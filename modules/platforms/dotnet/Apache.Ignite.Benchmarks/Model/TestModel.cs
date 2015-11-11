@@ -18,12 +18,12 @@
 namespace Apache.Ignite.Benchmarks.Model
 {
     using System;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Model class with all kinds of fields to test serialization.
     /// </summary>
-    internal class TestModel : IPortableMarshalAware
+    internal class TestModel : IBinarizable
     {
         public byte Byte { get; set; }
         public byte[] ByteArray { get; set; }
@@ -51,7 +51,7 @@ namespace Apache.Ignite.Benchmarks.Model
         public Guid?[] GuidArray { get; set; }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.WriteByte("Byte", Byte);
             writer.WriteByteArray("ByteArray", ByteArray);
@@ -71,8 +71,8 @@ namespace Apache.Ignite.Benchmarks.Model
             writer.WriteDoubleArray("DoubleArray", DoubleArray);
             writer.WriteDecimal("Decimal", Decimal);
             writer.WriteDecimalArray("DecimalArray", DecimalArray);
-            writer.WriteDate("Date", Date);
-            writer.WriteDateArray("DateArray", DateArray);
+            writer.WriteTimestamp("Date", Date);
+            writer.WriteTimestampArray("DateArray", DateArray);
             writer.WriteString("String", String);
             writer.WriteStringArray("StringArray", StringArray);
             writer.WriteGuid("Guid", Guid);
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Benchmarks.Model
         }
 
         /** <inheritDoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             Byte = reader.ReadByte("Byte");
             ByteArray = reader.ReadByteArray("ByteArray");
@@ -100,8 +100,8 @@ namespace Apache.Ignite.Benchmarks.Model
             DoubleArray = reader.ReadDoubleArray("DoubleArray");
             Decimal = reader.ReadDecimal("Decimal");
             DecimalArray = reader.ReadDecimalArray("DecimalArray");
-            Date = reader.ReadDate("Date");
-            DateArray = reader.ReadDateArray("DateArray");
+            Date = reader.ReadTimestamp("Date");
+            DateArray = reader.ReadTimestampArray("DateArray");
             String = reader.ReadString("String");
             StringArray = reader.ReadStringArray("StringArray");
             Guid = reader.ReadObject<Guid>("Guid");

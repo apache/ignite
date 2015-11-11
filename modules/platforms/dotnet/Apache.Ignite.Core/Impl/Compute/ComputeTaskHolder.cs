@@ -26,11 +26,11 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>
@@ -208,7 +208,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
 
             // 3. Write map result to the output stream.
-            PortableWriterImpl writer = prj.Marshaller.StartMarshal(outStream);
+            BinaryWriter writer = prj.Marshaller.StartMarshal(outStream);
 
             try
             {
@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public int JobResultRemote(ComputeJobHolder job, PlatformMemoryStream stream)
         {
             // 1. Unmarshal result.
-            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
+            BinaryReader reader = _compute.Marshaller.StartUnmarshal(stream);
 
             var nodeId = reader.ReadGuid();
             Debug.Assert(nodeId.HasValue);
@@ -299,7 +299,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             {
                 object err;
 
-                var data = PortableUtils.ReadWrappedInvocationResult(reader, out err);
+                var data = BinaryUtils.ReadInvocationResult(reader, out err);
 
                 // 2. Process the result.
                 return (int) JobResult0(new ComputeJobResultImpl(data, (Exception) err, job.Job, nodeId.Value, cancelled));
@@ -358,21 +358,15 @@ namespace Apache.Ignite.Core.Impl.Compute
             Justification = "User object deserialization can throw any exception")]
         public void CompleteWithError(long taskHandle, PlatformMemoryStream stream)
         {
-            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
+            BinaryReader reader = _compute.Marshaller.StartUnmarshal(stream);
 
             Exception err;
 
             try
             {
-                if (reader.ReadBoolean())
-                {
-                    PortableResultWrapper res = reader.ReadObject<PortableUserObject>()
-                        .Deserialize<PortableResultWrapper>();
-
-                    err = (Exception) res.Result;
-                }
-                else
-                    err = ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
+                err = reader.ReadBoolean()
+                    ? reader.ReadObject<BinaryObject>().Deserialize<Exception>()
+                    : ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
             }
             catch (Exception e)
             {
@@ -385,7 +379,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <summary>
         /// Task completion future.
         /// </summary>
-        internal IFuture<TR> Future
+        internal Future<TR> Future
         {
             get { return _fut; }
         }
@@ -425,17 +419,17 @@ namespace Apache.Ignite.Core.Impl.Compute
                     ress0 = EmptyRes;
 
                 // 2. Invoke user code.
-                var policy = _task.Result(new ComputeJobResultGenericWrapper<T>(res), ress0);
+                var policy = _task.OnResult(new ComputeJobResultGenericWrapper<T>(res), ress0);
 
                 // 3. Add result to the list only in case of success.
                 if (_resCache)
                 {
-                    var job = res.Job().Unwrap();
+                    var job = res.Job.Unwrap();
 
                     if (!_resJobs.Add(job))
                     {
                         // Duplicate result => find and replace it with the new one.
-                        var oldRes = _ress.Single(item => item.Job() == job);
+                        var oldRes = _ress.Single(item => item.Job == job);
 
                         _ress.Remove(oldRes);
                     }

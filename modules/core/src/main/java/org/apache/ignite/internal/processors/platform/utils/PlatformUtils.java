@@ -24,8 +24,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryRawReaderEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -39,8 +39,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetPortableTypeConfiguration;
+import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
+import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.CacheException;
@@ -96,7 +96,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param col Collection to write.
      */
-    public static <T> void writeNullableCollection(PortableRawWriterEx writer, @Nullable Collection<T> col) {
+    public static <T> void writeNullableCollection(BinaryRawWriterEx writer, @Nullable Collection<T> col) {
         writeNullableCollection(writer, col, null, null);
     }
 
@@ -107,7 +107,7 @@ public class PlatformUtils {
      * @param col Collection to write.
      * @param writeClo Writer closure.
      */
-    public static <T> void writeNullableCollection(PortableRawWriterEx writer, @Nullable Collection<T> col,
+    public static <T> void writeNullableCollection(BinaryRawWriterEx writer, @Nullable Collection<T> col,
         @Nullable PlatformWriterClosure<T> writeClo) {
         writeNullableCollection(writer, col, writeClo, null);
     }
@@ -120,7 +120,7 @@ public class PlatformUtils {
      * @param writeClo Optional writer closure.
      * @param filter Optional filter.
      */
-    public static <T> void writeNullableCollection(PortableRawWriterEx writer, @Nullable Collection<T> col,
+    public static <T> void writeNullableCollection(BinaryRawWriterEx writer, @Nullable Collection<T> col,
         @Nullable PlatformWriterClosure<T> writeClo, @Nullable IgnitePredicate<T> filter) {
         if (col != null) {
             writer.writeBoolean(true);
@@ -137,7 +137,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param col Collection to write.
      */
-    public static <T> void writeCollection(PortableRawWriterEx writer, Collection<T> col) {
+    public static <T> void writeCollection(BinaryRawWriterEx writer, Collection<T> col) {
         writeCollection(writer, col, null, null);
     }
 
@@ -148,7 +148,7 @@ public class PlatformUtils {
      * @param col Collection to write.
      * @param writeClo Writer closure.
      */
-    public static <T> void writeCollection(PortableRawWriterEx writer, Collection<T> col,
+    public static <T> void writeCollection(BinaryRawWriterEx writer, Collection<T> col,
         @Nullable PlatformWriterClosure<T> writeClo) {
         writeCollection(writer, col, writeClo, null);
     }
@@ -161,7 +161,7 @@ public class PlatformUtils {
      * @param writeClo Optional writer closure.
      * @param filter Optional filter.
      */
-    public static <T> void writeCollection(PortableRawWriterEx writer, Collection<T> col,
+    public static <T> void writeCollection(BinaryRawWriterEx writer, Collection<T> col,
         @Nullable PlatformWriterClosure<T> writeClo, @Nullable IgnitePredicate<T> filter) {
         assert col != null;
 
@@ -202,7 +202,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param map Map to write.
      */
-    public static <K, V> void writeNullableMap(PortableRawWriterEx writer, @Nullable Map<K, V> map) {
+    public static <K, V> void writeNullableMap(BinaryRawWriterEx writer, @Nullable Map<K, V> map) {
         if (map != null) {
             writer.writeBoolean(true);
 
@@ -218,7 +218,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param map Map to write.
      */
-    public static <K, V> void writeMap(PortableRawWriterEx writer, Map<K, V> map) {
+    public static <K, V> void writeMap(BinaryRawWriterEx writer, Map<K, V> map) {
         assert map != null;
 
         writeMap(writer, map, null);
@@ -231,7 +231,7 @@ public class PlatformUtils {
      * @param map Map to write.
      * @param writeClo Writer closure.
      */
-    public static <K, V> void writeMap(PortableRawWriterEx writer, Map<K, V> map,
+    public static <K, V> void writeMap(BinaryRawWriterEx writer, Map<K, V> map,
         @Nullable PlatformWriterBiClosure<K, V> writeClo) {
         assert map != null;
 
@@ -255,7 +255,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return List.
      */
-    public static <T> List<T> readCollection(PortableRawReaderEx reader) {
+    public static <T> List<T> readCollection(BinaryRawReaderEx reader) {
         return readCollection(reader, null);
     }
 
@@ -266,7 +266,7 @@ public class PlatformUtils {
      * @param readClo Optional reader closure.
      * @return List.
      */
-    public static <T> List<T> readCollection(PortableRawReaderEx reader, @Nullable PlatformReaderClosure<T> readClo) {
+    public static <T> List<T> readCollection(BinaryRawReaderEx reader, @Nullable PlatformReaderClosure<T> readClo) {
         int cnt = reader.readInt();
 
         List<T> res = new ArrayList<>(cnt);
@@ -289,7 +289,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return List.
      */
-    public static <T> List<T> readNullableCollection(PortableRawReaderEx reader) {
+    public static <T> List<T> readNullableCollection(BinaryRawReaderEx reader) {
         return readNullableCollection(reader, null);
     }
 
@@ -299,7 +299,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return List.
      */
-    public static <T> List<T> readNullableCollection(PortableRawReaderEx reader,
+    public static <T> List<T> readNullableCollection(BinaryRawReaderEx reader,
         @Nullable PlatformReaderClosure<T> readClo) {
         if (!reader.readBoolean())
             return null;
@@ -311,7 +311,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Set.
      */
-    public static <T> Set<T> readSet(PortableRawReaderEx reader) {
+    public static <T> Set<T> readSet(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
 
         Set<T> res = U.newHashSet(cnt);
@@ -326,7 +326,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Set.
      */
-    public static <T> Set<T> readNullableSet(PortableRawReaderEx reader) {
+    public static <T> Set<T> readNullableSet(BinaryRawReaderEx reader) {
         if (!reader.readBoolean())
             return null;
 
@@ -339,7 +339,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Map.
      */
-    public static <K, V> Map<K, V> readMap(PortableRawReaderEx reader) {
+    public static <K, V> Map<K, V> readMap(BinaryRawReaderEx reader) {
         return readMap(reader, null);
     }
 
@@ -350,7 +350,7 @@ public class PlatformUtils {
      * @param readClo Reader closure.
      * @return Map.
      */
-    public static <K, V> Map<K, V> readMap(PortableRawReaderEx reader,
+    public static <K, V> Map<K, V> readMap(BinaryRawReaderEx reader,
         @Nullable PlatformReaderBiClosure<K, V> readClo) {
         int cnt = reader.readInt();
 
@@ -377,7 +377,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Map.
      */
-    public static <K, V> Map<K, V> readNullableMap(PortableRawReaderEx reader) {
+    public static <K, V> Map<K, V> readNullableMap(BinaryRawReaderEx reader) {
         if (!reader.readBoolean())
             return null;
 
@@ -390,7 +390,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param val Values.
      */
-    public static void writeIgniteUuid(PortableRawWriterEx writer, IgniteUuid val) {
+    public static void writeIgniteUuid(BinaryRawWriterEx writer, IgniteUuid val) {
         if (val == null)
             writer.writeUuid(null);
         else {
@@ -483,7 +483,7 @@ public class PlatformUtils {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = ctx.writer(out);
+            BinaryRawWriterEx writer = ctx.writer(out);
 
             int cntPos = writer.reserveInt();
 
@@ -552,7 +552,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param evt Event.
      */
-    private static void writeCacheEntryEvent(PortableRawWriterEx writer, CacheEntryEvent evt) {
+    private static void writeCacheEntryEvent(BinaryRawWriterEx writer, CacheEntryEvent evt) {
         writer.writeObjectDetached(evt.getKey());
         writer.writeObjectDetached(evt.getOldValue());
         writer.writeObjectDetached(evt.getValue());
@@ -564,7 +564,7 @@ public class PlatformUtils {
      * @param err Error.
      * @param writer Writer.
      */
-    public static void writeErrorData(Throwable err, PortableRawWriterEx writer) {
+    public static void writeErrorData(Throwable err, BinaryRawWriterEx writer) {
         writeErrorData(err, writer, null);
     }
 
@@ -574,7 +574,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param log Optional logger.
      */
-    public static void writeErrorData(Throwable err, PortableRawWriterEx writer, @Nullable IgniteLogger log) {
+    public static void writeErrorData(Throwable err, BinaryRawWriterEx writer, @Nullable IgniteLogger log) {
         // Write additional data if needed.
         if (err instanceof PlatformExtendedException) {
             PlatformExtendedException err0 = (PlatformExtendedException)err;
@@ -659,7 +659,7 @@ public class PlatformUtils {
                 // Write error data.
                 PlatformOutputStream out = mem.output();
 
-                PortableRawWriterEx writer = ctx.writer(out);
+                BinaryRawWriterEx writer = ctx.writer(out);
 
                 try {
                     PlatformUtils.writeErrorData(err, writer, ctx.kernalContext().log(PlatformContext.class));
@@ -696,7 +696,7 @@ public class PlatformUtils {
      * @param resObj Result.
      * @param err Error.
      */
-    public static void writeInvocationResult(PortableRawWriterEx writer, Object resObj, Exception err)
+    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Exception err)
     {
         if (err == null) {
             writer.writeBoolean(true);
@@ -732,7 +732,7 @@ public class PlatformUtils {
      * @return Result.
      * @throws IgniteCheckedException When invocation result is an error.
      */
-    public static Object readInvocationResult(PlatformContext ctx, PortableRawReaderEx reader)
+    public static Object readInvocationResult(PlatformContext ctx, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         // 1. Read success flag.
         boolean success = reader.readBoolean();
@@ -769,35 +769,32 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param cfg Configuration.
      */
-    public static void writeDotNetConfiguration(PortableRawWriterEx writer, PlatformDotNetConfiguration cfg) {
+    public static void writeDotNetConfiguration(BinaryRawWriterEx writer, PlatformDotNetConfiguration cfg) {
         // 1. Write assemblies.
         writeNullableCollection(writer, cfg.getAssemblies());
 
-        PlatformDotNetPortableConfiguration portableCfg = cfg.getPortableConfiguration();
+        PlatformDotNetBinaryConfiguration binaryCfg = cfg.getBinaryConfiguration();
 
-        if (portableCfg != null) {
+        if (binaryCfg != null) {
             writer.writeBoolean(true);
 
-            writeNullableCollection(writer, portableCfg.getTypesConfiguration(),
-                new PlatformWriterClosure<PlatformDotNetPortableTypeConfiguration>() {
-                @Override public void write(PortableRawWriterEx writer, PlatformDotNetPortableTypeConfiguration typ) {
-                    writer.writeString(typ.getAssemblyName());
+            writeNullableCollection(writer, binaryCfg.getTypesConfiguration(),
+                new PlatformWriterClosure<PlatformDotNetBinaryTypeConfiguration>() {
+                @Override public void write(BinaryRawWriterEx writer, PlatformDotNetBinaryTypeConfiguration typ) {
                     writer.writeString(typ.getTypeName());
                     writer.writeString(typ.getNameMapper());
                     writer.writeString(typ.getIdMapper());
                     writer.writeString(typ.getSerializer());
                     writer.writeString(typ.getAffinityKeyFieldName());
-                    writer.writeObject(typ.getMetadataEnabled());
                     writer.writeObject(typ.getKeepDeserialized());
                 }
             });
 
-            writeNullableCollection(writer, portableCfg.getTypes());
-            writer.writeString(portableCfg.getDefaultNameMapper());
-            writer.writeString(portableCfg.getDefaultIdMapper());
-            writer.writeString(portableCfg.getDefaultSerializer());
-            writer.writeBoolean(portableCfg.isDefaultMetadataEnabled());
-            writer.writeBoolean(portableCfg.isDefaultKeepDeserialized());
+            writeNullableCollection(writer, binaryCfg.getTypes());
+            writer.writeString(binaryCfg.getDefaultNameMapper());
+            writer.writeString(binaryCfg.getDefaultIdMapper());
+            writer.writeString(binaryCfg.getDefaultSerializer());
+            writer.writeBoolean(binaryCfg.isDefaultKeepDeserialized());
         }
         else
             writer.writeBoolean(false);

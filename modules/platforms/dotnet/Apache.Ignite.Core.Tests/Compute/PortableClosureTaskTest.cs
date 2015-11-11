@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
 
     /// <summary>
@@ -40,12 +40,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         protected PortableClosureTaskTest(bool fork) : base(fork) { }
 
         /** <inheritDoc /> */
-        protected override void PortableTypeConfigurations(ICollection<PortableTypeConfiguration> portTypeCfgs)
+        protected override void PortableTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableOutFunc)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableFunc)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableResult)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableException)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableOutFunc)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableFunc)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableResult)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableException)));
         }
 
         /** <inheritDoc /> */
@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// 
         /// </summary>
-        private class PortableException : Exception, IPortableMarshalAware
+        private class PortableException : Exception, IBinarizable
         {
             /** */
             public string Msg;
@@ -176,13 +176,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /** <inheritDoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.GetRawWriter().WriteString(Msg);
             }
 
             /** <inheritDoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 Msg = reader.GetRawReader().ReadString();
             }

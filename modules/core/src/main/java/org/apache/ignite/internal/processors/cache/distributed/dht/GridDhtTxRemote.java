@@ -122,9 +122,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             concurrency, 
             isolation, 
             invalidate, 
-            timeout, 
+            timeout,
             txSize,
-            subjId, 
+            subjId,
             taskNameHash
         );
 
@@ -193,7 +193,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             concurrency, 
             isolation, 
             invalidate, 
-            timeout, 
+            timeout,
             txSize,
             subjId, 
             taskNameHash
@@ -335,7 +335,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable CacheObject val,
         @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors,
         long ttl,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary) {
         checkInternal(key);
 
         if (isSystemInvalidate())
@@ -351,7 +352,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             -1L,
             cached,
             null,
-            skipStore);
+            skipStore,
+            keepBinary);
 
         txEntry.entryProcessors(entryProcessors);
 

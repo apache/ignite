@@ -125,6 +125,14 @@ public class PortableOffheapOutputStream extends PortableAbstractOutputStream {
     }
 
     /** {@inheritDoc} */
+    @Override protected void writeShortPositioned(int pos, short val) {
+        if (!LITTLE_ENDIAN)
+            val = Short.reverseBytes(val);
+
+        UNSAFE.putShort(ptr + pos, val);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void writeIntPositioned(int pos, int val) {
         if (!LITTLE_ENDIAN)
             val = Integer.reverseBytes(val);

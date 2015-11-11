@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "ignite/cache/query/query_argument.h"
-#include "ignite/portable/portable_raw_writer.h"
+#include "ignite/binary/binary_raw_writer.h"
 
 namespace ignite
 {    
@@ -54,23 +54,14 @@ namespace ignite
                  *
                  * @param other Other instance.
                  */
-                SqlQuery(const SqlQuery& other)
+                SqlQuery(const SqlQuery& other) : type(other.type), sql(other.sql), pageSize(other.pageSize),
+                    loc(other.loc), args()
                 {
-                    type = other.type;
-                    sql = other.sql;
-                    pageSize = other.pageSize;
-                    loc = other.loc;
+                    args.reserve(other.args.size());
 
-                    if (other.args)
-                    {
-                        args = new std::vector<QueryArgumentBase*>();
-
-                        for (std::vector<QueryArgumentBase*>::iterator it = other.args->begin();
-                            it != other.args->end(); ++it)
-                            args->push_back((*it)->Copy());
-                    }
-                    else
-                        args = NULL;
+                    for (std::vector<QueryArgumentBase*>::const_iterator i = other.args.begin(); 
+                        i != other.args.end(); ++i)
+                        args.push_back((*i)->Copy());
                 }
 
                 /**
@@ -82,18 +73,13 @@ namespace ignite
                 {
                     if (this != &other)
                     {
-                        type = other.type;
-                        sql = other.sql;
-                        pageSize = other.pageSize;
-                        loc = other.loc;
-
                         SqlQuery tmp(other);
 
-                        std::vector<QueryArgumentBase*>* args0 = args;
-
-                        args = tmp.args;
-
-                        tmp.args = args0; 
+                        std::swap(type, tmp.type);
+                        std::swap(sql, tmp.sql);
+                        std::swap(pageSize, tmp.pageSize);
+                        std::swap(loc, tmp.loc);
+                        std::swap(args, tmp.args);
                     }
 
                     return *this;
@@ -104,12 +90,24 @@ namespace ignite
                  */
                 ~SqlQuery()
                 {
-                    if (args) 
-                    {
-                        for (std::vector<QueryArgumentBase*>::iterator it = args->begin(); it != args->end(); ++it)
-                            delete (*it);
+                    for (std::vector<QueryArgumentBase*>::iterator it = args.begin(); it != args.end(); ++it)
+                        delete *it;
+                }
 
-                        delete args;
+                /**
+                 * Efficiently swaps contents with another SqlQuery instance.
+                 *
+                 * @param other Other instance.
+                 */
+                void Swap(SqlQuery& other)
+                {
+                    if (this != &other)
+                    {
+                        std::swap(type, other.type);
+                        std::swap(sql, other.sql);
+                        std::swap(pageSize, other.pageSize);
+                        std::swap(loc, other.loc);
+                        std::swap(args, other.args);
                     }
                 }
 
@@ -201,10 +199,7 @@ namespace ignite
                 template<typename T>
                 void AddArgument(const T& arg)
                 {
-                    if (!args)
-                        args = new std::vector<QueryArgumentBase*>();
-
-                    args->push_back(new QueryArgument<T>(arg));
+                    args.push_back(new QueryArgument<T>(arg));
                 }
 
                 /**
@@ -212,22 +207,17 @@ namespace ignite
                  *
                  * @param writer Writer.
                  */
-                void Write(portable::PortableRawWriter& writer) const
+                void Write(binary::BinaryRawWriter& writer) const
                 {
                     writer.WriteBool(loc);
                     writer.WriteString(sql);
                     writer.WriteString(type);
                     writer.WriteInt32(pageSize);
 
-                    if (args)
-                    {
-                        writer.WriteInt32(static_cast<int32_t>(args->size()));
+                    writer.WriteInt32(static_cast<int32_t>(args.size()));
 
-                        for (std::vector<QueryArgumentBase*>::iterator it = args->begin(); it != args->end(); ++it)
-                            (*it)->Write(writer);
-                    }
-                    else
-                        writer.WriteInt32(0);
+                    for (std::vector<QueryArgumentBase*>::const_iterator it = args.begin(); it != args.end(); ++it)
+                        (*it)->Write(writer);
                 }
 
             private:
@@ -244,7 +234,7 @@ namespace ignite
                 bool loc;
 
                 /** Arguments. */
-                std::vector<QueryArgumentBase*>* args;
+                std::vector<QueryArgumentBase*> args;
             };
         }
     }    

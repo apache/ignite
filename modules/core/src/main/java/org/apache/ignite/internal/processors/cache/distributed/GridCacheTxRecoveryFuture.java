@@ -33,7 +33,9 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -162,7 +164,8 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                     0,
                     true,
                     futureId(),
-                    fut.futureId());
+                    fut.futureId(),
+                    tx.activeCachesDeploymentEnabled());
 
                 try {
                     cctx.io().send(nearNodeId, req, tx.ioPolicy());
@@ -267,7 +270,8 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                         nodeTransactions(id),
                         false,
                         futureId(),
-                        fut.futureId());
+                        fut.futureId(),
+                        tx.activeCachesDeploymentEnabled());
 
                     try {
                         cctx.io().send(id, req, tx.ioPolicy());
@@ -292,7 +296,8 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                     nodeTransactions(nodeId),
                     false,
                     futureId(),
-                    fut.futureId());
+                    fut.futureId(),
+                    tx.activeCachesDeploymentEnabled());
 
                 try {
                     cctx.io().send(nodeId, req, tx.ioPolicy());
@@ -431,7 +436,16 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheTxRecoveryFuture.class, this, "super", super.toString());
+        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
+            @Override public String apply(IgniteInternalFuture<?> f) {
+                return "[node=" + ((MiniFuture)f).nodeId +
+                    ", done=" + f.isDone() + "]";
+            }
+        });
+
+        return S.toString(GridCacheTxRecoveryFuture.class, this,
+            "innerFuts", futs,
+            "super", super.toString());
     }
 
     /**

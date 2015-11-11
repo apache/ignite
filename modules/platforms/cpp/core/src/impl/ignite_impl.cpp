@@ -38,5 +38,10 @@ namespace ignite
         {
             return env.Get()->InstanceName();
         }
+
+        JniContext* IgniteImpl::GetContext()
+        {
+            return env.Get()->Context();
+        }
     }    
 }

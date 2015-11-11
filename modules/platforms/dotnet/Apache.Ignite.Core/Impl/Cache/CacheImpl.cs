@@ -22,19 +22,18 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Threading;
+    using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
-    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache.Query;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Portable;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
@@ -58,8 +57,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Flag: skip store. */
         private readonly bool _flagSkipStore;
 
-        /** Flag: keep portable. */
-        private readonly bool _flagKeepPortable;
+        /** Flag: keep binary. */
+        private readonly bool _flagKeepBinary;
 
         /** Flag: async mode.*/
         private readonly bool _flagAsync;
@@ -67,13 +66,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Flag: no-retries.*/
         private readonly bool _flagNoRetries;
 
-        /** 
-         * Result converter for async InvokeAll operation. 
-         * In future result processing there is only one TResult generic argument, 
-         * and we can't get the type of ICacheEntryProcessorResult at compile time from it.
-         * This field caches converter for the last InvokeAll operation to avoid using reflection.
-         */
-        private readonly ThreadLocal<object> _invokeAllConverter = new ThreadLocal<object>();
+        /** Async instance. */
+        private readonly Lazy<CacheImpl<TK, TV>> _asyncInstance;
 
         /// <summary>
         /// Constructor.
@@ -82,65 +76,73 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="flagSkipStore">Skip store flag.</param>
-        /// <param name="flagKeepPortable">Keep portable flag.</param>
+        /// <param name="flagKeepBinary">Keep binary flag.</param>
         /// <param name="flagAsync">Async mode flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
-        public CacheImpl(Ignite grid, IUnmanagedTarget target, PortableMarshaller marsh,
-            bool flagSkipStore, bool flagKeepPortable, bool flagAsync, bool flagNoRetries) : base(target, marsh)
+        public CacheImpl(Ignite grid, IUnmanagedTarget target, Marshaller marsh,
+            bool flagSkipStore, bool flagKeepBinary, bool flagAsync, bool flagNoRetries) : base(target, marsh)
         {
             _ignite = grid;
             _flagSkipStore = flagSkipStore;
-            _flagKeepPortable = flagKeepPortable;
+            _flagKeepBinary = flagKeepBinary;
             _flagAsync = flagAsync;
             _flagNoRetries = flagNoRetries;
+
+            _asyncInstance = new Lazy<CacheImpl<TK, TV>>(() => new CacheImpl<TK, TV>(this));
+        }
+
+        /// <summary>
+        /// Initializes a new async instance.
+        /// </summary>
+        /// <param name="cache">The cache.</param>
+        private CacheImpl(CacheImpl<TK, TV> cache) : base(UU.CacheWithAsync(cache.Target), cache.Marshaller)
+        {
+            _ignite = cache._ignite;
+            _flagSkipStore = cache._flagSkipStore;
+            _flagKeepBinary = cache._flagKeepBinary;
+            _flagAsync = true;
+            _flagNoRetries = cache._flagNoRetries;
         }
 
         /** <inheritDoc /> */
         public IIgnite Ignite
         {
-            get
-            {
-                return _ignite;
-            }
+            get { return _ignite; }
         }
 
         /** <inheritDoc /> */
-        public bool IsAsync
+        private bool IsAsync
         {
             get { return _flagAsync; }
         }
 
-        /** <inheritDoc /> */
-        public IFuture GetFuture()
-        {
-            throw new NotSupportedException("GetFuture() should be called through CacheProxyImpl");
-        }
-
-        /** <inheritDoc /> */
-        public IFuture<TResult> GetFuture<TResult>()
-        {
-            throw new NotSupportedException("GetFuture() should be called through CacheProxyImpl");
-        }
-
         /// <summary>
-        /// Gets and resets future for previous asynchronous operation.
+        /// Gets and resets task for previous asynchronous operation.
         /// </summary>
         /// <param name="lastAsyncOp">The last async op id.</param>
         /// <returns>
-        /// Future for previous asynchronous operation.
+        /// Task for previous asynchronous operation.
         /// </returns>
-        /// <exception cref="System.InvalidOperationException">Asynchronous mode is disabled</exception>
-        internal IFuture<TResult> GetFuture<TResult>(CacheOp lastAsyncOp) 
+        private Task GetTask(CacheOp lastAsyncOp)
         {
-            if (!_flagAsync)
-                throw IgniteUtils.GetAsyncModeDisabledException();
+            return GetTask<object>(lastAsyncOp);
+        }
 
-            var converter = GetFutureResultConverter<TResult>(lastAsyncOp);
-
-            _invokeAllConverter.Value = null;
+        /// <summary>
+        /// Gets and resets task for previous asynchronous operation.
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
+        /// <param name="lastAsyncOp">The last async op id.</param>
+        /// <param name="converter">The converter.</param>
+        /// <returns>
+        /// Task for previous asynchronous operation.
+        /// </returns>
+        private Task<TResult> GetTask<TResult>(CacheOp lastAsyncOp, Func<BinaryReader, TResult> converter = null)
+        {
+            Debug.Assert(_flagAsync);
 
             return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, 
-                (int) lastAsyncOp), _flagKeepPortable, converter);
+                (int) lastAsyncOp), _flagKeepBinary, converter).Task;
         }
 
         /** <inheritDoc /> */
@@ -151,6 +153,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** <inheritDoc /> */
 
+        /** <inheritDoc /> */
         public bool IsEmpty()
         {
             return GetSize() == 0;
@@ -163,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(_ignite, UU.CacheWithSkipStore(Target), Marshaller, 
-                true, _flagKeepPortable, _flagAsync, true);
+                true, _flagKeepBinary, _flagAsync, true);
         }
 
         /// <summary>
@@ -172,21 +175,21 @@ namespace Apache.Ignite.Core.Impl.Cache
         internal bool IsSkipStore { get { return _flagSkipStore; } }
 
         /** <inheritDoc /> */
-        public ICache<TK1, TV1> WithKeepPortable<TK1, TV1>()
+        public ICache<TK1, TV1> WithKeepBinary<TK1, TV1>()
         {
-            if (_flagKeepPortable)
+            if (_flagKeepBinary)
             {
                 var result = this as ICache<TK1, TV1>;
 
                 if (result == null)
                     throw new InvalidOperationException(
-                        "Can't change type of portable cache. WithKeepPortable has been called on an instance of " +
-                        "portable cache with incompatible generic arguments.");
+                        "Can't change type of binary cache. WithKeepBinary has been called on an instance of " +
+                        "binary cache with incompatible generic arguments.");
 
                 return result;
             }
 
-            return new CacheImpl<TK1, TV1>(_ignite, UU.CacheWithKeepPortable(Target), Marshaller, 
+            return new CacheImpl<TK1, TV1>(_ignite, UU.CacheWithKeepBinary(Target), Marshaller, 
                 _flagSkipStore, true, _flagAsync, _flagNoRetries);
         }
 
@@ -201,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IUnmanagedTarget cache0 = UU.CacheWithExpiryPolicy(Target, create, update, access);
 
-            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepPortable, _flagAsync, _flagNoRetries);
+            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepBinary, _flagAsync, _flagNoRetries);
         }
 
         /// <summary>
@@ -225,16 +228,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public ICache<TK, TV> WithAsync()
+        public bool IsKeepBinary
         {
-            return _flagAsync ? this : new CacheImpl<TK, TV>(_ignite, UU.CacheWithAsync(Target), Marshaller,
-                _flagSkipStore, _flagKeepPortable, true, _flagNoRetries);
-        }
-
-        /** <inheritDoc /> */
-        public bool IsKeepPortable
-        {
-            get { return _flagKeepPortable; }
+            get { return _flagKeepBinary; }
         }
 
         /** <inheritDoc /> */
@@ -244,9 +240,25 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
+        {
+            AsyncInstance.LoadCache(p, args);
+
+            return AsyncInstance.GetTask(CacheOp.LoadCache);
+        }
+
+        /** <inheritDoc /> */
         public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
             LoadCache0(p, args, (int)CacheOp.LocLoadCache);
+        }
+
+        /** <inheritDoc /> */
+        public Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
+        {
+            AsyncInstance.LocalLoadCache(p, args);
+
+            return AsyncInstance.GetTask(CacheOp.LocLoadCache);
         }
 
         /// <summary>
@@ -259,14 +271,14 @@ namespace Apache.Ignite.Core.Impl.Cache
                 if (p != null)
                 {
                     var p0 = new CacheEntryFilterHolder(p, (k, v) => p.Invoke(new CacheEntry<TK, TV>((TK)k, (TV)v)),
-                        Marshaller, IsKeepPortable);
+                        Marshaller, IsKeepBinary);
                     writer.WriteObject(p0);
                     writer.WriteLong(p0.Handle);
                 }
                 else
                     writer.WriteObject<CacheEntryFilterHolder>(null);
 
-                writer.WriteObjectArray(args);
+                writer.WriteArray(args);
             });
         }
 
@@ -276,7 +288,15 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutOp((int)CacheOp.ContainsKey, key) == True;
-        }        
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> ContainsKeyAsync(TK key)
+        {
+            AsyncInstance.ContainsKey(key);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.ContainsKey);
+        }
 
         /** <inheritDoc /> */
         public bool ContainsKeys(IEnumerable<TK> keys)
@@ -284,7 +304,15 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(keys, "keys");
 
             return DoOutOp((int)CacheOp.ContainsKeys, writer => WriteEnumerable(writer, keys)) == True;
-        }        
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> ContainsKeysAsync(IEnumerable<TK> keys)
+        {
+            AsyncInstance.ContainsKeys(keys);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.ContainsKeys);
+        }
 
         /** <inheritDoc /> */
         public TV LocalPeek(TK key, params CachePeekMode[] modes)
@@ -355,6 +383,20 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task<TV> GetAsync(TK key)
+        {
+            AsyncInstance.Get(key);
+
+            return AsyncInstance.GetTask(CacheOp.Get, reader =>
+            {
+                if (reader != null)
+                    return reader.ReadObject<TV>();
+
+                throw GetKeyNotFoundException();
+            });
+        }
+
+        /** <inheritDoc /> */
         public bool TryGet(TK key, out TV value)
         {
             IgniteArgumentCheck.NotNull(key, "key");
@@ -370,6 +412,16 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task<CacheResult<TV>> TryGetAsync(TK key)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            AsyncInstance.Get(key);
+
+            return AsyncInstance.GetTask(CacheOp.Get, GetCacheResult);
+        }
+
+        /** <inheritDoc /> */
         public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
@@ -378,10 +430,18 @@ namespace Apache.Ignite.Core.Impl.Cache
                 writer => WriteEnumerable(writer, keys),
                 input =>
                 {
-                    var reader = Marshaller.StartUnmarshal(input, _flagKeepPortable);
+                    var reader = Marshaller.StartUnmarshal(input, _flagKeepBinary);
 
                     return ReadGetAllDictionary(reader);
                 });
+        }
+
+        /** <inheritDoc /> */
+        public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys)
+        {
+            AsyncInstance.GetAll(keys);
+
+            return AsyncInstance.GetTask(CacheOp.GetAll, r => r == null ? null : ReadGetAllDictionary(r));
         }
 
         /** <inheritdoc /> */
@@ -395,6 +455,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task PutAsync(TK key, TV val)
+        {
+            AsyncInstance.Put(key, val);
+
+            return AsyncInstance.GetTask(CacheOp.Put);
+        }
+
+        /** <inheritDoc /> */
         public CacheResult<TV> GetAndPut(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
@@ -405,13 +473,29 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task<CacheResult<TV>> GetAndPutAsync(TK key, TV val)
+        {
+            AsyncInstance.GetAndPut(key, val);
+
+            return AsyncInstance.GetTask(CacheOp.GetAndPut, GetCacheResult);
+        }
+
+        /** <inheritDoc /> */
         public CacheResult<TV> GetAndReplace(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpNullable<TK, TV, TV>((int)CacheOp.GetAndReplace, key, val);
+            return DoOutInOpNullable<TK, TV, TV>((int) CacheOp.GetAndReplace, key, val);
+        }
+
+        /** <inheritDoc /> */
+        public Task<CacheResult<TV>> GetAndReplaceAsync(TK key, TV val)
+        {
+            AsyncInstance.GetAndReplace(key, val);
+
+            return AsyncInstance.GetTask(CacheOp.GetAndReplace, GetCacheResult);
         }
 
         /** <inheritDoc /> */
@@ -420,6 +504,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOpNullable<TK, TV>((int)CacheOp.GetAndRemove, key);
+        }
+
+        /** <inheritDoc /> */
+        public Task<CacheResult<TV>> GetAndRemoveAsync(TK key)
+        {
+            AsyncInstance.GetAndRemove(key);
+
+            return AsyncInstance.GetTask(CacheOp.GetAndRemove, GetCacheResult);
         }
 
         /** <inheritdoc /> */
@@ -432,6 +524,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutOp((int) CacheOp.PutIfAbsent, key, val) == True;
         }
 
+        /** <inheritDoc /> */
+        public Task<bool> PutIfAbsentAsync(TK key, TV val)
+        {
+            AsyncInstance.PutIfAbsent(key, val);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.PutIfAbsent);
+        }
+
         /** <inheritdoc /> */
         public CacheResult<TV> GetAndPutIfAbsent(TK key, TV val)
         {
@@ -442,6 +542,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOpNullable<TK, TV, TV>((int)CacheOp.GetAndPutIfAbsent, key, val);
         }
 
+        /** <inheritDoc /> */
+        public Task<CacheResult<TV>> GetAndPutIfAbsentAsync(TK key, TV val)
+        {
+            AsyncInstance.GetAndPutIfAbsent(key, val);
+
+            return AsyncInstance.GetTask(CacheOp.GetAndPutIfAbsent, GetCacheResult);
+        }
+
         /** <inheritdoc /> */
         public bool Replace(TK key, TV val)
         {
@@ -449,7 +557,15 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutOp((int)CacheOp.Replace2, key, val) == True;
+            return DoOutOp((int) CacheOp.Replace2, key, val) == True;
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> ReplaceAsync(TK key, TV val)
+        {
+            AsyncInstance.Replace(key, val);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.Replace2);
         }
 
         /** <inheritdoc /> */
@@ -464,6 +580,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutOp((int)CacheOp.Replace3, key, oldVal, newVal) == True;
         }
 
+        /** <inheritDoc /> */
+        public Task<bool> ReplaceAsync(TK key, TV oldVal, TV newVal)
+        {
+            AsyncInstance.Replace(key, oldVal, newVal);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.Replace3);
+        }
+
         /** <inheritdoc /> */
         public void PutAll(IDictionary<TK, TV> vals)
         {
@@ -471,7 +595,15 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             DoOutOp((int) CacheOp.PutAll, writer => WriteDictionary(writer, vals));
         }
-        
+
+        /** <inheritDoc /> */
+        public Task PutAllAsync(IDictionary<TK, TV> vals)
+        {
+            AsyncInstance.PutAll(vals);
+
+            return AsyncInstance.GetTask(CacheOp.PutAll);
+        }
+
         /** <inheritdoc /> */
         public void LocalEvict(IEnumerable<TK> keys)
         {
@@ -486,12 +618,28 @@ namespace Apache.Ignite.Core.Impl.Cache
             UU.CacheClear(Target);
         }
 
+        /** <inheritDoc /> */
+        public Task ClearAsync()
+        {
+            AsyncInstance.Clear();
+
+            return AsyncInstance.GetTask();
+        }
+
         /** <inheritdoc /> */
         public void Clear(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            DoOutOp((int)CacheOp.Clear, key);
+            DoOutOp((int) CacheOp.Clear, key);
+        }
+
+        /** <inheritDoc /> */
+        public Task ClearAsync(TK key)
+        {
+            AsyncInstance.Clear(key);
+
+            return AsyncInstance.GetTask(CacheOp.Clear);
         }
 
         /** <inheritdoc /> */
@@ -500,6 +648,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(keys, "keys");
 
             DoOutOp((int)CacheOp.ClearAll, writer => WriteEnumerable(writer, keys));
+        }
+
+        /** <inheritDoc /> */
+        public Task ClearAllAsync(IEnumerable<TK> keys)
+        {
+            AsyncInstance.ClearAll(keys);
+
+            return AsyncInstance.GetTask(CacheOp.ClearAll);
         }
 
         /** <inheritdoc /> */
@@ -523,7 +679,15 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutOp((int)CacheOp.RemoveObj, key) == True;
+            return DoOutOp((int) CacheOp.RemoveObj, key) == True;
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> RemoveAsync(TK key)
+        {
+            AsyncInstance.Remove(key);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.RemoveObj);
         }
 
         /** <inheritDoc /> */
@@ -537,6 +701,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task<bool> RemoveAsync(TK key, TV val)
+        {
+            AsyncInstance.Remove(key, val);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.RemoveBool);
+        }
+
+        /** <inheritDoc /> */
         public void RemoveAll(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
@@ -545,9 +717,25 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task RemoveAllAsync(IEnumerable<TK> keys)
+        {
+            AsyncInstance.RemoveAll(keys);
+
+            return AsyncInstance.GetTask(CacheOp.RemoveAll);
+        }
+
+        /** <inheritDoc /> */
         public void RemoveAll()
         {
             UU.CacheRemoveAll(Target);
+        }
+
+        /** <inheritDoc /> */
+        public Task RemoveAllAsync()
+        {
+            AsyncInstance.RemoveAll();
+
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -560,6 +748,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         public int GetSize(params CachePeekMode[] modes)
         {
             return Size0(false, modes);
+        }
+
+        /** <inheritDoc /> */
+        public Task<int> GetSizeAsync(params CachePeekMode[] modes)
+        {
+            AsyncInstance.GetSize(modes);
+
+            return AsyncInstance.GetTask<int>();
         }
 
         /// <summary>
@@ -601,6 +797,25 @@ namespace Apache.Ignite.Core.Impl.Cache
             input => GetResultOrThrow<TRes>(Unmarshal<object>(input)));
         }
 
+        /** <inheritDoc /> */
+        public Task<TRes> InvokeAsync<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        {
+            AsyncInstance.Invoke(key, processor, arg);
+
+            return AsyncInstance.GetTask(CacheOp.Invoke, r =>
+            {
+                if (r == null)
+                    return default(TRes);
+
+                var hasError = r.ReadBoolean();
+
+                if (hasError)
+                    throw ReadException(r.Stream);
+
+                return r.ReadObject<TRes>();
+            });
+        }
+
         /** <inheritdoc /> */
         public IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
@@ -612,19 +827,21 @@ namespace Apache.Ignite.Core.Impl.Cache
             var holder = new CacheEntryProcessorHolder(processor, arg,
                 (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TArg)a), typeof(TK), typeof(TV));
 
-            return DoOutInOp((int)CacheOp.InvokeAll, writer =>
-            {
-                WriteEnumerable(writer, keys);
-                writer.Write(holder);
-            },
-            input =>
-            {
-                if (IsAsync)
-                    _invokeAllConverter.Value = (Func<PortableReaderImpl, IDictionary<TK, ICacheEntryProcessorResult<TRes>>>)
-                        (reader => ReadInvokeAllResults<TRes>(reader.Stream));
+            return DoOutInOp((int) CacheOp.InvokeAll,
+                writer =>
+                {
+                    WriteEnumerable(writer, keys);
+                    writer.Write(holder);
+                },
+                input => ReadInvokeAllResults<TRes>(input));
+        }
 
-                return ReadInvokeAllResults<TRes>(input);
-            });
+        /** <inheritDoc /> */
+        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        {
+            AsyncInstance.InvokeAll(keys, processor, arg);
+
+            return AsyncInstance.GetTask(CacheOp.InvokeAll, reader => ReadInvokeAllResults<TRes>(reader.Stream));
         }
 
         /** <inheritdoc /> */
@@ -666,16 +883,16 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             return DoInOp((int)CacheOp.Metrics, stream =>
             {
-                IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                 return new CacheMetricsImpl(reader);
             });
         }
 
         /** <inheritDoc /> */
-        public IFuture Rebalance()
+        public Task Rebalance()
         {
-            return GetFuture<object>((futId, futTyp) => UU.CacheRebalance(Target, futId));
+            return GetFuture<object>((futId, futTyp) => UU.CacheRebalance(Target, futId)).Task;
         }
 
         /** <inheritDoc /> */
@@ -685,15 +902,15 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(_ignite, UU.CacheWithNoRetries(Target), Marshaller,
-                _flagSkipStore, _flagKeepPortable, _flagAsync, true);
+                _flagSkipStore, _flagKeepBinary, _flagAsync, true);
         }
 
         /// <summary>
-        /// Gets a value indicating whether this instance is in no-retries mode.
+        /// Gets the asynchronous instance.
         /// </summary>
-        internal bool IsNoRetries
+        private CacheImpl<TK, TV> AsyncInstance
         {
-            get { return _flagNoRetries; }
+            get { return _asyncInstance.Value; }
         }
 
         #region Queries
@@ -723,7 +940,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 cursor = UU.CacheOutOpQueryCursor(Target, (int) CacheOp.QrySqlFields, stream.SynchronizeOutput());
             }
         
-            return new FieldsQueryCursor(cursor, Marshaller, _flagKeepPortable);
+            return new FieldsQueryCursor(cursor, Marshaller, _flagKeepBinary);
         }
 
         /** <inheritDoc /> */
@@ -737,14 +954,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 var writer = Marshaller.StartMarshal(stream);
 
-                qry.Write(writer, IsKeepPortable);
+                qry.Write(writer, IsKeepBinary);
 
                 FinishMarshal(writer);
 
                 cursor = UU.CacheOutOpQueryCursor(Target, (int)qry.OpId, stream.SynchronizeOutput()); 
             }
 
-            return new QueryCursor<TK, TV>(cursor, Marshaller, _flagKeepPortable);
+            return new QueryCursor<TK, TV>(cursor, Marshaller, _flagKeepBinary);
         }
                 
         /// <summary>
@@ -752,7 +969,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="args">Arguments.</param>
-        private static void WriteQueryArgs(PortableWriterImpl writer, object[] args)
+        private static void WriteQueryArgs(BinaryWriter writer, object[] args)
         {
             if (args == null)
                 writer.WriteInt(0);
@@ -790,7 +1007,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             qry.Validate();
 
-            var hnd = new ContinuousQueryHandleImpl<TK, TV>(qry, Marshaller, _flagKeepPortable);
+            var hnd = new ContinuousQueryHandleImpl<TK, TV>(qry, Marshaller, _flagKeepBinary);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -802,7 +1019,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                     {
                         writer.WriteInt((int) initialQry.OpId);
 
-                        initialQry.Write(writer, IsKeepPortable);
+                        initialQry.Write(writer, IsKeepBinary);
                     }
                     else
                         writer.WriteInt(-1); // no initial query
@@ -848,17 +1065,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         internal CacheEnumerator<TK, TV> CreateEnumerator(bool loc, int peekModes)
         {
             if (loc)
-                return new CacheEnumerator<TK, TV>(UU.CacheLocalIterator(Target, peekModes), Marshaller, _flagKeepPortable);
+                return new CacheEnumerator<TK, TV>(UU.CacheLocalIterator(Target, peekModes), Marshaller, _flagKeepBinary);
 
-            return new CacheEnumerator<TK, TV>(UU.CacheIterator(Target), Marshaller, _flagKeepPortable);
+            return new CacheEnumerator<TK, TV>(UU.CacheIterator(Target), Marshaller, _flagKeepBinary);
         }
 
         #endregion
 
         /** <inheritDoc /> */
-        protected override T Unmarshal<T>(IPortableStream stream)
+        protected override T Unmarshal<T>(IBinaryStream stream)
         {
-            return Marshaller.Unmarshal<T>(stream, _flagKeepPortable);
+            return Marshaller.Unmarshal<T>(stream, _flagKeepBinary);
         }
 
         /// <summary>
@@ -878,22 +1095,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /// <summary>
-        /// Unwraps an exception from PortableResultHolder, if any. Otherwise does the cast.
+        /// Unwraps an exception.
         /// </summary>
         /// <typeparam name="T">Result type.</typeparam>
         /// <param name="obj">Object.</param>
         /// <returns>Result.</returns>
         private static T GetResultOrThrow<T>(object obj)
         {
-            var holder = obj as PortableResultWrapper;
+            var err = obj as Exception;
 
-            if (holder != null)
-            {
-                var err = holder.Result as Exception;
-
-                if (err != null)
-                    throw err as CacheEntryProcessorException ?? new CacheEntryProcessorException(err);
-            }
+            if (err != null)
+                throw err as CacheEntryProcessorException ?? new CacheEntryProcessorException(err);
 
             return obj == null ? default(T) : (T) obj;
         }
@@ -904,7 +1116,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <typeparam name="T">The type of the result.</typeparam>
         /// <param name="inStream">Stream.</param>
         /// <returns>Results of InvokeAll operation.</returns>
-        private IDictionary<TK, ICacheEntryProcessorResult<T>> ReadInvokeAllResults<T>(IPortableStream inStream)
+        private IDictionary<TK, ICacheEntryProcessorResult<T>> ReadInvokeAllResults<T>(IBinaryStream inStream)
         {
             var count = inStream.ReadInt();
 
@@ -928,18 +1140,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /// <summary>
-        /// Reads the exception, either in portable wrapper form, or as a pair of strings.
+        /// Reads the exception, either in binary wrapper form, or as a pair of strings.
         /// </summary>
         /// <param name="inStream">The stream.</param>
         /// <returns>Exception.</returns>
-        private CacheEntryProcessorException ReadException(IPortableStream inStream)
+        private CacheEntryProcessorException ReadException(IBinaryStream inStream)
         {
             var item = Unmarshal<object>(inStream);
 
             var clsName = item as string;
 
             if (clsName == null)
-                return new CacheEntryProcessorException((Exception) ((PortableResultWrapper) item).Result);
+                return new CacheEntryProcessorException((Exception) item);
 
             var msg = Unmarshal<string>(inStream);
                 
@@ -951,9 +1163,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Dictionary.</returns>
-        private static IDictionary<TK, TV> ReadGetAllDictionary(PortableReaderImpl reader)
+        private static IDictionary<TK, TV> ReadGetAllDictionary(BinaryReader reader)
         {
-            IPortableStream stream = reader.Stream;
+            IBinaryStream stream = reader.Stream;
 
             if (stream.ReadBool())
             {
@@ -975,59 +1187,15 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /// <summary>
-        /// Gets the future result converter based on the last operation id.
+        /// Gets the cache result.
         /// </summary>
-        /// <typeparam name="TResult">The type of the future result.</typeparam>
-        /// <param name="lastAsyncOpId">The last op id.</param>
-        /// <returns>Future result converter.</returns>
-        private Func<PortableReaderImpl, TResult> GetFutureResultConverter<TResult>(CacheOp lastAsyncOpId)
+        private static CacheResult<TV> GetCacheResult(BinaryReader reader)
         {
-            switch (lastAsyncOpId)
-            {
-                case CacheOp.Get:
-                    return reader =>
-                    {
-                        if (reader != null)
-                            return reader.ReadObject<TResult>();
+            var res = reader == null
+                ? new CacheResult<TV>()
+                : new CacheResult<TV>(reader.ReadObject<TV>());
 
-                        throw GetKeyNotFoundException();
-                    };
-
-                case CacheOp.GetAll:
-                    return reader => reader == null ? default(TResult) : (TResult) ReadGetAllDictionary(reader);
-
-                case CacheOp.Invoke:
-                    return reader =>
-                    {
-                        if (reader == null)
-                            return default(TResult);
-
-                        var hasError = reader.ReadBoolean();
-
-                        if (hasError)
-                            throw ReadException(reader.Stream);
-
-                        return reader.ReadObject<TResult>();
-                    };
-
-                case CacheOp.InvokeAll:
-                    return _invokeAllConverter.Value as Func<PortableReaderImpl, TResult>;
-
-                case CacheOp.GetAndPut:
-                case CacheOp.GetAndPutIfAbsent:
-                case CacheOp.GetAndRemove:
-                case CacheOp.GetAndReplace:
-                    return reader =>
-                    {
-                        var res = reader == null
-                            ? new CacheResult<TV>()
-                            : new CacheResult<TV>(reader.ReadObject<TV>());
-
-                        return TypeCaster<TResult>.Cast(res);
-                    };
-            }
-
-            return null;
+            return res;
         }
 
         /// <summary>
@@ -1059,7 +1227,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
         /// <returns>Result.</returns>
-        private CacheResult<TR> DoOutInOpNullable<TR>(int type, Action<PortableWriterImpl> outAction)
+        private CacheResult<TR> DoOutInOpNullable<TR>(int type, Action<BinaryWriter> outAction)
         {
             var res = DoOutInOp<object>(type, outAction);
 

@@ -21,14 +21,15 @@ namespace Apache.Ignite.Core.Impl.Memory
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Text;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Platform memory stream.
     /// </summary>
     [CLSCompliant(false)]
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-    public unsafe class PlatformMemoryStream : IPortableStream
+    public unsafe class PlatformMemoryStream : IBinaryStream
     {
         /** Length: 1 byte. */
         protected const int Len1 = 1;
@@ -92,6 +93,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void WriteByteArray(byte[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (byte* val0 = val)
             {
                 CopyFromAndShift(val0, val.Length);
@@ -107,6 +110,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void WriteBoolArray(bool[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (bool* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length);
@@ -124,6 +129,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual void WriteShortArray(short[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (short* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length << Shift2);
@@ -141,6 +148,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual void WriteCharArray(char[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (char* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length << Shift2);
@@ -167,6 +176,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual void WriteIntArray(int[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (int* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length << Shift4);
@@ -184,6 +195,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual void WriteLongArray(long[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (long* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length << Shift8);
@@ -201,6 +214,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual void WriteFloatArray(float[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (float* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length << Shift4);
@@ -218,6 +233,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual void WriteDoubleArray(double[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (double* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length << Shift8);
@@ -227,6 +244,9 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public int WriteString(char* chars, int charCnt, int byteCnt, Encoding encoding)
         {
+            IgniteArgumentCheck.NotNull(charCnt, "charCnt");
+            IgniteArgumentCheck.NotNull(byteCnt, "byteCnt");
+            
             int curPos = EnsureWriteCapacityAndShift(byteCnt);
 
             return encoding.GetBytes(chars, charCnt, _data + curPos, byteCnt);
@@ -235,6 +255,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Write(byte[] src, int off, int cnt)
         {
+            IgniteArgumentCheck.NotNull(src, "src");
+
             fixed (byte* src0 = src)
             {
                 CopyFromAndShift(src0 + off, cnt);    
@@ -260,7 +282,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
-
         public byte[] ReadByteArray(int cnt)
         {
             int curPos = EnsureReadCapacityAndShift(cnt);
@@ -423,6 +444,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Read(byte[] dest, int off, int cnt)
         {
+            IgniteArgumentCheck.NotNull(dest, "dest");
+
             fixed (byte* dest0 = dest)
             {
                 Read(dest0 + off, cnt);
@@ -633,9 +656,9 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
-        public int Remaining()
+        public int Remaining
         {
-            return _len - _pos;
+            get { return _len - _pos; }
         }
 
         /** <inheritdoc /> */
@@ -675,13 +698,13 @@ namespace Apache.Ignite.Core.Impl.Memory
         #region ARRAYS
 
         /** <inheritdoc /> */
-        public byte[] Array()
+        public byte[] GetArray()
         {
-            return ArrayCopy();
+            return GetArrayCopy();
         }
 
         /** <inheritdoc /> */
-        public byte[] ArrayCopy()
+        public byte[] GetArrayCopy()
         {
             byte[] res = new byte[_mem.Length];
 

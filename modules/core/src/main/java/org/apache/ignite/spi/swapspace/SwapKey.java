@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.swapspace;
 
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -44,7 +45,8 @@ public class SwapKey {
      * @param key Key.
      */
     public SwapKey(Object key) {
-        this(key, Integer.MAX_VALUE, null);
+        this.key = key;
+        part = Integer.MAX_VALUE;
     }
 
     /**
@@ -52,7 +54,8 @@ public class SwapKey {
      * @param part Partition.
      */
     public SwapKey(Object key, int part) {
-        this(key, part, null);
+        this.key = key;
+        this.part = part;
     }
 
     /**
@@ -60,7 +63,7 @@ public class SwapKey {
      * @param part Part.
      * @param keyBytes Key bytes.
      */
-    public SwapKey(Object key, int part, @Nullable byte[] keyBytes) {
+    public SwapKey(KeyCacheObject key, int part, @Nullable byte[] keyBytes) {
         assert key != null;
         assert part >= 0;
 

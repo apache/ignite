@@ -21,7 +21,7 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>fabric</id>
+    <id>fabric-lgpl</id>
 
     <includeBaseDirectory>false</includeBaseDirectory>
 
@@ -29,35 +29,22 @@
         <format>dir</format>
     </formats>
 
+    <componentDescriptors>
+        <componentDescriptor>release-base.xml</componentDescriptor>
+        <componentDescriptor>release-fabric-base.xml</componentDescriptor>
+    </componentDescriptors>
+
     <files>
         <file>
-            <source>examples-lgpl/pom-standalone.xml</source>
-            <outputDirectory>/examples-lgpl</outputDirectory>
+            <source>examples/pom-standalone-lgpl.xml</source>
+            <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>
         </file>
+
+        <file>
+            <source>examples/README-LGPL.txt</source>
+            <outputDirectory>/examples</outputDirectory>
+            <destName>README.txt</destName>
+        </file>
     </files>
-
-    <fileSets>
-        <fileSet>
-            <directory>examples-lgpl</directory>
-            <outputDirectory>/examples-lgpl</outputDirectory>
-            <includes>
-                <include>README.txt</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>examples-lgpl</directory>
-            <outputDirectory>/examples-lgpl</outputDirectory>
-            <includes>
-                <include>config/**</include>
-                <include>src/**</include>
-            </includes>
-            <excludes>
-                <exclude>**/package.html</exclude>
-                <exclude>pom-standalone.xml</exclude>
-                <exclude>src/test/**</exclude>
-            </excludes>
-        </fileSet>
-    </fileSets>
 </assembly>

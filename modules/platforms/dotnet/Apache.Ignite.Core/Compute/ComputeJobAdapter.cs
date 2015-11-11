@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>
         /// Job execution result (possibly <c>null</c>). This result will be returned
         /// in <see cref="IComputeJobResult{T}" /> object passed into
-        /// <see cref="IComputeTask{A,T,R}.Result" />
+        /// <see cref="IComputeTask{TA,T,TR}.OnResult" />
         /// on caller node.
         /// </returns>
         public abstract T Execute();

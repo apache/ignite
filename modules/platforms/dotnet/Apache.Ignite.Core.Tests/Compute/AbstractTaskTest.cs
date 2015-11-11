@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System;
     using System.Collections.Generic;
     using System.Threading;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -167,15 +167,15 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             if (!_fork)
             {
-                PortableConfiguration portCfg = new PortableConfiguration();
+                BinaryConfiguration portCfg = new BinaryConfiguration();
 
-                ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+                ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
                 PortableTypeConfigurations(portTypeCfgs);
 
                 portCfg.TypeConfigurations = portTypeCfgs;
 
-                cfg.PortableConfiguration = portCfg;
+                cfg.BinaryConfiguration = portCfg;
             }
 
             cfg.JvmClasspath = TestUtils.CreateTestClasspath();
@@ -209,7 +209,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Define portable types.
         /// </summary>
         /// <param name="portTypeCfgs">Portable type configurations.</param>
-        protected virtual void PortableTypeConfigurations(ICollection<PortableTypeConfiguration> portTypeCfgs)
+        protected virtual void PortableTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
             // No-op.
         }

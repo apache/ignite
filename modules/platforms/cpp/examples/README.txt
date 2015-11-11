@@ -1,4 +1,4 @@
-Ignite C++ Examples
+Apache Ignite C++ Examples
 ==================================
 
 Common requirements
@@ -7,7 +7,7 @@ Common requirements
  * JAVA_HOME environment variable must be set pointing to Java installation directory.
  * IGNITE_HOME environment variable must be set to Ignite installation directory.
  * Ignite must be build and packaged using Maven. You can use the followin Maven command: mvn clean package -DskipTests
- * Ignite C++ must be built according to instructions for your platform.
+ * Apache Ignite C++ must be built according to instructions for your platform.
 
 Running examples on Linux
 ----------------------------------

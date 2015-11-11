@@ -37,11 +37,24 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.portable.builder.PortableBuilderImpl;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -50,19 +63,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableBuilder;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableIdMapper;
-import org.apache.ignite.portable.PortableInvalidClassException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableMetadata;
-import org.apache.ignite.portable.PortableObject;
-import org.apache.ignite.portable.PortableRawReader;
-import org.apache.ignite.portable.PortableRawWriter;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableSerializer;
-import org.apache.ignite.portable.PortableTypeConfiguration;
-import org.apache.ignite.portable.PortableWriter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
@@ -84,11 +84,11 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
     /** */
     protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, PortableMetadata meta) {
+        @Override public void addMeta(int typeId, BinaryType meta) {
             // No-op.
         }
 
-        @Override public PortableMetadata metadata(int typeId) {
+        @Override public BinaryType metadata(int typeId) {
             return null;
         }
     };
@@ -194,15 +194,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         Date date = new Date();
 
         Date val = marshalUnmarshal(date);
-
-        assertEquals(date, val);
-        assertEquals(Timestamp.class, val.getClass()); // With default configuration should unmarshal as Timestamp.
-
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setUseTimestamp(false);
-
-        val = marshalUnmarshal(date, marsh);
 
         assertEquals(date, val);
         assertEquals(Date.class, val.getClass());
@@ -403,16 +394,16 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPortableObject() throws Exception {
+    public void testBinaryObject() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
-        marsh.setTypeConfigurations(Arrays.asList(new PortableTypeConfiguration(SimpleObject.class.getName())));
+        marsh.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
-        PortableObject po0 = marshalUnmarshal(po, marsh);
+        BinaryObject po0 = marshalUnmarshal(po, marsh);
 
         assertTrue(po.hasField("b"));
         assertTrue(po.hasField("s"));
@@ -443,16 +434,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testUseTimestampFlag() throws Exception {
-        PortableTypeConfiguration cfg1 = new PortableTypeConfiguration(DateClass1.class.getName());
-
-        PortableTypeConfiguration cfg2 = new PortableTypeConfiguration(DateClass2.class.getName());
-
-        cfg2.setUseTimestamp(false);
+    public void testDateAndTimestampInSingleObject() throws Exception {
+        BinaryTypeConfiguration cfg1 = new BinaryTypeConfiguration(DateClass1.class.getName());
 
         PortableMarshaller marsh = new PortableMarshaller();
 
-        marsh.setTypeConfigurations(Arrays.asList(cfg1, cfg2));
+        marsh.setTypeConfigurations(Arrays.asList(cfg1));
 
         Date date = new Date();
         Timestamp ts = new Timestamp(System.currentTimeMillis());
@@ -461,32 +448,16 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         obj1.date = date;
         obj1.ts = ts;
 
-        DateClass2 obj2 = new DateClass2();
-        obj2.date = date;
-        obj2.ts = ts;
-
-        PortableObject po1 = marshal(obj1, marsh);
+        BinaryObject po1 = marshal(obj1, marsh);
 
         assertEquals(date, po1.field("date"));
-        assertEquals(Timestamp.class, po1.field("date").getClass());
+        assertEquals(Date.class, po1.field("date").getClass());
         assertEquals(ts, po1.field("ts"));
-
-        PortableObject po2 = marshal(obj2, marsh);
-
-        assertEquals(date, po2.field("date"));
-        assertEquals(Date.class, po2.field("date").getClass());
-        assertEquals(new Date(ts.getTime()), po2.field("ts"));
-        assertEquals(Date.class, po2.field("ts").getClass());
+        assertEquals(Timestamp.class, po1.field("ts").getClass());
 
         obj1 = po1.deserialize();
         assertEquals(date, obj1.date);
-        assertEquals(Date.class, obj1.date.getClass());
         assertEquals(ts, obj1.ts);
-
-        obj2 = po2.deserialize();
-        assertEquals(date, obj2.date);
-        assertEquals(Date.class, obj2.date.getClass());
-        assertEquals(ts, obj2.ts);
     }
 
     /**
@@ -496,12 +467,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
         assertEquals(obj.hashCode(), po.hashCode());
 
@@ -538,7 +509,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(ordinals(obj.enumArr), ordinals((Enum<?>[])po.field("enumArr")));
         assertNull(po.field("unknown"));
 
-        PortableObject innerPo = po.field("inner");
+        BinaryObject innerPo = po.field("inner");
 
         assertEquals(obj.inner, innerPo.deserialize());
 
@@ -583,13 +554,13 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName()),
-            new PortableTypeConfiguration(TestPortableObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName()),
+            new BinaryTypeConfiguration(TestBinary.class.getName())
         ));
 
-        TestPortableObject obj = portableObject();
+        TestBinary obj = BinaryObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
         assertEquals(obj.hashCode(), po.hashCode());
 
@@ -625,7 +596,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(ordinals(obj.enumArr), ordinals((Enum<?>[])po.field("_enumArr")));
         assertNull(po.field("unknown"));
 
-        PortableObject simplePo = po.field("_simple");
+        BinaryObject simplePo = po.field("_simple");
 
         assertEquals(obj.simple, simplePo.deserialize());
 
@@ -663,7 +634,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertNull(simplePo.field("portable"));
         assertNull(simplePo.field("unknown"));
 
-        PortableObject portablePo = po.field("_portable");
+        BinaryObject portablePo = po.field("_portable");
 
         assertEquals(obj.portable, portablePo.deserialize());
 
@@ -705,7 +676,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @param obj Simple object.
      * @param po Portable object.
      */
-    private void checkSimpleObjectData(SimpleObject obj, PortableObject po) {
+    private void checkSimpleObjectData(SimpleObject obj, BinaryObject po) {
         assertEquals(obj.b, (byte)po.field("b"));
         assertEquals(obj.s, (short)po.field("s"));
         assertEquals(obj.i, (int)po.field("i"));
@@ -743,52 +714,29 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvalidClass() throws Exception {
-        byte[] arr = new byte[20];
-
-        arr[0] = 103;
-        arr[1] = 1;
-
-        U.intToBytes(Integer.reverseBytes(11111), arr, 3);
-
-        final PortableObject po = new PortableObjectImpl(initPortableContext(new PortableMarshaller()), arr, 0);
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-                                       @Override public Object call() throws Exception {
-                                           po.deserialize();
-
-                                           return null;
-                                       }
-                                   }, PortableInvalidClassException.class, "Unknown type ID: 11111"
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testClassWithoutPublicConstructor() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-                                        new PortableTypeConfiguration(NoPublicConstructor.class.getName()),
-                                        new PortableTypeConfiguration(NoPublicDefaultConstructor.class.getName()),
-                                        new PortableTypeConfiguration(ProtectedConstructor.class.getName()))
+                new BinaryTypeConfiguration(NoPublicConstructor.class.getName()),
+                new BinaryTypeConfiguration(NoPublicDefaultConstructor.class.getName()),
+                new BinaryTypeConfiguration(ProtectedConstructor.class.getName()))
         );
 
         initPortableContext(marsh);
 
         NoPublicConstructor npc = new NoPublicConstructor();
-        PortableObject npc2 = marshal(npc, marsh);
+        BinaryObject npc2 = marshal(npc, marsh);
 
         assertEquals("test", npc2.<NoPublicConstructor>deserialize().val);
 
         NoPublicDefaultConstructor npdc = new NoPublicDefaultConstructor(239);
-        PortableObject npdc2 = marshal(npdc, marsh);
+        BinaryObject npdc2 = marshal(npdc, marsh);
 
         assertEquals(239, npdc2.<NoPublicDefaultConstructor>deserialize().val);
 
         ProtectedConstructor pc = new ProtectedConstructor();
-        PortableObject pc2 = marshal(pc, marsh);
+        BinaryObject pc2 = marshal(pc, marsh);
 
         assertEquals(ProtectedConstructor.class, pc2.<ProtectedConstructor>deserialize().getClass());
     }
@@ -799,8 +747,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testCustomSerializer() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
-        PortableTypeConfiguration type =
-            new PortableTypeConfiguration(CustomSerializedObject1.class.getName());
+        BinaryTypeConfiguration type =
+            new BinaryTypeConfiguration(CustomSerializedObject1.class.getName());
 
         type.setSerializer(new CustomSerializer1());
 
@@ -808,7 +756,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomSerializedObject1 obj1 = new CustomSerializedObject1(10);
 
-        PortableObject po1 = marshal(obj1, marsh);
+        BinaryObject po1 = marshal(obj1, marsh);
 
         assertEquals(20, po1.<CustomSerializedObject1>deserialize().val);
     }
@@ -821,10 +769,10 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         marsh.setSerializer(new CustomSerializer1());
 
-        PortableTypeConfiguration type1 =
-            new PortableTypeConfiguration(CustomSerializedObject1.class.getName());
-        PortableTypeConfiguration type2 =
-            new PortableTypeConfiguration(CustomSerializedObject2.class.getName());
+        BinaryTypeConfiguration type1 =
+            new BinaryTypeConfiguration(CustomSerializedObject1.class.getName());
+        BinaryTypeConfiguration type2 =
+            new BinaryTypeConfiguration(CustomSerializedObject2.class.getName());
 
         type2.setSerializer(new CustomSerializer2());
 
@@ -832,13 +780,13 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomSerializedObject1 obj1 = new CustomSerializedObject1(10);
 
-        PortableObject po1 = marshal(obj1, marsh);
+        BinaryObject po1 = marshal(obj1, marsh);
 
         assertEquals(20, po1.<CustomSerializedObject1>deserialize().val);
 
         CustomSerializedObject2 obj2 = new CustomSerializedObject2(10);
 
-        PortableObject po2 = marshal(obj2, marsh);
+        BinaryObject po2 = marshal(obj2, marsh);
 
         assertEquals(30, po2.<CustomSerializedObject2>deserialize().val);
     }
@@ -849,10 +797,10 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testCustomIdMapper() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
-        PortableTypeConfiguration type =
-            new PortableTypeConfiguration(CustomMappedObject1.class.getName());
+        BinaryTypeConfiguration type =
+            new BinaryTypeConfiguration(CustomMappedObject1.class.getName());
 
-        type.setIdMapper(new PortableIdMapper() {
+        type.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 11111;
             }
@@ -875,11 +823,11 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str");
 
-        PortableObject po1 = marshal(obj1, marsh);
+        BinaryObjectEx po1 = marshal(obj1, marsh);
 
         assertEquals(11111, po1.typeId());
-        assertEquals(22222, intFromPortable(po1, 19));
-        assertEquals(33333, intFromPortable(po1, 32));
+        assertEquals(10, po1.field(22222));
+        assertEquals("str", po1.field(33333));
 
         assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
         assertEquals("str", po1.<CustomMappedObject1>deserialize().val2);
@@ -891,7 +839,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testCustomIdMapperWithGlobal() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
-        marsh.setIdMapper(new PortableIdMapper() {
+        marsh.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 11111;
             }
@@ -908,12 +856,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        PortableTypeConfiguration type1 =
-            new PortableTypeConfiguration(CustomMappedObject1.class.getName());
-        PortableTypeConfiguration type2 =
-            new PortableTypeConfiguration(CustomMappedObject2.class.getName());
+        BinaryTypeConfiguration type1 =
+            new BinaryTypeConfiguration(CustomMappedObject1.class.getName());
+        BinaryTypeConfiguration type2 =
+            new BinaryTypeConfiguration(CustomMappedObject2.class.getName());
 
-        type2.setIdMapper(new PortableIdMapper() {
+        type2.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 44444;
             }
@@ -934,22 +882,22 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str1");
 
-        PortableObject po1 = marshal(obj1, marsh);
+        BinaryObjectEx po1 = marshal(obj1, marsh);
 
         assertEquals(11111, po1.typeId());
-        assertEquals(22222, intFromPortable(po1, 19));
-        assertEquals(33333, intFromPortable(po1, 32));
+        assertEquals(10, po1.field(22222));
+        assertEquals("str1", po1.field(33333));
 
         assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
         assertEquals("str1", po1.<CustomMappedObject1>deserialize().val2);
 
         CustomMappedObject2 obj2 = new CustomMappedObject2(20, "str2");
 
-        PortableObject po2 = marshal(obj2, marsh);
+        BinaryObjectEx po2 = marshal(obj2, marsh);
 
         assertEquals(44444, po2.typeId());
-        assertEquals(55555, intFromPortable(po2, 19));
-        assertEquals(66666, intFromPortable(po2, 32));
+        assertEquals(20, po2.field(55555));
+        assertEquals("str2", po2.field(66666));
 
         assertEquals(20, po2.<CustomMappedObject2>deserialize().val1);
         assertEquals("str2", po2.<CustomMappedObject2>deserialize().val2);
@@ -962,10 +910,10 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(DynamicObject.class.getName())
+            new BinaryTypeConfiguration(DynamicObject.class.getName())
         ));
 
-        PortableObject po1 = marshal(new DynamicObject(0, 10, 20, 30), marsh);
+        BinaryObject po1 = marshal(new DynamicObject(0, 10, 20, 30), marsh);
 
         assertEquals(new Integer(10), po1.field("val1"));
         assertEquals(null, po1.field("val2"));
@@ -977,7 +925,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(0, do1.val2);
         assertEquals(0, do1.val3);
 
-        PortableObject po2 = marshal(new DynamicObject(1, 10, 20, 30), marsh);
+        BinaryObject po2 = marshal(new DynamicObject(1, 10, 20, 30), marsh);
 
         assertEquals(new Integer(10), po2.field("val1"));
         assertEquals(new Integer(20), po2.field("val2"));
@@ -989,7 +937,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(20, do2.val2);
         assertEquals(0, do2.val3);
 
-        PortableObject po3 = marshal(new DynamicObject(2, 10, 20, 30), marsh);
+        BinaryObject po3 = marshal(new DynamicObject(2, 10, 20, 30), marsh);
 
         assertEquals(new Integer(10), po3.field("val1"));
         assertEquals(new Integer(20), po3.field("val2"));
@@ -1009,14 +957,14 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(CycleLinkObject.class.getName())
+            new BinaryTypeConfiguration(CycleLinkObject.class.getName())
         ));
 
         CycleLinkObject obj = new CycleLinkObject();
 
         obj.self = obj;
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
         CycleLinkObject obj0 = po.deserialize();
 
@@ -1030,8 +978,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(DetachedTestObject.class.getName()),
-            new PortableTypeConfiguration(DetachedInnerTestObject.class.getName())
+            new BinaryTypeConfiguration(DetachedTestObject.class.getName()),
+            new BinaryTypeConfiguration(DetachedInnerTestObject.class.getName())
         ));
 
         UUID id = UUID.randomUUID();
@@ -1044,7 +992,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         assert obj.inner1 == obj.inner4;
 
-        PortableObjectImpl innerPo = (PortableObjectImpl)obj.inner2;
+        BinaryObjectImpl innerPo = (BinaryObjectImpl)obj.inner2;
 
         assert innerPo.detached();
 
@@ -1052,7 +1000,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(id, inner.id);
 
-        PortableObjectImpl detachedPo = (PortableObjectImpl)innerPo.detach();
+        BinaryObjectImpl detachedPo = (BinaryObjectImpl)innerPo.detach();
 
         assert detachedPo.detached();
 
@@ -1060,7 +1008,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(id, inner.id);
 
-        innerPo = (PortableObjectImpl)obj.inner3;
+        innerPo = (BinaryObjectImpl)obj.inner3;
 
         assert innerPo.detached();
 
@@ -1069,7 +1017,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(id, inner.id);
         assertNotNull(inner.inner);
 
-        detachedPo = (PortableObjectImpl)innerPo.detach();
+        detachedPo = (BinaryObjectImpl)innerPo.detach();
 
         assert detachedPo.detached();
 
@@ -1086,9 +1034,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(CollectionFieldsObject.class.getName()),
-            new PortableTypeConfiguration(Key.class.getName()),
-            new PortableTypeConfiguration(Value.class.getName())
+            new BinaryTypeConfiguration(CollectionFieldsObject.class.getName()),
+            new BinaryTypeConfiguration(Key.class.getName()),
+            new BinaryTypeConfiguration(Value.class.getName())
         ));
 
         Object[] arr = new Object[] {new Value(1), new Value(2), new Value(3)};
@@ -1097,7 +1045,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         CollectionFieldsObject obj = new CollectionFieldsObject(arr, col, map);
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
         Object[] arr0 = po.field("arr");
 
@@ -1106,18 +1054,18 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         int i = 1;
 
         for (Object valPo : arr0)
-            assertEquals(i++, ((PortableObject)valPo).<Value>deserialize().val);
+            assertEquals(i++, ((BinaryObject)valPo).<Value>deserialize().val);
 
-        Collection<PortableObject> col0 = po.field("col");
+        Collection<BinaryObject> col0 = po.field("col");
 
         i = 4;
 
-        for (PortableObject valPo : col0)
+        for (BinaryObject valPo : col0)
             assertEquals(i++, valPo.<Value>deserialize().val);
 
-        Map<PortableObject, PortableObject> map0 = po.field("map");
+        Map<BinaryObject, BinaryObject> map0 = po.field("map");
 
-        for (Map.Entry<PortableObject, PortableObject> e : map0.entrySet())
+        for (Map.Entry<BinaryObject, BinaryObject> e : map0.entrySet())
             assertEquals(e.getKey().<Key>deserialize().key, e.getValue().<Value>deserialize().val);
     }
 
@@ -1127,10 +1075,10 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testDefaultMapping() throws Exception {
         PortableMarshaller marsh1 = new PortableMarshaller();
 
-        PortableTypeConfiguration customMappingType =
-            new PortableTypeConfiguration(TestPortableObject.class.getName());
+        BinaryTypeConfiguration customMappingType =
+            new BinaryTypeConfiguration(TestBinary.class.getName());
 
-        customMappingType.setIdMapper(new PortableIdMapper() {
+        customMappingType.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 String typeName;
 
@@ -1154,19 +1102,19 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         });
 
         marsh1.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName()),
+            new BinaryTypeConfiguration(SimpleObject.class.getName()),
             customMappingType
         ));
 
-        TestPortableObject obj = portableObject();
+        TestBinary obj = BinaryObject();
 
-        PortableObjectImpl po = marshal(obj, marsh1);
+        BinaryObjectImpl po = marshal(obj, marsh1);
 
         PortableMarshaller marsh2 = new PortableMarshaller();
 
         marsh2.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName()),
-            new PortableTypeConfiguration(TestPortableObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName()),
+            new BinaryTypeConfiguration(TestBinary.class.getName())
         ));
 
         PortableContext ctx = initPortableContext(marsh2);
@@ -1182,9 +1130,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testTypeNames() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
-        PortableTypeConfiguration customType1 = new PortableTypeConfiguration(Value.class.getName());
+        BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
-        customType1.setIdMapper(new PortableIdMapper() {
+        customType1.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 300;
             }
@@ -1194,9 +1142,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        PortableTypeConfiguration customType2 = new PortableTypeConfiguration("org.gridgain.NonExistentClass1");
+        BinaryTypeConfiguration customType2 = new BinaryTypeConfiguration("org.gridgain.NonExistentClass1");
 
-        customType2.setIdMapper(new PortableIdMapper() {
+        customType2.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 400;
             }
@@ -1206,9 +1154,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        PortableTypeConfiguration customType3 = new PortableTypeConfiguration("NonExistentClass2");
+        BinaryTypeConfiguration customType3 = new BinaryTypeConfiguration("NonExistentClass2");
 
-        customType3.setIdMapper(new PortableIdMapper() {
+        customType3.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 500;
             }
@@ -1218,9 +1166,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        PortableTypeConfiguration customType4 = new PortableTypeConfiguration("NonExistentClass5");
+        BinaryTypeConfiguration customType4 = new BinaryTypeConfiguration("NonExistentClass5");
 
-        customType4.setIdMapper(new PortableIdMapper() {
+        customType4.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 0;
             }
@@ -1231,9 +1179,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         });
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(Key.class.getName()),
-            new PortableTypeConfiguration("org.gridgain.NonExistentClass3"),
-            new PortableTypeConfiguration("NonExistentClass4"),
+            new BinaryTypeConfiguration(Key.class.getName()),
+            new BinaryTypeConfiguration("org.gridgain.NonExistentClass3"),
+            new BinaryTypeConfiguration("NonExistentClass4"),
             customType1,
             customType2,
             customType3,
@@ -1258,9 +1206,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testFieldIdMapping() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
-        PortableTypeConfiguration customType1 = new PortableTypeConfiguration(Value.class.getName());
+        BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
-        customType1.setIdMapper(new PortableIdMapper() {
+        customType1.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 300;
             }
@@ -1279,9 +1227,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        PortableTypeConfiguration customType2 = new PortableTypeConfiguration("NonExistentClass1");
+        BinaryTypeConfiguration customType2 = new BinaryTypeConfiguration("NonExistentClass1");
 
-        customType2.setIdMapper(new PortableIdMapper() {
+        customType2.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 400;
             }
@@ -1300,10 +1248,10 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        marsh.setTypeConfigurations(Arrays.asList(new PortableTypeConfiguration(Key.class.getName()),
-                                                  new PortableTypeConfiguration("NonExistentClass2"),
-                                                  customType1,
-                                                  customType2));
+        marsh.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(Key.class.getName()),
+            new BinaryTypeConfiguration("NonExistentClass2"),
+            customType1,
+            customType2));
 
         PortableContext ctx = initPortableContext(marsh);
 
@@ -1324,9 +1272,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testDuplicateTypeId() throws Exception {
         final PortableMarshaller marsh = new PortableMarshaller();
 
-        PortableTypeConfiguration customType1 = new PortableTypeConfiguration("org.gridgain.Class1");
+        BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration("org.gridgain.Class1");
 
-        customType1.setIdMapper(new PortableIdMapper() {
+        customType1.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 100;
             }
@@ -1336,9 +1284,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        PortableTypeConfiguration customType2 = new PortableTypeConfiguration("org.gridgain.Class2");
+        BinaryTypeConfiguration customType2 = new BinaryTypeConfiguration("org.gridgain.Class2");
 
-        customType2.setIdMapper(new PortableIdMapper() {
+        customType2.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 100;
             }
@@ -1370,14 +1318,14 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        final PortableObject po = marshal(obj, marsh);
+        final BinaryObject po = marshal(obj, marsh);
 
-        PortableObject copy = copy(po, null);
+        BinaryObject copy = copy(po, null);
 
         assertEquals(obj, copy.deserialize());
 
@@ -1493,14 +1441,14 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
-        PortableObject copy = copy(po, F.<String, Object>asMap("str", "str3"));
+        BinaryObject copy = copy(po, F.<String, Object>asMap("str", "str3"));
 
         assertEquals("str3", copy.<String>field("str"));
 
@@ -1516,16 +1464,16 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
         UUID uuid = UUID.randomUUID();
 
-        PortableObject copy = copy(po, F.<String, Object>asMap("uuid", uuid));
+        BinaryObject copy = copy(po, F.<String, Object>asMap("uuid", uuid));
 
         assertEquals(uuid, copy.<UUID>field("uuid"));
 
@@ -1541,14 +1489,14 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
-        PortableObject copy = copy(po, F.<String, Object>asMap("bArr", new byte[]{1, 2, 3}));
+        BinaryObject copy = copy(po, F.<String, Object>asMap("bArr", new byte[]{1, 2, 3}));
 
         assertArrayEquals(new byte[] {1, 2, 3}, copy.<byte[]>field("bArr"));
 
@@ -1562,8 +1510,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @param fields Fields.
      * @return Copy.
      */
-    private PortableObject copy(PortableObject po, Map<String, Object> fields) {
-        PortableBuilder builder = PortableBuilderImpl.wrap(po);
+    private BinaryObject copy(BinaryObject po, Map<String, Object> fields) {
+        BinaryObjectBuilder builder = BinaryObjectBuilderImpl.wrap(po);
 
         if (fields != null) {
             for (Map.Entry<String, Object> e : fields.entrySet())
@@ -1580,14 +1528,14 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
-        PortableObject copy = copy(po, F.<String, Object>asMap("sArr", new short[]{1, 2, 3}));
+        BinaryObject copy = copy(po, F.<String, Object>asMap("sArr", new short[]{1, 2, 3}));
 
         assertArrayEquals(new short[] {1, 2, 3}, copy.<short[]>field("sArr"));
 
@@ -1603,14 +1551,14 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
-        PortableObject copy = copy(po, F.<String, Object>asMap("iArr", new int[]{1, 2, 3}));
+        BinaryObject copy = copy(po, F.<String, Object>asMap("iArr", new int[]{1, 2, 3}));
 
         assertArrayEquals(new int[] {1, 2, 3}, copy.<int[]>field("iArr"));
 
@@ -1626,14 +1574,14 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
-        PortableObject copy = copy(po, F.<String, Object>asMap("lArr", new long[]{1, 2, 3}));
+        BinaryObject copy = copy(po, F.<String, Object>asMap("lArr", new long[]{1, 2, 3}));
 
         assertArrayEquals(new long[] {1, 2, 3}, copy.<long[]>field("lArr"));
 
@@ -1649,14 +1597,14 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
-        PortableObject copy = copy(po, F.<String, Object>asMap("fArr", new float[]{1, 2, 3}));
+        BinaryObject copy = copy(po, F.<String, Object>asMap("fArr", new float[]{1, 2, 3}));
 
         assertArrayEquals(new float[] {1, 2, 3}, copy.<float[]>field("fArr"), 0);
 
@@ -1672,14 +1620,14 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
-        PortableObject copy = copy(po, F.<String, Object>asMap("dArr", new double[]{1, 2, 3}));
+        BinaryObject copy = copy(po, F.<String, Object>asMap("dArr", new double[]{1, 2, 3}));
 
         assertArrayEquals(new double[] {1, 2, 3}, copy.<double[]>field("dArr"), 0);
 
@@ -1695,14 +1643,14 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
-        PortableObject copy = copy(po, F.<String, Object>asMap("cArr", new char[]{1, 2, 3}));
+        BinaryObject copy = copy(po, F.<String, Object>asMap("cArr", new char[]{1, 2, 3}));
 
         assertArrayEquals(new char[]{1, 2, 3}, copy.<char[]>field("cArr"));
 
@@ -1718,14 +1666,14 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
-        PortableObject copy = copy(po, F.<String, Object>asMap("strArr", new String[]{"str1", "str2"}));
+        BinaryObject copy = copy(po, F.<String, Object>asMap("strArr", new String[]{"str1", "str2"}));
 
         assertArrayEquals(new String[]{"str1", "str2"}, copy.<String[]>field("strArr"));
 
@@ -1741,12 +1689,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
         SimpleObject newObj = new SimpleObject();
 
@@ -1754,9 +1702,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         newObj.fArr = new float[] {5, 8, 0};
         newObj.str = "newStr";
 
-        PortableObject copy = copy(po, F.<String, Object>asMap("inner", newObj));
+        BinaryObject copy = copy(po, F.<String, Object>asMap("inner", newObj));
 
-        assertEquals(newObj, copy.<PortableObject>field("inner").deserialize());
+        assertEquals(newObj, copy.<BinaryObject>field("inner").deserialize());
 
         SimpleObject obj0 = copy.deserialize();
 
@@ -1770,12 +1718,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
         Map<String, Object> map = new HashMap<>(3, 1.0f);
 
@@ -1789,10 +1737,10 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         map.put("inner", newObj);
         map.put("bArr", new byte[]{6, 7, 9});
 
-        PortableObject copy = copy(po, map);
+        BinaryObject copy = copy(po, map);
 
         assertEquals("str555", copy.<String>field("str"));
-        assertEquals(newObj, copy.<PortableObject>field("inner").deserialize());
+        assertEquals(newObj, copy.<BinaryObject>field("inner").deserialize());
         assertArrayEquals(new byte[]{6, 7, 9}, copy.<byte[]>field("bArr"));
 
         SimpleObject obj0 = copy.deserialize();
@@ -1808,11 +1756,11 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testPortableCopyMixed() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
-        marsh.setTypeConfigurations(Arrays.asList(new PortableTypeConfiguration(SimpleObject.class.getName())));
+        marsh.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
         SimpleObject obj = simpleObject();
 
-        PortableObject po = marshal(obj, marsh);
+        BinaryObject po = marshal(obj, marsh);
 
         Map<String, Object> map = new HashMap<>(3, 1.0f);
 
@@ -1829,11 +1777,11 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         map.put("bArr", new byte[]{6, 7, 9});
         map.put("b", (byte)111);
 
-        PortableObject copy = copy(po, map);
+        BinaryObject copy = copy(po, map);
 
         assertEquals(1234, copy.<Integer>field("i").intValue());
         assertEquals("str555", copy.<String>field("str"));
-        assertEquals(newObj, copy.<PortableObject>field("inner").deserialize());
+        assertEquals(newObj, copy.<BinaryObject>field("inner").deserialize());
         assertEquals((short)2323, copy.<Short>field("s").shortValue());
         assertArrayEquals(new byte[] {6, 7, 9}, copy.<byte[]>field("bArr"));
         assertEquals((byte)111, copy.<Byte>field("b").byteValue());
@@ -1857,7 +1805,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         marsh.setClassNames(Arrays.asList(SimpleObject.class.getName()));
         marsh.setKeepDeserialized(true);
 
-        PortableObject po = marshal(simpleObject(), marsh);
+        BinaryObject po = marshal(simpleObject(), marsh);
 
         assert po.deserialize() == po.deserialize();
 
@@ -1874,7 +1822,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         marsh.setKeepDeserialized(true);
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())));
+            new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
         po = marshal(simpleObject(), marsh);
 
@@ -1884,7 +1832,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         marsh.setKeepDeserialized(false);
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration(SimpleObject.class.getName())));
+            new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
         po = marshal(simpleObject(), marsh);
 
@@ -1894,7 +1842,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         marsh.setKeepDeserialized(true);
 
-        PortableTypeConfiguration typeCfg = new PortableTypeConfiguration(SimpleObject.class.getName());
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(SimpleObject.class.getName());
 
         typeCfg.setKeepDeserialized(false);
 
@@ -1908,7 +1856,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         marsh.setKeepDeserialized(false);
 
-        typeCfg = new PortableTypeConfiguration(SimpleObject.class.getName());
+        typeCfg = new BinaryTypeConfiguration(SimpleObject.class.getName());
 
         typeCfg.setKeepDeserialized(true);
 
@@ -1925,13 +1873,13 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testOffheapPortable() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
-        marsh.setTypeConfigurations(Arrays.asList(new PortableTypeConfiguration(SimpleObject.class.getName())));
+        marsh.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
         PortableContext ctx = initPortableContext(marsh);
 
         SimpleObject simpleObj = simpleObject();
 
-        PortableObjectImpl obj = marshal(simpleObj, marsh);
+        BinaryObjectImpl obj = marshal(simpleObj, marsh);
 
         long ptr = 0;
 
@@ -1942,7 +1890,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         try {
             ptr = copyOffheap(obj);
 
-            PortableObjectOffheapImpl offheapObj = new PortableObjectOffheapImpl(ctx,
+            BinaryObjectOffheapImpl offheapObj = new BinaryObjectOffheapImpl(ctx,
                 ptr,
                 0,
                 obj.array().length);
@@ -1955,7 +1903,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
             ptr1 = copyOffheap(obj);
 
-            PortableObjectOffheapImpl offheapObj1 = new PortableObjectOffheapImpl(ctx,
+            BinaryObjectOffheapImpl offheapObj1 = new BinaryObjectOffheapImpl(ctx,
                 ptr1,
                 0,
                 obj.array().length);
@@ -1968,20 +1916,20 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
             checkSimpleObjectData(simpleObj, offheapObj);
 
-            PortableObjectOffheapImpl innerOffheapObj = offheapObj.field("inner");
+            BinaryObjectOffheapImpl innerOffheapObj = offheapObj.field("inner");
 
             assertNotNull(innerOffheapObj);
 
             checkSimpleObjectData(simpleObj.inner, innerOffheapObj);
 
-            obj = (PortableObjectImpl)offheapObj.heapCopy();
+            obj = (BinaryObjectImpl)offheapObj.heapCopy();
 
             assertEquals(obj.typeId(), offheapObj.typeId());
             assertEquals(obj.hashCode(), offheapObj.hashCode());
 
             checkSimpleObjectData(simpleObj, obj);
 
-            PortableObjectImpl innerObj = obj.field("inner");
+            BinaryObjectImpl innerObj = obj.field("inner");
 
             assertNotNull(innerObj);
 
@@ -1996,7 +1944,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
             ptr2 = copyOffheap(obj);
 
-            PortableObjectOffheapImpl offheapObj2 = new PortableObjectOffheapImpl(ctx,
+            BinaryObjectOffheapImpl offheapObj2 = new BinaryObjectOffheapImpl(ctx,
                 ptr2,
                 0,
                 obj.array().length);
@@ -2024,7 +1972,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         marsh.setClassNames(
             Arrays.asList(MySingleton.class.getName(), SingletonMarker.class.getName()));
 
-        PortableObjectImpl portableObj = marshal(MySingleton.INSTANCE, marsh);
+        BinaryObjectImpl portableObj = marshal(MySingleton.INSTANCE, marsh);
 
         assertTrue(portableObj.array().length <= 1024); // Check that big string was not serialized.
 
@@ -2041,7 +1989,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         marsh.setClassNames(Collections.singletonList(MyTestClass.class.getName()));
 
-        PortableObjectImpl portableObj = marshal(new MyTestClass(), marsh);
+        BinaryObjectImpl portableObj = marshal(new MyTestClass(), marsh);
 
         MyTestClass obj = portableObj.deserialize();
 
@@ -2056,7 +2004,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         marsh.setClassNames(Arrays.asList(ChildPortable.class.getName()));
 
-        PortableObjectImpl portableObj = marshal(new ChildPortable(), marsh);
+        BinaryObjectImpl portableObj = marshal(new ChildPortable(), marsh);
 
         ChildPortable singleton = portableObj.deserialize();
 
@@ -2082,7 +2030,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         obj1.val = BigDecimal.ZERO;
         obj1.valArr = new BigDecimal[] { BigDecimal.ONE, BigDecimal.TEN };
 
-        PortableObjectImpl portObj = marshal(obj1, marsh);
+        BinaryObjectImpl portObj = marshal(obj1, marsh);
 
         assertEquals(obj1.val, portObj.field("val"));
         assertArrayEquals(obj1.valArr, portObj.<BigDecimal[]>field("valArr"));
@@ -2129,7 +2077,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         // Checking the writer directly.
         assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
-        try (PortableWriterExImpl writer = new PortableWriterExImpl(initPortableContext(new PortableMarshaller()), 0)) {
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(initPortableContext(new PortableMarshaller()))) {
             assertEquals(true, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
             writer.writeString("Thread local test");
@@ -2151,12 +2099,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
         // Checking the builder.
-        PortableBuilder builder = new PortableBuilderImpl(initPortableContext(new PortableMarshaller()),
+        BinaryObjectBuilder builder = new BinaryObjectBuilderImpl(initPortableContext(new PortableMarshaller()),
             "org.gridgain.foo.bar.TestClass");
 
         builder.setField("a", "1");
 
-        PortableObject portableObj = builder.build();
+        BinaryObject portableObj = builder.build();
 
         assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
     }
@@ -2176,12 +2124,27 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         try {
             marsh.marshal(job2);
-        } catch (PortableException e) {
+        } catch (BinaryObjectException e) {
             assertEquals(true, e.getMessage().contains("Failed to register class"));
             return;
         }
 
         assert false;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClass() throws Exception {
+        PortableMarshaller marsh = new PortableMarshaller();
+
+        initPortableContext(marsh);
+
+        Class cls = GridPortableMarshallerSelfTest.class;
+
+        Class unmarshalledCls = marshalUnmarshal(cls, marsh);
+
+        Assert.assertEquals(cls, unmarshalledCls);
     }
 
     /**
@@ -2201,6 +2164,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(obj.cls1, obj2.cls1);
         assertNull(obj2.cls2);
+
+        BinaryObject portObj = marshal(obj, marsh);
+
+        Class cls1 = portObj.field("cls1");
+
+        assertEquals(obj.cls1, cls1);
     }
 
     /**
@@ -2318,11 +2287,13 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Object with class fields.
      */
     private static class ObjectWithClassFields {
+        /** */
         private Class<?> cls1;
 
+        /** */
         private Class<?> cls2;
     }
 
@@ -2368,7 +2339,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @param obj Object.
      * @return Offheap address.
      */
-    private long copyOffheap(PortableObjectImpl obj) {
+    private long copyOffheap(BinaryObjectImpl obj) {
         byte[] arr = obj.array();
 
         long ptr = UNSAFE.allocateMemory(arr.length);
@@ -2396,7 +2367,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @param off Offset.
      * @return Value.
      */
-    private int intFromPortable(PortableObject po, int off) {
+    private int intFromPortable(BinaryObject po, int off) {
         byte[] arr = U.field(po, "arr");
 
         return Integer.reverseBytes(U.bytesToInt(arr, off));
@@ -2428,12 +2399,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @param marsh Marshaller.
      * @return Portable object.
      */
-    private <T> PortableObjectImpl marshal(T obj, PortableMarshaller marsh) throws IgniteCheckedException {
+    private <T> BinaryObjectImpl marshal(T obj, PortableMarshaller marsh) throws IgniteCheckedException {
         initPortableContext(marsh);
 
         byte[] bytes = marsh.marshal(obj);
 
-        return new PortableObjectImpl(U.<GridPortableMarshaller>field(marsh, "impl").context(),
+        return new BinaryObjectImpl(U.<GridPortableMarshaller>field(marsh, "impl").context(),
             bytes, 0);
     }
 
@@ -2441,7 +2412,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @return Portable context.
      */
     protected PortableContext initPortableContext(PortableMarshaller marsh) throws IgniteCheckedException {
-        PortableContext ctx = new PortableContext(META_HND, null);
+        IgniteConfiguration iCfg = new IgniteConfiguration();
+
+        PortableContext ctx = new PortableContext(META_HND, iCfg);
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
@@ -2565,7 +2538,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @return Portable object.
      */
-    private TestPortableObject portableObject() {
+    private TestBinary BinaryObject() {
         SimpleObject innerSimple = new SimpleObject();
 
         innerSimple.b = 1;
@@ -2605,7 +2578,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         innerSimple.map.put(2, "str2");
         innerSimple.map.put(3, "str3");
 
-        TestPortableObject innerPortable = new TestPortableObject();
+        TestBinary innerPortable = new TestBinary();
 
         innerPortable.b = 2;
         innerPortable.s = 2;
@@ -2680,7 +2653,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         innerPortable.mapRaw.put(8, "str8");
         innerPortable.mapRaw.put(9, "str9");
 
-        TestPortableObject outer = new TestPortableObject();
+        TestBinary outer = new TestBinary();
 
         outer.b = 4;
         outer.s = 4;
@@ -2884,7 +2857,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestPortableObject implements PortableMarshalAware {
+    private static class TestBinary implements Binarylizable {
         /** */
         private byte b;
 
@@ -3060,13 +3033,13 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         private SimpleObject simpleRaw;
 
         /** */
-        private TestPortableObject portable;
+        private TestBinary portable;
 
         /** */
-        private TestPortableObject portableRaw;
+        private TestBinary portableRaw;
 
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeByte("_b", b);
             writer.writeShort("_s", s);
             writer.writeInt("_i", i);
@@ -3098,7 +3071,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             writer.writeObject("_simple", simple);
             writer.writeObject("_portable", portable);
 
-            PortableRawWriter raw = writer.rawWriter();
+            BinaryRawWriter raw = writer.rawWriter();
 
             raw.writeByte(bRaw);
             raw.writeShort(sRaw);
@@ -3133,7 +3106,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             b = reader.readByte("_b");
             s = reader.readShort("_s");
             i = reader.readInt("_i");
@@ -3165,7 +3138,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             simple = reader.readObject("_simple");
             portable = reader.readObject("_portable");
 
-            PortableRawReader raw = reader.rawReader();
+            BinaryRawReader raw = reader.rawReader();
 
             bRaw = raw.readByte();
             sRaw = raw.readShort();
@@ -3208,20 +3181,20 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             if (other == null || getClass() != other.getClass())
                 return false;
 
-            TestPortableObject obj = (TestPortableObject)other;
+            TestBinary obj = (TestBinary)other;
 
             return GridTestUtils.deepEquals(this, obj);
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(TestPortableObject.class, this);
+            return S.toString(TestBinary.class, this);
         }
     }
 
     /**
      */
-    private static class CustomSerializedObject1 implements PortableMarshalAware {
+    private static class CustomSerializedObject1 implements Binarylizable {
         /** */
         private int val;
 
@@ -3239,19 +3212,19 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             // No-op.
         }
     }
 
     /**
      */
-    private static class CustomSerializedObject2 implements PortableMarshalAware {
+    private static class CustomSerializedObject2 implements Binarylizable {
         /** */
         private int val;
 
@@ -3269,28 +3242,28 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             // No-op.
         }
     }
 
     /**
      */
-    private static class CustomSerializer1 implements PortableSerializer {
+    private static class CustomSerializer1 implements BinarySerializer {
         /** {@inheritDoc} */
-        @Override public void writePortable(Object obj, PortableWriter writer) throws PortableException {
+        @Override public void writeBinary(Object obj, BinaryWriter writer) throws BinaryObjectException {
             CustomSerializedObject1 o = (CustomSerializedObject1)obj;
 
             writer.writeInt("val", o.val * 2);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(Object obj, PortableReader reader) throws PortableException {
+        @Override public void readBinary(Object obj, BinaryReader reader) throws BinaryObjectException {
             CustomSerializedObject1 o = (CustomSerializedObject1)obj;
 
             o.val = reader.readInt("val");
@@ -3299,16 +3272,16 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class CustomSerializer2 implements PortableSerializer {
+    private static class CustomSerializer2 implements BinarySerializer {
         /** {@inheritDoc} */
-        @Override public void writePortable(Object obj, PortableWriter writer) throws PortableException {
+        @Override public void writeBinary(Object obj, BinaryWriter writer) throws BinaryObjectException {
             CustomSerializedObject2 o = (CustomSerializedObject2)obj;
 
             writer.writeInt("val", o.val * 3);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(Object obj, PortableReader reader) throws PortableException {
+        @Override public void readBinary(Object obj, BinaryReader reader) throws BinaryObjectException {
             CustomSerializedObject2 o = (CustomSerializedObject2)obj;
 
             o.val = reader.readInt("val");
@@ -3367,7 +3340,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class DynamicObject implements PortableMarshalAware {
+    private static class DynamicObject implements Binarylizable {
         /** */
         private int idx;
 
@@ -3399,7 +3372,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeInt("val1", val1);
 
             if (idx > 0)
@@ -3412,7 +3385,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             val1 = reader.readInt("val1");
             val2 = reader.readInt("val2");
             val3 = reader.readInt("val3");
@@ -3428,7 +3401,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class DetachedTestObject implements PortableMarshalAware {
+    private static class DetachedTestObject implements Binarylizable {
         /** */
         private DetachedInnerTestObject inner1;
 
@@ -3458,8 +3431,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
-            PortableRawWriterEx raw = (PortableRawWriterEx)writer.rawWriter();
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            BinaryRawWriterEx raw = (BinaryRawWriterEx)writer.rawWriter();
 
             raw.writeObject(inner1);
             raw.writeObjectDetached(inner2);
@@ -3468,8 +3441,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
-            PortableRawReaderEx raw = (PortableRawReaderEx)reader.rawReader();
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            BinaryRawReaderEx raw = (BinaryRawReaderEx)reader.rawReader();
 
             inner1 = (DetachedInnerTestObject)raw.readObject();
             inner2 = raw.readObjectDetached();
@@ -3604,16 +3577,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     */
-    private static class DateClass2 {
-        /** */
-        private Date date;
-
-        /** */
-        private Timestamp ts;
-    }
-
-    /**
      *
      */
     private static class NoPublicConstructor {
@@ -3659,7 +3622,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class MyTestClass implements PortableMarshalAware {
+    private static class MyTestClass implements Binarylizable {
         /** */
         private boolean readyToSerialize;
 
@@ -3685,14 +3648,14 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             if (!readyToSerialize)
                 fail();
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
-            s = "readPortable";
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            s = "readBinary";
         }
     }
 
@@ -3776,7 +3739,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class DecimalMarshalAware extends DecimalReflective implements PortableMarshalAware {
+    private static class DecimalMarshalAware extends DecimalReflective implements Binarylizable {
         /** */
         public BigDecimal rawVal;
 
@@ -3784,22 +3747,22 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         public BigDecimal[] rawValArr;
 
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeDecimal("val", val);
             writer.writeDecimalArray("valArr", valArr);
 
-            PortableRawWriter rawWriter = writer.rawWriter();
+            BinaryRawWriter rawWriter = writer.rawWriter();
 
             rawWriter.writeDecimal(rawVal);
             rawWriter.writeDecimalArray(rawValArr);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             val = reader.readDecimal("val");
             valArr = reader.readDecimalArray("valArr");
 
-            PortableRawReader rawReader = reader.rawReader();
+            BinaryRawReader rawReader = reader.rawReader();
 
             rawVal = rawReader.readDecimal();
             rawValArr = rawReader.readDecimalArray();

@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-using Apache.Ignite.Core.Portable;
-
 namespace Apache.Ignite.Core 
 {
     using System;
@@ -27,48 +25,25 @@ namespace Apache.Ignite.Core
     using System.Reflection;
     using System.Runtime;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
-    using PU = Apache.Ignite.Core.Impl.Portable.PortableUtils;
-    
+
     /// <summary>
     /// This class defines a factory for the main Ignite API.
     /// <p/>
     /// Use <see cref="Ignition.Start()"/> method to start Ignite with default configuration.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
-    /// <example>
-    /// You can also use <see cref="IgniteConfiguration"/> to override some default configuration.
-    /// Below is an example on how to start Ignite with custom configuration for portable types and
-    /// provide path to Spring XML configuration file:
-    /// <code>
-    /// IgniteConfiguration cfg = new IgniteConfiguration();
-    ///
-    /// // Create portable type configuration.
-    /// PortableConfiguration portableCfg = new PortableConfiguration();
-    ///
-    /// cfg.SpringConfigUrl = "examples\\config\\example-cache.xml";
-    ///
-    /// portableCfg.TypeConfigurations = new List&lt;PortableTypeConfiguration&gt; 
-    /// {
-    ///     new PortableTypeConfiguration(typeof(Address)),
-    ///     new PortableTypeConfiguration(typeof(Organization))
-    /// };
-    ///
-    /// cfg.PortableConfiguration = portableCfg;
-    ///
-    /// // Start Ignite node with Ignite configuration.
-    /// var ignite = Ignition.Start(cfg);
-    /// </code>
-    /// </example>
     /// </summary>
     public static class Ignition
     {
@@ -253,7 +228,7 @@ namespace Apache.Ignite.Core
         {
             try
             {
-                PortableReaderImpl reader = PU.Marshaller.StartUnmarshal(inStream);
+                BinaryReader reader = BinaryUtils.Marshaller.StartUnmarshal(inStream);
 
                 PrepareConfiguration(reader);
 
@@ -271,7 +246,7 @@ namespace Apache.Ignite.Core
         /// Preapare configuration.
         /// </summary>
         /// <param name="reader">Reader.</param>
-        private static void PrepareConfiguration(PortableReaderImpl reader)
+        private static void PrepareConfiguration(BinaryReader reader)
         {
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
@@ -279,17 +254,17 @@ namespace Apache.Ignite.Core
             LoadAssemblies(cfg.Assemblies);
 
             ICollection<string> cfgAssembllies;
-            PortableConfiguration portableCfg;
+            BinaryConfiguration binaryCfg;
 
-            PortableUtils.ReadConfiguration(reader, out cfgAssembllies, out portableCfg);
+            BinaryUtils.ReadConfiguration(reader, out cfgAssembllies, out binaryCfg);
 
             LoadAssemblies(cfgAssembllies);
 
             // 2. Create marshaller only after assemblies are loaded.
-            if (cfg.PortableConfiguration == null)
-                cfg.PortableConfiguration = portableCfg;
+            if (cfg.BinaryConfiguration == null)
+                cfg.BinaryConfiguration = binaryCfg;
 
-            _startup.Marshaller = new PortableMarshaller(cfg.PortableConfiguration);
+            _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
         }
 
         /// <summary>
@@ -298,7 +273,7 @@ namespace Apache.Ignite.Core
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="handleRegistry">Handle registry.</param>
-        private static void PrepareLifecycleBeans(PortableReaderImpl reader, PlatformMemoryStream outStream, 
+        private static void PrepareLifecycleBeans(BinaryReader reader, PlatformMemoryStream outStream, 
             HandleRegistry handleRegistry)
         {
             IList<LifecycleBeanHolder> beans = new List<LifecycleBeanHolder>();
@@ -335,20 +310,17 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Lifecycle bean.</returns>
-        internal static ILifecycleBean CreateLifecycleBean(PortableReaderImpl reader)
+        private static ILifecycleBean CreateLifecycleBean(BinaryReader reader)
         {
             // 1. Instantiate.
-            string assemblyName = reader.ReadString();
-            string clsName = reader.ReadString();
-
-            object bean = IgniteUtils.CreateInstance(assemblyName, clsName);
+            var bean = IgniteUtils.CreateInstance<ILifecycleBean>(reader.ReadString());
 
             // 2. Set properties.
-            IDictionary<string, object> props = reader.ReadGenericDictionary<string, object>();
+            var props = reader.ReadDictionaryAsGeneric<string, object>();
 
             IgniteUtils.SetProperties(bean, props);
 
-            return bean as ILifecycleBean;
+            return bean;
         }
 
         /// <summary>
@@ -356,12 +328,12 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="interopProc">Interop processor.</param>
         /// <param name="stream">Stream.</param>
-        internal static void OnStart(IUnmanagedTarget interopProc, IPortableStream stream)
+        internal static void OnStart(IUnmanagedTarget interopProc, IBinaryStream stream)
         {
             try
             {
                 // 1. Read data and leave critical state ASAP.
-                PortableReaderImpl reader = PU.Marshaller.StartUnmarshal(stream);
+                BinaryReader reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
                 
                 // ReSharper disable once PossibleInvalidOperationException
                 var name = reader.ReadString();
@@ -639,7 +611,7 @@ namespace Apache.Ignite.Core
             /// <summary>
             /// Marshaller.
             /// </summary>
-            internal PortableMarshaller Marshaller { get; set; }
+            internal Marshaller Marshaller { get; set; }
 
             /// <summary>
             /// Start error.

@@ -26,6 +26,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		Apache.Ignite.FxCop = Apache.Ignite.FxCop
 		Apache.Ignite.sln.DotSettings = Apache.Ignite.sln.DotSettings
+		examples\Config\example-cache-query.xml = examples\Config\example-cache-query.xml
+		examples\Config\example-cache-store.xml = examples\Config\example-cache-store.xml
+		examples\Config\example-cache.xml = examples\Config\example-cache.xml
+		examples\Config\example-compute.xml = examples\Config\example-compute.xml
 	EndProjectSection
 EndProject
 Global

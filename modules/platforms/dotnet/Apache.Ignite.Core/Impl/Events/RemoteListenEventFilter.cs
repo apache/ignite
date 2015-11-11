@@ -20,9 +20,8 @@ namespace Apache.Ignite.Core.Impl.Events
     using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Event filter/listener holder for RemoteListen.
@@ -47,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritdoc /> */
-        public int Invoke(IPortableStream stream)
+        public int Invoke(IBinaryStream stream)
         {
             var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
@@ -74,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
                 var reader = marsh.StartUnmarshal(stream);
 
-                var pred = reader.ReadObject<PortableOrSerializableObjectHolder>().Item;
+                var pred = reader.ReadObject<object>();
 
                 var func = DelegateTypeDescriptor.GetEventFilter(pred.GetType());
 

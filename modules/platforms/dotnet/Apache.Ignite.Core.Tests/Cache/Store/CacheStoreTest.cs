@@ -20,9 +20,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
 
     /// <summary>
@@ -125,11 +125,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = "config\\native-client-test-cache-store.xml";
 
-            PortableConfiguration portCfg = new PortableConfiguration();
+            BinaryConfiguration portCfg = new BinaryConfiguration();
 
             portCfg.Types = new List<string> { typeof(Key).FullName, typeof(Value).FullName };
 
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
 
             Ignition.Start(cfg);
         }
@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.AreEqual(3, cache.GetSize());
 
-            var meta = cache.WithKeepPortable<Key, IPortableObject>().Get(new Key(0)).GetMetadata();
+            var meta = cache.WithKeepBinary<Key, IBinaryObject>().Get(new Key(0)).GetBinaryType();
 
             Assert.NotNull(meta);
 
@@ -222,26 +222,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestLoadCacheAsync()
         {
-            var cache = Cache().WithAsync();
+            var cache = Cache();
 
             Assert.AreEqual(0, cache.GetSize());
 
-            cache.LocalLoadCache(new CacheEntryFilter(), 100, 10);
+            cache.LocalLoadCacheAsync(new CacheEntryFilter(), 100, 10).Wait();
 
-            var fut = cache.GetFuture<object>();
-
-            fut.Get();
-
-            Assert.IsTrue(fut.IsDone);
-
-            cache.GetSize();
-            Assert.AreEqual(5, cache.GetFuture<int>().ToTask().Result);
+            Assert.AreEqual(5, cache.GetSizeAsync().Result);
 
             for (int i = 105; i < 110; i++)
             {
-                cache.Get(i);
-
-                Assert.AreEqual("val_" + i, cache.GetFuture<string>().ToTask().Result);
+                Assert.AreEqual("val_" + i, cache.GetAsync(i).Result);
             }
         }
 
@@ -276,7 +267,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.AreEqual(1, map.Count);
 
-            IPortableObject v = (IPortableObject)map[1];
+            IBinaryObject v = (IBinaryObject)map[1];
 
             Assert.AreEqual(1, v.GetField<int>("_idx"));
 

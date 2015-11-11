@@ -31,20 +31,21 @@ COMMON_SRC = os/linux/src/impl/utils.cpp \
              src/impl/interop/interop_memory.cpp \
              src/impl/interop/interop_input_stream.cpp \
              src/impl/interop/interop_output_stream.cpp \
-             src/portable/portable_type.cpp \
-             src/impl/portable/portable_metadata_snapshot.cpp \
-             src/impl/portable/portable_metadata_handler.cpp \
-             src/impl/portable/portable_metadata_updater.cpp \
-             src/impl/portable/portable_metadata_manager.cpp \
-             src/impl/portable/portable_utils.cpp \
-             src/impl/portable/portable_reader_impl.cpp \
-             src/impl/portable/portable_writer_impl.cpp \
-             src/portable/portable_containers.cpp \
-             src/portable/portable_raw_reader.cpp \
-             src/portable/portable_raw_writer.cpp \
-             src/portable/portable_reader.cpp \
-             src/portable/portable_writer.cpp \
-             src/impl/portable/portable_metadata_updater_impl.cpp \
+             src/binary/binary_type.cpp \
+             src/impl/binary/binary_type_snapshot.cpp \
+             src/impl/binary/binary_type_handler.cpp \
+             src/impl/binary/binary_type_updater.cpp \
+             src/impl/binary/binary_type_manager.cpp \
+             src/impl/binary/binary_utils.cpp \
+             src/impl/binary/binary_reader_impl.cpp \
+             src/impl/binary/binary_writer_impl.cpp \
+             src/impl/binary/binary_schema.cpp \
+             src/binary/binary_containers.cpp \
+             src/binary/binary_raw_reader.cpp \
+             src/binary/binary_raw_writer.cpp \
+             src/binary/binary_reader.cpp \
+             src/binary/binary_writer.cpp \
+             src/impl/binary/binary_type_updater_impl.cpp \
              src/impl/ignite_environment.cpp \
              src/impl/cache/query/query_impl.cpp \
              src/impl/cache/cache_impl.cpp \

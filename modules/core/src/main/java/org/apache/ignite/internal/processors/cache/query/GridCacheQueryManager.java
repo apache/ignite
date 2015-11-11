@@ -907,7 +907,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             CacheObject cacheVal =
                                 entry != null ? entry.peek(true, false, false, topVer, expiryPlc) : null;
 
-                            val = cacheVal != null ? (V)cacheVal.value(cctx.cacheObjectContext(), false) : null;
+                            // TODO 950 nocopy
+                            val = (V)cctx.cacheObjectContext().unwrapPortableIfNeeded(cacheVal, qry.keepPortable());
                         }
                         catch (GridCacheEntryRemovedException e) {
                             val = null;
@@ -1093,7 +1094,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 next = null;
 
                 while (it.hasNext()) {
-                    final LazySwapEntry e = new LazySwapEntry(it.next());
+                    final LazySwapEntry e = new LazySwapEntry(it.next(), keepPortable);
 
                     if (filter != null) {
                         K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
@@ -2510,11 +2511,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private final Map.Entry<byte[], byte[]> e;
 
+        /** */
+        private boolean keepBinary;
+
         /**
          * @param e Entry with
          */
-        LazySwapEntry(Map.Entry<byte[], byte[]> e) {
+        LazySwapEntry(Map.Entry<byte[], byte[]> e, boolean keepBinary) {
             this.e = e;
+            this.keepBinary = keepBinary;
         }
 
         /** {@inheritDoc} */
@@ -2529,7 +2534,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             CacheObject obj = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), t.get2(), t.get1());
 
-            return obj.value(cctx.cacheObjectContext(), false);
+            return (V)cctx.cacheObjectContext().unwrapPortableIfNeeded(obj, keepBinary);
         }
 
         /** {@inheritDoc} */

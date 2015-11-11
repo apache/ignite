@@ -189,6 +189,11 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 

@@ -18,10 +18,10 @@
 namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
-    using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Portable;
+    using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Transactions;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="localNodeId">Local node id.</param>
-        public TransactionsImpl(IUnmanagedTarget target, PortableMarshaller marsh,
+        public TransactionsImpl(IUnmanagedTarget target, Marshaller marsh,
             Guid localNodeId) : base(target, marsh)
         {
             _localNodeId = localNodeId;
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         {
             return DoInOp(OpMetrics, stream =>
             {
-                IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                 return new TransactionMetricsImpl(reader);
             });
@@ -177,17 +177,17 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <summary>
         /// Commits tx in async mode.
         /// </summary>
-        internal IFuture CommitAsync(TransactionImpl tx)
+        internal Task CommitAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => UU.TransactionsCommitAsync(Target, tx.Id, futId));
+            return GetFuture<object>((futId, futTyp) => UU.TransactionsCommitAsync(Target, tx.Id, futId)).Task;
         }
 
         /// <summary>
         /// Rolls tx back in async mode.
         /// </summary>
-        internal IFuture RollbackAsync(TransactionImpl tx)
+        internal Task RollbackAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => UU.TransactionsRollbackAsync(Target, tx.Id, futId));
+            return GetFuture<object>((futId, futTyp) => UU.TransactionsRollbackAsync(Target, tx.Id, futId)).Task;
         }
  
         /// <summary>

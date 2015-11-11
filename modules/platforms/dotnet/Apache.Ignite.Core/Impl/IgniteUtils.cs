@@ -25,13 +25,14 @@ namespace Apache.Ignite.Core.Impl
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Portable;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
     /// <summary>
     /// Native utility methods.
@@ -126,20 +127,18 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Create new instance of specified class.
         /// </summary>
-        /// <param name="assemblyName">Assembly name.</param>
-        /// <param name="clsName">Class name</param>
+        /// <param name="typeName">Class name</param>
         /// <returns>New Instance.</returns>
-        public static object CreateInstance(string assemblyName, string clsName)
+        public static T CreateInstance<T>(string typeName)
         {
-            IgniteArgumentCheck.NotNullOrEmpty(clsName, "clsName");
+            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            var type = new TypeResolver().ResolveType(clsName, assemblyName);
+            var type = new TypeResolver().ResolveType(typeName);
 
             if (type == null)
-                throw new IgniteException("Failed to create class instance [assemblyName=" + assemblyName +
-                    ", className=" + clsName + ']');
+                throw new IgniteException("Failed to create class instance [className=" + typeName + ']');
 
-            return Activator.CreateInstance(type);
+            return (T) Activator.CreateInstance(type);
         }
 
         /// <summary>
@@ -386,7 +385,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <param name="pred">The predicate.</param>
         /// <returns> Nodes list or null. </returns>
-        public static List<IClusterNode> ReadNodes(IPortableRawReader reader, Func<ClusterNodeImpl, bool> pred = null)
+        public static List<IClusterNode> ReadNodes(IBinaryRawReader reader, Func<ClusterNodeImpl, bool> pred = null)
         {
             var cnt = reader.ReadInt();
 
@@ -395,7 +394,7 @@ namespace Apache.Ignite.Core.Impl
 
             var res = new List<IClusterNode>(cnt);
 
-            var ignite = ((PortableReaderImpl)reader).Marshaller.Ignite;
+            var ignite = ((BinaryReader)reader).Marshaller.Ignite;
 
             if (pred == null)
             {
@@ -414,15 +413,6 @@ namespace Apache.Ignite.Core.Impl
             }
 
             return res;
-        }
-
-        /// <summary>
-        /// Gets the asynchronous mode disabled exception.
-        /// </summary>
-        /// <returns>Asynchronous mode disabled exception.</returns>
-        public static InvalidOperationException GetAsyncModeDisabledException()
-        {
-            return new InvalidOperationException("Asynchronous mode is disabled");
         }
     }
 }

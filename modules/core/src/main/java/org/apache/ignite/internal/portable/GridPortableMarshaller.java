@@ -19,7 +19,7 @@ package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.internal.portable.streams.PortableInputStream;
 import org.apache.ignite.internal.portable.streams.PortableOutputStream;
-import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -132,6 +132,12 @@ public class GridPortableMarshaller {
     /** */
     public static final byte CLASS = 32;
 
+    /** Timestamp. */
+    public static final byte TIMESTAMP = 33;
+
+    /** Timestamp array. */
+    public static final byte TIMESTAMP_ARR = 34;
+
     /** */
     public static final byte NULL = (byte)101;
 
@@ -192,23 +198,26 @@ public class GridPortableMarshaller {
     /** Protocol version position. */
     public static final int PROTO_VER_POS = 1;
 
-    /** */
-    public static final int TYPE_ID_POS = 3;
+    /** Flags position in header. */
+    public static final int FLAGS_POS = 2;
 
     /** */
-    public static final int HASH_CODE_POS = 7;
+    public static final int TYPE_ID_POS = 4;
 
     /** */
-    public static final int TOTAL_LEN_POS = 11;
+    public static final int HASH_CODE_POS = 8;
 
     /** */
-    public static final byte RAW_DATA_OFF_POS = 15;
+    public static final int TOTAL_LEN_POS = 12;
 
     /** */
-    public static final int CLS_NAME_POS = 19;
+    public static final int SCHEMA_ID_POS = 16;
+
+    /** Schema or raw offset position. */
+    public static final int SCHEMA_OR_RAW_OFF_POS = 20;
 
     /** */
-    public static final byte DFLT_HDR_LEN = 19;
+    public static final byte DFLT_HDR_LEN = 24;
 
     /** */
     private final PortableContext ctx;
@@ -222,16 +231,15 @@ public class GridPortableMarshaller {
 
     /**
      * @param obj Object to marshal.
-     * @param off Offset.
      * @return Byte array.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public byte[] marshal(@Nullable Object obj, int off) throws PortableException {
+    public byte[] marshal(@Nullable Object obj) throws BinaryObjectException {
         if (obj == null)
             return new byte[] { NULL };
 
-        try (PortableWriterExImpl writer = new PortableWriterExImpl(ctx, off)) {
-            writer.marshal(obj, false);
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+            writer.marshal(obj);
 
             return writer.array();
         }
@@ -240,13 +248,13 @@ public class GridPortableMarshaller {
     /**
      * @param bytes Bytes array.
      * @return Portable object.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws PortableException {
+    @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws BinaryObjectException {
         assert bytes != null;
 
-        PortableReaderExImpl reader = new PortableReaderExImpl(ctx, bytes, 0, clsLdr);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, bytes, 0, clsLdr);
 
         return (T)reader.unmarshal();
     }
@@ -254,10 +262,10 @@ public class GridPortableMarshaller {
     /**
      * @param in Input stream.
      * @return Portable object.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <T> T unmarshal(PortableInputStream in) throws PortableException {
+    @Nullable public <T> T unmarshal(PortableInputStream in) throws BinaryObjectException {
         return (T)reader(in).unmarshal();
     }
 
@@ -265,17 +273,17 @@ public class GridPortableMarshaller {
      * @param arr Byte array.
      * @param ldr Class loader.
      * @return Deserialized object.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <T> T deserialize(byte[] arr, @Nullable ClassLoader ldr) throws PortableException {
+    @Nullable public <T> T deserialize(byte[] arr, @Nullable ClassLoader ldr) throws BinaryObjectException {
         assert arr != null;
         assert arr.length > 0;
 
         if (arr[0] == NULL)
             return null;
 
-        PortableReaderExImpl reader = new PortableReaderExImpl(ctx, arr, 0, ldr);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, arr, 0, ldr);
 
         return (T)reader.deserialize();
     }
@@ -286,8 +294,8 @@ public class GridPortableMarshaller {
      * @param out Output stream.
      * @return Writer.
      */
-    public PortableWriterExImpl writer(PortableOutputStream out) {
-        return new PortableWriterExImpl(ctx, out, 0);
+    public BinaryWriterExImpl writer(PortableOutputStream out) {
+        return new BinaryWriterExImpl(ctx, out);
     }
 
     /**
@@ -296,9 +304,9 @@ public class GridPortableMarshaller {
      * @param in Input stream.
      * @return Reader.
      */
-    public PortableReaderExImpl reader(PortableInputStream in) {
+    public BinaryReaderExImpl reader(PortableInputStream in) {
         // TODO: IGNITE-1272 - Is class loader needed here?
-        return new PortableReaderExImpl(ctx, in, in.position(), null);
+        return new BinaryReaderExImpl(ctx, in, in.position(), null);
     }
 
     /**

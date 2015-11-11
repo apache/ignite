@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
@@ -31,7 +32,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
     using CQU = Apache.Ignite.Core.Impl.Cache.Query.Continuous.ContinuousQueryUtils;
@@ -97,17 +97,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
-            PortableConfiguration portCfg = new PortableConfiguration();
+            BinaryConfiguration portCfg = new BinaryConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableEntry)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableFilter)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(KeepPortableFilter)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableEntry)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableFilter)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(KeepPortableFilter)));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
             cfg.JvmClasspath = TestUtils.CreateTestClasspath();
             cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = "config\\cache-query-continuous.xml";
@@ -491,7 +491,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             }
             else
             {
-                Assert.Throws<SerializationException>(() =>
+                Assert.Throws<BinaryObjectException>(() =>
                 {
                     using (cache1.QueryContinuous(qry))
                     {
@@ -594,10 +594,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestKeepPortable()
         {
-            var cache = cache1.WithKeepPortable<int, IPortableObject>();
+            var cache = cache1.WithKeepBinary<int, IBinaryObject>();
 
-            ContinuousQuery<int, IPortableObject> qry = new ContinuousQuery<int, IPortableObject>(
-                    new Listener<IPortableObject>(), new KeepPortableFilter());
+            ContinuousQuery<int, IBinaryObject> qry = new ContinuousQuery<int, IBinaryObject>(
+                    new Listener<IBinaryObject>(), new KeepPortableFilter());
 
             using (cache.QueryContinuous(qry))
             {
@@ -610,14 +610,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
                 Assert.AreEqual(PrimaryKey(cache1), filterEvt.entry.Key);
                 Assert.AreEqual(null, filterEvt.entry.OldValue);
-                Assert.AreEqual(Entry(1), (filterEvt.entry.Value as IPortableObject)
+                Assert.AreEqual(Entry(1), (filterEvt.entry.Value as IBinaryObject)
                     .Deserialize<PortableEntry>());
 
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
                 Assert.AreEqual(1, cbEvt.entries.Count);
                 Assert.AreEqual(PrimaryKey(cache1), cbEvt.entries.First().Key);
                 Assert.AreEqual(null, cbEvt.entries.First().OldValue);
-                Assert.AreEqual(Entry(1), (cbEvt.entries.First().Value as IPortableObject)
+                Assert.AreEqual(Entry(1), (cbEvt.entries.First().Value as IBinaryObject)
                     .Deserialize<PortableEntry>());
 
                 // 2. Remote put.
@@ -626,7 +626,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
                 Assert.AreEqual(PrimaryKey(cache2), filterEvt.entry.Key);
                 Assert.AreEqual(null, filterEvt.entry.OldValue);
-                Assert.AreEqual(Entry(2), (filterEvt.entry.Value as IPortableObject)
+                Assert.AreEqual(Entry(2), (filterEvt.entry.Value as IBinaryObject)
                     .Deserialize<PortableEntry>());
 
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
@@ -634,7 +634,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.AreEqual(PrimaryKey(cache2), cbEvt.entries.First().Key);
                 Assert.AreEqual(null, cbEvt.entries.First().OldValue);
                 Assert.AreEqual(Entry(2),
-                    (cbEvt.entries.First().Value as IPortableObject).Deserialize<PortableEntry>());
+                    (cbEvt.entries.First().Value as IBinaryObject).Deserialize<PortableEntry>());
             }
         }
 
@@ -718,13 +718,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestNestedCallFromCallback()
         {
-            var cache = cache1.WithKeepPortable<int, IPortableObject>();
+            var cache = cache1.WithKeepBinary<int, IBinaryObject>();
 
             int key = PrimaryKey(cache1);
 
             NestedCallListener cb = new NestedCallListener();
 
-            using (cache.QueryContinuous(new ContinuousQuery<int, IPortableObject>(cb)))
+            using (cache.QueryContinuous(new ContinuousQuery<int, IBinaryObject>(cb)))
             {
                 cache1.GetAndPut(key, Entry(key));
 
@@ -1021,17 +1021,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Portable filter.
         /// </summary>
-        public class PortableFilter : AbstractFilter<PortableEntry>, IPortableMarshalAware
+        public class PortableFilter : AbstractFilter<PortableEntry>, IBinarizable
         {
             /** <inheritDoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 if (marshErr)
                     throw new Exception("Filter marshalling error.");
             }
 
             /** <inheritDoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 if (unmarshErr)
                     throw new Exception("Filter unmarshalling error.");
@@ -1074,7 +1074,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Filter for "keep-portable" scenario.
         /// </summary>
-        public class KeepPortableFilter : AbstractFilter<IPortableObject>
+        public class KeepPortableFilter : AbstractFilter<IBinaryObject>
         {
             // No-op.
         }
@@ -1103,18 +1103,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Listener with nested Ignite API call.
         /// </summary>
-        public class NestedCallListener : ICacheEntryEventListener<int, IPortableObject>
+        public class NestedCallListener : ICacheEntryEventListener<int, IBinaryObject>
         {
             /** Event. */
             public readonly CountdownEvent countDown = new CountdownEvent(1);
 
-            public void OnEvent(IEnumerable<ICacheEntryEvent<int, IPortableObject>> evts)
+            public void OnEvent(IEnumerable<ICacheEntryEvent<int, IBinaryObject>> evts)
             {
-                foreach (ICacheEntryEvent<int, IPortableObject> evt in evts)
+                foreach (ICacheEntryEvent<int, IBinaryObject> evt in evts)
                 {
-                    IPortableObject val = evt.Value;
+                    IBinaryObject val = evt.Value;
 
-                    IPortableMetadata meta = val.GetMetadata();
+                    IBinaryType meta = val.GetBinaryType();
 
                     Assert.AreEqual(typeof(PortableEntry).Name, meta.TypeName);
                 }

@@ -64,14 +64,16 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
      * @param nearTxCheck {@code True} if should check only tx on near node.
      * @param futId Future ID.
      * @param miniId Mini future ID.
+     * @param addDepInfo Deployment info flag.
      */
     public GridCacheTxRecoveryRequest(IgniteInternalTx tx,
         int txNum,
         boolean nearTxCheck,
         IgniteUuid futId,
-        IgniteUuid miniId)
+        IgniteUuid miniId,
+        boolean addDepInfo)
     {
-        super(tx.xidVersion(), 0);
+        super(tx.xidVersion(), 0, addDepInfo);
 
         nearXidVer = tx.nearXidVersion();
         sys = tx.system();

@@ -22,12 +22,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Text;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -58,13 +58,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             IgniteConfigurationEx cfg = new IgniteConfigurationEx
             {
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
                     {
-                        new PortableTypeConfiguration(typeof (QueryPerson)),
-                        new PortableTypeConfiguration(typeof (PortableScanQueryFilter<QueryPerson>)),
-                        new PortableTypeConfiguration(typeof (PortableScanQueryFilter<PortableUserObject>))
+                        new BinaryTypeConfiguration(typeof (QueryPerson)),
+                        new BinaryTypeConfiguration(typeof (PortableScanQueryFilter<QueryPerson>)),
+                        new BinaryTypeConfiguration(typeof (PortableScanQueryFilter<BinaryObject>))
                     }
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
@@ -194,14 +194,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [SuppressMessage("ReSharper", "ReturnValueOfPureMethodIsNotUsed")]
         public void TestCursor()
         {
-            var cache0 = Cache().WithAsync();
-
-            cache0.WithAsync().Put(1, new QueryPerson("Ivanov", 30));
-
-            IFuture<object> res = cache0.GetFuture<object>();
-
-            res.Get();
-
             Cache().Put(1, new QueryPerson("Ivanov", 30));
             Cache().Put(1, new QueryPerson("Petrov", 40));
             Cache().Put(1, new QueryPerson("Sidorov", 50));
@@ -394,7 +386,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         /// <param name="cnt">Amount of cache entries to create.</param>
         /// <param name="loc">Local query flag.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         private void CheckSqlQuery(int cnt, bool loc, bool keepPortable)
         {
             var cache = Cache();
@@ -514,7 +506,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         /// <param name="cnt">Amount of cache entries to create.</param>
         /// <param name="loc">Local query flag.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         private void CheckTextQuery(int cnt, bool loc, bool keepPortable)
         {
             var cache = Cache();
@@ -544,7 +536,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryPortable()
         {
-            CheckScanQuery<PortableUserObject>(MaxItemCnt, false, true);
+            CheckScanQuery<BinaryObject>(MaxItemCnt, false, true);
         }
 
         /// <summary>
@@ -562,7 +554,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryLocalPortable()
         {
-            CheckScanQuery<PortableUserObject>(MaxItemCnt, true, true);
+            CheckScanQuery<BinaryObject>(MaxItemCnt, true, true);
         }
 
         /// <summary>
@@ -582,7 +574,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Ignore("IGNITE-1012")]
         public void TestScanQueryPartitionsPortable([Values(true, false)]  bool loc)
         {
-            CheckScanQueryPartitions<PortableUserObject>(MaxItemCnt, loc, true);
+            CheckScanQueryPartitions<BinaryObject>(MaxItemCnt, loc, true);
         }
 
         /// <summary>
@@ -613,7 +605,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         /// <param name="cnt">Amount of cache entries to create.</param>
         /// <param name="loc">Local query flag.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         private void CheckScanQuery<TV>(int cnt, bool loc, bool keepPortable)
         {
             var cache = Cache();
@@ -646,7 +638,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         /// <param name="cnt">Amount of cache entries to create.</param>
         /// <param name="loc">Local query flag.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         private void CheckScanQueryPartitions<TV>(int cnt, bool loc, bool keepPortable)
         {
             StopGrids();
@@ -696,13 +688,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <param name="cache">Cache.</param>
         /// <param name="qry">Query.</param>
         /// <param name="exp">Expected keys.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         private static void ValidateQueryResults(ICache<int, QueryPerson> cache, QueryBase qry, HashSet<int> exp,
             bool keepPortable)
         {
             if (keepPortable)
             {
-                var cache0 = cache.WithKeepPortable<int, IPortableObject>();
+                var cache0 = cache.WithKeepBinary<int, IBinaryObject>();
 
                 using (var cursor = cache0.Query(qry))
                 {
@@ -907,10 +899,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// <summary>
     /// Portable query filter.
     /// </summary>
-    public class PortableScanQueryFilter<TV> : ScanQueryFilter<TV>, IPortableMarshalAware
+    public class PortableScanQueryFilter<TV> : ScanQueryFilter<TV>, IBinarizable
     {
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var w = writer.GetRawWriter();
 
@@ -918,7 +910,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /** <inheritdoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             var r = reader.GetRawReader();
 

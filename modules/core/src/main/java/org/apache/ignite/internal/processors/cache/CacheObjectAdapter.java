@@ -49,7 +49,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public byte type() {
+    @Override public byte cacheObjectType() {
         return TYPE_REGULAR;
     }
 

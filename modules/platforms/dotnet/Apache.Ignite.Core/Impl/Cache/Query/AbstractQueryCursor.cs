@@ -22,8 +22,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -41,8 +41,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** Position before head. */
         private const int BatchPosBeforeHead = -1;
 
-        /** Keep portable flag. */
-        private readonly bool _keepPortable;
+        /** Keep binary flag. */
+        private readonly bool _keepBinary;
 
         /** Wherther "GetAll" was called. */
         private bool _getAllCalled;
@@ -61,11 +61,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
-        protected AbstractQueryCursor(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable) : 
+        /// <param name="keepBinary">Keep binary flag.</param>
+        protected AbstractQueryCursor(IUnmanagedTarget target, Marshaller marsh, bool keepBinary) : 
             base(target, marsh)
         {
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
         }
 
         #region Public methods
@@ -199,12 +199,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Entry.</returns>
-        protected abstract T Read(PortableReaderImpl reader);
+        protected abstract T Read(BinaryReader reader);
 
         /** <inheritdoc /> */
-        protected override T1 Unmarshal<T1>(IPortableStream stream)
+        protected override T1 Unmarshal<T1>(IBinaryStream stream)
         {
-            return Marshaller.Unmarshal<T1>(stream, _keepPortable);
+            return Marshaller.Unmarshal<T1>(stream, _keepBinary);
         }
 
         /// <summary>
@@ -220,11 +220,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <summary>
         /// Converter for GET_ALL operation.
         /// </summary>
-        /// <param name="stream">Portable stream.</param>
+        /// <param name="stream">Stream.</param>
         /// <returns>Result.</returns>
-        private IList<T> ConvertGetAll(IPortableStream stream)
+        private IList<T> ConvertGetAll(IBinaryStream stream)
         {
-            var reader = Marshaller.StartUnmarshal(stream, _keepPortable);
+            var reader = Marshaller.StartUnmarshal(stream, _keepBinary);
 
             var size = reader.ReadInt();
 
@@ -239,11 +239,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <summary>
         /// Converter for GET_BATCH operation.
         /// </summary>
-        /// <param name="stream">Portable stream.</param>
+        /// <param name="stream">Stream.</param>
         /// <returns>Result.</returns>
-        private T[] ConvertGetBatch(IPortableStream stream)
+        private T[] ConvertGetBatch(IBinaryStream stream)
         {
-            var reader = Marshaller.StartUnmarshal(stream, _keepPortable);
+            var reader = Marshaller.StartUnmarshal(stream, _keepBinary);
 
             var size = reader.ReadInt();
 

@@ -20,8 +20,8 @@ namespace Apache.Ignite.Core.Impl.Compute
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
 
     /// <summary>
@@ -41,30 +41,6 @@ namespace Apache.Ignite.Core.Impl.Compute
             Debug.Assert(computeImpl != null);
 
             _compute = computeImpl;
-        }
-
-        /** <inheritDoc /> */
-        public ICompute WithAsync()
-        {
-            return new ComputeAsync(_compute);
-        }
-
-        /** <inheritDoc /> */
-        public bool IsAsync
-        {
-            get { return false; }
-        }
-
-        /** <inheritDoc /> */
-        public IFuture GetFuture()
-        {
-            throw IgniteUtils.GetAsyncModeDisabledException();
-        }
-
-        /** <inheritDoc /> */
-        public IFuture<TResult> GetFuture<TResult>()
-        {
-            throw IgniteUtils.GetAsyncModeDisabledException();
         }
 
         /** <inheritDoc /> */
@@ -90,9 +66,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public ICompute WithKeepPortable()
+        public ICompute WithKeepBinary()
         {
-            _compute.WithKeepPortable();
+            _compute.WithKeepBinary();
 
             return this;
         }
@@ -104,9 +80,21 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg)
+        {
+            return _compute.ExecuteJavaTaskAsync<TRes>(taskName, taskArg).Task;
+        }
+
+        /** <inheritDoc /> */
         public TReduceRes Execute<TArg, TJobRes, TReduceRes>(IComputeTask<TArg, TJobRes, TReduceRes> task, TArg taskArg)
         {
             return _compute.Execute(task, taskArg).Get();
+        }
+
+        /** <inheritDoc /> */
+        public Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg)
+        {
+            return _compute.Execute(task, taskArg).Task;
         }
 
         /** <inheritDoc /> */
@@ -116,14 +104,33 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TRes> ExecuteAsync<TJobRes, TRes>(IComputeTask<TJobRes, TRes> task)
+        {
+            return _compute.Execute(task, null).Task;
+        }
+
+        /** <inheritDoc /> */
         public TReduceRes Execute<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg)
         {
             return _compute.Execute<TArg, TJobRes, TReduceRes>(taskType, taskArg).Get();
         }
 
+        /** <inheritDoc /> */
+        public Task<TReduceRes> ExecuteAsync<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg)
+        {
+            return _compute.Execute<TArg, TJobRes, TReduceRes>(taskType, taskArg).Task;
+        }
+
+        /** <inheritDoc /> */
         public TReduceRes Execute<TArg, TReduceRes>(Type taskType)
         {
             return _compute.Execute<object, TArg, TReduceRes>(taskType, null).Get();
+        }
+
+        /** <inheritDoc /> */
+        public Task<TReduceRes> ExecuteAsync<TArg, TReduceRes>(Type taskType)
+        {
+            return _compute.Execute<object, TArg, TReduceRes>(taskType, null).Task;
         }
 
         /** <inheritDoc /> */
@@ -133,9 +140,21 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TRes> CallAsync<TRes>(IComputeFunc<TRes> clo)
+        {
+            return _compute.Execute(clo).Task;
+        }
+
+        /** <inheritDoc /> */
         public TJobRes AffinityCall<TJobRes>(string cacheName, object affinityKey, IComputeFunc<TJobRes> clo)
         {
             return _compute.AffinityCall(cacheName, affinityKey, clo).Get();
+        }
+
+        /** <inheritDoc /> */
+        public Task<TRes> AffinityCallAsync<TRes>(string cacheName, object affinityKey, IComputeFunc<TRes> clo)
+        {
+            return _compute.AffinityCall(cacheName, affinityKey, clo).Task;
         }
 
         /** <inheritDoc /> */
@@ -145,9 +164,21 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TRes> CallAsync<TFuncRes, TRes>(IEnumerable<IComputeFunc<TFuncRes>> clos, IComputeReducer<TFuncRes, TRes> reducer)
+        {
+            return _compute.Execute(clos, reducer).Task;
+        }
+
+        /** <inheritDoc /> */
         public ICollection<TJobRes> Call<TJobRes>(IEnumerable<IComputeFunc<TJobRes>> clos)
         {
             return _compute.Execute(clos).Get();
+        }
+
+        /** <inheritDoc /> */
+        public Task<ICollection<TRes>> CallAsync<TRes>(IEnumerable<IComputeFunc<TRes>> clos)
+        {
+            return _compute.Execute(clos).Task;
         }
 
         /** <inheritDoc /> */
@@ -164,9 +195,21 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<ICollection<TRes>> BroadcastAsync<TRes>(IComputeFunc<TRes> clo)
+        {
+            return _compute.Broadcast(clo).Task;
+        }
+
+        /** <inheritDoc /> */
         public ICollection<TJobRes> Broadcast<T, TJobRes>(IComputeFunc<T, TJobRes> clo, T arg)
         {
             return _compute.Broadcast(clo, arg).Get();
+        }
+
+        /** <inheritDoc /> */
+        public Task<ICollection<TRes>> BroadcastAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg)
+        {
+            return _compute.Broadcast(clo, arg).Task;
         }
 
         /** <inheritDoc /> */
@@ -176,9 +219,21 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task BroadcastAsync(IComputeAction action)
+        {
+            return _compute.Broadcast(action).Task;
+        }
+
+        /** <inheritDoc /> */
         public void Run(IComputeAction action)
         {
             _compute.Run(action).Get();
+        }
+
+        /** <inheritDoc /> */
+        public Task RunAsync(IComputeAction action)
+        {
+            return _compute.Run(action).Task;
         }
 
         /** <inheritDoc /> */
@@ -188,9 +243,21 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task AffinityRunAsync(string cacheName, object affinityKey, IComputeAction action)
+        {
+            return _compute.AffinityRun(cacheName, affinityKey, action).Task;
+        }
+
+        /** <inheritDoc /> */
         public void Run(IEnumerable<IComputeAction> actions)
         {
             _compute.Run(actions).Get();
+        }
+
+        /** <inheritDoc /> */
+        public Task RunAsync(IEnumerable<IComputeAction> actions)
+        {
+            return _compute.Run(actions).Task;
         }
 
         /** <inheritDoc /> */
@@ -200,9 +267,21 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TRes> ApplyAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg)
+        {
+            return _compute.Apply(clo, arg).Task;
+        }
+
+        /** <inheritDoc /> */
         public ICollection<TJobRes> Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, IEnumerable<TArg> args)
         {
             return _compute.Apply(clo, args).Get();
+        }
+
+        /** <inheritDoc /> */
+        public Task<ICollection<TRes>> ApplyAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, IEnumerable<TArg> args)
+        {
+            return _compute.Apply(clo, args).Task;
         }
 
         /** <inheritDoc /> */
@@ -210,6 +289,12 @@ namespace Apache.Ignite.Core.Impl.Compute
             IEnumerable<TArg> args, IComputeReducer<TJobRes, TReduceRes> rdc)
         {
             return _compute.Apply(clo, args, rdc).Get();
+        }
+
+        /** <inheritDoc /> */
+        public Task<TRes> ApplyAsync<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, IComputeReducer<TFuncRes, TRes> rdc)
+        {
+            return _compute.Apply(clo, args, rdc).Task;
         }
     }
 }

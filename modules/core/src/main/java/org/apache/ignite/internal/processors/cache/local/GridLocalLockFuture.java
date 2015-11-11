@@ -225,10 +225,13 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         GridCacheMvccCandidate c = entry.addLocal(
             threadId,
             lockVer,
+            null,
+            null,
             timeout,
             !inTx(),
             inTx(),
-            implicitSingle()
+            implicitSingle(),
+            true
         );
 
         entries.add(entry);

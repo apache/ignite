@@ -20,10 +20,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Cluster node implementation.
@@ -64,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// Initializes a new instance of the <see cref="ClusterNodeImpl"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ClusterNodeImpl(IPortableRawReader reader)
+        public ClusterNodeImpl(IBinaryRawReader reader)
         {
             var id = reader.ReadGuid();
 
@@ -72,9 +73,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
             _id = id.Value;
 
-            _attrs = reader.ReadGenericDictionary<string, object>().AsReadOnly();
-            _addrs = reader.ReadGenericCollection<string>().AsReadOnly();
-            _hosts = reader.ReadGenericCollection<string>().AsReadOnly();
+            _attrs = reader.ReadDictionaryAsGeneric<string, object>().AsReadOnly();
+            _addrs = reader.ReadCollectionAsList<string>().AsReadOnly();
+            _hosts = reader.ReadCollectionAsList<string>().AsReadOnly();
             _order = reader.ReadLong();
             _isLocal = reader.ReadBoolean();
             _isDaemon = reader.ReadBoolean();

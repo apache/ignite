@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -48,15 +48,15 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 /**
  * Common code for tx prepare in optimistic and pessimistic modes.
  */
-public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundIdentityFuture<IgniteInternalTx>
+public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundFuture<GridNearTxPrepareResponse, IgniteInternalTx>
     implements GridCacheFuture<IgniteInternalTx> {
     /** Logger reference. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** */
-    private static final IgniteReducer<IgniteInternalTx, IgniteInternalTx> REDUCER =
-        new IgniteReducer<IgniteInternalTx, IgniteInternalTx>() {
-            @Override public boolean collect(IgniteInternalTx e) {
+    private static final IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx> REDUCER =
+        new IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx>() {
+            @Override public boolean collect(GridNearTxPrepareResponse e) {
                 return true;
             }
 
@@ -94,7 +94,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundIdentit
      * @param tx Transaction.
      */
     public GridNearTxPrepareFutureAdapter(GridCacheSharedContext cctx, final GridNearTxLocal tx) {
-        super(cctx.kernalContext(), REDUCER);
+        super(REDUCER);
 
         assert cctx != null;
         assert tx != null;
@@ -201,6 +201,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundIdentit
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // Retry.
+                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()));
                 }
             }
         }

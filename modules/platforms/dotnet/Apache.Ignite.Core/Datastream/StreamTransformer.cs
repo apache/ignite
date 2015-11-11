@@ -18,11 +18,11 @@
 namespace Apache.Ignite.Core.Datastream
 {
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Datastream;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Convenience adapter to transform update existing values in streaming cache 
@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Datastream
     /// <typeparam name="TArg">The type of the processor argument.</typeparam>
     /// <typeparam name="TRes">The type of the processor result.</typeparam>
     public sealed class StreamTransformer<TK, TV, TArg, TRes> : IStreamReceiver<TK, TV>, 
-        IPortableWriteAware
+        IBinaryWriteAware
     {
         /** Entry processor. */
         private readonly ICacheEntryProcessor<TK, TV, TArg, TRes> _proc;
@@ -61,13 +61,13 @@ namespace Apache.Ignite.Core.Datastream
         }
 
         /** <inheritdoc /> */
-        void IPortableWriteAware.WritePortable(IPortableWriter writer)
+        void IBinaryWriteAware.WriteBinary(IBinaryWriter writer)
         {
-            var w = (PortableWriterImpl)writer;
+            var w = (BinaryWriter)writer;
 
             w.WriteByte(StreamReceiverHolder.RcvTransformer);
 
-            PortableUtils.WritePortableOrSerializable(w, _proc);
+            w.WriteObject(_proc);
         }
     }
 }

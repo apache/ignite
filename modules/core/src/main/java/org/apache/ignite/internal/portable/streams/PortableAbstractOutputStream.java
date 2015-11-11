@@ -120,6 +120,13 @@ public abstract class PortableAbstractOutputStream extends PortableAbstractStrea
     }
 
     /** {@inheritDoc} */
+    @Override public void writeShort(int pos, short val) {
+        ensureCapacity(pos + 2);
+
+        writeShortPositioned(pos, val);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeInt(int pos, int val) {
         ensureCapacity(pos + 4);
 
@@ -305,6 +312,14 @@ public abstract class PortableAbstractOutputStream extends PortableAbstractStrea
      * @param val Long value.
      */
     protected abstract void writeLongFast(long val);
+
+    /**
+     * Write short value to the given position.
+     *
+     * @param pos Position.
+     * @param val Value.
+     */
+    protected abstract void writeShortPositioned(int pos, short val);
 
     /**
      * Write int value to the given position.

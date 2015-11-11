@@ -28,11 +28,11 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute.Closure;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -60,8 +60,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** Underlying projection. */
         private readonly ClusterGroupImpl _prj;
 
-        /** Whether objects must be kept portable. */
-        private readonly ThreadLocal<bool> _keepPortable = new ThreadLocal<bool>(() => false);
+        /** Whether objects must be kept in binary form. */
+        private readonly ThreadLocal<bool> _keepBinary = new ThreadLocal<bool>(() => false);
 
         /// <summary>
         /// Constructor.
@@ -69,13 +69,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="prj">Projection.</param>
-        /// <param name="keepPortable">"keepPortable" flag.</param>
-        public ComputeImpl(IUnmanagedTarget target, PortableMarshaller marsh, ClusterGroupImpl prj, bool keepPortable)
+        /// <param name="keepBinary">Binary flag.</param>
+        public ComputeImpl(IUnmanagedTarget target, Marshaller marsh, ClusterGroupImpl prj, bool keepBinary)
             : base(target, marsh)
         {
             _prj = prj;
 
-            _keepPortable.Value = keepPortable;
+            _keepBinary.Value = keepBinary;
         }
 
         /// <summary>
@@ -111,13 +111,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /// <summary>
-        /// Sets keep-portable flag for the next executed Java task on this projection in the current
+        /// Sets keep-binary flag for the next executed Java task on this projection in the current
         /// thread so that task argument passed to Java and returned task results will not be
         /// deserialized.
         /// </summary>
-        public void WithKeepPortable()
+        public void WithKeepBinary()
         {
-            _keepPortable.Value = true;
+            _keepBinary.Value = true;
         }
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
             finally
             {
-                _keepPortable.Value = false;
+                _keepBinary.Value = false;
             }
         }
 
@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// If task for given name has not been deployed yet,
         /// then 'taskName' will be used as task class name to auto-deploy the task.
         /// </summary>
-        public IFuture<TReduceRes> ExecuteJavaTaskAsync<TReduceRes>(string taskName, object taskArg)
+        public Future<TReduceRes> ExecuteJavaTaskAsync<TReduceRes>(string taskName, object taskArg)
         {
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
 
@@ -158,21 +158,21 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                IFuture<TReduceRes> fut = null;
+                Future<TReduceRes> fut = null;
 
                 DoOutInOp(OpExecAsync, writer =>
                 {
                     WriteTask(writer, taskName, taskArg, nodes);
                 }, input =>
                 {
-                    fut = GetFuture<TReduceRes>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepPortable.Value);
+                    fut = GetFuture<TReduceRes>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepBinary.Value);
                 });
 
                 return fut;
             }
             finally
             {
-                _keepPortable.Value = false;
+                _keepBinary.Value = false;
             }
         }
 
@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="task">Task to execute.</param>
         /// <param name="taskArg">Optional task argument.</param>
         /// <returns>Task result.</returns>
-        public IFuture<TReduceRes> Execute<TArg, TJobRes, TReduceRes>(IComputeTask<TArg, TJobRes, TReduceRes> task, 
+        public Future<TReduceRes> Execute<TArg, TJobRes, TReduceRes>(IComputeTask<TArg, TJobRes, TReduceRes> task, 
             TArg taskArg)
         {
             IgniteArgumentCheck.NotNull(task, "task");
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="taskType">Task type.</param>
         /// <param name="taskArg">Optional task argument.</param>
         /// <returns>Task result.</returns>
-        public IFuture<TReduceRes> Execute<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg)
+        public Future<TReduceRes> Execute<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg)
         {
             IgniteArgumentCheck.NotNull(taskType, "taskType");
 
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="clo">Job to execute.</param>
         /// <returns>Job result for this execution.</returns>
-        public IFuture<TJobRes> Execute<TJobRes>(IComputeFunc<TJobRes> clo)
+        public Future<TJobRes> Execute<TJobRes>(IComputeFunc<TJobRes> clo)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
 
@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="func">Func to execute.</param>
         /// <returns>Job result for this execution.</returns>
-        public IFuture<TJobRes> Execute<TJobRes>(Func<TJobRes> func)
+        public Future<TJobRes> Execute<TJobRes>(Func<TJobRes> func)
         {
             IgniteArgumentCheck.NotNull(func, "func");
 
@@ -253,7 +253,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="clos">Collection of jobs to execute.</param>
         /// <returns>Collection of job results for this execution.</returns>
-        public IFuture<ICollection<TJobRes>> Execute<TJobRes>(IEnumerable<IComputeFunc<TJobRes>> clos)
+        public Future<ICollection<TJobRes>> Execute<TJobRes>(IEnumerable<IComputeFunc<TJobRes>> clos)
         {
             IgniteArgumentCheck.NotNull(clos, "clos");
 
@@ -272,7 +272,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="clos">Collection of jobs to execute.</param>
         /// <param name="rdc">Reducer to reduce all job results into one individual return value.</param>
         /// <returns>Collection of job results for this execution.</returns>
-        public IFuture<TReduceRes> Execute<TJobRes, TReduceRes>(IEnumerable<IComputeFunc<TJobRes>> clos, 
+        public Future<TReduceRes> Execute<TJobRes, TReduceRes>(IEnumerable<IComputeFunc<TJobRes>> clos, 
             IComputeReducer<TJobRes, TReduceRes> rdc)
         {
             IgniteArgumentCheck.NotNull(clos, "clos");
@@ -290,7 +290,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="clo">Job to broadcast to all projection nodes.</param>
         /// <returns>Collection of results for this execution.</returns>
-        public IFuture<ICollection<TJobRes>> Broadcast<TJobRes>(IComputeFunc<TJobRes> clo)
+        public Future<ICollection<TJobRes>> Broadcast<TJobRes>(IComputeFunc<TJobRes> clo)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
 
@@ -305,7 +305,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="clo">Job to broadcast to all projection nodes.</param>
         /// <param name="arg">Job closure argument.</param>
         /// <returns>Collection of results for this execution.</returns>
-        public IFuture<ICollection<TJobRes>> Broadcast<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, TArg arg)
+        public Future<ICollection<TJobRes>> Broadcast<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, TArg arg)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
 
@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Broadcasts given job to all nodes in grid projection.
         /// </summary>
         /// <param name="action">Job to broadcast to all projection nodes.</param>
-        public IFuture<object> Broadcast(IComputeAction action)
+        public Future<object> Broadcast(IComputeAction action)
         {
             IgniteArgumentCheck.NotNull(action, "action");
 
@@ -329,7 +329,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Executes provided job on a node in this grid projection.
         /// </summary>
         /// <param name="action">Job to execute.</param>
-        public IFuture<object> Run(IComputeAction action)
+        public Future<object> Run(IComputeAction action)
         {
             IgniteArgumentCheck.NotNull(action, "action");
 
@@ -341,7 +341,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Executes collection of jobs on Ignite nodes within this grid projection.
         /// </summary>
         /// <param name="actions">Jobs to execute.</param>
-        public IFuture<object> Run(IEnumerable<IComputeAction> actions)
+        public Future<object> Run(IEnumerable<IComputeAction> actions)
         {
             IgniteArgumentCheck.NotNull(actions, "actions");
 
@@ -369,7 +369,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="clo">Job to run.</param>
         /// <param name="arg">Job argument.</param>
         /// <returns>Job result for this execution.</returns>
-        public IFuture<TJobRes> Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, TArg arg)
+        public Future<TJobRes> Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, TArg arg)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
 
@@ -385,7 +385,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="clo">Job to run.</param>
         /// <param name="args">Job arguments.</param>
         /// <returns>Collection of job results.</returns>
-        public IFuture<ICollection<TJobRes>> Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, 
+        public Future<ICollection<TJobRes>> Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, 
             IEnumerable<TArg> args)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
@@ -413,7 +413,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="args">Job arguments.</param>
         /// <param name="rdc">Reducer to reduce all job results into one individual return value.</param>
         /// <returns>Reduced job result for this execution.</returns>
-        public IFuture<TReduceRes> Apply<TArg, TJobRes, TReduceRes>(IComputeFunc<TArg, TJobRes> clo, 
+        public Future<TReduceRes> Apply<TArg, TJobRes, TReduceRes>(IComputeFunc<TArg, TJobRes> clo, 
             IEnumerable<TArg> args, IComputeReducer<TJobRes, TReduceRes> rdc)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
@@ -440,7 +440,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="cacheName">Name of the cache to use for affinity co-location.</param>
         /// <param name="affinityKey">Affinity key.</param>
         /// <param name="action">Job to execute.</param>
-        public IFuture AffinityRun(string cacheName, object affinityKey, IComputeAction action)
+        public Future<object> AffinityRun(string cacheName, object affinityKey, IComputeAction action)
         {
             IgniteArgumentCheck.NotNull(action, "action");
 
@@ -458,7 +458,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="clo">Job to execute.</param>
         /// <returns>Job result for this execution.</returns>
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        public IFuture<TJobRes> AffinityCall<TJobRes>(string cacheName, object affinityKey, IComputeFunc<TJobRes> clo)
+        public Future<TJobRes> AffinityCall<TJobRes>(string cacheName, object affinityKey, IComputeFunc<TJobRes> clo)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
 
@@ -468,9 +468,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        protected override T Unmarshal<T>(IPortableStream stream)
+        protected override T Unmarshal<T>(IBinaryStream stream)
         {
-            bool keep = _keepPortable.Value;
+            bool keep = _keepBinary.Value;
 
             return Marshaller.Unmarshal<T>(stream, keep);
         }
@@ -483,7 +483,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="jobs">Jobs.</param>
         /// <param name="broadcast">Broadcast flag.</param>
         /// <returns>Future.</returns>
-        private IFuture<TReduceRes> ExecuteClosures0<TArg, TJobRes, TReduceRes>(
+        private Future<TReduceRes> ExecuteClosures0<TArg, TJobRes, TReduceRes>(
             IComputeTask<TArg, TJobRes, TReduceRes> task, IComputeJob job,
             ICollection<IComputeJob> jobs, bool broadcast)
         {
@@ -503,10 +503,10 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <returns>Future.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "User code can throw any exception")]
-        private IFuture<TReduceRes> ExecuteClosures0<TArg, TJobRes, TReduceRes>(
+        private Future<TReduceRes> ExecuteClosures0<TArg, TJobRes, TReduceRes>(
             IComputeTask<TArg, TJobRes, TReduceRes> task, IComputeJob job = null,
             IEnumerable<IComputeJob> jobs = null, int opId = OpUnicast, int jobsCount = 0,
-            Action<PortableWriterImpl> writeAction = null)
+            Action<BinaryWriter> writeAction = null)
         {
             Debug.Assert(job != null || jobs != null);
 
@@ -576,7 +576,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="job">The job.</param>
         /// <param name="writer">The writer.</param>
         /// <returns>Handle to the job holder</returns>
-        private long WriteJob(IComputeJob job, PortableWriterImpl writer)
+        private long WriteJob(IComputeJob job, BinaryWriter writer)
         {
             var jobHolder = new ComputeJobHolder((Ignite) _prj.Ignite, job);
 
@@ -595,11 +595,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="taskName">Task name.</param>
         /// <param name="taskArg">Task arg.</param>
         /// <param name="nodes">Nodes.</param>
-        private void WriteTask(PortableWriterImpl writer, string taskName, object taskArg,
+        private void WriteTask(BinaryWriter writer, string taskName, object taskArg,
             ICollection<IClusterNode> nodes)
         {
             writer.WriteString(taskName);
-            writer.WriteBoolean(_keepPortable.Value);
+            writer.WriteBoolean(_keepBinary.Value);
             writer.Write(taskArg);
 
             WriteNodeIds(writer, nodes);
@@ -610,7 +610,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="nodes">Nodes.</param>
-        private static void WriteNodeIds(PortableWriterImpl writer, ICollection<IClusterNode> nodes)
+        private static void WriteNodeIds(BinaryWriter writer, ICollection<IClusterNode> nodes)
         {
             if (nodes == null)
                 writer.WriteBoolean(false);
@@ -630,7 +630,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="writer">The writer.</param>
         /// <param name="cacheName">Name of the cache to use for affinity co-location.</param>
         /// <param name="affinityKey">Affinity key.</param>
-        private static void WriteAffinity(PortableWriterImpl writer, string cacheName, object affinityKey)
+        private static void WriteAffinity(BinaryWriter writer, string cacheName, object affinityKey)
         {
             writer.WriteString(cacheName);
 

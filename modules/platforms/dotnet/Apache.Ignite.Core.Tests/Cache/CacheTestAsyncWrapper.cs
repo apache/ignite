@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
@@ -39,35 +41,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <param name="cache">The cache to be wrapped.</param>
         public CacheTestAsyncWrapper(ICache<TK, TV> cache)
         {
-            Debug.Assert(cache.IsAsync, "GridCacheTestAsyncWrapper only works with async caches.");
+            Debug.Assert(cache != null);
 
             _cache = cache;
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> WithAsync()
-        {
-            return this;
-        }
-
-        /** <inheritDoc /> */
-        public bool IsAsync
-        {
-            get { return true; }
-        }
-
-        /** <inheritDoc /> */
-        public IFuture GetFuture()
-        {
-            Debug.Fail("GridCacheTestAsyncWrapper.Future() should not be called. It always returns null.");
-            return null;
-        }
-
-        /** <inheritDoc /> */
-        public IFuture<TResult> GetFuture<TResult>()
-        {
-            Debug.Fail("GridCacheTestAsyncWrapper.Future() should not be called. It always returns null.");
-            return null;
         }
 
         /** <inheritDoc /> */
@@ -83,16 +59,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-
         public bool IsEmpty()
         {
             return _cache.IsEmpty();
         }
 
         /** <inheritDoc /> */
-        public bool IsKeepPortable
+        public bool IsKeepBinary
         {
-            get { return _cache.IsKeepPortable; }
+            get { return _cache.IsKeepBinary; }
         }
 
         /** <inheritDoc /> */
@@ -108,44 +83,63 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public ICache<TK1, TV1> WithKeepPortable<TK1, TV1>()
+        public ICache<TK1, TV1> WithKeepBinary<TK1, TV1>()
         {
-            return _cache.WithKeepPortable<TK1, TV1>().WrapAsync();
+            return _cache.WithKeepBinary<TK1, TV1>().WrapAsync();
         }
         
         /** <inheritDoc /> */
         public void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            _cache.LoadCache(p, args);
-            WaitResult();
+            WaitResult(_cache.LoadCacheAsync(p, args));
+        }
+
+        /** <inheritDoc /> */
+        public Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
+        {
+            return _cache.LoadCacheAsync(p, args);
         }
 
         /** <inheritDoc /> */
         public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            _cache.LocalLoadCache(p, args);
-            WaitResult();
+            WaitResult(_cache.LocalLoadCacheAsync(p, args));
+        }
+
+        /** <inheritDoc /> */
+        public Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
+        {
+            return _cache.LocalLoadCacheAsync(p, args);
         }
 
         /** <inheritDoc /> */
         public bool ContainsKey(TK key)
         {
-            _cache.ContainsKey(key);
-            return GetResult<bool>();
+            return GetResult(_cache.ContainsKeyAsync(key));
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> ContainsKeyAsync(TK key)
+        {
+            return _cache.ContainsKeyAsync(key);
         }
 
         /** <inheritDoc /> */
         public bool ContainsKeys(IEnumerable<TK> keys)
         {
-            _cache.ContainsKeys(keys);
-            return GetResult<bool>();
+            return GetResult(_cache.ContainsKeysAsync(keys));
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> ContainsKeysAsync(IEnumerable<TK> keys)
+        {
+            return _cache.ContainsKeysAsync(keys);
         }
 
         /** <inheritDoc /> */
         public TV LocalPeek(TK key, params CachePeekMode[] modes)
         {
-            _cache.LocalPeek(key, modes);
-            return GetResult<TV>();
+            return _cache.LocalPeek(key, modes);
         }
 
         /** <inheritDoc /> */
@@ -164,8 +158,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public TV Get(TK key)
         {
-            _cache.Get(key);
-            return GetResult<TV>();
+            return GetResult(_cache.GetAsync(key));
+        }
+
+        /** <inheritDoc /> */
+        public Task<TV> GetAsync(TK key)
+        {
+            return _cache.GetAsync(key);
         }
 
         /** <inheritDoc /> */
@@ -175,73 +174,129 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public Task<CacheResult<TV>> TryGetAsync(TK key)
+        {
+            return _cache.TryGetAsync(key);
+        }
+
+        /** <inheritDoc /> */
         public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
         {
-            _cache.GetAll(keys);
-            return GetResult<IDictionary<TK, TV>>();
+            return GetResult(_cache.GetAllAsync(keys));
+        }
+
+        /** <inheritDoc /> */
+        public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys)
+        {
+            return _cache.GetAllAsync(keys);
         }
 
         /** <inheritDoc /> */
         public void Put(TK key, TV val)
         {
-            _cache.Put(key, val);
-            WaitResult();
+            WaitResult(_cache.PutAsync(key, val));
+        }
+
+        /** <inheritDoc /> */
+        public Task PutAsync(TK key, TV val)
+        {
+            return _cache.PutAsync(key, val);
         }
 
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndPut(TK key, TV val)
         {
-            _cache.GetAndPut(key, val);
-            return GetResult<CacheResult<TV>>();
+            return GetResult(_cache.GetAndPutAsync(key, val));
+        }
+
+        /** <inheritDoc /> */
+        public Task<CacheResult<TV>> GetAndPutAsync(TK key, TV val)
+        {
+            return _cache.GetAndPutAsync(key, val);
         }
 
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndReplace(TK key, TV val)
         {
-            _cache.GetAndReplace(key, val);
-            return GetResult<CacheResult<TV>>();
+            return GetResult(_cache.GetAndReplaceAsync(key, val));
+        }
+
+        /** <inheritDoc /> */
+        public Task<CacheResult<TV>> GetAndReplaceAsync(TK key, TV val)
+        {
+            return _cache.GetAndReplaceAsync(key, val);
         }
 
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndRemove(TK key)
         {
-            _cache.GetAndRemove(key);
-            return GetResult<CacheResult<TV>>();
+            return GetResult(_cache.GetAndRemoveAsync(key));
+        }
+
+        /** <inheritDoc /> */
+        public Task<CacheResult<TV>> GetAndRemoveAsync(TK key)
+        {
+            return _cache.GetAndRemoveAsync(key);
         }
 
         /** <inheritDoc /> */
         public bool PutIfAbsent(TK key, TV val)
         {
-            _cache.PutIfAbsent(key, val);
-            return GetResult<bool>();
+            return GetResult(_cache.PutIfAbsentAsync(key, val));
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> PutIfAbsentAsync(TK key, TV val)
+        {
+            return _cache.PutIfAbsentAsync(key, val);
         }
 
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndPutIfAbsent(TK key, TV val)
         {
-            _cache.GetAndPutIfAbsent(key, val);
-            return GetResult<CacheResult<TV>>();
+            return GetResult(_cache.GetAndPutIfAbsentAsync(key, val));
+        }
+
+        /** <inheritDoc /> */
+        public Task<CacheResult<TV>> GetAndPutIfAbsentAsync(TK key, TV val)
+        {
+            return _cache.GetAndPutIfAbsentAsync(key, val);
         }
 
         /** <inheritDoc /> */
         public bool Replace(TK key, TV val)
         {
-            _cache.Replace(key, val);
-            return GetResult<bool>();
+            return GetResult(_cache.ReplaceAsync(key, val));
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> ReplaceAsync(TK key, TV val)
+        {
+            return _cache.ReplaceAsync(key, val);
         }
 
         /** <inheritDoc /> */
         public bool Replace(TK key, TV oldVal, TV newVal)
         {
-            _cache.Replace(key, oldVal, newVal);
-            return GetResult<bool>();
+            return GetResult(_cache.ReplaceAsync(key, oldVal, newVal));
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> ReplaceAsync(TK key, TV oldVal, TV newVal)
+        {
+            return _cache.ReplaceAsync(key, oldVal, newVal);
         }
 
         /** <inheritDoc /> */
         public void PutAll(IDictionary<TK, TV> vals)
         {
-            _cache.PutAll(vals);
-            WaitResult();
+            WaitResult(_cache.PutAllAsync(vals));
+        }
+
+        /** <inheritDoc /> */
+        public Task PutAllAsync(IDictionary<TK, TV> vals)
+        {
+            return _cache.PutAllAsync(vals);
         }
 
         /** <inheritDoc /> */
@@ -253,20 +308,37 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public void Clear()
         {
-            _cache.Clear();
-            WaitResult();
+            WaitResult(_cache.ClearAsync());
+        }
+
+        /** <inheritDoc /> */
+        public Task ClearAsync()
+        {
+            return _cache.ClearAsync();
         }
 
         /** <inheritDoc /> */
         public void Clear(TK key)
         {
-            _cache.Clear(key);
+            WaitResult(_cache.ClearAsync(key));
+        }
+
+        /** <inheritDoc /> */
+        public Task ClearAsync(TK key)
+        {
+            return _cache.ClearAsync(key);
         }
 
         /** <inheritDoc /> */
         public void ClearAll(IEnumerable<TK> keys)
         {
-            _cache.ClearAll(keys);
+            WaitResult(_cache.ClearAllAsync(keys));
+        }
+
+        /** <inheritDoc /> */
+        public Task ClearAllAsync(IEnumerable<TK> keys)
+        {
+            return _cache.ClearAllAsync(keys);
         }
 
         /** <inheritDoc /> */
@@ -284,29 +356,49 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public bool Remove(TK key)
         {
-            _cache.Remove(key);
-            return GetResult<bool>();
+            return GetResult(_cache.RemoveAsync(key));
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> RemoveAsync(TK key)
+        {
+            return _cache.RemoveAsync(key);
         }
 
         /** <inheritDoc /> */
         public bool Remove(TK key, TV val)
         {
-            _cache.Remove(key, val);
-            return GetResult<bool>();
+            return GetResult(_cache.RemoveAsync(key, val));
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> RemoveAsync(TK key, TV val)
+        {
+            return _cache.RemoveAsync(key, val);
         }
 
         /** <inheritDoc /> */
         public void RemoveAll(IEnumerable<TK> keys)
         {
-            _cache.RemoveAll(keys);
-            WaitResult();
+            WaitResult(_cache.RemoveAllAsync(keys));
+        }
+
+        /** <inheritDoc /> */
+        public Task RemoveAllAsync(IEnumerable<TK> keys)
+        {
+            return _cache.RemoveAllAsync(keys);
         }
 
         /** <inheritDoc /> */
         public void RemoveAll()
         {
-            _cache.RemoveAll();
-            WaitResult();
+            WaitResult(_cache.RemoveAllAsync());
+        }
+
+        /** <inheritDoc /> */
+        public Task RemoveAllAsync()
+        {
+            return _cache.RemoveAllAsync();
         }
 
         /** <inheritDoc /> */
@@ -318,8 +410,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public int GetSize(params CachePeekMode[] modes)
         {
-            _cache.GetSize(modes);
-            return GetResult<int>();
+            return GetResult(_cache.GetSizeAsync(modes));
+        }
+
+        /** <inheritDoc /> */
+        public Task<int> GetSizeAsync(params CachePeekMode[] modes)
+        {
+            return _cache.GetSizeAsync(modes);
         }
 
         /** <inheritDoc /> */
@@ -361,18 +458,26 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public TRes Invoke<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            _cache.Invoke(key, processor, arg);
-            
-            return GetResult<TRes>();
+            return GetResult(_cache.InvokeAsync(key, processor, arg));
+        }
+
+        /** <inheritDoc /> */
+        public Task<TRes> InvokeAsync<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        {
+            return _cache.InvokeAsync(key, processor, arg);
         }
 
         /** <inheritDoc /> */
         public IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, 
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            _cache.InvokeAll(keys, processor, arg);
+            return GetResult(_cache.InvokeAllAsync(keys, processor, arg));
+        }
 
-            return GetResult<IDictionary<TK, ICacheEntryProcessorResult<TRes>>>();
+        /** <inheritDoc /> */
+        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        {
+            return _cache.InvokeAllAsync(keys, processor, arg);
         }
 
         /** <inheritDoc /> */
@@ -400,7 +505,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public IFuture Rebalance()
+        public Task Rebalance()
         {
             return _cache.Rebalance();
         }
@@ -424,19 +529,34 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// Waits for the async result.
+        /// Waits the result of a task, unwraps exceptions.
         /// </summary>
-        private void WaitResult()
+        /// <param name="task">The task.</param>
+        private static void WaitResult(Task task)
         {
-            GetResult<object>();
+            try
+            {
+                task.Wait();
+            }
+            catch (AggregateException ex)
+            {
+                throw ex.InnerException;
+            }
         }
 
         /// <summary>
-        /// Gets the async result.
+        /// Gets the result of a task, unwraps exceptions.
         /// </summary>
-        private T GetResult<T>()
+        private static T GetResult<T>(Task<T> task)
         {
-            return _cache.GetFuture<T>().Get();
+            try
+            {
+                return task.Result;
+            }
+            catch (Exception ex)
+            {
+                throw ex.InnerException;
+            }
         }
     }
 
