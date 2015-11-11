@@ -21,6 +21,17 @@
 
 #include "connection.h"
 
+// TODO: implement appropriate protocol with de-/serialisation.
+namespace
+{
+#pragma pack(push, 1)
+    struct OdbcProtocolHeader
+    {
+        int32_t len;
+    };
+#pragma pack(pop)
+}
+
 namespace ignite
 {
     namespace odbc
@@ -65,6 +76,15 @@ namespace ignite
         bool Connection::Send(const uint8_t* data, size_t len)
         {
             if (!connected)
+                return false;
+
+            OdbcProtocolHeader hdr;
+
+            hdr.len = static_cast<int32_t>(len);
+
+            bool success = socket.Send(reinterpret_cast<uint8_t*>(&hdr), sizeof(hdr)) == sizeof(hdr);
+
+            if (!success)
                 return false;
 
             return socket.Send(data, len) == len;

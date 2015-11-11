@@ -97,6 +97,10 @@ public class CacheQueryExample {
                 // Populate cache.
                 initialize();
 
+                synchronized (CacheQueryExample.class) {
+                    CacheQueryExample.class.wait();
+                }
+
                 // Example for SCAN-based query based on a predicate.
                 scanQuery();
 
