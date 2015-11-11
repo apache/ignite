@@ -1469,21 +1469,11 @@ public class GridNioServer<T> {
         private void checkIdle(Iterable<SelectionKey> keys) {
             long now = U.currentTimeMillis();
 
-            U.debug(">>>>>>>>>>>>>>>>>");
-
-            if (!keys.iterator().hasNext())
-                U.debug("Thread handles no connections.");
-
             for (SelectionKey key : keys) {
                 GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
                 try {
                     long writeTimeout0 = writeTimeout;
-
-                    if (key.isValid()) {
-                        U.debug("Thread handles connection [locNode=" + ses.localAddress() +
-                            ", rmtAddress=" + ses.remoteAddress() + ']');
-                    }
 
                     // If we are writing and timeout passed.
                     if (key.isValid() && (key.interestOps() & SelectionKey.OP_WRITE) != 0 &&
@@ -1510,8 +1500,6 @@ public class GridNioServer<T> {
                     close(ses,  e);
                 }
             }
-
-            U.debug(">>>>>>>>>>>>>>>>>");
         }
 
         /**
