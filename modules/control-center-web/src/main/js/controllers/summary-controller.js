@@ -232,8 +232,6 @@ consoleModule.controller('summaryController', [
 
         var blob = zip.generate({type:'blob', mimeType: 'application/octet-stream'});
 
-        console.log(blob);
-
         // Download archive.
         saveAs(blob, cluster.name + '-configuration.zip');
     };

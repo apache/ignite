@@ -537,7 +537,7 @@ consoleModule.controller('metadataController', [
                                 var fields = Object.keys(index);
 
                                 indexes.push(
-                                    {name: indexName, type: 'SORTED', fields: _.map(fields, function (fieldName) {
+                                    {name: indexName, indexType: 'SORTED', fields: _.map(fields, function (fieldName) {
                                         return {
                                             name: toJavaName(fieldName),
                                             direction: !index[fieldName]
