@@ -1,6 +1,7 @@
 
 LIBRARY   odbc-driver
 EXPORTS
+	ConfigDSN
 	SQLAllocConnect
 	SQLAllocEnv
 	SQLAllocStmt

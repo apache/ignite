@@ -37,6 +37,8 @@ namespace ignite
              */
             ~Statement();
 
+            bool BindResultColumn(uint16_t columnId);
+
         private:
         };
     }

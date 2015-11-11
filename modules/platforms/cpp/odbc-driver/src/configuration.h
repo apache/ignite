@@ -38,17 +38,6 @@ namespace ignite
             Configuration();
 
             /**
-             * Connection string constructor.
-             * Constructs configuration taking values from the specified string.
-             * Equivalent to default construction with following call to 
-             * FillFromConnectString() method.
-             *
-             * @param str Pointer to string data.
-             * @param len String length.
-             */
-            Configuration(const char* str, size_t len);
-
-            /**
              * Destructor.
              */
             ~Configuration();
@@ -69,6 +58,14 @@ namespace ignite
             std::string ToConnectString() const;
 
             /**
+             * Fill configuration data using config attributes string.
+             *
+             * @param str Pointer to list of zero-terminated strings.
+             *            Terminated by two zero bytes.
+             */
+            void FillFromConfigAttributes(const char* attributes);
+
+            /**
              * Get server port.
              *
              * @return Server port.
@@ -76,6 +73,26 @@ namespace ignite
             uint16_t GetServetPort() const
             {
                 return port;
+            }
+
+            /**
+             * Get DSN.
+             *
+             * @return Data Source Name.
+             */
+            const std::string& GetDsn() const
+            {
+                return dsn;
+            }
+
+            /**
+             * Get Driver.
+             *
+             * @return Driver name.
+             */
+            const std::string& GetDriver() const
+            {
+                return driver;
             }
 
             /**
@@ -99,7 +116,13 @@ namespace ignite
              * @param len String length.
              * @param params Parsing result.
              */
-            void ParseConnectString(const char* str, size_t len, ArgumentMap& args) const;
+            void ParseAttributeList(const char* str, size_t len, char delimeter, ArgumentMap& args) const;
+
+            /** Data Source Name. */
+            std::string dsn;
+
+            /** Driver name. */
+            std::string driver;
 
             /** Server hostname. */
             std::string host;

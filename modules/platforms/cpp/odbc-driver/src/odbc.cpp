@@ -46,6 +46,59 @@ void logInit(const char* path)
 }
 
 
+BOOL INSTAPI ConfigDSN(
+    HWND    hwndParent,
+    WORD    fRequest,
+    LPCSTR  lpszDriver,
+    LPCSTR  lpszAttributes)
+{
+    LOG_MSG("ConfigDSN called\n");
+
+    ignite::odbc::Configuration config;
+
+    config.FillFromConfigAttributes(lpszAttributes);
+
+    if (!SQLValidDSN(config.GetDsn().c_str()))
+        return FALSE;
+
+    LOG_MSG("Driver: %s\n", lpszDriver);
+    LOG_MSG("Attributes: %s\n", lpszAttributes);
+
+
+    LOG_MSG("DSN: %s\n", config.GetDsn().c_str());
+
+    switch (fRequest)
+    {
+        case ODBC_ADD_DSN:
+        {
+            LOG_MSG("ODBC_ADD_DSN\n");
+
+            return SQLWriteDSNToIni(config.GetDsn().c_str(), lpszDriver);
+        }
+
+        case ODBC_CONFIG_DSN:
+        {
+            LOG_MSG("ODBC_CONFIG_DSN\n");
+            break;
+        }
+
+        case ODBC_REMOVE_DSN:
+        {
+            LOG_MSG("ODBC_REMOVE_DSN\n");
+
+            return SQLRemoveDSNFromIni(config.GetDsn().c_str());
+        }
+
+        default:
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+
 SQLRETURN SQL_API SQLAllocHandle(SQLSMALLINT type, SQLHANDLE parent, SQLHANDLE* result)
 {
     LOG_MSG("SQLAllocHandle called\n");
@@ -297,16 +350,24 @@ SQLRETURN SQL_API SQLExecDirect(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryL
     return SQL_SUCCESS;
 }
 
-///// SQLBindCol /////
-
-SQLRETURN SQL_API SQLBindCol(SQLHSTMT arg0,
-    UWORD arg1,
-    SWORD arg2,
-    PTR arg3,
-    SDWORD arg4,
-    UNALIGNED SDWORD * arg5)
+SQLRETURN SQL_API SQLBindCol(SQLHSTMT               stmt,
+                             SQLUSMALLINT           colNum,
+                             SQLSMALLINT            targetType,
+                             SQLPOINTER             targetValue,
+                             SQLINTEGER             targetValueMax,
+                             UNALIGNED SQLINTEGER*  lengthOrIndicator)
 {
+    using ignite::odbc::Statement;
+
     LOG_MSG("SQLBindCol called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+//    statement->BindResultColumn(colNum, targetType, targetValue, targetValueMax, lengthOrIndicator);
+
     return SQL_SUCCESS;
 }
 
