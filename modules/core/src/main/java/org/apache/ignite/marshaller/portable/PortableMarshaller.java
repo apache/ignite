@@ -30,7 +30,7 @@ import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryTypeIdMapper;
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinarySerializer;
 import org.jetbrains.annotations.Nullable;
 
@@ -79,7 +79,7 @@ public class PortableMarshaller extends AbstractMarshaller {
     private Collection<String> clsNames;
 
     /** ID mapper. */
-    private BinaryTypeIdMapper idMapper;
+    private BinaryIdMapper idMapper;
 
     /** Serializer. */
     private BinarySerializer serializer;
@@ -119,7 +119,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @return ID mapper.
      */
-    public BinaryTypeIdMapper getIdMapper() {
+    public BinaryIdMapper getIdMapper() {
         return idMapper;
     }
 
@@ -128,7 +128,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @param idMapper ID mapper.
      */
-    public void setIdMapper(BinaryTypeIdMapper idMapper) {
+    public void setIdMapper(BinaryIdMapper idMapper) {
         this.idMapper = idMapper;
     }
 

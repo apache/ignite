@@ -44,7 +44,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryTypeIdMapper;
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.binary.BinarySerializer;
 
@@ -65,7 +65,7 @@ public class PortableClassDescriptor {
     private final BinarySerializer serializer;
 
     /** ID mapper. */
-    private final BinaryTypeIdMapper idMapper;
+    private final BinaryIdMapper idMapper;
 
     /** */
     private final Mode mode;
@@ -126,7 +126,7 @@ public class PortableClassDescriptor {
         boolean userType,
         int typeId,
         String typeName,
-        @Nullable BinaryTypeIdMapper idMapper,
+        @Nullable BinaryIdMapper idMapper,
         @Nullable BinarySerializer serializer,
         boolean metaDataEnabled,
         boolean keepDeserialized,
@@ -323,7 +323,7 @@ public class PortableClassDescriptor {
      *
      * @return ID mapper.
      */
-    public BinaryTypeIdMapper idMapper() {
+    public BinaryIdMapper idMapper() {
         return idMapper;
     }
 
