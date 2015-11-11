@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             if (_filter != null && !qry.IsLocal)
             {
                 writer.WriteObject(_filter);
-                writer.WriteBoolean(_keepPortable);
+                writer.WriteBoolean(_keepBinary);
             }
             else
                 writer.WriteObject<object>(null);
