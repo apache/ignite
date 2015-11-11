@@ -21,17 +21,17 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Portable wrapper for the <see cref="ICacheEntryProcessor{TK,TV,TA,TR}"/> and it's argument.
+    /// Binary wrapper for the <see cref="ICacheEntryProcessor{TK,TV,TA,TR}"/> and it's argument.
     /// Marshals and executes wrapped processor with a non-generic interface.
     /// </summary>
-    internal class CacheEntryProcessorHolder : IPortableWriteAware
+    internal class CacheEntryProcessorHolder : IBinaryWriteAware
     {
         // generic processor
         private readonly object _proc;
@@ -101,24 +101,24 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl) writer.GetRawWriter();
+            var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _proc));
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _arg));
+            writer0.WithDetach(w => w.WriteObject(_proc));
+            writer0.WithDetach(w => w.WriteObject(_arg));
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryProcessorHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public CacheEntryProcessorHolder(IPortableReader reader)
+        public CacheEntryProcessorHolder(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl) reader.GetRawReader();
+            var reader0 = (BinaryReader) reader.GetRawReader();
 
-            _proc = PortableUtils.ReadPortableOrSerializable<object>(reader0);
-            _arg = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _proc = reader0.ReadObject<object>();
+            _arg = reader0.ReadObject<object>();
 
             _processFunc = GetProcessFunc(_proc);
 

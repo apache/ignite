@@ -40,6 +40,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -995,6 +996,192 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertNotNull(clientCache2.get(1));
         assertNotNull(clientCache2.get(2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnectClusterRestartMultinode() throws Exception {
+        clientMode = true;
+
+        final int CLIENTS = 5;
+
+        CountDownLatch disconnectLatch = new CountDownLatch(CLIENTS);
+        CountDownLatch reconnectLatch = new CountDownLatch(CLIENTS);
+
+        List<IgniteCache> caches = new ArrayList<>();
+
+        for (int i = 0; i < CLIENTS; i++) {
+            Ignite client = startGrid(SRV_CNT + i);
+
+            addListener(client, disconnectLatch, reconnectLatch);
+
+            IgniteCache cache = client.getOrCreateCache(new CacheConfiguration<>());
+
+            assertNotNull(cache);
+
+            caches.add(cache);
+        }
+
+        for (int i = 0; i < SRV_CNT; i++)
+            stopGrid(i);
+
+        assertTrue(disconnectLatch.await(30_000, MILLISECONDS));
+
+        log.info("Restart servers.");
+
+        clientMode = false;
+
+        startGridsMultiThreaded(0, SRV_CNT);
+
+        assertTrue(reconnectLatch.await(30_000, MILLISECONDS));
+
+        for (final IgniteCache clientCache : caches) {
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return clientCache.get(1);
+                }
+            }, IllegalStateException.class, null);
+        }
+
+        for (int i = 0; i < SRV_CNT + CLIENTS; i++) {
+            Ignite ignite = grid(i);
+
+            ClusterGroup grp = ignite.cluster().forCacheNodes(null);
+
+            assertEquals(0, grp.nodes().size());
+
+            grp = ignite.cluster().forClientNodes(null);
+
+            assertEquals(0, grp.nodes().size());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnectMultinode() throws Exception {
+        grid(0).createCache(new CacheConfiguration<>());
+
+        clientMode = true;
+
+        final int CLIENTS = 2;
+
+        List<Ignite> clients = new ArrayList<>();
+
+        for (int i = 0; i < CLIENTS; i++) {
+            Ignite client = startGrid(SRV_CNT + i);
+
+            assertNotNull(client.getOrCreateCache(new CacheConfiguration<>()));
+
+            clients.add(client);
+        }
+
+        int nodes = SRV_CNT + CLIENTS;
+        int srvNodes = SRV_CNT;
+
+        for (int iter = 0; iter < 3; iter++) {
+            log.info("Iteration: " + iter);
+
+            reconnectClientNodes(clients, grid(0), null);
+
+            for (Ignite client : clients) {
+                IgniteCache<Object, Object> cache = client.cache(null);
+
+                assertNotNull(cache);
+
+                cache.put(client.name(), 1);
+
+                assertEquals(1, cache.get(client.name()));
+
+                ClusterGroup grp = client.cluster().forCacheNodes(null);
+
+                assertEquals(CLIENTS + srvNodes, grp.nodes().size());
+
+                grp = client.cluster().forClientNodes(null);
+
+                assertEquals(CLIENTS, grp.nodes().size());
+            }
+
+            for (int i = 0; i < nodes; i++) {
+                Ignite ignite = grid(i);
+
+                ClusterGroup grp = ignite.cluster().forCacheNodes(null);
+
+                assertEquals(CLIENTS + srvNodes, grp.nodes().size());
+
+                grp = ignite.cluster().forClientNodes(null);
+
+                assertEquals(CLIENTS, grp.nodes().size());
+            }
+
+            clientMode = false;
+
+            startGrid(nodes++);
+
+            srvNodes++;
+
+            clientMode = true;
+
+            startGrid(nodes++);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnectDestroyCache() throws Exception {
+        clientMode = true;
+
+        Ignite client = startGrid(SRV_CNT);
+
+        CacheConfiguration<Integer, Integer> ccfg1 = new CacheConfiguration<>();
+        ccfg1.setName("cache1");
+
+        CacheConfiguration<Integer, Integer> ccfg2 = new CacheConfiguration<>();
+        ccfg2.setName("cache2");
+
+        final Ignite srv = grid(0);
+
+        srv.createCache(ccfg1);
+        srv.createCache(ccfg2).put(1, 1);
+
+        IgniteCache<Integer, Integer> cache = client.cache("cache2");
+
+        reconnectClientNode(client, srv, new Runnable() {
+            @Override public void run() {
+                srv.destroyCache("cache1");
+            }
+        });
+
+        cache.put(2, 2);
+
+        assertEquals(1, (Object)cache.get(1));
+        assertEquals(2, (Object)cache.get(2));
+    }
+
+    /**
+     * @param client Client.
+     * @param disconnectLatch Disconnect event latch.
+     * @param reconnectLatch Reconnect event latch.
+     */
+    private void addListener(Ignite client, final CountDownLatch disconnectLatch, final CountDownLatch reconnectLatch) {
+        client.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                if (evt.type() == EVT_CLIENT_NODE_DISCONNECTED) {
+                    info("Disconnected: " + evt);
+
+                    disconnectLatch.countDown();
+                }
+                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                    info("Reconnected: " + evt);
+
+                    reconnectLatch.countDown();
+                }
+
+                return true;
+            }
+        }, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
     }
 
     /**

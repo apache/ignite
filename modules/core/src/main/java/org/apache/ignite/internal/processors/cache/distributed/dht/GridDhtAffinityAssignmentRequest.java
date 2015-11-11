@@ -52,8 +52,8 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /** {@inheritDoc} */

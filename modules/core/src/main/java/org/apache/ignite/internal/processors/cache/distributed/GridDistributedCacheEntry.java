@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -742,8 +743,12 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(IgniteInternalTx tx, long timeout)
-        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
+    @Override public boolean tmLock(IgniteInternalTx tx,
+        long timeout,
+        @Nullable GridCacheVersion serOrder,
+        GridCacheVersion serReadVer,
+        boolean keepBinary
+    ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local())
             // Null is returned if timeout is negative and there is other lock owner.
             return addLocal(
@@ -751,8 +756,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 tx.xidVersion(),
                 tx.topologyVersion(),
                 timeout,
-                false,
-                true,
+                /*reenter*/false,
+                /*tx*/true,
                 tx.implicitSingle()) != null;
 
         try {
@@ -762,7 +767,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 tx.threadId(),
                 tx.xidVersion(),
                 tx.timeout(),
-                true,
+                /*tx*/true,
                 tx.implicitSingle(),
                 tx.ownedVersion(txKey())
             );
@@ -817,7 +822,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                 // Event notification.
                 cctx.events().addEvent(partition(), key, prev.nodeId(), prev, EVT_CACHE_OBJECT_UNLOCKED, val, hasVal,
-                    val, hasVal, null, null, null);
+                    val, hasVal, null, null, null, true);
             }
 
             if (owner != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_LOCKED)) {
@@ -825,7 +830,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                 // Event notification.
                 cctx.events().addEvent(partition(), key, owner.nodeId(), owner, EVT_CACHE_OBJECT_LOCKED, val, hasVal,
-                    val, hasVal, null, null, null);
+                    val, hasVal, null, null, null, true);
             }
         }
     }
@@ -849,7 +854,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                     GridCacheContext cctx0 = cand.parent().context();
 
                     GridDistributedCacheEntry e =
-                        (GridDistributedCacheEntry)cctx0.cache().peekEx(cand.key());
+                        (GridDistributedCacheEntry)cctx0.cache().peekEx(cand.parent().key());
 
                     if (e != null)
                         e.recheck();

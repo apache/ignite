@@ -61,6 +61,9 @@ public enum GridSqlFunctionType {
     /** */
     SYSTEM_RANGE,
 
+    /** TABLE and TABLE_DISTINCT */
+    TABLE,
+
     /** Constant for all other functions. */
     UNKNOWN_FUNCTION;
 

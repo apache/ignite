@@ -77,6 +77,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
 
@@ -246,10 +248,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected static <K, V> boolean nearEnabled(final IgniteCache<K,V> cache) {
         CacheConfiguration cfg = GridAbstractTest.executeOnLocalOrRemoteJvm(cache,
             new TestCacheCallable<K, V, CacheConfiguration>() {
-            @Override public CacheConfiguration call(Ignite ignite, IgniteCache<K, V> cache) throws Exception {
-                return ((IgniteKernal)ignite).<K, V>internalCache(cache.getName()).context().config();
-            }
-        });
+                private static final long serialVersionUID = 0L;
+
+                @Override public CacheConfiguration call(Ignite ignite, IgniteCache<K, V> cache) throws Exception {
+                    return ((IgniteKernal)ignite).<K, V>internalCache(cache.getName()).context().config();
+                }
+            });
 
         return isNearEnabled(cfg);
     }
@@ -285,10 +289,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected static <K> void loadAll(Cache<K, ?> cache, final Set<K> keys, final boolean replaceExistingValues) throws Exception {
+    protected static <K> void loadAll(Cache<K, ?> cache, final Set<K> keys, final boolean replaceExistingValues)
+        throws Exception {
         IgniteCache<K, Object> cacheCp = (IgniteCache<K, Object>)cache;
 
         GridAbstractTest.executeOnLocalOrRemoteJvm(cacheCp, new TestCacheRunnable<K, Object>() {
+            private static final long serialVersionUID = -3030833765012500545L;
+
             @Override public void run(Ignite ignite, IgniteCache<K, Object> cache) throws Exception {
                 final AtomicReference<Exception> ex = new AtomicReference<>();
 
@@ -1021,8 +1028,23 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws Exception If failed.
      */
     protected <T> T doInTransaction(Ignite ignite, Callable<T> clo) throws Exception {
+        return doInTransaction(ignite, PESSIMISTIC, REPEATABLE_READ, clo);
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @param clo Closure.
+     * @return Result of closure execution.
+     * @throws Exception If failed.
+     */
+    protected <T> T doInTransaction(Ignite ignite,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        Callable<T> clo) throws Exception {
         while (true) {
-            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
                 T res = clo.call();
 
                 tx.commit();

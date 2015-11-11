@@ -85,6 +85,14 @@ public interface PortableOutputStream extends PortableStream, AutoCloseable {
     public void writeInt(int val);
 
     /**
+     * Write short value at the given position.
+     *
+     * @param pos Position.
+     * @param val Value.
+     */
+    public void writeShort(int pos, short val);
+
+    /**
      * Write int value to the given position.
      *
      * @param pos Position.

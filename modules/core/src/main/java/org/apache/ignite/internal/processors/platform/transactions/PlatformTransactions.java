@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform.transactions;
 
-import java.util.Date;
+import java.sql.Timestamp;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
@@ -231,7 +231,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_CACHE_CONFIG_PARAMETERS:
                 TransactionConfiguration txCfg = platformCtx.kernalContext().config().getTransactionConfiguration();
@@ -245,8 +245,8 @@ public class PlatformTransactions extends PlatformAbstractTarget {
             case OP_METRICS:
                 TransactionMetrics metrics = txs.metrics();
 
-                writer.writeDate(new Date(metrics.commitTime()));
-                writer.writeDate(new Date(metrics.rollbackTime()));
+                writer.writeTimestamp(new Timestamp(metrics.commitTime()));
+                writer.writeTimestamp(new Timestamp(metrics.rollbackTime()));
                 writer.writeInt(metrics.txCommits());
                 writer.writeInt(metrics.txRollbacks());
 

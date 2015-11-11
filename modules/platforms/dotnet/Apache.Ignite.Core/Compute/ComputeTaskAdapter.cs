@@ -23,9 +23,9 @@ namespace Apache.Ignite.Core.Compute
     using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// Convenience adapter for <see cref="IComputeTask{A,T,R}"/> interface
+    /// Convenience adapter for <see cref="IComputeTask{TArg,TJobRes,TTaskRes}"/> interface
     /// </summary>
-    public abstract class ComputeTaskAdapter<TA, T, TR> : IComputeTask<TA, T, TR>
+    public abstract class ComputeTaskAdapter<TArg, TJobRes, TTaskRes> : IComputeTask<TArg, TJobRes, TTaskRes>
     {
         /// <summary>
         /// Default implementation which will wait for all jobs to complete before
@@ -42,9 +42,10 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="res">Received remote Ignite executable result.</param>
         /// <param name="rcvd">All previously received results.</param>
         /// <returns>Result policy that dictates how to process further upcoming job results.</returns>
-        public virtual ComputeJobResultPolicy Result(IComputeJobResult<T> res, IList<IComputeJobResult<T>> rcvd)
+        public virtual ComputeJobResultPolicy OnResult(IComputeJobResult<TJobRes> res,
+            IList<IComputeJobResult<TJobRes>> rcvd)
         {
-            Exception err = res.Exception();
+            Exception err = res.Exception;
 
             if (err != null)
             {
@@ -52,8 +53,9 @@ namespace Apache.Ignite.Core.Compute
                     err is ComputeJobFailoverException)
                     return ComputeJobResultPolicy.Failover;
                 
-                throw new IgniteException("Remote job threw user exception (override or implement IComputeTask.result(..) " +
-                                        "method if you would like to have automatic failover for this exception).", err);
+                throw new IgniteException("Remote job threw user exception (override or implement " +
+                    "IComputeTask.result(..) method if you would like to have automatic failover for this exception).",
+                    err);
             }
 
             return ComputeJobResultPolicy.Wait;
@@ -73,11 +75,11 @@ namespace Apache.Ignite.Core.Compute
         /// Map of Ignite jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.
         /// </returns>
-        public abstract IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, TA arg);
+        public abstract IDictionary<IComputeJob<TJobRes>, IClusterNode> Map(IList<IClusterNode> subgrid, TArg arg);
 
         /// <summary>
         /// Reduces (or aggregates) results received so far into one compound result to be returned to
-        /// caller via future.
+        /// caller via task.
         /// <para />
         /// Note, that if some jobs did not succeed and could not be failed over then the list of
         /// results passed into this method will include the failed results. Otherwise, failed
@@ -88,6 +90,6 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>
         /// Task result constructed from results of remote executions.
         /// </returns>
-        public abstract TR Reduce(IList<IComputeJobResult<T>> results);
+        public abstract TTaskRes Reduce(IList<IComputeJobResult<TJobRes>> results);
     }
 }

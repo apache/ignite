@@ -333,38 +333,6 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Compound preloaders start future.
-     */
-    public IgniteInternalFuture<Object> preloadersStartFuture(AffinityTopologyVersion topVer) {
-        if (preloadersStartFut == null) {
-            GridCompoundFuture<Object, Object> compound = null;
-
-            for (GridCacheContext<?, ?> cacheCtx : cacheContexts()) {
-                if (cacheCtx.startTopologyVersion() != null && cacheCtx.startTopologyVersion().compareTo(topVer) <= 0) {
-                    IgniteInternalFuture<Object> startFut = cacheCtx.preloader().startFuture();
-
-                    if (!startFut.isDone()) {
-                        if (compound == null)
-                            compound = new GridCompoundFuture<>();
-
-                        compound.add(startFut);
-                    }
-                }
-            }
-
-            if (compound != null) {
-                compound.markInitialized();
-
-                return preloadersStartFut = compound;
-            }
-            else
-                return preloadersStartFut = new GridFinishedFuture<>();
-        }
-        else
-            return preloadersStartFut;
-    }
-
-    /**
      * @return Transactional metrics adapter.
      */
     public TransactionMetricsAdapter txMetrics() {
@@ -589,6 +557,9 @@ public class GridCacheSharedContext<K, V> {
 
             if (store.isWriteBehind() != activeStore.isWriteBehind())
                 return "caches with different write-behind setting can't be enlisted in one transaction";
+
+            if (activeCacheCtx.deploymentEnabled() != cacheCtx.deploymentEnabled())
+                return "caches with enabled and disabled deployment modes can't be enlisted in one transaction";
 
             // If local and write-behind validations passed, this must be true.
             assert store.isWriteToStoreFromDht() == activeStore.isWriteToStoreFromDht();

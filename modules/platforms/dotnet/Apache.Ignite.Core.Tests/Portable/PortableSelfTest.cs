@@ -26,10 +26,10 @@ namespace Apache.Ignite.Core.Tests.Portable
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using NUnit.Framework;
 
     /// <summary>
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     [TestFixture]
     public class PortableSelfTest { 
         /** */
-        private PortableMarshaller _marsh;
+        private Marshaller _marsh;
 
         /// <summary>
         /// 
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [TestFixtureSetUp]
         public void BeforeTest()
         {
-            _marsh = new PortableMarshaller(null);
+            _marsh = new Marshaller(null);
         }
         
         /**
@@ -497,31 +497,21 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(vals, newVals);
         }
-
-        /**
-         * <summary>Check write of date.</summary>
-         */
-        [Test]
-        public void TestWriteDate() {
-            DateTime time = DateTime.Now.ToUniversalTime();
-
-            Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(time)), time);
-        }
-
+        
         /// <summary>
         /// Test object with dates.
         /// </summary>
         [Test]
         public void TestDateObject()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs =
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(DateTimeType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(DateTimeType)));
 
-            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
+            BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             DateTime now = DateTime.Now;
 
@@ -529,19 +519,31 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             DateTimeType otherObj = marsh.Unmarshal<DateTimeType>(marsh.Marshal(obj));
 
-            Assert.AreEqual(obj.Loc, otherObj.Loc);
             Assert.AreEqual(obj.Utc, otherObj.Utc);
-            Assert.AreEqual(obj.LocNull, otherObj.LocNull);
             Assert.AreEqual(obj.UtcNull, otherObj.UtcNull);            
-            Assert.AreEqual(obj.LocArr, otherObj.LocArr);
             Assert.AreEqual(obj.UtcArr, otherObj.UtcArr);
 
-            Assert.AreEqual(obj.LocRaw, otherObj.LocRaw);
             Assert.AreEqual(obj.UtcRaw, otherObj.UtcRaw);
-            Assert.AreEqual(obj.LocNullRaw, otherObj.LocNullRaw);
             Assert.AreEqual(obj.UtcNullRaw, otherObj.UtcNullRaw);
-            Assert.AreEqual(obj.LocArrRaw, otherObj.LocArrRaw);
             Assert.AreEqual(obj.UtcArrRaw, otherObj.UtcArrRaw);
+        }
+
+        /// <summary>
+        /// Tests the DateTime marshalling.
+        /// </summary>
+        [Test]
+        public void TestDateTime()
+        {
+            var time = DateTime.Now;
+            Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(time)), time);
+
+            var timeUtc = DateTime.UtcNow;
+            Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(timeUtc)), timeUtc);
+
+            // Check exception with non-UTC date
+            var stream = new BinaryHeapStream(128);
+            var writer = _marsh.StartMarshal(stream);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteTimestamp(DateTime.Now));
         }
 
         /**
@@ -550,22 +552,55 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestGenericCollections()
         {
-            ICollection<string> list = new List<string>();
+            var list = new List<string> {"1"};
 
-            list.Add("1");
+            var data = _marsh.Marshal(list);
 
-            byte[] data = _marsh.Marshal(list);
+            var newObjList = _marsh.Unmarshal<IList<string>>(data);
 
-            ICollection<object> newObjList = _marsh.Unmarshal<List<object>>(data);
+            CollectionAssert.AreEquivalent(list, newObjList);
+        }
 
-            Assert.NotNull(newObjList);
+        /// <summary>
+        /// Tests marshal aware type with generic collections.
+        /// </summary>
+        [Test]
+        public void TestGenericCollectionsType()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new List<BinaryTypeConfiguration>
+                {
+                    new BinaryTypeConfiguration(typeof (PrimitiveFieldType)),
+                    new BinaryTypeConfiguration(typeof (GenericCollectionsType<PrimitiveFieldType, SerializableObject>))
+                }
+            });
 
-            ICollection<string> newList = new List<string>();
+            var obj = new GenericCollectionsType<PrimitiveFieldType, SerializableObject>
+            {
+                Keys = new[] {new PrimitiveFieldType(), new PrimitiveFieldType()},
+                Values =
+                    new List<SerializableObject>
+                    {
+                        new SerializableObject {Foo = 1},
+                        new SerializableObject {Foo = 5}
+                    },
+                Pairs = new Dictionary<PrimitiveFieldType, SerializableObject>
+                {
+                    {new PrimitiveFieldType(), new SerializableObject {Foo = 10}},
+                    {new PrimitiveFieldType {PByte = 10}, new SerializableObject {Foo = 20}}
+                },
+                Objects = new object[] {1, 2, "3", 4.4}
+            };
+            
+            var data = marsh.Marshal(obj);
 
-            foreach (object obj in newObjList)
-                newList.Add((string)obj);
+            var result = marsh.Unmarshal<GenericCollectionsType<PrimitiveFieldType, SerializableObject>>(data);
 
-            CollectionAssert.AreEquivalent(list, newList);
+            CollectionAssert.AreEquivalent(obj.Keys, result.Keys);
+            CollectionAssert.AreEquivalent(obj.Values, result.Values);
+            CollectionAssert.AreEquivalent(obj.Pairs, result.Pairs);
+            CollectionAssert.AreEquivalent(obj.Objects, result.Objects);
         }
 
         /**
@@ -574,14 +609,14 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestProperty()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs = 
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(PropertyType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PropertyType)));
 
-            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
+            BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             PropertyType obj = new PropertyType
             {
@@ -596,7 +631,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(obj.Field1, newObj.Field1);
             Assert.AreEqual(obj.Field2, newObj.Field2);
 
-            IPortableObject portNewObj = marsh.Unmarshal<IPortableObject>(data, PortableMode.ForcePortable);
+            IBinaryObject portNewObj = marsh.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj.Field1, portNewObj.GetField<int>("field1"));
             Assert.AreEqual(obj.Field2, portNewObj.GetField<int>("Field2"));
@@ -608,14 +643,14 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsReflective()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs = 
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(PrimitiveFieldType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldType)));
 
-            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
+            BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             PrimitiveFieldType obj = new PrimitiveFieldType();
 
@@ -628,16 +663,16 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsPortable()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs = 
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(PrimitiveFieldPortableType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldPortableType)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = typeCfgs;
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             PrimitiveFieldPortableType obj = new PrimitiveFieldPortableType();
 
@@ -650,16 +685,16 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsRawPortable()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs = 
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(PrimitiveFieldRawPortableType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldRawPortableType)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = typeCfgs;
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             PrimitiveFieldRawPortableType obj = new PrimitiveFieldRawPortableType();
 
@@ -672,17 +707,17 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsSerializer()
         {
-            var typeCfgs = new List<PortableTypeConfiguration>
+            var typeCfgs = new List<BinaryTypeConfiguration>
             {
-                new PortableTypeConfiguration(typeof (PrimitiveFieldType))
+                new BinaryTypeConfiguration(typeof (PrimitiveFieldType))
                 {
                     Serializer = new PrimitiveFieldsSerializer()
                 }
             };
 
-            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
+            BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             PrimitiveFieldType obj = new PrimitiveFieldType();
 
@@ -695,16 +730,16 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestDecimalFields()
         {
-            PortableConfiguration cfg = new PortableConfiguration
+            BinaryConfiguration cfg = new BinaryConfiguration
             {
-                TypeConfigurations = new List<PortableTypeConfiguration>
+                TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (DecimalReflective)),
-                    new PortableTypeConfiguration(typeof (DecimalMarshalAware))
+                    new BinaryTypeConfiguration(typeof (DecimalReflective)),
+                    new BinaryTypeConfiguration(typeof (DecimalMarshalAware))
                 }
             };
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             // 1. Test reflective stuff.
             DecimalReflective obj1 = new DecimalReflective
@@ -713,7 +748,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 ValArr = new decimal?[] {decimal.One, decimal.MinusOne}
             };
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj1), PortableMode.ForcePortable);
+            IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(marsh.Marshal(obj1), BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj1.Val, portObj.GetField<decimal>("val"));
             Assert.AreEqual(obj1.ValArr, portObj.GetField<decimal?[]>("valArr"));
@@ -729,7 +764,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             obj2.RawVal = decimal.MaxValue;
             obj2.RawValArr = new decimal?[] { decimal.MinusOne, decimal.One} ;
 
-            portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj2), PortableMode.ForcePortable);
+            portObj = marsh.Unmarshal<IBinaryObject>(marsh.Marshal(obj2), BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj2.Val, portObj.GetField<decimal>("val"));
             Assert.AreEqual(obj2.ValArr, portObj.GetField<decimal?[]>("valArr"));
@@ -746,28 +781,28 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsRawSerializer()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs = 
+                new List<BinaryTypeConfiguration>();
 
-            PortableTypeConfiguration typeCfg =
-                new PortableTypeConfiguration(typeof(PrimitiveFieldType));
+            BinaryTypeConfiguration typeCfg =
+                new BinaryTypeConfiguration(typeof(PrimitiveFieldType));
 
             typeCfg.Serializer = new PrimitiveFieldsRawSerializer();
 
             typeCfgs.Add(typeCfg);
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = typeCfgs;
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             PrimitiveFieldType obj = new PrimitiveFieldType();
 
             CheckPrimitiveFields(marsh, obj);
         }
 
-        private void CheckPrimitiveFields(PortableMarshaller marsh, PrimitiveFieldType obj)
+        private void CheckPrimitiveFields(Marshaller marsh, PrimitiveFieldType obj)
         {
             obj.PBool = true;
             obj.PByte = 2;
@@ -784,28 +819,16 @@ namespace Apache.Ignite.Core.Tests.Portable
             obj.PString = "abc";
             obj.PGuid = Guid.NewGuid();
             obj.PnGuid = Guid.NewGuid();
+            obj.IgniteGuid = new IgniteGuid(Guid.NewGuid(), 123);
             
-            //CheckPrimitiveFieldsSerialization(marsh, obj);
-
-            //obj.PString = "";
-
-            //CheckPrimitiveFieldsSerialization(marsh, obj);
-
-            //obj.PString = null;
-
-            //CheckPrimitiveFieldsSerialization(marsh, obj);
-
-            //obj.PString = null;
-            //obj.PNGuid = null;
-
             CheckPrimitiveFieldsSerialization(marsh, obj);
         }
 
-        private void CheckPrimitiveFieldsSerialization(PortableMarshaller marsh, PrimitiveFieldType obj)
+        private void CheckPrimitiveFieldsSerialization(Marshaller marsh, PrimitiveFieldType obj)
         {
             byte[] bytes = marsh.Marshal(obj);
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
@@ -820,11 +843,11 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestEnumsReflective()
         {
-            PortableMarshaller marsh =
-                new PortableMarshaller(new PortableConfiguration
+            Marshaller marsh =
+                new Marshaller(new BinaryConfiguration
                 {
                     TypeConfigurations =
-                        new List<PortableTypeConfiguration> {new PortableTypeConfiguration(typeof (EnumType))}
+                        new List<BinaryTypeConfiguration> {new BinaryTypeConfiguration(typeof (EnumType))}
                 });
 
             EnumType obj = new EnumType
@@ -835,7 +858,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] bytes = marsh.Marshal(obj);
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
@@ -851,46 +874,48 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestCollectionsReflective()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
-
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(CollectionsType)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(InnerObjectType)));
-
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
-
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
-
-            CollectionsType obj = new CollectionsType();
-
-            ArrayList list = new ArrayList();
-
-            list.Add(true);
-            list.Add((byte)1);
-            list.Add((short)2);
-            list.Add('a');
-            list.Add(3);
-            list.Add((long)4);
-            list.Add((float)5);
-            list.Add((double)6);
-
-            list.Add("string");
-            list.Add(Guid.NewGuid());
-
-            InnerObjectType innerObj = new InnerObjectType();
-
-            innerObj.PInt1 = 1;
-            innerObj.PInt2 = 2;
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new List<BinaryTypeConfiguration>
+                {
+                    new BinaryTypeConfiguration(typeof (CollectionsType)),
+                    new BinaryTypeConfiguration(typeof (InnerObjectType))
+                }
+            });
             
-            list.Add(innerObj);
+            var obj = new CollectionsType
+            {
+                Hashtable = new Hashtable {{1, 2}, {3, 4}},
+                LinkedList = new LinkedList<int>(new[] {1, 2, 3}),
+                SortedDict = new SortedDictionary<string, int> {{"1", 2}},
+                Dict = new Dictionary<int, string> {{1, "2"}},
+                Arr = new[] {new InnerObjectType()}
+            };
+
+            var list = new ArrayList
+            {
+                true,
+                (byte) 1,
+                (short) 2,
+                'a',
+                3,
+                (long) 4,
+                (float) 5,
+                (double) 6,
+                "string",
+                Guid.NewGuid(),
+                new InnerObjectType
+                {
+                    PInt1 = 1,
+                    PInt2 = 2
+                }
+            };
 
             obj.Col1 = list;
 
             byte[] bytes = marsh.Marshal(obj);
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
@@ -918,17 +943,17 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestObjectReflective()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs = 
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(OuterObjectType)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(InnerObjectType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(OuterObjectType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(InnerObjectType)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = typeCfgs;
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             CheckObject(marsh, new OuterObjectType(), new InnerObjectType());
         }
@@ -939,17 +964,17 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestHandles()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs =
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(HandleInner)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(HandleOuter)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(HandleInner)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(HandleOuter)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = typeCfgs;
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             HandleOuter outer = new HandleOuter();
 
@@ -973,7 +998,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] bytes = marsh.Marshal(outer);
 
-            IPortableObject outerObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            IBinaryObject outerObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
             HandleInner newInner = newOuter.Inner;
@@ -981,7 +1006,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             CheckHandlesConsistency(outer, inner, newOuter, newInner);
 
             // Get inner object by field.
-            IPortableObject innerObj = outerObj.GetField<IPortableObject>("inner");
+            IBinaryObject innerObj = outerObj.GetField<IBinaryObject>("inner");
 
             newInner = innerObj.Deserialize<HandleInner>();
             newOuter = newInner.Outer;
@@ -989,7 +1014,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             CheckHandlesConsistency(outer, inner, newOuter, newInner);
 
             // Get outer object from inner object by handle.
-            outerObj = innerObj.GetField<IPortableObject>("outer");
+            outerObj = innerObj.GetField<IBinaryObject>("outer");
 
             newOuter = outerObj.Deserialize<HandleOuter>();
             newInner = newOuter.Inner;
@@ -1003,12 +1028,12 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestHandlesExclusive([Values(true, false)] bool detached, [Values(true, false)] bool asPortable)
         {
-            var marsh = new PortableMarshaller(new PortableConfiguration
+            var marsh = new Marshaller(new BinaryConfiguration
             {
-                TypeConfigurations = new List<PortableTypeConfiguration>
+                TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (HandleInner)),
-                    new PortableTypeConfiguration(typeof (HandleOuterExclusive))
+                    new BinaryTypeConfiguration(typeof (HandleInner)),
+                    new BinaryTypeConfiguration(typeof (HandleOuterExclusive))
                 }
             });
 
@@ -1034,22 +1059,22 @@ namespace Apache.Ignite.Core.Tests.Portable
             inner.RawOuter = outer;
 
             var bytes = asPortable
-                ? marsh.Marshal(new PortablesImpl(marsh).ToPortable<IPortableObject>(outer))
+                ? marsh.Marshal(new IgniteBinary(marsh).ToBinary<IBinaryObject>(outer))
                 : marsh.Marshal(outer);
 
-            IPortableObject outerObj;
+            IBinaryObject outerObj;
 
             if (detached)
             {
-                var reader = new PortableReaderImpl(marsh, new Dictionary<long, IPortableTypeDescriptor>(),
-                    new PortableHeapStream(bytes), PortableMode.ForcePortable, null);
+                var reader = new BinaryReader(marsh, new Dictionary<long, IBinaryTypeDescriptor>(),
+                    new BinaryHeapStream(bytes), BinaryMode.ForceBinary, null);
 
                 reader.DetachNext();
 
-                outerObj = reader.Deserialize<IPortableObject>();
+                outerObj = reader.Deserialize<IBinaryObject>();
             }
             else
-                outerObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+                outerObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
 
@@ -1075,7 +1100,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestKeepSerializedDefault()
         {
-            CheckKeepSerialized(new PortableConfiguration(), true);
+            CheckKeepSerialized(new BinaryConfiguration(), true);
         }
 
         ///
@@ -1084,7 +1109,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestKeepSerializedDefaultFalse()
         {
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.DefaultKeepDeserialized = false;
 
@@ -1097,13 +1122,13 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestKeepSerializedTypeCfgFalse()
         {
-            PortableTypeConfiguration typeCfg = new PortableTypeConfiguration(typeof(PropertyType));
+            BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(typeof(PropertyType));
 
             typeCfg.KeepDeserialized = false;
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
-            cfg.TypeConfigurations = new List<PortableTypeConfiguration> { typeCfg };
+            cfg.TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg };
 
             CheckKeepSerialized(cfg, false);
         }
@@ -1114,13 +1139,13 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestKeepSerializedTypeCfgTrue()
         {
-            PortableTypeConfiguration typeCfg = new PortableTypeConfiguration(typeof(PropertyType));
+            BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(typeof(PropertyType));
             typeCfg.KeepDeserialized = true;
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
             cfg.DefaultKeepDeserialized = false;
 
-            cfg.TypeConfigurations = new List<PortableTypeConfiguration> { typeCfg };
+            cfg.TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg };
 
             CheckKeepSerialized(cfg, true);
         }
@@ -1131,17 +1156,17 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestSpecialArrays()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs =
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(SpecialArray)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(SpecialArrayMarshalAware)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(SpecialArray)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(SpecialArrayMarshalAware)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = typeCfgs;
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             Guid[] guidArr = { Guid.NewGuid() };
             Guid?[] nGuidArr = { Guid.NewGuid() };
@@ -1149,16 +1174,19 @@ namespace Apache.Ignite.Core.Tests.Portable
             DateTime?[] nDateArr = { DateTime.Now.ToUniversalTime() };
 
             // Use special object.
-            SpecialArray obj1 = new SpecialArray();
-
-            obj1.GuidArr = guidArr;
-            obj1.NGuidArr = nGuidArr;
-            obj1.DateArr = dateArr;
-            obj1.NDateArr = nDateArr;
+            SpecialArray obj1 = new SpecialArray
+            {
+                GuidArr = guidArr,
+                NGuidArr = nGuidArr,
+                DateArr = dateArr,
+                NDateArr = nDateArr
+            };
 
             byte[] bytes = marsh.Marshal(obj1);
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
+
+            Assert.IsNotNull(portObj.Deserialize<SpecialArray>());
 
             Assert.AreEqual(guidArr, portObj.GetField<Guid[]>("guidArr"));
             Assert.AreEqual(nGuidArr, portObj.GetField<Guid?[]>("nGuidArr"));
@@ -1182,7 +1210,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             bytes = marsh.Marshal(obj2);
 
-            portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             Assert.AreEqual(guidArr, portObj.GetField<Guid[]>("a"));
             Assert.AreEqual(nGuidArr, portObj.GetField<Guid?[]>("b"));
@@ -1197,21 +1225,53 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(nDateArr, obj2.NDateArr);
         }
 
-        private static void CheckKeepSerialized(PortableConfiguration cfg, bool expKeep)
+        /// <summary>
+        /// Writes objects of various sizes to test schema compaction 
+        /// (where field offsets can be stored as 1, 2 or 4 bytes).
+        /// </summary>
+        [Test]
+        public void TestCompactSchema()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new List<BinaryTypeConfiguration>
+                {
+                    new BinaryTypeConfiguration(typeof (SpecialArray)),
+                    new BinaryTypeConfiguration(typeof (SpecialArrayMarshalAware))
+                }
+            });
+
+            var dt = new SpecialArrayMarshalAware();
+
+            foreach (var i in new[] {1, 5, 10, 13, 14, 15, 100, 200, 1000, 5000, 15000, 30000})
+            {
+                dt.NGuidArr = Enumerable.Range(1, i).Select(x => (Guid?) Guid.NewGuid()).ToArray();
+                dt.NDateArr = Enumerable.Range(1, i).Select(x => (DateTime?) DateTime.Now.AddDays(x)).ToArray();
+
+                var bytes = marsh.Marshal(dt);
+
+                var res = marsh.Unmarshal<SpecialArrayMarshalAware>(bytes);
+
+                CollectionAssert.AreEquivalent(dt.NGuidArr, res.NGuidArr);
+                CollectionAssert.AreEquivalent(dt.NDateArr, res.NDateArr);
+            }
+        }
+
+        private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
         {
             if (cfg.TypeConfigurations == null)
             {
-                cfg.TypeConfigurations = new List<PortableTypeConfiguration>
+                cfg.TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof(PropertyType))
+                    new BinaryTypeConfiguration(typeof(PropertyType))
                 };
             }
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             byte[] data = marsh.Marshal(new PropertyType());
 
-            IPortableObject portNewObj = marsh.Unmarshal<IPortableObject>(data, PortableMode.ForcePortable);
+            IBinaryObject portNewObj = marsh.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
             PropertyType deserialized1 = portNewObj.Deserialize<PropertyType>();
             PropertyType deserialized2 = portNewObj.Deserialize<PropertyType>();
@@ -1241,7 +1301,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(inner.RawAfter, newInner.RawAfter);            
         }
 
-        private static void CheckObject(PortableMarshaller marsh, OuterObjectType outObj, InnerObjectType inObj)
+        private static void CheckObject(Marshaller marsh, OuterObjectType outObj, InnerObjectType inObj)
         {
             inObj.PInt1 = 1;
             inObj.PInt2 = 2;
@@ -1250,7 +1310,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] bytes = marsh.Marshal(outObj);
 
-            IPortableObject portOutObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            IBinaryObject portOutObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             Assert.AreEqual(outObj.GetHashCode(), portOutObj.GetHashCode());
 
@@ -1281,6 +1341,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
+        [Serializable]
         public class InnerObjectType
         {
             public int PInt1 { get; set; }
@@ -1317,60 +1378,71 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public ArrayList Col2 { get; set; }
 
+            public Hashtable Hashtable { get; set; }
+
+            public Dictionary<int, string> Dict { get; set; }
+
+            public InnerObjectType[] Arr { get; set; }
+
+            public SortedDictionary<string, int> SortedDict { get; set; }
+
+            public LinkedList<int> LinkedList { get; set; }
+
             /** <inheritdoc /> */
             public override bool Equals(object obj)
             {
                 if (this == obj)
                     return true;
 
-                if (obj != null && obj is CollectionsType)
-                {
-                    CollectionsType that = (CollectionsType)obj;
+                var that = obj as CollectionsType;
 
-                    return CompareCollections(Col1, that.Col1) && CompareCollections(Col2, that.Col2);
-                }
-                return false;
+                return that != null 
+                    && CompareCollections(Col1, that.Col1) 
+                    && CompareCollections(Col2, that.Col2)
+                    && CompareCollections(Hashtable, that.Hashtable)
+                    && CompareCollections(Dict, that.Dict)
+                    && CompareCollections(Arr, that.Arr)
+                    && CompareCollections(SortedDict, that.SortedDict)
+                    && CompareCollections(LinkedList, that.LinkedList);
             }
 
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                int res = Col1 != null ? Col1.GetHashCode() : 0;
+                int res = 0;
 
-                res = 31 * res + (Col2 != null ? Col2.GetHashCode() : 0);
+                foreach (var col in new object[] {Col1, Col2, Hashtable, Dict, Arr, SortedDict, LinkedList})
+                    res = 31*res + (col != null ? col.GetHashCode() : 0);
 
                 return res;
             }
-
-            /** <inheritdoc /> */
-            public override string ToString()
-            {
-                return "CollectoinsType[col1=" + CollectionAsString(Col1) + 
-                    ", col2=" + CollectionAsString(Col2) + ']'; 
-            }
         }
 
-        private static string CollectionAsString(ICollection col)
+        public class GenericCollectionsType<TKey, TValue> : IBinarizable
         {
-            if (col == null)
-                return null;
-            StringBuilder sb = new StringBuilder("[");
+            public ICollection<TKey> Keys { get; set; }
 
-            bool first = true;
+            public ICollection<TValue> Values { get; set; }
 
-            foreach (object elem in col)
+            public IDictionary<TKey, TValue> Pairs { get; set; }
+
+            public ICollection<object> Objects { get; set; }
+
+            public void WriteBinary(IBinaryWriter writer)
             {
-                if (first)
-                    first = false;
-                else
-                    sb.Append(", ");
-
-                sb.Append(elem);
+                writer.WriteObject("Keys", Keys);
+                writer.WriteObject("Values", Values);
+                writer.WriteObject("Pairs", Pairs);
+                writer.WriteObject("Objects", Objects);
             }
 
-            sb.Append("]");
-
-            return sb.ToString();
+            public void ReadBinary(IBinaryReader reader)
+            {
+                Keys = (ICollection<TKey>) reader.ReadObject<object>("Keys");
+                Values = (ICollection<TValue>) reader.ReadObject<object>("Values");
+                Pairs = (IDictionary<TKey, TValue>) reader.ReadObject<object>("Pairs");
+                Objects = (ICollection<object>) reader.ReadObject<object>("Objects");
+            }
         }
 
         public class TestList : ArrayList
@@ -1457,22 +1529,22 @@ namespace Apache.Ignite.Core.Tests.Portable
             public DateTime?[] NDateArr;
         }
 
-        public class SpecialArrayMarshalAware : SpecialArray, IPortableMarshalAware
+        public class SpecialArrayMarshalAware : SpecialArray, IBinarizable
         {
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
-                writer.WriteObjectArray("a", GuidArr);
-                writer.WriteObjectArray("b", NGuidArr);
-                writer.WriteObjectArray("c", DateArr);
-                writer.WriteObjectArray("d", NDateArr);
+                writer.WriteObject("a", GuidArr);
+                writer.WriteObject("b", NGuidArr);
+                writer.WriteObject("c", DateArr);
+                writer.WriteObject("d", NDateArr);
             }
 
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
-                GuidArr = reader.ReadObjectArray<Guid>("a");
-                NGuidArr = reader.ReadObjectArray<Guid?>("b");
-                DateArr = reader.ReadObjectArray<DateTime>("c");
-                NDateArr = reader.ReadObjectArray<DateTime?>("d");
+                GuidArr = reader.ReadObject<Guid[]>("a");
+                NGuidArr = reader.ReadObject<Guid?[]>("b");
+                DateArr = reader.ReadObject<DateTime[]>("c");
+                NDateArr = reader.ReadObject<DateTime?[]>("d");
             }
         }
 
@@ -1483,10 +1555,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             public TestEnum[] PEnumArray { get; set; }
         }
 
+        [Serializable]
         public class PrimitiveFieldType 
         {
-            private Guid _pGuid;
-
             public bool PBool { get; set; }
 
             public sbyte PSbyte { get; set; }
@@ -1513,13 +1584,11 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public string PString { get; set; }
 
-            public Guid PGuid
-            {
-                get { return _pGuid; }
-                set { _pGuid = value; }
-            }
+            public Guid PGuid { get; set; }
 
             public Guid? PnGuid { get; set; }
+
+            public IgniteGuid IgniteGuid { get; set; }
 
             /** <inheritdoc /> */
             public override bool Equals(object obj)
@@ -1543,8 +1612,9 @@ namespace Apache.Ignite.Core.Tests.Portable
                         PChar == that.PChar &&
                         PFloat == that.PFloat &&
                         PDouble == that.PDouble &&
-                        (PString == null && that.PString == null || PString != null && PString.Equals(that.PString)) &&
-                        _pGuid.Equals(that._pGuid) &&
+                        (string.Equals(PString, that.PString)) &&
+                        PGuid.Equals(that.PGuid) &&
+                        IgniteGuid.Equals(that.IgniteGuid) &&
                         (PnGuid == null && that.PnGuid == null || PnGuid != null && PnGuid.Equals(that.PnGuid));
                 }
                 return false;
@@ -1557,9 +1627,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public class PrimitiveFieldPortableType : PrimitiveFieldType, IPortableMarshalAware
+        public class PrimitiveFieldPortableType : PrimitiveFieldType, IBinarizable
         {
-            public unsafe void WritePortable(IPortableWriter writer)
+            public unsafe void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteBoolean("bool", PBool);
                 writer.WriteByte("byte", PByte);
@@ -1583,9 +1653,11 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteString("string", PString);
                 writer.WriteGuid("guid", PGuid);
                 writer.WriteGuid("nguid", PnGuid);
+
+                writer.WriteObject("iguid", IgniteGuid);
             }
 
-            public unsafe void ReadPortable(IPortableReader reader)
+            public unsafe void ReadBinary(IBinaryReader reader)
             {
                 PBool = reader.ReadBoolean("bool");
                 PByte = reader.ReadByte("byte");
@@ -1610,14 +1682,16 @@ namespace Apache.Ignite.Core.Tests.Portable
                 PString = reader.ReadString("string");
                 PGuid = reader.ReadObject<Guid>("guid");
                 PnGuid = reader.ReadGuid("nguid");
+
+                IgniteGuid = reader.ReadObject<IgniteGuid>("iguid");
             }
         }
 
-        public class PrimitiveFieldRawPortableType : PrimitiveFieldType, IPortableMarshalAware
+        public class PrimitiveFieldRawPortableType : PrimitiveFieldType, IBinarizable
         {
-            public unsafe void WritePortable(IPortableWriter writer)
+            public unsafe void WriteBinary(IBinaryWriter writer)
             {
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteBoolean(PBool);
                 rawWriter.WriteByte(PByte);
@@ -1641,11 +1715,13 @@ namespace Apache.Ignite.Core.Tests.Portable
                 rawWriter.WriteString(PString);
                 rawWriter.WriteGuid(PGuid);
                 rawWriter.WriteGuid(PnGuid);
+
+                rawWriter.WriteObject(IgniteGuid);
             }
 
-            public unsafe void ReadPortable(IPortableReader reader)
+            public unsafe void ReadBinary(IBinaryReader reader)
             {
-                IPortableRawReader rawReader = reader.GetRawReader();
+                IBinaryRawReader rawReader = reader.GetRawReader();
 
                 PBool = rawReader.ReadBoolean();
                 PByte = rawReader.ReadByte();
@@ -1670,12 +1746,14 @@ namespace Apache.Ignite.Core.Tests.Portable
                 PString = rawReader.ReadString();
                 PGuid = rawReader.ReadGuid().Value;
                 PnGuid = rawReader.ReadGuid();
+
+                IgniteGuid = rawReader.ReadObject<IgniteGuid>();
             }
         }
 
-        public class PrimitiveFieldsSerializer : IPortableSerializer
+        public class PrimitiveFieldsSerializer : IBinarySerializer
         {
-            public unsafe void WritePortable(object obj, IPortableWriter writer)
+            public unsafe void WriteBinary(object obj, IBinaryWriter writer)
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
@@ -1701,9 +1779,11 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteString("string", obj0.PString);
                 writer.WriteGuid("guid", obj0.PGuid);
                 writer.WriteGuid("nguid", obj0.PnGuid);
+
+                writer.WriteObject("iguid", obj0.IgniteGuid);
             }
 
-            public unsafe void ReadPortable(object obj, IPortableReader reader)
+            public unsafe void ReadBinary(object obj, IBinaryReader reader)
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
@@ -1730,16 +1810,18 @@ namespace Apache.Ignite.Core.Tests.Portable
                 obj0.PString = reader.ReadString("string");
                 obj0.PGuid = reader.ReadObject<Guid>("guid");
                 obj0.PnGuid = reader.ReadGuid("nguid");
+
+                obj0.IgniteGuid = reader.ReadObject<IgniteGuid>("iguid");
             }
         }
 
-        public class PrimitiveFieldsRawSerializer : IPortableSerializer
+        public class PrimitiveFieldsRawSerializer : IBinarySerializer
         {
-            public unsafe void WritePortable(object obj, IPortableWriter writer)
+            public unsafe void WriteBinary(object obj, IBinaryWriter writer)
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteBoolean(obj0.PBool);
                 rawWriter.WriteByte(obj0.PByte);
@@ -1763,13 +1845,15 @@ namespace Apache.Ignite.Core.Tests.Portable
                 rawWriter.WriteString(obj0.PString);
                 rawWriter.WriteGuid(obj0.PGuid);
                 rawWriter.WriteGuid(obj0.PnGuid);
+
+                rawWriter.WriteObject(obj0.IgniteGuid);
             }
 
-            public unsafe void ReadPortable(object obj, IPortableReader reader)
+            public unsafe void ReadBinary(object obj, IBinaryReader reader)
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
-                IPortableRawReader rawReader = reader.GetRawReader();
+                IBinaryRawReader rawReader = reader.GetRawReader();
 
                 obj0.PBool = rawReader.ReadBoolean();
                 obj0.PByte = rawReader.ReadByte();
@@ -1793,20 +1877,12 @@ namespace Apache.Ignite.Core.Tests.Portable
                 obj0.PString = rawReader.ReadString();
                 obj0.PGuid = rawReader.ReadGuid().Value;
                 obj0.PnGuid = rawReader.ReadGuid();
+
+                obj0.IgniteGuid = rawReader.ReadObject<IgniteGuid>();
             }
         }
 
-        public static string PrintBytes(byte[] bytes)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            foreach (byte b in bytes)
-                sb.Append(b + " ");
-
-            return sb.ToString();
-        }
-
-        public class HandleOuter : IPortableMarshalAware
+        public class HandleOuter : IBinarizable
         {
             public string Before;
             public HandleInner Inner;
@@ -1817,13 +1893,13 @@ namespace Apache.Ignite.Core.Tests.Portable
             public string RawAfter;
 
             /** <inheritdoc /> */
-            virtual public void WritePortable(IPortableWriter writer)
+            virtual public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteString("before", Before);
                 writer.WriteObject("inner", Inner);
                 writer.WriteString("after", After);
 
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteString(RawBefore);
                 rawWriter.WriteObject(RawInner);
@@ -1831,13 +1907,13 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
 
             /** <inheritdoc /> */
-            virtual public void ReadPortable(IPortableReader reader)
+            virtual public void ReadBinary(IBinaryReader reader)
             {
                 Before = reader.ReadString("before");
                 Inner = reader.ReadObject<HandleInner>("inner");
                 After = reader.ReadString("after");
 
-                IPortableRawReader rawReader = reader.GetRawReader();
+                IBinaryRawReader rawReader = reader.GetRawReader();
 
                 RawBefore = rawReader.ReadString();
                 RawInner = rawReader.ReadObject<HandleInner>();
@@ -1845,7 +1921,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public class HandleInner : IPortableMarshalAware
+        public class HandleInner : IBinarizable
         {
             public string Before;
             public HandleOuter Outer;
@@ -1856,13 +1932,13 @@ namespace Apache.Ignite.Core.Tests.Portable
             public string RawAfter;
 
             /** <inheritdoc /> */
-            virtual public void WritePortable(IPortableWriter writer)
+            virtual public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteString("before", Before);
                 writer.WriteObject("outer", Outer);
                 writer.WriteString("after", After);
 
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteString(RawBefore);
                 rawWriter.WriteObject(RawOuter);
@@ -1870,13 +1946,13 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
 
             /** <inheritdoc /> */
-            virtual public void ReadPortable(IPortableReader reader)
+            virtual public void ReadBinary(IBinaryReader reader)
             {
                 Before = reader.ReadString("before");
                 Outer = reader.ReadObject<HandleOuter>("outer");
                 After = reader.ReadString("after");
 
-                IPortableRawReader rawReader = reader.GetRawReader();
+                IBinaryRawReader rawReader = reader.GetRawReader();
 
                 RawBefore = rawReader.ReadString();
                 RawOuter = rawReader.ReadObject<HandleOuter>();
@@ -1888,9 +1964,9 @@ namespace Apache.Ignite.Core.Tests.Portable
         public class HandleOuterExclusive : HandleOuter
         {
             /** <inheritdoc /> */
-            override public void WritePortable(IPortableWriter writer)
+            override public void WriteBinary(IBinaryWriter writer)
             {
-                PortableWriterImpl writer0 = (PortableWriterImpl)writer;
+                BinaryWriter writer0 = (BinaryWriter)writer;
 
                 writer.WriteString("before", Before);
 
@@ -1898,7 +1974,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 
                 writer.WriteString("after", After);
 
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteString(RawBefore);
 
@@ -1908,9 +1984,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
 
             /** <inheritdoc /> */
-            override public void ReadPortable(IPortableReader reader)
+            override public void ReadBinary(IBinaryReader reader)
             {
-                var reader0 = (PortableReaderImpl) reader;
+                var reader0 = (BinaryReader) reader;
 
                 Before = reader0.ReadString("before");
 
@@ -1919,7 +1995,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 After = reader0.ReadString("after");
 
-                var rawReader = (PortableReaderImpl) reader.GetRawReader();
+                var rawReader = (BinaryReader) reader.GetRawReader();
 
                 RawBefore = rawReader.ReadString();
 
@@ -1955,7 +2031,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             public decimal?[] ValArr;
         }
 
-        public class DecimalMarshalAware : DecimalReflective, IPortableMarshalAware
+        public class DecimalMarshalAware : DecimalReflective, IBinarizable
         {
             /** */
             public decimal? RawVal;
@@ -1964,24 +2040,24 @@ namespace Apache.Ignite.Core.Tests.Portable
             public decimal?[] RawValArr;
 
             /** <inheritDoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteDecimal("val", Val);
                 writer.WriteDecimalArray("valArr", ValArr);
 
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteDecimal(RawVal);
                 rawWriter.WriteDecimalArray(RawValArr);
             }
 
             /** <inheritDoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 Val = reader.ReadDecimal("val");
                 ValArr = reader.ReadDecimalArray("valArr");
 
-                IPortableRawReader rawReader = reader.GetRawReader();
+                IBinaryRawReader rawReader = reader.GetRawReader();
 
                 RawVal = rawReader.ReadDecimal();
                 RawValArr = rawReader.ReadDecimalArray();
@@ -1991,24 +2067,18 @@ namespace Apache.Ignite.Core.Tests.Portable
         /// <summary>
         /// Date time type.
         /// </summary>
-        public class DateTimeType : IPortableMarshalAware
+        public class DateTimeType : IBinarizable
         {
-            public DateTime Loc;
             public DateTime Utc;
 
-            public DateTime? LocNull;
             public DateTime? UtcNull;
 
-            public DateTime?[] LocArr;
             public DateTime?[] UtcArr;
 
-            public DateTime LocRaw;
             public DateTime UtcRaw;
 
-            public DateTime? LocNullRaw;
             public DateTime? UtcNullRaw;
 
-            public DateTime?[] LocArrRaw;
             public DateTime?[] UtcArrRaw;
 
             /// <summary>
@@ -2017,63 +2087,70 @@ namespace Apache.Ignite.Core.Tests.Portable
             /// <param name="now">Current local time.</param>
             public DateTimeType(DateTime now)
             {
-                Loc = now;
                 Utc = now.ToUniversalTime();
 
-                LocNull = Loc;
                 UtcNull = Utc;
 
-                LocArr = new DateTime?[] { Loc };
                 UtcArr = new DateTime?[] { Utc };
 
-                LocRaw = Loc;
                 UtcRaw = Utc;
 
-                LocNullRaw = LocNull;
                 UtcNullRaw = UtcNull;
 
-                LocArrRaw = new[] { LocArr[0] };
                 UtcArrRaw = new[] { UtcArr[0] };
             }
 
             /** <inheritDoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
-                writer.WriteDate("loc", Loc);
-                writer.WriteDate("utc", Utc);
-                writer.WriteDate("locNull", LocNull);
-                writer.WriteDate("utcNull", UtcNull);
-                writer.WriteDateArray("locArr", LocArr);
-                writer.WriteDateArray("utcArr", UtcArr);
+                writer.WriteTimestamp("utc", Utc);
+                writer.WriteTimestamp("utcNull", UtcNull);
+                writer.WriteTimestampArray("utcArr", UtcArr);
 
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
-                rawWriter.WriteDate(LocRaw);
-                rawWriter.WriteDate(UtcRaw);
-                rawWriter.WriteDate(LocNullRaw);
-                rawWriter.WriteDate(UtcNullRaw);
-                rawWriter.WriteDateArray(LocArrRaw);
-                rawWriter.WriteDateArray(UtcArrRaw);
+                rawWriter.WriteTimestamp(UtcRaw);
+                rawWriter.WriteTimestamp(UtcNullRaw);
+                rawWriter.WriteTimestampArray(UtcArrRaw);
             }
 
             /** <inheritDoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
-                Loc = reader.ReadDate("loc", true).Value;
-                Utc = reader.ReadDate("utc", false).Value;
-                LocNull = reader.ReadDate("loc", true).Value;
-                UtcNull = reader.ReadDate("utc", false).Value;
-                LocArr = reader.ReadDateArray("locArr", true);
-                UtcArr = reader.ReadDateArray("utcArr", false);
+                Utc = reader.ReadTimestamp("utc").Value;
+                UtcNull = reader.ReadTimestamp("utc").Value;
+                UtcArr = reader.ReadTimestampArray("utcArr");
 
-                IPortableRawReader rawReader = reader.GetRawReader();
+                IBinaryRawReader rawReader = reader.GetRawReader();
 
-                LocRaw = rawReader.ReadDate(true).Value;
-                UtcRaw = rawReader.ReadDate(false).Value;
-                LocNullRaw = rawReader.ReadDate(true).Value;
-                UtcNullRaw = rawReader.ReadDate(false).Value;
-                LocArrRaw = rawReader.ReadDateArray(true);
-                UtcArrRaw = rawReader.ReadDateArray(false);
+                UtcRaw = rawReader.ReadTimestamp().Value;
+                UtcNullRaw = rawReader.ReadTimestamp().Value;
+                UtcArrRaw = rawReader.ReadTimestampArray();
+            }
+        }
+
+        [Serializable]
+        private class SerializableObject
+        {
+            public int Foo { get; set; }
+
+            private bool Equals(SerializableObject other)
+            {
+                return Foo == other.Foo;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != GetType()) return false;
+
+                return Equals((SerializableObject) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return Foo;
             }
         }
     }

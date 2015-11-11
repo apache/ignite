@@ -121,6 +121,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         if (fileInfo.lockId() == null)
             throw new IgfsException("Failed to acquire file lock (concurrently modified?): " + path);
 
+        assert !IgfsMetaManager.DELETE_LOCK_ID.equals(fileInfo.lockId());
+
         this.igfsCtx = igfsCtx;
         meta = igfsCtx.meta();
         data = igfsCtx.data();

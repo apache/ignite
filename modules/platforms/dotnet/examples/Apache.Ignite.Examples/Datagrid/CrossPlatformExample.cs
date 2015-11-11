@@ -18,13 +18,14 @@
 using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
-using Apache.Ignite.Core.Portable;
-using Apache.Ignite.ExamplesDll.Portable;
+using Apache.Ignite.Core.Binary;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
-    /// This example demonstrates use of portable objects between different platforms.
+    /// This example demonstrates use of binary objects between different platforms.
     /// <para/>
     /// This example must be run with standalone Java node. To achieve this start a node from %IGNITE_HOME%
     /// using "ignite.bat" with proper configuration:
@@ -99,10 +100,10 @@ namespace Apache.Ignite.Examples.Datagrid
                     // Retrieve value stored by C++ client.
                     GetFromCpp(ignite);
 
-                    // Gets portable value from cache in portable format, without de-serializing it.
-                    GetDotNetPortableInstance(ignite);
+                    // Gets binary value from cache in binary format, without de-serializing it.
+                    GetDotNetBinaryInstance(ignite);
 
-                    // Gets portable value form cache as a strongly-typed fully de-serialized instance.
+                    // Gets binary value form cache as a strongly-typed fully de-serialized instance.
                     GetDotNetTypedInstance(ignite);
 
                     Console.WriteLine();
@@ -118,17 +119,15 @@ namespace Apache.Ignite.Examples.Datagrid
         /// Gets entry put by Java client. In order for entry to be in cache, Java client example
         /// must be run before this example.
         /// </summary>
-        /// <param name="Ignite">Ignite instance.</param>
+        /// <param name="ignite">Ignite instance.</param>
         private static void GetFromJava(IIgnite ignite)
         {
-            var cache = ignite.GetOrCreateCache<int, IPortableObject>(CacheName)
-                .WithKeepPortable<int, IPortableObject>().WithAsync();
+            var cache = ignite.GetOrCreateCache<int, IBinaryObject>(CacheName)
+                .WithKeepBinary<int, IBinaryObject>();
 
-            cache.Get(KeyJava);
+            var orgBinary = cache.GetAsync(KeyJava).Result;
 
-            var orgPortable = cache.GetFuture<IPortableObject>().ToTask().Result;
-
-            if (orgPortable == null)
+            if (orgBinary == null)
             {
                 Console.WriteLine(">>> Java client hasn't put entry to cache. Run Java example before this example " +
                     "to see the output.");
@@ -136,8 +135,8 @@ namespace Apache.Ignite.Examples.Datagrid
             else
             {
                 Console.WriteLine(">>> Entry from Java client:");
-                Console.WriteLine(">>>     Portable:     " + orgPortable);
-                Console.WriteLine(">>>     Deserialized: " + orgPortable.Deserialize<Organization>());
+                Console.WriteLine(">>>     Binary:     " + orgBinary);
+                Console.WriteLine(">>>     Deserialized: " + orgBinary.Deserialize<Organization>());
             }
         }
 
@@ -148,16 +147,14 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="ignite">Ignite instance.</param>
         private static void GetFromCpp(IIgnite ignite)
         {
-            var cache = ignite.GetOrCreateCache<int, IPortableObject>(CacheName)
-                .WithKeepPortable<int, IPortableObject>().WithAsync();
+            var cache = ignite.GetOrCreateCache<int, IBinaryObject>(CacheName)
+                .WithKeepBinary<int, IBinaryObject>();
 
-            cache.Get(KeyCpp);
-
-            var orgPortable = cache.GetFuture<IPortableObject>().Get();
+            var orgBinary = cache.GetAsync(KeyCpp).Result;
 
             Console.WriteLine();
 
-            if (orgPortable == null)
+            if (orgBinary == null)
             {
                 Console.WriteLine(">>> CPP client hasn't put entry to cache. Run CPP example before this example " +
                     "to see the output.");
@@ -165,31 +162,31 @@ namespace Apache.Ignite.Examples.Datagrid
             else
             {
                 Console.WriteLine(">>> Entry from CPP client:");
-                Console.WriteLine(">>>     Portable:     " + orgPortable);
-                Console.WriteLine(">>>     Deserialized: " + orgPortable.Deserialize<Organization>());
+                Console.WriteLine(">>>     Binary:     " + orgBinary);
+                Console.WriteLine(">>>     Deserialized: " + orgBinary.Deserialize<Organization>());
             }
         }
 
         /// <summary>
-        /// Gets portable value from cache in portable format, without de-serializing it.
+        /// Gets binary value from cache in binary format, without de-serializing it.
         /// </summary>
         /// <param name="ignite">Ignite instance.</param>
-        private static void GetDotNetPortableInstance(IIgnite ignite)
+        private static void GetDotNetBinaryInstance(IIgnite ignite)
         {
-            // Apply "KeepPortable" flag on data projection.
-            var cache = ignite.GetOrCreateCache<int, IPortableObject>(CacheName)
-                .WithKeepPortable<int, IPortableObject>();
+            // Apply "KeepBinary" flag on data projection.
+            var cache = ignite.GetOrCreateCache<int, IBinaryObject>(CacheName)
+                .WithKeepBinary<int, IBinaryObject>();
 
             var org = cache.Get(KeyDotnet);
 
             string name = org.GetField<string>("name");
 
             Console.WriteLine();
-            Console.WriteLine(">>> Retrieved organization name from portable field: " + name);
+            Console.WriteLine(">>> Retrieved organization name from binary field: " + name);
         }
 
         /// <summary>
-        /// Gets portable value form cache as a strongly-typed fully de-serialized instance.
+        /// Gets binary value form cache as a strongly-typed fully de-serialized instance.
         /// </summary>
         /// <param name="ignite">Ignite instance.</param>
         private static void GetDotNetTypedInstance(IIgnite ignite)

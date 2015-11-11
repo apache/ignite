@@ -1079,7 +1079,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Found duplicated properties with the same name [keyType=" +
                 type.keyClass().getName() + ", valueType=" + type.valueClass().getName() + "]");
 
-        String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [class=" + type + "]";
+        String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [type=" + type.name() + "]";
 
         for (String name : names) {
             if (name.equals(KEY_FIELD_NAME) || name.equals(VAL_FIELD_NAME))
@@ -1474,7 +1474,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) {
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
 
-                if (cache.context().isReplicated() || (cache.configuration().getBackups() == 0 && parts == null))
+                if (cache.context().isReplicated())
                     return null;
 
                 final GridCacheAffinityManager aff = cache.context().affinity();
@@ -1585,23 +1585,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isSqlType(Class<?> cls) {
-        switch (DBTypeEnum.fromClass(cls)) {
-            case OTHER:
-            case ARRAY:
-                return false;
-
-            default:
-                return true;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isGeometryClass(Class<?> cls) {
-        return DataType.isGeometryClass(cls);
-    }
-
     /**
      * Enum that helps to map java types to database types.
      */
@@ -1686,8 +1669,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             map.put(Timestamp.class, TIMESTAMP);
             map.put(java.util.Date.class, TIMESTAMP);
             map.put(java.sql.Date.class, DATE);
-            map.put(char.class, CHAR);
-            map.put(Character.class, CHAR);
             map.put(String.class, VARCHAR);
             map.put(UUID.class, UUID);
             map.put(byte[].class, BINARY);
@@ -2272,7 +2253,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (v == null)
                 return null;
 
-            return v.value(cctx.cacheObjectContext(), false);
+            return v;
         }
 
         /** {@inheritDoc} */

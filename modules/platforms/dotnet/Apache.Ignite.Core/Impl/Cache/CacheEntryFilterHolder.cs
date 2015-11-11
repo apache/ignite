@@ -19,16 +19,16 @@ namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Non-generic portable filter wrapper.
+    /// Non-generic binary filter wrapper.
     /// </summary>
-    internal class CacheEntryFilterHolder : IPortableWriteAware
+    internal class CacheEntryFilterHolder : IBinaryWriteAware
     {
         /** Wrapped ICacheEntryFilter */
         private readonly object _pred;
@@ -36,11 +36,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Invoker function that takes key and value and invokes wrapped ICacheEntryFilter */
         private readonly Func<object, object, bool> _invoker;
         
-        /** Keep portable flag. */
-        private readonly bool _keepPortable;
+        /** Keep binary flag. */
+        private readonly bool _keepBinary;
 
         /** Grid. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
         
         /** Handle. */
         private readonly long _handle;
@@ -51,9 +51,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="pred">The <see cref="ICacheEntryFilter{TK,TV}" /> to wrap.</param>
         /// <param name="invoker">The invoker func that takes key and value and invokes wrapped ICacheEntryFilter.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
-        public CacheEntryFilterHolder(object pred, Func<object, object, bool> invoker, PortableMarshaller marsh, 
-            bool keepPortable)
+        /// <param name="keepBinary">Keep binary flag.</param>
+        public CacheEntryFilterHolder(object pred, Func<object, object, bool> invoker, Marshaller marsh, 
+            bool keepBinary)
         {
             Debug.Assert(pred != null);
             Debug.Assert(invoker != null);
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _pred = pred;
             _invoker = invoker;
             _marsh = marsh;
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
 
             _handle = marsh.Ignite.HandleRegistry.Allocate(this);
         }
@@ -80,34 +80,34 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="input">The input stream.</param>
         /// <returns>Invocation result.</returns>
-        public int Invoke(IPortableStream input)
+        public int Invoke(IBinaryStream input)
         {
-            var rawReader = _marsh.StartUnmarshal(input, _keepPortable).GetRawReader();
+            var rawReader = _marsh.StartUnmarshal(input, _keepBinary).GetRawReader();
 
             return _invoker(rawReader.ReadObject<object>(), rawReader.ReadObject<object>()) ? 1 : 0;
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriter)writer.GetRawWriter();
 
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _pred));
+            writer0.WithDetach(w => w.WriteObject(_pred));
             
-            writer0.WriteBoolean(_keepPortable);
+            writer0.WriteBoolean(_keepBinary);
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryFilterHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public CacheEntryFilterHolder(IPortableReader reader)
+        public CacheEntryFilterHolder(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.GetRawReader();
+            var reader0 = (BinaryReader)reader.GetRawReader();
 
-            _pred = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _pred = reader0.ReadObject<object>();
 
-            _keepPortable = reader0.ReadBoolean();
+            _keepBinary = reader0.ReadBoolean();
 
             _marsh = reader0.Marshaller;
 

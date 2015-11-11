@@ -233,7 +233,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                         forceTransformBackups,
                         this.updateReq.subjectId(),
                         this.updateReq.taskNameHash(),
-                        forceTransformBackups ? this.updateReq.invokeArguments() : null);
+                        forceTransformBackups ? this.updateReq.invokeArguments() : null,
+                        cctx.deploymentEnabled(),
+                        this.updateReq.keepBinary());
 
                     mappings.put(nodeId, updateReq);
                 }
@@ -288,7 +290,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     forceTransformBackups,
                     this.updateReq.subjectId(),
                     this.updateReq.taskNameHash(),
-                    forceTransformBackups ? this.updateReq.invokeArguments() : null);
+                    forceTransformBackups ? this.updateReq.invokeArguments() : null,
+                    cctx.deploymentEnabled(),
+                    this.updateReq.keepBinary());
 
                 mappings.put(nodeId, updateReq);
             }
@@ -310,6 +314,11 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
             cctx.mvcc().removeAtomicFuture(version());
+
+            if (err != null) {
+                for (KeyCacheObject key : keys)
+                    updateRes.addFailedKey(key, err);
+            }
 
             if (updateReq.writeSynchronizationMode() == FULL_SYNC)
                 completionCb.apply(updateReq, updateRes);

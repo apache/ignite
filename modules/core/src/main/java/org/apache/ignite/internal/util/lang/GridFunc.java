@@ -103,6 +103,9 @@ public class GridFunc {
 
     /** */
     private static final IgniteClosure IDENTITY = new C1() {
+        /** */
+        private static final long serialVersionUID = -6338573080046225172L;
+
         @Override public Object apply(Object o) {
             return o;
         }
@@ -114,6 +117,9 @@ public class GridFunc {
 
     /** */
     private static final IgnitePredicate<Object> ALWAYS_TRUE = new P1<Object>() {
+        /** */
+        private static final long serialVersionUID = 6101914246981105862L;
+
         @Override public boolean apply(Object e) {
             return true;
         }
@@ -1196,6 +1202,9 @@ public class GridFunc {
         A.notNull(nodeId, "nodeId");
 
         return new P1<T>() {
+            /** */
+            private static final long serialVersionUID = -7082730222779476623L;
+
             @Override public boolean apply(ClusterNode e) {
                 return e.id().equals(nodeId);
             }
@@ -1215,9 +1224,10 @@ public class GridFunc {
         if (isEmpty(nodeIds))
             return alwaysFalse();
 
-        assert nodeIds != null;
-
         return new P1<T>() {
+            /** */
+            private static final long serialVersionUID = -5664060422647374863L;
+
             @Override public boolean apply(ClusterNode e) {
                 return nodeIds.contains(e.id());
             }
@@ -1705,6 +1715,9 @@ public class GridFunc {
         assert c != null;
 
         return new GridSerializableList<T2>() {
+            /** */
+            private static final long serialVersionUID = 3126625219739967068L;
+
             @Override public T2 get(int idx) {
                 return trans.apply(c.get(idx));
             }
@@ -1766,6 +1779,9 @@ public class GridFunc {
         assert m != null;
 
         return isEmpty(p) || isAlwaysTrue(p) ? m : new GridSerializableMap<K, V>() {
+            /** */
+            private static final long serialVersionUID = 5531745605372387948L;
+
             /** Entry predicate. */
             private IgnitePredicate<Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
                 @Override public boolean apply(Entry<K, V> e) {

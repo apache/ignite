@@ -24,10 +24,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -53,11 +53,11 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -75,6 +75,9 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
  * Cache communication manager.
  */
 public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
+    /** Communication topic prefix for distributed queries. */
+    private static final String QUERY_TOPIC_PREFIX = "QUERY";
+
     /** Message ID generator. */
     private static final AtomicLong idGen = new AtomicLong();
 
@@ -97,9 +100,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** Stopping flag. */
     private boolean stopping;
-
-    /** Error flag. */
-    private final AtomicBoolean startErr = new AtomicBoolean();
 
     /** Mutex. */
     private final GridSpinReadWriteLock rw = new GridSpinReadWriteLock();
@@ -270,62 +270,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             if (cacheMsg.classError() != null)
                 processFailedMessage(nodeId, cacheMsg);
-            else {
-                if (cacheMsg.allowForStartup())
-                    processMessage(nodeId, cacheMsg, c);
-                else {
-                    IgniteInternalFuture<?> startFut = startFuture(cacheMsg);
-
-                    if (startFut.isDone())
-                        processMessage(nodeId, cacheMsg, c);
-                    else {
-                        if (log.isDebugEnabled())
-                            log.debug("Waiting for start future to complete for message [nodeId=" + nodeId +
-                                ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
-
-                        // Don't hold this thread waiting for preloading to complete.
-                        startFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                            @Override public void apply(final IgniteInternalFuture<?> f) {
-                                cctx.kernalContext().closure().runLocalSafe(
-                                    new GridPlainRunnable() {
-                                        @Override public void run() {
-                                            rw.readLock();
-
-                                            try {
-                                                if (stopping) {
-                                                    if (log.isDebugEnabled())
-                                                        log.debug("Received cache communication message while stopping " +
-                                                            "(will ignore) [nodeId=" + nodeId + ", msg=" + cacheMsg + ']');
-
-                                                    return;
-                                                }
-
-                                                f.get();
-
-                                                if (log.isDebugEnabled())
-                                                    log.debug("Start future completed for message [nodeId=" + nodeId +
-                                                        ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
-
-                                                processMessage(nodeId, cacheMsg, c);
-                                            }
-                                            catch (IgniteCheckedException e) {
-                                                // Log once.
-                                                if (startErr.compareAndSet(false, true))
-                                                    U.error(log, "Failed to complete preload start future " +
-                                                        "(will ignore message) " +
-                                                        "[fut=" + f + ", nodeId=" + nodeId + ", msg=" + cacheMsg + ']', e);
-                                            }
-                                            finally {
-                                                rw.readUnlock();
-                                            }
-                                        }
-                                    }
-                                );
-                            }
-                        });
-                    }
-                }
-            }
+            else
+                processMessage(nodeId, cacheMsg, c);
         }
         catch (Throwable e) {
             U.error(log, "Failed to process message [senderId=" + nodeId + ", messageType=" + cacheMsg.getClass() + ']', e);
@@ -343,6 +289,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Sends response on failed message.
+     *
      * @param nodeId node id.
      * @param res response.
      * @param cctx shared context.
@@ -361,8 +308,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Processes failed messages.
-     * @param nodeId niode id.
-     * @param msg message.
+     *
+     * @param nodeId Node ID.
+     * @param msg Message.
      * @throws IgniteCheckedException If failed.
      */
     private void processFailedMessage(UUID nodeId, GridCacheMessage msg) throws IgniteCheckedException {
@@ -391,7 +339,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.version(),
                     req.futureId(),
                     req.miniId(),
-                    0);
+                    0,
+                    ctx.deploymentEnabled());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }
@@ -404,7 +353,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(
                     req.version(),
                     req.futureId(),
-                    req.miniId());
+                    req.miniId(),
+                    req.deployInfo() != null);
 
                 res.error(req.classError());
 
@@ -418,7 +368,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     ctx.cacheId(),
-                    req.futureVersion());
+                    req.futureVersion(),
+                    ctx.deploymentEnabled());
 
                 res.onError(req.classError());
 
@@ -433,7 +384,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
                     ctx.cacheId(),
                     nodeId,
-                    req.futureVersion());
+                    req.futureVersion(),
+                    ctx.deploymentEnabled());
 
                 res.error(req.classError());
 
@@ -448,7 +400,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                     ctx.cacheId(),
                     req.futureId(),
-                    req.miniId()
+                    req.miniId(),
+                    ctx.deploymentEnabled()
                 );
 
                 res.error(req.classError());
@@ -473,7 +426,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     ctx.cacheId(),
                     req.futureId(),
                     req.miniId(),
-                    req.version());
+                    req.version(),
+                    req.deployInfo() != null);
 
                 res.error(req.classError());
 
@@ -515,7 +469,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     false,
                     0,
                     req.classError(),
-                    null);
+                    null,
+                    ctx.deploymentEnabled());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }
@@ -533,7 +488,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.version(),
                     null,
                     null,
-                    null);
+                    null,
+                    req.deployInfo() != null);
 
                 res.error(req.classError());
 
@@ -542,27 +498,28 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
+            case 58: {
+                GridCacheQueryRequest req = (GridCacheQueryRequest)msg;
+
+                GridCacheQueryResponse res = new GridCacheQueryResponse(
+                    req.cacheId(),
+                    req.id(),
+                    req.classError(),
+                    cctx.deploymentEnabled());
+
+                cctx.io().sendOrderedMessage(
+                    ctx.node(nodeId),
+                    TOPIC_CACHE.topic(QUERY_TOPIC_PREFIX, nodeId, req.id()),
+                    res,
+                    ctx.ioPolicy(),
+                    Long.MAX_VALUE);
+            }
+
+            break;
+
             default:
                 throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
                     + msg + "]");
-        }
-    }
-
-    /**
-     * @param cacheMsg Cache message to get start future.
-     * @return Preloader start future.
-     */
-    @SuppressWarnings("unchecked")
-    private IgniteInternalFuture<Object> startFuture(GridCacheMessage cacheMsg) {
-        int cacheId = cacheMsg.cacheId();
-
-        if (cacheId != 0)
-            return cctx.cacheContext(cacheId).preloader().startFuture();
-        else {
-            if (F.eq(cacheMsg.topologyVersion(), AffinityTopologyVersion.NONE))
-                return new GridFinishedFuture<>();
-
-            return cctx.preloadersStartFuture(cacheMsg.topologyVersion());
         }
     }
 
@@ -617,7 +574,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (destNodeId == null || !cctx.localNodeId().equals(destNodeId)) {
             msg.prepareMarshal(cctx);
 
-            if (depEnabled && msg instanceof GridCacheDeployable)
+            if (msg instanceof GridCacheDeployable && msg.addDeploymentInfo())
                 cctx.deploy().prepare((GridCacheDeployable)msg);
         }
 
@@ -843,8 +800,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @return ID that auto-grows based on local counter and counters received
-     *      from other nodes.
+     * @return ID that auto-grows based on local counter and counters received from other nodes.
      */
     public long nextIoId() {
         return idGen.incrementAndGet();
@@ -861,8 +817,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     public void sendNoRetry(ClusterNode node,
         GridCacheMessage msg,
         byte plc)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         assert node != null;
         assert msg != null;
 
@@ -923,9 +878,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     ", old=" + clsHandlers.get(key) + ", new=" + c + ']';
         }
 
-        if (log != null && log.isDebugEnabled())
-            log.debug("Registered cache communication handler [cacheId=" + cacheId + ", type=" + type +
-                ", msgIdx=" + msgIdx + ", handler=" + c + ']');
+        IgniteLogger log0 = log;
+
+        if (log0 != null && log0.isTraceEnabled())
+            log0.trace(
+                "Registered cache communication handler [cacheId=" + cacheId + ", type=" + type +
+                    ", msgIdx=" + msgIdx + ", handler=" + c + ']');
     }
 
     /**
@@ -978,15 +936,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     @SuppressWarnings({"unchecked"})
     public void addOrderedHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        IgniteLogger log0 = log;
+
         if (orderedHandlers.putIfAbsent(topic, c) == null) {
             cctx.gridIO().addMessageListener(topic, new OrderedMessageListener(
                 (IgniteBiInClosure<UUID, GridCacheMessage>)c));
 
-            if (log != null && log.isDebugEnabled())
-                log.debug("Registered ordered cache communication handler [topic=" + topic + ", handler=" + c + ']');
+            if (log0 != null && log0.isTraceEnabled())
+                log0.trace("Registered ordered cache communication handler [topic=" + topic + ", handler=" + c + ']');
         }
-        else if (log != null)
-            U.warn(log, "Failed to register ordered cache communication handler because it is already " +
+        else if (log0 != null)
+            U.warn(log0, "Failed to register ordered cache communication handler because it is already " +
                 "registered for this topic [topic=" + topic + ", handler=" + c + ']');
     }
 
@@ -1010,10 +970,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /**
      * @param nodeId Sender node ID.
      * @param cacheMsg Message.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ErrorNotRethrown", "unchecked"})
-    private void unmarshall(UUID nodeId, GridCacheMessage cacheMsg) throws IgniteCheckedException {
+    private void unmarshall(UUID nodeId, GridCacheMessage cacheMsg) {
         if (cctx.localNodeId().equals(nodeId))
             return;
 

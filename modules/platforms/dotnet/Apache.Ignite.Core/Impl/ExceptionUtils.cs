@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.InteropServices;
     using System.Security;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
@@ -29,13 +28,12 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Managed environment. Acts as a gateway for native code.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
     internal static class ExceptionUtils
     {
         /** NoClassDefFoundError fully-qualified class name which is important during startup phase. */
@@ -105,7 +103,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="clsName">Exception class name.</param>
         /// <param name="msg">Exception message.</param>
         /// <param name="reader">Error data reader.</param>
-        public static Exception GetException(string clsName, string msg, PortableReaderImpl reader = null)
+        public static Exception GetException(string clsName, string msg, BinaryReader reader = null)
         {
             ExceptionFactoryDelegate ctor;
 
@@ -133,7 +131,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <returns></returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static Exception ProcessCachePartialUpdateException(string msg, PortableReaderImpl reader)
+        private static Exception ProcessCachePartialUpdateException(string msg, BinaryReader reader)
         {
             if (reader == null)
                 return new CachePartialUpdateException(msg, new IgniteException("Failed keys are not available."));
@@ -144,9 +142,9 @@ namespace Apache.Ignite.Core.Impl
 
             if (reader.ReadBoolean())
             {
-                bool keepPortable = reader.ReadBoolean();
+                bool keepBinary = reader.ReadBoolean();
 
-                PortableReaderImpl keysReader = reader.Marshaller.StartUnmarshal(reader.Stream, keepPortable);
+                BinaryReader keysReader = reader.Marshaller.StartUnmarshal(reader.Stream, keepBinary);
 
                 try
                 {
@@ -190,7 +188,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>List.</returns>
-        private static List<object> ReadNullableList(PortableReaderImpl reader)
+        private static List<object> ReadNullableList(BinaryReader reader)
         {
             if (!reader.ReadBoolean()) 
                 return null;

@@ -18,11 +18,11 @@
 namespace Apache.Ignite.Core.Datastream
 {
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Datastream;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Convenience adapter to transform update existing values in streaming cache 
@@ -30,19 +30,19 @@ namespace Apache.Ignite.Core.Datastream
     /// </summary>
     /// <typeparam name="TK">Key type.</typeparam>
     /// <typeparam name="TV">Value type.</typeparam>
-    /// <typeparam name="TA">The type of the processor argument.</typeparam>
-    /// <typeparam name="TR">The type of the processor result.</typeparam>
-    public sealed class StreamTransformer<TK, TV, TA, TR> : IStreamReceiver<TK, TV>, 
-        IPortableWriteAware
+    /// <typeparam name="TArg">The type of the processor argument.</typeparam>
+    /// <typeparam name="TRes">The type of the processor result.</typeparam>
+    public sealed class StreamTransformer<TK, TV, TArg, TRes> : IStreamReceiver<TK, TV>, 
+        IBinaryWriteAware
     {
         /** Entry processor. */
-        private readonly ICacheEntryProcessor<TK, TV, TA, TR> _proc;
+        private readonly ICacheEntryProcessor<TK, TV, TArg, TRes> _proc;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StreamTransformer{K, V, A, R}"/> class.
         /// </summary>
         /// <param name="proc">Entry processor.</param>
-        public StreamTransformer(ICacheEntryProcessor<TK, TV, TA, TR> proc)
+        public StreamTransformer(ICacheEntryProcessor<TK, TV, TArg, TRes> proc)
         {
             IgniteArgumentCheck.NotNull(proc, "proc");
 
@@ -57,17 +57,17 @@ namespace Apache.Ignite.Core.Datastream
             foreach (var entry in entries)
                 keys.Add(entry.Key);
 
-            cache.InvokeAll(keys, _proc, default(TA));
+            cache.InvokeAll(keys, _proc, default(TArg));
         }
 
         /** <inheritdoc /> */
-        void IPortableWriteAware.WritePortable(IPortableWriter writer)
+        void IBinaryWriteAware.WriteBinary(IBinaryWriter writer)
         {
-            var w = (PortableWriterImpl)writer;
+            var w = (BinaryWriter)writer;
 
             w.WriteByte(StreamReceiverHolder.RcvTransformer);
 
-            PortableUtils.WritePortableOrSerializable(w, _proc);
+            w.WriteObject(_proc);
         }
     }
 }

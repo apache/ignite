@@ -31,8 +31,8 @@
 
         <property name="platformConfiguration">
             <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
-                <property name="portableConfiguration">
-                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
+                <property name="binaryConfiguration">
+                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration">
                         <property name="types">
                             <list>
                                 <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64]</value>

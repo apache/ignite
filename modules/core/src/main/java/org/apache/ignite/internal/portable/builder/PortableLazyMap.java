@@ -73,7 +73,7 @@ class PortableLazyMap extends AbstractMap<Object, Object> implements PortableBui
      */
     private void ensureDelegateInit() {
         if (delegate == null) {
-            int size = reader.readIntAbsolute(off + 1);
+            int size = reader.readIntPositioned(off + 1);
 
             reader.position(off + 1/* flag */ + 4/* size */ + 1/* col type */);
 
@@ -85,9 +85,9 @@ class PortableLazyMap extends AbstractMap<Object, Object> implements PortableBui
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
         if (delegate == null) {
-            int size = reader.readIntAbsolute(off + 1);
+            int size = reader.readIntPositioned(off + 1);
 
             int hdrSize = 1 /* flag */ + 4 /* size */ + 1 /* col type */;
             writer.write(reader.array(), off, hdrSize);
@@ -117,7 +117,7 @@ class PortableLazyMap extends AbstractMap<Object, Object> implements PortableBui
     /** {@inheritDoc} */
     @Override public int size() {
         if (delegate == null)
-            return reader.readIntAbsolute(off + 1);
+            return reader.readIntPositioned(off + 1);
 
         return delegate.size();
     }

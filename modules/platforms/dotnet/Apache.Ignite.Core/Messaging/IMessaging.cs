@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core.Messaging
 {
     using System;
     using System.Collections;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Provides functionality for topic-based message exchange among nodes defined by <see cref="IClusterGroup"/>.
@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Messaging
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
-    public interface IMessaging : IAsyncSupport<IMessaging>
+    public interface IMessaging
     {
         /// <summary>
         /// Gets the cluster group to which this instance belongs.
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Messaging
         /// </summary>
         /// <param name="messages">Messages to send.</param>
         /// <param name="topic">Topic to send to, null for default topic.</param>
-        void Send(IEnumerable messages, object topic = null);
+        void SendAll(IEnumerable messages, object topic = null);
 
         /// <summary>
         /// Sends a message with specified topic to the nodes in the underlying cluster group.
@@ -67,19 +67,19 @@ namespace Apache.Ignite.Core.Messaging
         /// node within the cluster group will send a message for a given topic to this node. Local listen
         /// subscription will happen regardless of whether local node belongs to this cluster group or not.
         /// </summary>
-        /// <param name="filter">
+        /// <param name="listener">
         /// Predicate that is called on each received message. If predicate returns false,
         /// then it will be unsubscribed from any further notifications.
         /// </param>
         /// <param name="topic">Topic to subscribe to.</param>
-        void LocalListen<T>(IMessageFilter<T> filter, object topic = null);
+        void LocalListen<T>(IMessageListener<T> listener, object topic = null);
 
         /// <summary>
         /// Unregisters local listener for given topic on local node only.
         /// </summary>
-        /// <param name="filter">Listener predicate.</param>
+        /// <param name="listener">Listener predicate.</param>
         /// <param name="topic">Topic to unsubscribe from.</param>
-        void StopLocalListen<T>(IMessageFilter<T> filter, object topic = null);
+        void StopLocalListen<T>(IMessageListener<T> listener, object topic = null);
 
         /// <summary>
         /// Adds a message listener for a given topic to all nodes in the cluster group (possibly including
@@ -87,19 +87,42 @@ namespace Apache.Ignite.Core.Messaging
         /// group can send a message for a given topic and all nodes within the cluster group will receive
         /// listener notifications.
         /// </summary>
-        /// <param name="filter">Listener predicate.</param>
+        /// <param name="listener">
+        /// Predicate that is called on each received message. If predicate returns false,
+        /// then it will be unsubscribed from any further notifications.
+        /// </param>
         /// <param name="topic">Topic to unsubscribe from.</param>
         /// <returns>
         /// Operation ID that can be passed to <see cref="StopRemoteListen"/> method to stop listening.
         /// </returns>
-        [AsyncSupported]
-        Guid RemoteListen<T>(IMessageFilter<T> filter, object topic = null);
+        Guid RemoteListen<T>(IMessageListener<T> listener, object topic = null);
+
+        /// <summary>
+        /// Adds a message listener for a given topic to all nodes in the cluster group (possibly including
+        /// this node if it belongs to the cluster group as well). This means that any node within this cluster
+        /// group can send a message for a given topic and all nodes within the cluster group will receive
+        /// listener notifications.
+        /// </summary>
+        /// <param name="listener">
+        /// Predicate that is called on each received message. If predicate returns false,
+        /// then it will be unsubscribed from any further notifications.
+        /// </param>
+        /// <param name="topic">Topic to unsubscribe from.</param>
+        /// <returns>
+        /// Operation ID that can be passed to <see cref="StopRemoteListen"/> method to stop listening.
+        /// </returns>
+        Task<Guid> RemoteListenAsync<T>(IMessageListener<T> listener, object topic = null);
 
         /// <summary>
         /// Unregisters all listeners identified with provided operation ID on all nodes in the cluster group.
         /// </summary>
         /// <param name="opId">Operation ID that was returned from <see cref="RemoteListen{T}"/> method.</param>
-        [AsyncSupported]
         void StopRemoteListen(Guid opId);
+
+        /// <summary>
+        /// Unregisters all listeners identified with provided operation ID on all nodes in the cluster group.
+        /// </summary>
+        /// <param name="opId">Operation ID that was returned from <see cref="RemoteListen{T}"/> method.</param>
+        Task StopRemoteListenAsync(Guid opId);
     }
 }

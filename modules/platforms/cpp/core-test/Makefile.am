@@ -30,10 +30,10 @@ ignite_tests_SOURCES = src/cache_test.cpp \
                          src/concurrent_test.cpp \
                          src/ignition_test.cpp \
                          src/handle_registry_test.cpp \
-                         src/portable_test_defs.cpp \
-                         src/portable_reader_writer_raw_test.cpp \
-                         src/portable_reader_writer_test.cpp \
-                         src/portable_session_test.cpp \
+                         src/binary_test_defs.cpp \
+                         src/binary_reader_writer_raw_test.cpp \
+                         src/binary_reader_writer_test.cpp \
+                         src/binary_session_test.cpp \
                          src/teamcity_messages.cpp \
                          src/teamcity_boost.cpp
 

@@ -26,6 +26,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Store;
@@ -36,8 +38,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Messaging;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;
@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 IUnmanagedTarget cb0 = null;
 
                 if ((long) cb != 0)
-                    cb0 = new UnmanagedNonReleaseableTarget(_ctx.NativeContext, cb);
+                    cb0 = new UnmanagedNonReleaseableTarget(_ctx, cb);
 
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
@@ -358,7 +358,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <param name="inOutStream">Stream.</param>
         /// <param name="grid">Grid.</param>
         /// <returns>CacheEntryProcessor result.</returns>
-        private CacheEntryProcessorResultHolder ReadAndRunCacheEntryProcessor(IPortableStream inOutStream,
+        private CacheEntryProcessorResultHolder ReadAndRunCacheEntryProcessor(IBinaryStream inOutStream,
             Ignite grid)
         {
             var marsh = grid.Marshaller;
@@ -612,15 +612,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream, PortableMode.ForcePortable);
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream, BinaryMode.ForceBinary);
 
-                    var portableReceiver = reader.ReadObject<PortableUserObject>();
+                    var portableReceiver = reader.ReadObject<BinaryObject>();
 
                     var receiver = _handleRegistry.Get<StreamReceiverHolder>(rcvPtr) ??
                                    portableReceiver.Deserialize<StreamReceiverHolder>();
 
                     if (receiver != null)
-                        receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx.NativeContext, cache), stream,
+                        receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx, cache), stream,
                             keepPortable != 0);
                 }
             });
@@ -790,7 +790,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                MessageFilterHolder holder = MessageFilterHolder.CreateRemote(_ignite, memPtr);
+                MessageListenerHolder holder = MessageListenerHolder.CreateRemote(_ignite, memPtr);
 
                 return _ignite.HandleRegistry.AllocateSafe(holder);
             });
@@ -800,7 +800,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                var holder = _ignite.HandleRegistry.Get<MessageFilterHolder>(ptr, false);
+                var holder = _ignite.HandleRegistry.Get<MessageListenerHolder>(ptr, false);
                 
                 if (holder == null)
                     return 0;
@@ -980,7 +980,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    var filter = (IClusterNodeFilter) reader.ReadObject<PortableOrSerializableObjectHolder>().Item;
+                    var filter = reader.ReadObject<IClusterNodeFilter>();
 
                     return filter.Invoke(_ignite.GetNode(reader.ReadGuid())) ? 1 : 0;
                 }

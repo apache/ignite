@@ -211,6 +211,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private boolean skipStore;
 
     /** */
+    private boolean keepBinary;
+
+    /** */
     private int maxRemapCnt = DFLT_MAX_REMAP_CNT;
 
     /** Whether a warning at {@link DataStreamerImpl#allowOverwrite()} printed */
@@ -402,6 +405,16 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** {@inheritDoc} */
     @Override public void skipStore(boolean skipStore) {
         this.skipStore = skipStore;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean keepBinary() {
+        return keepBinary;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void keepBinary(boolean keepBinary) {
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc} */
@@ -1243,7 +1256,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             if (isLocNode) {
                 fut = ctx.closure().callLocalSafe(
-                    new DataStreamerUpdateJob(ctx, log, cacheName, entries, false, skipStore, rcvr), false);
+                    new DataStreamerUpdateJob(ctx, log, cacheName, entries, false, skipStore, keepBinary, rcvr), false);
 
                 locFuts.add(fut);
 
@@ -1331,6 +1344,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     entries,
                     true,
                     skipStore,
+                    keepBinary,
                     dep != null ? dep.deployMode() : null,
                     dep != null ? jobPda0.deployClass().getName() : null,
                     dep != null ? dep.userVersion() : null,
@@ -1556,7 +1570,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
-            GridCacheVersion ver = cctx.versions().next(topVer);
+            GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 
             long ttl = CU.TTL_ETERNAL;
             long expiryTime = CU.EXPIRE_TIME_ETERNAL;

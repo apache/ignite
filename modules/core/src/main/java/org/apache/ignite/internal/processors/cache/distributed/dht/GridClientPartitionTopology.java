@@ -313,13 +313,18 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create)
+    @Nullable @Override public GridDhtLocalPartition localPartition(
+        int p,
+        AffinityTopologyVersion topVer,
+        boolean create
+    )
         throws GridDhtInvalidPartitionException {
         if (!create)
             return null;
 
-        throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition [part=" + p +
-            ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
+        throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition (often may be caused by " +
+            "inconsistent 'key.hashCode()' implementation) " +
+            "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
     }
 
     /** {@inheritDoc} */

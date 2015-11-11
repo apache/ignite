@@ -1,12 +1,12 @@
 Apache Ignite C++
 ==================================
 
-Ignite C++ provides data grid functionality.
-Using Ignite C++ APIs you can execute perform concurrent operations on
+Apache Ignite C++ provides data grid functionality.
+Using Apache Ignite C++ APIs you can execute perform concurrent operations on
 the data stored in cache.
 
-Ignite C++ can access cluster and share data with .Net and
-Java applications using portable object format.
+Apache Ignite C++ can access cluster and share data with .Net and
+Java applications using binary object format.
 
 Support for the following will be added in next releases:
  * ACID transactions management.
@@ -29,7 +29,7 @@ Common Requirements:
 
 Building the library:
 
- * Build Ignite C++ helper "common" library:
+ * Build Apache Ignite C++ helper "common" library:
      * Navigate to the directory $IGNITE_HOME/platforms/cpp/common
      * Execute the following commands one by one:
          * libtoolize
@@ -40,7 +40,7 @@ Building the library:
          * ./configure
          * make
          * make install
- * Build Ignite C++ library:
+ * Build Apache Ignite C++ library:
      * Navigate to the directory $IGNITE_HOME/platforms/cpp/core
      * Execute the following commands one by one:
          * libtoolize
@@ -60,7 +60,7 @@ Development:
  * IGNITE_HOME environment variable must be set to Ignite installation directory.
  * Once both libraries are built and installed, required headers are placed in the
    "/usr/local/include/ignite" directory.
- * Ignite C++ depends on jni.h file located inside ${JAVA_HOME}/include directory.
+ * Apache Ignite C++ depends on jni.h file located inside ${JAVA_HOME}/include directory.
    Add this directory to headers search path: "-I${JAVA_HOME}/include".
  * Library is placed in the "/usr/local/lib" directory. Link it to your project: "-lignite".
  * Ignite depends on "libjvm.so" library shipped with Java. Typically this library is located inside

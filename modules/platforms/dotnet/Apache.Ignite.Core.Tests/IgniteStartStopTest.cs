@@ -311,12 +311,16 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                using (Ignition.Start(servCfg))  // start server-mode ignite first
+                using (var serv = Ignition.Start(servCfg))  // start server-mode ignite first
                 {
+                    Assert.IsFalse(serv.GetCluster().GetLocalNode().IsClient);
+
                     Ignition.ClientMode = true;
 
                     using (var grid = Ignition.Start(clientCfg))
                     {
+                        Assert.IsTrue(grid.GetCluster().GetLocalNode().IsClient);
+
                         UseIgnite(grid);
                     }
                 }
@@ -337,7 +341,7 @@ namespace Apache.Ignite.Core.Tests
             var comp = ignite.GetCompute();
 
             // ReSharper disable once RedundantAssignment
-            comp = comp.WithKeepPortable();
+            comp = comp.WithKeepBinary();
 
             var prj = ignite.GetCluster().ForOldest();
 
@@ -384,7 +388,7 @@ namespace Apache.Ignite.Core.Tests
             // to test race conditions during processor init on remote node
             var listenTask = Task.Factory.StartNew(() =>
             {
-                var filter = new MessageFilter();
+                var filter = new MessageListener();
 
                 while (!token.IsCancellationRequested)
                 {
@@ -410,7 +414,7 @@ namespace Apache.Ignite.Core.Tests
         /// Noop message filter.
         /// </summary>
         [Serializable]
-        private class MessageFilter : IMessageFilter<int>
+        private class MessageListener : IMessageListener<int>
         {
             /** <inheritdoc /> */
             public bool Invoke(Guid nodeId, int message)

@@ -21,9 +21,9 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
-    using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Manages cache entry processing result in non-generic form.
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <param name="marsh">Marshaller.</param>
-        public void Write(IPortableStream stream, PortableMarshaller marsh)
+        public void Write(IBinaryStream stream, Marshaller marsh)
         {
             var writer = marsh.StartMarshal(stream);
 
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="writer">Writer.</param>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "Any kind of exception can be thrown during user type marshalling.")]
-        private void Marshal(PortableWriterImpl writer)
+        private void Marshal(BinaryWriter writer)
         {
             var pos = writer.Stream.Position;
 
@@ -100,8 +100,8 @@ namespace Apache.Ignite.Core.Impl.Cache
                 }
                 else
                 {
-                    writer.WriteByte((byte) MutableCacheEntryState.ErrPortable);
-                    writer.Write(new PortableResultWrapper(Error));
+                    writer.WriteByte((byte) MutableCacheEntryState.ErrBinary);
+                    writer.Write(Error);
                 }
             }
             catch (Exception marshErr)

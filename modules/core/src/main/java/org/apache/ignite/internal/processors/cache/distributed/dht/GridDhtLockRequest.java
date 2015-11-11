@@ -120,6 +120,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param keepBinary Keep binary flag.
+     * @param addDepInfo Deployment info flag.
      */
     public GridDhtLockRequest(
         int cacheId,
@@ -141,7 +143,9 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         @Nullable UUID subjId,
         int taskNameHash,
         long accessTtl,
-        boolean skipStore
+        boolean skipStore,
+        boolean keepBinary,
+        boolean addDepInfo
     ) {
         super(cacheId,
             nodeId,
@@ -156,7 +160,9 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             timeout,
             dhtCnt == 0 ? nearCnt : dhtCnt,
             txSize,
-            skipStore);
+            skipStore,
+            keepBinary,
+            addDepInfo);
 
         this.topVer = topVer;
 
@@ -169,11 +175,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
     }
 
     /**
@@ -304,8 +305,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         return accessTtl;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

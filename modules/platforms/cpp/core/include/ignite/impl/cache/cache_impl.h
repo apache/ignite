@@ -21,6 +21,7 @@
 #include "ignite/cache/query/query_scan.h"
 #include "ignite/cache/query/query_sql.h"
 #include "ignite/cache/query/query_text.h"
+#include "ignite/cache/query/query_sql_fields.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/cache/query/query_impl.h"
 #include "ignite/impl/operations.h"
@@ -316,6 +317,15 @@ namespace ignite
                  * @return Query cursor.
                  */
                 query::QueryCursorImpl* QueryScan(const ignite::cache::query::ScanQuery& qry, IgniteError* err);
+
+                /*
+                 * Invoke sql fields query.
+                 *
+                 * @param qry Query.
+                 * @param err Error.
+                 * @return Query cursor.
+                 */
+                query::QueryCursorImpl* QuerySqlFields(const ignite::cache::query::SqlFieldsQuery& qry, IgniteError* err);
                 
             private:
                 /** Name. */
@@ -393,8 +403,8 @@ namespace ignite
                     ignite::common::concurrent::SharedPointer<interop::InteropMemory> mem = env.Get()->AllocateMemory();
                     interop::InteropMemory* mem0 = mem.Get();
                     interop::InteropOutputStream out(mem0);
-                    portable::PortableWriterImpl writer(&out, env.Get()->GetMetadataManager());
-                    ignite::portable::PortableRawWriter rawWriter(&writer);
+                    binary::BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());
+                    ignite::binary::BinaryRawWriter rawWriter(&writer);
 
                     qry.Write(rawWriter);
 

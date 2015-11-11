@@ -19,12 +19,13 @@ package org.apache.ignite.internal.portable;
 
 import java.util.Arrays;
 import java.util.Map;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableIdMapper;
-import org.apache.ignite.portable.PortableMetadata;
-import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -33,11 +34,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, PortableMetadata meta) {
+        @Override public void addMeta(int typeId, BinaryType meta) {
             // No-op.
         }
 
-        @Override public PortableMetadata metadata(int typeId) {
+        @Override public BinaryType metadata(int typeId) {
             return null;
         }
     };
@@ -46,7 +47,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @return Portable context.
      */
     private PortableContext portableContext() {
-        return new PortableContext(META_HND, null);
+        return new PortableContext(META_HND, new IgniteConfiguration());
     }
 
     /**
@@ -91,7 +92,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         PortableMarshaller marsh = portableMarshaller();
 
-        marsh.setIdMapper(new PortableIdMapper() {
+        marsh.setIdMapper(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -116,7 +117,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         ctx.configure(marsh);
 
-        Map<String, PortableIdMapper> typeMappers = U.field(ctx, "typeMappers");
+        Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
         assertEquals(3, typeMappers.size());
 
@@ -134,8 +135,8 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = portableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration("org.apache.ignite.internal.portable.test.*"),
-            new PortableTypeConfiguration("unknown.*")
+            new BinaryTypeConfiguration("org.apache.ignite.internal.portable.test.*"),
+            new BinaryTypeConfiguration("unknown.*")
         ));
 
         ctx.configure(marsh);
@@ -157,7 +158,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         PortableMarshaller marsh = portableMarshaller();
 
-        marsh.setIdMapper(new PortableIdMapper() {
+        marsh.setIdMapper(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -176,13 +177,13 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         });
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration("org.apache.ignite.internal.portable.test.*"),
-            new PortableTypeConfiguration("unknown.*")
+            new BinaryTypeConfiguration("org.apache.ignite.internal.portable.test.*"),
+            new BinaryTypeConfiguration("unknown.*")
         ));
 
         ctx.configure(marsh);
 
-        Map<String, PortableIdMapper> typeMappers = U.field(ctx, "typeMappers");
+        Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
         assertEquals(3, typeMappers.size());
 
@@ -199,7 +200,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         PortableMarshaller marsh = portableMarshaller();
 
-        marsh.setIdMapper(new PortableIdMapper() {
+        marsh.setIdMapper(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -218,13 +219,13 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         });
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration("org.apache.ignite.internal.portable.test.*"),
-            new PortableTypeConfiguration("unknown.*")
+            new BinaryTypeConfiguration("org.apache.ignite.internal.portable.test.*"),
+            new BinaryTypeConfiguration("unknown.*")
         ));
 
         ctx.configure(marsh);
 
-        Map<String, PortableIdMapper> typeMappers = U.field(ctx, "typeMappers");
+        Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
         assertEquals(3, typeMappers.size());
 
@@ -245,10 +246,10 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             "org.apache.ignite.internal.portable.test.*"
         ));
 
-        PortableTypeConfiguration typeCfg = new PortableTypeConfiguration();
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
 
         typeCfg.setClassName("org.apache.ignite.internal.portable.test.GridPortableTestClass2");
-        typeCfg.setIdMapper(new PortableIdMapper() {
+        typeCfg.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 100;
             }
@@ -270,7 +271,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         assertTrue(typeIds.containsKey("innerclass".hashCode()));
         assertFalse(typeIds.containsKey("gridportabletestclass2".hashCode()));
 
-        Map<String, PortableIdMapper> typeMappers = U.field(ctx, "typeMappers");
+        Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
         assertEquals(100, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
     }
@@ -306,7 +307,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         PortableMarshaller marsh = portableMarshaller();
 
-        marsh.setIdMapper(new PortableIdMapper() {
+        marsh.setIdMapper(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -329,7 +330,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         ctx.configure(marsh);
 
-        Map<String, PortableIdMapper> typeMappers = U.field(ctx, "typeMappers");
+        Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
         assertEquals(3, typeMappers.size());
 
@@ -346,8 +347,8 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = portableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration("org.apache.ignite.portable.testjar.*"),
-            new PortableTypeConfiguration("unknown.*")
+            new BinaryTypeConfiguration("org.apache.ignite.portable.testjar.*"),
+            new BinaryTypeConfiguration("unknown.*")
         ));
 
         ctx.configure(marsh);
@@ -368,7 +369,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         PortableMarshaller marsh = portableMarshaller();
 
-        marsh.setIdMapper(new PortableIdMapper() {
+        marsh.setIdMapper(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -385,13 +386,13 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         });
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration("org.apache.ignite.portable.testjar.*"),
-            new PortableTypeConfiguration("unknown.*")
+            new BinaryTypeConfiguration("org.apache.ignite.portable.testjar.*"),
+            new BinaryTypeConfiguration("unknown.*")
         ));
 
         ctx.configure(marsh);
 
-        Map<String, PortableIdMapper> typeMappers = U.field(ctx, "typeMappers");
+        Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
         assertEquals(3, typeMappers.size());
 
@@ -407,7 +408,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         PortableMarshaller marsh = portableMarshaller();
 
-        marsh.setIdMapper(new PortableIdMapper() {
+        marsh.setIdMapper(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -424,13 +425,13 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         });
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration("org.apache.ignite.portable.testjar.*"),
-            new PortableTypeConfiguration("unknown.*")
+            new BinaryTypeConfiguration("org.apache.ignite.portable.testjar.*"),
+            new BinaryTypeConfiguration("unknown.*")
         ));
 
         ctx.configure(marsh);
 
-        Map<String, PortableIdMapper> typeMappers = U.field(ctx, "typeMappers");
+        Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
         assertEquals(3, typeMappers.size());
 
@@ -450,10 +451,10 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             "org.apache.ignite.portable.testjar.*"
         ));
 
-        PortableTypeConfiguration typeCfg = new PortableTypeConfiguration(
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(
             "org.apache.ignite.portable.testjar.GridPortableTestClass2");
 
-        typeCfg.setIdMapper(new PortableIdMapper() {
+        typeCfg.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 100;
             }
@@ -473,7 +474,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
 
-        Map<String, PortableIdMapper> typeMappers = U.field(ctx, "typeMappers");
+        Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
         assertEquals(3, typeMappers.size());
 

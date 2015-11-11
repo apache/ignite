@@ -19,14 +19,15 @@
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -786,12 +787,12 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(1, res1.Length);
             Assert.AreEqual(1, res1[0]);
 
-            IList<int> res2 = _grid1.GetCompute().ExecuteJavaTask<IList<int>>(EchoTask, EchoTypeCollection);
+            var res2 = _grid1.GetCompute().ExecuteJavaTask<IList>(EchoTask, EchoTypeCollection);
 
             Assert.AreEqual(1, res2.Count);
             Assert.AreEqual(1, res2[0]);
 
-            IDictionary<int, int> res3 = _grid1.GetCompute().ExecuteJavaTask<IDictionary<int, int>>(EchoTask, EchoTypeMap);
+            var res3 = _grid1.GetCompute().ExecuteJavaTask<IDictionary>(EchoTask, EchoTypeMap);
 
             Assert.AreEqual(1, res3.Count);
             Assert.AreEqual(1, res3[1]);
@@ -816,16 +817,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICompute compute = _grid1.GetCompute();
 
-            compute.WithKeepPortable();
+            compute.WithKeepBinary();
 
-            IPortableObject res = compute.ExecuteJavaTask<IPortableObject>(EchoTask, EchoTypePortableJava);
+            IBinaryObject res = compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypePortableJava);
 
             Assert.AreEqual(1, res.GetField<int>("field"));
 
             // This call must fail because "keepPortable" flag is reset.
-            Assert.Catch(typeof(PortableException), () =>
+            Assert.Catch(typeof(BinaryObjectException), () =>
             {
-                compute.ExecuteJavaTask<IPortableObject>(EchoTask, EchoTypePortableJava);
+                compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypePortableJava);
             });
         }
 
@@ -846,12 +847,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskPortableArray()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputePortable[]>(EchoTask, EchoTypePortableArray);
+            var res = _grid1.GetCompute().ExecuteJavaTask<object[]>(EchoTask, EchoTypePortableArray);
             
             Assert.AreEqual(3, res.Length);
 
             for (var i = 0; i < res.Length; i++)
-                Assert.AreEqual(i + 1, res[i].Field);
+                Assert.AreEqual(i + 1, ((PlatformComputePortable) res[i]).Field);
         }
 
         /// <summary>
@@ -889,7 +890,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICompute compute = _grid1.GetCompute();
 
-            compute.WithKeepPortable();
+            compute.WithKeepBinary();
 
             PlatformComputeNetPortable arg = new PlatformComputeNetPortable();
 
@@ -906,7 +907,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastTask()
         {
-            ICollection<Guid> res = _grid1.GetCompute().ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
+            var res = _grid1.GetCompute().ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
@@ -917,7 +918,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(2, prj.GetNodes().Count);
 
-            ICollection<Guid> filteredRes = prj.GetCompute().ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
+            var filteredRes = prj.GetCompute().ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
 
             Assert.AreEqual(2, filteredRes.Count);
             Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));
@@ -930,9 +931,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastTaskAsync()
         {
-            var gridCompute = _grid1.GetCompute().WithAsync();
-            Assert.IsNull(gridCompute.ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null));
-            ICollection<Guid> res = gridCompute.GetFuture<ICollection<Guid>>().Get();
+            var gridCompute = _grid1.GetCompute();
+
+            var res = gridCompute.ExecuteJavaTaskAsync<ICollection>(BroadcastTask, null).Result.OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
@@ -943,9 +944,8 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(2, prj.GetNodes().Count);
 
-            var compute = prj.GetCompute().WithAsync();
-            Assert.IsNull(compute.ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null));
-            ICollection<Guid> filteredRes = compute.GetFuture<ICollection<Guid>>().Get();
+            var compute = prj.GetCompute();
+            var filteredRes = compute.ExecuteJavaTaskAsync<IList>(BroadcastTask, null).Result;
 
             Assert.AreEqual(2, filteredRes.Count);
             Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));
@@ -1051,7 +1051,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestWithNoFailover()
         {
-            ICollection<Guid> res = _grid1.GetCompute().WithNoFailover().ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
+            var res = _grid1.GetCompute().WithNoFailover().ExecuteJavaTask<ICollection>(BroadcastTask, null)
+                .OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
@@ -1065,7 +1066,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestWithTimeout()
         {
-            ICollection<Guid> res = _grid1.GetCompute().WithTimeout(1000).ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
+            var res = _grid1.GetCompute().WithTimeout(1000).ExecuteJavaTask<ICollection>(BroadcastTask, null)
+                .OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
@@ -1093,17 +1095,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            PortableConfiguration portCfg = new PortableConfiguration();
+            BinaryConfiguration portCfg = new BinaryConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PlatformComputePortable)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PlatformComputeNetPortable)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(JavaPortableCls));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputePortable)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputeNetPortable)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(JavaPortableCls));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
 
             cfg.JvmClasspath = Classpath.CreateClasspath(cfg, true);
 
@@ -1150,7 +1152,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        public ComputeJobResultPolicy Result(IComputeJobResult<NetSimpleJobResult> res,
+        public ComputeJobResultPolicy OnResult(IComputeJobResult<NetSimpleJobResult> res,
             IList<IComputeJobResult<NetSimpleJobResult>> rcvd)
         {
             return ComputeJobResultPolicy.Wait;
@@ -1159,7 +1161,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** <inheritDoc /> */
         public NetSimpleTaskResult Reduce(IList<IComputeJobResult<NetSimpleJobResult>> results)
         {
-            return new NetSimpleTaskResult(results.Sum(res => res.Data().Res));
+            return new NetSimpleTaskResult(results.Sum(res => res.Data.Res));
         }
     }
 

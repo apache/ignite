@@ -78,14 +78,16 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
      * @param workerId Worker ID.
      * @param updateSeq Update sequence for this node.
      * @param cacheId Cache ID.
+     * @param addDepInfo Deployment info flag.
      */
-    GridDhtPartitionSupplyMessage(int workerId, long updateSeq, int cacheId) {
+    GridDhtPartitionSupplyMessage(int workerId, long updateSeq, int cacheId, boolean addDepInfo) {
         assert workerId >= 0;
         assert updateSeq > 0;
 
         this.cacheId = cacheId;
         this.updateSeq = updateSeq;
         this.workerId = workerId;
+        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -93,11 +95,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
      */
     public GridDhtPartitionSupplyMessage() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
     }
 
     /** {@inheritDoc} */
@@ -263,6 +260,11 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
+    }
+
     /**
      * @return Number of entries in message.
      */
@@ -404,7 +406,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
     @Override public String toString() {
         return S.toString(GridDhtPartitionSupplyMessage.class, this,
             "size", size(),
-            "parts", infos.keySet(),
             "super", super.toString());
     }
 }

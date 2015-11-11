@@ -25,7 +25,7 @@ import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableMetaDataHandler;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
@@ -39,8 +39,8 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -137,7 +137,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             try (PlatformMemory inMem = memMgr.allocate()) {
                 PlatformOutputStream out = outMem.output();
 
-                PortableRawWriterEx writer = marshaller().writer(out);
+                BinaryRawWriterEx writer = marshaller().writer(out);
 
                 PlatformUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
@@ -146,8 +146,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 writer.writeInt(beans.size());
 
                 for (PlatformDotNetLifecycleBean bean : beans) {
-                    writer.writeString(bean.getAssemblyName());
-                    writer.writeString(bean.getClassName());
+                    writer.writeString(bean.getTypeName());
                     writer.writeMap(bean.getProperties());
                 }
 
@@ -230,15 +229,15 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     private static GridPortableMarshaller marshaller() {
         try {
             PortableContext ctx = new PortableContext(new PortableMetaDataHandler() {
-                @Override public void addMeta(int typeId, PortableMetadata meta)
-                    throws PortableException {
+                @Override public void addMeta(int typeId, BinaryType meta)
+                    throws BinaryObjectException {
                     // No-op.
                 }
 
-                @Override public PortableMetadata metadata(int typeId) throws PortableException {
+                @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
                     return null;
                 }
-            }, null);
+            }, new IgniteConfiguration());
 
             PortableMarshaller marsh = new PortableMarshaller();
 

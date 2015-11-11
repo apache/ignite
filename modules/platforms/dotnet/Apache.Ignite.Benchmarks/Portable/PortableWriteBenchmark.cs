@@ -21,9 +21,9 @@ namespace Apache.Ignite.Benchmarks.Portable
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Benchmarks.Model;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Portable write benchmark.
@@ -31,7 +31,7 @@ namespace Apache.Ignite.Benchmarks.Portable
     internal class PortableWriteBenchmark : BenchmarkBase
     {
         /** Marshaller. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
 
         /** Memory manager. */
         private readonly PlatformMemoryManager _memMgr = new PlatformMemoryManager(1024);
@@ -73,12 +73,12 @@ namespace Apache.Ignite.Benchmarks.Portable
         /// </summary>
         public PortableWriteBenchmark()
         {
-            _marsh = new PortableMarshaller(new PortableConfiguration
+            _marsh = new Marshaller(new BinaryConfiguration
             {
-                TypeConfigurations = new List<PortableTypeConfiguration>
+                TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (Address)) {MetadataEnabled = true},
-                    new PortableTypeConfiguration(typeof (TestModel)) {MetadataEnabled = false}
+                    new BinaryTypeConfiguration(typeof (Address))
+                    //new PortableTypeConfiguration(typeof (TestModel))
                 }
             });
         }
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Benchmarks.Portable
         protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
             descs.Add(BenchmarkOperationDescriptor.Create("WriteAddress", WriteAddress, 1));
-            descs.Add(BenchmarkOperationDescriptor.Create("WriteTestModel", WriteTestModel, 1));
+            //descs.Add(BenchmarkOperationDescriptor.Create("WriteTestModel", WriteTestModel, 1));
         }
 
         /// <summary>

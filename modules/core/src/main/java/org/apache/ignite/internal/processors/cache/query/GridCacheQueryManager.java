@@ -907,7 +907,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             CacheObject cacheVal =
                                 entry != null ? entry.peek(true, false, false, topVer, expiryPlc) : null;
 
-                            val = cacheVal != null ? (V)cacheVal.value(cctx.cacheObjectContext(), false) : null;
+                            // TODO 950 nocopy
+                            val = (V)cctx.cacheObjectContext().unwrapPortableIfNeeded(cacheVal, qry.keepPortable());
                         }
                         catch (GridCacheEntryRemovedException e) {
                             val = null;
@@ -1093,7 +1094,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 next = null;
 
                 while (it.hasNext()) {
-                    final LazySwapEntry e = new LazySwapEntry(it.next());
+                    final LazySwapEntry e = new LazySwapEntry(it.next(), keepPortable);
 
                     if (filter != null) {
                         K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
@@ -2229,6 +2230,26 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
+        @Override public Map<String, String> keyClasses() {
+            return keyClasses;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, String> valClasses() {
+            return valClasses;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Map<String, String>> fields() {
+            return fields;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridCacheSqlIndexMetadata>> indexes() {
+            return indexes;
+        }
+
+        /** {@inheritDoc} */
         @Override public Collection<GridCacheSqlIndexMetadata> indexes(String type) {
             return indexes.get(type);
         }
@@ -2316,6 +2337,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override public boolean descending(String field) {
             return descendings.contains(field);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<String> descendings() {
+            return descendings;
         }
 
         /** {@inheritDoc} */
@@ -2485,11 +2511,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private final Map.Entry<byte[], byte[]> e;
 
+        /** */
+        private boolean keepBinary;
+
         /**
          * @param e Entry with
          */
-        LazySwapEntry(Map.Entry<byte[], byte[]> e) {
+        LazySwapEntry(Map.Entry<byte[], byte[]> e, boolean keepBinary) {
             this.e = e;
+            this.keepBinary = keepBinary;
         }
 
         /** {@inheritDoc} */
@@ -2504,7 +2534,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             CacheObject obj = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), t.get2(), t.get1());
 
-            return obj.value(cctx.cacheObjectContext(), false);
+            return (V)cctx.cacheObjectContext().unwrapPortableIfNeeded(obj, keepBinary);
         }
 
         /** {@inheritDoc} */
@@ -2687,14 +2717,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Cached result.
      */
     private abstract static class CachedResult<R> extends GridFutureAdapter<IgniteSpiCloseableIterator<R>> {
-        /** */
-        private CircularQueue<R> queue;
-
-        /** */
-        private int pruned;
-
         /** Absolute position of each recipient. */
         private final Map<Object, QueueIterator> recipients = new GridLeanMap<>(1);
+        /** */
+        private CircularQueue<R> queue;
+        /** */
+        private int pruned;
 
         /**
          * @param rcpt ID of the recipient.

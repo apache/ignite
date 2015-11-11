@@ -25,10 +25,11 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryRawReaderEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -113,7 +114,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_PARTITION:
                 return aff.partition(reader.readObjectDetached());
@@ -164,7 +165,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions"})
-    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_PRIMARY_PARTITIONS: {
@@ -248,7 +249,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             }
 
             case OP_MAP_KEYS_TO_NODES: {
-                Collection<Object> keys = reader.readCollection();
+                Collection<Object> keys = PlatformUtils.readCollection(reader);
 
                 Map<ClusterNode, Collection<Object>> map = aff.mapKeysToNodes(keys);
 
@@ -265,7 +266,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             }
 
             case OP_MAP_PARTITIONS_TO_NODES: {
-                Collection<Integer> parts = reader.readCollection();
+                Collection<Integer> parts = PlatformUtils.readCollection(reader);
 
                 Map<Integer, ClusterNode> map = aff.mapPartitionsToNodes(parts);
 

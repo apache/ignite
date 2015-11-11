@@ -35,11 +35,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>
-    </AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.Core.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <DelaySign>false</DelaySign>
@@ -68,6 +67,7 @@
     <Compile Include="Cache\ICacheEntryProcessorResult.cs" />
     <Compile Include="Cache\ICacheLock.cs" />
     <Compile Include="Cache\ICacheMetrics.cs" />
+    <Compile Include="Cache\CacheResult.cs" />
     <Compile Include="Cache\IMutableCacheEntry.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQuery.cs" />
     <Compile Include="Cache\Query\Continuous\IContinuousQueryHandle.cs" />
@@ -90,8 +90,6 @@
     <Compile Include="Cluster\IClusterNode.cs" />
     <Compile Include="Cluster\IClusterNodeFilter.cs" />
     <Compile Include="Common\IgniteException.cs" />
-    <Compile Include="Common\IAsyncSupport.cs" />
-    <Compile Include="Common\IFuture.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
     <Compile Include="Compute\ComputeJobAdapter.cs" />
@@ -125,6 +123,7 @@
     <Compile Include="Events\EventType.cs" />
     <Compile Include="Events\IEvent.cs" />
     <Compile Include="Events\IEventFilter.cs" />
+    <Compile Include="Events\IEventListener.cs" />
     <Compile Include="Events\IEvents.cs" />
     <Compile Include="Events\JobEvent.cs" />
     <Compile Include="Events\SwapSpaceEvent.cs" />
@@ -132,7 +131,6 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="IgniteConfiguration.cs" />
     <Compile Include="Ignition.cs" />
-    <Compile Include="Common\AsyncSupportedAttribute.cs" />
     <Compile Include="IIgnite.cs" />
     <Compile Include="Impl\Cache\CacheAffinityImpl.cs" />
     <Compile Include="Impl\Cache\CacheEntry.cs" />
@@ -147,7 +145,6 @@
     <Compile Include="Impl\Cache\CacheLock.cs" />
     <Compile Include="Impl\Cache\CacheMetricsImpl.cs" />
     <Compile Include="Impl\Cache\CacheOp.cs" />
-    <Compile Include="Impl\Cache\CacheProxyImpl.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryCreateEvent.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryRemoveEvent.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryUpdateEvent.cs" />
@@ -169,12 +166,11 @@
     <Compile Include="Impl\Collections\MultiValueDictionary.cs" />
     <Compile Include="Impl\Collections\ReadOnlyCollection.cs" />
     <Compile Include="Impl\Collections\ReadOnlyDictionary.cs" />
-    <Compile Include="Impl\Common\AsyncResult.cs" />
     <Compile Include="Impl\Common\Classpath.cs" />
-    <Compile Include="Impl\Common\CompletedAsyncResult.cs" />
     <Compile Include="Impl\Common\CopyOnWriteConcurrentDictionary.cs" />
     <Compile Include="Impl\Common\DelegateConverter.cs" />
     <Compile Include="Impl\Common\DelegateTypeDescriptor.cs" />
+    <Compile Include="Impl\Common\Fnv1Hash.cs" />
     <Compile Include="Impl\Common\Future.cs" />
     <Compile Include="Impl\Common\FutureConverter.cs" />
     <Compile Include="Impl\Common\FutureType.cs" />
@@ -183,7 +179,7 @@
     <Compile Include="Impl\Common\IFutureInternal.cs" />
     <Compile Include="Impl\Common\IgniteHome.cs" />
     <Compile Include="Impl\Common\LoadedAssembliesResolver.cs" />
-    <Compile Include="Impl\Common\PortableResultWrapper.cs" />
+    <Compile Include="Impl\Common\ResizeableArray.cs" />
     <Compile Include="Impl\Common\TypeCaster.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeAbstractClosureTask.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeActionJob.cs" />
@@ -194,7 +190,6 @@
     <Compile Include="Impl\Compute\Closure\ComputeSingleClosureTask.cs" />
     <Compile Include="Impl\Compute\Closure\IComputeResourceInjector.cs" />
     <Compile Include="Impl\Compute\Compute.cs" />
-    <Compile Include="Impl\Compute\ComputeAsync.cs" />
     <Compile Include="Impl\Compute\ComputeFunc.cs" />
     <Compile Include="Impl\Compute\ComputeImpl.cs" />
     <Compile Include="Impl\Compute\ComputeJob.cs" />
@@ -210,7 +205,6 @@
     <Compile Include="Impl\Datastream\StreamReceiverHolder.cs" />
     <Compile Include="Impl\DataStructures\AtomicLong.cs" />
     <Compile Include="Impl\Events\Events.cs" />
-    <Compile Include="Impl\Events\EventsAsync.cs" />
     <Compile Include="Impl\Events\RemoteListenEventFilter.cs" />
     <Compile Include="Impl\ExceptionUtils.cs" />
     <Compile Include="Impl\IgniteConfigurationEx.cs" />
@@ -237,48 +231,52 @@
     <Compile Include="Impl\Memory\PlatformPooledMemory.cs" />
     <Compile Include="Impl\Memory\PlatformRawMemory.cs" />
     <Compile Include="Impl\Memory\PlatformUnpooledMemory.cs" />
-    <Compile Include="Impl\Messaging\MessageFilterHolder.cs" />
+    <Compile Include="Impl\Messaging\MessageListenerHolder.cs" />
     <Compile Include="Impl\Messaging\Messaging.cs" />
-    <Compile Include="Impl\Messaging\MessagingAsync.cs" />
     <Compile Include="Impl\NativeMethods.cs" />
-    <Compile Include="Impl\Portable\IO\IPortableStream.cs" />
-    <Compile Include="Impl\Portable\IO\PortableAbstractStream.cs" />
-    <Compile Include="Impl\Portable\IO\PortableHeapStream.cs" />
-    <Compile Include="Impl\Portable\IO\PortableStreamAdapter.cs" />
-    <Compile Include="Impl\Portable\IPortableSystemTypeSerializer.cs" />
-    <Compile Include="Impl\Portable\IPortableTypeDescriptor.cs" />
-    <Compile Include="Impl\Portable\IPortableWriteAware.cs" />
-    <Compile Include="Impl\Portable\Metadata\IPortableMetadataHandler.cs" />
-    <Compile Include="Impl\Portable\Metadata\PortableHashsetMetadataHandler.cs" />
-    <Compile Include="Impl\Portable\Metadata\PortableMetadataHolder.cs" />
-    <Compile Include="Impl\Portable\Metadata\PortableMetadataImpl.cs" />
-    <Compile Include="Impl\Portable\PortableBuilderField.cs" />
-    <Compile Include="Impl\Portable\PortableBuilderImpl.cs" />
-    <Compile Include="Impl\Portable\PortableCollectionInfo.cs" />
-    <Compile Include="Impl\Portable\PortableFullTypeDescriptor.cs" />
-    <Compile Include="Impl\Portable\PortableHandleDictionary.cs" />
-    <Compile Include="Impl\Portable\PortableMarshalAwareSerializer.cs" />
-    <Compile Include="Impl\Portable\PortableMarshaller.cs" />
-    <Compile Include="Impl\Portable\PortableMode.cs" />
-    <Compile Include="Impl\Portable\PortableObjectHandle.cs" />
-    <Compile Include="Impl\Portable\PortableOrSerializableObjectHolder.cs" />
-    <Compile Include="Impl\Portable\PortableReaderHandleDictionary.cs" />
-    <Compile Include="Impl\Portable\PortableReaderImpl.cs" />
-    <Compile Include="Impl\Portable\PortableReflectiveRoutines.cs" />
-    <Compile Include="Impl\Portable\PortableReflectiveSerializer.cs" />
-    <Compile Include="Impl\Portable\PortablesImpl.cs" />
-    <Compile Include="Impl\Portable\PortableSurrogateTypeDescriptor.cs" />
-    <Compile Include="Impl\Portable\PortableSystemHandlers.cs" />
-    <Compile Include="Impl\Portable\PortableSystemTypeSerializer.cs" />
-    <Compile Include="Impl\Portable\PortableUserObject.cs" />
-    <Compile Include="Impl\Portable\PortableUtils.cs" />
-    <Compile Include="Impl\Portable\PortableWriterImpl.cs" />
-    <Compile Include="Impl\Portable\SerializableObjectHolder.cs" />
-    <Compile Include="Impl\Portable\Structure\PortableStructure.cs" />
-    <Compile Include="Impl\Portable\Structure\PortableStructureEntry.cs" />
-    <Compile Include="Impl\Portable\Structure\PortableStructureJumpTable.cs" />
-    <Compile Include="Impl\Portable\Structure\PortableStructureUpdate.cs" />
-    <Compile Include="Impl\Portable\TypeResolver.cs" />
+    <Compile Include="Impl\Binary\DateTimeHolder.cs" />
+    <Compile Include="Impl\Binary\IO\IBinaryStream.cs" />
+    <Compile Include="Impl\Binary\IO\BinaryStreamBase.cs" />
+    <Compile Include="Impl\Binary\IO\BinaryHeapStream.cs" />
+    <Compile Include="Impl\Binary\IO\BinaryStreamAdapter.cs" />
+    <Compile Include="Impl\Binary\IBinarySystemTypeSerializer.cs" />
+    <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />
+    <Compile Include="Impl\Binary\IBinaryWriteAware.cs" />
+    <Compile Include="Impl\Binary\Metadata\IBinaryTypeHandler.cs" />
+    <Compile Include="Impl\Binary\Metadata\BinaryTypeHashsetHandler.cs" />
+    <Compile Include="Impl\Binary\Metadata\BinaryTypeHolder.cs" />
+    <Compile Include="Impl\Binary\Metadata\BinaryType.cs" />
+    <Compile Include="Impl\Binary\BinaryBuilderField.cs" />
+    <Compile Include="Impl\Binary\BinaryObjectBuilder.cs" />
+    <Compile Include="Impl\Binary\BinaryFullTypeDescriptor.cs" />
+    <Compile Include="Impl\Binary\BinaryHandleDictionary.cs" />
+    <Compile Include="Impl\Binary\BinarizableSerializer.cs" />
+    <Compile Include="Impl\Binary\Marshaller.cs" />
+    <Compile Include="Impl\Binary\BinaryMode.cs" />
+    <Compile Include="Impl\Binary\BinaryObjectHandle.cs" />
+    <Compile Include="Impl\Binary\BinaryObjectHeader.cs" />
+    <Compile Include="Impl\Binary\BinaryObjectSchema.cs" />
+    <Compile Include="Impl\Binary\BinaryObjectSchemaField.cs" />
+    <Compile Include="Impl\Binary\BinaryObjectSchemaHolder.cs" />
+    <Compile Include="Impl\Binary\BinaryReaderExtensions.cs" />
+    <Compile Include="Impl\Binary\BinaryReaderHandleDictionary.cs" />
+    <Compile Include="Impl\Binary\BinaryReader.cs" />
+    <Compile Include="Impl\Binary\BinaryReflectiveActions.cs" />
+    <Compile Include="Impl\Binary\BinaryReflectiveSerializer.cs" />
+    <Compile Include="Impl\Binary\IgniteBinary.cs" />
+    <Compile Include="Impl\Binary\Structure\BinaryStructureTracker.cs" />
+    <Compile Include="Impl\Binary\BinarySurrogateTypeDescriptor.cs" />
+    <Compile Include="Impl\Binary\BinarySystemHandlers.cs" />
+    <Compile Include="Impl\Binary\BinarySystemTypeSerializer.cs" />
+    <Compile Include="Impl\Binary\BinaryObject.cs" />
+    <Compile Include="Impl\Binary\BinaryUtils.cs" />
+    <Compile Include="Impl\Binary\BinaryWriter.cs" />
+    <Compile Include="Impl\Binary\SerializableObjectHolder.cs" />
+    <Compile Include="Impl\Binary\Structure\BinaryStructure.cs" />
+    <Compile Include="Impl\Binary\Structure\BinaryStructureEntry.cs" />
+    <Compile Include="Impl\Binary\Structure\BinaryStructureJumpTable.cs" />
+    <Compile Include="Impl\Binary\Structure\BinaryStructureUpdate.cs" />
+    <Compile Include="Impl\Binary\TypeResolver.cs" />
     <Compile Include="Impl\Resource\IResourceInjector.cs" />
     <Compile Include="Impl\Resource\ResourceFieldInjector.cs" />
     <Compile Include="Impl\Resource\ResourceMethodInjector.cs" />
@@ -291,8 +289,6 @@
     <Compile Include="Impl\Services\ServiceProxyInvoker.cs" />
     <Compile Include="Impl\Services\ServiceProxySerializer.cs" />
     <Compile Include="Impl\Services\Services.cs" />
-    <Compile Include="Impl\Services\ServicesAsync.cs" />
-    <Compile Include="Impl\Transactions\AsyncTransaction.cs" />
     <Compile Include="Impl\Transactions\Transaction.cs" />
     <Compile Include="Impl\Transactions\TransactionImpl.cs" />
     <Compile Include="Impl\Transactions\TransactionMetricsImpl.cs" />
@@ -306,24 +302,24 @@
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
     <Compile Include="Lifecycle\ILifecycleBean.cs" />
     <Compile Include="Lifecycle\LifecycleEventType.cs" />
-    <Compile Include="Messaging\IMessageFilter.cs" />
+    <Compile Include="Messaging\IMessageListener.cs" />
     <Compile Include="Messaging\IMessaging.cs" />
-    <Compile Include="Portable\IPortableBuilder.cs" />
-    <Compile Include="Portable\IPortableIdMapper.cs" />
-    <Compile Include="Portable\IPortableMarshalAware.cs" />
-    <Compile Include="Portable\IPortableMetadata.cs" />
-    <Compile Include="Portable\IPortableNameMapper.cs" />
-    <Compile Include="Portable\IPortableObject.cs" />
-    <Compile Include="Portable\IPortableRawReader.cs" />
-    <Compile Include="Portable\IPortableRawWriter.cs" />
-    <Compile Include="Portable\IPortableReader.cs" />
-    <Compile Include="Portable\IPortables.cs" />
-    <Compile Include="Portable\IPortableSerializer.cs" />
-    <Compile Include="Portable\IPortableWriter.cs" />
-    <Compile Include="Portable\PortableConfiguration.cs" />
-    <Compile Include="Portable\PortableException.cs" />
-    <Compile Include="Portable\PortableTypeConfiguration.cs" />
-    <Compile Include="Portable\PortableTypeNames.cs" />
+    <Compile Include="Binary\IBinaryObjectBuilder.cs" />
+    <Compile Include="Binary\IBinaryIdMapper.cs" />
+    <Compile Include="Binary\IBinarizable.cs" />
+    <Compile Include="Binary\IBinaryType.cs" />
+    <Compile Include="Binary\IBinaryNameMapper.cs" />
+    <Compile Include="Binary\IBinaryObject.cs" />
+    <Compile Include="Binary\IBinaryRawReader.cs" />
+    <Compile Include="Binary\IBinaryRawWriter.cs" />
+    <Compile Include="Binary\IBinaryReader.cs" />
+    <Compile Include="Binary\IIgniteBinary.cs" />
+    <Compile Include="Binary\IBinarySerializer.cs" />
+    <Compile Include="Binary\IBinaryWriter.cs" />
+    <Compile Include="Binary\BinaryConfiguration.cs" />
+    <Compile Include="Binary\BinaryObjectException.cs" />
+    <Compile Include="Binary\BinaryTypeConfiguration.cs" />
+    <Compile Include="Binary\BinaryTypeNames.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resource\InstanceResourceAttribute.cs" />
     <Compile Include="Resource\StoreSessionResourceAttribute.cs" />
@@ -369,6 +365,9 @@
     <EmbeddedResource Include="$(SolutionDir)\Win32\Release\ignite.common.dll">
       <Link>resources\release\x86\ignite.common.dll</Link>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Apache.Ignite.Core.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

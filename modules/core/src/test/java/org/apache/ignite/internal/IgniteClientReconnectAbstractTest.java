@@ -19,6 +19,8 @@ package org.apache.ignite.internal;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -199,15 +201,28 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
      */
     protected void reconnectClientNode(Ignite client, Ignite srv, @Nullable Runnable disconnectedC)
         throws Exception {
-        final TestTcpDiscoverySpi clientSpi = spi(client);
+        reconnectClientNodes(Collections.singletonList(client), srv, disconnectedC);
+    }
+
+    /**
+     * Reconnect client node.
+     *
+     * @param clients Clients.
+     * @param srv Server.
+     * @param disconnectedC Closure which will be run when client node disconnected.
+     * @throws Exception If failed.
+     */
+    protected void reconnectClientNodes(List<Ignite> clients, Ignite srv, @Nullable Runnable disconnectedC)
+        throws Exception {
         final TestTcpDiscoverySpi srvSpi = spi(srv);
 
-        final CountDownLatch disconnectLatch = new CountDownLatch(1);
-        final CountDownLatch reconnectLatch = new CountDownLatch(1);
+        final CountDownLatch disconnectLatch = new CountDownLatch(clients.size());
+        final CountDownLatch reconnectLatch = new CountDownLatch(clients.size());
 
         log.info("Block reconnect.");
 
-        clientSpi.writeLatch = new CountDownLatch(1);
+        for (Ignite client : clients)
+            spi(client).writeLatch = new CountDownLatch(1);
 
         IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -226,9 +241,11 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
             }
         };
 
-        client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
+        for (Ignite client : clients)
+            client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
 
-        srvSpi.failNode(client.cluster().localNode().id(), null);
+        for (Ignite client : clients)
+            srvSpi.failNode(client.cluster().localNode().id(), null);
 
         waitReconnectEvent(disconnectLatch);
 
@@ -237,11 +254,13 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         log.info("Allow reconnect.");
 
-        clientSpi.writeLatch.countDown();
+        for (Ignite client : clients)
+            spi(client).writeLatch.countDown();
 
         waitReconnectEvent(reconnectLatch);
 
-        client.events().stopLocalListen(p);
+        for (Ignite client : clients)
+            client.events().stopLocalListen(p);
     }
 
     /**

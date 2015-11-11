@@ -33,4 +33,9 @@ public class GridCacheAtomicNearEnabledFairAffinityMultiNodeFullApiSelfTest
 
         return cfg;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testWithSkipStore(){
+        fail("https://issues.apache.org/jira/browse/IGNITE-1582");
+    }
 }

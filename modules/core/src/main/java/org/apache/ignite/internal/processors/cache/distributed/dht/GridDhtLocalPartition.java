@@ -258,7 +258,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         GridDhtPartitionState state = state();
 
         if (state == EVICTED)
-            throw new GridDhtInvalidPartitionException(id, "Adding entry to invalid partition [part=" + id + ']');
+            throw new GridDhtInvalidPartitionException(id, "Adding entry to invalid partition " +
+                "(often may be caused by inconsistent 'key.hashCode()' implementation) [part=" + id + ']');
 
         map.put(entry.key(), entry);
 
@@ -603,6 +604,14 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
+     * @param topVer Topology version.
+     * @return {@code True} if local node is backup for this partition.
+     */
+    public boolean backup(AffinityTopologyVersion topVer) {
+        return cctx.affinity().backup(cctx.localNode(), id, topVer);
+    }
+
+    /**
      * Clears values for this partition.
      */
     private void clearAll() {
@@ -657,7 +666,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                                     cached.hasValue(),
                                     null,
                                     null,
-                                    null);
+                                    null,
+                                    false);
                             }
                         }
                     }

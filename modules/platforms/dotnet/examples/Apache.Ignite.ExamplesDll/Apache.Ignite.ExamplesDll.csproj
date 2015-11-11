@@ -33,6 +33,12 @@
     <PlatformTarget>x86</PlatformTarget>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.ExamplesDll.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Apache.Ignite.Core">
       <HintPath>..\..\Apache.Ignite\bin\$(Platform)\$(Configuration)\Apache.Ignite.Core.dll</HintPath>
@@ -49,19 +55,21 @@
     <Compile Include="Datagrid\ContinuousQueryFilter.cs" />
     <Compile Include="Datagrid\EmployeeStore.cs" />
     <Compile Include="Events\LocalListener.cs" />
-    <Compile Include="Events\RemoteFilter.cs" />
     <Compile Include="Messaging\LocalListener.cs" />
     <Compile Include="Messaging\RemoteOrderedListener.cs" />
     <Compile Include="Messaging\RemoteUnorderedListener.cs" />
     <Compile Include="Messaging\Topic.cs" />
-    <Compile Include="Portable\Account.cs" />
-    <Compile Include="Portable\Address.cs" />
-    <Compile Include="Portable\Employee.cs" />
-    <Compile Include="Portable\EmployeeKey.cs" />
-    <Compile Include="Portable\Organization.cs" />
-    <Compile Include="Portable\OrganizationType.cs" />
+    <Compile Include="Binary\Account.cs" />
+    <Compile Include="Binary\Address.cs" />
+    <Compile Include="Binary\Employee.cs" />
+    <Compile Include="Binary\EmployeeKey.cs" />
+    <Compile Include="Binary\Organization.cs" />
+    <Compile Include="Binary\OrganizationType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\MapService.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Apache.Ignite.ExamplesDll.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.

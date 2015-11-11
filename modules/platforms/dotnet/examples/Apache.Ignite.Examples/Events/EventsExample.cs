@@ -22,10 +22,11 @@ using Apache.Ignite.Core;
 using Apache.Ignite.Core.Events;
 using Apache.Ignite.ExamplesDll.Compute;
 using Apache.Ignite.ExamplesDll.Events;
-using Apache.Ignite.ExamplesDll.Portable;
 
 namespace Apache.Ignite.Examples.Events
 {
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
     /// Example demonstrating Ignite events.
     /// <para />
@@ -63,7 +64,7 @@ namespace Apache.Ignite.Examples.Events
                 Console.WriteLine(">>> Listening for a local event...");
 
                 var listener = new LocalListener();
-                ignite.GetEvents().LocalListen(listener, EventType.EventsTaskExecution);
+                ignite.GetEvents().LocalListen(listener, EventType.TaskExecutionAll);
 
                 ExecuteTask(ignite);
 
@@ -71,24 +72,6 @@ namespace Apache.Ignite.Examples.Events
 
                 Console.WriteLine(">>> Received events count: " + listener.EventsReceived);
                 Console.WriteLine();
-
-                // Remote listen example (start standalone nodes for better demonstration)
-                Console.WriteLine(">>> Listening for remote events...");
-
-                var localListener = new LocalListener();
-                var remoteFilter = new RemoteFilter();
-
-                var listenId = ignite.GetEvents().RemoteListen(localListener: localListener,
-                    remoteFilter: remoteFilter, types: EventType.EventsJobExecution);
-
-                if (listenId == null)
-                    throw new InvalidOperationException("Subscription failed.");
-
-                ExecuteTask(ignite);
-
-                ignite.GetEvents().StopRemoteListen(listenId.Value);
-
-                Console.WriteLine(">>> Received events count: " + localListener.EventsReceived);
             }
 
             Console.WriteLine();

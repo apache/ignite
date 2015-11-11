@@ -19,10 +19,10 @@ namespace Apache.Ignite.Core.Tests.Portable
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.Structure;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -56,14 +56,14 @@ namespace Apache.Ignite.Core.Tests.Portable
                 objs = IgniteUtils.Shuffle(objs);
 
                 // 2. Create new marshaller.
-                PortableTypeConfiguration typeCfg = new PortableTypeConfiguration(typeof(BranchedType));
+                BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(typeof(BranchedType));
 
-                PortableConfiguration cfg = new PortableConfiguration
+                BinaryConfiguration cfg = new BinaryConfiguration
                 {
-                    TypeConfigurations = new List<PortableTypeConfiguration> { typeCfg }
+                    TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg }
                 };
 
-                PortableMarshaller marsh = new PortableMarshaller(cfg);
+                Marshaller marsh = new Marshaller(cfg);
 
                 // 3. Marshal all data and ensure deserialized object is fine.
                 foreach (BranchedType obj in objs)
@@ -80,27 +80,16 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Console.WriteLine();
 
                 // 4. Ensure that all fields are recorded.
-                IPortableTypeDescriptor desc = marsh.GetDescriptor(typeof (BranchedType));
+                var desc = marsh.GetDescriptor(typeof (BranchedType));
 
-                PortableStructure typeStruct = desc.TypeStructure;
-
-                IDictionary<string, byte> fields = typeStruct.FieldTypes;
-
-                Assert.IsTrue(fields.Count == 8);
-
-                Assert.IsTrue(fields.ContainsKey("mode"));
-                Assert.IsTrue(fields.ContainsKey("f2"));
-                Assert.IsTrue(fields.ContainsKey("f3"));
-                Assert.IsTrue(fields.ContainsKey("f4"));
-                Assert.IsTrue(fields.ContainsKey("f5"));
-                Assert.IsTrue(fields.ContainsKey("f6"));
-                Assert.IsTrue(fields.ContainsKey("f7"));
-                Assert.IsTrue(fields.ContainsKey("f8"));
+                CollectionAssert.AreEquivalent(new[] {"mode", "f2", "f3", "f4", "f5", "f6", "f7", "f8"},
+                    desc.WriterTypeStructure.FieldTypes.Keys);
             }
         }
     }
 
-    public class BranchedType : IPortableMarshalAware
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
+    public class BranchedType : IBinarizable
     {
         public int mode;
         public int f2;
@@ -158,7 +147,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.WriteInt("mode", mode);
 
@@ -205,7 +194,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             mode = reader.ReadInt("mode");
 

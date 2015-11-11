@@ -19,31 +19,32 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.portable.GridPortableAffinityKeySelfTest;
-import org.apache.ignite.internal.portable.GridPortableBuilderAdditionalSelfTest;
-import org.apache.ignite.internal.portable.GridPortableBuilderSelfTest;
-import org.apache.ignite.internal.portable.GridPortableBuilderStringAsCharsAdditionalSelfTest;
-import org.apache.ignite.internal.portable.GridPortableBuilderStringAsCharsSelfTest;
+import org.apache.ignite.internal.portable.GridBinaryObjectBuilderAdditionalSelfTest;
+import org.apache.ignite.internal.portable.GridBinaryObjectBuilderSelfTest;
 import org.apache.ignite.internal.portable.GridPortableMarshallerCtxDisabledSelfTest;
 import org.apache.ignite.internal.portable.GridPortableMarshallerSelfTest;
-import org.apache.ignite.internal.portable.GridPortableMetaDataDisabledSelfTest;
 import org.apache.ignite.internal.portable.GridPortableMetaDataSelfTest;
 import org.apache.ignite.internal.portable.GridPortableWildcardsSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodePortableMetadataMultinodeTest;
-import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodePortableMetadataTest;
+import org.apache.ignite.internal.portable.PortableCompactOffsetsHeapSelfTest;
+import org.apache.ignite.internal.portable.PortableCompactOffsetsOffheapSelfTest;
+import org.apache.ignite.internal.portable.BinaryFieldsHeapSelfTest;
+import org.apache.ignite.internal.portable.BinaryFieldsOffheapSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
+import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodeBinaryObjectMetadataTest;
 import org.apache.ignite.internal.processors.cache.portable.GridCachePortableStoreObjectsSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.GridCachePortableStorePortablesSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsAtomicNearDisabledOffheapTieredSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsAtomicNearDisabledSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsAtomicOffheapTieredSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsPartitionedNearDisabledOffheapTieredSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsPartitionedNearDisabledSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsPartitionedOffheapTieredSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsPartitionedSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.replicated.GridCachePortableObjectsReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.local.GridCachePortableObjectsAtomicLocalSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.local.GridCachePortableObjectsLocalOffheapTieredSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.local.GridCachePortableObjectsLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsAtomicOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsPartitionedNearDisabledOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsPartitionedNearDisabledSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsPartitionedOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.replicated.GridCacheBinaryObjectsReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.local.GridCacheBinaryObjectsAtomicLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.local.GridCacheBinaryObjectsLocalOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.local.GridCacheBinaryObjectsLocalSelfTest;
 
 /**
  * Test for portable objects stored in cache.
@@ -58,34 +59,35 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
 
         suite.addTestSuite(GridPortableMarshallerSelfTest.class);
         suite.addTestSuite(GridPortableMarshallerCtxDisabledSelfTest.class);
-        suite.addTestSuite(GridPortableBuilderSelfTest.class);
-        suite.addTestSuite(GridPortableBuilderStringAsCharsSelfTest.class);
+        suite.addTestSuite(GridBinaryObjectBuilderSelfTest.class);
+        suite.addTestSuite(GridBinaryObjectBuilderAdditionalSelfTest.class);
+        suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
+        suite.addTestSuite(BinaryFieldsOffheapSelfTest.class);
+        suite.addTestSuite(PortableCompactOffsetsHeapSelfTest.class);
+        suite.addTestSuite(PortableCompactOffsetsOffheapSelfTest.class);
         suite.addTestSuite(GridPortableMetaDataSelfTest.class);
-        suite.addTestSuite(GridPortableMetaDataDisabledSelfTest.class);
         suite.addTestSuite(GridPortableAffinityKeySelfTest.class);
         suite.addTestSuite(GridPortableWildcardsSelfTest.class);
-        suite.addTestSuite(GridPortableBuilderAdditionalSelfTest.class);
-        suite.addTestSuite(GridPortableBuilderStringAsCharsAdditionalSelfTest.class);
 
-        suite.addTestSuite(GridCachePortableObjectsLocalSelfTest.class);
-        suite.addTestSuite(GridCachePortableObjectsAtomicLocalSelfTest.class);
-        suite.addTestSuite(GridCachePortableObjectsReplicatedSelfTest.class);
-        suite.addTestSuite(GridCachePortableObjectsPartitionedSelfTest.class);
-        suite.addTestSuite(GridCachePortableObjectsPartitionedNearDisabledSelfTest.class);
-        suite.addTestSuite(GridCachePortableObjectsAtomicSelfTest.class);
-        suite.addTestSuite(GridCachePortableObjectsAtomicNearDisabledSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectsLocalSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectsAtomicLocalSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectsReplicatedSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectsPartitionedSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectsAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectsAtomicNearDisabledSelfTest.class);
 
-        suite.addTestSuite(GridCachePortableObjectsLocalOffheapTieredSelfTest.class);
-        suite.addTestSuite(GridCachePortableObjectsAtomicOffheapTieredSelfTest.class);
-        suite.addTestSuite(GridCachePortableObjectsAtomicNearDisabledOffheapTieredSelfTest.class);
-        suite.addTestSuite(GridCachePortableObjectsPartitionedOffheapTieredSelfTest.class);
-        suite.addTestSuite(GridCachePortableObjectsPartitionedNearDisabledOffheapTieredSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectsLocalOffheapTieredSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectsAtomicOffheapTieredSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectsAtomicNearDisabledOffheapTieredSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectsPartitionedOffheapTieredSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledOffheapTieredSelfTest.class);
 
         suite.addTestSuite(GridCachePortableStoreObjectsSelfTest.class);
         suite.addTestSuite(GridCachePortableStorePortablesSelfTest.class);
 
-        suite.addTestSuite(GridCacheClientNodePortableMetadataTest.class);
-        suite.addTestSuite(GridCacheClientNodePortableMetadataMultinodeTest.class);
+        suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
+        suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);
 
         return suite;
     }

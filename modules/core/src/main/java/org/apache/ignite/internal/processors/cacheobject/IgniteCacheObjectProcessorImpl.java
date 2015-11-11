@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -56,6 +57,9 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
+    /** */
+    private IgniteBinary noOpBinary = new NoOpBinary();
+
     /**
      *
      */
@@ -82,6 +86,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteBinary binary() {
+        return noOpBinary;
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx) {
         if (obj == null)
             return null;
@@ -91,7 +100,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public byte[] marshal(CacheObjectContext ctx, Object val) throws IgniteCheckedException {
-        return CU.marshal(ctx.kernalContext().cache().context(), val);
+        return CU.marshal(ctx.kernalContext().cache().context(), ctx.addDeploymentInfo(), val);
     }
 
     /** {@inheritDoc} */
@@ -209,7 +218,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         CacheObjectContext res = new CacheObjectContext(ctx,
             ccfg.getAffinityMapper() != null ? ccfg.getAffinityMapper() : new GridCacheDefaultAffinityKeyMapper(),
             ccfg.isCopyOnRead() && memMode != OFFHEAP_VALUES,
-            storeVal);
+            storeVal,
+            ctx.config().isPeerClassLoadingEnabled() && !isPortableEnabled(ccfg));
 
         ctx.resource().injectGeneric(res.defaultAffMapper());
 

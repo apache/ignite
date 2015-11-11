@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.internal.portable.builder.PortableLazyValue;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryObject;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
+
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Collection;
@@ -33,11 +42,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import org.apache.ignite.internal.portable.builder.PortableLazyValue;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.portable.PortableObject;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN_ARR;
@@ -61,18 +65,22 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT_ARR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_ARR;
 
 /**
- *
+ * Portable utils.
  */
 public class PortableUtils {
     /** */
@@ -86,6 +94,62 @@ public class PortableUtils {
 
     /** Portable classes. */
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
+
+    /** Flag: user type. */
+    public static final short FLAG_USR_TYP = 0x1;
+
+    /** Flag: only raw data exists. */
+    public static final short FLAG_RAW_ONLY = 0x2;
+
+    /** Flag: offsets take 1 byte. */
+    public static final short FLAG_OFFSET_ONE_BYTE = 0x4;
+
+    /** Flag: offsets take 2 bytes. */
+    public static final short FLAG_OFFSET_TWO_BYTES = 0x8;
+
+    /** Offset which fits into 1 byte. */
+    public static final int OFFSET_1 = 1;
+
+    /** Offset which fits into 2 bytes. */
+    public static final int OFFSET_2 = 2;
+
+    /** Offset which fits into 4 bytes. */
+    public static final int OFFSET_4 = 4;
+
+    /**
+     * Write flags.
+     *
+     * @param writer Writer.
+     * @param userType User type flag.
+     */
+    public static void writeFlags(BinaryWriterExImpl writer, boolean userType) {
+        short val = 0;
+
+        if (userType)
+            val |= FLAG_USR_TYP;
+
+        writer.doWriteShort(val);
+    }
+
+    /**
+     * Check if user type flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isUserType(short flags) {
+        return (flags & FLAG_USR_TYP) == FLAG_USR_TYP;
+    }
+
+    /**
+     * Check if raw-only flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isRawOnly(short flags) {
+        return (flags & FLAG_RAW_ONLY) == FLAG_RAW_ONLY;
+    }
 
     /**
      *
@@ -135,6 +199,7 @@ public class PortableUtils {
         PLAIN_CLASS_TO_FLAG.put(String.class, GridPortableMarshaller.STRING);
         PLAIN_CLASS_TO_FLAG.put(UUID.class, GridPortableMarshaller.UUID);
         PLAIN_CLASS_TO_FLAG.put(Date.class, GridPortableMarshaller.DATE);
+        PLAIN_CLASS_TO_FLAG.put(Timestamp.class, GridPortableMarshaller.TIMESTAMP);
 
         PLAIN_CLASS_TO_FLAG.put(byte[].class, GridPortableMarshaller.BYTE_ARR);
         PLAIN_CLASS_TO_FLAG.put(short[].class, GridPortableMarshaller.SHORT_ARR);
@@ -148,6 +213,7 @@ public class PortableUtils {
         PLAIN_CLASS_TO_FLAG.put(String[].class, GridPortableMarshaller.STRING_ARR);
         PLAIN_CLASS_TO_FLAG.put(UUID[].class, GridPortableMarshaller.UUID_ARR);
         PLAIN_CLASS_TO_FLAG.put(Date[].class, GridPortableMarshaller.DATE_ARR);
+        PLAIN_CLASS_TO_FLAG.put(Timestamp[].class, GridPortableMarshaller.TIMESTAMP_ARR);
 
         for (Map.Entry<Class<?>, Byte> entry : PLAIN_CLASS_TO_FLAG.entrySet())
             FLAG_TO_CLASS.put(entry.getValue(), entry.getKey());
@@ -163,9 +229,9 @@ public class PortableUtils {
 
         for (byte b : new byte[] {
             BYTE, SHORT, INT, LONG, FLOAT, DOUBLE,
-            CHAR, BOOLEAN, DECIMAL, STRING, UUID, DATE,
+            CHAR, BOOLEAN, DECIMAL, STRING, UUID, DATE, TIMESTAMP,
             BYTE_ARR, SHORT_ARR, INT_ARR, LONG_ARR, FLOAT_ARR, DOUBLE_ARR,
-            CHAR_ARR, BOOLEAN_ARR, DECIMAL_ARR, STRING_ARR, UUID_ARR, DATE_ARR,
+            CHAR_ARR, BOOLEAN_ARR, DECIMAL_ARR, STRING_ARR, UUID_ARR, DATE_ARR, TIMESTAMP_ARR,
             ENUM, ENUM_ARR, NULL}) {
 
             PLAIN_TYPE_FLAG[b] = true;
@@ -178,7 +244,7 @@ public class PortableUtils {
      * @param writer W
      * @param val Value.
      */
-    public static void writePlainObject(PortableWriterExImpl writer, Object val) {
+    public static void writePlainObject(BinaryWriterExImpl writer, Object val) {
         Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
 
         if (flag == null)
@@ -249,10 +315,12 @@ public class PortableUtils {
                 break;
 
             case DATE:
-                if (val instanceof Timestamp)
-                    writer.doWriteTimestamp((Timestamp)val);
-                else
-                    writer.doWriteDate((Date)val);
+                writer.doWriteDate((Date)val);
+
+                break;
+
+            case TIMESTAMP:
+                writer.doWriteTimestamp((Timestamp) val);
 
                 break;
 
@@ -316,6 +384,11 @@ public class PortableUtils {
 
                 break;
 
+            case TIMESTAMP_ARR:
+                writer.doWriteTimestampArray((Timestamp[])val);
+
+                break;
+
             default:
                 throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
         }
@@ -366,7 +439,7 @@ public class PortableUtils {
      * @return {@code true} if content of serialized array value cannot contain references to other object.
      */
     public static boolean isPlainArrayType(int type) {
-        return type >= BYTE_ARR && type <= DATE_ARR;
+        return (type >= BYTE_ARR && type <= DATE_ARR) || type == TIMESTAMP_ARR;
     }
 
     /**
@@ -374,9 +447,6 @@ public class PortableUtils {
      * @return Portable field type.
      */
     public static byte typeByClass(Class<?> cls) {
-        if (Date.class.isAssignableFrom(cls))
-            return DATE;
-
         Byte type = PLAIN_CLASS_TO_FLAG.get(cls);
 
         if (type != null)
@@ -395,7 +465,7 @@ public class PortableUtils {
             return MAP;
 
         if (Map.Entry.class.isAssignableFrom(cls))
-            return MAP;
+            return MAP_ENTRY;
 
         return OBJ;
     }
@@ -425,7 +495,7 @@ public class PortableUtils {
     public static boolean isPortableType(Class<?> cls) {
         assert cls != null;
 
-        return PortableObject.class.isAssignableFrom(cls) ||
+        return BinaryObject.class.isAssignableFrom(cls) ||
             PORTABLE_CLS.contains(cls) ||
             cls.isEnum() ||
             (cls.isArray() && cls.getComponentType().isEnum());
@@ -465,5 +535,167 @@ public class PortableUtils {
             return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)set).comparator());
 
         return U.newHashSet(set.size());
+    }
+
+    /**
+     * Check protocol version.
+     *
+     * @param protoVer Protocol version.
+     */
+    public static void checkProtocolVersion(byte protoVer) {
+        if (PROTO_VER != protoVer)
+            throw new BinaryObjectException("Unsupported protocol version: " + protoVer);
+    }
+
+    /**
+     * Write portable header.
+     *
+     * @param writer Writer.
+     * @param usrTyp User type flag.
+     * @param typeId Type ID.
+     * @param hashCode Hash code.
+     * @param clsName Class name (optional).
+     * @return Position where length should be written.
+     */
+    public static int writeHeader(BinaryWriterExImpl writer, boolean usrTyp, int typeId, int hashCode,
+        @Nullable String clsName) {
+        writer.doWriteByte(GridPortableMarshaller.OBJ);
+        writer.doWriteByte(GridPortableMarshaller.PROTO_VER);
+
+        PortableUtils.writeFlags(writer, usrTyp);
+
+        writer.doWriteInt(typeId);
+        writer.doWriteInt(hashCode);
+
+        int reserved = writer.reserve(12);
+
+        if (clsName != null)
+            writer.doWriteString(clsName);
+
+        return reserved;
+    }
+
+    /**
+     * Get portable object length.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @return Length.
+     */
+    public static int length(PortablePositionReadable in, int start) {
+        return in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
+    }
+
+    /**
+     * Get footer start of the object.
+     *
+     * @param in Input stream.
+     * @param start Object start position inside the stream.
+     * @return Footer start.
+     */
+    public static int footerStartRelative(PortablePositionReadable in, int start) {
+        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
+
+        if (PortableUtils.isRawOnly(flags))
+            // No schema, footer start equals to object end.
+            return length(in, start);
+        else
+            // Schema exists, use offset.
+            return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+    }
+
+    /**
+     * Get object's footer.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @return Footer start.
+     */
+    public static int footerStartAbsolute(PortablePositionReadable in, int start) {
+        return footerStartRelative(in, start) + start;
+    }
+
+    /**
+     * Get object's footer.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @param fieldOffsetSize Field offset size.
+     * @return Footer.
+     */
+    public static IgniteBiTuple<Integer, Integer> footerAbsolute(PortablePositionReadable in, int start,
+        int fieldOffsetSize) {
+        int footerStart = footerStartRelative(in, start);
+        int footerEnd = length(in, start);
+
+        // Take in count possible raw offset.
+        if ((footerEnd - footerStart) % (4 + fieldOffsetSize) != 0)
+            footerEnd -= 4;
+
+        return F.t(start + footerStart, start + footerEnd);
+    }
+
+    /**
+     * Get raw offset of the object.
+     *
+     * @param in Input stream.
+     * @param start Object start position inside the stream.
+     * @param fieldOffsetSize Field offset size.
+     * @return Raw offset.
+     */
+    public static int rawOffsetAbsolute(PortablePositionReadable in, int start, int fieldOffsetSize) {
+        int len = length(in, start);
+
+        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
+
+        if (PortableUtils.isRawOnly(flags))
+            // No schema, raw offset is located on schema offset position.
+            return start + in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        else {
+            // Schema exists.
+            int schemaOff = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+            if (((len - schemaOff) % (4 + fieldOffsetSize)) == 0x0)
+                // Even amount of records in schema => no raw offset.
+                return start + schemaOff;
+            else
+                // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
+                return start + in.readIntPositioned(start + len - 4);
+        }
+    }
+
+    /**
+     * Get offset size for the given flags.
+     * @param flags Flags.
+     * @return Offset size.
+     */
+    public static int fieldOffsetSize(short flags) {
+        if ((flags & FLAG_OFFSET_ONE_BYTE) == FLAG_OFFSET_ONE_BYTE)
+            return OFFSET_1;
+        else if ((flags & FLAG_OFFSET_TWO_BYTES) == FLAG_OFFSET_TWO_BYTES)
+            return OFFSET_2;
+        else
+            return OFFSET_4;
+    }
+
+    /**
+     * Get relative field offset.
+     *
+     * @param stream Stream.
+     * @param pos Position.
+     * @param fieldOffsetSize Field offset size.
+     * @return Relative field offset.
+     */
+    public static int fieldOffsetRelative(PortablePositionReadable stream, int pos, int fieldOffsetSize) {
+        int res;
+
+        if (fieldOffsetSize == PortableUtils.OFFSET_1)
+            res = (int)stream.readBytePositioned(pos) & 0xFF;
+        else if (fieldOffsetSize == PortableUtils.OFFSET_2)
+            res = (int)stream.readShortPositioned(pos) & 0xFFFF;
+        else
+            res = stream.readIntPositioned(pos);
+
+        return res;
     }
 }

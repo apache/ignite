@@ -56,23 +56,23 @@ struct Person
 
 namespace ignite
 {
-    namespace portable
+    namespace binary
     {
-        IGNITE_PORTABLE_TYPE_START(Person)
-        IGNITE_PORTABLE_GET_TYPE_ID_AS_HASH(Person)
-        IGNITE_PORTABLE_GET_TYPE_NAME_AS_IS(Person)
-        IGNITE_PORTABLE_GET_FIELD_ID_AS_HASH
-        IGNITE_PORTABLE_GET_HASH_CODE_ZERO(Person)
-        IGNITE_PORTABLE_IS_NULL_FALSE(Person)
-        IGNITE_PORTABLE_GET_NULL_DEFAULT_CTOR(Person)
+        IGNITE_BINARY_TYPE_START(Person)
+        IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Person)
+        IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Person)
+        IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+        IGNITE_BINARY_GET_HASH_CODE_ZERO(Person)
+        IGNITE_BINARY_IS_NULL_FALSE(Person)
+        IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
             
-        void Write(PortableWriter& writer, Person obj)
+        void Write(BinaryWriter& writer, Person obj)
         {
             writer.WriteString("name", obj.name);
             writer.WriteInt32("age", obj.age);            
         }
 
-        Person Read(PortableReader& reader)
+        Person Read(BinaryReader& reader)
         {
             std::string name = reader.ReadString("name");
             int age = reader.ReadInt32("age");
@@ -80,7 +80,7 @@ namespace ignite
             return Person(name, age);
         }
 
-        IGNITE_PORTABLE_TYPE_END
+        IGNITE_BINARY_TYPE_END
     }
 }
 
@@ -95,16 +95,11 @@ struct CacheTestSuiteFixture {
     {
         IgniteConfiguration cfg;
 
-        IgniteJvmOption opts[5];
-
-        opts[0] = IgniteJvmOption("-Xdebug");
-        opts[1] = IgniteJvmOption("-Xnoagent");
-        opts[2] = IgniteJvmOption("-Djava.compiler=NONE");
-        opts[3] = IgniteJvmOption("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        opts[4] = IgniteJvmOption("-XX:+HeapDumpOnOutOfMemoryError");
-
-        cfg.jvmOptsLen = 5;
-        cfg.jvmOpts = opts;
+        cfg.jvmOpts.push_back("-Xdebug");
+        cfg.jvmOpts.push_back("-Xnoagent");
+        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
+        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
+        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
 
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;
@@ -116,9 +111,7 @@ struct CacheTestSuiteFixture {
 
         char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
 
-        std::string cfgPathStr = std::string(cfgPath).append("/").append("cache-test.xml");
-
-        cfg.springCfgPath = const_cast<char*>(cfgPathStr.c_str());
+        cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test.xml");
         
         for (int i = 0; i < 2; i++) 
         {
@@ -435,7 +428,7 @@ BOOST_AUTO_TEST_CASE(TestLocalEvict)
     BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
 }
 
-BOOST_AUTO_TEST_CASE(TestPortable)
+BOOST_AUTO_TEST_CASE(TestBinary)
 {
     cache::Cache<int, Person> cache = grid0.GetCache<int, Person>("partitioned");
 
