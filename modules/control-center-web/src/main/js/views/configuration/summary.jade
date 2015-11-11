@@ -83,7 +83,6 @@ block content
                                     .col-xs-4.col-sm-3.col-md-3
                                         button.select-toggle.form-control(ng-model='configServer.javaClassServer' bs-select bs-options='item.value as item.label for item in javaClassItems' data-sort='false')
                                 div(ui-ace='{ onLoad: aceInit, mode: "java" }' ng-model='javaServer')
-                            +pojos('Server')
                             div(bs-pane title='Dockerfile')
                                 .details-row
                                     p

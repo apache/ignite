@@ -45,7 +45,7 @@ consoleModule.controller('summaryController', [
     $scope.pojoClasses = function() {
         var classes = [];
 
-        _.forEach($generatorJava.metadatas, function(meta) {
+        _.forEach($scope.selectedItem.metadatas, function(meta) {
             classes.push(meta.keyType);
             classes.push(meta.valueType);
         });
@@ -96,7 +96,7 @@ consoleModule.controller('summaryController', [
     };
 
     function selectPojoClass(config) {
-        _.forEach($generatorJava.metadatas, function(meta) {
+        _.forEach($scope.selectedItem.metadatas, function(meta) {
             if (meta.keyType == config.pojoClass)
                 return config.pojoClassBody = meta.keyClass;
 
@@ -113,12 +113,11 @@ consoleModule.controller('summaryController', [
 
     $scope.updatePojos = function() {
         if ($common.isDefined($scope.selectedItem)) {
-            var curServCls = $scope.configServer.pojoClass;
-            var curCliCls = $scope.configClient.pojoClass;
-
             var metadatas = $generatorJava.pojos($scope.selectedItem.caches, $scope.configServer.useConstructor, $scope.configServer.includeKeyFields);
 
-            function restoreSelected(selected, config, tabs) {
+            $scope.selectedItem.metadatas = metadatas;
+
+            function restoreSelected(selected, config, tabs, metadatas) {
                 if (!$common.isDefined(selected) || _.findIndex(metadatas, function (meta) {
                         return meta.keyType == selected || meta.valueType == selected;
                     }) < 0) {
@@ -141,8 +140,8 @@ consoleModule.controller('summaryController', [
                 selectPojoClass(config);
             }
 
-            restoreSelected(curServCls, $scope.configServer, $scope.tabsServer);
-            restoreSelected(curCliCls, $scope.configClient, $scope.tabsClient);
+            restoreSelected($scope.configServer.pojoClass, $scope.configServer, $scope.tabsServer, metadatas);
+            restoreSelected($scope.configClient.pojoClass, $scope.configClient, $scope.tabsClient, metadatas);
         }
     };
 
@@ -190,7 +189,7 @@ consoleModule.controller('summaryController', [
     };
 
     $scope.pojoAvailable = function() {
-        return $common.isDefined($generatorJava.metadatas) && $generatorJava.metadatas.length > 0;
+        return $common.isDefined($scope.selectedItem.metadatas) && $scope.selectedItem.metadatas.length > 0;
     };
 
     $scope.downloadConfiguration = function () {

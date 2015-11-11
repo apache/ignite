@@ -1352,7 +1352,7 @@ $generatorXml.igfsMisc = function(igfs, res) {
     return res;
 };
 
-// Generate cluster config.
+// Generate DataSource beans.
 $generatorXml.generateDataSources = function (datasources, res) {
     if (!res)
         res = $generatorCommon.builder();

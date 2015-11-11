@@ -1328,14 +1328,14 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     if (!key)
         _.forEach(meta.valueFields, function (valFld) {
             if (_.findIndex(allFields, function(fld) {
-                return fld.javaName == valFld.javaName;
+                return fld.javaFieldName == valFld.javaFieldName;
             }) < 0)
                 allFields.push(valFld);
         });
 
     // Generate allFields declaration.
     _.forEach(allFields, function (field) {
-        var fldName = field.javaName;
+        var fldName = field.javaFieldName;
 
         res.line('/** Value for ' + fldName + '. */');
 
@@ -1361,7 +1361,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
         res.startBlock('public ' + type + '(');
 
         _.forEach(allFields, function(field) {
-            res.line(res.importClass(field.javaType) + ' ' + field.javaName + (fldIx < allFields.length - 1 ? ',' : ''))
+            res.line(res.importClass(field.javaFieldType) + ' ' + field.javaFieldName + (fldIx < allFields.length - 1 ? ',' : ''))
         });
 
         res.endBlock(') {');
@@ -1369,7 +1369,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
         res.startBlock();
 
         _.forEach(allFields, function (field) {
-            res.line('this.' + field.javaName +' = ' + field.javaName + ';');
+            res.line('this.' + field.javaFieldName +' = ' + field.javaFieldName + ';');
         });
 
         res.endBlock('}');
@@ -1379,7 +1379,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
 
     // Generate getters and setters methods.
     _.forEach(allFields, function (field) {
-        var fldName = field.javaName;
+        var fldName = field.javaFieldName;
 
         var fldType = res.importClass(field.javaFieldType);
 
@@ -1425,7 +1425,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     _.forEach(allFields, function (field) {
         res.needEmptyLine = true;
 
-        var javaName = field.javaName;
+        var javaName = field.javaFieldName;
 
         res.startBlock('if (' + javaName + ' != null ? !' + javaName + '.equals(that.' + javaName + ') : that.' + javaName + ' != null)');
 
@@ -1447,7 +1447,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     var first = true;
 
     _.forEach(allFields, function (field) {
-        var javaName = field.javaName;
+        var javaName = field.javaFieldName;
 
         if (!first)
             res.needEmptyLine = true;
@@ -1470,14 +1470,14 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     if (allFields.length > 0) {
         field = allFields[0];
 
-        res.startBlock('return \"' + type + ' [' + field.javaName + '=\" + ' + field.javaName + ' +', type);
+        res.startBlock('return \"' + type + ' [' + field.javaFieldName + '=\" + ' + field.javaFieldName + ' +', type);
 
         for (fldIx = 1; fldIx < allFields.length; fldIx ++) {
             field = allFields[fldIx];
 
-            var javaName = field.javaName;
+            var javaName = field.javaFieldName;
 
-            res.line('\", ' + javaName + '=\" + ' + field.javaName + ' +');
+            res.line('\", ' + javaName + '=\" + ' + field.javaFieldName + ' +');
         }
     }
 
