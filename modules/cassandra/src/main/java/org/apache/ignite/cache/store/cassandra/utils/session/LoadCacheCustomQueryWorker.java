@@ -36,7 +36,7 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
     public LoadCacheCustomQueryWorker(CassandraSession ses, String query, PersistenceController ctrl,
         IgniteLogger logger, IgniteBiInClosure<K, V> clo) {
         this.ses = ses;
-        this.query = query;
+        this.query = query.trim().endsWith(";") ? query : query + ";";
         this.ctrl = ctrl;
         this.logger = logger;
         this.clo = clo;
