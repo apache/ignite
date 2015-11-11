@@ -271,12 +271,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static readonly bool IsGuidSequential = GetIsGuidSequential();
 
         /** Guid writer. */
-        public static readonly Action<Guid, IPortableStream> WriteGuid = IsGuidSequential
-            ? (Action<Guid, IPortableStream>) WriteGuidBitwise : WriteGuidBytewise;
+        public static readonly Action<Guid, IBinaryStream> WriteGuid = IsGuidSequential
+            ? (Action<Guid, IBinaryStream>)WriteGuidBitwise : WriteGuidBytewise;
 
         /** Guid reader. */
-        public static readonly Func<IPortableStream, Guid?> ReadGuid = IsGuidSequential
-            ? (Func<IPortableStream, Guid?>) ReadGuidBitwise : ReadGuidBytewise;
+        public static readonly Func<IBinaryStream, Guid?> ReadGuid = IsGuidSequential
+            ? (Func<IBinaryStream, Guid?>)ReadGuidBitwise : ReadGuidBytewise;
 
         /// <summary>
         /// Default marshaller.
@@ -962,7 +962,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="val">The value.</param>
         /// <param name="stream">The stream.</param>
-        private static unsafe void WriteGuidBitwise(Guid val, IPortableStream stream)
+        private static unsafe void WriteGuidBitwise(Guid val, IBinaryStream stream)
         {
             var jguid = new JavaGuid(val);
 
@@ -976,7 +976,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="val">The value.</param>
         /// <param name="stream">The stream.</param>
-        private static unsafe void WriteGuidBytewise(Guid val, IPortableStream stream)
+        private static unsafe void WriteGuidBytewise(Guid val, IBinaryStream stream)
         {
             var bytes = val.ToByteArray();
             byte* jBytes = stackalloc byte[16];
@@ -1010,7 +1010,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <returns>Guid.</returns>
-        private static unsafe Guid? ReadGuidBitwise(IPortableStream stream)
+        private static unsafe Guid? ReadGuidBitwise(IBinaryStream stream)
         {
             JavaGuid jguid;
 
@@ -1028,7 +1028,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <returns>Guid.</returns>
-        private static unsafe Guid? ReadGuidBytewise(IPortableStream stream)
+        private static unsafe Guid? ReadGuidBytewise(IBinaryStream stream)
         {
             byte* jBytes = stackalloc byte[16];
 
