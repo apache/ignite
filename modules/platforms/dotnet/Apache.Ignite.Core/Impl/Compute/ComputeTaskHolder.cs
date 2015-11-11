@@ -26,11 +26,11 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>
@@ -208,7 +208,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
 
             // 3. Write map result to the output stream.
-            PortableWriterImpl writer = prj.Marshaller.StartMarshal(outStream);
+            BinaryWriter writer = prj.Marshaller.StartMarshal(outStream);
 
             try
             {
@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public int JobResultRemote(ComputeJobHolder job, PlatformMemoryStream stream)
         {
             // 1. Unmarshal result.
-            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
+            BinaryReader reader = _compute.Marshaller.StartUnmarshal(stream);
 
             var nodeId = reader.ReadGuid();
             Debug.Assert(nodeId.HasValue);
@@ -299,7 +299,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             {
                 object err;
 
-                var data = PortableUtils.ReadInvocationResult(reader, out err);
+                var data = BinaryUtils.ReadInvocationResult(reader, out err);
 
                 // 2. Process the result.
                 return (int) JobResult0(new ComputeJobResultImpl(data, (Exception) err, job.Job, nodeId.Value, cancelled));
@@ -358,14 +358,14 @@ namespace Apache.Ignite.Core.Impl.Compute
             Justification = "User object deserialization can throw any exception")]
         public void CompleteWithError(long taskHandle, PlatformMemoryStream stream)
         {
-            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
+            BinaryReader reader = _compute.Marshaller.StartUnmarshal(stream);
 
             Exception err;
 
             try
             {
                 err = reader.ReadBoolean()
-                    ? reader.ReadObject<PortableUserObject>().Deserialize<Exception>()
+                    ? reader.ReadObject<BinaryObject>().Deserialize<Exception>()
                     : ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
             }
             catch (Exception e)

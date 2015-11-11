@@ -23,14 +23,14 @@ namespace Apache.Ignite.Core.Impl.Events
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Portable;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="clusterGroup">Cluster group.</param>
-        public Events(IUnmanagedTarget target, PortableMarshaller marsh, IClusterGroup clusterGroup) 
+        public Events(IUnmanagedTarget target, Marshaller marsh, IClusterGroup clusterGroup) 
             : base(target, marsh)
         {
             Debug.Assert(clusterGroup != null);
@@ -421,25 +421,25 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /// <summary>
-        /// Reads events from a portable stream.
+        /// Reads events from a binary stream.
         /// </summary>
         /// <typeparam name="T">Event type.</typeparam>
         /// <param name="reader">Reader.</param>
         /// <returns>Resulting list or null.</returns>
-        private ICollection<T> ReadEvents<T>(IPortableStream reader) where T : IEvent
+        private ICollection<T> ReadEvents<T>(IBinaryStream reader) where T : IEvent
         {
             return ReadEvents<T>(Marshaller.StartUnmarshal(reader));
         }
 
         /// <summary>
-        /// Reads events from a portable reader.
+        /// Reads events from a binary reader.
         /// </summary>
         /// <typeparam name="T">Event type.</typeparam>
-        /// <param name="portableReader">Reader.</param>
+        /// <param name="binaryReader">Reader.</param>
         /// <returns>Resulting list or null.</returns>
-        private static ICollection<T> ReadEvents<T>(PortableReaderImpl portableReader) where T : IEvent
+        private static ICollection<T> ReadEvents<T>(BinaryReader binaryReader) where T : IEvent
         {
-            var count = portableReader.GetRawReader().ReadInt();
+            var count = binaryReader.GetRawReader().ReadInt();
 
             if (count == -1)
                 return null;
@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Impl.Events
             var result = new List<T>(count);
 
             for (var i = 0; i < count; i++)
-                result.Add(EventReader.Read<T>(portableReader));
+                result.Add(EventReader.Read<T>(binaryReader));
 
             return result;
         }
@@ -549,7 +549,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="stream">The stream.</param>
         /// <param name="listener">The listener.</param>
         /// <returns>Filter invocation result.</returns>
-        private bool InvokeLocalFilter<T>(IPortableStream stream, IEventFilter<T> listener) where T : IEvent
+        private bool InvokeLocalFilter<T>(IBinaryStream stream, IEventFilter<T> listener) where T : IEvent
         {
             var evt = EventReader.Read<T>(Marshaller.StartUnmarshal(stream));
 
@@ -563,7 +563,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="stream">The stream.</param>
         /// <param name="listener">The listener.</param>
         /// <returns>Filter invocation result.</returns>
-        private bool InvokeLocalListener<T>(IPortableStream stream, IEventListener<T> listener) where T : IEvent
+        private bool InvokeLocalListener<T>(IBinaryStream stream, IEventListener<T> listener) where T : IEvent
         {
             var evt = EventReader.Read<T>(Marshaller.StartUnmarshal(stream));
 
@@ -575,7 +575,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// </summary>
         /// <param name="types">Types.</param>
         /// <param name="writer">Writer.</param>
-        private static void WriteEventTypes(int[] types, IPortableRawWriter writer)
+        private static void WriteEventTypes(int[] types, IBinaryRawWriter writer)
         {
             if (types != null && types.Length == 0)
                 types = null;  // empty array means no type filtering
@@ -587,7 +587,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// Writes the event types.
         /// </summary>
         /// <param name="reader">Reader.</param>
-        private int[] ReadEventTypes(IPortableStream reader)
+        private int[] ReadEventTypes(IBinaryStream reader)
         {
             return Marshaller.StartUnmarshal(reader).ReadIntArray();
         }
@@ -609,10 +609,10 @@ namespace Apache.Ignite.Core.Impl.Events
         private class LocalEventFilter : IInteropCallback
         {
             /** */
-            public Func<IPortableStream, bool> InvokeFunc;
+            public Func<IBinaryStream, bool> InvokeFunc;
 
             /** <inheritdoc /> */
-            public int Invoke(IPortableStream stream)
+            public int Invoke(IBinaryStream stream)
             {
                 return InvokeFunc(stream) ? 1 : 0;
             }
@@ -621,13 +621,13 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <summary>
         /// Local user filter wrapper with handle.
         /// </summary>
-        private class LocalHandledEventFilter : Handle<Func<IPortableStream, bool>>, IInteropCallback
+        private class LocalHandledEventFilter : Handle<Func<IBinaryStream, bool>>, IInteropCallback
         {
             /** */
             public long Handle;
 
             /** <inheritdoc /> */
-            public int Invoke(IPortableStream stream)
+            public int Invoke(IBinaryStream stream)
             {
                 return Target(stream) ? 1 : 0;
             }
@@ -638,7 +638,7 @@ namespace Apache.Ignite.Core.Impl.Events
             /// <param name="invokeFunc">The invoke function.</param>
             /// <param name="releaseAction">The release action.</param>
             public LocalHandledEventFilter(
-                Func<IPortableStream, bool> invokeFunc, Action<Func<IPortableStream, bool>> releaseAction) 
+                Func<IBinaryStream, bool> invokeFunc, Action<Func<IBinaryStream, bool>> releaseAction) 
                 : base(invokeFunc, releaseAction)
             {
                 // No-op.

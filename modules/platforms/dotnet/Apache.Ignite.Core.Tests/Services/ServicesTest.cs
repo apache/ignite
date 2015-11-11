@@ -21,9 +21,9 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestDeployKeyAffinitySingletonPortable()
         {
-            var services = Services.WithKeepPortable();
+            var services = Services.WithKeepBinary();
 
             var svc = new TestIgniteServicePortable();
 
@@ -366,18 +366,18 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = new TestIgniteServicePortable();
 
             // Deploy to grid2
-            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithKeepPortable()
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithKeepBinary()
                 .DeployNodeSingleton(SvcName, svc);
 
             // Get proxy
-            var prx = Services.WithKeepPortable().GetServiceProxy<ITestIgniteService>(SvcName);
+            var prx = Services.WithKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
 
             var obj = new PortableObject {Val = 11};
 
-            var res = (IPortableObject) prx.Method(obj);
+            var res = (IBinaryObject) prx.Method(obj);
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
 
-            res = (IPortableObject) prx.Method(Grid1.GetPortables().ToPortable<IPortableObject>(obj));
+            res = (IBinaryObject) prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
         }
         
@@ -390,18 +390,18 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = new TestIgniteServicePortable();
 
             // Deploy to grid2
-            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithServerKeepPortable()
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithServerKeepBinary()
                 .DeployNodeSingleton(SvcName, svc);
 
             // Get proxy
-            var prx = Services.WithServerKeepPortable().GetServiceProxy<ITestIgniteService>(SvcName);
+            var prx = Services.WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
 
             var obj = new PortableObject { Val = 11 };
 
             var res = (PortableObject) prx.Method(obj);
             Assert.AreEqual(11, res.Val);
 
-            res = (PortableObject)prx.Method(Grid1.GetPortables().ToPortable<IPortableObject>(obj));
+            res = (PortableObject)prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Val);
         }
 
@@ -414,18 +414,18 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = new TestIgniteServicePortable();
 
             // Deploy to grid2
-            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithKeepPortable().WithServerKeepPortable()
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithKeepBinary().WithServerKeepBinary()
                 .DeployNodeSingleton(SvcName, svc);
 
             // Get proxy
-            var prx = Services.WithKeepPortable().WithServerKeepPortable().GetServiceProxy<ITestIgniteService>(SvcName);
+            var prx = Services.WithKeepBinary().WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
 
             var obj = new PortableObject { Val = 11 };
 
-            var res = (IPortableObject)prx.Method(obj);
+            var res = (IBinaryObject)prx.Method(obj);
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
 
-            res = (IPortableObject)prx.Method(Grid1.GetPortables().ToPortable<IPortableObject>(obj));
+            res = (IBinaryObject)prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
         }
 
@@ -566,13 +566,13 @@ namespace Apache.Ignite.Core.Tests.Services
                 SpringConfigUrl = springConfigUrl,
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
-                    TypeConfigurations = new List<PortableTypeConfiguration>
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
                     {
-                        new PortableTypeConfiguration(typeof(TestIgniteServicePortable)),
-                        new PortableTypeConfiguration(typeof(TestIgniteServicePortableErr)),
-                        new PortableTypeConfiguration(typeof(PortableObject))
+                        new BinaryTypeConfiguration(typeof(TestIgniteServicePortable)),
+                        new BinaryTypeConfiguration(typeof(TestIgniteServicePortableErr)),
+                        new BinaryTypeConfiguration(typeof(PortableObject))
                     }
                 }
             };
@@ -734,7 +734,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
                 if (context.AffinityKey != null && !(context.AffinityKey is int))
                 {
-                    var portableObject = context.AffinityKey as IPortableObject;
+                    var portableObject = context.AffinityKey as IBinaryObject;
                     
                     var key = portableObject != null
                         ? portableObject.Deserialize<PortableObject>()
@@ -753,16 +753,16 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test portable service.
         /// </summary>
-        private class TestIgniteServicePortable : TestIgniteServiceSerializable, IPortableMarshalAware
+        private class TestIgniteServicePortable : TestIgniteServiceSerializable, IBinarizable
         {
             /** <inheritdoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("TestProp", TestProperty);
             }
 
             /** <inheritdoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 TestProperty = reader.ReadInt("TestProp");
             }
@@ -771,13 +771,13 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test portable service with exceptions in marshalling.
         /// </summary>
-        private class TestIgniteServicePortableErr : TestIgniteServiceSerializable, IPortableMarshalAware
+        private class TestIgniteServicePortableErr : TestIgniteServiceSerializable, IBinarizable
         {
             /** */
             public bool ThrowOnWrite { get; set; }
 
             /** <inheritdoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("TestProp", TestProperty);
                 
@@ -786,7 +786,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** <inheritdoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 TestProperty = reader.ReadInt("TestProp");
                 

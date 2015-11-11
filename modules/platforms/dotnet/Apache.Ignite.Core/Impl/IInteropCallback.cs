@@ -17,7 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl
 {
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
     /// Interop callback.
@@ -29,6 +29,6 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <returns>Invocation result.</returns>
-        int Invoke(IPortableStream stream);
+        int Invoke(IBinaryStream stream);
     }
 }

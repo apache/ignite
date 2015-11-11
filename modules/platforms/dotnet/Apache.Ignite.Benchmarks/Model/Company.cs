@@ -17,12 +17,12 @@
 
 namespace Apache.Ignite.Benchmarks.Model
 {
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Company.
     /// </summary>
-    internal class Company : IPortableMarshalAware
+    internal class Company : IBinarizable
     {
         /// <summary>
         /// ID.
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Benchmarks.Model
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.WriteInt("id", Id);
             writer.WriteInt("size", Size);
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Benchmarks.Model
         }
 
         /** <inheritDoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             Id = reader.ReadInt("id");
             Size = reader.ReadInt("size");

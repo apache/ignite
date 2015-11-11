@@ -23,8 +23,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
     /// Data streamer batch.
@@ -204,8 +204,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <summary>
         /// Write batch content.
         /// </summary>
-        /// <param name="writer">Portable writer.</param>
-        private void WriteTo(PortableWriterImpl writer)
+        /// <param name="writer">Writer.</param>
+        private void WriteTo(BinaryWriter writer)
         {
             writer.WriteInt(_size);
 

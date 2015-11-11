@@ -28,11 +28,11 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute.Closure;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -60,8 +60,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** Underlying projection. */
         private readonly ClusterGroupImpl _prj;
 
-        /** Whether objects must be kept portable. */
-        private readonly ThreadLocal<bool> _keepPortable = new ThreadLocal<bool>(() => false);
+        /** Whether objects must be kept in binary form. */
+        private readonly ThreadLocal<bool> _keepBinary = new ThreadLocal<bool>(() => false);
 
         /// <summary>
         /// Constructor.
@@ -69,13 +69,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="prj">Projection.</param>
-        /// <param name="keepPortable">"keepPortable" flag.</param>
-        public ComputeImpl(IUnmanagedTarget target, PortableMarshaller marsh, ClusterGroupImpl prj, bool keepPortable)
+        /// <param name="keepBinary">Binary flag.</param>
+        public ComputeImpl(IUnmanagedTarget target, Marshaller marsh, ClusterGroupImpl prj, bool keepBinary)
             : base(target, marsh)
         {
             _prj = prj;
 
-            _keepPortable.Value = keepPortable;
+            _keepBinary.Value = keepBinary;
         }
 
         /// <summary>
@@ -111,13 +111,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /// <summary>
-        /// Sets keep-portable flag for the next executed Java task on this projection in the current
+        /// Sets keep-binary flag for the next executed Java task on this projection in the current
         /// thread so that task argument passed to Java and returned task results will not be
         /// deserialized.
         /// </summary>
-        public void WithKeepPortable()
+        public void WithKeepBinary()
         {
-            _keepPortable.Value = true;
+            _keepBinary.Value = true;
         }
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
             finally
             {
-                _keepPortable.Value = false;
+                _keepBinary.Value = false;
             }
         }
 
@@ -165,14 +165,14 @@ namespace Apache.Ignite.Core.Impl.Compute
                     WriteTask(writer, taskName, taskArg, nodes);
                 }, input =>
                 {
-                    fut = GetFuture<TReduceRes>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepPortable.Value);
+                    fut = GetFuture<TReduceRes>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepBinary.Value);
                 });
 
                 return fut;
             }
             finally
             {
-                _keepPortable.Value = false;
+                _keepBinary.Value = false;
             }
         }
 
@@ -468,9 +468,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        protected override T Unmarshal<T>(IPortableStream stream)
+        protected override T Unmarshal<T>(IBinaryStream stream)
         {
-            bool keep = _keepPortable.Value;
+            bool keep = _keepBinary.Value;
 
             return Marshaller.Unmarshal<T>(stream, keep);
         }
@@ -506,7 +506,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         private Future<TReduceRes> ExecuteClosures0<TArg, TJobRes, TReduceRes>(
             IComputeTask<TArg, TJobRes, TReduceRes> task, IComputeJob job = null,
             IEnumerable<IComputeJob> jobs = null, int opId = OpUnicast, int jobsCount = 0,
-            Action<PortableWriterImpl> writeAction = null)
+            Action<BinaryWriter> writeAction = null)
         {
             Debug.Assert(job != null || jobs != null);
 
@@ -576,7 +576,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="job">The job.</param>
         /// <param name="writer">The writer.</param>
         /// <returns>Handle to the job holder</returns>
-        private long WriteJob(IComputeJob job, PortableWriterImpl writer)
+        private long WriteJob(IComputeJob job, BinaryWriter writer)
         {
             var jobHolder = new ComputeJobHolder((Ignite) _prj.Ignite, job);
 
@@ -595,11 +595,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="taskName">Task name.</param>
         /// <param name="taskArg">Task arg.</param>
         /// <param name="nodes">Nodes.</param>
-        private void WriteTask(PortableWriterImpl writer, string taskName, object taskArg,
+        private void WriteTask(BinaryWriter writer, string taskName, object taskArg,
             ICollection<IClusterNode> nodes)
         {
             writer.WriteString(taskName);
-            writer.WriteBoolean(_keepPortable.Value);
+            writer.WriteBoolean(_keepBinary.Value);
             writer.Write(taskArg);
 
             WriteNodeIds(writer, nodes);
@@ -610,7 +610,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="nodes">Nodes.</param>
-        private static void WriteNodeIds(PortableWriterImpl writer, ICollection<IClusterNode> nodes)
+        private static void WriteNodeIds(BinaryWriter writer, ICollection<IClusterNode> nodes)
         {
             if (nodes == null)
                 writer.WriteBoolean(false);
@@ -630,7 +630,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="writer">The writer.</param>
         /// <param name="cacheName">Name of the cache to use for affinity co-location.</param>
         /// <param name="affinityKey">Affinity key.</param>
-        private static void WriteAffinity(PortableWriterImpl writer, string cacheName, object affinityKey)
+        private static void WriteAffinity(BinaryWriter writer, string cacheName, object affinityKey)
         {
             writer.WriteString(cacheName);
 
