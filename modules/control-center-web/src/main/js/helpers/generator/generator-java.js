@@ -1064,7 +1064,7 @@ $generatorJava.metadataQueryIndexes = function (res, meta) {
     if (indexes && indexes.length > 0) {
         res.needEmptyLine = true;
 
-        $generatorJava.declareVariable(res, 'indexes', 'java.util.Map', 'java.util.LinkedHashMap', 'String', 'org.apache.ignite.cache.QueryIndex');
+        $generatorJava.declareVariable(res, 'indexes', 'java.util.List', 'java.util.ArrayList', 'org.apache.ignite.cache.QueryIndex');
 
         _.forEach(indexes, function (index) {
             res.needEmptyLine = true;
