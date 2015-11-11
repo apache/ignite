@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.store.Data;
+import org.h2.value.Value;
 
 /**
  * Row with locking support needed for unique key conflicts resolution.
@@ -77,7 +78,7 @@ public abstract class GridH2Row extends Row implements GridSearchRowPointer {
 
     /** {@inheritDoc} */
     @Override public void commit() {
-        throw new UnsupportedOperationException();
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -107,6 +108,11 @@ public abstract class GridH2Row extends Row implements GridSearchRowPointer {
 
     /** {@inheritDoc} */
     @Override public int getMemory() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Value[] getValueList() {
         throw new UnsupportedOperationException();
     }
 }

@@ -473,11 +473,6 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     }
 
     /** {@inheritDoc} */
-    @Override public Value[] getValueList() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public void setValue(int idx, Value v) {
         if (idx == VAL_COL)
             val = v;

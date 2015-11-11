@@ -409,7 +409,7 @@ public class GridH2Table extends TableBase {
                 //  index(1) is PK, get full row from there (search row here contains only key but no other columns).
                 GridH2Row old = pk.remove(row);
 
-                if (old instanceof GridH2AbstractKeyValueRow) { // Unswap value.
+                if (row.getColumnCount() != 1 && old instanceof GridH2AbstractKeyValueRow) { // Unswap value.
                     Value v = row.getValue(VAL_COL);
 
                     if (v != null)

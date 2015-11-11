@@ -120,7 +120,8 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      * @return New row.
      */
     private GridH2Row row(UUID id, long t, String str, long x) {
-        return new GridH2Row(ValueUuid.get(id.getMostSignificantBits(), id.getLeastSignificantBits()),
+        return GridH2RowFactory.create(
+            ValueUuid.get(id.getMostSignificantBits(), id.getLeastSignificantBits()),
             ValueTimestamp.get(new Timestamp(t)),
             ValueString.get(str),
             ValueLong.get(x));

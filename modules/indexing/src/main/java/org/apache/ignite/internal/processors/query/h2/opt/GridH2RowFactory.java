@@ -24,14 +24,11 @@ import org.h2.value.Value;
  * Row factory.
  */
 public class GridH2RowFactory extends RowFactory {
-    /** */
-    public static final GridH2RowFactory INSTANCE = new GridH2RowFactory();
-
     /**
      * @param v Value.
      * @return Row.
      */
-    public GridH2Row create(Value v) {
+    public static GridH2Row create(Value v) {
         return new RowKey(v);
     }
 
@@ -40,13 +37,19 @@ public class GridH2RowFactory extends RowFactory {
      * @param v2 Value 2.
      * @return Row.
      */
-    public GridH2Row create(Value v1, Value v2) {
+    public static GridH2Row create(Value v1, Value v2) {
         return new RowPair(v1, v2);
     }
 
-    /** {@inheritDoc} */
-    @Override public GridH2Row createRow(Value[] data, int memory) {
+    /**
+     * @param data Values.
+     * @return Row.
+     */
+    public static GridH2Row create(Value... data) {
         switch (data.length) {
+            case 0:
+                throw new IllegalStateException();
+
             case 1:
                 return new RowKey(data[0]);
 
@@ -56,6 +59,11 @@ public class GridH2RowFactory extends RowFactory {
             default:
                 return new RowSimple(data);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridH2Row createRow(Value[] data, int memory) {
+        return create(data);
     }
 
     /**
@@ -84,13 +92,9 @@ public class GridH2RowFactory extends RowFactory {
         }
 
         /** {@inheritDoc} */
-        @Override public void setValue(int index, Value v) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Value[] getValueList() {
-            throw new UnsupportedOperationException();
+        @Override public void setValue(int idx, Value v) {
+            assert idx == 0 : idx;
+            key = v;
         }
     }
 
@@ -124,13 +128,14 @@ public class GridH2RowFactory extends RowFactory {
         }
 
         /** {@inheritDoc} */
-        @Override public void setValue(int index, Value v) {
-            throw new UnsupportedOperationException();
-        }
+        @Override public void setValue(int idx, Value v) {
+            if (idx == 0)
+                v1 = v;
+            else {
+                assert idx == 1 : idx;
 
-        /** {@inheritDoc} */
-        @Override public Value[] getValueList() {
-            throw new UnsupportedOperationException();
+                v2 = v;
+            }
         }
     }
 
@@ -149,11 +154,6 @@ public class GridH2RowFactory extends RowFactory {
         }
 
         /** {@inheritDoc} */
-        @Override public Value[] getValueList() {
-            return vals;
-        }
-
-        /** {@inheritDoc} */
         @Override public int getColumnCount() {
             return vals.length;
         }
@@ -165,7 +165,7 @@ public class GridH2RowFactory extends RowFactory {
 
         /** {@inheritDoc} */
         @Override public void setValue(int idx, Value v) {
-            throw new UnsupportedOperationException();
+            vals[idx] = v;
         }
     }
 }
