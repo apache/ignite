@@ -118,7 +118,7 @@ public class PortableClassDescriptor {
      * @param keepDeserialized Keep deserialized flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
      * @param predefined Whether the class is predefined or not.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
     PortableClassDescriptor(
         PortableContext ctx,
@@ -345,7 +345,7 @@ public class PortableClassDescriptor {
     /**
      * @param obj Object.
      * @param writer Writer.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
     void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
         assert obj != null;
@@ -601,7 +601,7 @@ public class PortableClassDescriptor {
     /**
      * @param reader Reader.
      * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException If failed.
+     * @throws BinaryObjectException If failed.
      */
     Object read(BinaryReaderExImpl reader) throws BinaryObjectException {
         assert reader != null;
@@ -693,7 +693,7 @@ public class PortableClassDescriptor {
 
     /**
      * @return Instance.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
     private Object newInstance() throws BinaryObjectException {
         assert ctor != null;
@@ -709,7 +709,7 @@ public class PortableClassDescriptor {
     /**
      * @param cls Class.
      * @return Constructor.
-     * @throws org.apache.ignite.binary.BinaryObjectException If constructor doesn't exist.
+     * @throws BinaryObjectException If constructor doesn't exist.
      */
     @SuppressWarnings("ConstantConditions")
     @Nullable private static Constructor<?> constructor(Class<?> cls) throws BinaryObjectException {
@@ -873,7 +873,7 @@ public class PortableClassDescriptor {
         /**
          * @param obj Object.
          * @param writer Writer.
-         * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+         * @throws BinaryObjectException In case of error.
          */
         public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             assert obj != null;
@@ -1076,7 +1076,7 @@ public class PortableClassDescriptor {
         /**
          * @param obj Object.
          * @param reader Reader.
-         * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+         * @throws BinaryObjectException In case of error.
          */
         public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             Object val = null;
