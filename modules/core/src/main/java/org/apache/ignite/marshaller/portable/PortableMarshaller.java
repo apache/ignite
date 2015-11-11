@@ -97,7 +97,7 @@ public class PortableMarshaller extends AbstractMarshaller {
     private boolean keepDeserialized = DFLT_KEEP_DESERIALIZED;
 
     /** Compact footer. */
-    private boolean compactFooter =  DFLT_COMPACT_FOOTER;
+    private boolean compactFooter = DFLT_COMPACT_FOOTER;
 
     /** */
     private GridPortableMarshaller impl;

@@ -348,7 +348,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         typeName = metadata.typeName();
                     }
 
-                    ctx.updateMetaData(typeId, typeName, newFldsMetadata);
+                    ctx.updateMetadata(typeId, typeName, newFldsMetadata);
                 }
             }
 

@@ -175,7 +175,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                                 if (checkMeta(typeId, oldMeta, newMeta0, fields)) {
                                     newMeta0 = new BinaryMetadata(typeId, newMeta0.typeName(), fields,
-                                        newMeta0.affinityKeyFieldName());
+                                        newMeta0.affinityKeyFieldName(), newMeta0.schemas());
 
                                     metaBuf.put(typeId, newMeta0);
                                 }
@@ -450,7 +450,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
         Map<String, Integer> fieldTypeIds) throws BinaryObjectException {
-        portableCtx.updateMetaData(typeId, new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName));
+        portableCtx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null));
     }
 
     /** {@inheritDoc} */
@@ -838,7 +838,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 if (checkMeta(typeId, oldMeta, newMeta, fields)) {
                     BinaryMetadata res = new BinaryMetadata(typeId, newMeta.typeName(), fields,
-                        newMeta.affinityKeyFieldName());
+                        newMeta.affinityKeyFieldName(), newMeta.schemas());
 
                     entry.setValue(res);
 

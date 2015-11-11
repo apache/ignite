@@ -38,6 +38,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -93,6 +94,9 @@ public class PortableClassDescriptor {
 
     /** */
     private final Map<String, Integer> fieldsMeta;
+
+    /** Object schemas. Initialized only for serializable classes and contains only 1 entry. */
+    private final Collection<PortableSchema> schemas;
 
     /** */
     private final boolean keepDeserialized;
@@ -194,6 +198,7 @@ public class PortableClassDescriptor {
                 ctor = null;
                 fields = null;
                 fieldsMeta = null;
+                schemas = null;
 
                 break;
 
@@ -202,6 +207,7 @@ public class PortableClassDescriptor {
                 ctor = constructor(cls);
                 fields = null;
                 fieldsMeta = null;
+                schemas = null;
 
                 break;
 
@@ -211,6 +217,8 @@ public class PortableClassDescriptor {
                 ctor = constructor(cls);
                 fields = new ArrayList<>();
                 fieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
+
+                PortableSchema.Builder schemaBuilder = PortableSchema.Builder.newBuilder();
 
                 Collection<String> names = new HashSet<>();
                 Collection<Integer> ids = new HashSet<>();
@@ -236,11 +244,15 @@ public class PortableClassDescriptor {
 
                             fields.add(fieldInfo);
 
+                            schemaBuilder.addField(fieldId);
+
                             if (metaDataEnabled)
                                 fieldsMeta.put(name, fieldInfo.fieldMode().typeId());
                         }
                     }
                 }
+
+                schemas = Collections.singleton(schemaBuilder.build());
 
                 break;
 
@@ -285,6 +297,13 @@ public class PortableClassDescriptor {
      */
     Map<String, Integer> fieldsMeta() {
         return fieldsMeta;
+    }
+
+    /**
+     * @return Schemas.
+     */
+    Collection<PortableSchema> schemas() {
+        return schemas;
     }
 
     /**
@@ -553,7 +572,7 @@ public class PortableClassDescriptor {
                         else
                             ((Binarylizable)obj).writeBinary(metaCollector);
 
-                        ctx.updateMetaData(typeId, typeName, metaCollector.meta());
+                        ctx.updateMetadata(typeId, typeName, metaCollector.meta());
                     }
                 }
 

@@ -49,6 +49,9 @@ public class BinaryMetadata implements Externalizable {
     /** Affinity key field name. */
     private String affKeyFieldName;
 
+    /** Schemas associated with type. */
+    private Collection<PortableSchema> schemas;
+
     /**
      * For {@link Externalizable}.
      */
@@ -63,15 +66,17 @@ public class BinaryMetadata implements Externalizable {
      * @param typeName Type name.
      * @param fields Fields map.
      * @param affKeyFieldName Affinity key field name.
+     * @param schemas Schemas.
      */
     public BinaryMetadata(int typeId, String typeName, @Nullable Map<String, Integer> fields,
-        @Nullable String affKeyFieldName) {
+        @Nullable String affKeyFieldName, @Nullable Collection<PortableSchema> schemas) {
         assert typeName != null;
 
         this.typeId = typeId;
         this.typeName = typeName;
         this.fields = fields;
         this.affKeyFieldName = affKeyFieldName;
+        this.schemas = schemas;
     }
 
     /**
@@ -120,6 +125,13 @@ public class BinaryMetadata implements Externalizable {
     }
 
     /**
+     * @return Schemas.
+     */
+    @Nullable public Collection<PortableSchema> schemas() {
+        return schemas;
+    }
+
+    /**
      * Wrap metadata into binary type.
      *
      * @param ctx Portable context.
@@ -135,6 +147,7 @@ public class BinaryMetadata implements Externalizable {
         U.writeString(out, typeName);
         U.writeMap(out, fields);
         U.writeString(out, affKeyFieldName);
+        U.writeCollection(out, schemas);
     }
 
     /** {@inheritDoc} */
@@ -143,6 +156,7 @@ public class BinaryMetadata implements Externalizable {
         typeName = U.readString(in);
         fields = U.readMap(in);
         affKeyFieldName = U.readString(in);
+        schemas = U.readCollection(in);
     }
 
     /** {@inheritDoc} */

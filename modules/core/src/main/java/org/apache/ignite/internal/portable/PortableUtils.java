@@ -109,8 +109,8 @@ public class PortableUtils {
     /** Flag: offsets take 2 bytes. */
     public static final short FLAG_OFFSET_TWO_BYTES = 0x0008;
 
-    /** Flag: no field IDs in object's footer. */
-    public static final short FLAG_NO_FIELD_IDS = 0x0010;
+    /** Flag: compact footer, no field IDs. */
+    public static final short FLAG_COMPACT_FOOTER = 0x0010;
 
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
@@ -127,165 +127,14 @@ public class PortableUtils {
     /** Field type names. */
     private static final String[] FIELD_TYPE_NAMES;
 
-    static {
-        FIELD_TYPE_NAMES = new String[104];
+    /** FNV1 hash offset basis. */
+    private static final int FNV1_OFFSET_BASIS = 0x811C9DC5;
 
-        FIELD_TYPE_NAMES[BYTE] = "byte";
-        FIELD_TYPE_NAMES[SHORT] = "short";
-        FIELD_TYPE_NAMES[INT] = "int";
-        FIELD_TYPE_NAMES[LONG] = "long";
-        FIELD_TYPE_NAMES[BOOLEAN] = "boolean";
-        FIELD_TYPE_NAMES[FLOAT] = "float";
-        FIELD_TYPE_NAMES[DOUBLE] = "double";
-        FIELD_TYPE_NAMES[CHAR] = "char";
-        FIELD_TYPE_NAMES[UUID] = "UUID";
-        FIELD_TYPE_NAMES[DECIMAL] = "decimal";
-        FIELD_TYPE_NAMES[STRING] = "String";
-        FIELD_TYPE_NAMES[DATE] = "Date";
-        FIELD_TYPE_NAMES[TIMESTAMP] = "Timestamp";
-        FIELD_TYPE_NAMES[ENUM] = "Enum";
-        FIELD_TYPE_NAMES[OBJ] = "Object";
-        FIELD_TYPE_NAMES[PORTABLE_OBJ] = "Object";
-        FIELD_TYPE_NAMES[COL] = "Collection";
-        FIELD_TYPE_NAMES[MAP] = "Map";
-        FIELD_TYPE_NAMES[MAP_ENTRY] = "Entry";
-        FIELD_TYPE_NAMES[CLASS] = "Class";
-        FIELD_TYPE_NAMES[BYTE_ARR] = "byte[]";
-        FIELD_TYPE_NAMES[SHORT_ARR] = "short[]";
-        FIELD_TYPE_NAMES[INT_ARR] = "int[]";
-        FIELD_TYPE_NAMES[LONG_ARR] = "long[]";
-        FIELD_TYPE_NAMES[BOOLEAN_ARR] = "boolean[]";
-        FIELD_TYPE_NAMES[FLOAT_ARR] = "float[]";
-        FIELD_TYPE_NAMES[DOUBLE_ARR] = "double[]";
-        FIELD_TYPE_NAMES[CHAR_ARR] = "char[]";
-        FIELD_TYPE_NAMES[UUID_ARR] = "UUID[]";
-        FIELD_TYPE_NAMES[DECIMAL_ARR] = "decimal[]";
-        FIELD_TYPE_NAMES[STRING_ARR] = "String[]";
-        FIELD_TYPE_NAMES[DATE_ARR] = "Date[]";
-        FIELD_TYPE_NAMES[TIMESTAMP_ARR] = "Timestamp[]";
-        FIELD_TYPE_NAMES[OBJ_ARR] = "Object[]";
-        FIELD_TYPE_NAMES[ENUM_ARR] = "Enum[]";
-    }
+    /** FNV1 hash prime. */
+    private static final int FNV1_PRIME = 0x01000193;
 
     /**
-     * @param typeName Field type name.
-     * @return Field type ID;
-     */
-    @SuppressWarnings("StringEquality")
-    public static int fieldTypeId(String typeName) {
-        for (int i = 0; i < FIELD_TYPE_NAMES.length; i++) {
-            String typeName0 = FIELD_TYPE_NAMES[i];
-
-            if (typeName.equals(typeName0))
-                return i;
-        }
-
-        throw new IllegalArgumentException("Invalid metadata type name: " + typeName);
-    }
-
-    /**
-     * @param typeId Field type ID.
-     * @return Field type name.
-     */
-    public static String fieldTypeName(int typeId) {
-        assert typeId >= 0 && typeId < FIELD_TYPE_NAMES.length : typeId;
-
-        String typeName = FIELD_TYPE_NAMES[typeId];
-
-        assert typeName != null : typeId;
-
-        return typeName;
-    }
-
-    /**
-     * @param typeIds Field type IDs.
-     * @return Field type names.
-     */
-    public static Map<String, String> fieldTypeNames(Map<String, Integer> typeIds) {
-        Map<String, String> names = U.newHashMap(typeIds.size());
-
-        for (Map.Entry<String, Integer> e : typeIds.entrySet())
-            names.put(e.getKey(), fieldTypeName(e.getValue()));
-
-        return names;
-    }
-
-    /**
-     * Check if user type flag is set.
-     *
-     * @param flags Flags.
-     * @return {@code True} if set.
-     */
-    public static boolean isUserType(short flags) {
-        return isFlagSet(flags, FLAG_USR_TYP);
-    }
-
-    /**
-     * Check if raw-only flag is set.
-     *
-     * @param flags Flags.
-     * @return {@code True} if set.
-     */
-    public static boolean isRawOnly(short flags) {
-        return isFlagSet(flags, FLAG_RAW_ONLY);
-    }
-
-    /**
-     * Check if "no-field-ids" flag is set.
-     *
-     * @param flags Flags.
-     * @return {@code True} if set.
-     */
-    public static boolean isNoFieldIds(short flags) {
-        return isFlagSet(flags, FLAG_NO_FIELD_IDS);
-    }
-
-    /**
-     * Check whether particular flag is set.
-     *
-     * @param flags Flags.
-     * @param flag Flag.
-     * @return {@code True} if flag is set in flags.
-     */
-    private static boolean isFlagSet(short flags, short flag) {
-        return (flags & flag) == flag;
-    }
-
-
-    /**
-     *
-     */
-    static {
-        PORTABLE_CLS.add(Byte.class);
-        PORTABLE_CLS.add(Short.class);
-        PORTABLE_CLS.add(Integer.class);
-        PORTABLE_CLS.add(Long.class);
-        PORTABLE_CLS.add(Float.class);
-        PORTABLE_CLS.add(Double.class);
-        PORTABLE_CLS.add(Character.class);
-        PORTABLE_CLS.add(Boolean.class);
-        PORTABLE_CLS.add(String.class);
-        PORTABLE_CLS.add(UUID.class);
-        PORTABLE_CLS.add(Date.class);
-        PORTABLE_CLS.add(Timestamp.class);
-        PORTABLE_CLS.add(BigDecimal.class);
-        PORTABLE_CLS.add(byte[].class);
-        PORTABLE_CLS.add(short[].class);
-        PORTABLE_CLS.add(int[].class);
-        PORTABLE_CLS.add(long[].class);
-        PORTABLE_CLS.add(float[].class);
-        PORTABLE_CLS.add(double[].class);
-        PORTABLE_CLS.add(char[].class);
-        PORTABLE_CLS.add(boolean[].class);
-        PORTABLE_CLS.add(String[].class);
-        PORTABLE_CLS.add(UUID[].class);
-        PORTABLE_CLS.add(Date[].class);
-        PORTABLE_CLS.add(Timestamp[].class);
-        PORTABLE_CLS.add(BigDecimal[].class);
-    }
-
-    /**
-     *
+     * Static class initializer.
      */
     static {
         PLAIN_CLASS_TO_FLAG.put(Byte.class, GridPortableMarshaller.BYTE);
@@ -337,6 +186,171 @@ public class PortableUtils {
 
             PLAIN_TYPE_FLAG[b] = true;
         }
+
+        PORTABLE_CLS.add(Byte.class);
+        PORTABLE_CLS.add(Short.class);
+        PORTABLE_CLS.add(Integer.class);
+        PORTABLE_CLS.add(Long.class);
+        PORTABLE_CLS.add(Float.class);
+        PORTABLE_CLS.add(Double.class);
+        PORTABLE_CLS.add(Character.class);
+        PORTABLE_CLS.add(Boolean.class);
+        PORTABLE_CLS.add(String.class);
+        PORTABLE_CLS.add(UUID.class);
+        PORTABLE_CLS.add(Date.class);
+        PORTABLE_CLS.add(Timestamp.class);
+        PORTABLE_CLS.add(BigDecimal.class);
+        PORTABLE_CLS.add(byte[].class);
+        PORTABLE_CLS.add(short[].class);
+        PORTABLE_CLS.add(int[].class);
+        PORTABLE_CLS.add(long[].class);
+        PORTABLE_CLS.add(float[].class);
+        PORTABLE_CLS.add(double[].class);
+        PORTABLE_CLS.add(char[].class);
+        PORTABLE_CLS.add(boolean[].class);
+        PORTABLE_CLS.add(String[].class);
+        PORTABLE_CLS.add(UUID[].class);
+        PORTABLE_CLS.add(Date[].class);
+        PORTABLE_CLS.add(Timestamp[].class);
+        PORTABLE_CLS.add(BigDecimal[].class);
+
+        FIELD_TYPE_NAMES = new String[104];
+
+        FIELD_TYPE_NAMES[BYTE] = "byte";
+        FIELD_TYPE_NAMES[SHORT] = "short";
+        FIELD_TYPE_NAMES[INT] = "int";
+        FIELD_TYPE_NAMES[LONG] = "long";
+        FIELD_TYPE_NAMES[BOOLEAN] = "boolean";
+        FIELD_TYPE_NAMES[FLOAT] = "float";
+        FIELD_TYPE_NAMES[DOUBLE] = "double";
+        FIELD_TYPE_NAMES[CHAR] = "char";
+        FIELD_TYPE_NAMES[UUID] = "UUID";
+        FIELD_TYPE_NAMES[DECIMAL] = "decimal";
+        FIELD_TYPE_NAMES[STRING] = "String";
+        FIELD_TYPE_NAMES[DATE] = "Date";
+        FIELD_TYPE_NAMES[TIMESTAMP] = "Timestamp";
+        FIELD_TYPE_NAMES[ENUM] = "Enum";
+        FIELD_TYPE_NAMES[OBJ] = "Object";
+        FIELD_TYPE_NAMES[PORTABLE_OBJ] = "Object";
+        FIELD_TYPE_NAMES[COL] = "Collection";
+        FIELD_TYPE_NAMES[MAP] = "Map";
+        FIELD_TYPE_NAMES[MAP_ENTRY] = "Entry";
+        FIELD_TYPE_NAMES[CLASS] = "Class";
+        FIELD_TYPE_NAMES[BYTE_ARR] = "byte[]";
+        FIELD_TYPE_NAMES[SHORT_ARR] = "short[]";
+        FIELD_TYPE_NAMES[INT_ARR] = "int[]";
+        FIELD_TYPE_NAMES[LONG_ARR] = "long[]";
+        FIELD_TYPE_NAMES[BOOLEAN_ARR] = "boolean[]";
+        FIELD_TYPE_NAMES[FLOAT_ARR] = "float[]";
+        FIELD_TYPE_NAMES[DOUBLE_ARR] = "double[]";
+        FIELD_TYPE_NAMES[CHAR_ARR] = "char[]";
+        FIELD_TYPE_NAMES[UUID_ARR] = "UUID[]";
+        FIELD_TYPE_NAMES[DECIMAL_ARR] = "decimal[]";
+        FIELD_TYPE_NAMES[STRING_ARR] = "String[]";
+        FIELD_TYPE_NAMES[DATE_ARR] = "Date[]";
+        FIELD_TYPE_NAMES[TIMESTAMP_ARR] = "Timestamp[]";
+        FIELD_TYPE_NAMES[OBJ_ARR] = "Object[]";
+        FIELD_TYPE_NAMES[ENUM_ARR] = "Enum[]";
+    }
+
+    /**
+     * Schema initial ID.
+     *
+     * @return ID.
+     */
+    public static int schemaInitialId() {
+        return FNV1_OFFSET_BASIS;
+    }
+
+    /**
+     * Update schema ID when new field is added.
+     *
+     * @param schemaId Current schema ID.
+     * @param fieldId Field ID.
+     * @return New schema ID.
+     */
+    public static int updateSchemaId(int schemaId, int fieldId) {
+        schemaId = schemaId ^ (fieldId & 0xFF);
+        schemaId = schemaId * FNV1_PRIME;
+        schemaId = schemaId ^ ((fieldId >> 8) & 0xFF);
+        schemaId = schemaId * FNV1_PRIME;
+        schemaId = schemaId ^ ((fieldId >> 16) & 0xFF);
+        schemaId = schemaId * FNV1_PRIME;
+        schemaId = schemaId ^ ((fieldId >> 24) & 0xFF);
+        schemaId = schemaId * FNV1_PRIME;
+
+        return schemaId;
+    }
+
+    /**
+     * @param typeName Field type name.
+     * @return Field type ID;
+     */
+    @SuppressWarnings("StringEquality")
+    public static int fieldTypeId(String typeName) {
+        for (int i = 0; i < FIELD_TYPE_NAMES.length; i++) {
+            String typeName0 = FIELD_TYPE_NAMES[i];
+
+            if (typeName.equals(typeName0))
+                return i;
+        }
+
+        throw new IllegalArgumentException("Invalid metadata type name: " + typeName);
+    }
+
+    /**
+     * @param typeId Field type ID.
+     * @return Field type name.
+     */
+    public static String fieldTypeName(int typeId) {
+        assert typeId >= 0 && typeId < FIELD_TYPE_NAMES.length : typeId;
+
+        String typeName = FIELD_TYPE_NAMES[typeId];
+
+        assert typeName != null : typeId;
+
+        return typeName;
+    }
+
+    /**
+     * Check if user type flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isUserType(short flags) {
+        return isFlagSet(flags, FLAG_USR_TYP);
+    }
+
+    /**
+     * Check if raw-only flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isRawOnly(short flags) {
+        return isFlagSet(flags, FLAG_RAW_ONLY);
+    }
+
+    /**
+     * Check if "no-field-ids" flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isCompactFooter(short flags) {
+        return isFlagSet(flags, FLAG_COMPACT_FOOTER);
+    }
+
+    /**
+     * Check whether particular flag is set.
+     *
+     * @param flags Flags.
+     * @param flag Flag.
+     * @return {@code True} if flag is set in flags.
+     */
+    private static boolean isFlagSet(short flags, short flag) {
+        return (flags & flag) == flag;
     }
 
     /**
@@ -770,7 +784,7 @@ public class PortableUtils {
      * @return Field ID length.
      */
     public static int fieldIdLength(short flags) {
-        return isNoFieldIds(flags) ? 0 : FIELD_ID_LEN;
+        return isCompactFooter(flags) ? 0 : FIELD_ID_LEN;
     }
 
     /**

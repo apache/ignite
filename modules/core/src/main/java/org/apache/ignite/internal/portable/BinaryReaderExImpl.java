@@ -17,6 +17,23 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
+import org.apache.ignite.internal.portable.streams.PortableInputStream;
+import org.apache.ignite.internal.util.GridEnumCache;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
@@ -30,7 +47,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
@@ -39,22 +55,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
-import org.apache.ignite.internal.portable.streams.PortableInputStream;
-import org.apache.ignite.internal.util.GridEnumCache;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.ARR_LIST;
@@ -2565,22 +2565,20 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
 
         assert fieldIdLen == PortableUtils.FIELD_ID_LEN;
 
-        LinkedHashMap<Integer, Integer> fields = new LinkedHashMap<>();
+        PortableSchema.Builder builder = PortableSchema.Builder.newBuilder();
 
         int searchPos = footerStart;
         int searchEnd = searchPos + footerLen;
 
-        int idx = 0;
-
         while (searchPos < searchEnd) {
             int fieldId = in.readIntPositioned(searchPos);
 
-            fields.put(fieldId, idx++);
+            builder.addField(fieldId);
 
             searchPos += PortableUtils.FIELD_ID_LEN + fieldOffsetLen;
         }
 
-        return new PortableSchema(fields);
+        return builder.build();
     }
 
     /**

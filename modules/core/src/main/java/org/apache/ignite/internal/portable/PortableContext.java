@@ -151,6 +151,9 @@ public class PortableContext implements Externalizable {
     /** */
     private boolean keepDeserialized;
 
+    /** Compact footer flag. */
+    private boolean compactFooter;
+
     /** Object schemas. */
     private volatile Map<Integer, PortableSchemaRegistry> schemas;
 
@@ -262,6 +265,8 @@ public class PortableContext implements Externalizable {
             marsh.getClassNames(),
             marsh.getTypeConfigurations()
         );
+
+        compactFooter = marsh.isCompactFooter();
     }
 
     /**
@@ -567,7 +572,8 @@ public class PortableContext implements Externalizable {
 
         mappers.putIfAbsent(typeId, idMapper);
 
-        metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null).wrap(this));
+        metaHnd.addMeta(typeId,
+            new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null, desc.schemas()).wrap(this));
 
         return desc;
     }
@@ -750,6 +756,7 @@ public class PortableContext implements Externalizable {
         typeMappers.put(typeName, idMapper);
 
         Map<String, Integer> fieldsMeta = null;
+        Collection<PortableSchema> schemas = null;
 
         if (cls != null) {
             PortableClassDescriptor desc = new PortableClassDescriptor(
@@ -767,6 +774,7 @@ public class PortableContext implements Externalizable {
             );
 
             fieldsMeta = desc.fieldsMeta();
+            schemas = desc.schemas();
 
             if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
                 userTypes.put(id, desc);
@@ -774,7 +782,7 @@ public class PortableContext implements Externalizable {
             descByCls.put(cls, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName).wrap(this));
+        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas).wrap(this));
     }
 
     /**
@@ -826,26 +834,26 @@ public class PortableContext implements Externalizable {
      * @param typeId Type ID.
      * @param typeName Type name.
      * @param fields Fields map.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
-    public void updateMetaData(int typeId, String typeName, Map<String, Integer> fields) throws BinaryObjectException {
-        updateMetaData(typeId, new BinaryMetadata(typeId, typeName, fields, null));
+    public void updateMetadata(int typeId, String typeName, Map<String, Integer> fields) throws BinaryObjectException {
+        updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fields, null, null));
     }
 
     /**
      * @param typeId Type ID.
      * @param meta Meta data.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
-    public void updateMetaData(int typeId, BinaryMetadata meta) throws BinaryObjectException {
+    public void updateMetadata(int typeId, BinaryMetadata meta) throws BinaryObjectException {
         metaHnd.addMeta(typeId, meta.wrap(this));
     }
 
     /**
      * @return Whether field IDs should be skipped in footer or not.
      */
-    public boolean isNoFieldIds() {
-        return false; // TODO: IGNITE-1816: Take from config.
+    public boolean isCompactFooter() {
+        return compactFooter;
     }
 
     /**

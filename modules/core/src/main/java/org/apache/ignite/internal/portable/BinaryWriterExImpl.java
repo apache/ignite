@@ -93,12 +93,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** Initial capacity. */
     private static final int INIT_CAP = 1024;
 
-    /** FNV1 hash offset basis. */
-    private static final int FNV1_OFFSET_BASIS = 0x811C9DC5;
-
-    /** FNV1 hash prime. */
-    private static final int FNV1_PRIME = 0x01000193;
-
     /** Maximum offset which fits in 1 byte. */
     private static final int MAX_OFFSET_1 = 1 << 8;
 
@@ -342,8 +336,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     public void postWrite(boolean userType) {
         short flags = userType ? PortableUtils.FLAG_USR_TYP : 0;
 
-        if (ctx.isNoFieldIds())
-            flags |= PortableUtils.FLAG_NO_FIELD_IDS;
+        if (ctx.isCompactFooter())
+            flags |= PortableUtils.FLAG_COMPACT_FOOTER;
 
         if (schema != null) {
             // Write schema ID.
@@ -353,7 +347,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, out.position() - start);
 
             // Write the schema.
-            int offsetByteCnt = schema.write(this, fieldCnt);
+            int offsetByteCnt = schema.write(this, fieldCnt, !ctx.isCompactFooter());
 
             // Write raw offset if needed.
             if (rawOffPos != 0)
@@ -1740,20 +1734,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             }
 
             // Initialize offset when the first field is written.
-            schemaId = FNV1_OFFSET_BASIS;
+            schemaId = PortableUtils.schemaInitialId();
         }
 
-        // Advance schema hash.
-        int schemaId0 = schemaId ^ (fieldId & 0xFF);
-        schemaId0 = schemaId0 * FNV1_PRIME;
-        schemaId0 = schemaId0 ^ ((fieldId >> 8) & 0xFF);
-        schemaId0 = schemaId0 * FNV1_PRIME;
-        schemaId0 = schemaId0 ^ ((fieldId >> 16) & 0xFF);
-        schemaId0 = schemaId0 * FNV1_PRIME;
-        schemaId0 = schemaId0 ^ ((fieldId >> 24) & 0xFF);
-        schemaId0 = schemaId0 * FNV1_PRIME;
-
-        schemaId = schemaId0;
+        schemaId = PortableUtils.updateSchemaId(schemaId, fieldId);
 
         schema.push(fieldId, fieldOff);
 
@@ -1849,9 +1833,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
          *
          * @param writer Writer.
          * @param fieldCnt Count.
-         * @return Amount of bytes dedicated to
+         * @param writeFieldId Whether to write field IDs.
+         * @return Amount of bytes dedicated to each field offset. Could be 1, 2 or 4.
          */
-        public int write(BinaryWriterExImpl writer, int fieldCnt) {
+        public int write(BinaryWriterExImpl writer, int fieldCnt, boolean writeFieldId) {
             int startIdx = idx - fieldCnt * 2;
 
             assert startIdx >= 0;
@@ -1862,7 +1847,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             if (lastOffset < MAX_OFFSET_1) {
                 for (int idx0 = startIdx; idx0 < idx; ) {
-                    writer.writeInt(data[idx0++]);
+                    if (writeFieldId)
+                        writer.writeInt(data[idx0++]);
+
                     writer.writeByte((byte) data[idx0++]);
                 }
 
@@ -1870,7 +1857,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             }
             else if (lastOffset < MAX_OFFSET_2) {
                 for (int idx0 = startIdx; idx0 < idx; ) {
-                    writer.writeInt(data[idx0++]);
+                    if (writeFieldId)
+                        writer.writeInt(data[idx0++]);
+
                     writer.writeShort((short)data[idx0++]);
                 }
 
@@ -1878,7 +1867,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             }
             else {
                 for (int idx0 = startIdx; idx0 < idx; ) {
-                    writer.writeInt(data[idx0++]);
+                    if (writeFieldId)
+                        writer.writeInt(data[idx0++]);
+
                     writer.writeInt(data[idx0++]);
                 }
 

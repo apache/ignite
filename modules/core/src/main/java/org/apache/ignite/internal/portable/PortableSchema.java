@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.portable;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 
 /**
  * Schema describing portable object content. We rely on the following assumptions:
@@ -28,7 +29,10 @@ import java.util.Map;
  * for quick comparisons performed within already fetched L1 cache line.
  * - When there are more fields, we store them inside a hash map.
  */
-public class PortableSchema {
+public class PortableSchema implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Order returned if field is not found. */
     public static final int ORDER_NOT_FOUND = -1;
 
@@ -62,82 +66,31 @@ public class PortableSchema {
     /** ID 4. */
     private final int id7;
 
+    /** Schema ID. */
+    private final int schemaId;
+
     /**
      * Constructor.
      *
-     * @param vals Values.
+     * @param schemaId Schema ID.
+     * @param fieldIds Field IDs.
      */
-    public PortableSchema(LinkedHashMap<Integer, Integer> vals) {
-        if (vals.size() <= 8) {
+    private PortableSchema(int schemaId, List<Integer> fieldIds) {
+        this.schemaId = schemaId;
+
+        if (fieldIds.size() <= 8) {
             inline = true;
 
-            Iterator<Map.Entry<Integer, Integer>> iter = vals.entrySet().iterator();
+            Iterator<Integer> iter = fieldIds.iterator();
 
-            Map.Entry<Integer, Integer> entry = iter.hasNext() ? iter.next() : null;
-
-            if (entry != null) {
-                id0 = entry.getKey();
-
-                assert entry.getValue() == 0;
-            }
-            else
-                id0 = 0;
-
-            if ((entry = iter.hasNext() ? iter.next() : null) != null) {
-                id1 = entry.getKey();
-
-                assert entry.getValue() == 1;
-            }
-            else
-                id1 = 0;
-
-            if ((entry = iter.hasNext() ? iter.next() : null) != null) {
-                id2 = entry.getKey();
-
-                assert entry.getValue() == 2;
-            }
-            else
-                id2 = 0;
-
-            if ((entry = iter.hasNext() ? iter.next() : null) != null) {
-                id3 = entry.getKey();
-
-                assert entry.getValue() == 3;
-            }
-            else
-                id3 = 0;
-
-            if ((entry = iter.hasNext() ? iter.next() : null) != null) {
-                id4 = entry.getKey();
-
-                assert entry.getValue() == 4;
-            }
-            else
-                id4 = 0;
-
-            if ((entry = iter.hasNext() ? iter.next() : null) != null) {
-                id5 = entry.getKey();
-
-                assert entry.getValue() == 5;
-            }
-            else
-                id5 = 0;
-
-            if ((entry = iter.hasNext() ? iter.next() : null) != null) {
-                id6 = entry.getKey();
-
-                assert entry.getValue() == 6;
-            }
-            else
-                id6 = 0;
-
-            if ((entry = iter.hasNext() ? iter.next() : null) != null) {
-                id7 = entry.getKey();
-
-                assert entry.getValue() == 7;
-            }
-            else
-                id7 = 0;
+            id0 = iter.hasNext() ? iter.next() : 0;
+            id1 = iter.hasNext() ? iter.next() : 0;
+            id2 = iter.hasNext() ? iter.next() : 0;
+            id3 = iter.hasNext() ? iter.next() : 0;
+            id4 = iter.hasNext() ? iter.next() : 0;
+            id5 = iter.hasNext() ? iter.next() : 0;
+            id6 = iter.hasNext() ? iter.next() : 0;
+            id7 = iter.hasNext() ? iter.next() : 0;
 
             map = null;
         }
@@ -146,8 +99,18 @@ public class PortableSchema {
 
             id0 = id1 = id2 = id3 = id4 = id5 = id6 = id7 = 0;
 
-            map = new HashMap<>(vals);
+            map = new HashMap<>();
+
+            for (int i = 0; i < fieldIds.size(); i++)
+                map.put(fieldIds.get(i), i);
         }
+    }
+
+    /**
+     * @return Schema ID.
+     */
+    public int schemaId() {
+        return schemaId;
     }
 
     /**
@@ -188,6 +151,53 @@ public class PortableSchema {
             Integer order = map.get(id);
 
             return order != null ? order : ORDER_NOT_FOUND;
+        }
+    }
+
+    /**
+     * Schema builder.
+     */
+    public static class Builder {
+        /** Schema ID. */
+        private int schemaId = PortableUtils.schemaInitialId();
+
+        /** Fields. */
+        private final ArrayList<Integer> fields = new ArrayList<>();
+
+        /**
+         * Create new schema builder.
+         *
+         * @return Schema builder.
+         */
+        public static Builder newBuilder() {
+            return new Builder();
+        }
+
+        /**
+         * Private constructor.
+         */
+        private Builder() {
+            // No-op.
+        }
+
+        /**
+         * Add field.
+         *
+         * @param fieldId Field ID.
+         */
+        public void addField(int fieldId) {
+            fields.add(fieldId);
+
+            schemaId = PortableUtils.updateSchemaId(schemaId, fieldId);
+        }
+
+        /**
+         * Build schema.
+         *
+         * @return Schema.
+         */
+        public PortableSchema build() {
+            return new PortableSchema(schemaId, fields);
         }
     }
 }
