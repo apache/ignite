@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
@@ -208,7 +209,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         this.rmtFutId = rmtFutId;
 
         readMap = Collections.emptyMap();
-        writeMap = new ConcurrentLinkedHashMap<>(U.capacity(txSize), 0.75f, 1);
+        writeMap = new LinkedHashMap<>(U.capacity(txSize), 0.75f);
 
         topologyVersion(topVer);
     }

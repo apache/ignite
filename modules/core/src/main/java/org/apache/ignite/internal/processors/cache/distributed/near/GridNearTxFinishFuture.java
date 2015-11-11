@@ -332,6 +332,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /**
      * Initializes future.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     void finish() {
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
@@ -355,10 +356,18 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (!isSync() && !isDone()) {
                     boolean complete = true;
 
-                    for (IgniteInternalFuture<?> f : pending())
-                        // Mini-future in non-sync mode gets done when message gets sent.
-                        if (isMini(f) && !f.isDone())
-                            complete = false;
+                    synchronized (futs) {
+                        // Avoid collection copy and iterator creation.
+                        for (int i = 0; i < futs.size(); i++) {
+                            IgniteInternalFuture<IgniteInternalTx> f = futs.get(i);
+
+                            if (isMini(f) && !f.isDone()) {
+                                complete = false;
+
+                                break;
+                            }
+                        }
+                    }
 
                     if (complete)
                         onComplete();

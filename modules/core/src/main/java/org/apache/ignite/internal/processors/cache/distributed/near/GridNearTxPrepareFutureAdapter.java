@@ -231,14 +231,12 @@ public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundFuture<
             if (writeVer == null)
                 writeVer = res.dhtVersion();
 
-            // Register DHT version.
-            tx.addDhtVersion(nodeId, res.dhtVersion(), writeVer);
-
             assert tx.mappings().get(nodeId) == m;
 
             // This step is very important as near and DHT versions grow separately.
             cctx.versions().onReceived(nodeId, res.dhtVersion());
 
+            // Register DHT version.
             m.dhtVersion(res.dhtVersion(), writeVer);
 
             if (m.near())

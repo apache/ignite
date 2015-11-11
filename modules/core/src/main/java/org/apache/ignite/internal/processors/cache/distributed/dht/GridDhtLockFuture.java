@@ -529,35 +529,53 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             if (log.isDebugEnabled())
                 log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
 
-            boolean found = false;
+            MiniFuture mini = miniFuture(res.miniId());
 
-            for (IgniteInternalFuture<Boolean> fut : pending()) {
-                if (isMini(fut)) {
-                    MiniFuture mini = (MiniFuture)fut;
+            if (mini != null) {
+                assert mini.node().id().equals(nodeId);
 
-                    if (mini.futureId().equals(res.miniId())) {
-                        assert mini.node().id().equals(nodeId);
+                if (log.isDebugEnabled())
+                    log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
 
-                        if (log.isDebugEnabled())
-                            log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
+                mini.onResult(res);
 
-                        found = true;
+                if (log.isDebugEnabled())
+                    log.debug("Futures after processed lock response [fut=" + this + ", mini=" + mini +
+                        ", res=" + res + ']');
 
-                        mini.onResult(res);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Futures after processed lock response [fut=" + this + ", mini=" + mini +
-                                ", res=" + res + ']');
-
-                        break;
-                    }
-                }
+                return;
             }
 
-            if (!found)
-                U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
-                    ", fut=" + this + ']');
+            U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
+                ", fut=" + this + ']');
         }
+    }
+
+    /**
+     * Finds pending mini future by the given mini ID.
+     *
+     * @param miniId Mini ID to find.
+     * @return Mini future.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private MiniFuture miniFuture(IgniteUuid miniId) {
+        // We iterate directly over the futs collection here to avoid copy.
+        synchronized (futs) {
+            // Avoid iterator creation.
+            for (int i = 0; i < futs.size(); i++) {
+                IgniteInternalFuture<Boolean> fut = futs.get(i);
+
+                if (!isMini(fut))
+                    continue;
+
+                MiniFuture mini = (MiniFuture)fut;
+
+                if (!mini.isDone() && mini.futureId().equals(miniId))
+                    return mini;
+            }
+        }
+
+        return null;
     }
 
     /**
