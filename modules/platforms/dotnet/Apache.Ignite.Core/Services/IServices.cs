@@ -240,17 +240,17 @@ namespace Apache.Ignite.Core.Services
         T GetServiceProxy<T>(string name, bool sticky) where T : class;
 
         /// <summary>
-        /// Returns an instance with portable mode enabled.
-        /// Service method results will be kept in portable form.
+        /// Returns an instance with binary mode enabled.
+        /// Service method results will be kept in binary form.
         /// </summary>
-        /// <returns>Instance with portable mode enabled.</returns>
-        IServices WithKeepPortable();
+        /// <returns>Instance with binary mode enabled.</returns>
+        IServices WithKeepBinary();
 
         /// <summary>
-        /// Returns an instance with server-side portable mode enabled.
-        /// Service method arguments will be kept in portable form.
+        /// Returns an instance with server-side binary mode enabled.
+        /// Service method arguments will be kept in binary form.
         /// </summary>
-        /// <returns>Instance with server-side portable mode enabled.</returns>
-        IServices WithServerKeepPortable();
+        /// <returns>Instance with server-side binary mode enabled.</returns>
+        IServices WithServerKeepBinary();
     }
 }

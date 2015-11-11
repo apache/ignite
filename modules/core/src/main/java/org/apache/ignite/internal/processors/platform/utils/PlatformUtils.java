@@ -39,8 +39,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetPortableTypeConfiguration;
+import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
+import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.CacheException;
@@ -773,14 +773,14 @@ public class PlatformUtils {
         // 1. Write assemblies.
         writeNullableCollection(writer, cfg.getAssemblies());
 
-        PlatformDotNetPortableConfiguration portableCfg = cfg.getPortableConfiguration();
+        PlatformDotNetBinaryConfiguration binaryCfg = cfg.getBinaryConfiguration();
 
-        if (portableCfg != null) {
+        if (binaryCfg != null) {
             writer.writeBoolean(true);
 
-            writeNullableCollection(writer, portableCfg.getTypesConfiguration(),
-                new PlatformWriterClosure<PlatformDotNetPortableTypeConfiguration>() {
-                @Override public void write(BinaryRawWriterEx writer, PlatformDotNetPortableTypeConfiguration typ) {
+            writeNullableCollection(writer, binaryCfg.getTypesConfiguration(),
+                new PlatformWriterClosure<PlatformDotNetBinaryTypeConfiguration>() {
+                @Override public void write(BinaryRawWriterEx writer, PlatformDotNetBinaryTypeConfiguration typ) {
                     writer.writeString(typ.getTypeName());
                     writer.writeString(typ.getNameMapper());
                     writer.writeString(typ.getIdMapper());
@@ -790,11 +790,11 @@ public class PlatformUtils {
                 }
             });
 
-            writeNullableCollection(writer, portableCfg.getTypes());
-            writer.writeString(portableCfg.getDefaultNameMapper());
-            writer.writeString(portableCfg.getDefaultIdMapper());
-            writer.writeString(portableCfg.getDefaultSerializer());
-            writer.writeBoolean(portableCfg.isDefaultKeepDeserialized());
+            writeNullableCollection(writer, binaryCfg.getTypes());
+            writer.writeString(binaryCfg.getDefaultNameMapper());
+            writer.writeString(binaryCfg.getDefaultIdMapper());
+            writer.writeString(binaryCfg.getDefaultSerializer());
+            writer.writeBoolean(binaryCfg.isDefaultKeepDeserialized());
         }
         else
             writer.writeBoolean(false);

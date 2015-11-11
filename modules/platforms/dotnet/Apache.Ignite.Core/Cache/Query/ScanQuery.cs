@@ -17,8 +17,8 @@
 
 namespace Apache.Ignite.Core.Cache.Query
 {
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
     /// Scan query over cache entries. Will accept all the entries if no predicate was set.
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Cache.Query
         public int? Partition { get; set; }
 
         /** <inheritDoc /> */
-        internal override void Write(PortableWriterImpl writer, bool keepPortable)
+        internal override void Write(BinaryWriter writer, bool keepBinary)
         {
             writer.WriteBoolean(Local);
             writer.WriteInt(PageSize);
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Cache.Query
             else
             {
                 var holder = new CacheEntryFilterHolder(Filter, (key, val) => Filter.Invoke(
-                    new CacheEntry<TK, TV>((TK) key, (TV) val)), writer.Marshaller, keepPortable);
+                    new CacheEntry<TK, TV>((TK) key, (TV) val)), writer.Marshaller, keepBinary);
                 
                 writer.WriteObject(holder);
                 writer.WriteLong(holder.Handle);
