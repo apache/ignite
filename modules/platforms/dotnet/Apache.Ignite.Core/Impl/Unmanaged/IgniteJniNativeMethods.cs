@@ -21,10 +21,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Security;
 
     /// <summary>
-    /// Ignite JNI methods.
+    /// Ignite JNI native methods.
     /// </summary>
     [SuppressUnmanagedCodeSecurity]
-    internal unsafe static class IgniteJni
+    internal unsafe static class IgniteJniNativeMethods
     {
         // TODO: Fix FxCop
 

@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
 
-    using JNI = IgniteJni;
+    using JNI = IgniteJniNativeMethods;
 
     /// <summary>
     /// Unmanaged utility classes.

@@ -294,7 +294,7 @@
     <Compile Include="Impl\Transactions\TransactionImpl.cs" />
     <Compile Include="Impl\Transactions\TransactionMetricsImpl.cs" />
     <Compile Include="Impl\Transactions\TransactionsImpl.cs" />
-    <Compile Include="Impl\Unmanaged\IgniteJni.cs" />
+    <Compile Include="Impl\Unmanaged\IgniteJniNativeMethods.cs" />
     <Compile Include="Impl\Unmanaged\IUnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedCallbackHandlers.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedCallbacks.cs" />
