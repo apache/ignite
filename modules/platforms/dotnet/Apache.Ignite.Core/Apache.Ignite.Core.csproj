@@ -112,6 +112,8 @@
     <Compile Include="Datastream\StreamTransformer.cs" />
     <Compile Include="Datastream\StreamVisitor.cs" />
     <Compile Include="DataStructures\IAtomicLong.cs" />
+    <Compile Include="DataStructures\IAtomicReference.cs" />
+    <Compile Include="DataStructures\IAtomicSequence.cs" />
     <Compile Include="Events\CacheEvent.cs" />
     <Compile Include="Events\CacheQueryExecutedEvent.cs" />
     <Compile Include="Events\CacheQueryReadEvent.cs" />
@@ -205,6 +207,8 @@
     <Compile Include="Impl\Datastream\DataStreamerRemoveEntry.cs" />
     <Compile Include="Impl\Datastream\StreamReceiverHolder.cs" />
     <Compile Include="Impl\DataStructures\AtomicLong.cs" />
+    <Compile Include="Impl\DataStructures\AtomicReference.cs" />
+    <Compile Include="Impl\DataStructures\AtomicSequence.cs" />
     <Compile Include="Impl\Events\Events.cs" />
     <Compile Include="Impl\Events\RemoteListenEventFilter.cs" />
     <Compile Include="Impl\ExceptionUtils.cs" />

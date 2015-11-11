@@ -102,6 +102,8 @@ namespace ignite
 
             typedef long long(JNICALL *ExtensionCallbackInLongOutLongHandler)(void* target, int typ, long long arg1);
             typedef long long(JNICALL *ExtensionCallbackInLongLongOutLongHandler)(void* target, int typ, long long arg1, long long arg2);
+            
+            typedef long long(JNICALL *CompareObjectsHandler)(void* target, long long memPtr);
 
             /**
              * JNI handlers holder.
@@ -177,6 +179,8 @@ namespace ignite
 
                 ExtensionCallbackInLongOutLongHandler extensionCallbackInLongOutLong;
                 ExtensionCallbackInLongLongOutLongHandler extensionCallbackInLongLongOutLong;
+                
+                CompareObjectsHandler compareObjects;
             };
 
             /**
@@ -307,6 +311,8 @@ namespace ignite
                 jmethodID m_PlatformProcessor_services;
                 jmethodID m_PlatformProcessor_extensions;
                 jmethodID m_PlatformProcessor_atomicLong;
+                jmethodID m_PlatformProcessor_atomicSequence;
+                jmethodID m_PlatformProcessor_atomicReference;
 
                 jclass c_PlatformTarget;
                 jmethodID m_PlatformTarget_inStreamOutLong;
@@ -346,6 +352,21 @@ namespace ignite
                 jmethodID m_PlatformAtomicLong_compareAndSetAndGet;
                 jmethodID m_PlatformAtomicLong_isClosed;
                 jmethodID m_PlatformAtomicLong_close;
+
+                jclass c_PlatformAtomicSequence;
+                jmethodID m_PlatformAtomicSequence_get;
+                jmethodID m_PlatformAtomicSequence_incrementAndGet;
+                jmethodID m_PlatformAtomicSequence_getAndIncrement;
+                jmethodID m_PlatformAtomicSequence_addAndGet;
+                jmethodID m_PlatformAtomicSequence_getAndAdd;
+                jmethodID m_PlatformAtomicSequence_getBatchSize;
+                jmethodID m_PlatformAtomicSequence_setBatchSize;
+                jmethodID m_PlatformAtomicSequence_isClosed;
+                jmethodID m_PlatformAtomicSequence_close;
+
+                jclass c_PlatformAtomicReference;
+                jmethodID m_PlatformAtomicReference_isClosed;
+                jmethodID m_PlatformAtomicReference_close;
 
                 /**
                  * Constructor.
@@ -491,6 +512,8 @@ namespace ignite
                 jobject ProcessorServices(jobject obj, jobject prj);
                 jobject ProcessorExtensions(jobject obj);
                 jobject ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create);
+                jobject ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create);
+                jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
                 
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
@@ -589,6 +612,19 @@ namespace ignite
                 bool AtomicLongIsClosed(jobject obj);
                 void AtomicLongClose(jobject obj);
 
+                long long AtomicSequenceGet(jobject obj);
+                long long AtomicSequenceIncrementAndGet(jobject obj);
+                long long AtomicSequenceGetAndIncrement(jobject obj);
+                long long AtomicSequenceAddAndGet(jobject obj, long long l);
+                long long AtomicSequenceGetAndAdd(jobject obj, long long l);
+                int AtomicSequenceGetBatchSize(jobject obj);
+                void AtomicSequenceSetBatchSize(jobject obj, int size);
+                bool AtomicSequenceIsClosed(jobject obj);
+                void AtomicSequenceClose(jobject obj);
+
+                bool AtomicReferenceIsClosed(jobject obj);
+                void AtomicReferenceClose(jobject obj);
+
                 jobject Acquire(jobject obj);
 
                 void DestroyJvm();
@@ -672,6 +708,8 @@ namespace ignite
 
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1);
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1, jlong arg2);
+
+            JNIEXPORT jlong JNICALL JniCompareObjects(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
         }
     }
 }

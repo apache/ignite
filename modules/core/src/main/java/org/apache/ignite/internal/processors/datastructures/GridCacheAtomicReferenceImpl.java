@@ -152,10 +152,21 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
     /** {@inheritDoc} */
     @Override public boolean compareAndSet(T expVal, T newVal) {
+        return compareAndSetAndGet(expVal, newVal, wrapperPredicate(expVal)) == expVal;
+    }
+
+    /**
+     * Compares current value with specified value for equality and, if they are equal, replaces current value.
+     *
+     * @param expVal Expected value.
+     * @param newVal New value to set.
+     * @return Original value.
+     */
+    public T compareAndSetAndGet(T expVal, T newVal, final IgnitePredicate<T> expValPred) {
         checkRemoved();
 
         try {
-            return CU.outTx(internalCompareAndSet(wrapperPredicate(expVal), wrapperClosure(newVal)), ctx);
+            return CU.outTx(internalCompareAndSetAndGet(expValPred, wrapperClosure(newVal)), ctx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -263,30 +274,30 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @param newValClos Closure which generates new value.
      * @return Callable for execution in async and sync mode.
      */
-    private Callable<Boolean> internalCompareAndSet(final IgnitePredicate<T> expValPred,
-        final IgniteClosure<T, T> newValClos) {
-        return new Callable<Boolean>() {
-            @Override public Boolean call() throws Exception {
+    private Callable<T> internalCompareAndSetAndGet(final IgnitePredicate<T> expValPred,
+                                                    final IgniteClosure<T, T> newValClos) {
+        return new Callable<T>() {
+            @Override public T call() throws Exception {
                 try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
 
                     if (ref == null)
                         throw new IgniteCheckedException("Failed to find atomic reference with given name: " + name);
 
-                    if (!expValPred.apply(ref.get())) {
-                        tx.setRollbackOnly();
+                    T origVal = ref.get();
 
-                        return false;
+                    if (!expValPred.apply(origVal)) {
+                        tx.setRollbackOnly();
                     }
                     else {
-                        ref.set(newValClos.apply(ref.get()));
+                        ref.set(newValClos.apply(origVal));
 
                         atomicView.getAndPut(key, ref);
 
                         tx.commit();
-
-                        return true;
                     }
+
+                    return origVal;
                 }
                 catch (Error | Exception e) {
                     U.error(log, "Failed to compare and value [expValPred=" + expValPred + ", newValClos" +

@@ -443,6 +443,56 @@ namespace Apache.Ignite.Core.Impl
             return new AtomicLong(nativeLong, Marshaller, name);
         }
 
+        /** <inheritdoc /> */
+        public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            var nativeSeq = UU.ProcessorAtomicSequence(_proc, name, initialValue, create);
+
+            if (nativeSeq == null)
+                return null;
+
+            return new AtomicSequence(nativeSeq, Marshaller, name);
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            var refTarget = GetAtomicReferenceUnmanaged(name, initialValue, create);
+
+            return refTarget == null ? null : new AtomicReference<T>(refTarget, Marshaller, name);
+        }
+
+        /// <summary>
+        /// Gets the unmanaged atomic reference.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="initialValue">The initial value.</param>
+        /// <param name="create">Create flag.</param>
+        /// <returns>Unmanaged atomic reference, or null.</returns>
+        private IUnmanagedTarget GetAtomicReferenceUnmanaged<T>(string name, T initialValue, bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            // Do not allocate memory to pass default value.
+            if (EqualityComparer<T>.Default.Equals(initialValue, default(T)))
+                return UU.ProcessorAtomicReference(_proc, name, 0, create);
+            
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
+
+                writer.Write(initialValue);
+
+                var memPtr = stream.SynchronizeOutput();
+
+                return UU.ProcessorAtomicReference(_proc, name, memPtr, create);
+            }
+        }
+
         /// <summary>
         /// Gets internal projection.
         /// </summary>

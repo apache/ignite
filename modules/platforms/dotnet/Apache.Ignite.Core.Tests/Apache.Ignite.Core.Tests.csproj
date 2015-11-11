@@ -102,6 +102,8 @@
     <Compile Include="Compute\TaskResultTest.cs" />
     <Compile Include="Dataload\DataStreamerTest.cs" />
     <Compile Include="DataStructures\AtomicLongTest.cs" />
+    <Compile Include="DataStructures\AtomicReferenceTest.cs" />
+    <Compile Include="DataStructures\AtomicSequenceTest.cs" />
     <Compile Include="EventsTest.cs" />
     <Compile Include="Examples\Example.cs" />
     <Compile Include="Examples\ExamplesTest.cs" />

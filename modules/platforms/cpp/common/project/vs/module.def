@@ -109,3 +109,16 @@ IgniteAtomicLongGetAndSet @106
 IgniteAtomicLongCompareAndSetAndGet @107
 IgniteAtomicLongIsClosed @108
 IgniteAtomicLongClose @109
+IgniteProcessorAtomicSequence @110
+IgniteAtomicSequenceGet @111
+IgniteAtomicSequenceIncrementAndGet @112
+IgniteAtomicSequenceGetAndIncrement @113
+IgniteAtomicSequenceAddAndGet @114
+IgniteAtomicSequenceGetAndAdd @115
+IgniteAtomicSequenceGetBatchSize @116
+IgniteAtomicSequenceSetBatchSize @117
+IgniteAtomicSequenceIsClosed @118
+IgniteAtomicSequenceClose @119
+IgniteProcessorAtomicReference @120
+IgniteAtomicReferenceIsClosed @121
+IgniteAtomicReferenceClose @122

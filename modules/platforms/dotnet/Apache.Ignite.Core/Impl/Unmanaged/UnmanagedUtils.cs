@@ -54,6 +54,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcProcessorServices = "IgniteProcessorServices";
         private const string ProcProcessorExtensions = "IgniteProcessorExtensions";
         private const string ProcProcessorAtomicLong = "IgniteProcessorAtomicLong";
+        private const string ProcProcessorAtomicSequence = "IgniteProcessorAtomicSequence";
+        private const string ProcProcessorAtomicReference = "IgniteProcessorAtomicReference";
         
         private const string ProcTargetInStreamOutLong = "IgniteTargetInStreamOutLong";
         private const string ProcTargetInStreamOutStream = "IgniteTargetInStreamOutStream";
@@ -161,6 +163,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcAtomicLongIsClosed = "IgniteAtomicLongIsClosed";
         private const string ProcAtomicLongClose = "IgniteAtomicLongClose";
 
+        private const string ProcAtomicSequenceGet = "IgniteAtomicSequenceGet";
+        private const string ProcAtomicSequenceIncrementAndGet = "IgniteAtomicSequenceIncrementAndGet";
+        private const string ProcAtomicSequenceGetAndIncrement = "IgniteAtomicSequenceGetAndIncrement";
+        private const string ProcAtomicSequenceAddAndGet = "IgniteAtomicSequenceAddAndGet";
+        private const string ProcAtomicSequenceGetAndAdd = "IgniteAtomicSequenceGetAndAdd";
+        private const string ProcAtomicSequenceGetBatchSize = "IgniteAtomicSequenceGetBatchSize";
+        private const string ProcAtomicSequenceSetBatchSize = "IgniteAtomicSequenceSetBatchSize";
+        private const string ProcAtomicSequenceIsClosed = "IgniteAtomicSequenceIsClosed";
+        private const string ProcAtomicSequenceClose = "IgniteAtomicSequenceClose";
+
+        private const string ProcAtomicReferenceIsClosed = "IgniteAtomicReferenceIsClosed";
+        private const string ProcAtomicReferenceClose = "IgniteAtomicReferenceClose";
+
         #endregion
 
         #region DELEGATE DEFINITIONS
@@ -185,6 +200,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void* ProcessorServicesDelegate(void* ctx, void* obj, void* prj);
         private delegate void* ProcessorExtensionsDelegate(void* ctx, void* obj);
         private delegate void* ProcessorAtomicLongDelegate(void* ctx, void* obj, sbyte* name, long initVal, bool create);
+        private delegate void* ProcessorAtomicSequenceDelegate(void* ctx, void* obj, sbyte* name, long initVal, bool create);
+        private delegate void* ProcessorAtomicReferenceDelegate(void* ctx, void* obj, sbyte* name, long memPtr, bool create);
         
         private delegate long TargetInStreamOutLongDelegate(void* ctx, void* target, int opType, long memPtr);
         private delegate void TargetInStreamOutStreamDelegate(void* ctx, void* target, int opType, long inMemPtr, long outMemPtr);
@@ -292,6 +309,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate bool AtomicLongIsClosedDelegate(void* ctx, void* target);
         private delegate void AtomicLongCloseDelegate(void* ctx, void* target);
 
+        private delegate long AtomicSequenceGetDelegate(void* ctx, void* target);
+        private delegate long AtomicSequenceIncrementAndGetDelegate(void* ctx, void* target);
+        private delegate long AtomicSequenceGetAndIncrementDelegate(void* ctx, void* target);
+        private delegate long AtomicSequenceAddAndGetDelegate(void* ctx, void* target, long l);
+        private delegate long AtomicSequenceGetAndAddDelegate(void* ctx, void* target, long l);
+        private delegate int AtomicSequenceGetBatchSizeDelegate(void* ctx, void* target);
+        private delegate void AtomicSequenceSetBatchSizeDelegate(void* ctx, void* target, int size);
+        private delegate bool AtomicSequenceIsClosedDelegate(void* ctx, void* target);
+        private delegate void AtomicSequenceCloseDelegate(void* ctx, void* target);
+
+        private delegate bool AtomicReferenceIsClosedDelegate(void* ctx, void* target);
+        private delegate void AtomicReferenceCloseDelegate(void* ctx, void* target); 
+
         #endregion
 
         #region DELEGATE MEMBERS
@@ -317,6 +347,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ProcessorServicesDelegate PROCESSOR_SERVICES;
         private static readonly ProcessorExtensionsDelegate PROCESSOR_EXTENSIONS;
         private static readonly ProcessorAtomicLongDelegate PROCESSOR_ATOMIC_LONG;
+        private static readonly ProcessorAtomicSequenceDelegate PROCESSOR_ATOMIC_SEQUENCE;
+        private static readonly ProcessorAtomicReferenceDelegate PROCESSOR_ATOMIC_REFERENCE;
         
         private static readonly TargetInStreamOutLongDelegate TARGET_IN_STREAM_OUT_LONG;
         private static readonly TargetInStreamOutStreamDelegate TARGET_IN_STREAM_OUT_STREAM;
@@ -424,6 +456,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly AtomicLongIsClosedDelegate ATOMIC_LONG_IS_CLOSED;
         private static readonly AtomicLongCloseDelegate ATOMIC_LONG_CLOSE;
 
+        private static readonly AtomicSequenceGetDelegate ATOMIC_SEQUENCE_GET;
+        private static readonly AtomicSequenceIncrementAndGetDelegate ATOMIC_SEQUENCE_INCREMENT_AND_GET;
+        private static readonly AtomicSequenceGetAndIncrementDelegate ATOMIC_SEQUENCE_GET_AND_INCREMENT;
+        private static readonly AtomicSequenceAddAndGetDelegate ATOMIC_SEQUENCE_ADD_AND_GET;
+        private static readonly AtomicSequenceGetAndAddDelegate ATOMIC_SEQUENCE_GET_AND_ADD;
+        private static readonly AtomicSequenceGetBatchSizeDelegate ATOMIC_SEQUENCE_GET_BATCH_SIZE;
+        private static readonly AtomicSequenceSetBatchSizeDelegate ATOMIC_SEQUENCE_SET_BATCH_SIZE;
+        private static readonly AtomicSequenceIsClosedDelegate ATOMIC_SEQUENCE_IS_CLOSED;
+        private static readonly AtomicSequenceCloseDelegate ATOMIC_SEQUENCE_CLOSE;
+
+        private static readonly AtomicReferenceIsClosedDelegate ATOMIC_REFERENCE_IS_CLOSED;
+        private static readonly AtomicReferenceCloseDelegate ATOMIC_REFERENCE_CLOSE;
+
         // ReSharper restore InconsistentNaming
 
         #endregion
@@ -465,6 +510,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             PROCESSOR_SERVICES = CreateDelegate<ProcessorServicesDelegate>(ProcProcessorServices);
             PROCESSOR_EXTENSIONS = CreateDelegate<ProcessorExtensionsDelegate>(ProcProcessorExtensions);
             PROCESSOR_ATOMIC_LONG = CreateDelegate<ProcessorAtomicLongDelegate>(ProcProcessorAtomicLong);
+            PROCESSOR_ATOMIC_SEQUENCE = CreateDelegate<ProcessorAtomicSequenceDelegate>(ProcProcessorAtomicSequence);
+            PROCESSOR_ATOMIC_REFERENCE = CreateDelegate<ProcessorAtomicReferenceDelegate>(ProcProcessorAtomicReference);
             
             TARGET_IN_STREAM_OUT_LONG = CreateDelegate<TargetInStreamOutLongDelegate>(ProcTargetInStreamOutLong);
             TARGET_IN_STREAM_OUT_STREAM = CreateDelegate<TargetInStreamOutStreamDelegate>(ProcTargetInStreamOutStream);
@@ -570,6 +617,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             ATOMIC_LONG_COMPARE_AND_SET_AND_GET = CreateDelegate<AtomicLongCompareAndSetAndGetDelegate>(ProcAtomicLongCompareAndSetAndGet);
             ATOMIC_LONG_IS_CLOSED = CreateDelegate<AtomicLongIsClosedDelegate>(ProcAtomicLongIsClosed);
             ATOMIC_LONG_CLOSE = CreateDelegate<AtomicLongCloseDelegate>(ProcAtomicLongClose);
+
+            ATOMIC_SEQUENCE_GET = CreateDelegate<AtomicSequenceGetDelegate>(ProcAtomicSequenceGet);
+            ATOMIC_SEQUENCE_INCREMENT_AND_GET = CreateDelegate<AtomicSequenceIncrementAndGetDelegate>(ProcAtomicSequenceIncrementAndGet);
+            ATOMIC_SEQUENCE_GET_AND_INCREMENT = CreateDelegate<AtomicSequenceGetAndIncrementDelegate>(ProcAtomicSequenceGetAndIncrement);
+            ATOMIC_SEQUENCE_ADD_AND_GET = CreateDelegate<AtomicSequenceAddAndGetDelegate>(ProcAtomicSequenceAddAndGet);
+            ATOMIC_SEQUENCE_GET_AND_ADD = CreateDelegate<AtomicSequenceGetAndAddDelegate>(ProcAtomicSequenceGetAndAdd);
+            ATOMIC_SEQUENCE_GET_BATCH_SIZE = CreateDelegate<AtomicSequenceGetBatchSizeDelegate>(ProcAtomicSequenceGetBatchSize);
+            ATOMIC_SEQUENCE_SET_BATCH_SIZE = CreateDelegate<AtomicSequenceSetBatchSizeDelegate>(ProcAtomicSequenceSetBatchSize);
+            ATOMIC_SEQUENCE_IS_CLOSED = CreateDelegate<AtomicSequenceIsClosedDelegate>(ProcAtomicSequenceIsClosed);
+            ATOMIC_SEQUENCE_CLOSE = CreateDelegate<AtomicSequenceCloseDelegate>(ProcAtomicSequenceClose);
+
+            ATOMIC_REFERENCE_IS_CLOSED = CreateDelegate<AtomicReferenceIsClosedDelegate>(ProcAtomicReferenceIsClosed);
+            ATOMIC_REFERENCE_CLOSE = CreateDelegate<AtomicReferenceCloseDelegate>(ProcAtomicReferenceClose);
         }
 
         #region NATIVE METHODS: PROCESSOR
@@ -760,6 +820,40 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             try
             {
                 var res = PROCESSOR_ATOMIC_LONG(target.Context, target.Target, name0, initialValue, create);
+
+                return res == null ? null : target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static IUnmanagedTarget ProcessorAtomicSequence(IUnmanagedTarget target, string name, 
+            long initialValue, bool create)
+        {
+            var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                var res = PROCESSOR_ATOMIC_SEQUENCE(target.Context, target.Target, name0, initialValue, create);
+
+                return res == null ? null : target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static IUnmanagedTarget ProcessorAtomicReference(IUnmanagedTarget target, string name, 
+            long memPtr, bool create)
+        {
+            var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                var res = PROCESSOR_ATOMIC_REFERENCE(target.Context, target.Target, name0, memPtr, create);
 
                 return res == null ? null : target.ChangeTarget(res);
             }
@@ -1335,6 +1429,61 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             ATOMIC_LONG_CLOSE(target.Context, target.Target);
         }
+
+        internal static long AtomicSequenceGet(IUnmanagedTarget target)
+        {
+            return ATOMIC_SEQUENCE_GET(target.Context, target.Target);
+        }
+
+        internal static long AtomicSequenceIncrementAndGet(IUnmanagedTarget target)
+        {
+            return ATOMIC_SEQUENCE_INCREMENT_AND_GET(target.Context, target.Target);
+        }
+
+        internal static long AtomicSequenceGetAndIncrement(IUnmanagedTarget target)
+        {
+            return ATOMIC_SEQUENCE_GET_AND_INCREMENT(target.Context, target.Target);
+        }
+
+        internal static long AtomicSequenceAddAndGet(IUnmanagedTarget target, long l)
+        {
+            return ATOMIC_SEQUENCE_ADD_AND_GET(target.Context, target.Target, l);
+        }
+
+        internal static long AtomicSequenceGetAndAdd(IUnmanagedTarget target, long l)
+        {
+            return ATOMIC_SEQUENCE_GET_AND_ADD(target.Context, target.Target, l);
+        }
+
+        internal static int AtomicSequenceGetBatchSize(IUnmanagedTarget target)
+        {
+            return ATOMIC_SEQUENCE_GET_BATCH_SIZE(target.Context, target.Target);
+        }
+
+        internal static void AtomicSequenceSetBatchSize(IUnmanagedTarget target, int size)
+        {
+            ATOMIC_SEQUENCE_SET_BATCH_SIZE(target.Context, target.Target, size);
+        }
+
+        internal static bool AtomicSequenceIsClosed(IUnmanagedTarget target)
+        {
+            return ATOMIC_SEQUENCE_IS_CLOSED(target.Context, target.Target);
+        }
+
+        internal static void AtomicSequenceClose(IUnmanagedTarget target)
+        {
+            ATOMIC_SEQUENCE_CLOSE(target.Context, target.Target);
+        }
+
+        internal static bool AtomicReferenceIsClosed(IUnmanagedTarget target)
+        {
+            return ATOMIC_REFERENCE_IS_CLOSED(target.Context, target.Target);
+        }
+
+        internal static void AtomicReferenceClose(IUnmanagedTarget target)
+        {
+            ATOMIC_REFERENCE_CLOSE(target.Context, target.Target);
+        } 
 
         #endregion
 

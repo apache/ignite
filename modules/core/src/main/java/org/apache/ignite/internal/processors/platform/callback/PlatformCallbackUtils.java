@@ -442,7 +442,6 @@ public class PlatformCallbackUtils {
     static native void serviceCancel(long envPtr, long svcPtr, long memPtr);
 
     /**
-     /**
      * Invokes service method.
      *
      * @param envPtr Environment pointer.
@@ -480,6 +479,15 @@ public class PlatformCallbackUtils {
      * @return Long result.
      */
     static native long extensionCallbackInLongLongOutLong(long envPtr, int typ, long arg1, long arg2);
+
+    /**
+     * Compares two objects in a stream and returns the difference (0 for equality).
+     *
+     * @param envPtr Environment pointer.
+     * @param memPtr Output memory pointer.
+     * @return Object difference (0 for equality).
+     */
+    static native long compareObjects(long envPtr, long memPtr);
 
     /**
      * Private constructor.

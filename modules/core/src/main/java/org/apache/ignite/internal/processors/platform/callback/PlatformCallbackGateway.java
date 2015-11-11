@@ -911,6 +911,24 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Compares two objects in a stream and returns the difference (0 for equality).
+     *
+     * @param memPtr Output memory pointer.
+     * @return Object difference (0 for equality).
+     * @throws org.apache.ignite.IgniteCheckedException In case of error.
+     */
+    public long compareObjects(long memPtr) throws IgniteCheckedException {
+        enter();
+
+        try {
+            return PlatformCallbackUtils.compareObjects(envPtr, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Kernal stop callback.
      */
     public void onStop() {

@@ -174,6 +174,8 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_SERVICES = JniMethod("services", "(Lorg/apache/ignite/internal/processors/platform/PlatformTarget;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_EXTENSIONS = JniMethod("extensions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_LONG = JniMethod("atomicLong", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE = JniMethod("atomicSequence", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE = JniMethod("atomicReference", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             
             const char* C_PLATFORM_TARGET = "org/apache/ignite/internal/processors/platform/PlatformTarget";
             JniMethod M_PLATFORM_TARGET_IN_STREAM_OUT_LONG = JniMethod("inStreamOutLong", "(IJ)J", false);
@@ -318,6 +320,8 @@ namespace ignite
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG = JniMethod("extensionCallbackInLongOutLong", "(JIJ)J", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG = JniMethod("extensionCallbackInLongLongOutLong", "(JIJJ)J", true);
             
+            JniMethod M_PLATFORM_CALLBACK_UTILS_COMPARE_OBJECTS = JniMethod("compareObjects", "(JJ)J", true);
+            
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
             JniMethod M_PLATFORM_UTILS_ERR_DATA = JniMethod("errorData", "(Ljava/lang/Throwable;)[B", true);
@@ -363,6 +367,21 @@ namespace ignite
             JniMethod M_PLATFORM_ATOMIC_LONG_COMPARE_AND_SET_AND_GET = JniMethod("compareAndSetAndGet", "(JJ)J", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_IS_CLOSED = JniMethod("isClosed", "()Z", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_CLOSE = JniMethod("close", "()V", false);
+
+            const char* C_PLATFORM_ATOMIC_SEQUENCE = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicSequence";
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET = JniMethod("get", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_INCREMENT_AND_GET = JniMethod("incrementAndGet", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_INCREMENT = JniMethod("getAndIncrement", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_ADD_AND_GET = JniMethod("addAndGet", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_ADD = JniMethod("getAndAdd", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET_BATCH_SIZE = JniMethod("getBatchSize", "()I", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_SET_BATCH_SIZE = JniMethod("setBatchSize", "(I)V", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_IS_CLOSED = JniMethod("isClosed", "()Z", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_CLOSE = JniMethod("close", "()V", false);
+
+            const char* C_PLATFORM_ATOMIC_REFERENCE = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicReference";
+            JniMethod M_PLATFORM_ATOMIC_REFERENCE_IS_CLOSED = JniMethod("isClosed", "()Z", false);
+            JniMethod M_PLATFORM_ATOMIC_REFERENCE_CLOSE = JniMethod("close", "()V", false);
 
             /* STATIC STATE. */
             gcc::CriticalSection JVM_LOCK;
@@ -613,6 +632,8 @@ namespace ignite
                 m_PlatformProcessor_services = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_SERVICES);
                 m_PlatformProcessor_extensions = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EXTENSIONS);
                 m_PlatformProcessor_atomicLong = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_LONG);
+                m_PlatformProcessor_atomicSequence = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE);
+                m_PlatformProcessor_atomicReference = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE);
 
                 c_PlatformTarget = FindClass(env, C_PLATFORM_TARGET);
                 m_PlatformTarget_inStreamOutLong = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_STREAM_OUT_LONG);
@@ -652,6 +673,21 @@ namespace ignite
                 m_PlatformAtomicLong_compareAndSetAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_COMPARE_AND_SET_AND_GET);
                 m_PlatformAtomicLong_isClosed = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_IS_CLOSED);
                 m_PlatformAtomicLong_close = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_CLOSE);
+
+                jclass c_PlatformAtomicSequence = FindClass(env, C_PLATFORM_ATOMIC_SEQUENCE);
+                m_PlatformAtomicSequence_get = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET);
+                m_PlatformAtomicSequence_incrementAndGet = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_INCREMENT_AND_GET);
+                m_PlatformAtomicSequence_getAndIncrement = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_INCREMENT);
+                m_PlatformAtomicSequence_addAndGet = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_ADD_AND_GET);
+                m_PlatformAtomicSequence_getAndAdd = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_ADD);
+                m_PlatformAtomicSequence_getBatchSize = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET_BATCH_SIZE);
+                m_PlatformAtomicSequence_setBatchSize = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_SET_BATCH_SIZE);
+                m_PlatformAtomicSequence_isClosed = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_IS_CLOSED);
+                m_PlatformAtomicSequence_close = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_CLOSE);
+
+                jclass c_PlatformAtomicReference = FindClass(env, C_PLATFORM_ATOMIC_REFERENCE);
+                m_PlatformAtomicReference_isClosed = FindMethod(env, c_PlatformAtomicReference, M_PLATFORM_ATOMIC_REFERENCE_IS_CLOSED);
+                m_PlatformAtomicReference_close = FindMethod(env, c_PlatformAtomicReference, M_PLATFORM_ATOMIC_REFERENCE_CLOSE);
 
                 // Find utility classes which are not used from context, but are still required in other places.
                 CheckClass(env, C_PLATFORM_NO_CALLBACK_EXCEPTION);
@@ -728,7 +764,7 @@ namespace ignite
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[52];
+					JNINativeMethod methods[53];
 
                     int idx = 0;
 
@@ -801,6 +837,8 @@ namespace ignite
 
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG, reinterpret_cast<void*>(JniExtensionCallbackInLongOutLong));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG, reinterpret_cast<void*>(JniExtensionCallbackInLongLongOutLong));
+                    
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_COMPARE_OBJECTS, reinterpret_cast<void*>(JniCompareObjects));
 
                     jint res = env->RegisterNatives(FindClass(env, C_PLATFORM_CALLBACK_UTILS), methods, idx);
 
@@ -1205,6 +1243,38 @@ namespace ignite
                 jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
 
                 jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_atomicLong, name0, initVal, create);
+
+                if (name0)
+                    env->DeleteLocalRef(name0);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
+            }
+
+            jobject JniContext::ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create)
+            {
+                JNIEnv* env = Attach();
+
+                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_atomicSequence, name0, initVal, create);
+
+                if (name0)
+                    env->DeleteLocalRef(name0);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
+            }
+
+            jobject JniContext::ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create)
+            {
+                JNIEnv* env = Attach();
+
+                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_atomicReference, name0, memPtr, create);
 
                 if (name0)
                     env->DeleteLocalRef(name0);
@@ -2011,6 +2081,121 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
+            long long JniContext::AtomicSequenceGet(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_get);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicSequenceIncrementAndGet(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_incrementAndGet);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicSequenceGetAndIncrement(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_getAndIncrement);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicSequenceAddAndGet(jobject obj, long long l)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_addAndGet, l);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicSequenceGetAndAdd(jobject obj, long long l)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_getAndAdd, l);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            int JniContext::AtomicSequenceGetBatchSize(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                int res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_getBatchSize);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            void JniContext::AtomicSequenceSetBatchSize(jobject obj, int size)
+            {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_setBatchSize, size);
+
+                ExceptionCheck(env);
+            }
+
+            bool JniContext::AtomicSequenceIsClosed(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_isClosed);
+
+                ExceptionCheck(env);
+
+                return res != 0;
+            }
+
+            void JniContext::AtomicSequenceClose(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_close);
+
+                ExceptionCheck(env);
+            }
+
+            bool JniContext::AtomicReferenceIsClosed(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicReference_isClosed);
+
+                ExceptionCheck(env);
+
+                return res != 0;
+            }
+
+            void JniContext::AtomicReferenceClose(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicReference_close);
+
+                ExceptionCheck(env);
+            }
+
 			jobject JniContext::Acquire(jobject obj)
             {
                 if (obj) {
@@ -2362,6 +2547,10 @@ namespace ignite
 
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1, jlong arg2) {
                 IGNITE_SAFE_FUNC(env, envPtr, ExtensionCallbackInLongLongOutLongHandler, extensionCallbackInLongLongOutLong, typ, arg1, arg2);
+            }
+
+            JNIEXPORT jlong JNICALL JniCompareObjects(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
+                IGNITE_SAFE_FUNC(env, envPtr, CompareObjectsHandler, compareObjects, memPtr);
             }
         }
     }
