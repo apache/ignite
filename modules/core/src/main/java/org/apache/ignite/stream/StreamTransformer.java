@@ -29,6 +29,11 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 /**
  * Convenience adapter to transform update existing values in streaming cache
  * based on the previously cached value.
+ * <p>
+ * This transformer implement {@link EntryProcessor} and internally will call
+ * {@link IgniteCache#invoke(Object, EntryProcessor, Object...)} method. Note
+ * that the value received from the data streamer will be passed to the entry
+ * processor as an argument.
  */
 public abstract class StreamTransformer<K, V> implements StreamReceiver<K, V>, EntryProcessor<K, V, Object> {
     /** */
