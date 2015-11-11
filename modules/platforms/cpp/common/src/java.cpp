@@ -148,6 +148,7 @@ namespace ignite
                     delete[] errMsg;
             }
 
+            /** JNI global ref RAII-style holder to handle release properly. */
             struct JniGlobalRefHolder
             {
                 JNIEnv *env;
