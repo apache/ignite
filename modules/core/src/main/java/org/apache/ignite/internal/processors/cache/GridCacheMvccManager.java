@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -91,9 +90,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /** Set of removed lock versions. */
     private GridBoundedConcurrentLinkedHashSet<GridCacheVersion> rmvLocks =
         new GridBoundedConcurrentLinkedHashSet<>(MAX_REMOVED_LOCKS, MAX_REMOVED_LOCKS, 0.75f, 16, PER_SEGMENT_Q);
-
-    /** Current local candidates. */
-    private Collection<GridCacheMvccCandidate> dhtLocCands = new ConcurrentSkipListSet<>();
 
     /** Locked keys. */
     @GridToStringExclude
@@ -707,43 +703,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param cand Local lock.
-     * @return {@code True} if added.
-     */
-    public boolean addLocal(GridCacheMvccCandidate cand) {
-        assert cand.key() != null : cand;
-        assert cand.local() : cand;
-
-        if (cand.dhtLocal() && dhtLocCands.add(cand)) {
-            if (log.isDebugEnabled())
-                log.debug("Added local candidate: " + cand);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     *
-     * @param cand Local candidate to remove.
-     * @return {@code True} if removed.
-     */
-    public boolean removeLocal(GridCacheMvccCandidate cand) {
-        assert cand.key() != null : cand;
-        assert cand.local() : cand;
-
-        if (cand.dhtLocal() && dhtLocCands.remove(cand)) {
-            if (log.isDebugEnabled())
-                log.debug("Removed local candidate: " + cand);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * @param cacheCtx Cache context.
      * @param cand Cache lock candidate to add.
      * @return {@code True} if added as a result of this operation,
@@ -953,7 +912,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         X.println(">>> ");
         X.println(">>> Mvcc manager memory stats [grid=" + cctx.gridName() + ']');
         X.println(">>>   rmvLocksSize: " + rmvLocks.sizex());
-        X.println(">>>   dhtLocCandsSize: " + dhtLocCands.size());
         X.println(">>>   lockedSize: " + locked.size());
         X.println(">>>   futsSize: " + futs.size());
         X.println(">>>   near2dhtSize: " + near2dht.size());

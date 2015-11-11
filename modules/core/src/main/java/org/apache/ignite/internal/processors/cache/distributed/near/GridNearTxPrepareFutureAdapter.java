@@ -172,6 +172,8 @@ public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundFuture<
         assert res.error() == null : res;
         assert F.isEmpty(res.invalidPartitions()) : res;
 
+        UUID nodeId = m.node().id();
+
         for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : res.ownedValues().entrySet()) {
             IgniteTxEntry txEntry = tx.entry(entry.getKey());
 
@@ -187,7 +189,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundFuture<
                         CacheVersionedValue tup = entry.getValue();
 
                         nearEntry.resetFromPrimary(tup.value(), tx.xidVersion(),
-                            tup.version(), m.node().id(), tx.topologyVersion());
+                            tup.version(), nodeId, tx.topologyVersion());
                     }
                     else if (txEntry.cached().detached()) {
                         GridDhtDetachedCacheEntry detachedEntry = (GridDhtDetachedCacheEntry)txEntry.cached();
@@ -230,7 +232,12 @@ public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundFuture<
                 writeVer = res.dhtVersion();
 
             // Register DHT version.
-            tx.addDhtVersion(m.node().id(), res.dhtVersion(), writeVer);
+            tx.addDhtVersion(nodeId, res.dhtVersion(), writeVer);
+
+            assert tx.mappings().get(nodeId) == m;
+
+            // This step is very important as near and DHT versions grow separately.
+            cctx.versions().onReceived(nodeId, res.dhtVersion());
 
             m.dhtVersion(res.dhtVersion(), writeVer);
 

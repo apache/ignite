@@ -481,9 +481,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param writeVer Write version.
      */
     void addDhtVersion(UUID nodeId, GridCacheVersion dhtVer, GridCacheVersion writeVer) {
-        // This step is very important as near and DHT versions grow separately.
-        cctx.versions().onReceived(nodeId, dhtVer);
-
         GridDistributedTxMapping m = mappings.get(nodeId);
 
         if (m != null)
@@ -567,18 +564,20 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 GridDistributedTxMapping m = mappings.get(n.id());
 
                 if (m == null) {
-                    m = F.addIfAbsent(mappings, n.id(), new GridDistributedTxMapping(n));
+                    GridDistributedTxMapping old = mappings.putIfAbsent(map.node().id(), map);
 
-                    m.near(map.near());
+                    assert old == null : "Failed to add mapping to transaction: " + this;
+                }
+                else {
+                    if (map.near())
+                        m.near(map.near());
 
                     if (map.explicitLock())
                         m.markExplicitLock();
+
+                    for (IgniteTxEntry entry : map.entries())
+                        m.add(entry);
                 }
-
-                assert m != null;
-
-                for (IgniteTxEntry entry : map.entries())
-                    m.add(entry);
             }
 
             if (log.isDebugEnabled())
@@ -623,7 +622,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers)
     {
-        Collection<IgniteTxEntry> entries = F.concat(false, mapping.writes(), mapping.reads());
+        Collection<IgniteTxEntry> entries = mapping.entries();
 
         for (IgniteTxEntry txEntry : entries) {
             while (true) {
