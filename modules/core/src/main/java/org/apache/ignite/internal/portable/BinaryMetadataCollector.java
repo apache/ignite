@@ -23,10 +23,13 @@ import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryWriter;
@@ -36,17 +39,32 @@ import org.jetbrains.annotations.Nullable;
  * Writer for meta data collection.
  */
 class BinaryMetadataCollector implements BinaryWriter {
-    /** */
-    private final Map<String, Integer> meta = new HashMap<>();
+    /** Type ID. */
+    private final int typeId;
 
-    /** */
+    /** Type name. */
     private final String typeName;
 
+    /** ID mapper. */
+    private final BinaryIdMapper idMapper;
+
+    /** Collected metadata. */
+    private final Map<String, Integer> meta = new HashMap<>();
+
+    /** Schema builder. */
+    private PortableSchema.Builder schemaBuilder = PortableSchema.Builder.newBuilder();
+
     /**
+     * Constructor.
+     *
+     * @param typeId Type ID.
      * @param typeName Type name.
+     * @param idMapper ID mapper.
      */
-    BinaryMetadataCollector(String typeName) {
+    BinaryMetadataCollector(int typeId, String typeName, BinaryIdMapper idMapper) {
+        this.typeId = typeId;
         this.typeName = typeName;
+        this.idMapper = idMapper;
     }
 
     /**
@@ -54,6 +72,13 @@ class BinaryMetadataCollector implements BinaryWriter {
      */
     Map<String, Integer> meta() {
         return meta;
+    }
+
+    /**
+     * @return Schemas.
+     */
+    Collection<PortableSchema> schemas() {
+        return Collections.singleton(schemaBuilder.build());
     }
 
     /** {@inheritDoc} */
@@ -242,13 +267,12 @@ class BinaryMetadataCollector implements BinaryWriter {
 
         if (oldFieldTypeId != null && !oldFieldTypeId.equals(fieldTypeId)) {
             throw new BinaryObjectException(
-                "Field is written twice with different types [" +
-                "typeName=" + typeName +
-                ", fieldName=" + name +
+                "Field is written twice with different types [" + "typeName=" + typeName + ", fieldName=" + name +
                 ", fieldTypeName1=" + PortableUtils.fieldTypeName(oldFieldTypeId) +
-                ", fieldTypeName2=" + PortableUtils.fieldTypeName(fieldTypeId) +
-                ']'
+                ", fieldTypeName2=" + PortableUtils.fieldTypeName(fieldTypeId) + ']'
             );
         }
+
+        schemaBuilder.addField(idMapper.fieldId(typeId, name));
     }
 }

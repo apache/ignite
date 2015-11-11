@@ -133,7 +133,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     private SchemaHolder schema;
 
     /** Schema ID. */
-    private int schemaId;
+    private int schemaId = PortableUtils.schemaInitialId();
 
     /** Amount of written fields. */
     private int fieldCnt;
@@ -1732,9 +1732,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
                 SCHEMA.set(schema);
             }
-
-            // Initialize offset when the first field is written.
-            schemaId = PortableUtils.schemaInitialId();
         }
 
         schemaId = PortableUtils.updateSchemaId(schemaId, fieldId);
@@ -1742,6 +1739,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         schema.push(fieldId, fieldOff);
 
         fieldCnt++;
+    }
+
+    /**
+     * @return Current writer's schema.
+     */
+    public PortableSchema currentSchema() {
+        PortableSchema.Builder builder = PortableSchema.Builder.newBuilder();
+
+        if (schema != null)
+            schema.build(builder, fieldCnt);
+
+        return builder.build();
     }
 
     /**
@@ -1826,6 +1835,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             data[idx + 1] = off;
 
             idx += 2;
+        }
+
+        /**
+         * Build the schema.
+         *
+         * @param builder Builder.
+         * @param fieldCnt Fields count.
+         */
+        public void build(PortableSchema.Builder builder, int fieldCnt) {
+            for (int curIdx = idx - fieldCnt * 2; curIdx < idx; curIdx += 2)
+                builder.addField(data[curIdx]);
         }
 
         /**

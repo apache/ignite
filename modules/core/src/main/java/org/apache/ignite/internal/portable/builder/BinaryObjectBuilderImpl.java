@@ -22,6 +22,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.portable.BinaryMetadata;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
@@ -348,7 +349,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         typeName = metadata.typeName();
                     }
 
-                    ctx.updateMetadata(typeId, typeName, newFldsMetadata);
+                    ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, newFldsMetadata,
+                        ctx.affinityKeyFieldName(typeId), Collections.singleton(writer.currentSchema())));
                 }
             }
 

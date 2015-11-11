@@ -130,6 +130,9 @@ public class PortableContext implements Externalizable {
     /** */
     private final ConcurrentMap<Integer, BinaryIdMapper> mappers = new ConcurrentHashMap8<>(0);
 
+    /** Affinity key field names. */
+    private final ConcurrentMap<Integer, String> affKeyFieldNames = new ConcurrentHashMap8<>(0);
+
     /** */
     private final Map<String, BinaryIdMapper> typeMappers = new ConcurrentHashMap8<>(0);
 
@@ -509,6 +512,7 @@ public class PortableContext implements Externalizable {
                 false,
                 clsName.hashCode(),
                 clsName,
+                null,
                 BASIC_CLS_ID_MAPPER,
                 null,
                 false,
@@ -555,6 +559,7 @@ public class PortableContext implements Externalizable {
             true,
             typeId,
             typeName,
+            null,
             idMapper,
             null,
             true,
@@ -700,6 +705,7 @@ public class PortableContext implements Externalizable {
             false,
             id,
             typeName,
+            null,
             DFLT_ID_MAPPER,
             null,
             false,
@@ -751,6 +757,11 @@ public class PortableContext implements Externalizable {
         if (mappers.put(id, idMapper) != null)
             throw new BinaryObjectException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
 
+        if (affKeyFieldName != null) {
+            if (affKeyFieldNames.put(id, affKeyFieldName) != null)
+                throw new BinaryObjectException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
+        }
+
         String typeName = typeName(clsName);
 
         typeMappers.put(typeName, idMapper);
@@ -765,6 +776,7 @@ public class PortableContext implements Externalizable {
                 true,
                 id,
                 typeName,
+                affKeyFieldName,
                 idMapper,
                 serializer,
                 true,
@@ -811,6 +823,14 @@ public class PortableContext implements Externalizable {
 
     /**
      * @param typeId Type ID.
+     * @return Affinity key field name.
+     */
+    public String affinityKeyFieldName(int typeId) {
+        return affKeyFieldNames.get(typeId);
+    }
+
+    /**
+     * @param typeId Type ID.
      * @param metaHashSum Meta data hash sum.
      * @return Whether meta is changed.
      */
@@ -828,16 +848,6 @@ public class PortableContext implements Externalizable {
         }
 
         return hist.add(metaHashSum);
-    }
-
-    /**
-     * @param typeId Type ID.
-     * @param typeName Type name.
-     * @param fields Fields map.
-     * @throws BinaryObjectException In case of error.
-     */
-    public void updateMetadata(int typeId, String typeName, Map<String, Integer> fields) throws BinaryObjectException {
-        updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fields, null, null));
     }
 
     /**

@@ -80,6 +80,9 @@ public class PortableClassDescriptor {
     /** */
     private final String typeName;
 
+    /** Affinity key field name. */
+    private final String affKeyFieldName;
+
     /** */
     private final Constructor<?> ctor;
 
@@ -116,6 +119,7 @@ public class PortableClassDescriptor {
      * @param userType User type flag.
      * @param typeId Type ID.
      * @param typeName Type name.
+     * @param affKeyFieldName Affinity key field name.
      * @param idMapper ID mapper.
      * @param serializer Serializer.
      * @param metaDataEnabled Metadata enabled flag.
@@ -130,6 +134,7 @@ public class PortableClassDescriptor {
         boolean userType,
         int typeId,
         String typeName,
+        @Nullable String affKeyFieldName,
         @Nullable BinaryIdMapper idMapper,
         @Nullable BinarySerializer serializer,
         boolean metaDataEnabled,
@@ -139,12 +144,14 @@ public class PortableClassDescriptor {
     ) throws BinaryObjectException {
         assert ctx != null;
         assert cls != null;
+        assert idMapper != null;
 
         this.ctx = ctx;
         this.cls = cls;
         this.userType = userType;
         this.typeId = typeId;
         this.typeName = typeName;
+        this.affKeyFieldName = affKeyFieldName;
         this.serializer = serializer;
         this.idMapper = idMapper;
         this.keepDeserialized = keepDeserialized;
@@ -212,8 +219,6 @@ public class PortableClassDescriptor {
                 break;
 
             case OBJECT:
-                assert idMapper != null;
-
                 ctor = constructor(cls);
                 fields = new ArrayList<>();
                 fieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
@@ -565,14 +570,17 @@ public class PortableClassDescriptor {
 
                     if (obj.getClass() != BinaryMetadata.class
                         && ctx.isMetaDataChanged(typeId, writer.metaDataHashSum())) {
-                        BinaryMetadataCollector metaCollector = new BinaryMetadataCollector(typeName);
+                        BinaryMetadataCollector collector = new BinaryMetadataCollector(typeId, typeName, idMapper);
 
                         if (serializer != null)
-                            serializer.writeBinary(obj, metaCollector);
+                            serializer.writeBinary(obj, collector);
                         else
-                            ((Binarylizable)obj).writeBinary(metaCollector);
+                            ((Binarylizable)obj).writeBinary(collector);
 
-                        ctx.updateMetadata(typeId, typeName, metaCollector.meta());
+                        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(), affKeyFieldName,
+                            collector.schemas());
+
+                        ctx.updateMetadata(typeId, meta);
                     }
                 }
 
