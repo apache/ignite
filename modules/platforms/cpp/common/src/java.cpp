@@ -148,6 +148,27 @@ namespace ignite
                     delete[] errMsg;
             }
 
+            struct JniGlobalRefHolder
+            {
+                JNIEnv *env;
+                jobject ref;
+
+                JniGlobalRefHolder(JNIEnv *e, jobject obj) : env(e), ref(NULL)
+                {
+                    ref = e->NewGlobalRef(obj);
+                }
+
+                jobject GetGlobalRef()
+                {
+                    return ref;
+                }
+
+                ~JniGlobalRefHolder()
+                {
+                    env->DeleteGlobalRef(ref);
+                }
+            };
+
             const char* C_THROWABLE = "java/lang/Throwable";
             JniMethod M_THROWABLE_GET_MESSAGE = JniMethod("getMessage", "()Ljava/lang/String;", false);
             JniMethod M_THROWABLE_PRINT_STACK_TRACE = JniMethod("printStackTrace", "()V", false);
@@ -2162,11 +2183,9 @@ namespace ignite
 
             JNIEXPORT jint JNICALL JniCacheStoreInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr, jlong memPtr, jobject cb) {
                 // Allocate global ref so that callback can be used from any thread.
-                jobject cb0 = env->NewGlobalRef(cb);
+                JniGlobalRefHolder cb0(env, cb);
 
-                IGNITE_SAFE_FUNC(env, envPtr, CacheStoreInvokeHandler, cacheStoreInvoke, objPtr, memPtr, cb0);
-
-                env->DeleteGlobalRef(cb0);
+                IGNITE_SAFE_FUNC(env, envPtr, CacheStoreInvokeHandler, cacheStoreInvoke, objPtr, memPtr, cb0.GetGlobalRef());
             }
 
             JNIEXPORT void JNICALL JniCacheStoreDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr) {
