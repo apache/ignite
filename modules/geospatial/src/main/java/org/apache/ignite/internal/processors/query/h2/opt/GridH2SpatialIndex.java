@@ -224,7 +224,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override protected long getCostRangeIndex(int[] masks, long rowCnt, TableFilter filter, SortOrder sortOrder) {
+    @Override protected long getCostRangeIndex(int[] masks, long rowCnt, TableFilter[] filters, int filter,
+        SortOrder sortOrder) {
         rowCnt += Constants.COST_ROW_OFFSET;
         long cost = rowCnt;
         long rows = rowCnt;
@@ -246,8 +247,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        return getCostRangeIndex(masks, rowCnt, filter, sortOrder);
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
+        return getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder);
     }
 
     /** {@inheritDoc} */
