@@ -2271,11 +2271,9 @@ namespace ignite
 
             JNIEXPORT void JNICALL JniDataStreamerStreamReceiverInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jobject cache, jlong memPtr, jboolean keepPortable) {
                 // Allocate global ref so that cache can be used from any thread.
-                jobject cache0 = env->NewGlobalRef(cache);
+                JniGlobalRefHolder cache0(env, cache);
 
-                IGNITE_SAFE_PROC(env, envPtr, DataStreamerStreamReceiverInvokeHandler, streamReceiverInvoke, ptr, cache0, memPtr, keepPortable);
-
-                env->DeleteGlobalRef(cache0);
+                IGNITE_SAFE_PROC(env, envPtr, DataStreamerStreamReceiverInvokeHandler, streamReceiverInvoke, ptr, cache0.GetGlobalRef(), memPtr, keepPortable);
             }
 
             JNIEXPORT void JNICALL JniFutureByteResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jint res) {
