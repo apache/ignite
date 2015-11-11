@@ -2284,12 +2284,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     else {
                         assert desc.cacheConfiguration() != null : desc;
 
-                        if (req.close() && desc.cacheConfiguration().getCacheMode() == LOCAL) {
-                            req.close(false);
-
-                            req.stop(true);
-                        }
-
                         IgniteUuid dynamicDeploymentId = desc.deploymentId();
 
                         assert dynamicDeploymentId != null : desc;
