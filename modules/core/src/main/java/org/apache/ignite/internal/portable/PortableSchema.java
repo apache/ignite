@@ -154,6 +154,16 @@ public class PortableSchema implements Serializable {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return schemaId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        return o != null && o instanceof PortableSchema && schemaId == ((PortableSchema)o).schemaId;
+    }
+
     /**
      * Schema builder.
      */

@@ -127,8 +127,8 @@ public class BinaryMetadata implements Externalizable {
     /**
      * @return Schemas.
      */
-    @Nullable public Collection<PortableSchema> schemas() {
-        return schemas;
+    public Collection<PortableSchema> schemas() {
+        return schemas != null ? schemas : Collections.<PortableSchema>emptyList();
     }
 
     /**

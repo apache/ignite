@@ -37,6 +37,7 @@ import org.apache.ignite.internal.portable.BinaryTypeImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.BinaryMetadataHandler;
+import org.apache.ignite.internal.portable.PortableSchema;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.portable.streams.PortableInputStream;
@@ -89,6 +90,7 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -168,17 +170,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                     if (metaDataCache == null) {
                         BinaryMetadata oldMeta = metaBuf.get(typeId);
+                        BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta0);
 
-                        if (oldMeta == null || checkMeta(typeId, oldMeta, newMeta0, null)) {
+                        if (oldMeta != mergedMeta) {
                             synchronized (this) {
-                                Map<String, Integer> fields = new HashMap<>();
+                                mergedMeta = mergeMetadata(oldMeta, newMeta0);
 
-                                if (checkMeta(typeId, oldMeta, newMeta0, fields)) {
-                                    newMeta0 = new BinaryMetadata(typeId, newMeta0.typeName(), fields,
-                                        newMeta0.affinityKeyFieldName(), newMeta0.schemas());
-
-                                    metaBuf.put(typeId, newMeta0);
-                                }
+                                if (oldMeta != mergedMeta)
+                                    metaBuf.put(typeId, mergedMeta);
                                 else
                                     return;
                             }
@@ -188,8 +187,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                             else
                                 metaBuf.remove(typeId);
                         }
-                        else
-                            return;
                     }
 
                     CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(portableCtx));
@@ -297,24 +294,22 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     private void addClientCacheMetaData(PortableMetaDataKey key, final BinaryMetadata newMeta) {
         int key0 = key.typeId();
 
-        clientMetaDataCache.compute(key0,
-            new ConcurrentHashMap8.BiFun<Integer, BinaryTypeImpl, BinaryTypeImpl>() {
-                @Override public BinaryTypeImpl apply(Integer key, BinaryTypeImpl oldMeta) {
-                    BinaryMetadata res;
+        clientMetaDataCache.compute(key0, new ConcurrentHashMap8.BiFun<Integer, BinaryTypeImpl, BinaryTypeImpl>() {
+            @Override public BinaryTypeImpl apply(Integer key, BinaryTypeImpl oldMeta) {
+                BinaryMetadata res;
 
-                    BinaryMetadata oldMeta0 = oldMeta != null ? oldMeta.metadata() : null;
+                BinaryMetadata oldMeta0 = oldMeta != null ? oldMeta.metadata() : null;
 
-                    try {
-                        res = checkMeta(key, oldMeta0, newMeta, null) ? newMeta : oldMeta0;
-                    }
-                    catch (BinaryObjectException e) {
-                        res = oldMeta0;
-                    }
-
-                    return res != null ? res.wrap(portableCtx) : null;
+                try {
+                    res = mergeMetadata(oldMeta0, newMeta);
                 }
+                catch (BinaryObjectException e) {
+                    res = oldMeta0;
+                }
+
+                return res != null ? res.wrap(portableCtx) : null;
             }
-        );
+        });
     }
 
     /** {@inheritDoc} */
@@ -464,13 +459,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         try {
             BinaryMetadata oldMeta = metaDataCache.localPeek(key);
+            BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta0);
 
-            if (oldMeta == null || checkMeta(typeId, oldMeta, newMeta0, null)) {
-                BinaryObjectException err = metaDataCache.invoke(key, new MetaDataProcessor(typeId, newMeta0));
+            BinaryObjectException err = metaDataCache.invoke(key, new MetadataProcessor(mergedMeta));
 
-                if (err != null)
-                    throw err;
-            }
+            if (err != null)
+                throw err;
         }
         catch (CacheException e) {
             throw new BinaryObjectException("Failed to update meta data for type: " + newMeta.typeName(), e);
@@ -727,84 +721,80 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /**
-     * @param typeId Type ID.
+     * Merge old and new metas.
+     *
      * @param oldMeta Old meta.
      * @param newMeta New meta.
-     * @param fields Fields map.
-     * @return Whether meta is changed.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @return New meta if old meta was null, old meta if no changes detected, merged meta otherwise.
+     * @throws BinaryObjectException If merge failed due to metadata conflict.
      */
-    private static boolean checkMeta(int typeId, @Nullable BinaryMetadata oldMeta,
-        BinaryMetadata newMeta, @Nullable Map<String, Integer> fields) throws BinaryObjectException {
+    private static BinaryMetadata mergeMetadata(@Nullable BinaryMetadata oldMeta, BinaryMetadata newMeta) {
         assert newMeta != null;
 
-        Map<String, Integer> oldFields = oldMeta != null ? oldMeta.fieldsMap() : null;
-        Map<String, Integer> newFields = newMeta.fieldsMap();
+        if (oldMeta == null)
+            return newMeta;
+        else {
+            assert oldMeta.typeId() == newMeta.typeId();
 
-        boolean changed = false;
-
-        if (oldMeta != null) {
-            if (!oldMeta.typeName().equals(newMeta.typeName())) {
+            // Check type name.
+            if (!F.eq(oldMeta.typeName(), newMeta.typeName())) {
                 throw new BinaryObjectException(
-                    "Two portable types have duplicate type ID [" +
-                        "typeId=" + typeId +
-                        ", typeName1=" + oldMeta.typeName() +
-                        ", typeName2=" + newMeta.typeName() +
-                        ']'
+                    "Two portable types have duplicate type ID [" + "typeId=" + oldMeta.typeId() +
+                        ", typeName1=" + oldMeta.typeName() + ", typeName2=" + newMeta.typeName() + ']'
                 );
             }
 
+            // Check affinity field names.
             if (!F.eq(oldMeta.affinityKeyFieldName(), newMeta.affinityKeyFieldName())) {
                 throw new BinaryObjectException(
-                    "Portable type has different affinity key fields on different clients [" +
-                        "typeName=" + newMeta.typeName() +
+                    "Binary type has different affinity key fields [" + "typeName=" + newMeta.typeName() +
                         ", affKeyFieldName1=" + oldMeta.affinityKeyFieldName() +
-                        ", affKeyFieldName2=" + newMeta.affinityKeyFieldName() +
-                        ']'
+                        ", affKeyFieldName2=" + newMeta.affinityKeyFieldName() + ']'
                 );
             }
 
-            if (fields != null)
-                fields.putAll(oldFields);
-        }
-        else
-            changed = true;
+            // Check and merge fields.
+            boolean changed = false;
 
-        for (Map.Entry<String, Integer> e : newFields.entrySet()) {
-            Integer oldTypeId = oldFields != null ? oldFields.get(e.getKey()) : null;
+            Map<String, Integer> mergedFields = new HashMap<>(oldMeta.fieldsMap());
+            Map<String, Integer> newFields = newMeta.fieldsMap();
 
-            if (oldTypeId != null) {
-                if (!oldTypeId.equals(e.getValue())) {
+            for (Map.Entry<String, Integer> newField : newFields.entrySet()) {
+                Integer oldFieldType = mergedFields.put(newField.getKey(), newField.getValue());
+
+                if (oldFieldType == null)
+                    changed = true;
+                else if (!F.eq(oldFieldType, newField.getValue())) {
                     throw new BinaryObjectException(
-                        "Portable field has different types on different clients [" +
-                            "typeName=" + newMeta.typeName() +
-                            ", fieldName=" + e.getKey() +
-                            ", fieldTypeName1=" + PortableUtils.fieldTypeName(oldTypeId) +
-                            ", fieldTypeName2=" + PortableUtils.fieldTypeName(e.getValue()) +
-                            ']'
+                        "Binary type has different field types [" + "typeName=" + oldMeta.typeName() +
+                            ", fieldName=" + newField.getKey() +
+                            ", fieldTypeName1=" + PortableUtils.fieldTypeName(oldFieldType) +
+                            ", fieldTypeName2=" + PortableUtils.fieldTypeName(newField.getValue()) + ']'
                     );
                 }
             }
-            else {
-                if (fields != null)
-                    fields.put(e.getKey(), e.getValue());
 
-                changed = true;
+            // Check and merge schemas.
+            Collection<PortableSchema> mergedSchemas = new HashSet<>(oldMeta.schemas());
+
+            for (PortableSchema newSchema : newMeta.schemas()) {
+                if (mergedSchemas.add(newSchema))
+                    changed = true;
             }
-        }
 
-        return changed;
+            // Return either old meta if no changes detected, or new merged meta.
+            return changed ? new BinaryMetadata(oldMeta.typeId(), oldMeta.typeName(), mergedFields,
+                oldMeta.affinityKeyFieldName(), mergedSchemas) : oldMeta;
+        }
     }
 
     /**
+     * Processor responsible for metadata update.
      */
-    private static class MetaDataProcessor implements
-        EntryProcessor<PortableMetaDataKey, BinaryMetadata, BinaryObjectException>, Externalizable {
+    private static class MetadataProcessor
+        implements EntryProcessor<PortableMetaDataKey, BinaryMetadata, BinaryObjectException>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        private int typeId;
 
         /** */
         private BinaryMetadata newMeta;
@@ -812,40 +802,31 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         /**
          * For {@link Externalizable}.
          */
-        public MetaDataProcessor() {
+        public MetadataProcessor() {
             // No-op.
         }
 
         /**
-         * @param typeId Type ID.
          * @param newMeta New metadata.
          */
-        private MetaDataProcessor(int typeId, BinaryMetadata newMeta) {
+        private MetadataProcessor(BinaryMetadata newMeta) {
             assert newMeta != null;
 
-            this.typeId = typeId;
             this.newMeta = newMeta;
         }
 
         /** {@inheritDoc} */
-        @Override public BinaryObjectException process(
-            MutableEntry<PortableMetaDataKey, BinaryMetadata> entry,
+        @Override public BinaryObjectException process(MutableEntry<PortableMetaDataKey, BinaryMetadata> entry,
             Object... args) {
             try {
                 BinaryMetadata oldMeta = entry.getValue();
 
-                Map<String, Integer> fields = new HashMap<>();
+                BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta);
 
-                if (checkMeta(typeId, oldMeta, newMeta, fields)) {
-                    BinaryMetadata res = new BinaryMetadata(typeId, newMeta.typeName(), fields,
-                        newMeta.affinityKeyFieldName(), newMeta.schemas());
+                if (mergedMeta != oldMeta)
+                    entry.setValue(mergedMeta);
 
-                    entry.setValue(res);
-
-                    return null;
-                }
-                else
-                    return null;
+                return null;
             }
             catch (BinaryObjectException e) {
                 return e;
@@ -854,19 +835,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(typeId);
             out.writeObject(newMeta);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            typeId = in.readInt();
             newMeta = (BinaryMetadata)in.readObject();
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(MetaDataProcessor.class, this);
+            return S.toString(MetadataProcessor.class, this);
         }
     }
 
