@@ -47,6 +47,9 @@ public class HadoopIgfsUtils {
     /** Parameter name for endpoint no local TCP flag. */
     public static final String PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP = "fs.igfs.%s.endpoint.no_local_tcp";
 
+    /** Parameter name for endpoint no local TCP flag. */
+    public static final String PARAM_IGFS_ENDPOINT_NO_REMOTE_TCP = "fs.igfs.%s.endpoint.no_remote_tcp";
+
     /**
      * Get string parameter.
      *
