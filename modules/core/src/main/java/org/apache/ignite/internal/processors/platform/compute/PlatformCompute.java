@@ -25,15 +25,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.portable.PortableObjectImpl;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryObjectImpl;
+import org.apache.ignite.internal.portable.BinaryRawReaderEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.binary.BinaryObject;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 
@@ -75,7 +75,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_UNICAST:
                 processClosures(reader.readLong(), reader, false, false);
@@ -104,7 +104,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param reader Reader.
      * @param broadcast broadcast flag.
      */
-    private void processClosures(long taskPtr, PortableRawReaderEx reader, boolean broadcast, boolean affinity) {
+    private void processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast, boolean affinity) {
         PlatformAbstractTask task;
 
         int size = reader.readInt();
@@ -165,12 +165,12 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Closure job.
      */
-    private PlatformJob nextClosureJob(PlatformAbstractTask task, PortableRawReaderEx reader) {
+    private PlatformJob nextClosureJob(PlatformAbstractTask task, BinaryRawReaderEx reader) {
         return platformCtx.createClosureJob(task, reader.readLong(), reader.readObjectDetached());
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_EXEC:
@@ -256,7 +256,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Task result.
      */
-    protected Object executeJavaTask(PortableRawReaderEx reader, boolean async) {
+    protected Object executeJavaTask(BinaryRawReaderEx reader, boolean async) {
         String taskName = reader.readString();
         boolean keepPortable = reader.readBoolean();
         Object arg = reader.readObjectDetached();
@@ -268,8 +268,8 @@ public class PlatformCompute extends PlatformAbstractTarget {
         if (async)
             compute0 = compute0.withAsync();
 
-        if (!keepPortable && arg instanceof PortableObjectImpl)
-            arg = ((PortableObject)arg).deserialize();
+        if (!keepPortable && arg instanceof BinaryObjectImpl)
+            arg = ((BinaryObject)arg).deserialize();
 
         Object res = compute0.execute(taskName, arg);
 
@@ -295,7 +295,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @return Result.
      */
     private Object toPortable(Object src) {
-        return platformCtx.kernalContext().grid().portables().toPortable(src);
+        return platformCtx.kernalContext().grid().binary().toBinary(src);
     }
 
     /**
@@ -304,7 +304,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Node IDs.
      */
-    protected Collection<UUID> readNodeIds(PortableRawReaderEx reader) {
+    protected Collection<UUID> readNodeIds(BinaryRawReaderEx reader) {
         if (reader.readBoolean()) {
             int len = reader.readInt();
 

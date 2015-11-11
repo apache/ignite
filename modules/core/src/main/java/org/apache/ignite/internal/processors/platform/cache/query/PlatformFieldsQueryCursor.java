@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache.query;
 
 import java.util.List;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 
@@ -38,7 +38,7 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
     }
 
     /** {@inheritDoc} */
-    @Override protected void write(PortableRawWriterEx writer, List vals) {
+    @Override protected void write(BinaryRawWriterEx writer, List vals) {
         assert vals != null;
 
         writer.writeInt(vals.size());

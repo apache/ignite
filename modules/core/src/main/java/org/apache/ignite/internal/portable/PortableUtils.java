@@ -21,8 +21,8 @@ import org.apache.ignite.internal.portable.builder.PortableLazyValue;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -49,6 +49,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
@@ -69,6 +70,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENT
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
@@ -118,7 +120,7 @@ public class PortableUtils {
 
     /** Offset which fits into 4 bytes. */
     public static final int OFFSET_4 = 4;
-
+    
     /** Length of a single field ID value. */
     public static final int FIELD_ID_LEN = 4;
 
@@ -257,7 +259,7 @@ public class PortableUtils {
      * @param writer W
      * @param val Value.
      */
-    public static void writePlainObject(PortableWriterExImpl writer, Object val) {
+    public static void writePlainObject(BinaryWriterExImpl writer, Object val) {
         Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
 
         if (flag == null)
@@ -484,22 +486,6 @@ public class PortableUtils {
     }
 
     /**
-     * Tells whether provided type is portable or a collection.
-     *
-     * @param cls Class to check.
-     * @return Whether type is portable or a collection.
-     */
-    public static boolean isPortableOrCollectionType(Class<?> cls) {
-        assert cls != null;
-
-        return isPortableType(cls) ||
-            cls == Object[].class ||
-            Collection.class.isAssignableFrom(cls) ||
-            Map.class.isAssignableFrom(cls) ||
-            Map.Entry.class.isAssignableFrom(cls);
-    }
-
-    /**
      * Tells whether provided type is portable.
      *
      * @param cls Class to check.
@@ -508,7 +494,7 @@ public class PortableUtils {
     public static boolean isPortableType(Class<?> cls) {
         assert cls != null;
 
-        return PortableObject.class.isAssignableFrom(cls) ||
+        return BinaryObject.class.isAssignableFrom(cls) ||
             PORTABLE_CLS.contains(cls) ||
             cls.isEnum() ||
             (cls.isArray() && cls.getComponentType().isEnum());
@@ -557,7 +543,7 @@ public class PortableUtils {
      */
     public static void checkProtocolVersion(byte protoVer) {
         if (PROTO_VER != protoVer)
-            throw new PortableException("Unsupported protocol version: " + protoVer);
+            throw new BinaryObjectException("Unsupported protocol version: " + protoVer);
     }
 
     /**
@@ -569,7 +555,7 @@ public class PortableUtils {
      * @param clsName Class name (optional).
      * @return Position where length should be written.
      */
-    public static int writeHeader(PortableWriterExImpl writer, int typeId, int hashCode, @Nullable String clsName) {
+    public static int writeHeader(BinaryWriterExImpl writer, int typeId, int hashCode, @Nullable String clsName) {
         writer.doWriteByte(GridPortableMarshaller.OBJ);
         writer.doWriteByte(GridPortableMarshaller.PROTO_VER);
 

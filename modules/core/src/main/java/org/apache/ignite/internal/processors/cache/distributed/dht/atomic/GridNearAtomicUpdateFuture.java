@@ -138,6 +138,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     /** Skip store flag. */
     private final boolean skipStore;
 
+    /** */
+    private final boolean keepBinary;
+
     /** Wait for topology future flag. */
     private final boolean waitTopFut;
 
@@ -184,6 +187,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         UUID subjId,
         int taskNameHash,
         boolean skipStore,
+        boolean keepBinary,
         int remapCnt,
         boolean waitTopFut
     ) {
@@ -209,6 +213,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
+        this.keepBinary = keepBinary;
         this.waitTopFut = waitTopFut;
 
         if (log == null)
@@ -474,7 +479,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
 
                 if (syncMode == FULL_ASYNC)
-                    onDone(new GridCacheReturn(cctx, true, null, true));
+                    onDone(new GridCacheReturn(cctx, true, true, null, true));
             }
             catch (IgniteCheckedException e) {
                 state.onSendError(req, e);
@@ -523,7 +528,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         }
 
         if (syncMode == FULL_ASYNC)
-            onDone(new GridCacheReturn(cctx, true, null, true));
+            onDone(new GridCacheReturn(cctx, true, true, null, true));
     }
 
     /**
@@ -893,7 +898,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 assert pendingMappings != null;
 
                 if (size == 0)
-                    onDone(new GridCacheReturn(cctx, true, null, true));
+                    onDone(new GridCacheReturn(cctx, true, true, null, true));
                 else
                     doUpdate(pendingMappings);
             }
@@ -1050,6 +1055,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             subjId,
                             taskNameHash,
                             skipStore,
+                            keepBinary,
                             cctx.kernalContext().clientNode(),
                             cctx.deploymentEnabled());
 
@@ -1143,6 +1149,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 subjId,
                 taskNameHash,
                 skipStore,
+                keepBinary,
                 cctx.kernalContext().clientNode(),
                 cctx.deploymentEnabled());
 
@@ -1188,7 +1195,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             Collection<Object> keys = new ArrayList<>(failedKeys.size());
 
             for (KeyCacheObject key : failedKeys)
-                keys.add(key.value(cctx.cacheObjectContext(), false));
+                keys.add(cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepBinary, false));
 
             err0.add(keys, err, topVer);
         }

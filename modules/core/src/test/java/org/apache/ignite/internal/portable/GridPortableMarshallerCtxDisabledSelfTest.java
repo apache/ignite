@@ -17,37 +17,27 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.MarshallerContextAdapter;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallerContextAdapter;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableMetadata;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableWriter;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
  */
 public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstractTest {
-    /** */
-    protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, PortableMetadata meta) {
-            // No-op.
-        }
-
-        @Override public PortableMetadata metadata(int typeId) {
-            return null;
-        }
-    };
-
     /**
      * @throws Exception If failed.
      */
@@ -55,7 +45,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
         PortableMarshaller marsh = new PortableMarshaller();
         marsh.setContext(new MarshallerContextWithNoStorage());
 
-        PortableContext context = new PortableContext(META_HND, null);
+        PortableContext context = new PortableContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration());
 
         IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", context);
 
@@ -77,7 +67,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
 
         assertEquals(simpleObj, marsh.unmarshal(marsh.marshal(simpleObj), null));
 
-        SimplePortable simplePortable = new SimplePortable();
+        SimpleBinary simplePortable = new SimpleBinary();
 
         simplePortable.str = "portable";
         simplePortable.arr = new long[] {100, 200, 300};
@@ -179,7 +169,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
     /**
      *
      */
-    private static class SimplePortable implements PortableMarshalAware {
+    private static class SimpleBinary implements Binarylizable {
         /** */
         private String str;
 
@@ -187,13 +177,13 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
         private long[] arr;
 
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeString("str", str);
             writer.writeLongArray("longArr", arr);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             str = reader.readString("str");
             arr = reader.readLongArray("longArr");
         }
@@ -206,7 +196,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            SimplePortable that = (SimplePortable)o;
+            SimpleBinary that = (SimpleBinary)o;
 
             if (str != null ? !str.equals(that.str) : that.str != null)
                 return false;

@@ -193,14 +193,19 @@ public class GridNioRecoveryDescriptor {
 
     /**
      * Node left callback.
+     *
+     * @return {@code False} if descriptor is reserved.
      */
-    public void onNodeLeft() {
+    public boolean onNodeLeft() {
         GridNioFuture<?>[] futs = null;
 
         synchronized (this) {
             nodeLeft = true;
 
-            if (!reserved && !msgFuts.isEmpty()) {
+            if (reserved)
+                return false;
+
+            if (!msgFuts.isEmpty()) {
                 futs = msgFuts.toArray(new GridNioFuture<?>[msgFuts.size()]);
 
                 msgFuts.clear();
@@ -209,6 +214,8 @@ public class GridNioRecoveryDescriptor {
 
         if (futs != null)
             completeOnNodeLeft(futs);
+
+        return true;
     }
 
     /**

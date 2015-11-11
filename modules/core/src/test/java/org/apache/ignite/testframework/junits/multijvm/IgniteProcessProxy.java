@@ -41,7 +41,7 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteServices;
@@ -477,6 +477,11 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<String> cacheNames() {
+        return locJvmGrid.cacheNames();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
         throw new UnsupportedOperationException("Transactions can't be supported automatically in multi JVM mode.");
     }
@@ -546,7 +551,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgnitePortables portables() {
+    @Override public IgniteBinary binary() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

@@ -342,7 +342,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TearDown]
         public virtual void AfterTest() {
             for (int i = 0; i < GridCount(); i++) 
-                Cache(i).RemoveAll();
+                Cache(i).WithKeepPortable<object, object>().RemoveAll();
 
             for (int i = 0; i < GridCount(); i++)
             {

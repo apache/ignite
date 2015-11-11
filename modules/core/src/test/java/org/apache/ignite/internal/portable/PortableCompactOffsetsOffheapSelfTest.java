@@ -47,7 +47,7 @@ public class PortableCompactOffsetsOffheapSelfTest extends PortableCompactOffset
     }
 
     /** {@inheritDoc} */
-    @Override protected PortableObjectEx toPortable(PortableMarshaller marsh, Object obj) throws Exception {
+    @Override protected BinaryObjectEx toPortable(PortableMarshaller marsh, Object obj) throws Exception {
         byte[] arr = marsh.marshal(obj);
 
         long ptr = UNSAFE.allocateMemory(arr.length);
@@ -56,6 +56,6 @@ public class PortableCompactOffsetsOffheapSelfTest extends PortableCompactOffset
 
         UNSAFE.copyMemory(arr, BYTE_ARR_OFF, null, ptr, arr.length);
 
-        return new PortableObjectOffheapImpl(ctx, ptr, 0, arr.length);
+        return new BinaryObjectOffheapImpl(ctx, ptr, 0, arr.length);
     }
 }

@@ -165,6 +165,9 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     /** Skip store flag. */
     private final boolean skipStore;
 
+    /** Keep binary. */
+    private final boolean keepBinary;
+
     /**
      * @param cctx Cache context.
      * @param nearNodeId Near node ID.
@@ -193,7 +196,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         long threadId,
         long accessTtl,
         CacheEntryPredicate[] filter,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert nearNodeId != null;
@@ -211,6 +215,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         this.tx = tx;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
+        this.keepBinary = keepBinary;
 
         if (tx != null)
             tx.topologyVersion(topVer);
@@ -870,6 +875,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                         inTx() ? tx.taskNameHash() : 0,
                         read ? accessTtl : -1L,
                         skipStore,
+                        keepBinary,
                         cctx.deploymentEnabled());
 
                     try {
@@ -1177,7 +1183,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
                                     (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                    false, null, null, null);
+                                    false, null, null, null, false);
                         }
                     }
                     catch (IgniteCheckedException e) {

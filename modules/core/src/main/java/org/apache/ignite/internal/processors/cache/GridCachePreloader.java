@@ -132,4 +132,9 @@ public interface GridCachePreloader {
      * Unwinds undeploys.
      */
     public void unwindUndeploys();
+
+    /**
+     * Dumps debug information.
+     */
+    public void dumpDebugInfo();
 }

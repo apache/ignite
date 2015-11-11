@@ -153,7 +153,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             invalidate,
             storeEnabled,
             onePhaseCommit,
-            txSize, 
+            txSize,
             subjId, 
             taskNameHash
         );
@@ -613,7 +613,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final boolean read,
         final boolean needRetVal,
         long accessTtl,
-        boolean skipStore
+        boolean skipStore,
+        boolean keepBinary
     ) {
         try {
             checkValid();
@@ -681,7 +682,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         -1L,
                         -1L,
                         null,
-                        skipStore);
+                        skipStore,
+                        keepBinary);
 
                     if (read)
                         txEntry.ttl(accessTtl);
@@ -719,7 +721,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 skipped,
                 accessTtl,
                 null,
-                skipStore);
+                skipStore,
+                keepBinary);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
@@ -749,7 +752,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final Set<KeyCacheObject> skipped,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [passedKeys=" + passedKeys + ", skipped=" +
                 skipped + ']');
@@ -768,7 +772,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             isolation,
             accessTtl,
             CU.empty0(),
-            skipStore);
+            skipStore,
+            keepBinary);
 
         return new GridEmbeddedFuture<>(
             fut,

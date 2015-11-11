@@ -216,7 +216,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore());
                 }
-            });
+            }, opCtx);
         }
 
         AffinityTopologyVersion topVer = tx == null ?
@@ -351,7 +351,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                     subjId,
                                     null,
                                     taskName,
-                                    expiryPlc);
+                                    expiryPlc,
+                                    !deserializePortable);
 
                                 if (res != null) {
                                     v = res.get1();
@@ -370,7 +371,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                     subjId,
                                     null,
                                     taskName,
-                                    expiryPlc);
+                                    expiryPlc,
+                                    !deserializePortable);
                             }
 
                             // Entry was not in memory or in swap, so we remove it from cache.
@@ -487,7 +489,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             timeout,
             accessTtl,
             CU.empty0(),
-            opCtx != null && opCtx.skipStore());
+            opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.isKeepBinary());
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
@@ -746,7 +749,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long timeout,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
-        final boolean skipStore
+        final boolean skipStore,
+        final boolean keepBinary
     ) {
         assert keys != null;
 
@@ -769,7 +773,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     timeout,
                     accessTtl,
                     filter,
-                    skipStore);
+                    skipStore,
+                    keepBinary);
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);
@@ -793,7 +798,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             timeout,
                             accessTtl,
                             filter,
-                            skipStore);
+                            skipStore,
+                            keepBinary);
                     }
                 }
             );
@@ -827,7 +833,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long timeout,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary) {
         int cnt = keys.size();
 
         if (tx == null) {
@@ -843,7 +850,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 threadId,
                 accessTtl,
                 filter,
-                skipStore);
+                skipStore,
+                keepBinary);
 
             // Add before mapping.
             if (!ctx.mvcc().addFuture(fut))
@@ -909,7 +917,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 tx.implicit(),
                 txRead,
                 accessTtl,
-                skipStore);
+                skipStore,
+                keepBinary);
 
             return new GridDhtEmbeddedFuture<>(
                 new C2<GridCacheReturn, Exception, Exception>() {

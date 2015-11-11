@@ -1529,6 +1529,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets a collection of currently started public cache names.
+     *
+     * @return Collection of currently started public cache names
+     */
+    public Collection<String> publicCacheNames() {
+        return F.viewReadOnly(registeredCaches.values(),
+            new IgniteClosure<DynamicCacheDescriptor, String>() {
+                @Override public String apply(DynamicCacheDescriptor desc) {
+                    return desc.cacheConfiguration().getName();
+                }
+            },
+            new IgnitePredicate<DynamicCacheDescriptor>() {
+                @Override public boolean apply(DynamicCacheDescriptor desc) {
+                    return desc.started() && desc.cacheType().userCache();
+                }
+            }
+        );
+    }
+    /**
      * Gets cache mode.
      *
      * @param cacheName Cache name to check.
@@ -1810,46 +1829,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
-        // Collect dynamically started caches to a single object.
-        Collection<DynamicCacheChangeRequest> reqs =
-            new ArrayList<>(registeredCaches.size() + registeredTemplates.size());
-
         boolean reconnect = ctx.localNodeId().equals(nodeId) && cachesOnDisconnect != null;
 
-        Map<String, DynamicCacheDescriptor> descs = reconnect ? cachesOnDisconnect : registeredCaches;
+        // Collect dynamically started caches to a single object.
+        Collection<DynamicCacheChangeRequest> reqs;
 
-        for (DynamicCacheDescriptor desc : descs.values()) {
-            DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
-
-            req.startCacheConfiguration(desc.cacheConfiguration());
-
-            req.cacheType(desc.cacheType());
-
-            req.deploymentId(desc.deploymentId());
-
-            reqs.add(req);
-        }
-
-        for (DynamicCacheDescriptor desc : registeredTemplates.values()) {
-            DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
-
-            req.startCacheConfiguration(desc.cacheConfiguration());
-
-            req.template(true);
-
-            req.deploymentId(desc.deploymentId());
-
-            reqs.add(req);
-        }
-
-        DynamicCacheChangeBatch req = new DynamicCacheChangeBatch(reqs);
-
-        Map<String, Map<UUID, Boolean>> clientNodesMap = ctx.discovery().clientNodesMap();
+        Map<String, Map<UUID, Boolean>> clientNodesMap;
 
         if (reconnect) {
+            reqs = new ArrayList<>(caches.size());
+
             clientNodesMap = U.newHashMap(caches.size());
 
             for (GridCacheAdapter<?, ?> cache : caches.values()) {
+                DynamicCacheDescriptor desc = cachesOnDisconnect.get(maskNull(cache.name()));
+
+                if (desc == null)
+                    continue;
+
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cache.name(), null);
+
+                req.startCacheConfiguration(desc.cacheConfiguration());
+
+                req.cacheType(desc.cacheType());
+
+                req.deploymentId(desc.deploymentId());
+
+                reqs.add(req);
+
                 Boolean nearEnabled = cache.isNear();
 
                 Map<UUID, Boolean> map = U.newHashMap(1);
@@ -1859,12 +1866,43 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 clientNodesMap.put(cache.name(), map);
             }
         }
+        else {
+            reqs = new ArrayList<>(registeredCaches.size() + registeredTemplates.size());
 
-        req.clientNodes(clientNodesMap);
+            for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
 
-        req.clientReconnect(reconnect);
+                req.startCacheConfiguration(desc.cacheConfiguration());
 
-        return req;
+                req.cacheType(desc.cacheType());
+
+                req.deploymentId(desc.deploymentId());
+
+                reqs.add(req);
+            }
+
+            for (DynamicCacheDescriptor desc : registeredTemplates.values()) {
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
+
+                req.startCacheConfiguration(desc.cacheConfiguration());
+
+                req.template(true);
+
+                req.deploymentId(desc.deploymentId());
+
+                reqs.add(req);
+            }
+
+            clientNodesMap = ctx.discovery().clientNodesMap();
+        }
+
+        DynamicCacheChangeBatch batch = new DynamicCacheChangeBatch(reqs);
+
+        batch.clientNodes(clientNodesMap);
+
+        batch.clientReconnect(reconnect);
+
+        return batch;
     }
 
     /** {@inheritDoc} */

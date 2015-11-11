@@ -64,7 +64,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteServices;
@@ -102,8 +102,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessor;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessor;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -157,7 +157,6 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
@@ -166,6 +165,7 @@ import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
@@ -641,7 +641,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Catch generic throwable to secure against user assertions.
         catch (Throwable e) {
             U.error(log, "Failed to notify lifecycle bean (safely ignored) [evt=" + evt +
-                ", gridName=" + gridName + ']', e);
+                (gridName == null ? "" : ", gridName=" + gridName) + ']', e);
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -1489,6 +1489,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 mgr.start();
         }
         catch (IgniteCheckedException e) {
+            U.error(log, "Failed to start manager: " + mgr , e);
+
             throw new IgniteCheckedException("Failed to start manager: " + mgr, e);
         }
     }
@@ -1673,7 +1675,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     ">>> CPU(s): " + locNode.metrics().getTotalCpus() + NL +
                     ">>> Heap: " + U.heapSize(locNode, 2) + "GB" + NL +
                     ">>> VM name: " + rtBean.getName() + NL +
-                    ">>> Grid name: " + gridName + NL +
+                    (gridName == null ? "" : ">>> Grid name: " + gridName + NL) +
                     ">>> Local node [" +
                     "ID=" + locNode.id().toString().toUpperCase() +
                     ", order=" + locNode.order() + ", clientMode=" + ctx.clientNode() +
@@ -1691,6 +1693,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackOsInfo() {
         assert log != null;
 
+        if (log.isQuiet())
+            U.quiet(false, "OS: " + U.osString());
+
         if (log.isInfoEnabled()) {
             log.info("OS: " + U.osString());
             log.info("OS user: " + System.getProperty("user.name"));
@@ -1702,6 +1707,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     private void ackLanguageRuntime() {
         assert log != null;
+
+        if (log.isQuiet())
+            U.quiet(false, "VM information: " + U.jdkString());
 
         if (log.isInfoEnabled()) {
             log.info("Language runtime: " + getLanguage());
@@ -1939,11 +1947,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Ack stop.
             if (log.isQuiet()) {
+                String nodeName = gridName == null ? "" : "name=" + gridName + ", ";
+
                 if (!errOnStop)
-                    U.quiet(false, "Ignite node stopped OK [uptime=" +
+                    U.quiet(false, "Ignite node stopped OK [" + nodeName + "uptime=" +
                         X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + ']');
                 else
-                    U.quiet(true, "Ignite node stopped wih ERRORS [uptime=" +
+                    U.quiet(true, "Ignite node stopped wih ERRORS [" + nodeName + "uptime=" +
                         X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + ']');
             }
 
@@ -1958,7 +1968,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         ">>> " + dash + NL +
                         ">>> " + ack + NL +
                         ">>> " + dash + NL +
-                        ">>> Grid name: " + gridName + NL +
+                        (gridName == null ? "" : ">>> Grid name: " + gridName + NL) +
                         ">>> Grid uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) +
                         NL +
                         NL);
@@ -1972,7 +1982,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     log.info(NL + NL +
                         ">>> " + ack + NL +
                         ">>> " + dash + NL +
-                        ">>> Grid name: " + gridName + NL +
+                        (gridName == null ? "" : ">>> Grid name: " + gridName + NL) +
                         ">>> Grid uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) +
                         NL +
                         ">>> See log above for detailed error message." + NL +
@@ -2643,6 +2653,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<String> cacheNames() {
+        guard();
+
+        try {
+            return ctx.cache().publicCacheNames();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
         guard();
 
@@ -2768,8 +2790,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgnitePortables portables() {
-        return ((CacheObjectPortableProcessor)ctx.cacheObjects()).portables();
+    @Override public IgniteBinary binary() {
+        IgniteCacheObjectProcessor objProc = ctx.cacheObjects();
+
+        return objProc.binary();
     }
 
     /** {@inheritDoc} */
@@ -3067,7 +3091,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return comp;
 
         if (cls.equals(IgniteCacheObjectProcessor.class))
-            return (T)new CacheObjectPortableProcessorImpl(ctx);
+            return (T)new CacheObjectBinaryProcessorImpl(ctx);
 
         if (cls.equals(DiscoveryNodeValidationProcessor.class))
             return (T)new OsDiscoveryNodeValidationProcessor(ctx);
@@ -3157,10 +3181,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     public void dumpDebugInfo() {
-        U.warn(log, "Dumping debug info for node [id=" + ctx.localNodeId() +
+        boolean client = ctx.clientNode();
+
+        ClusterNode locNode = ctx.discovery().localNode();
+
+        UUID routerId = locNode instanceof TcpDiscoveryNode ? ((TcpDiscoveryNode)locNode).clientRouterNodeId() : null;
+
+        U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
             ", name=" + ctx.gridName() +
-            ", order=" + ctx.discovery().localNode().order() +
-            ", client=" + ctx.clientNode() + ']');
+            ", order=" + locNode.order() +
+            ", topVer=" + ctx.discovery().topologyVersion() +
+            ", client=" + client +
+            (client && routerId != null ? ", routerId=" + routerId : "") + ']');
 
         ctx.cache().context().exchange().dumpDebugInfo();
     }

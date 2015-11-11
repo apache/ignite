@@ -1336,9 +1336,9 @@ public abstract class IgniteUtils {
      */
     @Nullable public static Class<?> classForName(String cls, @Nullable Class<?> dflt) {
         try {
-            return Class.forName(cls);
+            return cls == null ? dflt : Class.forName(cls);
         }
-        catch (ClassNotFoundException e) {
+        catch (ClassNotFoundException ignore) {
             return dflt;
         }
     }
@@ -8098,9 +8098,10 @@ public abstract class IgniteUtils {
         if (cls == null)
             return null;
 
-        Class<?> boxed = boxedClsMap.get(cls);
+        if (!cls.isPrimitive())
+            return cls;
 
-        return boxed != null ? boxed : cls;
+        return boxedClsMap.get(cls);
     }
 
     /**

@@ -24,9 +24,9 @@ import org.apache.ignite.marshaller.portable.PortableMarshaller;
  */
 public class PortableCompactOffsetsHeapSelfTest extends PortableCompactOffsetsAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected PortableObjectEx toPortable(PortableMarshaller marsh, Object obj) throws Exception {
+    @Override protected BinaryObjectEx toPortable(PortableMarshaller marsh, Object obj) throws Exception {
         byte[] bytes = marsh.marshal(obj);
 
-        return new PortableObjectImpl(ctx, bytes, 0);
+        return new BinaryObjectImpl(ctx, bytes, 0);
     }
 }

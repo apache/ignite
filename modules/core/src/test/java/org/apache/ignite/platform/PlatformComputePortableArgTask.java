@@ -25,8 +25,8 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.portable.PortableMetadata;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -87,14 +87,14 @@ public class PlatformComputePortableArgTask extends ComputeTaskAdapter<Object, I
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
-            PortableObject arg0 = ((PortableObject)arg);
+            BinaryObject arg0 = ((BinaryObject)arg);
 
-            PortableMetadata meta = ignite.portables().metadata(arg0.typeId());
+            BinaryType meta = ignite.binary().metadata(arg0.typeId());
 
             if (meta == null)
                 throw new IgniteException("Metadata doesn't exist.");
 
-            if (meta.fields() == null || !meta.fields().contains("Field"))
+            if (meta.fieldNames() == null || !meta.fieldNames().contains("Field"))
                 throw new IgniteException("Field metadata doesn't exist.");
 
             if (!F.eq("int", meta.fieldTypeName("Field")))

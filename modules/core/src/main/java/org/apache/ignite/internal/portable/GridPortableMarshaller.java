@@ -19,7 +19,7 @@ package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.internal.portable.streams.PortableInputStream;
 import org.apache.ignite.internal.portable.streams.PortableOutputStream;
-import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -232,13 +232,13 @@ public class GridPortableMarshaller {
     /**
      * @param obj Object to marshal.
      * @return Byte array.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public byte[] marshal(@Nullable Object obj) throws PortableException {
+    public byte[] marshal(@Nullable Object obj) throws BinaryObjectException {
         if (obj == null)
             return new byte[] { NULL };
 
-        try (PortableWriterExImpl writer = new PortableWriterExImpl(ctx)) {
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
             writer.marshal(obj);
 
             return writer.array();
@@ -248,13 +248,13 @@ public class GridPortableMarshaller {
     /**
      * @param bytes Bytes array.
      * @return Portable object.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws PortableException {
+    @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws BinaryObjectException {
         assert bytes != null;
 
-        PortableReaderExImpl reader = new PortableReaderExImpl(ctx, bytes, 0, clsLdr);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, bytes, 0, clsLdr);
 
         return (T)reader.unmarshal();
     }
@@ -262,10 +262,10 @@ public class GridPortableMarshaller {
     /**
      * @param in Input stream.
      * @return Portable object.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <T> T unmarshal(PortableInputStream in) throws PortableException {
+    @Nullable public <T> T unmarshal(PortableInputStream in) throws BinaryObjectException {
         return (T)reader(in).unmarshal();
     }
 
@@ -273,17 +273,17 @@ public class GridPortableMarshaller {
      * @param arr Byte array.
      * @param ldr Class loader.
      * @return Deserialized object.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <T> T deserialize(byte[] arr, @Nullable ClassLoader ldr) throws PortableException {
+    @Nullable public <T> T deserialize(byte[] arr, @Nullable ClassLoader ldr) throws BinaryObjectException {
         assert arr != null;
         assert arr.length > 0;
 
         if (arr[0] == NULL)
             return null;
 
-        PortableReaderExImpl reader = new PortableReaderExImpl(ctx, arr, 0, ldr);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, arr, 0, ldr);
 
         return (T)reader.deserialize();
     }
@@ -294,8 +294,8 @@ public class GridPortableMarshaller {
      * @param out Output stream.
      * @return Writer.
      */
-    public PortableWriterExImpl writer(PortableOutputStream out) {
-        return new PortableWriterExImpl(ctx, out);
+    public BinaryWriterExImpl writer(PortableOutputStream out) {
+        return new BinaryWriterExImpl(ctx, out);
     }
 
     /**
@@ -304,9 +304,9 @@ public class GridPortableMarshaller {
      * @param in Input stream.
      * @return Reader.
      */
-    public PortableReaderExImpl reader(PortableInputStream in) {
+    public BinaryReaderExImpl reader(PortableInputStream in) {
         // TODO: IGNITE-1272 - Is class loader needed here?
-        return new PortableReaderExImpl(ctx, in, in.position(), null);
+        return new BinaryReaderExImpl(ctx, in, in.position(), null);
     }
 
     /**
