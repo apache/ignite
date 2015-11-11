@@ -15,35 +15,26 @@
  * limitations under the License.
  */
 
-#include <ignite/impl/interop/interop_output_stream.h>
+#ifndef _IGNITE_ODBC_DRIVER_TYPE_TRAITS
+#define _IGNITE_ODBC_DRIVER_TYPE_TRAITS
 
-#include "statement.h"
+#include <stdint.h>
 
 namespace ignite
 {
     namespace odbc
     {
-        Statement::Statement()
+        namespace type_traits
         {
-            // No-op.
-        }
-
-        Statement::~Statement()
-        {
-            // No-op.
-        }
-
-        bool Statement::ExecuteSqlQuery(const char* query, size_t len)
-        {
-            //ignite::impl::interop::InteropOutputStream outStream(mem);
-
-            return false;
-        }
-
-        void Statement::BindResultColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer)
-        {
-            columnBindings[columnIdx] = buffer;
+            /**
+             * Check if the type supported by the current implementation.
+             *
+             * @param type Application type.
+             * @return True if the type is supported.
+             */
+            bool IsApplicationTypeSupported(uint16_t type);
         }
     }
 }
 
+#endif

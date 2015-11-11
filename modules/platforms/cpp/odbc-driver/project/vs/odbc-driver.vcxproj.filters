@@ -28,6 +28,12 @@
     <ClCompile Include="..\..\src\statement.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\type_traits.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\application_data_buffer.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -51,6 +57,12 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\statement.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\type_traits.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\application_data_buffer.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

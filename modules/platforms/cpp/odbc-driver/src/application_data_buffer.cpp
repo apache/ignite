@@ -15,34 +15,42 @@
  * limitations under the License.
  */
 
-#include <ignite/impl/interop/interop_output_stream.h>
-
-#include "statement.h"
+#include "application_data_buffer.h"
 
 namespace ignite
 {
     namespace odbc
     {
-        Statement::Statement()
+        ApplicationDataBuffer::ApplicationDataBuffer() :
+            type(0), buffer(0), len(0)
         {
             // No-op.
         }
 
-        Statement::~Statement()
+        ApplicationDataBuffer::ApplicationDataBuffer(uint16_t type, void* bufferPtr, uint64_t len) :
+            type(type), buffer(bufferPtr), len(len)
         {
             // No-op.
         }
 
-        bool Statement::ExecuteSqlQuery(const char* query, size_t len)
+        ApplicationDataBuffer::ApplicationDataBuffer(const ApplicationDataBuffer & other) :
+            type(other.type), buffer(other.buffer), len(other.len)
         {
-            //ignite::impl::interop::InteropOutputStream outStream(mem);
-
-            return false;
+            // No-op.
         }
 
-        void Statement::BindResultColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer)
+        ApplicationDataBuffer::~ApplicationDataBuffer()
         {
-            columnBindings[columnIdx] = buffer;
+            // No-op.
+        }
+
+        ApplicationDataBuffer & ApplicationDataBuffer::operator=(const ApplicationDataBuffer & other)
+        {
+            type = other.type;
+            buffer = other.buffer;
+            len = other.len;
+
+            return *this;
         }
     }
 }

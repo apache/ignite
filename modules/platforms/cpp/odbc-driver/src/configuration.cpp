@@ -111,7 +111,7 @@ namespace ignite
             std::stringstream connect_string_buffer;
 
             if (!driver.empty())
-                connect_string_buffer << "Driver={" << driver << "};";
+                connect_string_buffer << attrkey::driver << "={" << driver << "};";
 
             if (!host.empty())
                 connect_string_buffer << attrkey::host << '=' << host << ';';

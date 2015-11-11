@@ -29,6 +29,7 @@
 #include <odbcinst.h>
 
 #include "utility.h"
+#include "type_traits.h"
 #include "configuration.h"
 #include "environment.h"
 #include "connection.h"
@@ -63,7 +64,6 @@ BOOL INSTAPI ConfigDSN(
 
     LOG_MSG("Driver: %s\n", lpszDriver);
     LOG_MSG("Attributes: %s\n", lpszAttributes);
-
 
     LOG_MSG("DSN: %s\n", config.GetDsn().c_str());
 
@@ -295,6 +295,7 @@ SQLRETURN SQL_API SQLDriverConnect(
     UNREFERENCED_PARAMETER(WindowHandle);
 
     LOG_MSG("SQLDriverConnect called\n");
+    LOG_MSG("Connection String: [%s]\n", InConnectionString);
 
     Connection *connection = reinterpret_cast<Connection*>(ConnectionHandle);
 
@@ -317,12 +318,14 @@ SQLRETURN SQL_API SQLDriverConnect(
     {
         std::string out_connection_str = config.ToConnectString();
 
+        LOG_MSG("%s\n", out_connection_str.c_str());
+
         strncpy((char*)OutConnectionString, out_connection_str.c_str(), BufferLength - 1);
 
         OutConnectionString[BufferLength - 1] = '\0';
 
         if (StringLength2Ptr)
-            *StringLength2Ptr = std::min(BufferLength - 1, static_cast<int>(out_connection_str.size()));
+            *StringLength2Ptr = static_cast<SQLSMALLINT>(strlen(reinterpret_cast<char*>(OutConnectionString)));
     }
 
     return SQL_SUCCESS;
@@ -346,18 +349,32 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC conn)
 
 SQLRETURN SQL_API SQLExecDirect(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryLen)
 {
+    using ignite::odbc::Statement;
+
     LOG_MSG("SQLExecDirect called\n");
-    return SQL_SUCCESS;
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    const char* sql = reinterpret_cast<char*>(query);
+    size_t len = queryLen == SQL_NTS ? strlen(sql) : static_cast<size_t>(queryLen);
+
+    bool success = statement->ExecuteSqlQuery(sql, len);
+
+    return success ? SQL_SUCCESS : SQL_ERROR;
 }
 
-SQLRETURN SQL_API SQLBindCol(SQLHSTMT               stmt,
-                             SQLUSMALLINT           colNum,
-                             SQLSMALLINT            targetType,
-                             SQLPOINTER             targetValue,
-                             SQLINTEGER             targetValueMax,
-                             UNALIGNED SQLINTEGER*  lengthOrIndicator)
+SQLRETURN SQL_API SQLBindCol(SQLHSTMT       stmt,
+                             SQLUSMALLINT   colNum,
+                             SQLSMALLINT    targetType,
+                             SQLPOINTER     targetValue,
+                             SQLLEN         bufferLength,
+                             SQLLEN*        strLengthOrIndicator)
 {
     using ignite::odbc::Statement;
+    using ignite::odbc::ApplicationDataBuffer;
 
     LOG_MSG("SQLBindCol called\n");
 
@@ -366,7 +383,15 @@ SQLRETURN SQL_API SQLBindCol(SQLHSTMT               stmt,
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-//    statement->BindResultColumn(colNum, targetType, targetValue, targetValueMax, lengthOrIndicator);
+    if (!ignite::odbc::type_traits::IsApplicationTypeSupported(targetType))
+        return SQL_ERROR;
+
+    if (!targetType)
+        return SQL_ERROR;
+
+    ApplicationDataBuffer dataBuffer(targetType, targetValue, bufferLength);
+
+    statement->BindResultColumn(colNum, dataBuffer);
 
     return SQL_SUCCESS;
 }

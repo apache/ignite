@@ -20,6 +20,10 @@
 
 #include <stdint.h>
 
+#include <map>
+
+#include "application_data_buffer.h"
+
 namespace ignite
 {
     namespace odbc
@@ -37,9 +41,30 @@ namespace ignite
              */
             ~Statement();
 
-            bool BindResultColumn(uint16_t columnId);
+            /**
+             * Execute SQL query.
+             *
+             * @note Only SELECT queries are supported currently.
+             * @param query SQL query.
+             * @param len Query length.
+             * @return True on success.
+             */
+            bool ExecuteSqlQuery(const char* query, size_t len);
+
+            /**
+             * Bind result column to specified data buffer.
+             *
+             * @param columnIdx Column index.
+             * @param buffer Buffer to put column data to.
+             */
+            void BindResultColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer);
 
         private:
+            /** Column binging map type alias. */
+            typedef std::map<uint16_t, ApplicationDataBuffer> ColumnBindingMap;
+
+            /** Column bindings. */
+            ColumnBindingMap columnBindings;
         };
     }
 }
