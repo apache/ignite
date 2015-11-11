@@ -203,7 +203,6 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(Date.class, GridPortableMarshaller.DATE);
         registerPredefinedType(Timestamp.class, GridPortableMarshaller.TIMESTAMP);
         registerPredefinedType(UUID.class, GridPortableMarshaller.UUID);
-        // TODO: How to handle timestamp? It has the same ID in .Net.
 
         registerPredefinedType(byte[].class, GridPortableMarshaller.BYTE_ARR);
         registerPredefinedType(short[].class, GridPortableMarshaller.SHORT_ARR);
@@ -568,10 +567,7 @@ public class PortableContext implements Externalizable {
 
         mappers.putIfAbsent(typeId, idMapper);
 
-        // TODO: IGNITE-1847: Cannot proceed further due to this bug.
-        // TODO uncomment for https://issues.apache.org/jira/browse/IGNITE-1377
-//        if (registerMetadata && isMetaDataEnabled(typeId))
-//            metaHnd.addMeta(typeId, new PortableMetaDataImpl(typeName, desc.fieldsMeta(), null));
+        metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null).wrap(this));
 
         return desc;
     }
