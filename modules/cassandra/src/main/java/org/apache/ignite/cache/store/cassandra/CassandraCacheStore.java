@@ -20,21 +20,29 @@ package org.apache.ignite.cache.store.cassandra;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
+import org.apache.ignite.cache.store.cassandra.utils.common.SystemHelper;
 import org.apache.ignite.cache.store.cassandra.utils.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.utils.persistence.KeyValuePersistenceSettings;
 import org.apache.ignite.cache.store.cassandra.utils.persistence.PersistenceController;
 import org.apache.ignite.cache.store.cassandra.utils.session.CassandraSession;
 import org.apache.ignite.cache.store.cassandra.utils.session.GenericBatchExecutionAssistant;
 import org.apache.ignite.cache.store.cassandra.utils.session.ExecutionAssistant;
+import org.apache.ignite.cache.store.cassandra.utils.session.LoadCacheCustomQueryWorker;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.resources.CacheStoreSessionResource;
@@ -64,7 +72,39 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         this.controller = new PersistenceController(settings);
     }
 
-    @Override public void loadCache(IgniteBiInClosure<K, V> closure, Object... args) throws CacheLoaderException {
+    @Override public void loadCache(IgniteBiInClosure<K, V> clo, Object... args) throws CacheLoaderException {
+        if (clo == null || args == null || args.length == 0)
+            return;
+
+        ExecutorService pool = null;
+        Collection<Future<?>> futs = new ArrayList<>(args.length);
+
+        try {
+            pool = Executors.newFixedThreadPool(SystemHelper.PROCESSORS_COUNT);
+
+            for (Object obj : args) {
+                if (obj == null || !(obj instanceof String) || !((String)obj).trim().toLowerCase().startsWith("select"))
+                    continue;
+
+                futs.add(pool.submit(new LoadCacheCustomQueryWorker<K, V>(getCassandraSession(), (String)obj,
+                    controller, logger, clo)));
+            }
+
+            for (Future<?> fut : futs)
+                U.get(fut);
+
+            if (logger != null && logger.isDebugEnabled() && storeSession != null)
+                logger.debug("Cache loaded from db: " + storeSession.cacheName());
+        }
+        catch (IgniteCheckedException e) {
+            if (storeSession != null)
+                throw new CacheLoaderException("Failed to load Ignite cache: " + storeSession.cacheName(), e.getCause());
+            else
+                throw new CacheLoaderException("Failed to load cache", e.getCause());
+        }
+        finally {
+            U.shutdownNow(getClass(), pool, logger);
+        }
     }
 
     @Override public void sessionEnd(boolean commit) throws CacheWriterException {
