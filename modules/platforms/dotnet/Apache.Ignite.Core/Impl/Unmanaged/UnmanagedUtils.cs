@@ -312,6 +312,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ProcessorDataStreamerDelegate PROCESSOR_DATA_STREAMER;
         private static readonly ProcessorTransactionsDelegate PROCESSOR_TRANSACTIONS;
         private static readonly ProcessorComputeDelegate PROCESSOR_COMPUTE;
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorCompute")]
+        private static extern void* PROCESSOR_COMPUTE2(void* ctx, void* obj, void* prj);
+
         private static readonly ProcessorMessageDelegate PROCESSOR_MESSAGE;
         private static readonly ProcessorEventsDelegate PROCESSOR_EVENTS;
         private static readonly ProcessorServicesDelegate PROCESSOR_SERVICES;
@@ -719,7 +723,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget ProcessorCompute(IUnmanagedTarget target, IUnmanagedTarget prj)
         {
-            void* res = PROCESSOR_COMPUTE(target.Context, target.Target, prj.Target);
+            void* res = PROCESSOR_COMPUTE2(target.Context, target.Target, prj.Target);
 
             return target.ChangeTarget(res);
         }
