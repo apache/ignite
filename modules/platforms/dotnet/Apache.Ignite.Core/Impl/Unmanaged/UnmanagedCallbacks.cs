@@ -545,11 +545,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     var filter0 = reader.ReadObject<object>();
 
-                    var keepPortable = reader.ReadBoolean();
+                    var keepBinary = reader.ReadBoolean();
 
                     // 2. Create real filter from it's holder.
                     var filter = (IContinuousQueryFilter) DelegateTypeDescriptor.GetContinuousQueryFilterCtor(
-                        filter0.GetType())(filter0, keepPortable);
+                        filter0.GetType())(filter0, keepBinary);
 
                     // 3. Inject grid.
                     filter.Inject(_ignite);
