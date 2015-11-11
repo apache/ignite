@@ -62,10 +62,10 @@
                                 <value>Apache.Ignite.Core.Tests.ExecutableTest+RemoteConfiguration</value>
                                 <value>Apache.Ignite.Core.Tests.ExecutableTest+RemoteConfigurationClosure</value>
                                 <value>Apache.Ignite.Core.Tests.Compute.TaskAdapterTest+BinarizableJob</value>
-                                <value>Apache.Ignite.Core.Tests.Compute.PortableClosureTaskTest+BinarizableOutFunc</value>
-                                <value>Apache.Ignite.Core.Tests.Compute.PortableClosureTaskTest+BinarizableFunc</value>
-                                <value>Apache.Ignite.Core.Tests.Compute.PortableClosureTaskTest+BinarizableResult</value>
-                                <value>Apache.Ignite.Core.Tests.Compute.PortableClosureTaskTest+BinarizableException</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.BinarizableClosureTaskTest+BinarizableOutFunc</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.BinarizableClosureTaskTest+BinarizableFunc</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.BinarizableClosureTaskTest+BinarizableResult</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.BinarizableClosureTaskTest+BinarizableException</value>
                             </list>
                         </property>
                         <property name="typesConfiguration">
