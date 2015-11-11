@@ -20,11 +20,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
+    using System.Security;
     using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Unmanaged utility classes.
     /// </summary>
+    [SuppressUnmanagedCodeSecurity]
     internal static unsafe class UnmanagedUtils
     {
         /** Interop factory ID for .Net. */
