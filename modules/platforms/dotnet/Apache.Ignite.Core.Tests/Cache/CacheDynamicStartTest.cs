@@ -19,9 +19,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Tests.Query;
     using NUnit.Framework;
 
@@ -55,6 +55,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void SetUp()
         {
             TestUtils.KillProcesses();
+            Ignition.StopAll(true);
 
             Ignition.Start(CreateConfiguration(GridData, @"config/dynamic/dynamic-data.xml"));
             Ignition.Start(CreateConfiguration(GridDataNoCfg, @"config/dynamic/dynamic-data-no-cfg.xml"));
@@ -82,17 +83,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
-            PortableConfiguration portCfg = new PortableConfiguration();
+            BinaryConfiguration portCfg = new BinaryConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(DynamicTestKey)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(DynamicTestValue)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(DynamicTestKey)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(DynamicTestValue)));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
             cfg.GridName = name;
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
             cfg.JvmClasspath = TestUtils.CreateTestClasspath();
             cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = springCfg;

@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         Intact = 0,
         ValueSet = 1,
         Removed = 2,
-        ErrPortable = 3,
+        ErrBinary = 3,
         ErrString = 4
     }
 }

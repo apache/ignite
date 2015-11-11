@@ -20,26 +20,26 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache.Event;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Utility methods for continuous queries.
     /// </summary>
-    static class ContinuousQueryUtils
+    internal static class ContinuousQueryUtils
     {
         /// <summary>
         /// Read single event.
         /// </summary>
         /// <param name="stream">Stream to read data from.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Event.</returns>
-        public static ICacheEntryEvent<TK, TV> ReadEvent<TK, TV>(IPortableStream stream, 
-            PortableMarshaller marsh, bool keepPortable)
+        public static ICacheEntryEvent<TK, TV> ReadEvent<TK, TV>(IBinaryStream stream, 
+            Marshaller marsh, bool keepBinary)
         {
-            var reader = marsh.StartUnmarshal(stream, keepPortable);
+            var reader = marsh.StartUnmarshal(stream, keepBinary);
 
             return ReadEvent0<TK, TV>(reader);
         }
@@ -49,13 +49,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Events.</returns>
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
-        public static ICacheEntryEvent<TK, TV>[] ReadEvents<TK, TV>(IPortableStream stream,
-            PortableMarshaller marsh, bool keepPortable)
+        public static ICacheEntryEvent<TK, TV>[] ReadEvents<TK, TV>(IBinaryStream stream,
+            Marshaller marsh, bool keepBinary)
         {
-            var reader = marsh.StartUnmarshal(stream, keepPortable);
+            var reader = marsh.StartUnmarshal(stream, keepBinary);
 
             int cnt = reader.ReadInt();
 
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Event.</returns>
-        private static ICacheEntryEvent<TK, TV> ReadEvent0<TK, TV>(PortableReaderImpl reader)
+        private static ICacheEntryEvent<TK, TV> ReadEvent0<TK, TV>(BinaryReader reader)
         {
             reader.DetachNext();
             TK key = reader.ReadObject<TK>();

@@ -193,14 +193,14 @@ namespace Apache.Ignite.Core.Datastream
         void Close(bool cancel);
 
         /// <summary>
-        /// Gets streamer instance with portable mode enabled, changing key and/or value types if necessary.
-        /// In portable mode stream receiver gets data in portable format.
-        /// You can only change key/value types when transitioning from non-portable to portable streamer;
-        /// Changing type of portable streamer is not allowed and will throw an <see cref="InvalidOperationException"/>
+        /// Gets streamer instance with binary mode enabled, changing key and/or value types if necessary.
+        /// In binary mode stream receiver gets data in binary format.
+        /// You can only change key/value types when transitioning from non-binary to binary streamer;
+        /// Changing type of binary streamer is not allowed and will throw an <see cref="InvalidOperationException"/>
         /// </summary>
-        /// <typeparam name="TK1">Key type in portable mode.</typeparam>
-        /// <typeparam name="TV1">Value type in protable mode.</typeparam>
-        /// <returns>Streamer instance with portable mode enabled.</returns>
-        IDataStreamer<TK1, TV1> WithKeepPortable<TK1, TV1>();
+        /// <typeparam name="TK1">Key type in binary mode.</typeparam>
+        /// <typeparam name="TV1">Value type in binary mode.</typeparam>
+        /// <returns>Streamer instance with binary mode enabled.</returns>
+        IDataStreamer<TK1, TV1> WithKeepBinary<TK1, TV1>();
     }
 }

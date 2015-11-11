@@ -22,11 +22,11 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
 
     /// <summary>
@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestPartialUpdateExceptionPortable()
         {
             // User type
-            TestPartialUpdateException(false, (x, g) => g.GetPortables().ToPortable<IPortableObject>(new PortableEntry(x)));
+            TestPartialUpdateException(false, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new PortableEntry(x)));
         }
 
         /// <summary>
@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Tests
         [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionAsyncPortable()
         {
-            TestPartialUpdateException(true, (x, g) => g.GetPortables().ToPortable<IPortableObject>(new PortableEntry(x)));
+            TestPartialUpdateException(true, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new PortableEntry(x)));
         }
 
         /// <summary>
@@ -217,8 +217,8 @@ namespace Apache.Ignite.Core.Tests
             {
                 var cache = grid.GetCache<TK, int>("partitioned_atomic").WithNoRetries();
 
-                if (typeof (TK) == typeof (IPortableObject))
-                    cache = cache.WithKeepPortable<TK, int>();
+                if (typeof (TK) == typeof (IBinaryObject))
+                    cache = cache.WithKeepBinary<TK, int>();
 
                 // Do cache puts in parallel
                 var putTask = Task.Factory.StartNew(() =>
@@ -291,11 +291,11 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 GridName = gridName,
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
                     {
-                        new PortableTypeConfiguration(typeof (PortableEntry))
+                        new BinaryTypeConfiguration(typeof (PortableEntry))
                     }
                 }
             });
