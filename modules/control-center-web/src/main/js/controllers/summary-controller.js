@@ -93,7 +93,7 @@ consoleModule.controller('summaryController', [
 
     $scope.generateJavaServer = function () {
         $scope.javaServer = $generatorJava.cluster($scope.selectedItem,
-            $scope.configServer.javaClassServer === 2 ? 'ConfigurationFactory' : false);
+            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false);
     };
 
     function selectPojoClass(config) {
