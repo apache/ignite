@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffhe
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Utils;
@@ -113,7 +114,7 @@ import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
-import org.h2.constant.SysProperties;
+import org.h2.engine.SysProperties;
 import org.h2.index.Index;
 import org.h2.index.SpatialIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
@@ -124,7 +125,7 @@ import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.Table;
 import org.h2.tools.Server;
-import org.h2.util.Utils;
+import org.h2.util.JdbcUtils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
@@ -1296,10 +1297,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SysProperties.serializeJavaObject = false;
         }
 
-        if (Utils.serializer != null)
+        if (JdbcUtils.serializer != null)
             U.warn(log, "Custom H2 serialization is already configured, will override.");
 
-        Utils.serializer = h2Serializer();
+        JdbcUtils.serializer = h2Serializer();
 
         String dbName = (ctx != null ? ctx.localNodeId() : UUID.randomUUID()).toString();
 
@@ -2041,8 +2042,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             this.offheap = offheap;
             this.ccfg = ccfg;
 
-            if (offheap != null)
-                rowCache = new CacheLongKeyLIRS<>(ccfg.getSqlOnheapRowCacheSize(), 1, 128, 256);
+            if (offheap != null) {
+                CacheLongKeyLIRS.Config lirsCfg = new CacheLongKeyLIRS.Config();
+
+                lirsCfg.maxMemory = ccfg.getSqlOnheapRowCacheSize();
+
+                rowCache = new CacheLongKeyLIRS<>(lirsCfg);
+            }
             else
                 rowCache = null;
         }
@@ -2225,7 +2231,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throws IgniteCheckedException {
             try {
                 if (val == null) // Only can happen for remove operation, can create simple search row.
-                    return new GridH2Row(wrap(key, keyType), null);
+                    return GridH2RowFactory.INSTANCE.create(wrap(key, keyType));
 
                 return schema.offheap == null ?
                     new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, expirationTime) :

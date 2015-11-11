@@ -252,7 +252,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter filter, SortOrder sortOrder) {
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
         return getRowCountApproximation() + Constants.COST_ROW_OFFSET;
     }
 

@@ -40,6 +40,7 @@ import org.h2.engine.DbObject;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
+import org.h2.index.IndexLookupBatch;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
@@ -199,10 +200,10 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "SynchronizationOnLocalVariableOrMethodParameter", "unchecked"})
-    @Override public void lock(@Nullable final Session ses, boolean exclusive, boolean force) {
+    @Override public boolean lock(@Nullable final Session ses, boolean exclusive, boolean force) {
         if (ses != null) {
             if (!sessions.add(ses))
-                return;
+                return false;
 
             synchronized (ses) {
                 ses.addLock(this);
@@ -219,7 +220,7 @@ public class GridH2Table extends TableBase {
                 for (int i = 1, len = idxs.size(); i < len; i++)
                     index(i).takeSnapshot(snapshot[i - 1]);
 
-                return;
+                return false;
             }
 
             try {
@@ -253,6 +254,8 @@ public class GridH2Table extends TableBase {
             for (int i = 1, len = idxs.size(); i < len; i++)
                 index(i).takeSnapshot(snapshot[i - 1]);
         }
+
+        return false;
     }
 
     /**
@@ -771,7 +774,8 @@ public class GridH2Table extends TableBase {
         }
 
         /** {@inheritDoc} */
-        @Override public double getCost(Session ses, int[] masks, TableFilter tblFilter, SortOrder sortOrder) {
+        @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
+            SortOrder sortOrder) {
             return getRowCountApproximation() + Constants.COST_ROW_OFFSET;
         }
 
@@ -833,6 +837,11 @@ public class GridH2Table extends TableBase {
         /** {@inheritDoc} */
         @Override public void setSortedInsertMode(boolean sortedInsertMode) {
             // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
+            return delegate.createLookupBatch(filter);
         }
 
         /** {@inheritDoc} */

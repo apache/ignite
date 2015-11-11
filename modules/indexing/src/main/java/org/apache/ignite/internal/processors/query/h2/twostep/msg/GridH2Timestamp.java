@@ -50,7 +50,7 @@ public class GridH2Timestamp extends GridH2ValueMessage {
         ValueTimestamp t = (ValueTimestamp)val;
 
         date = t.getDateValue();
-        nanos = t.getNanos();
+        nanos = t.getTimeNanos();
     }
 
     /** {@inheritDoc} */

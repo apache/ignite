@@ -229,8 +229,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        return getCostRangeIndex(masks, getRowCountApproximation(), filter, sortOrder);
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
+        SortOrder sortOrder) {
+        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder);
     }
 
     /** {@inheritDoc} */

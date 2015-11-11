@@ -77,8 +77,9 @@ public class GridThreadLocalTable extends Table {
     }
 
     /** {@inheritDoc} */
-    @Override public PlanItem getBestPlanItem(Session session, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        return tbl.get().getBestPlanItem(session, masks, filter, sortOrder);
+    @Override public PlanItem getBestPlanItem(Session session, int[] masks, TableFilter[] filters, int filter,
+        SortOrder sortOrder) {
+        return tbl.get().getBestPlanItem(session, masks, filters, filter, sortOrder);
     }
 
     /** {@inheritDoc} */
@@ -122,8 +123,8 @@ public class GridThreadLocalTable extends Table {
     }
 
     /** {@inheritDoc} */
-    @Override public void lock(Session session, boolean exclusive, boolean force) {
-        tbl.get().lock(session, exclusive, force);
+    @Override public boolean lock(Session session, boolean exclusive, boolean force) {
+        return tbl.get().lock(session, exclusive, force);
     }
 
     /** {@inheritDoc} */
