@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -1092,7 +1093,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxCommit();
 
-                for (int cacheId : tx.activeCacheIds()) {
+                GridLongList cacheIds = tx.activeCacheIds();
+
+                for (int i = 0; i < cacheIds.size(); i++) {
+                    int cacheId = (int)cacheIds.get(i);
+
                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
                     if (cacheCtx.cache().configuration().isStatisticsEnabled())
@@ -1163,7 +1168,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxRollback();
 
-                for (int cacheId : tx.activeCacheIds()) {
+                GridLongList cacheIds = tx.activeCacheIds();
+
+                for (int i = 0; i < cacheIds.size(); i++) {
+                    int cacheId = (int)cacheIds.get(i);
+
                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
                     if (cacheCtx.cache().configuration().isStatisticsEnabled())
@@ -1233,10 +1242,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (!tx.system())
                 threadMap.remove(tx.threadId(), tx);
             else {
-                Integer cacheId = F.first(tx.activeCacheIds());
-
-                if (cacheId != null)
-                    sysThreadMap.remove(new TxThreadKey(tx.threadId(), cacheId), tx);
+                if (!tx.activeCacheIds().isEmpty())
+                    sysThreadMap.remove(new TxThreadKey(tx.threadId(), (int)tx.activeCacheIds().get(0)), tx);
                 else {
                     for (Iterator<IgniteInternalTx> it = sysThreadMap.values().iterator(); it.hasNext(); ) {
                         IgniteInternalTx txx = it.next();

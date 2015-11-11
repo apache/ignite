@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -533,7 +534,7 @@ public class GridCacheSharedContext<K, V> {
      * @param cacheCtx Cache context.
      * @return Error message if transactions are incompatible.
      */
-    @Nullable public String verifyTxCompatibility(IgniteInternalTx tx, Iterable<Integer> activeCacheIds,
+    @Nullable public String verifyTxCompatibility(IgniteInternalTx tx, GridLongList activeCacheIds,
         GridCacheContext<K, V> cacheCtx) {
         if (cacheCtx.systemTx() && !tx.system())
             return "system cache can be enlisted only in system transaction";
@@ -541,7 +542,9 @@ public class GridCacheSharedContext<K, V> {
         if (!cacheCtx.systemTx() && tx.system())
             return "non-system cache can't be enlisted in system transaction";
 
-        for (Integer cacheId : activeCacheIds) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int)activeCacheIds.get(i);
+
             GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
 
             if (cacheCtx.systemTx()) {
@@ -582,11 +585,11 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void endTx(IgniteInternalTx tx) throws IgniteCheckedException {
-        Collection<Integer> cacheIds = tx.activeCacheIds();
+        GridLongList cacheIds = tx.activeCacheIds();
 
         if (!cacheIds.isEmpty()) {
-            for (Integer cacheId : cacheIds)
-                cacheContext(cacheId).cache().awaitLastFut();
+            for (int i = 0; i < cacheIds.size(); i++)
+                cacheContext((int)cacheIds.get(i)).cache().awaitLastFut();
         }
 
         tx.close();
@@ -597,18 +600,18 @@ public class GridCacheSharedContext<K, V> {
      * @return Commit future.
      */
     public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(IgniteInternalTx tx) {
-        Collection<Integer> cacheIds = tx.activeCacheIds();
+        GridLongList cacheIds = tx.activeCacheIds();
 
         if (cacheIds.isEmpty())
             return tx.commitAsync();
         else if (cacheIds.size() == 1) {
-            int cacheId = F.first(cacheIds);
+            int cacheId = (int)cacheIds.get(0);
 
             return cacheContext(cacheId).cache().commitTxAsync(tx);
         }
         else {
-            for (Integer cacheId : cacheIds)
-                cacheContext(cacheId).cache().awaitLastFut();
+            for (int i = 0; i < cacheIds.size(); i++)
+                cacheContext((int)cacheIds.get(i)).cache().awaitLastFut();
 
             return tx.commitAsync();
         }
@@ -620,11 +623,11 @@ public class GridCacheSharedContext<K, V> {
      * @return Rollback future.
      */
     public IgniteInternalFuture rollbackTxAsync(IgniteInternalTx tx) throws IgniteCheckedException {
-        Collection<Integer> cacheIds = tx.activeCacheIds();
+        GridLongList cacheIds = tx.activeCacheIds();
 
         if (!cacheIds.isEmpty()) {
-            for (Integer cacheId : cacheIds)
-                cacheContext(cacheId).cache().awaitLastFut();
+            for (int i = 0; i < cacheIds.size(); i++)
+                cacheContext((int)cacheIds.get(i)).cache().awaitLastFut();
         }
 
         return tx.rollbackAsync();

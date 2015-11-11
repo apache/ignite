@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -297,20 +298,16 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         catch (TransactionTimeoutException e) {
             onError( e);
         }
-        catch (IgniteCheckedException e) {
-            onDone(e);
-        }
     }
 
     /**
      * @param writes Write entries.
      * @param topLocked {@code True} if thread already acquired lock preventing topology change.
-     * @throws IgniteCheckedException If failed.
      */
     private void prepare(
         Iterable<IgniteTxEntry> writes,
         boolean topLocked
-    ) throws IgniteCheckedException {
+    ) {
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
         assert topVer.topologyVersion() > 0;
@@ -320,7 +317,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         Queue<GridDistributedTxMapping> mappings = new ArrayDeque<>();
 
         if (!F.isEmpty(writes)) {
-            for (int cacheId : tx.activeCacheIds()) {
+            GridLongList cacheIds = tx.activeCacheIds();
+
+            for (int i = 0; i < cacheIds.size(); i++) {
+                int cacheId = (int)cacheIds.get(i);
+
                 GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
                 if (CU.affinityNodes(cacheCtx, topVer).isEmpty()) {

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -75,12 +76,16 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
      * @return Topology ready future.
      */
     protected final GridDhtTopologyFuture topologyReadLock() {
-        if (tx.activeCacheIds().isEmpty())
+        GridLongList cacheIds = tx.activeCacheIds();
+
+        if (cacheIds.isEmpty())
             return cctx.exchange().lastTopologyFuture();
 
         GridCacheContext<?, ?> nonLocCtx = null;
 
-        for (int cacheId : tx.activeCacheIds()) {
+        for (int i = 0; i < cacheIds.size(); i++) {
+            int cacheId = (int)cacheIds.get(i);
+
             GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
             if (!cacheCtx.isLocal()) {
@@ -109,10 +114,14 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
      * Releases topology read lock.
      */
     protected final void topologyReadUnlock() {
-        if (!tx.activeCacheIds().isEmpty()) {
+        GridLongList cacheIds = tx.activeCacheIds();
+
+        if (!cacheIds.isEmpty()) {
             GridCacheContext<?, ?> nonLocCtx = null;
 
-            for (int cacheId : tx.activeCacheIds()) {
+            for (int i = 0; i < cacheIds.size(); i++) {
+                int cacheId = (int)cacheIds.get(i);
+
                 GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
                 if (!cacheCtx.isLocal()) {
@@ -162,7 +171,11 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         if (topVer != null) {
             StringBuilder invalidCaches = null;
 
-            for (Integer cacheId : tx.activeCacheIds()) {
+            GridLongList cacheIds = tx.activeCacheIds();
+
+            for (int i = 0; i < cacheIds.size(); i++) {
+                int cacheId = (int)cacheIds.get(i);
+
                 GridCacheContext ctx = cctx.cacheContext(cacheId);
 
                 assert ctx != null : cacheId;

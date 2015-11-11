@@ -1301,6 +1301,8 @@ public class GridNioServer<T> {
         @SuppressWarnings("unchecked")
         private void bodyInternal() throws IgniteCheckedException {
             try {
+                long lastIdleCheck = U.currentTimeMillis();
+
                 while (!closed && selector.isOpen()) {
                     NioOperationFuture req;
 
@@ -1374,11 +1376,18 @@ public class GridNioServer<T> {
                     }
 
                     // Wake up every 2 seconds to check if closed.
-                    if (selector.select(2000) > 0)
+                    if (selector.select(2000) > 0) {
                         // Walk through the ready keys collection and process network events.
                         processSelectedKeys(selector.selectedKeys());
+                    }
 
-                    checkIdle(selector.keys());
+                    long now = U.currentTimeMillis();
+
+                    if (U.currentTimeMillis() - lastIdleCheck > 5000) {
+                        lastIdleCheck = now;
+
+                        checkIdle(selector.keys());
+                    }
                 }
             }
             // Ignore this exception as thread interruption is equal to 'close' call.
@@ -1460,11 +1469,21 @@ public class GridNioServer<T> {
         private void checkIdle(Iterable<SelectionKey> keys) {
             long now = U.currentTimeMillis();
 
+            U.debug(">>>>>>>>>>>>>>>>>");
+
+            if (!keys.iterator().hasNext())
+                U.debug("Thread handles no connections.");
+
             for (SelectionKey key : keys) {
                 GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
                 try {
                     long writeTimeout0 = writeTimeout;
+
+                    if (key.isValid()) {
+                        U.debug("Thread handles connection [locNode=" + ses.localAddress() +
+                            ", rmtAddress=" + ses.remoteAddress() + ']');
+                    }
 
                     // If we are writing and timeout passed.
                     if (key.isValid() && (key.interestOps() & SelectionKey.OP_WRITE) != 0 &&
@@ -1491,6 +1510,8 @@ public class GridNioServer<T> {
                     close(ses,  e);
                 }
             }
+
+            U.debug(">>>>>>>>>>>>>>>>>");
         }
 
         /**

@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -284,7 +285,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (super.syncCommit())
             return true;
 
-        for (int cacheId : activeCacheIds()) {
+        GridLongList cacheIds = activeCacheIds();
+
+        for (int i = 0; i < cacheIds.size(); i++) {
+            int cacheId = (int)cacheIds.get(i);
+
             if (cctx.cacheContext(cacheId).config().getWriteSynchronizationMode() == FULL_SYNC)
                 return true;
         }

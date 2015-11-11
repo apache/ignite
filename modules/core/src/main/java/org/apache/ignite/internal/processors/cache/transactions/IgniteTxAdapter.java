@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -424,10 +425,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         if (!storeEnabled())
             return false;
 
-        Collection<Integer> cacheIds = activeCacheIds();
+        GridLongList cacheIds = activeCacheIds();
 
         if (!cacheIds.isEmpty()) {
-            for (int cacheId : cacheIds) {
+            for (int i = 0; i < cacheIds.size(); i++) {
+                int cacheId = (int)cacheIds.get(i);
+
                 CacheStoreManager store = cctx.cacheContext(cacheId).store();
 
                 if (store.configured())
@@ -444,12 +447,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @return Store manager.
      */
     protected Collection<CacheStoreManager> stores() {
-        Collection<Integer> cacheIds = activeCacheIds();
+        GridLongList cacheIds = activeCacheIds();
 
         if (!cacheIds.isEmpty()) {
             Collection<CacheStoreManager> stores = new ArrayList<>(cacheIds.size());
 
-            for (int cacheId : cacheIds) {
+            for (int i = 0; i < cacheIds.size(); i++) {
+                int cacheId = (int)cacheIds.get(i);
+
                 CacheStoreManager store = cctx.cacheContext(cacheId).store();
 
                 if (store.configured())
@@ -1758,7 +1763,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<Integer> activeCacheIds() {
+        @Override public GridLongList activeCacheIds() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

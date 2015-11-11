@@ -69,6 +69,7 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -157,7 +158,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     protected AtomicReference<Throwable> commitErr = new AtomicReference<>();
 
     /** Active cache IDs. */
-    protected Set<Integer> activeCacheIds = new HashSet<>();
+    protected GridLongList activeCacheIds = new GridLongList();
 
     /** Need return value. */
     protected boolean needRetVal;
@@ -275,7 +276,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      *
      * @return Collection of active cache IDs.
      */
-    @Override public Collection<Integer> activeCacheIds() {
+    @Override public GridLongList activeCacheIds() {
         return activeCacheIds;
     }
 
@@ -2783,7 +2784,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         try {
             Set<?> keySet = map0 != null ? map0.keySet() : invokeMap0.keySet();
 
-            Collection<KeyCacheObject> enlisted = new ArrayList<>();
+            Collection<KeyCacheObject> enlisted = new ArrayList<>(keySet.size());
 
             CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
@@ -3170,7 +3171,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      */
     public boolean init() {
         if (txMap == null) {
-            txMap = new LinkedHashMap<>(txSize > 0 ? txSize : 16, 1.0f);
+            txMap = new LinkedHashMap<>(U.capacity(txSize > 0 ? txSize : 16));
 
             readView = new IgniteTxMap(txMap, CU.reads());
             writeView = new IgniteTxMap(txMap, CU.writes());
@@ -3200,7 +3201,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 int idx = 0;
 
-                for (Integer activeCacheId : activeCacheIds) {
+                for (int i = 0; i < activeCacheIds.size(); i++) {
+                    int activeCacheId = (int)activeCacheIds.get(i);
+
                     cacheNames.append(cctx.cacheContext(activeCacheId).name());
 
                     if (idx++ < activeCacheIds.size() - 1)

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -498,7 +499,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         boolean finish = false;
 
-        for (Integer cacheId : tx.activeCacheIds()) {
+        GridLongList cacheIds = tx.activeCacheIds();
+
+        for (int i = 0; i < cacheIds.size(); i++) {
+            int cacheId = (int)cacheIds.get(i);
+
             GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
             if (cacheCtx.isNear()) {
