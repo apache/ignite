@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+var _ = require('lodash');
 var router = require('express').Router();
 var agentManager = require('../agents/agent-manager');
 
