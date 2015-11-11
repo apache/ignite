@@ -62,8 +62,14 @@ public class BinaryTypeImpl implements BinaryType {
         return ctx.createField(meta.typeId(), fieldName);
     }
 
-    public String affinityKeyFieldName() {
+    /** {@inheritDoc} */
+    @Override public String affinityKeyFieldName() {
         return meta.affinityKeyFieldName();
+    }
+
+    /** {@inheritDoc} */
+    public PortableContext context() {
+        return ctx;
     }
 
     /**

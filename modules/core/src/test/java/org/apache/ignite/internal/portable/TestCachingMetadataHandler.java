@@ -30,12 +30,21 @@ public class TestCachingMetadataHandler implements BinaryMetadataHandler {
     private final ConcurrentHashMap<Integer, BinaryType> metas = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException {
-        BinaryType otherType = metas.put(typeId, meta);
+    @Override public void addMeta(int typeId, BinaryType type) throws BinaryObjectException {
+        synchronized (this) {
+            BinaryType oldType = metas.put(typeId, type);
 
-        if (otherType != null)
-            throw new IllegalStateException("Metadata replacement is not allowed in " +
-                TestCachingMetadataHandler.class.getSimpleName() + '.');
+            if (oldType != null) {
+                BinaryMetadata oldMeta = ((BinaryTypeImpl)oldType).metadata();
+                BinaryMetadata newMeta = ((BinaryTypeImpl)type).metadata();
+
+                BinaryMetadata mergedMeta = PortableUtils.mergeMetadata(oldMeta, newMeta);
+
+                BinaryType mergedType = mergedMeta.wrap(((BinaryTypeImpl)oldType).context());
+
+                metas.put(typeId, mergedType);
+            }
+        }
     }
 
     /** {@inheritDoc} */
