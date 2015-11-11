@@ -188,12 +188,24 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         CacheConfiguration cfg = cctx.config();
 
-        if (cfgStore != null && !cfg.isWriteThrough() && !cfg.isReadThrough()) {
-            U.quietAndWarn(log,
-                "Persistence store is configured, but both read-through and write-through are disabled. This " +
-                "configuration makes sense if the store implements loadCache method only. If this is the " +
-                "case, ignore this warning. Otherwise, fix the configuration for cache: " + cfg.getName(),
-                "Persistence store is configured, but both read-through and write-through are disabled.");
+        if (cfgStore != null) {
+            if (!cfg.isWriteThrough() && !cfg.isReadThrough()) {
+                U.quietAndWarn(log,
+                    "Persistence store is configured, but both read-through and write-through are disabled. This " +
+                    "configuration makes sense if the store implements loadCache method only. If this is the " +
+                    "case, ignore this warning. Otherwise, fix the configuration for the cache: " + cfg.getName(),
+                    "Persistence store is configured, but both read-through and write-through are disabled " +
+                    "for cache: " + cfg.getName());
+            }
+
+            if (!cfg.isWriteThrough() && cfg.isWriteBehindEnabled()) {
+                U.quietAndWarn(log,
+                    "To enable write-behind mode for the cache store it's also required to set " +
+                    "CacheConfiguration.setWriteThrough(true) property, otherwise the persistence " +
+                    "store will be never updated. Consider fixing configuration for the cache: " + cfg.getName(),
+                    "Write-behind mode for the cache store also requires CacheConfiguration.setWriteThrough(true) " +
+                    "property. Fix configuration for the cache: " + cfg.getName());
+            }
         }
 
         sesLsnrs = CU.startStoreSessionListeners(cctx.kernalContext(), cfg.getCacheStoreSessionListenerFactories());
