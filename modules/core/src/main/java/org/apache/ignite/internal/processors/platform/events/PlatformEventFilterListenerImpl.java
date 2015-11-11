@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.events;
 
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -125,7 +125,7 @@ public class PlatformEventFilterListenerImpl implements PlatformEventFilterListe
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = ctx.writer(out);
+            BinaryRawWriterEx writer = ctx.writer(out);
 
             ctx.writeEvent(writer, evt);
 
@@ -151,7 +151,7 @@ public class PlatformEventFilterListenerImpl implements PlatformEventFilterListe
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = ctx.writer(out);
+            BinaryRawWriterEx writer = ctx.writer(out);
 
             writer.writeObjectDetached(pred);
 

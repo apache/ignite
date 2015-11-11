@@ -25,10 +25,10 @@ namespace Apache.Ignite.Core.Impl.Common
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Datastream;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
 
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly Action<object> _computeJobCancel;
 
         /** */
-        private readonly Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> _streamReceiver;
+        private readonly Action<object, Ignite, IUnmanagedTarget, IBinaryStream, bool> _streamReceiver;
 
         /** */
         private readonly Func<object, object> _streamTransformerCtor;
@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Precompiled invocator delegate.</returns>
-        public static Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> GetStreamReceiver(Type type)
+        public static Action<object, Ignite, IUnmanagedTarget, IBinaryStream, bool> GetStreamReceiver(Type type)
         {
             return Get(type)._streamReceiver;
         }
@@ -314,12 +314,12 @@ namespace Apache.Ignite.Core.Impl.Common
                             .MakeGenericMethod(iface.GetGenericArguments());
 
                     _streamReceiver = DelegateConverter
-                        .CompileFunc<Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool>>(
+                        .CompileFunc<Action<object, Ignite, IUnmanagedTarget, IBinaryStream, bool>>(
                             typeof (StreamReceiverHolder),
                             method,
                             new[]
                             {
-                                iface, typeof (Ignite), typeof (IUnmanagedTarget), typeof (IPortableStream),
+                                iface, typeof (Ignite), typeof (IUnmanagedTarget), typeof (IBinaryStream),
                                 typeof (bool)
                             },
                             new[] {true, false, false, false, false, false});

@@ -20,9 +20,9 @@ namespace Apache.Ignite.Core.Tests.Portable
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -56,14 +56,14 @@ namespace Apache.Ignite.Core.Tests.Portable
                 objs = IgniteUtils.Shuffle(objs);
 
                 // 2. Create new marshaller.
-                PortableTypeConfiguration typeCfg = new PortableTypeConfiguration(typeof(BranchedType));
+                BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(typeof(BranchedType));
 
-                PortableConfiguration cfg = new PortableConfiguration
+                BinaryConfiguration cfg = new BinaryConfiguration
                 {
-                    TypeConfigurations = new List<PortableTypeConfiguration> { typeCfg }
+                    TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg }
                 };
 
-                PortableMarshaller marsh = new PortableMarshaller(cfg);
+                Marshaller marsh = new Marshaller(cfg);
 
                 // 3. Marshal all data and ensure deserialized object is fine.
                 foreach (BranchedType obj in objs)
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     }
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]
-    public class BranchedType : IPortableMarshalAware
+    public class BranchedType : IBinarizable
     {
         public int mode;
         public int f2;
@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.WriteInt("mode", mode);
 
@@ -194,7 +194,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             mode = reader.ReadInt("mode");
 

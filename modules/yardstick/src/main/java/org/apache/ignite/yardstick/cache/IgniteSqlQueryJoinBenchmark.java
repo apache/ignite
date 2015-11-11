@@ -33,7 +33,7 @@ import static org.yardstickframework.BenchmarkUtils.println;
 /**
  * Ignite benchmark that performs query operations with joins.
  */
-public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
+public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);

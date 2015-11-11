@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcCacheWithNoRetries = "IgniteCacheWithNoRetries";
         private const string ProcCacheWithExpiryPolicy = "IgniteCacheWithExpiryPolicy";
         private const string ProcCacheWithAsync = "IgniteCacheWithAsync";
-        private const string ProcCacheWithKeepPortable = "IgniteCacheWithKeepPortable";
+        private const string ProcCacheWithKeepBinary = "IgniteCacheWithKeepPortable";
         private const string ProcCacheClear = "IgniteCacheClear";
         private const string ProcCacheRemoveAll = "IgniteCacheRemoveAll";
         private const string ProcCacheOutOpQueryCursor = "IgniteCacheOutOpQueryCursor";
@@ -149,7 +149,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcDeleteContext = "IgniteDeleteContext";
         
         private const string ProcServicesWithAsync = "IgniteServicesWithAsync";
-        private const string ProcServicesWithServerKeepPortable = "IgniteServicesWithServerKeepPortable";
+        private const string ProcServicesWithServerKeepBinary = "IgniteServicesWithServerKeepPortable";
         private const string ProcServicesCancel = "IgniteServicesCancel";
         private const string ProcServicesCancelAll = "IgniteServicesCancelAll";
         private const string ProcServicesGetServiceProxy = "IgniteServicesGetServiceProxy";
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void* ProcessorCreateCacheDelegate(void* ctx, void* obj, sbyte* name);
         private delegate void* ProcessorGetOrCreateCacheDelegate(void* ctx, void* obj, sbyte* name);
         private delegate void* ProcessorAffinityDelegate(void* ctx, void* obj, sbyte* name);
-        private delegate void* ProcessorDataStreamerDelegate(void* ctx, void* obj, sbyte* name, bool keepPortable);
+        private delegate void* ProcessorDataStreamerDelegate(void* ctx, void* obj, sbyte* name, bool keepBinary);
         private delegate void* ProcessorTransactionsDelegate(void* ctx, void* obj);
         private delegate void* ProcessorComputeDelegate(void* ctx, void* obj, void* prj);
         private delegate void* ProcessorMessageDelegate(void* ctx, void* obj, void* prj);
@@ -219,7 +219,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void* CacheNoRetriesDelegate(void* ctx, void* obj);
         private delegate void* CacheWithExpiryPolicyDelegate(void* ctx, void* obj, long create, long update, long access);
         private delegate void* CacheWithAsyncDelegate(void* ctx, void* obj);
-        private delegate void* CacheWithKeepPortableDelegate(void* ctx, void* obj);
+        private delegate void* CacheWithKeepBinaryDelegate(void* ctx, void* obj);
         private delegate void CacheClearDelegate(void* ctx, void* obj);
         private delegate void CacheRemoveAllDelegate(void* ctx, void* obj);
         private delegate void* CacheOutOpQueryCursorDelegate(void* ctx, void* obj, int type, long memPtr);
@@ -295,7 +295,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void DeleteContextDelegate(void* ptr);
 
         private delegate void* ServicesWithAsyncDelegate(void* ctx, void* target);
-        private delegate void* ServicesWithServerKeepPortableDelegate(void* ctx, void* target);
+        private delegate void* ServicesWithServerKeepBinaryDelegate(void* ctx, void* target);
         private delegate long ServicesCancelDelegate(void* ctx, void* target, char* name);
         private delegate long ServicesCancelAllDelegate(void* ctx, void* target);
         private delegate void* ServicesGetServiceProxyDelegate(void* ctx, void* target, char* name, bool sticky);
@@ -366,7 +366,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly CacheNoRetriesDelegate CACHE_WITH_NO_RETRIES;
         private static readonly CacheWithExpiryPolicyDelegate CACHE_WITH_EXPIRY_POLICY;
         private static readonly CacheWithAsyncDelegate CACHE_WITH_ASYNC;
-        private static readonly CacheWithKeepPortableDelegate CACHE_WITH_KEEP_PORTABLE;
+        private static readonly CacheWithKeepBinaryDelegate CACHE_WITH_KEEP_BINARY;
         private static readonly CacheClearDelegate CACHE_CLEAR;
         private static readonly CacheRemoveAllDelegate CACHE_REMOVE_ALL;
         private static readonly CacheOutOpQueryCursorDelegate CACHE_OUT_OP_QUERY_CURSOR;
@@ -442,7 +442,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly DeleteContextDelegate DELETE_CONTEXT;
         
         private static readonly ServicesWithAsyncDelegate SERVICES_WITH_ASYNC;
-        private static readonly ServicesWithServerKeepPortableDelegate SERVICES_WITH_SERVER_KEEP_PORTABLE;
+        private static readonly ServicesWithServerKeepBinaryDelegate SERVICES_WITH_SERVER_KEEP_BINARY;
         private static readonly ServicesCancelDelegate SERVICES_CANCEL;
         private static readonly ServicesCancelAllDelegate SERVICES_CANCEL_ALL;
         private static readonly ServicesGetServiceProxyDelegate SERVICES_GET_SERVICE_PROXY;
@@ -529,7 +529,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             CACHE_WITH_NO_RETRIES = CreateDelegate<CacheNoRetriesDelegate>(ProcCacheWithNoRetries);
             CACHE_WITH_EXPIRY_POLICY = CreateDelegate<CacheWithExpiryPolicyDelegate>(ProcCacheWithExpiryPolicy);
             CACHE_WITH_ASYNC = CreateDelegate<CacheWithAsyncDelegate>(ProcCacheWithAsync);
-            CACHE_WITH_KEEP_PORTABLE = CreateDelegate<CacheWithKeepPortableDelegate>(ProcCacheWithKeepPortable);
+            CACHE_WITH_KEEP_BINARY = CreateDelegate<CacheWithKeepBinaryDelegate>(ProcCacheWithKeepBinary);
             CACHE_CLEAR = CreateDelegate<CacheClearDelegate>(ProcCacheClear);
             CACHE_REMOVE_ALL = CreateDelegate<CacheRemoveAllDelegate>(ProcCacheRemoveAll);
             CACHE_OUT_OP_QUERY_CURSOR = CreateDelegate<CacheOutOpQueryCursorDelegate>(ProcCacheOutOpQueryCursor);
@@ -604,7 +604,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             EVENTS_IS_ENABLED = CreateDelegate<EventsIsEnabledDelegate>(ProcEventsIsEnabled);
             
             SERVICES_WITH_ASYNC = CreateDelegate<ServicesWithAsyncDelegate>(ProcServicesWithAsync);
-            SERVICES_WITH_SERVER_KEEP_PORTABLE = CreateDelegate<ServicesWithServerKeepPortableDelegate>(ProcServicesWithServerKeepPortable);
+            SERVICES_WITH_SERVER_KEEP_BINARY = CreateDelegate<ServicesWithServerKeepBinaryDelegate>(ProcServicesWithServerKeepBinary);
             SERVICES_CANCEL = CreateDelegate<ServicesCancelDelegate>(ProcServicesCancel);
             SERVICES_CANCEL_ALL = CreateDelegate<ServicesCancelAllDelegate>(ProcServicesCancelAll);
             SERVICES_GET_SERVICE_PROXY = CreateDelegate<ServicesGetServiceProxyDelegate>(ProcServicesGetServiceProxy);
@@ -754,13 +754,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        internal static IUnmanagedTarget ProcessorDataStreamer(IUnmanagedTarget target, string name, bool keepPortable)
+        internal static IUnmanagedTarget ProcessorDataStreamer(IUnmanagedTarget target, string name, bool keepBinary)
         {
             sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
 
             try
             {
-                void* res = PROCESSOR_DATA_STREAMER(target.Context, target.Target, name0, keepPortable);
+                void* res = PROCESSOR_DATA_STREAMER(target.Context, target.Target, name0, keepBinary);
 
                 return target.ChangeTarget(res);
             }
@@ -957,9 +957,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
-        internal static IUnmanagedTarget CacheWithKeepPortable(IUnmanagedTarget target)
+        internal static IUnmanagedTarget CacheWithKeepBinary(IUnmanagedTarget target)
         {
-            void* res = CACHE_WITH_KEEP_PORTABLE(target.Context, target.Target);
+            void* res = CACHE_WITH_KEEP_BINARY(target.Context, target.Target);
 
             return target.ChangeTarget(res);
         }
@@ -1347,9 +1347,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(SERVICES_WITH_ASYNC(target.Context, target.Target));
         }
 
-        internal static IUnmanagedTarget ServicesWithServerKeepPortable(IUnmanagedTarget target)
+        internal static IUnmanagedTarget ServicesWithServerKeepBinary(IUnmanagedTarget target)
         {
-            return target.ChangeTarget(SERVICES_WITH_SERVER_KEEP_PORTABLE(target.Context, target.Target));
+            return target.ChangeTarget(SERVICES_WITH_SERVER_KEEP_BINARY(target.Context, target.Target));
         }
 
         internal static void ServicesCancel(IUnmanagedTarget target, string name)

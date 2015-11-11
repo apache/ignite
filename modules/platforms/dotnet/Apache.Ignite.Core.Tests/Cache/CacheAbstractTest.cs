@@ -24,13 +24,13 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Tests.Query;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
@@ -206,10 +206,10 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Portable add processor.
     /// </summary>
-    public class PortableAddArgCacheEntryProcessor : AddArgCacheEntryProcessor, IPortableMarshalAware
+    public class PortableAddArgCacheEntryProcessor : AddArgCacheEntryProcessor, IBinarizable
     {
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var w = writer.GetRawWriter();
 
@@ -222,7 +222,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritdoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             var r = reader.GetRawReader();
 
@@ -246,7 +246,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Portable exception.
     /// </summary>
-    public class PortableTestException : Exception, IPortableMarshalAware
+    public class PortableTestException : Exception, IBinarizable
     {
         /// <summary>
         /// Gets or sets exception info.
@@ -260,13 +260,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.GetRawWriter().WriteString(Info);
         }
 
         /** <inheritdoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             Info = reader.GetRawReader().ReadString();
         }
@@ -294,19 +294,19 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
-            PortableConfiguration portCfg = new PortableConfiguration();
+            BinaryConfiguration portCfg = new BinaryConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortablePerson)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(CacheTestKey)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(TestReferenceObject)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableAddArgCacheEntryProcessor)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableTestException)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortablePerson)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(CacheTestKey)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestReferenceObject)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableAddArgCacheEntryProcessor)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableTestException)));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
             cfg.JvmClasspath = TestUtils.CreateTestClasspath();
             cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = "config\\native-client-test-cache.xml";
@@ -342,7 +342,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TearDown]
         public virtual void AfterTest() {
             for (int i = 0; i < GridCount(); i++) 
-                Cache(i).RemoveAll();
+                Cache(i).WithKeepBinary<object, object>().RemoveAll();
 
             for (int i = 0; i < GridCount(); i++)
             {
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestCircularReference()
         {
-            var cache = Cache().WithKeepPortable<int, object>();
+            var cache = Cache().WithKeepBinary<int, object>();
 
             TestReferenceObject obj1 = new TestReferenceObject();
 
@@ -407,7 +407,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.Put(1, obj1);
 
-            var po = (IPortableObject) cache.Get(1);
+            var po = (IBinaryObject) cache.Get(1);
 
             Assert.IsNotNull(po);
 
@@ -1767,8 +1767,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         //[Category(TestUtils.CATEGORY_INTENSIVE)]
         public void TestAsyncMultithreadedKeepPortable()
         {
-            var cache = Cache().WithKeepPortable<CacheTestKey, PortablePerson>();
-            var portCache = Cache().WithKeepPortable<CacheTestKey, IPortableObject>();
+            var cache = Cache().WithKeepBinary<CacheTestKey, PortablePerson>();
+            var portCache = Cache().WithKeepBinary<CacheTestKey, IBinaryObject>();
 
             const int threads = 10;
             const int objPerThread = 1000;
@@ -1803,7 +1803,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    IPortableObject p = portCache.Get(new CacheTestKey(key));
+                    IBinaryObject p = portCache.Get(new CacheTestKey(key));
 
                     Assert.IsNotNull(p);
                     Assert.AreEqual(key, p.GetField<int>("age"));
@@ -1817,7 +1817,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 int threadIdx = Interlocked.Increment(ref cntr);
 
-                var futs = new List<Task<IPortableObject>>();
+                var futs = new List<Task<IBinaryObject>>();
 
                 for (int i = 0; i < objPerThread; i++)
                 {
@@ -2801,7 +2801,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.Put(1, obj);
 
-            var portableResult = cache.WithKeepPortable<int, IPortableObject>().Get(1);
+            var portableResult = cache.WithKeepBinary<int, IBinaryObject>().Get(1);
 
             var resultObj = portableResult.Deserialize<TestSerializableObject>();
 
@@ -2830,7 +2830,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 TestInvoke<NonSerializableCacheEntryProcessor>(async);
                 Assert.Fail();
             }
-            catch (PortableException)
+            catch (BinaryObjectException)
             {
                 // Expected
             }
@@ -2865,7 +2865,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertThrowsCacheEntryProcessorException(
                 () => cache.Invoke(key, new T {ThrowErrPortable = true}, arg));
             AssertThrowsCacheEntryProcessorException(
-                () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "PortableException");
+                () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "BinaryObjectException");
         }
 
         private static void AssertThrowsCacheEntryProcessorException(Action action, string containsText = null)
@@ -2911,7 +2911,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     TestInvokeAll<NonSerializableCacheEntryProcessor>(async, i);
                     Assert.Fail();
                 }
-                catch (PortableException)
+                catch (BinaryObjectException)
                 {
                     // Expected
                 }
@@ -2958,8 +2958,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             TestInvokeAllException(cache, entries, new T { ThrowErr = true, ThrowOnKey = errKey }, arg, errKey);
             TestInvokeAllException(cache, entries, new T { ThrowErrPortable = true, ThrowOnKey = errKey }, 
                 arg, errKey);
-            TestInvokeAllException(cache, entries, new T { ThrowErrNonSerializable = true, ThrowOnKey = errKey }, 
-                arg, errKey, "PortableException");
+            TestInvokeAllException(cache, entries, new T { ThrowErrNonSerializable = true, ThrowOnKey = errKey },
+                arg, errKey, "BinaryObjectException");
 
         }
 
@@ -3002,7 +3002,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreSame(cacheSkipStore1, cacheSkipStore2);
 
             // Ensure other flags are preserved.
-            Assert.IsTrue(((CacheImpl<int, int>) cache.WithKeepPortable<int, int>().WithSkipStore()).IsKeepPortable);
+            Assert.IsTrue(((CacheImpl<int, int>) cache.WithKeepBinary<int, int>().WithSkipStore()).IsKeepBinary);
         }
 
         [Test]
@@ -3092,9 +3092,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache0 = async ? Cache().WrapAsync() : Cache();
 
-            var cache = cache0.WithKeepPortable<int, PortablePerson>();
+            var cache = cache0.WithKeepBinary<int, PortablePerson>();
 
-            var portCache = cache0.WithKeepPortable<int, IPortableObject>();
+            var portCache = cache0.WithKeepBinary<int, IBinaryObject>();
 
             int cnt = 10;
 
@@ -3106,7 +3106,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 keys.Add(i);
             }
 
-            IList<IPortableObject> objs = new List<IPortableObject>();
+            IList<IBinaryObject> objs = new List<IBinaryObject>();
 
             for (int i = 0; i < cnt; i++)
             {
@@ -3120,7 +3120,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Check objects weren't corrupted by subsequent cache operations.
             for (int i = 0; i < cnt; i++)
             {
-                IPortableObject obj = objs[i];
+                IBinaryObject obj = objs[i];
 
                 CheckPersonData(obj, "person-" + i, i);
             }
@@ -3145,7 +3145,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(true, success1);
         }
 
-        private void CheckPersonData(IPortableObject obj, string expName, int expAge)
+        private void CheckPersonData(IBinaryObject obj, string expName, int expAge)
         {
             Assert.AreEqual(expName, obj.GetField<string>("name"));
             Assert.AreEqual(expAge, obj.GetField<int>("age"));

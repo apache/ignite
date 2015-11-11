@@ -19,18 +19,18 @@ namespace Apache.Ignite.Core.Impl.Messaging
 {
     using System;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Non-generic portable message listener wrapper.
+    /// Non-generic binary message listener wrapper.
     /// </summary>
-    internal class MessageListenerHolder : IPortableWriteAware, IHandle
+    internal class MessageListenerHolder : IBinaryWriteAware, IHandle
     {
         /** Invoker function that takes key and value and invokes wrapped IMessageListener */
         private readonly Func<Guid, object, bool> _invoker;
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// </summary>
         /// <param name="input">Input.</param>
         /// <returns></returns>
-        public int Invoke(IPortableStream input)
+        public int Invoke(IBinaryStream input)
         {
             var rawReader = _ignite.Marshaller.StartUnmarshal(input).GetRawReader();
 
@@ -150,9 +150,9 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriter)writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(Filter));
         }
@@ -161,9 +161,9 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// Initializes a new instance of the <see cref="MessageListenerHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public MessageListenerHolder(IPortableReader reader)
+        public MessageListenerHolder(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.GetRawReader();
+            var reader0 = (BinaryReader)reader.GetRawReader();
 
             _filter = reader0.ReadObject<object>();
 

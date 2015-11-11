@@ -22,10 +22,10 @@ namespace Apache.Ignite.Core.Tests.Dataload
     using System.Diagnostics;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Tests.Cache;
     using NUnit.Framework;
 
@@ -441,14 +441,14 @@ namespace Apache.Ignite.Core.Tests.Dataload
             var cache = _grid.GetCache<int, PortableEntry>(CacheName);
 
             using (var ldr0 = _grid.GetDataStreamer<int, int>(CacheName))
-            using (var ldr = ldr0.WithKeepPortable<int, IPortableObject>())
+            using (var ldr = ldr0.WithKeepBinary<int, IBinaryObject>())
             {
                 ldr.Receiver = new StreamReceiverKeepPortable();
 
                 ldr.AllowOverwrite = true;
 
                 for (var i = 0; i < 100; i++)
-                    ldr.AddData(i, _grid.GetPortables().ToPortable<IPortableObject>(new PortableEntry {Val = i}));
+                    ldr.AddData(i, _grid.GetBinary().ToBinary<IBinaryObject>(new PortableEntry {Val = i}));
 
                 ldr.Flush();
 
@@ -468,15 +468,15 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 GridName = gridName,
                 SpringConfigUrl = "config\\native-client-test-cache.xml",
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
-                    TypeConfigurations = new List<PortableTypeConfiguration>
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
                     {
-                        new PortableTypeConfiguration(typeof (CacheTestKey)),
-                        new PortableTypeConfiguration(typeof (TestReferenceObject)),
-                        new PortableTypeConfiguration(typeof (StreamReceiverPortable)),
-                        new PortableTypeConfiguration(typeof (EntryProcessorPortable)),
-                        new PortableTypeConfiguration(typeof (PortableEntry))
+                        new BinaryTypeConfiguration(typeof (CacheTestKey)),
+                        new BinaryTypeConfiguration(typeof (TestReferenceObject)),
+                        new BinaryTypeConfiguration(typeof (StreamReceiverPortable)),
+                        new BinaryTypeConfiguration(typeof (EntryProcessorPortable)),
+                        new BinaryTypeConfiguration(typeof (PortableEntry))
                     }
                 },
                 JvmOptions = TestUtils.TestJavaOptions().Concat(new[]
@@ -512,15 +512,15 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Test portable receiver.
         /// </summary>
         [Serializable]
-        private class StreamReceiverKeepPortable : IStreamReceiver<int, IPortableObject>
+        private class StreamReceiverKeepPortable : IStreamReceiver<int, IBinaryObject>
         {
             /** <inheritdoc /> */
-            public void Receive(ICache<int, IPortableObject> cache, ICollection<ICacheEntry<int, IPortableObject>> entries)
+            public void Receive(ICache<int, IBinaryObject> cache, ICollection<ICacheEntry<int, IBinaryObject>> entries)
             {
-                var portables = cache.Ignite.GetPortables();
+                var portables = cache.Ignite.GetBinary();
 
                 cache.PutAll(entries.ToDictionary(x => x.Key, x =>
-                    portables.ToPortable<IPortableObject>(new PortableEntry
+                    portables.ToBinary<IBinaryObject>(new PortableEntry
                     {
                         Val = x.Value.Deserialize<PortableEntry>().Val + 1
                     })));
@@ -558,7 +558,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Test entry processor.
         /// </summary>
-        private class EntryProcessorPortable : ICacheEntryProcessor<int, int, int, int>, IPortableMarshalAware
+        private class EntryProcessorPortable : ICacheEntryProcessor<int, int, int, int>, IBinarizable
         {
             /** <inheritdoc /> */
             public int Process(IMutableCacheEntry<int, int> entry, int arg)
@@ -569,13 +569,13 @@ namespace Apache.Ignite.Core.Tests.Dataload
             }
 
             /** <inheritdoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 // No-op.
             }
 
             /** <inheritdoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 // No-op.
             }

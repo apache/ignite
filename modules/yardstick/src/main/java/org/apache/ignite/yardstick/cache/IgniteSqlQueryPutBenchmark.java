@@ -30,7 +30,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 /**
  * Ignite benchmark that performs put and query operations.
  */
-public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
+public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
     private LongAdder8 resCnt = new LongAdder8();
 

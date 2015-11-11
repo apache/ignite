@@ -1128,6 +1128,39 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testReconnectDestroyCache() throws Exception {
+        clientMode = true;
+
+        Ignite client = startGrid(SRV_CNT);
+
+        CacheConfiguration<Integer, Integer> ccfg1 = new CacheConfiguration<>();
+        ccfg1.setName("cache1");
+
+        CacheConfiguration<Integer, Integer> ccfg2 = new CacheConfiguration<>();
+        ccfg2.setName("cache2");
+
+        final Ignite srv = grid(0);
+
+        srv.createCache(ccfg1);
+        srv.createCache(ccfg2).put(1, 1);
+
+        IgniteCache<Integer, Integer> cache = client.cache("cache2");
+
+        reconnectClientNode(client, srv, new Runnable() {
+            @Override public void run() {
+                srv.destroyCache("cache1");
+            }
+        });
+
+        cache.put(2, 2);
+
+        assertEquals(1, (Object)cache.get(1));
+        assertEquals(2, (Object)cache.get(2));
+    }
+
+    /**
      * @param client Client.
      * @param disconnectLatch Disconnect event latch.
      * @param reconnectLatch Reconnect event latch.

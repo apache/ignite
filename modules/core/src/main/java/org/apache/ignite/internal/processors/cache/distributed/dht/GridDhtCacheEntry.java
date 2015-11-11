@@ -263,8 +263,9 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     @Override public boolean tmLock(IgniteInternalTx tx,
         long timeout,
         @Nullable GridCacheVersion serOrder,
-        GridCacheVersion serReadVer)
-        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
+        GridCacheVersion serReadVer,
+        boolean keepBinary
+    ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local()) {
             GridDhtTxLocalAdapter dhtTx = (GridDhtTxLocalAdapter)tx;
 

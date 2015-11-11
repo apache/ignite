@@ -22,10 +22,10 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Services;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
 
@@ -38,17 +38,17 @@ namespace Apache.Ignite.Core.Tests.Services
         private TestIgniteService _svc;
 
         /** */
-        private readonly PortableMarshaller _marsh = new PortableMarshaller(new PortableConfiguration
+        private readonly Marshaller _marsh = new Marshaller(new BinaryConfiguration
         {
             TypeConfigurations = new[]
             {
-                new PortableTypeConfiguration(typeof (TestPortableClass)),
-                new PortableTypeConfiguration(typeof (CustomExceptionPortable))
+                new BinaryTypeConfiguration(typeof (TestPortableClass)),
+                new BinaryTypeConfiguration(typeof (CustomExceptionPortable))
             }
         });
 
         /** */
-        protected readonly IPortables Portables;
+        protected readonly IIgniteBinary IgniteBinary;
 
         /** */
         private readonly PlatformMemoryManager _memory = new PlatformMemoryManager(1024);
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         public ServiceProxyTest()
         {
-            Portables = new PortablesImpl(_marsh);
+            IgniteBinary = new IgniteBinary(_marsh);
         }
 
         /// <summary>
@@ -204,10 +204,10 @@ namespace Apache.Ignite.Core.Tests.Services
 
             if (KeepPortable)
             {
-                Assert.AreEqual("Proxy method invocation failed with a portable error. " +
-                                "Examine PortableCause for details.", ex.Message);
+                Assert.AreEqual("Proxy method invocation failed with a binary error. " +
+                                "Examine BinaryCause for details.", ex.Message);
 
-                Assert.IsNotNull(ex.PortableCause);
+                Assert.IsNotNull(ex.BinaryCause);
                 Assert.IsNull(ex.InnerException);
             }
             else
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual("Proxy method invocation failed with an exception. " +
                                 "Examine InnerException for details.", ex.Message);
 
-                Assert.IsNull(ex.PortableCause);
+                Assert.IsNull(ex.BinaryCause);
                 Assert.IsNotNull(ex.InnerException);
             }
 
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         protected T GetProxy<T>()
         {
-            _svc = new TestIgniteService(Portables);
+            _svc = new TestIgniteService(IgniteBinary);
 
             var prx = new ServiceProxy<T>(InvokeProxyMethod).GetTransparentProxy();
 
@@ -357,13 +357,13 @@ namespace Apache.Ignite.Core.Tests.Services
             void CustomExceptionPortableMethod(bool throwOnWrite, bool throwOnRead);
 
             /** */
-            TestPortableClass PortableArgMethod(int arg1, IPortableObject arg2);
+            TestPortableClass PortableArgMethod(int arg1, IBinaryObject arg2);
 
             /** */
-            IPortableObject PortableResultMethod(int arg1, TestPortableClass arg2);
+            IBinaryObject PortableResultMethod(int arg1, TestPortableClass arg2);
 
             /** */
-            IPortableObject PortableArgAndResultMethod(int arg1, IPortableObject arg2);
+            IBinaryObject PortableArgAndResultMethod(int arg1, IBinaryObject arg2);
 
             /** */
             int AmbiguousMethod(int arg);
@@ -417,13 +417,13 @@ namespace Apache.Ignite.Core.Tests.Services
             void CustomExceptionPortableMethod(bool throwOnWrite, bool throwOnRead);
 
             /** */
-            TestPortableClass PortableArgMethod(int arg1, IPortableObject arg2);
+            TestPortableClass PortableArgMethod(int arg1, IBinaryObject arg2);
 
             /** */
-            IPortableObject PortableResultMethod(int arg1, TestPortableClass arg2);
+            IBinaryObject PortableResultMethod(int arg1, TestPortableClass arg2);
 
             /** */
-            IPortableObject PortableArgAndResultMethod(int arg1, IPortableObject arg2);
+            IBinaryObject PortableArgAndResultMethod(int arg1, IBinaryObject arg2);
 
             /** */
             void MissingMethod();
@@ -439,15 +439,15 @@ namespace Apache.Ignite.Core.Tests.Services
         private class TestIgniteService : ITestIgniteService, ITestIgniteServiceAmbiguity
         {
             /** */
-            private readonly IPortables _portables;
+            private readonly IIgniteBinary _igniteBinary;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="TestIgniteService"/> class.
             /// </summary>
-            /// <param name="portables">The portables.</param>
-            public TestIgniteService(IPortables portables)
+            /// <param name="igniteBinary">The portables.</param>
+            public TestIgniteService(IIgniteBinary igniteBinary)
             {
-                _portables = portables;
+                _igniteBinary = igniteBinary;
             }
 
             /** <inheritdoc /> */
@@ -526,21 +526,21 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** <inheritdoc /> */
-            public TestPortableClass PortableArgMethod(int arg1, IPortableObject arg2)
+            public TestPortableClass PortableArgMethod(int arg1, IBinaryObject arg2)
             {
                 return arg2.Deserialize<TestPortableClass>();
             }
 
             /** <inheritdoc /> */
-            public IPortableObject PortableResultMethod(int arg1, TestPortableClass arg2)
+            public IBinaryObject PortableResultMethod(int arg1, TestPortableClass arg2)
             {
-                return _portables.ToPortable<IPortableObject>(arg2);
+                return _igniteBinary.ToBinary<IBinaryObject>(arg2);
             }
 
             /** <inheritdoc /> */
-            public IPortableObject PortableArgAndResultMethod(int arg1, IPortableObject arg2)
+            public IBinaryObject PortableArgAndResultMethod(int arg1, IBinaryObject arg2)
             {
-                return _portables.ToPortable<IPortableObject>(arg2.Deserialize<TestPortableClass>());
+                return _igniteBinary.ToBinary<IBinaryObject>(arg2.Deserialize<TestPortableClass>());
             }
 
             /** <inheritdoc /> */
@@ -595,7 +595,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Custom non-serializable exception.
         /// </summary>
-        private class CustomExceptionPortable : Exception, IPortableMarshalAware
+        private class CustomExceptionPortable : Exception, IBinarizable
         {
             /** */
             public bool ThrowOnWrite { get; set; }
@@ -604,7 +604,7 @@ namespace Apache.Ignite.Core.Tests.Services
             public bool ThrowOnRead { get; set; }
 
             /** <inheritdoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteBoolean("ThrowOnRead", ThrowOnRead);
 
@@ -613,7 +613,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** <inheritdoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 ThrowOnRead = reader.ReadBoolean("ThrowOnRead");
 
@@ -625,7 +625,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Portable object for method argument/result.
         /// </summary>
-        protected class TestPortableClass : IPortableMarshalAware
+        protected class TestPortableClass : IBinarizable
         {
             /** */
             public string Prop { get; set; }
@@ -637,7 +637,7 @@ namespace Apache.Ignite.Core.Tests.Services
             public bool ThrowOnRead { get; set; }
 
             /** <inheritdoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteString("Prop", Prop);
                 writer.WriteBoolean("ThrowOnRead", ThrowOnRead);
@@ -647,7 +647,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** <inheritdoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 Prop = reader.ReadString("Prop");
                 ThrowOnRead = reader.ReadBoolean("ThrowOnRead");
@@ -703,7 +703,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
 
             var obj = new TestPortableClass { Prop = "PropValue" };
-            var portObj = Portables.ToPortable<IPortableObject>(obj);
+            var portObj = IgniteBinary.ToBinary<IBinaryObject>(obj);
 
             var result = prx.PortableArgMethod(1, portObj);
 
@@ -731,7 +731,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
             
             var obj = new TestPortableClass { Prop = "PropValue" };
-            var portObj = Portables.ToPortable<IPortableObject>(obj);
+            var portObj = IgniteBinary.ToBinary<IBinaryObject>(obj);
 
             var result = prx.PortableArgAndResultMethod(1, portObj);
 

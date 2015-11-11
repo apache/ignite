@@ -320,8 +320,8 @@
                                 <packages>org.apache.ignite.marshaller*</packages>
                             </group>
                             <group>
-                                <title>Portable Objects API</title>
-                                <packages>org.apache.ignite.portable*</packages>
+                                <title>Ignite Binary Objects API</title>
+                                <packages>org.apache.ignite.binary*</packages>
                             </group>
                             <group>
                                 <title>Visor Plugins</title>
@@ -749,7 +749,8 @@
                                         <exclude>**/configure.ac</exclude>
                                         <exclude>**/*.pc.in</exclude>
                                         <exclude>**/*.sln</exclude>
-                                        <exclude>**/*.slnrel</exclude>                                        
+                                        <exclude>**/*.snk</exclude>
+                                        <exclude>**/*.slnrel</exclude>
                                         <exclude>**/*.sln.DotSettings</exclude>
                                         <exclude>**/*.FxCop</exclude>
                                         <exclude>**/*.csproj</exclude>

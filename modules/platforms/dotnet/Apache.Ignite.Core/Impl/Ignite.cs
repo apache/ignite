@@ -23,24 +23,24 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
@@ -60,13 +60,13 @@ namespace Apache.Ignite.Core.Impl
         private readonly IUnmanagedTarget _proc;
 
         /** Marshaller. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
 
         /** Initial projection. */
         private readonly ClusterGroupImpl _prj;
 
-        /** Portables. */
-        private readonly PortablesImpl _portables;
+        /** Binary. */
+        private readonly IgniteBinary _igniteBinary;
 
         /** Cached proxy. */
         private readonly IgniteProxy _proxy;
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="marsh">Marshaller.</param>
         /// <param name="lifecycleBeans">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
-        public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, PortableMarshaller marsh,
+        public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh,
             IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs)
         {
             Debug.Assert(cfg != null);
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Impl
 
             _prj = new ClusterGroupImpl(proc, UU.ProcessorProjection(proc), marsh, this, null);
 
-            _portables = new PortablesImpl(marsh);
+            _igniteBinary = new IgniteBinary(marsh);
 
             _proxy = new IgniteProxy(this);
 
@@ -347,13 +347,13 @@ namespace Apache.Ignite.Core.Impl
         /// Gets cache from specified native cache object.
         /// </summary>
         /// <param name="nativeCache">Native cache.</param>
-        /// <param name="keepPortable">Portable flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>
         /// New instance of cache wrapping specified native cache.
         /// </returns>
-        public ICache<TK, TV> Cache<TK, TV>(IUnmanagedTarget nativeCache, bool keepPortable = false)
+        public ICache<TK, TV> Cache<TK, TV>(IUnmanagedTarget nativeCache, bool keepBinary = false)
         {
-            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepPortable, false, false);
+            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false, false);
         }
 
         /** <inheritdoc /> */
@@ -394,9 +394,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IPortables GetPortables()
+        public IIgniteBinary GetBinary()
         {
-            return _portables;
+            return _igniteBinary;
         }
 
         /** <inheritdoc /> */
@@ -505,7 +505,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Marshaller.
         /// </summary>
-        internal PortableMarshaller Marshaller
+        internal Marshaller Marshaller
         {
             get { return _marsh; }
         }
@@ -522,15 +522,15 @@ namespace Apache.Ignite.Core.Impl
         /// Put metadata to Grid.
         /// </summary>
         /// <param name="metas">Metadata.</param>
-        internal void PutMetadata(IDictionary<int, IPortableMetadata> metas)
+        internal void PutBinaryTypes(IDictionary<int, IBinaryType> metas)
         {
-            _prj.PutMetadata(metas);
+            _prj.PutBinaryTypes(metas);
         }
 
         /** <inheritDoc /> */
-        public IPortableMetadata GetMetadata(int typeId)
+        public IBinaryType GetBinaryType(int typeId)
         {
-            return _prj.GetMetadata(typeId);
+            return _prj.GetBinaryType(typeId);
         }
 
         /// <summary>
@@ -549,7 +549,7 @@ namespace Apache.Ignite.Core.Impl
         {
             var stream = IgniteManager.Memory.Get(memPtr).GetStream();
 
-            IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+            IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
             var node = new ClusterNodeImpl(reader);
 

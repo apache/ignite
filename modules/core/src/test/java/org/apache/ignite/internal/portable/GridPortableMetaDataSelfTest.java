@@ -22,17 +22,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableMetadata;
-import org.apache.ignite.portable.PortableObject;
-import org.apache.ignite.portable.PortableRawWriter;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableWriter;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -74,21 +74,21 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
     /**
      * @return Portables API.
      */
-    protected IgnitePortables portables() {
-        return grid().portables();
+    protected IgniteBinary portables() {
+        return grid().binary();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetAll() throws Exception {
-        portables().toPortable(new TestObject2());
+        portables().toBinary(new TestObject2());
 
-        Collection<PortableMetadata> metas = portables().metadata();
+        Collection<BinaryType> metas = portables().metadata();
 
         assertEquals(2, metas.size());
 
-        for (PortableMetadata meta : metas) {
+        for (BinaryType meta : metas) {
             Collection<String> fields;
 
             switch (meta.typeName()) {
@@ -150,7 +150,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
     public void testNoConfiguration() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1377");
 
-        portables().toPortable(new TestObject3());
+        portables().toBinary(new TestObject3());
 
         assertNotNull(portables().metadata(TestObject3.class));
     }
@@ -159,7 +159,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReflection() throws Exception {
-        PortableMetadata meta = portables().metadata(TestObject1.class);
+        BinaryType meta = portables().metadata(TestObject1.class);
 
         assertNotNull(meta);
 
@@ -190,9 +190,9 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableMarshalAware() throws Exception {
-        portables().toPortable(new TestObject2());
+        portables().toBinary(new TestObject2());
 
-        PortableMetadata meta = portables().metadata(TestObject2.class);
+        BinaryType meta = portables().metadata(TestObject2.class);
 
         assertNotNull(meta);
 
@@ -223,13 +223,13 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMerge() throws Exception {
-        portables().toPortable(new TestObject2());
+        portables().toBinary(new TestObject2());
 
         idx = 1;
 
-        portables().toPortable(new TestObject2());
+        portables().toBinary(new TestObject2());
 
-        PortableMetadata meta = portables().metadata(TestObject2.class);
+        BinaryType meta = portables().metadata(TestObject2.class);
 
         assertNotNull(meta);
 
@@ -274,11 +274,11 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
         obj.decVal = BigDecimal.ZERO;
         obj.decArrVal = new BigDecimal[] { BigDecimal.ONE };
 
-        PortableObject po = portables().toPortable(obj);
+        BinaryObject po = portables().toBinary(obj);
 
         info(po.toString());
 
-        PortableMetadata meta = po.metaData();
+        BinaryType meta = po.type();
 
         assertNotNull(meta);
 
@@ -333,9 +333,9 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class TestObject2 implements PortableMarshalAware {
+    private static class TestObject2 implements Binarylizable {
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeBoolean("boolVal", false);
             writer.writeDate("dateVal", new Date());
             writer.writeUuidArray("uuidArrVal", null);
@@ -349,14 +349,14 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
                 writer.writeCollection("colVal", null);
             }
 
-            PortableRawWriter raw = writer.rawWriter();
+            BinaryRawWriter raw = writer.rawWriter();
 
             raw.writeChar((char)0);
             raw.writeCollection(null);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             // No-op.
         }
     }
