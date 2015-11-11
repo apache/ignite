@@ -34,7 +34,7 @@ consoleModule.controller('sqlController',
 
     $scope.timeLineSpans = ['1', '5', '10', '15', '30'];
 
-    $scope.aggregateFxs = ['FIRST', 'LAST', 'MIN', 'MAX', 'AVG', 'SUM', 'COUNT'];
+    $scope.aggregateFxs = ['FIRST', 'LAST', 'MIN', 'MAX', 'SUM', 'AVG', 'COUNT'];
 
     $scope.modes = $common.mkOptions(['PARTITIONED', 'REPLICATED', 'LOCAL']);
 
@@ -913,6 +913,71 @@ consoleModule.controller('sqlController',
         return dflt;
     }
 
+    function _min(rows, idx, dflt) {
+        var min = _chartNumber(rows[0], idx, dflt);
+
+        _.forEach(rows, function (row) {
+            var v = _chartNumber(row, idx, dflt);
+
+            if (v < min)
+                min = v;
+        });
+
+        return min;
+    }
+
+    function _max(rows, idx, dflt) {
+        var max = _chartNumber(rows[0], idx, dflt);
+
+        _.forEach(rows, function (row) {
+            var v = _chartNumber(row, idx, dflt);
+
+            if (v > max)
+                max = v;
+        });
+
+        return max;
+    }
+
+    function _sum(rows, idx) {
+        var sum = 0;
+
+        _.forEach(rows, function (row) {
+            sum += _chartNumber(row, idx, 0);
+        });
+
+        return sum;
+    }
+
+    function _aggregate(rows, aggFx, idx, dflt) {
+        var len = rows.length;
+
+        switch (aggFx) {
+            case  'FIRST':
+                return _chartNumber(rows[0], idx, dflt);
+
+            case 'LAST':
+                return _chartNumber(rows[len - 1], idx, dflt);
+
+            case 'MIN':
+                return _min(rows, idx, dflt);
+
+            case 'MAX':
+                return _max(rows, idx, dflt);
+
+            case 'SUM':
+                return _sum(rows, idx);
+
+            case 'AVG':
+                return len > 0 ? _sum(idx) / len : 0;
+
+            case 'COUNT':
+                return len;
+        }
+
+        return 0;
+    }
+
     function _chartDatum(paragraph) {
         var datum = [];
 
@@ -920,8 +985,11 @@ consoleModule.controller('sqlController',
             paragraph.chartValCols.forEach(function (valCol) {
                 var index = 0;
                 var values = [];
+                var colIdx = valCol.value;
 
                 if (paragraph.chartTimeLineEnabled()) {
+                    var aggFx = valCol.aggFx;
+
                     if (paragraph.charts && paragraph.charts.length == 1)
                         datum = paragraph.charts[0].data;
 
@@ -937,7 +1005,7 @@ consoleModule.controller('sqlController',
 
                         values.push({
                             x: lastItem.tm,
-                            y: _chartNumber(lastItem.rows[0], valCol.value, index++)
+                            y: _aggregate(lastItem.rows[0], aggFx, colIdx, index++)
                         });
 
                         while (values.length > 0 && values[0].x < leftBound)
@@ -948,7 +1016,7 @@ consoleModule.controller('sqlController',
                             if (history.tm >= leftBound)
                                 values.push({
                                     x: history.tm,
-                                    y: _chartNumber(history.rows[0], valCol.value, index++)
+                                    y: _aggregate(history.rows, aggFx, colIdx, index++)
                                 });
                         });
 
@@ -964,7 +1032,7 @@ consoleModule.controller('sqlController',
                         var v = {
                             x: _chartNumber(row, xCol, index),
                             xLbl: _chartLabel(row, xCol, undefined),
-                            y: _chartNumber(row, valCol.value, index)
+                            y: _chartNumber(row, colIdx, index)
                         };
 
                         index++;
@@ -1043,7 +1111,7 @@ consoleModule.controller('sqlController',
         }
     }
 
-    $scope.applyChartTimeFrame = function (paragraph) {
+    $scope.applyChartSettings = function (paragraph) {
         _chartApplySettings(paragraph, true);
     };
 
