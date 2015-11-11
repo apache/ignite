@@ -59,9 +59,6 @@ public class GridDistributedTxMapping implements Externalizable {
     /** DHT version. */
     private GridCacheVersion dhtVer;
 
-    /** Copy on remove flag. */
-    private boolean readOnly;
-
     /** {@code True} if this is last mapping for node. */
     private boolean last;
 
@@ -161,17 +158,6 @@ public class GridDistributedTxMapping implements Externalizable {
     }
 
     /**
-     * @param entries Mapped entries.
-     * @param readOnly Flag indicating that passed in collection is read-only.
-     */
-    public void entries(Collection<IgniteTxEntry> entries, boolean readOnly) {
-        this.entries = entries;
-
-        // Set copy on remove flag as passed in collection is unmodifiable.
-        this.readOnly = true;
-    }
-
-    /**
      * @return {@code True} if lock is explicit.
      */
     public boolean explicitLock() {
@@ -221,8 +207,6 @@ public class GridDistributedTxMapping implements Externalizable {
      * @param entry Adds entry.
      */
     public void add(IgniteTxEntry entry) {
-        ensureModifiable();
-
         entries.add(entry);
     }
 
@@ -231,8 +215,6 @@ public class GridDistributedTxMapping implements Externalizable {
      * @return {@code True} if entry was removed.
      */
     public boolean removeEntry(IgniteTxEntry entry) {
-        ensureModifiable();
-
         return entries.remove(entry);
     }
 
@@ -240,11 +222,8 @@ public class GridDistributedTxMapping implements Externalizable {
      * @param parts Evicts partitions from mapping.
      */
     public void evictPartitions(@Nullable int[] parts) {
-        if (!F.isEmpty(parts)) {
-            ensureModifiable();
-
+        if (!F.isEmpty(parts))
             evictPartitions(parts, entries);
-        }
     }
 
     /**
@@ -271,8 +250,6 @@ public class GridDistributedTxMapping implements Externalizable {
         if (keys == null || keys.isEmpty())
             return;
 
-        ensureModifiable();
-
         evictReaders(keys, entries);
     }
 
@@ -289,17 +266,6 @@ public class GridDistributedTxMapping implements Externalizable {
 
             if (keys.contains(entry.txKey()))
                 it.remove();
-        }
-    }
-
-    /**
-     * Copies collection of entries if it is read-only.
-     */
-    private void ensureModifiable() {
-        if (readOnly) {
-            entries = new LinkedHashSet<>(entries);
-
-            readOnly = false;
         }
     }
 
