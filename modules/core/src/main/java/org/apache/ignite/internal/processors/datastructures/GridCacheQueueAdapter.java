@@ -58,9 +58,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected static final long QUEUE_REMOVED_IDX = Long.MIN_VALUE;
 
     /** */
-    protected static final int MAX_UPDATE_RETRIES = 100;
-
-    /** */
     protected static final long RETRY_DELAY = 1;
 
     /** */

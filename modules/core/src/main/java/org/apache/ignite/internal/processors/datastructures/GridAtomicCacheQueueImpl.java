@@ -24,6 +24,7 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -67,7 +68,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                     break;
                 }
                 catch (CachePartialUpdateCheckedException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
+                    if (cnt++ == GridCacheAdapter.MAX_RETRIES)
                         throw e;
                     else {
                         U.warn(log, "Failed to put queue item, will retry [err=" + e + ", idx=" + idx + ']');
@@ -122,7 +123,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                         break;
                     }
                     catch (CachePartialUpdateCheckedException e) {
-                        if (cnt++ == MAX_UPDATE_RETRIES)
+                        if (cnt++ == GridCacheAdapter.MAX_RETRIES)
                             throw e;
                         else {
                             U.warn(log, "Failed to remove queue item, will retry [err=" + e + ']');
@@ -170,7 +171,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                     break;
                 }
                 catch (CachePartialUpdateCheckedException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
+                    if (cnt++ == GridCacheAdapter.MAX_RETRIES)
                         throw e;
                     else {
                         U.warn(log, "Failed to add items, will retry [err=" + e + ']');
@@ -217,7 +218,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                     break;
                 }
                 catch (CachePartialUpdateCheckedException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
+                    if (cnt++ == GridCacheAdapter.MAX_RETRIES)
                         throw e;
                     else {
                         U.warn(log, "Failed to add items, will retry [err=" + e + ']');
@@ -246,7 +247,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                 return (Long)cache.invoke(queueKey, c).get();
             }
             catch (CachePartialUpdateCheckedException e) {
-                if (cnt++ == MAX_UPDATE_RETRIES)
+                if (cnt++ == GridCacheAdapter.MAX_RETRIES)
                     throw e;
                 else {
                     U.warn(log, "Failed to update queue header, will retry [err=" + e + ']');

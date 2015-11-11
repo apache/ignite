@@ -61,6 +61,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -93,6 +94,7 @@ import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -1780,16 +1782,23 @@ public class GridCacheUtils {
     public static <S> Callable<S> retryTopologySafe(final Callable<S> c ) {
         return new Callable<S>() {
             @Override public S call() throws Exception {
-                int retries = GridCacheAdapter.MAX_RETRIES;
-
                 IgniteCheckedException err = null;
 
-                for (int i = 0; i < retries; i++) {
+                for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
                     try {
                         return c.call();
                     }
+                    catch (ClusterGroupEmptyCheckedException e) {
+                        throw e;
+                    }
+                    catch (TransactionRollbackException e) {
+                        if (i == GridCacheAdapter.MAX_RETRIES)
+                            throw e;
+
+                        U.sleep(1);
+                    }
                     catch (IgniteCheckedException e) {
-                        if (i == retries)
+                        if (i == GridCacheAdapter.MAX_RETRIES)
                             throw e;
 
                         if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
@@ -1797,7 +1806,8 @@ public class GridCacheUtils {
 
                             topErr.retryReadyFuture().get();
                         }
-                        else if (X.hasCause(e, IgniteTxRollbackCheckedException.class))
+                        else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
+                            CachePartialUpdateCheckedException.class))
                             U.sleep(1);
                         else
                             throw e;
