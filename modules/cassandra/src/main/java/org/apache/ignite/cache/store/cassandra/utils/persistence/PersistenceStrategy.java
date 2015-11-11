@@ -40,7 +40,7 @@ public enum PersistenceStrategy {
      * 1) org.apache.ignite.cache.store.cassandra.utils.serializer.JavaSerializer - uses standard Java serialization
      * framework
      *
-     * 2) org.apache.ignite.cache.store.cassandra.utils.serializer.TachyonSerializer - uses Tachyon serialization
+     * 2) org.apache.ignite.cache.store.cassandra.utils.serializer.KryoSerializer - uses Kryo serialization
      * framework
      */
     BLOB,
