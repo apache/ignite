@@ -596,7 +596,7 @@ consoleModule.controller('cachesController', [
             $scope.resetAll = function() {
                 $table.tableReset();
 
-                $confirm.confirm('Are you sure you want to reset current cache?')
+                $confirm.confirm('Are you sure you want to undo all changes for current cache?')
                     .then(function() {
                         $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
                     });
