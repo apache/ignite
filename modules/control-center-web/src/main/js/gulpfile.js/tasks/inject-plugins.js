@@ -1,5 +1,5 @@
-var gulp    = require('gulp');
-var inject  = require('gulp-inject');
+var gulp = require('gulp');
+var inject = require('gulp-inject');
 
 var common_options = {
     read: false

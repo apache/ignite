@@ -1,5 +1,5 @@
-var gulp     = require('gulp');
-var jade     = require('gulp-jade');
+var gulp = require('gulp');
+var jade = require('gulp-jade');
 var sequence = require('gulp-sequence');
 
 var paths = [
