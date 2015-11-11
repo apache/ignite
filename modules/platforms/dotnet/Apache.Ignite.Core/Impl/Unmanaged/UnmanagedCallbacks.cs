@@ -935,9 +935,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     {
                         var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                        bool rvKeepBinary = reader.ReadBoolean();
+                        bool srvKeepBinary = reader.ReadBoolean();
 
-                        svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, rvKeepBinary)));
+                        svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
                     }
                 }
                 finally
