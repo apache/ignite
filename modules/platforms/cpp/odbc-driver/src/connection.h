@@ -20,6 +20,8 @@
 
 #include <stdint.h>
 
+#include <vector>
+
 #include "socket_client.h"
 #include "statement.h"
 
@@ -67,6 +69,14 @@ namespace ignite
              * @return True on success.
              */
             bool Send(const uint8_t* data, size_t len);
+
+            /**
+             * Receive next message.
+             *
+             * @param msg Buffer for message.
+             * @return True on success.
+             */
+            bool Receive(std::vector<uint8_t>& msg);
 
         private:
             /**

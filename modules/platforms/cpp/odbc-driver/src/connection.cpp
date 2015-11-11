@@ -89,6 +89,42 @@ namespace ignite
 
             return socket.Send(data, len) == len;
         }
+
+        bool Connection::Receive(std::vector<uint8_t>& msg)
+        {
+            if (!connected)
+                return false;
+
+            msg.clear();
+
+            OdbcProtocolHeader hdr;
+
+            bool success = socket.Receive(reinterpret_cast<uint8_t*>(&hdr), sizeof(hdr)) == sizeof(hdr);
+
+            if (!success)
+                return false;
+
+            size_t remain = hdr.len;
+            size_t receivedAtAll = 0;
+
+            msg.resize(remain);
+
+            while (remain)
+            {
+                int received = socket.Receive(&msg[receivedAtAll], remain);
+                
+                if (received <= 0)
+                {
+                    msg.resize(receivedAtAll);
+
+                    return false;
+                }
+
+                remain -= static_cast<size_t>(received);
+            }
+
+            return true;
+        }
     }
 }
 

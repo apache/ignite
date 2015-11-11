@@ -118,6 +118,12 @@ namespace ignite
             {
                 return send(socketHandle, reinterpret_cast<const char*>(data), static_cast<int>(size), 0);
             }
+
+
+            int SocketClient::Receive(uint8_t* buffer, size_t size)
+            {
+                return recv(socketHandle, reinterpret_cast<char*>(buffer), static_cast<int>(size), 0);
+            }
         }
     }
 }

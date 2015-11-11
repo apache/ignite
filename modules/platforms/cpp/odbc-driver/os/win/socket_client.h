@@ -91,7 +91,17 @@ namespace ignite
                  * @return Number of bytes that have been sent on success and negative
                  *         value on failure.
                  */
-                int Send(const uint8_t *data, size_t size);
+                int Send(const uint8_t* data, size_t size);
+
+                /**
+                 * Receive data from established connection.
+                 *
+                 * @param data Pointer to data buffer.
+                 * @param size Size of the buffer in bytes.
+                 * @return Number of bytes that have been received on success and negative
+                 *         value on failure.
+                 */
+                int Receive(uint8_t* buffer, size_t size);
 
             private:
                 SOCKET socketHandle;
