@@ -45,10 +45,11 @@ consoleModule.controller('summaryController', [
     $scope.pojoClasses = function() {
         var classes = [];
 
-        _.forEach($scope.selectedItem.metadatas, function(meta) {
-            classes.push(meta.keyType);
-            classes.push(meta.valueType);
-        });
+        if ($scope.selectedItem)
+            _.forEach($scope.selectedItem.metadatas, function(meta) {
+                classes.push(meta.keyType);
+                classes.push(meta.valueType);
+            });
 
         return classes;
     };
@@ -96,13 +97,14 @@ consoleModule.controller('summaryController', [
     };
 
     function selectPojoClass(config) {
-        _.forEach($scope.selectedItem.metadatas, function(meta) {
-            if (meta.keyType == config.pojoClass)
-                return config.pojoClassBody = meta.keyClass;
+        if ($scope.selectedItem)
+            _.forEach($scope.selectedItem.metadatas, function(meta) {
+                if (meta.keyType == config.pojoClass)
+                    return config.pojoClassBody = meta.keyClass;
 
-            if (meta.valueType == config.pojoClass)
-                return config.pojoClassBody = meta.valueClass;
-        });
+                if (meta.valueType == config.pojoClass)
+                    return config.pojoClassBody = meta.valueClass;
+            });
     }
 
     function pojoClsListener(config) {
@@ -189,7 +191,7 @@ consoleModule.controller('summaryController', [
     };
 
     $scope.pojoAvailable = function() {
-        return $common.isDefined($scope.selectedItem.metadatas) && $scope.selectedItem.metadatas.length > 0;
+        return $scope.selectedItem && $common.isDefined($scope.selectedItem.metadatas) && $scope.selectedItem.metadatas.length > 0;
     };
 
     $scope.downloadConfiguration = function () {
