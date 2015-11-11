@@ -43,8 +43,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var ptr = NativeMethods.LoadLibrary(path);
 
             if (ptr == IntPtr.Zero)
-                throw new IgniteException("Failed to load " + IgniteUtils.FileIgniteJniDll + ": " + Marshal.GetLastWin32Error());
-
+                throw new IgniteException(string.Format("Failed to load {0}: {1}", 
+                    IgniteUtils.FileIgniteJniDll, Marshal.GetLastWin32Error()));
         }
 
         /// <summary>
