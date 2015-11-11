@@ -17,8 +17,8 @@
 
 namespace Apache.Ignite.Core.Cache.Query
 {
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
     /// Base class for all Ignite cache entry queries.
@@ -53,8 +53,8 @@ namespace Apache.Ignite.Core.Cache.Query
         /// Writes this instance to a stream created with a specified delegate.
         /// </summary>
         /// <param name="writer">Writer.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
-        internal abstract void Write(PortableWriterImpl writer, bool keepPortable);
+        /// <param name="keepBinary">Keep binary flag.</param>
+        internal abstract void Write(BinaryWriter writer, bool keepBinary);
 
         /// <summary>
         /// Gets the interop opcode.
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="args">Arguments.</param>
-        internal static void WriteQueryArgs(PortableWriterImpl writer, object[] args)
+        internal static void WriteQueryArgs(BinaryWriter writer, object[] args)
         {
             if (args == null)
                 writer.WriteInt(0);

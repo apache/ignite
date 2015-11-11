@@ -19,11 +19,11 @@ namespace Apache.Ignite.Core.Impl.Compute
 {
     using System;
     using System.Reflection;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
 
     /// <summary>
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     /// <summary>
     /// Wraps generic func into a non-generic for internal usage.
     /// </summary>
-    internal class ComputeJobWrapper : IComputeJob, IPortableWriteAware
+    internal class ComputeJobWrapper : IComputeJob, IBinaryWriteAware
     {
         /** */
         private readonly Func<object, object> _execute;
@@ -52,9 +52,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Initializes a new instance of the <see cref="ComputeJobWrapper"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ComputeJobWrapper(IPortableReader reader)
+        public ComputeJobWrapper(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.GetRawReader();
+            var reader0 = (BinaryReader)reader.GetRawReader();
 
             _job = reader0.ReadObject<object>();
 
@@ -100,9 +100,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriter)writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(Job));
         }

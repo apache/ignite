@@ -18,9 +18,9 @@
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -61,24 +61,24 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(400, resObj.Val);
         }
 
-        private static IPortableObject ToPortable(IIgnite grid, object obj)
+        private static IBinaryObject ToPortable(IIgnite grid, object obj)
         {
-            var cache = grid.GetCache<object, object>(Cache1Name).WithKeepPortable<object, object>();
+            var cache = grid.GetCache<object, object>(Cache1Name).WithKeepBinary<object, object>();
 
             cache.Put(1, obj);
 
-            return (IPortableObject) cache.Get(1);
+            return (IBinaryObject) cache.Get(1);
         }
 
         /** <inheritDoc /> */
-        override protected void PortableTypeConfigurations(ICollection<PortableTypeConfiguration> portTypeCfgs)
+        override protected void PortableTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableJobArgument)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableJobResult)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableTaskArgument)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableTaskResult)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableJob)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableWrapper)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableJobArgument)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableJobResult)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableTaskArgument)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableTaskResult)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableJob)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableWrapper)));
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         class PortableWrapper
         {
-            public IPortableObject Item { get; set; }
+            public IBinaryObject Item { get; set; }
         }
     }
 }

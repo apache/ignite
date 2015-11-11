@@ -21,15 +21,15 @@ namespace Apache.Ignite.Core.Impl.Memory
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Text;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Platform memory stream.
     /// </summary>
     [CLSCompliant(false)]
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-    public unsafe class PlatformMemoryStream : IPortableStream
+    public unsafe class PlatformMemoryStream : IBinaryStream
     {
         /** Length: 1 byte. */
         protected const int Len1 = 1;
