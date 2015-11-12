@@ -28,11 +28,11 @@
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
         <version>1</version>
-        <relativePath>../../../parent</relativePath>
+        <relativePath>../../parent</relativePath>
     </parent>
 
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-osgi-karaf-features</artifactId>
+    <artifactId>ignite-osgi-karaf</artifactId>
     <version>1.5.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 

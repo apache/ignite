@@ -147,6 +147,15 @@
                 <configuration>
                     <instructions>
                         <Fragment-Host>org.apache.ignite.ignite-core</Fragment-Host>
+                        <Require-Bundle>
+                            org.apache.servicemix.bundles.spring-beans,
+                            org.apache.servicemix.bundles.spring-context,
+                            org.apache.servicemix.bundles.spring-context-support,
+                            org.apache.servicemix.bundles.spring-core,
+                            org.apache.servicemix.bundles.spring-expression,
+                            org.apache.servicemix.bundles.spring-jdbc,
+                            org.apache.servicemix.bundles.spring-tx
+                        </Require-Bundle>
                     </instructions>
                 </configuration>
             </plugin>

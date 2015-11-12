@@ -86,6 +86,7 @@
         <lucene.version>3.5.0</lucene.version>
         <lucene.bundle.version>3.5.0_1</lucene.bundle.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
+        <osgi.core.version>5.0.0</osgi.core.version>
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
         <scala210.library.version>2.10.4</scala210.library.version>

@@ -77,8 +77,9 @@
         <module>modules/jms11</module>
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
-        <module>modules/osgi-karaf/features</module>
-        <module>modules/osgi-karaf/paxlogging-fragment</module>
+        <module>modules/osgi</module>
+        <module>modules/osgi-karaf</module>
+        <module>modules/osgi-paxlogging</module>
         <module>modules/platform</module>
     </modules>
 
