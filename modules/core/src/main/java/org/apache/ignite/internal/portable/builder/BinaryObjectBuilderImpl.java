@@ -205,7 +205,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             Set<Integer> remainsFlds = null;
 
             if (reader != null) {
-                PortableSchema schema = reader.schema();
+                PortableSchema schema = reader.schema(start);
 
                 Map<Integer, Object> assignedFldsById;
 
@@ -213,9 +213,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     assignedFldsById = U.newHashMap(assignedVals.size());
 
                     for (Map.Entry<String, Object> entry : assignedVals.entrySet()) {
-                        int fldId = ctx.fieldId(typeId, entry.getKey());
+                        int fieldId = ctx.fieldId(typeId, entry.getKey());
 
-                        assignedFldsById.put(fldId, entry.getValue());
+                        assignedFldsById.put(fieldId, entry.getValue());
                     }
 
                     remainsFlds = assignedFldsById.keySet();
@@ -240,6 +240,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 int idx = 0;
 
+                // TODO: + fieldIdLen looks incorrect here.
                 while (reader.position() + fieldIdLen < rawPos) {
                     int fieldId = schema.fieldId(idx++);
                     int fieldLen =
@@ -433,7 +434,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             int fieldIdLen = PortableUtils.fieldIdLength(flags);
             int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
 
-            PortableSchema schema = reader.schema();
+            PortableSchema schema = reader.schema(start);
 
             Map<Integer, Object> readCache = new HashMap<>();
 
