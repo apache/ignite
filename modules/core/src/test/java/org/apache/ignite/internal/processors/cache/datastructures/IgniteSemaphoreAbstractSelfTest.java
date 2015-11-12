@@ -86,7 +86,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
         checkRelease();
 
-        checkFair();
+        checkFailoverSafe();
 
         // Test main functionality.
         IgniteSemaphore semaphore1 = grid(0).semaphore("semaphore", -2, true, true);
@@ -166,19 +166,22 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     }
 
     /**
+     * This method only checks if parameter of new semaphore is initialized properly.
+     * For tests considering failure recovery see @GridCachePartitionedNodeFailureSelfTest.
+     *
      * @throws Exception Exception.
      */
-    private void checkFair() throws Exception {
+    private void checkFailoverSafe() throws Exception {
         // Checks only if semaphore is initialized properly
         IgniteSemaphore semaphore = createSemaphore("rmv", 5, true);
 
-        assert semaphore.isFair();
+        assert semaphore.isFailoverSafe();
 
         removeSemaphore("rmv");
 
         IgniteSemaphore semaphore1 = createSemaphore("rmv1", 5, false);
 
-        assert !semaphore1.isFair();
+        assert !semaphore1.isFailoverSafe();
 
         removeSemaphore("rmv1");
     }
@@ -237,19 +240,19 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     /**
      * @param semaphoreName Semaphore name.
      * @param numPermissions Initial number of permissions.
-     * @param fair Fairness flag.
+     * @param failoverSafe Fairness flag.
      * @return New semaphore.
      * @throws Exception If failed.
      */
-    private IgniteSemaphore createSemaphore(String semaphoreName, int numPermissions, boolean fair)
+    private IgniteSemaphore createSemaphore(String semaphoreName, int numPermissions, boolean failoverSafe)
         throws Exception {
-        IgniteSemaphore semaphore = grid(RND.nextInt(NODES_CNT)).semaphore(semaphoreName, numPermissions, fair, true);
+        IgniteSemaphore semaphore = grid(RND.nextInt(NODES_CNT)).semaphore(semaphoreName, numPermissions, failoverSafe, true);
 
         // Test initialization.
         assert semaphoreName.equals(semaphore.name());
         assert semaphore.availablePermits() == numPermissions;
         assert semaphore.getQueueLength() == 0;
-        assert semaphore.isFair() == fair;
+        assert semaphore.isFailoverSafe() == failoverSafe;
 
         return semaphore;
     }

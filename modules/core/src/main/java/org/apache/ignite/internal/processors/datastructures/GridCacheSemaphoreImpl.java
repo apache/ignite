@@ -21,9 +21,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,10 +48,11 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Cache semaphore implementation based on AbstractQueuedSynchronizer. Current implementation supports only unfair and
- * locally fair modes. When fairness set false, this class makes no guarantees about the order in which threads acquire
- * permits. When fairness is set true, the semaphore only guarantees that local threads invoking any of the acquire
- * methods are selected to obtain permits in the order in which their invocation of those methods was processed (FIFO).
+ * Cache semaphore implementation based on AbstractQueuedSynchronizer.
+ * Current implementation supports only unfair semaphores.
+ * If any node fails after acquiring permissions on cache semaphore, there are two different behaviors controlled with the
+ * parameter failoverSafe. If this parameter is true, other nodes can reacquire permits that were acquired by the failing node.
+ * In case this parameter is false, IgniteInterruptedException is called on every node waiting on this semaphore.
  */
 public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Externalizable {
     /** */
@@ -83,12 +84,6 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     /** Cache context. */
     private GridCacheContext ctx;
 
-    /** Fairness flag. */
-    private boolean isFair;
-
-    /** Initial count. */
-    private transient final int initCnt;
-
     /** Initialization guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
 
@@ -103,43 +98,52 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
      */
     public GridCacheSemaphoreImpl() {
         // No-op.
-        initCnt = 0;
     }
 
     /**
      * Synchronization implementation for semaphore.
-     * Uses AQS state to represent permits. Subclassed into fair and nonfair versions.
+     * Uses AQS state to represent permits.
      */
-    abstract class Sync extends AbstractQueuedSynchronizer {
+    final class Sync extends AbstractQueuedSynchronizer {
         private static final long serialVersionUID = 1192457210091910933L;
 
-        /** Thread map. */
-        protected final ConcurrentMap<Thread, Integer> threadMap;
+        /** Map containing number of acquired permits for each node waiting on this semaphore. */
+        protected Map<UUID, Integer> nodeMap;
 
-        /** Total number of threads currently waiting on this semaphore. */
-        protected int totalWaiters;
+        /** Flag indicating that it is safe to continue after node that acquired semaphore fails. */
+        final boolean failoverSafe;
 
-        protected Sync(int permits) {
+        /** Flag indicating that a node failed and it is not safe to continue using this semaphore. */
+        protected boolean broken = false;
+
+        protected Sync(int permits, Map<UUID, Integer> waiters, boolean failoverSafe) {
             setState(permits);
-            threadMap = new ConcurrentHashMap<>();
+            nodeMap = waiters;
+            this.failoverSafe = failoverSafe;
         }
 
         /**
-         * Sets the estimate of the total current number of threads waiting on this semaphore. This method should only
+         * Sets a map containing number of permits acquired by each node using this semaphore. This method should only
          * be called in {@linkplain GridCacheSemaphoreImpl#onUpdate(GridCacheSemaphoreState)}.
          *
-         * @param waiters Thread count.
+         * @param nodeMap NodeMap.
          */
-        protected synchronized void setWaiters(int waiters) {
-            totalWaiters = waiters;
+        protected synchronized void setWaiters(Map<UUID, Integer> nodeMap) {
+            this.nodeMap = nodeMap;
         }
 
         /**
-         * Gets the number of waiting threads.
+         * Gets the number of nodes waiting at this semaphore.
          *
-         * @return Number of thread waiting at this semaphore.
+         * @return Number of nodes waiting at this semaphore.
          */
         public int getWaiters() {
+            int totalWaiters = 0;
+            for(UUID id:nodeMap.keySet()){
+                if(nodeMap.get(id)>0){
+                    totalWaiters++;
+                }
+            }
             return totalWaiters;
         }
 
@@ -174,15 +178,15 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
                 int remaining = available - acquires;
 
-                if (remaining < 0 || compareAndSetGlobalState(available, remaining)) {
-                    if (remaining < 0) {
-                        if (!threadMap.containsKey(Thread.currentThread()))
-                            getAndIncWaitingCount();
-                    }
-
+                if (remaining < 0 || compareAndSetGlobalState(available, remaining, false)) {
                     return remaining;
                 }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected int tryAcquireShared(int acquires) {
+            return nonfairTryAcquireShared(acquires);
         }
 
         /** {@inheritDoc} */
@@ -200,7 +204,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                 if (next < current) // overflow
                     throw new Error("Maximum permit count exceeded");
 
-                if (compareAndSetGlobalState(current, next))
+                if (compareAndSetGlobalState(current, next, false))
                     return true;
             }
         }
@@ -212,69 +216,28 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
          */
         final int drainPermits() {
             for (; ; ) {
+
                 int current = getState();
 
-                if (current == 0 || compareAndSetGlobalState(current, 0))
+                if (current == 0 || compareAndSetGlobalState(current, 0, true))
                     return current;
             }
         }
 
         /**
-         * This method is used when thread blocks on this semaphore to synchronize the waiting thread counter across all
-         * nodes.
-         */
-        protected void getAndIncWaitingCount() {
-            try {
-                CU.outTx(
-                    retryTopologySafe(new Callable<Boolean>() {
-                        @Override public Boolean call() throws Exception {
-                            try (
-                                IgniteInternalTx tx = CU.txStartInternal(ctx, semaphoreView, PESSIMISTIC, REPEATABLE_READ)
-                            ) {
-                                GridCacheSemaphoreState val = semaphoreView.get(key);
-
-                                if (val == null)
-                                    throw new IgniteCheckedException("Failed to find semaphore with given name: " + name);
-
-                                int waiting = val.getWaiters();
-
-                                sync.threadMap.put(Thread.currentThread(), waiting);
-
-                                waiting++;
-
-                                val.setWaiters(waiting);
-
-                                semaphoreView.put(key, val);
-
-                                tx.commit();
-
-                                return true;
-                            }
-                            catch (Error | Exception e) {
-                                U.error(log, "Failed to compare and set: " + this, e);
-
-                                throw e;
-                            }
-                        }
-                    }),
-                    ctx
-                );
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-        }
-
-        /**
          * This method is used for synchronizing the semaphore state across all nodes.
+         *
+         * @param expVal Expected number of permits.
+         * @param newVal New number of permits.
+         * @param draining True if used for draining the permits.
+         * @return True if this is the call that succeeded to change the global state.
          */
-        protected boolean compareAndSetGlobalState(final int expVal, final int newVal) {
+        protected boolean compareAndSetGlobalState(final int expVal, final int newVal, boolean draining) {
             try {
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
-                            try (
-                                IgniteInternalTx tx = CU.txStartInternal(ctx, semaphoreView,
+                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, semaphoreView,
                                     PESSIMISTIC, REPEATABLE_READ)
                             ) {
                                 GridCacheSemaphoreState val = semaphoreView.get(key);
@@ -286,14 +249,22 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                                 boolean retVal = val.getCount() == expVal;
 
                                 if (retVal) {
-                                    // If current thread is queued, than this call is
-                                    // the call that is going to be unblocked.
-                                    if (sync.isQueued(Thread.currentThread())) {
-                                        int waiting = val.getWaiters() - 1;
+                                    // If this is not a call to drain permits,
+                                    // Modify global permission count for the calling node.
+                                    if(!draining) {
+                                        UUID nodeID = ctx.localNodeId();
 
-                                        val.setWaiters(waiting);
+                                        Map<UUID,Integer> map = val.getWaiters();
 
-                                        sync.threadMap.remove(Thread.currentThread());
+                                        int waitingCnt = expVal - newVal;
+
+                                        if(map.containsKey(nodeID)){
+                                            waitingCnt += map.get(nodeID);
+                                        }
+
+                                        map.put(nodeID, waitingCnt);
+
+                                        val.setWaiters(map);
                                     }
 
                                     val.setCount(newVal);
@@ -319,69 +290,79 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                 throw U.convertException(e);
             }
         }
-    }
 
-    /**
-     * NonFair version.
-     */
-    final class NonfairSync extends Sync {
-        private static final long serialVersionUID = 7983135489326435495L;
+        /**
+         * This method is used for releasing the permits acquired by failing node.
+         *
+         * @param nodeId ID of the failing node.
+         * @return True if this is the call that succeeded to change the global state.
+         */
+        protected boolean releaseFailedNode(final UUID nodeId) {
+            try {
+                return CU.outTx(
+                    retryTopologySafe(new Callable<Boolean>() {
+                        @Override public Boolean call() throws Exception {
+                            try (
+                                IgniteInternalTx tx = CU.txStartInternal(ctx, semaphoreView,
+                                    PESSIMISTIC, REPEATABLE_READ)
+                            ) {
+                                GridCacheSemaphoreState val = semaphoreView.get(key);
 
-        NonfairSync(int permits) {
-            super(permits);
-        }
+                                if (val == null)
+                                    throw new IgniteCheckedException("Failed to find semaphore with given name: " +
+                                        name);
 
-        /** {@inheritDoc} */
-        @Override protected int tryAcquireShared(int acquires) {
-            return nonfairTryAcquireShared(acquires);
-        }
-    }
+                                Map<UUID,Integer> map = val.getWaiters();
 
-    /**
-     * Fair version
-     */
-    final class FairSync extends Sync {
-        private static final long serialVersionUID = 3468129658421667L;
+                                if(!map.containsKey(nodeId)){
+                                    tx.rollback();
 
-        FairSync(int permits) {
-            super(permits);
-        }
+                                    return false;
+                                }
 
-        /** {@inheritDoc} */
-        @Override protected int tryAcquireShared(int acquires) {
-            for (; ; ) {
-                if (hasQueuedPredecessors())
-                    return -1;
+                                int numPermits = map.get(nodeId);
 
-                int available = getState();
+                                if(numPermits > 0)
+                                    val.setCount(val.getCount() + numPermits);
 
-                int remaining = available - acquires;
+                                map.remove(nodeId);
 
-                if (remaining < 0 || compareAndSetGlobalState(available, remaining)) {
-                    if (remaining < 0) {
-                        if (!threadMap.containsKey(Thread.currentThread()))
-                            getAndIncWaitingCount();
-                    }
-                    return remaining;
-                }
+                                val.setWaiters(map);
+
+                                semaphoreView.put(key, val);
+
+                                sync.nodeMap = map;
+
+                                tx.commit();
+
+                                return true;
+                            }
+                            catch (Error | Exception e) {
+                                U.error(log, "Failed to compare and set: " + this, e);
+
+                                throw e;
+                            }
+                        }
+                    }),
+                    ctx
+                );
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
             }
         }
-
     }
 
     /**
      * Constructor.
      *
      * @param name Semaphore name.
-     * @param initCnt Initial count.
      * @param key Semaphore key.
      * @param semaphoreView Semaphore projection.
      * @param ctx Cache context.
      */
     public GridCacheSemaphoreImpl(
         String name,
-        int initCnt,
-        boolean fair,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semaphoreView,
         GridCacheContext ctx
@@ -392,11 +373,9 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         assert ctx != null;
 
         this.name = name;
-        this.initCnt = initCnt;
         this.key = key;
         this.semaphoreView = semaphoreView;
         this.ctx = ctx;
-        this.isFair = fair;
 
         log = ctx.logger(getClass());
     }
@@ -422,9 +401,13 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
                                 final int count = val.getCount();
 
+                                Map<UUID, Integer> waiters = val.getWaiters();
+
+                                final boolean failoverSafe = val.isFailoverSafe();
+
                                 tx.commit();
 
-                                return val.isFair() ? new FairSync(count) : new NonfairSync(count);
+                                return new Sync(count, waiters, failoverSafe);
                             }
                         }
                     }),
@@ -442,7 +425,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
             U.await(initLatch);
 
             if (sync == null)
-                throw new IgniteCheckedException("Internal latch has not been properly initialized.");
+                throw new IgniteCheckedException("Internal semaphore has not been properly initialized.");
         }
     }
 
@@ -474,11 +457,35 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         // Update permission count.
         sync.setPermits(val.getCount());
 
-        // Update waiters count.
+        // Update waiters' counts.
         sync.setWaiters(val.getWaiters());
 
         // Try to notify any waiting threads.
         sync.releaseShared(0);
+    }
+
+    @Override public void onNodeRemoved(UUID nodeID) {
+      if (sync.nodeMap.containsKey(nodeID)) {
+            int numPermits = sync.nodeMap.get(nodeID);
+
+            if (numPermits > 0) {
+                if (sync.failoverSafe) {
+                    // Release permits acquired by threads on failing node.
+                    sync.releaseFailedNode(nodeID);
+                }
+                else {
+                    // Interrupt every waiting thread if this semaphore is not failover safe.
+                    sync.broken = true;
+
+                    for(Thread t:sync.getSharedQueuedThreads()){
+                        t.interrupt();
+                    }
+
+                    // Try to notify any waiting threads.
+                    sync.releaseShared(0);
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -497,6 +504,9 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
         try {
             initializeSemaphore();
+
+            if(isBroken())
+                Thread.currentThread().interrupt();
 
             sync.acquireSharedInterruptibly(permits);
         }
@@ -658,8 +668,8 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isFair() {
-        return isFair;
+    @Override public boolean isFailoverSafe() {
+        return sync.failoverSafe;
     }
 
     /** {@inheritDoc} */
@@ -684,6 +694,11 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isBroken(){
+        return sync.broken;
     }
 
     /** {@inheritDoc} */
@@ -717,4 +732,6 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     @Override public String toString() {
         return S.toString(GridCacheSemaphoreImpl.class, this);
     }
+
 }
+

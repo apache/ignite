@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteSemaphore;
 
 /**
@@ -36,4 +37,11 @@ public interface GridCacheSemaphoreEx extends IgniteSemaphore, GridCacheRemovabl
      * @param val State containing the number of available permissions.
      */
     public void onUpdate(GridCacheSemaphoreState val);
+
+    /**
+     * Callback to notify semaphore on topology changes.
+     *
+     * @param nodeId Id of the node that left the grid.
+     */
+    public void onNodeRemoved(UUID nodeId);
 }

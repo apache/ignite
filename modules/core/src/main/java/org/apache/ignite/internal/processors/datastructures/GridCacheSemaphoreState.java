@@ -21,8 +21,13 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid cache semaphore state.
@@ -34,32 +39,22 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     /** Permission count. */
     private int count;
 
-    /** Waiter ID. */
-    private int waiters;
+    /** Map containing number of acquired permits for each node waiting on this semaphore. */
+    @GridToStringInclude
+    private Map<UUID,Integer> waiters;
 
-    /** Fairness flag. */
-    private boolean fair;
-
-    /**
-     * Constructor.
-     *
-     * @param count Number of permissions.
-     */
-    public GridCacheSemaphoreState(int count, int waiters) {
-        this.count = count;
-        this.waiters = waiters;
-        this.fair = false;
-    }
+    /** FailoverSafe flag. */
+    private boolean failoverSafe;
 
     /**
      * Constructor.
      *
      * @param count Number of permissions.
      */
-    public GridCacheSemaphoreState(int count, int waiters, boolean fair) {
+    public GridCacheSemaphoreState(int count, @Nullable Map<UUID,Integer> waiters, boolean failoverSafe) {
         this.count = count;
         this.waiters = waiters;
-        this.fair = fair;
+        this.failoverSafe = failoverSafe;
     }
 
     /**
@@ -86,22 +81,22 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     /**
      * @return Waiters.
      */
-    public int getWaiters() {
+    public Map<UUID,Integer> getWaiters() {
         return waiters;
     }
 
     /**
-     * @param id Waiters.
+     * @param waiters Map containing the number of permissions acquired by each node.
      */
-    public void setWaiters(int id) {
-        this.waiters = id;
+    public void setWaiters(Map<UUID, Integer> waiters) {
+        this.waiters = waiters;
     }
 
     /**
-     * @return Fair flag.
+     * @return failoverSafe flag.
      */
-    public boolean isFair() {
-        return fair;
+    public boolean isFailoverSafe() {
+        return failoverSafe;
     }
 
     /** {@inheritDoc} */
@@ -112,15 +107,30 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(count);
-        out.writeInt(waiters);
-        out.writeBoolean(fair);
+        out.writeBoolean(failoverSafe);
+        out.writeBoolean(waiters != null);
+        if (waiters != null) {
+            out.writeInt(waiters.size());
+            for (UUID uuid : waiters.keySet()) {
+                out.writeUTF(uuid.toString());
+                out.writeInt(waiters.get(uuid));
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         count = in.readInt();
-        waiters = in.readInt();
-        fair = in.readBoolean();
+        failoverSafe = in.readBoolean();
+        if(in.readBoolean()) {
+            int size = in.readInt();
+            waiters = new HashMap<>();
+            for (int i = 0; i < size; i++) {
+                UUID uuid = UUID.fromString(in.readUTF());
+                int permits = in.readInt();
+                waiters.put(uuid, permits);
+            }
+        }
     }
 
     /** {@inheritDoc} */

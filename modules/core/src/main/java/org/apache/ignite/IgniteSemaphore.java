@@ -82,12 +82,6 @@ public interface IgniteSemaphore extends Closeable {
      *
      * <p>If no permit is available then this method will return immediately with the value {@code false}.
      *
-     * <p>Even when this semaphore has been set to use a fair ordering policy, a call to {@code tryAcquire()}
-     * <em>will</em> immediately acquire a permit if one is available, whether or not other threads are currently
-     * waiting. This &quot;barging&quot; behavior can be useful in certain circumstances, even though it breaks
-     * fairness. If you want to honor the fairness setting, then use {@link #tryAcquire(long, TimeUnit) tryAcquire(0,
-     * TimeUnit.SECONDS) } which is almost equivalent (it also detects interruption).
-     *
      * @return {@code true} if a permit was acquired and {@code false} otherwise
      */
     public boolean tryAcquire();
@@ -216,10 +210,7 @@ public interface IgniteSemaphore extends Closeable {
      * <p>If insufficient permits are available then this method will return immediately with the value {@code false}
      * and the number of available permits is unchanged.
      *
-     * <p>Even when this semaphore has been set to use a fair ordering policy, a call to {@code tryAcquire}
-     * <em>will</em> immediately acquire a permit if one is available, whether or not other threads are currently
-     * waiting.  This &quot;barging&quot; behavior can be useful in certain circumstances, even though it breaks
-     * fairness. If you want to honor the fairness setting, then use {@link #tryAcquire(int, long, TimeUnit)
+     * <p>If you want to honor the failoverSafe setting, then use {@link #tryAcquire(int, long, TimeUnit)
      * tryAcquire(permits, 0, TimeUnit.SECONDS) } which is almost equivalent (it also detects interruption).
      *
      * @param permits the number of permits to acquire
@@ -273,11 +264,12 @@ public interface IgniteSemaphore extends Closeable {
     public void release(int permits);
 
     /**
-     * Returns {@code true} if this semaphore has fairness set true.
+     * Returns {@code true} if this semaphore is safe to use after node failure.
+     * If not, IgniteInterruptedException is thrown on every other node after node failure.
      *
-     * @return {@code true} if this semaphore has fairness set true
+     * @return {@code true} if this semaphore has failoverSafe set true
      */
-    public boolean isFair();
+    public boolean isFailoverSafe();
 
     /**
      * Queries whether any threads are waiting to acquire. Note that because cancellations may occur at any time, a
@@ -289,13 +281,20 @@ public interface IgniteSemaphore extends Closeable {
     public boolean hasQueuedThreads();
 
     /**
-     * Returns an estimate of the number of threads waiting to acquire. The value is only an estimate because the number
-     * of threads may change dynamically while this method traverses internal data structures.  This method is designed
+     * Returns an estimate of the number of nodes waiting to acquire. The value is only an estimate because the number
+     * of nodes that are waiting may change dynamically while this method traverses internal data structures.  This method is designed
      * for use in monitoring of the system state, not for synchronization control.
      *
-     * @return the estimated number of threads waiting for this lock
+     * @return the estimated number of nodes waiting for this lock
      */
     public int getQueueLength();
+
+    /**
+     * Gets {@code broken} status of the semaphore.
+     *
+     * @return {@code True} if a node failed on this semaphore and failoverSafe flag was set to false, {@code false} otherwise.
+     */
+    public boolean isBroken();
 
     /**
      * Gets {@code removed} status of the semaphore.

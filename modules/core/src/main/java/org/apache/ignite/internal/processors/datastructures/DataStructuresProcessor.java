@@ -51,6 +51,8 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -77,12 +79,14 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.ATOMIC_LONG;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.ATOMIC_REF;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.ATOMIC_SEQ;
@@ -142,7 +146,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /** Cache contains only {@code GridCacheAtomicStampedValue}. */
     private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue> atomicStampedView;
 
-    /** Cache contains only entry {@code GridCacheSequenceValue}.  */
+    /** Cache contains only entry {@code GridCacheSequenceValue}. */
     private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
 
     /** Cache context for atomic data structures. */
@@ -269,7 +273,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      *
      * @param name Sequence name.
      * @param initVal Initial value for sequence. If sequence already cached, {@code initVal} will be ignored.
-     * @param create  If {@code true} sequence will be created in case it is not in cache.
+     * @param create If {@code true} sequence will be created in case it is not in cache.
      * @return Sequence.
      * @throws IgniteCheckedException If loading failed.
      */
@@ -1206,14 +1210,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      *
      * @param name Name of the semaphore.
      * @param cnt Initial count.
-     * @param fair {@code True} Fairness parameter.
+     * @param failoverSafe {@code True} FailoverSafe parameter.
      * @param create If {@code true} semaphore will be created in case it is not in cache,
      *      if it is {@code false} all parameters except {@code name} are ignored.
      * @return Semaphore for the given name or {@code null} if it is not found and
      *      {@code create} is false.
      * @throws IgniteCheckedException If operation failed.
      */
-    public IgniteSemaphore semaphore(final String name, final int cnt, final boolean fair, final boolean create)
+    public IgniteSemaphore semaphore(final String name, final int cnt, final boolean failoverSafe, final boolean create)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
@@ -1232,7 +1236,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                 try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheSemaphoreState val = cast(dsView.get(key), GridCacheSemaphoreState.class);
 
-                    // Check that count down hasn't been created in other thread yet.
+                    // Check that semaphore hasn't been created in other thread yet.
                     GridCacheSemaphoreEx semaphore = cast(dsMap.get(key), GridCacheSemaphoreEx.class);
 
                     if (semaphore != null) {
@@ -1245,28 +1249,40 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         return null;
 
                     if (val == null) {
-                        val = new GridCacheSemaphoreState(cnt, 0, fair);
+                        val = new GridCacheSemaphoreState(cnt, new HashMap<UUID,Integer>(), failoverSafe);
 
                         dsView.put(key, val);
                     }
 
-                    semaphore = new GridCacheSemaphoreImpl(
-                        name, val.getCount(),
-                        fair,
+                    final GridCacheSemaphoreEx semaphore0 = new GridCacheSemaphoreImpl(
+                        name,
                         key,
                         semaphoreView,
                         dsCacheCtx);
 
-                    dsMap.put(key, semaphore);
+                    dsCacheCtx.grid().events().localListen(new IgnitePredicate<Event>() {
+                        @Override public boolean apply(Event event) {
+                            if (event.type() != EVT_NODE_LEFT || !(event instanceof DiscoveryEvent))
+                                return false;
+
+                            DiscoveryEvent ev = (DiscoveryEvent)event;
+
+                            semaphore0.onNodeRemoved(ev.eventNode().id());
+
+                            return true;
+                        }
+                    }, new int[] {EVT_NODE_LEFT});
+
+                    dsMap.put(key, semaphore0);
 
                     tx.commit();
 
-                    return semaphore;
+                    return semaphore0;
                 }
                 catch (Error | Exception e) {
                     dsMap.remove(key);
 
-                    U.error(log, "Failed to create count down latch: " + name, e);
+                    U.error(log, "Failed to create semaphore: " + name, e);
 
                     throw e;
                 }
@@ -1442,7 +1458,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                                 ", actual=" + latch.getClass() + ", value=" + latch + ']');
                         }
                     }
-                    else if(val0 instanceof GridCacheSemaphoreState) {
+                    else if (val0 instanceof GridCacheSemaphoreState) {
                         GridCacheInternalKey key = evt.getKey();
 
                         // Notify semaphore on changes.
