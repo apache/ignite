@@ -223,13 +223,13 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 int fieldIdLen = PortableUtils.fieldIdLength(flags);
                 int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
 
-                IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start, fieldOffsetLen);
+                IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start);
 
                 int footerPos = footer.get1();
                 int footerEnd = footer.get2();
 
                 // Get raw position.
-                int rawPos = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetLen);
+                int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
 
                 // Position reader on data.
                 reader.position(start + hdrLen);
@@ -355,9 +355,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             if (reader != null) {
                 // Write raw data if any.
-                int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
-
-                int rawOff = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetLen);
+                int rawOff = PortableUtils.rawOffsetAbsolute(reader, start);
                 int footerStart = PortableUtils.footerStartAbsolute(reader, start);
 
                 if (rawOff < footerStart) {
@@ -427,12 +425,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             Map<Integer, Object> readCache = new HashMap<>();
 
-            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start, fieldOffsetLen);
+            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start);
 
             int footerPos = footer.get1();
             int footerEnd = footer.get2();
 
-            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetLen);
+            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
 
             while (footerPos + fieldIdLen < footerEnd) {
                 int fieldId = reader.readIntPositioned(footerPos);

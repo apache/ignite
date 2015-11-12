@@ -338,8 +338,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         if (ctx.isCompactFooter())
             flags |= PortableUtils.FLAG_COMPACT_FOOTER;
-
+        
         if (schema != null) {
+            flags |= PortableUtils.FLAG_HAS_SCHEMA;
+
             // Write schema ID.
             out.writeInt(start + SCHEMA_ID_POS, schemaId);
 
@@ -349,24 +351,30 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             // Write the schema.
             int offsetByteCnt = schema.write(this, fieldCnt, ctx.isCompactFooter());
 
-            // Write raw offset if needed.
-            if (rawOffPos != 0)
-                out.writeInt(rawOffPos - start);
-
             if (offsetByteCnt == PortableUtils.OFFSET_1)
                 flags |= PortableUtils.FLAG_OFFSET_ONE_BYTE;
             else if (offsetByteCnt == PortableUtils.OFFSET_2)
                 flags |= PortableUtils.FLAG_OFFSET_TWO_BYTES;
+            
+            // Write raw offset if needed.
+            if (rawOffPos != 0) {
+                flags |= PortableUtils.FLAG_HAS_RAW;
+
+                out.writeInt(rawOffPos - start);
+            }
         }
         else {
-            // Write raw-only flag is needed.
-            flags |= PortableUtils.FLAG_RAW_ONLY;
+            if (rawOffPos != 0) {
+                // If there are no schema, we are free to write raw offset to schema offset.
+                flags |= PortableUtils.FLAG_HAS_RAW;
 
-            // If there are no schema, we are free to write raw offset to schema offset.
-            out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
+                out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, rawOffPos - start);
+            }
+            else
+                out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, 0);
         }
 
-        // Write flags as we know them at this point.
+        // Write flags.
         out.writeShort(start + FLAGS_POS, flags);
 
         // Write length.

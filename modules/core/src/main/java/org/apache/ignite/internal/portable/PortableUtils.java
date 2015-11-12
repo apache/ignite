@@ -101,16 +101,19 @@ public class PortableUtils {
     public static final short FLAG_USR_TYP = 0x0001;
 
     /** Flag: only raw data exists. */
-    public static final short FLAG_RAW_ONLY = 0x0002;
+    public static final short FLAG_HAS_SCHEMA = 0x0002;
+
+    /** Flag indicating that object has raw data. */
+    public static final short FLAG_HAS_RAW = 0x0004;
 
     /** Flag: offsets take 1 byte. */
-    public static final short FLAG_OFFSET_ONE_BYTE = 0x0004;
+    public static final short FLAG_OFFSET_ONE_BYTE = 0x0008;
 
     /** Flag: offsets take 2 bytes. */
-    public static final short FLAG_OFFSET_TWO_BYTES = 0x0008;
+    public static final short FLAG_OFFSET_TWO_BYTES = 0x0010;
 
     /** Flag: compact footer, no field IDs. */
-    public static final short FLAG_COMPACT_FOOTER = 0x0010;
+    public static final short FLAG_COMPACT_FOOTER = 0x0020;
 
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
@@ -254,6 +257,57 @@ public class PortableUtils {
     }
 
     /**
+     * Check if user type flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isUserType(short flags) {
+        return isFlagSet(flags, FLAG_USR_TYP);
+    }
+
+    /**
+     * Check if raw-only flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean hasSchema(short flags) {
+        return isFlagSet(flags, FLAG_HAS_SCHEMA);
+    }
+
+    /**
+     * Check if raw-only flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean hasRaw(short flags) {
+        return isFlagSet(flags, FLAG_HAS_RAW);
+    }
+
+    /**
+     * Check if "no-field-ids" flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isCompactFooter(short flags) {
+        return isFlagSet(flags, FLAG_COMPACT_FOOTER);
+    }
+
+    /**
+     * Check whether particular flag is set.
+     *
+     * @param flags Flags.
+     * @param flag Flag.
+     * @return {@code True} if flag is set in flags.
+     */
+    private static boolean isFlagSet(short flags, short flag) {
+        return (flags & flag) == flag;
+    }
+    
+    /**
      * Schema initial ID.
      *
      * @return ID.
@@ -310,47 +364,6 @@ public class PortableUtils {
         assert typeName != null : typeId;
 
         return typeName;
-    }
-
-    /**
-     * Check if user type flag is set.
-     *
-     * @param flags Flags.
-     * @return {@code True} if set.
-     */
-    public static boolean isUserType(short flags) {
-        return isFlagSet(flags, FLAG_USR_TYP);
-    }
-
-    /**
-     * Check if raw-only flag is set.
-     *
-     * @param flags Flags.
-     * @return {@code True} if set.
-     */
-    public static boolean isRawOnly(short flags) {
-        return isFlagSet(flags, FLAG_RAW_ONLY);
-    }
-
-    /**
-     * Check if "no-field-ids" flag is set.
-     *
-     * @param flags Flags.
-     * @return {@code True} if set.
-     */
-    public static boolean isCompactFooter(short flags) {
-        return isFlagSet(flags, FLAG_COMPACT_FOOTER);
-    }
-
-    /**
-     * Check whether particular flag is set.
-     *
-     * @param flags Flags.
-     * @param flag Flag.
-     * @return {@code True} if flag is set in flags.
-     */
-    private static boolean isFlagSet(short flags, short flag) {
-        return (flags & flag) == flag;
     }
 
     /**
@@ -659,8 +672,7 @@ public class PortableUtils {
         writer.doWriteByte(GridPortableMarshaller.OBJ);
         writer.doWriteByte(GridPortableMarshaller.PROTO_VER);
 
-        // Skip flags, they will be written in post-write step.
-        writer.position(writer.position() + 2);
+        writer.doWriteShort((short) 0);
 
         writer.doWriteInt(typeId);
         writer.doWriteInt(hashCode);
@@ -694,12 +706,12 @@ public class PortableUtils {
     public static int footerStartRelative(PortablePositionReadable in, int start) {
         short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
 
-        if (PortableUtils.isRawOnly(flags))
-            // No schema, footer start equals to object end.
-            return length(in, start);
-        else
+        if (hasSchema(flags))
             // Schema exists, use offset.
             return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        else
+            // No schema, footer start equals to object end.
+            return length(in, start);
     }
 
     /**
@@ -718,48 +730,64 @@ public class PortableUtils {
      *
      * @param in Input stream.
      * @param start Start position.
-     * @param fieldOffsetSize Field offset size.
      * @return Footer.
      */
-    public static IgniteBiTuple<Integer, Integer> footerAbsolute(PortablePositionReadable in, int start,
-        int fieldOffsetSize) {
-        int footerStart = footerStartRelative(in, start);
+    public static IgniteBiTuple<Integer, Integer> footerAbsolute(PortablePositionReadable in, int start) {
+        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
+
         int footerEnd = length(in, start);
 
-        // Take in count possible raw offset.
-        if ((footerEnd - footerStart) % (4 + fieldOffsetSize) != 0)
-            footerEnd -= 4;
+        if (hasSchema(flags)) {
+            // Schema exists.
+            int footerStart = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
-        return F.t(start + footerStart, start + footerEnd);
+            if (hasRaw(flags))
+                footerEnd -= 4;
+
+            assert footerStart <= footerEnd;
+
+            return F.t(start + footerStart, start + footerEnd);
+        }
+        else
+            // No schema.
+            return F.t(start + footerEnd, start + footerEnd);
     }
 
     /**
-     * Get raw offset of the object.
+     * Get relative raw offset of the object.
      *
      * @param in Input stream.
      * @param start Object start position inside the stream.
-     * @param fieldOffsetSize Field offset size.
      * @return Raw offset.
      */
-    public static int rawOffsetAbsolute(PortablePositionReadable in, int start, int fieldOffsetSize) {
-        int len = length(in, start);
-
+    public static int rawOffsetRelative(PortablePositionReadable in, int start) {
         short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
 
-        if (PortableUtils.isRawOnly(flags))
-            // No schema, raw offset is located on schema offset position.
-            return start + in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
-        else {
-            // Schema exists.
-            int schemaOff = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        int len = length(in, start);
 
-            if (((len - schemaOff) % (4 + fieldOffsetSize)) == 0x0)
-                // Even amount of records in schema => no raw offset.
-                return start + schemaOff;
+        if (hasSchema(flags)){
+            // Schema exists.
+            if (hasRaw(flags))
+                // Raw offset is set, it is at the very end of the object.
+                return in.readIntPositioned(start + len - 4);
             else
-                // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
-                return start + in.readIntPositioned(start + len - 4);
+                // Raw offset is not set, so just return schema offset.
+                return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
         }
+        else
+            // No schema, raw offset is located on schema offset position.
+            return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+    }
+
+    /**
+     * Get absolute raw offset of the object.
+     *
+     * @param in Input stream.
+     * @param start Object start position inside the stream.
+     * @return Raw offset.
+     */
+    public static int rawOffsetAbsolute(PortablePositionReadable in, int start) {
+        return start + rawOffsetRelative(in, start);
     }
 
     /**
