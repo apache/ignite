@@ -116,7 +116,7 @@ import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.ROOT_ID;
  */
 public final class IgfsImpl implements IgfsEx {
     /** Default permissions for file system entry. */
-    private static final String PERMISSION_DFLT_VAL = "0777";
+    static final String PERMISSION_DFLT_VAL = "0777";
 
     /** Default directory metadata. */
     static final Map<String, String> DFLT_DIR_META = F.asMap(PROP_PERMISSION, PERMISSION_DFLT_VAL);

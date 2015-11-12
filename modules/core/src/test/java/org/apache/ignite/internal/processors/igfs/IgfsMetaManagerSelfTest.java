@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -443,5 +444,25 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         }, IgfsException.class, msg);
 
         assertTrue("Unexpected cause: " + err, err instanceof IgfsException);
+    }
+
+    /**
+     * Checks permission correction method.
+     */
+    public void testVXifyDirectoryPermissions() {
+        Map<String,String> prop = new HashMap<>();
+
+        prop.put(IgfsEx.PROP_PERMISSION, "0455");
+        prop.put("foo", "bar");
+
+        Map<String,String> m = IgfsMetaManager.wXifyDirectoryPermissions(prop);
+
+        assertEquals("0755", m.get(IgfsEx.PROP_PERMISSION));
+        assertEquals("bar", m.get("foo")); // Check another property is present.
+
+        // Test empty map:
+        m = IgfsMetaManager.wXifyDirectoryPermissions(Collections.<String,String>emptyMap());
+
+        assertEquals("0777", m.get(IgfsEx.PROP_PERMISSION));
     }
 }
