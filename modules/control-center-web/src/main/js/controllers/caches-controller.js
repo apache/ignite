@@ -32,6 +32,7 @@ consoleModule.controller('cachesController', [
             $scope.getModel = $common.getModel;
             $scope.javaBuildInClasses = $common.javaBuildInClasses;
             $scope.compactJavaName = $common.compactJavaName;
+            $scope.widthIsSufficient = $common.widthIsSufficient;
             $scope.saveBtnTipText = $common.saveBtnTipText;
             $scope.panelExpanded = $common.panelExpanded;
 
@@ -80,7 +81,6 @@ consoleModule.controller('cachesController', [
 
             $scope.evictionPolicies = [
                 {value: 'LRU', label: 'LRU'},
-                {value: 'RND', label: 'Random'},
                 {value: 'FIFO', label: 'FIFO'},
                 {value: 'SORTED', label: 'Sorted'},
                 {value: undefined, label: 'Not set'}

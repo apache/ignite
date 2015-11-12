@@ -39,8 +39,8 @@ mixin pojos(side)
         .details-row
             .col-xs-2.col-sm-2.col-md-2
                 label POJO class:
-            .col-xs-10.col-sm-10.col-md-10
-                button.select-toggle.form-control(ng-model='config#{side}.pojoClass' bs-select bs-options='item for item in pojoClasses()')
+            .col-xs-10.col-sm-10.col-md-10.summary-pojo-list
+                button.select-toggle.form-control(ng-model='config#{side}.pojoClass' bs-select bs-options='item for item in pojoClasses()' data-container='')
             .col-xs-2.col-sm-2.col-md-2
                 label
             .col-xs-10.col-sm-10.col-md-10

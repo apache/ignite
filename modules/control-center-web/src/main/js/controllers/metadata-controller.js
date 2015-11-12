@@ -42,6 +42,7 @@ consoleModule.controller('metadataController', [
             $scope.getModel = $common.getModel;
             $scope.javaBuildInClasses = $common.javaBuildInClasses;
             $scope.compactJavaName = $common.compactJavaName;
+            $scope.widthIsSufficient = $common.widthIsSufficient;
             $scope.saveBtnTipText = $common.saveBtnTipText;
             $scope.panelExpanded = $common.panelExpanded;
 
@@ -1010,8 +1011,7 @@ consoleModule.controller('metadataController', [
                     $scope.selectItem(undefined, undefined);
             };
 
-
-        var pairFields = {
+            var pairFields = {
                 fields: {msg: 'Query field class', id: 'QryField', idPrefix: 'Key', searchCol: 'name', valueCol: 'key', classValidation: true, dupObjName: 'name'},
                 aliases: {id: 'Alias', idPrefix: 'Value', searchCol: 'alias', valueCol: 'value', dupObjName: 'alias'}
             };

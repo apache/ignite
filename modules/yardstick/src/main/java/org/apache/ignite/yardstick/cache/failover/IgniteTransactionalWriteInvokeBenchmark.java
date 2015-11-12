@@ -22,17 +22,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.doInTransaction;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
@@ -63,7 +59,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
         final int scenario = nextRandom(2);
 
-        return doInTransaction(ignite(), new Callable<Boolean>() {
+        return doInTransaction(ignite().transactions(), PESSIMISTIC, REPEATABLE_READ, new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 final int timeout = args.cacheOperationTimeoutMillis();
 
@@ -125,39 +121,6 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
                 return true;
             }
         });
-    }
-
-    /**
-     * @param ignite Ignite instance.
-     * @param clo Closure.
-     * @return Result of closure execution.
-     * @throws Exception
-     */
-    public static <T> T doInTransaction(Ignite ignite, Callable<T> clo) throws Exception {
-        while (true) {
-            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                T res = clo.call();
-
-                tx.commit();
-
-                return res;
-            }
-            catch (CacheException e) {
-                if (e.getCause() instanceof ClusterTopologyException) {
-                    ClusterTopologyException topEx = (ClusterTopologyException)e.getCause();
-
-                    topEx.retryReadyFuture().get();
-                }
-                else
-                    throw e;
-            }
-            catch (ClusterTopologyException e) {
-                e.retryReadyFuture().get();
-            }
-            catch (TransactionRollbackException ignore) {
-                // Safe to retry right away.
-            }
-        }
     }
 
     /** {@inheritDoc} */
