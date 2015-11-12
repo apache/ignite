@@ -25,8 +25,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E0784F76-949C-456E-A529-A55D0E389165}"
 	ProjectSection(SolutionItems) = preProject
 		Apache.Ignite.FxCop = Apache.Ignite.FxCop
-		Apache.Ignite.nuspec = Apache.Ignite.nuspec
-		Apache.Ignite.nuspec.Install.ps1 = Apache.Ignite.nuspec.Install.ps1
 		Apache.Ignite.sln.DotSettings = Apache.Ignite.sln.DotSettings
 		examples\Config\example-cache-query.xml = examples\Config\example-cache-query.xml
 		examples\Config\example-cache-store.xml = examples\Config\example-cache-store.xml
