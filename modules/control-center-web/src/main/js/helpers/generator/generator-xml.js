@@ -904,7 +904,7 @@ $generatorXml.metadataQueryFields = function (res, meta) {
         res.startBlock('<map>');
 
         _.forEach(fields, function (field) {
-            $generatorXml.element(res, 'entry', 'key', field.name.toUpperCase(), 'value', $dataStructures.fullClassName(field.className));
+            $generatorXml.element(res, 'entry', 'key', field.name, 'value', $dataStructures.fullClassName(field.className));
         });
 
         res.endBlock('</map>');
