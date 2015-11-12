@@ -149,6 +149,10 @@ ul.navbar-nav, .sidebar-nav {
     max-width: none;
 }
 
+.tooltip {
+  word-wrap: break-word;
+}
+
 .theme-line ul.dropdown-menu {
     min-width: 120px;
     max-width: 280px;
