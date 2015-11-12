@@ -20,17 +20,17 @@ package org.apache.ignite.internal.portable;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 
 /**
  * Test metadata handler.
  */
 public class TestCachingMetadataHandler implements BinaryMetadataHandler {
     /** Cached metadatas. */
-    private final ConcurrentHashMap<Integer, BinaryType> metas = new ConcurrentHashMap<>();
+    private final HashMap<Integer, BinaryType> metas = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void addMeta(int typeId, BinaryType type) throws BinaryObjectException {
+    @Override public synchronized void addMeta(int typeId, BinaryType type) throws BinaryObjectException {
         synchronized (this) {
             BinaryType oldType = metas.put(typeId, type);
 
@@ -48,7 +48,7 @@ public class TestCachingMetadataHandler implements BinaryMetadataHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+    @Override public synchronized BinaryType metadata(int typeId) throws BinaryObjectException {
         return metas.get(typeId);
     }
 }

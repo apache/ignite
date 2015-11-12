@@ -546,7 +546,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration(TestBinary.class.getName())
         ));
 
-        TestBinary obj = BinaryObject();
+        TestBinary obj = binaryObject();
 
         BinaryObject po = marshal(obj, marsh);
 
@@ -899,6 +899,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration(DynamicObject.class.getName())
         ));
 
+        initializePortableContext(marsh);
+
         BinaryObject po1 = marshal(new DynamicObject(0, 10, 20, 30), marsh);
 
         assertEquals(new Integer(10), po1.field("val1"));
@@ -1092,7 +1094,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             customMappingType
         ));
 
-        TestBinary obj = BinaryObject();
+        TestBinary obj = binaryObject();
 
         BinaryObjectImpl po = marshal(obj, marsh1);
 
@@ -1307,9 +1309,13 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
+        initializePortableContext(marsh);
+
         SimpleObject obj = simpleObject();
 
         final BinaryObject po = marshal(obj, marsh);
+
+        assertEquals(obj, po.deserialize());
 
         BinaryObject copy = copy(po, null);
 
@@ -2547,7 +2553,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @return Portable object.
      */
-    private TestBinary BinaryObject() {
+    private TestBinary binaryObject() {
         SimpleObject innerSimple = new SimpleObject();
 
         innerSimple.b = 1;
@@ -3389,8 +3395,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
             if (idx > 1)
                 writer.writeInt("val3", val3);
-
-            idx++;
         }
 
         /** {@inheritDoc} */
