@@ -12,6 +12,8 @@
 
 param($installPath, $toolsPath, $package, $project)
 
+Write-Host "Updating content files properties..."
+
 Function SetProperties
 {
 	param ($projItem)
