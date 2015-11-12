@@ -1,6 +1,11 @@
 package org.apache.ignite.internal.processors.odbc.protocol;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.portable.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.odbc.GridOdbcRequest;
+import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
@@ -19,8 +24,14 @@ public class GridOdbcParser implements GridNioParser {
     /** Already received bytes of current message. */
     ByteBuffer currentMessage = null;
 
-    @Nullable @Override public byte[] decode(GridNioSession ses, ByteBuffer buf) throws IOException,
-            IgniteCheckedException {
+    /** Context. */
+    protected final GridKernalContext ctx;
+
+    GridOdbcParser(GridKernalContext context) {
+        ctx = context;
+    }
+
+    private byte[] tryConstructMessage(ByteBuffer buf) {
         if (leftToReceive != 0) {
             // Still receiving message
             int toConsume = Math.min(leftToReceive, buf.remaining());
@@ -61,6 +72,13 @@ public class GridOdbcParser implements GridNioParser {
         return result;
     }
 
+    @Nullable @Override public GridOdbcRequest decode(GridNioSession ses, ByteBuffer buf) throws IOException,
+            IgniteCheckedException {
+        byte[] message = tryConstructMessage(buf);
+
+        return message == null ? null : parseMessage(message);
+    }
+
     @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
         assert msg != null;
 
@@ -72,5 +90,22 @@ public class GridOdbcParser implements GridNioParser {
         result.put(messageBytes);
 
         return result;
+    }
+
+    private GridOdbcRequest parseMessage(byte[] msg) {
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, msg, 0, null);
+
+        boolean local = reader.readBoolean();
+        String sql = reader.readString();
+        int pageSize = reader.readInt();
+        int argsNum = reader.readInt();
+
+        System.out.println("Message:");
+        System.out.println("local: " + local);
+        System.out.println("query: " + sql);
+        System.out.println("pageSize: " + pageSize);
+        System.out.println("argsNum: " + argsNum);
+
+        return new GridOdbcRequest(sql, pageSize);
     }
 }

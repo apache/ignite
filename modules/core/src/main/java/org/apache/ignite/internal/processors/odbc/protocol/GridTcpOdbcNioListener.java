@@ -17,16 +17,24 @@
 
 package org.apache.ignite.internal.processors.odbc.protocol;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.odbc.GridOdbcProtocolHandler;
+import org.apache.ignite.internal.processors.odbc.GridOdbcRequest;
+import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener for ODBC driver connection.
  */
-public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
+public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<GridOdbcRequest> {
 
     /** Server. */
     private GridTcpOdbcServer srv;
@@ -37,10 +45,14 @@ public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<byte[]>
     /** Context. */
     protected final GridKernalContext ctx;
 
-    GridTcpOdbcNioListener(IgniteLogger logger, GridTcpOdbcServer server, GridKernalContext context) {
-        log = logger;
-        srv = server;
-        ctx = context;
+    /** Protocol handler. */
+    private GridOdbcProtocolHandler hnd;
+
+    GridTcpOdbcNioListener(IgniteLogger log, GridTcpOdbcServer srv, GridKernalContext ctx, GridOdbcProtocolHandler hnd) {
+        this.log = log;
+        this.srv = srv;
+        this.ctx = ctx;
+        this.hnd = hnd;
     }
 
     @Override
@@ -54,11 +66,36 @@ public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<byte[]>
     }
 
     @Override
-    public void onMessage(GridNioSession ses, byte[] msg) {
-        System.out.println("onMessage");
-        System.out.println("length: " + msg.length);
-        for (int i = 0; i < msg.length && i < 64; ++i) {
-            System.out.println("msg[" + i + "] = " + msg[i]);
-        }
+    public void onMessage(GridNioSession ses, GridOdbcRequest msg) {
+        assert msg != null;
+
+        System.out.println("Query: " + msg.sqlQuery());
+
+        hnd.handleAsync(msg).listen(new CI1<IgniteInternalFuture<GridOdbcResponse>>() {
+            @Override public void apply(IgniteInternalFuture<GridOdbcResponse> fut) {
+                GridOdbcResponse restRes;
+
+                try {
+                    restRes = fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to process client request: " + msg, e);
+
+                    restRes = new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
+                        "Failed to process client request: " + e.getMessage());
+                }
+
+                GridNioFuture<?> sf = ses.send(restRes);
+
+                // Check if send failed.
+                if (sf.isDone())
+                    try {
+                        sf.get();
+                    }
+                    catch (Exception e) {
+                        U.error(log, "Failed to process client request [ses=" + ses + ", msg=" + msg + ']', e);
+                    }
+            }
+        });
     }
 }
