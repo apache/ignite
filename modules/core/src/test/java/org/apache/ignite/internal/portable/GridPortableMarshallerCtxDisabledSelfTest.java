@@ -45,7 +45,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
         PortableMarshaller marsh = new PortableMarshaller();
         marsh.setContext(new MarshallerContextWithNoStorage());
 
-        PortableContext context = new PortableContext(new TestCachingMetadataHandler(), new IgniteConfiguration());
+        PortableContext context = new PortableContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
 
         IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", context);
 

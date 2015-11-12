@@ -47,7 +47,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     protected static PortableMarshaller createMarshaller() throws Exception {
-        PortableContext ctx = new PortableContext(new TestCachingMetadataHandler(), new IgniteConfiguration());
+        PortableContext ctx = new PortableContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
 
         PortableMarshaller marsh = new PortableMarshaller();
 
