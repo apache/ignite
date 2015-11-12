@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetada
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -1285,7 +1284,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JSONObject json = JSONObject.fromObject(ret);
 
-        Integer qryId = (Integer)((Map)json.get("response")).get("queryId");
+        Long qryId = (Long)((Map)json.get("response")).get("queryId");
 
         assertNotNull(qryId);
 
@@ -1294,7 +1293,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         json = JSONObject.fromObject(ret);
 
-        Integer qryId0 = (Integer)((Map)json.get("response")).get("queryId");
+        Long qryId0 = (Long)((Map)json.get("response")).get("queryId");
 
         Boolean last = (Boolean)((Map)json.get("response")).get("last");
 
@@ -1306,7 +1305,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         json = JSONObject.fromObject(ret);
 
-        qryId0 = (Integer)((Map)json.get("response")).get("queryId");
+        qryId0 = (Long)((Map)json.get("response")).get("queryId");
 
         last = (Boolean)((Map)json.get("response")).get("last");
 
@@ -1407,7 +1406,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertTrue(queryCursorFound());
 
-        Integer qryId = (Integer)((Map)json.get("response")).get("queryId");
+        Long qryId = (Long)((Map)json.get("response")).get("queryId");
 
         assertNotNull(qryId);
 
