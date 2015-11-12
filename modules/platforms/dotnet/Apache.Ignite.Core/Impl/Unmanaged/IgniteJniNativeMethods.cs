@@ -40,11 +40,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteIgnitionStop", SetLastError = true,
             CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool IgnitionStop(void* ctx, sbyte* gridName, bool cancel);
+        public static extern bool IgnitionStop(void* ctx, sbyte* gridName, [MarshalAs(UnmanagedType.U1)] bool cancel);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteIgnitionStopAll", SetLastError = true,
             CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        public static extern void IgnitionStopAll(void* ctx, bool cancel);
+        public static extern void IgnitionStopAll(void* ctx, [MarshalAs(UnmanagedType.U1)] bool cancel);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorReleaseStart", SetLastError = true,
             CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
@@ -72,7 +72,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorDataStreamer", SetLastError = true,
             CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        public static extern void* ProcessorDataStreamer(void* ctx, void* obj, sbyte* name, bool keepBinary);
+        public static extern void* ProcessorDataStreamer(void* ctx, void* obj, sbyte* name, 
+            [MarshalAs(UnmanagedType.U1)] bool keepBinary);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorTransactions", SetLastError = true,
             CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
@@ -101,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorAtomicLong", SetLastError = true,
             CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         public static extern void* ProcessorAtomicLong(void* ctx, void* obj, sbyte* name, long initVal,
-            bool create);
+            [MarshalAs(UnmanagedType.U1)] bool create);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutLong", SetLastError = true,
             CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
@@ -213,7 +214,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheSize", SetLastError = true,
             CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        public static extern int CacheSize(void* ctx, void* obj, int peekModes, bool loc);
+        public static extern int CacheSize(void* ctx, void* obj, int peekModes, [MarshalAs(UnmanagedType.U1)] bool loc);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheStoreCallbackInvoke",
             SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
@@ -250,7 +251,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerAllowOverwriteSet",
             SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        public static extern void DataStreamerAllowOverwriteSet(void* ctx, void* obj, bool val);
+        public static extern void DataStreamerAllowOverwriteSet(void* ctx, void* obj, 
+            [MarshalAs(UnmanagedType.U1)] bool val);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerSkipStoreGet",
             SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
@@ -259,7 +261,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerSkipStoreSet",
             SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        public static extern void DataStreamerSkipStoreSet(void* ctx, void* obj, bool val);
+        public static extern void DataStreamerSkipStoreSet(void* ctx, void* obj, 
+            [MarshalAs(UnmanagedType.U1)] bool val);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerPerNodeBufferSizeGet",
             SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
@@ -423,7 +426,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesGetServiceProxy", SetLastError = true,
             CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        public static extern void* ServicesGetServiceProxy(void* ctx, void* target, char* name, bool sticky);
+        public static extern void* ServicesGetServiceProxy(void* ctx, void* target, char* name,
+            [MarshalAs(UnmanagedType.U1)] bool sticky);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongGet", SetLastError = true,
             CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
