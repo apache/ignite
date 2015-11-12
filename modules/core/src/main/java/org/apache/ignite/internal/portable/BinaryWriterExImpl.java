@@ -366,11 +366,14 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 flags |= PortableUtils.FLAG_OFFSET_TWO_BYTES;
         }
         else {
-            if (rawOffPos != 0)
+            if (rawOffPos != 0) {
+                // If there are no schema, we are free to write raw offset to schema offset.
                 flags |= PortableUtils.FLAG_HAS_RAW;
 
-            // If there are no schema, we are free to write raw offset to schema offset.
-            out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
+                out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, rawOffPos - start);
+            }
+            else
+                out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, 0);
         }
 
         // Write flags.
