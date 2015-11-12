@@ -22,10 +22,13 @@
         <tags>Apache Ignite In-memory Distributed Computing</tags>
     </metadata>
     <files>
-        <file src="Apache.Ignite.Core\bin\x64\Release\Apache.Ignite.Core.dll" target="bin" />
+        <!-- Dlls should go to lib folder to be referenced. Optionally, framework subfolder should be used. -->
+        <file src="Apache.Ignite.Core\bin\x64\Release\Apache.Ignite.Core.dll" target="lib\net40" />
         
-        <file src="..\..\..\target\release-package\libs\*.jar" target="libs" />
-        <file src="..\..\..\target\release-package\libs\ignite-spring\*.jar" target="libs" />
-        <file src="..\..\..\target\release-package\libs\ignite-indexing\*.jar" target="libs" />
+        <file src="..\..\..\config\default-config.xml" target="Content\config" />
+        
+        <file src="..\..\..\target\release-package\libs\*.jar" target="Content\libs" />
+        <file src="..\..\..\target\release-package\libs\ignite-spring\*.jar" target="Content\libs" />
+        <file src="..\..\..\target\release-package\libs\ignite-indexing\*.jar" target="Content\libs" />
     </files>
 </package>
