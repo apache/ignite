@@ -549,7 +549,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public int primarySize() {
-        int sum = 0;
+        return (int)primarySizeLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long primarySizeLong() {
+        long sum = 0;
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
