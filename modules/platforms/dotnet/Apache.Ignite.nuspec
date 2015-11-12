@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Apache.Ignite.NET</id>
+	<title>Apache Ignite.NET</title>
+    <version>1.5.0</version>
+    <authors>Apache Ignite</authors>
+    <owners>Apache Ignite</owners>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <projectUrl>https://ignite.apache.org/</projectUrl>
+    <iconUrl>https://ignite.apache.org/images/logo.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Apache Ignite.NET In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.</description>
+    <releaseNotes>TEST RELEASE</releaseNotes>
+    <copyright>Copyright 2015</copyright>
+    <tags>Apache Ignite In-memory Distributed Computing</tags>
+	</metadata>
+	<files>
+		<file src="libs\**" target="libs" />
+	</files>
+</package>
