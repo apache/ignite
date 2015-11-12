@@ -454,29 +454,38 @@ consoleModule.service('$common', [
          * @returns {*[]} First element is length of class for single value, second element is length for pair vlaue.
          */
         function availableWidth(index, id) {
-            var divs = $($('#' + id).find('tr')[index - 1]).find('div');
-
-            var div = null;
+            var idElem = $('#' + id);
 
             var width = 0;
 
-            for (var divIx = 0; divIx < divs.length; divIx ++)
-                if (divs[divIx].className.length == 0 && (div == null ||  divs[divIx].childNodes.length > div.childNodes.length))
-                    div = divs[divIx];
+            switch (idElem.prop("tagName")) {
+                // Detection of available width in presentation table row.
+                case 'TABLE':
+                    var cont = $(idElem.find('tr')[index - 1]).find('td')[0];
 
-            if (div != null) {
-                width = div.clientWidth;
+                    width = cont.clientWidth;
 
-                if (width > 0) {
-                    var children = div.childNodes;
+                    if (width > 0) {
+                        var children = $(cont).children(':not("a")');
 
-                    for (var i = 1; i < children.length; i++) {
-                        var child = children[i];
-
-                        if ('offsetWidth' in child)
-                            width -= $(children[i]).outerWidth(true);
+                        _.forEach(children, function(child) {
+                            if ('offsetWidth' in child)
+                                width -= $(child).outerWidth(true);
+                        });
                     }
-                }
+
+                    break;
+
+                // Detection of available width in dropdown row.
+                case 'A':
+                    width = idElem.width();
+
+                    $(idElem).children(':not("span")').each(function(ix, child) {
+                        if ('offsetWidth' in child)
+                            width -= child.offsetWidth;
+                    });
+
+                    break;
             }
 
             return width | 0;
@@ -735,6 +744,18 @@ consoleModule.service('$common', [
                     result += divider + names[nameIx];
 
                 return result;
+            },
+            widthIsSufficient: function(id, index, text) {
+                try {
+                    var available = availableWidth(index, id);
+
+                    var required = measureText(text);
+
+                    return !available || available >= Math.floor(required);
+                }
+                catch (err) {
+                    return true;
+                }
             },
             ensureActivePanel: function (panels, id, focusId) {
                 ensureActivePanel(panels, id, focusId);

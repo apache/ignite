@@ -42,6 +42,7 @@ consoleModule.controller('metadataController', [
             $scope.getModel = $common.getModel;
             $scope.javaBuildInClasses = $common.javaBuildInClasses;
             $scope.compactJavaName = $common.compactJavaName;
+            $scope.widthIsSufficient = $common.widthIsSufficient;
             $scope.saveBtnTipText = $common.saveBtnTipText;
             $scope.panelExpanded = $common.panelExpanded;
 

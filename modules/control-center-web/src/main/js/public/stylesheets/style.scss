@@ -144,6 +144,11 @@ ul.navbar-nav, .sidebar-nav {
     color: $input-color-placeholder;
 }
 
+.theme-line .summary-pojo-list > ul.dropdown-menu {
+    width: 100%;
+    max-width: none;
+}
+
 .theme-line ul.dropdown-menu {
     min-width: 120px;
     max-width: 280px;

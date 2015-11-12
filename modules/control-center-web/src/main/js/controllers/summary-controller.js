@@ -23,6 +23,7 @@ consoleModule.controller('summaryController', [
     $scope.tableVisibleRow = $table.tableVisibleRow;
     $scope.joinTip = $common.joinTip;
     $scope.getModel = $common.getModel;
+    $scope.widthIsSufficient = $common.widthIsSufficient;
 
     $scope.showMoreInfo = $message.message;
 
