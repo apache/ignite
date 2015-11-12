@@ -477,6 +477,11 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<String> cacheNames() {
+        return locJvmGrid.cacheNames();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
         throw new UnsupportedOperationException("Transactions can't be supported automatically in multi JVM mode.");
     }

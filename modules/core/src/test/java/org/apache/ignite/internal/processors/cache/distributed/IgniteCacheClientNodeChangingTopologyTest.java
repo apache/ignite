@@ -1761,7 +1761,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                     log.error("Failed to wait for update.");
 
                     for (Ignite ignite : G.allGrids())
-                        dumpCacheDebugInfo(ignite);
+                        ((IgniteKernal)ignite).dumpDebugInfo();
 
                     U.dumpThreads(log);
 
@@ -1801,7 +1801,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                     log.error("Failed to wait for update.");
 
                     for (Ignite ignite : G.allGrids())
-                        dumpCacheDebugInfo(ignite);
+                        ((IgniteKernal)ignite).dumpDebugInfo();
 
                     U.dumpThreads(log);
 
