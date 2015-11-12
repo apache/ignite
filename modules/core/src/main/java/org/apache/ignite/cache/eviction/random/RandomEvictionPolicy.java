@@ -39,7 +39,11 @@ import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE
  * <p>
  * Random eviction will provide the best performance over any key queue in which every
  * key has the same probability of being accessed.
+ *
+ * @deprecated This eviction policy implementation doesn't support near cache
+ * and doesn't work on client nodes. Also it seems that random eviction doesn't make sense.
  */
+@Deprecated
 public class RandomEvictionPolicy<K, V> implements EvictionPolicy<K, V>, RandomEvictionPolicyMBean, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
