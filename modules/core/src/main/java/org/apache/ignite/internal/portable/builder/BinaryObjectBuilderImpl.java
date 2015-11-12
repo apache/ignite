@@ -289,11 +289,11 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 }
             }
 
+            BinaryType meta = ctx.metaData(typeId);
+
+            Map<String, Integer> fieldsMeta = null;
+
             if (assignedVals != null && (remainsFlds == null || !remainsFlds.isEmpty())) {
-                BinaryType metadata = ctx.metaData(typeId);
-
-                Map<String, Integer> newFldsMetadata = null;
-
                 for (Map.Entry<String, Object> entry : assignedVals.entrySet()) {
                     Object val = entry.getValue();
 
@@ -311,7 +311,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                     serializer.writeValue(writer, val);
 
-                    String oldFldTypeName = metadata == null ? null : metadata.fieldTypeName(name);
+                    String oldFldTypeName = meta == null ? null : meta.fieldTypeName(name);
 
                     int newFldTypeId;
 
@@ -324,11 +324,10 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                     if (oldFldTypeName == null) {
                         // It's a new field, we have to add it to metadata.
+                        if (fieldsMeta == null)
+                            fieldsMeta = new HashMap<>();
 
-                        if (newFldsMetadata == null)
-                            newFldsMetadata = new HashMap<>();
-
-                        newFldsMetadata.put(name, PortableUtils.fieldTypeId(newFldTypeName));
+                        fieldsMeta.put(name, PortableUtils.fieldTypeId(newFldTypeName));
                     }
                     else {
                         String objTypeName = PortableUtils.fieldTypeName(GridPortableMarshaller.OBJ);
@@ -336,26 +335,13 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         if (!objTypeName.equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
                             throw new BinaryObjectException(
                                 "Wrong value has been set [" +
-                                    "typeName=" + (typeName == null ? metadata.typeName() : typeName) +
+                                    "typeName=" + (typeName == null ? meta.typeName() : typeName) +
                                     ", fieldName=" + name +
                                     ", fieldType=" + oldFldTypeName +
                                     ", assignedValueType=" + newFldTypeName + ']'
                             );
                         }
                     }
-                }
-
-                if (newFldsMetadata != null) {
-                    String typeName = this.typeName;
-
-                    if (typeName == null) {
-                        assert metadata != null;
-
-                        typeName = metadata.typeName();
-                    }
-
-                    ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, newFldsMetadata,
-                        ctx.affinityKeyFieldName(typeId), Collections.singleton(writer.currentSchema())));
                 }
             }
 
@@ -375,6 +361,22 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             }
 
             writer.postWrite(true);
+
+            // Update metadata if needed.
+            int schemaId = writer.schemaId();
+
+            if (ctx.schemaRegistry(typeId).schema(schemaId) == null) {
+                String typeName = this.typeName;
+
+                if (typeName == null) {
+                    assert meta != null;
+
+                    typeName = meta.typeName();
+                }
+
+                ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta,
+                    ctx.affinityKeyFieldName(typeId), Collections.singleton(writer.currentSchema())));
+            }
         }
         finally {
             writer.popSchema();

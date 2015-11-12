@@ -1750,6 +1750,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
+     * @return Current schema ID.
+     */
+    public int schemaId() {
+        return schemaId;
+    }
+
+    /**
      * @return Current writer's schema.
      */
     public PortableSchema currentSchema() {

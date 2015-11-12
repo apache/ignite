@@ -96,10 +96,13 @@ public class PortableClassDescriptor {
     private final Method readResolveMtd;
 
     /** */
-    private final Map<String, Integer> fieldsMeta;
+    private final Map<String, Integer> stableFieldsMeta;
 
     /** Object schemas. Initialized only for serializable classes and contains only 1 entry. */
-    private final Collection<PortableSchema> schemas;
+    private final Collection<PortableSchema> stableSchemas;
+
+    /** Schema registry. */
+    private final PortableSchemaRegistry schemaReg;
 
     /** */
     private final boolean keepDeserialized;
@@ -148,14 +151,16 @@ public class PortableClassDescriptor {
 
         this.ctx = ctx;
         this.cls = cls;
-        this.userType = userType;
         this.typeId = typeId;
+        this.userType = userType;
         this.typeName = typeName;
         this.affKeyFieldName = affKeyFieldName;
         this.serializer = serializer;
         this.idMapper = idMapper;
         this.keepDeserialized = keepDeserialized;
         this.registered = registered;
+
+        schemaReg = ctx.schemaRegistry(typeId);
 
         excluded = MarshallerExclusions.isExcluded(cls);
 
@@ -204,8 +209,8 @@ public class PortableClassDescriptor {
             case EXCLUSION:
                 ctor = null;
                 fields = null;
-                fieldsMeta = null;
-                schemas = null;
+                stableFieldsMeta = null;
+                stableSchemas = null;
 
                 break;
 
@@ -213,15 +218,15 @@ public class PortableClassDescriptor {
             case EXTERNALIZABLE:
                 ctor = constructor(cls);
                 fields = null;
-                fieldsMeta = null;
-                schemas = null;
+                stableFieldsMeta = null;
+                stableSchemas = null;
 
                 break;
 
             case OBJECT:
                 ctor = constructor(cls);
                 fields = new ArrayList<>();
-                fieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
+                stableFieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
 
                 PortableSchema.Builder schemaBuilder = PortableSchema.Builder.newBuilder();
 
@@ -252,12 +257,12 @@ public class PortableClassDescriptor {
                             schemaBuilder.addField(fieldId);
 
                             if (metaDataEnabled)
-                                fieldsMeta.put(name, fieldInfo.fieldMode().typeId());
+                                stableFieldsMeta.put(name, fieldInfo.fieldMode().typeId());
                         }
                     }
                 }
 
-                schemas = Collections.singleton(schemaBuilder.build());
+                stableSchemas = Collections.singleton(schemaBuilder.build());
 
                 break;
 
@@ -301,14 +306,14 @@ public class PortableClassDescriptor {
      * @return Fields meta data.
      */
     Map<String, Integer> fieldsMeta() {
-        return fieldsMeta;
+        return stableFieldsMeta;
     }
 
     /**
      * @return Schemas.
      */
     Collection<PortableSchema> schemas() {
-        return schemas;
+        return stableSchemas;
     }
 
     /**
@@ -563,24 +568,30 @@ public class PortableClassDescriptor {
                             ((Binarylizable)obj).writeBinary(writer);
 
                         writer.postWrite(userType);
+
+                        // Check whether we need to update metadata.
+                        if (obj.getClass() != BinaryMetadata.class) {
+                            int schemaId = writer.schemaId();
+
+                            if (schemaReg.schema(schemaId) == null) {
+                                // This is new schema, let's update metadata.
+                                BinaryMetadataCollector collector =
+                                    new BinaryMetadataCollector(typeId, typeName, idMapper);
+
+                                if (serializer != null)
+                                    serializer.writeBinary(obj, collector);
+                                else
+                                    ((Binarylizable)obj).writeBinary(collector);
+
+                                BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
+                                    affKeyFieldName, collector.schemas());
+
+                                ctx.updateMetadata(typeId, meta);
+                            }
+                        }
                     }
                     finally {
                         writer.popSchema();
-                    }
-
-                    if (obj.getClass() != BinaryMetadata.class
-                        && ctx.isMetaDataChanged(typeId, writer.metaDataHashSum())) {
-                        BinaryMetadataCollector collector = new BinaryMetadataCollector(typeId, typeName, idMapper);
-
-                        if (serializer != null)
-                            serializer.writeBinary(obj, collector);
-                        else
-                            ((Binarylizable)obj).writeBinary(collector);
-
-                        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(), affKeyFieldName,
-                            collector.schemas());
-
-                        ctx.updateMetadata(typeId, meta);
                     }
                 }
 

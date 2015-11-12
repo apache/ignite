@@ -914,7 +914,11 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         builder.removeField("str");
 
-        assertNull(builder.build().<TestObjectAllTypes>deserialize().str);
+        BinaryObject binary = builder.build();
+
+        TestObjectAllTypes deserialzied = binary.deserialize();
+
+        assertNull(deserialzied.str);
     }
 
     /**

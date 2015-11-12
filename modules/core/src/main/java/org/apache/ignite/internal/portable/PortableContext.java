@@ -61,7 +61,6 @@ import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
@@ -105,9 +104,6 @@ public class PortableContext implements Externalizable {
         for (char c = 0; c <= MAX_LOWER_CASE_CHAR; c++)
             LOWER_CASE_CHARS[c] = Character.toLowerCase(c);
     }
-
-    /** */
-    private final ConcurrentMap<Integer, Collection<Integer>> metaDataCache = new ConcurrentHashMap8<>();
 
     /** */
     private final ConcurrentMap<Class<?>, PortableClassDescriptor> descByCls = new ConcurrentHashMap8<>();
@@ -827,27 +823,6 @@ public class PortableContext implements Externalizable {
      */
     public String affinityKeyFieldName(int typeId) {
         return affKeyFieldNames.get(typeId);
-    }
-
-    /**
-     * @param typeId Type ID.
-     * @param metaHashSum Meta data hash sum.
-     * @return Whether meta is changed.
-     */
-    boolean isMetaDataChanged(int typeId, @Nullable Integer metaHashSum) {
-        if (metaHashSum == null)
-            return false;
-
-        Collection<Integer> hist = metaDataCache.get(typeId);
-
-        if (hist == null) {
-            Collection<Integer> old = metaDataCache.putIfAbsent(typeId, hist = new GridConcurrentHashSet<>());
-
-            if (old != null)
-                hist = old;
-        }
-
-        return hist.add(metaHashSum);
     }
 
     /**
