@@ -89,9 +89,11 @@ namespace Apache.Ignite.Core.Impl.Common
         private static bool IsIgniteHome(DirectoryInfo dir)
         {
             return dir.Exists &&
-                   dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
-                   (dir.EnumerateDirectories().Count(x => x.Name == "modules") == 1 ||
-                    dir.EnumerateDirectories().Count(x => x.Name == "platforms") == 1);
+                   (dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
+                    dir.EnumerateDirectories().Count(x => x.Name == "modules" || x.Name == "platforms") == 1)
+                   ||  // NuGet home
+                   (dir.EnumerateDirectories().Count(x => x.Name == "Config" || x.Name == "Libs") == 2 &&
+                    dir.EnumerateFiles().Any(x => x.Name == "Apache.Ignite.Core.dll"));
         }
     }
 }
