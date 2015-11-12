@@ -240,8 +240,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 int idx = 0;
 
-                // TODO: + fieldIdLen looks incorrect here.
-                while (reader.position() + fieldIdLen < rawPos) {
+                while (reader.position() < rawPos) {
                     int fieldId = schema.fieldId(idx++);
                     int fieldLen =
                         fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen).get2();
