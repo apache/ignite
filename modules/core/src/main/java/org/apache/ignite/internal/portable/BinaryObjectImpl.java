@@ -279,9 +279,11 @@ public final class BinaryObjectImpl extends BinaryObjectEx implements Externaliz
         int schemaOffset = PortablePrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
         short flags = PortablePrimitives.readShort(arr, start + GridPortableMarshaller.FLAGS_POS);
+
+        int fieldIdLen = PortableUtils.isCompactFooter(flags) ? 0 : PortableUtils.FIELD_ID_LEN;
         int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
 
-        int fieldOffsetPos = start + schemaOffset + order * (4 + fieldOffsetLen) + 4;
+        int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
 
         int fieldPos;
 
@@ -458,7 +460,7 @@ public final class BinaryObjectImpl extends BinaryObjectEx implements Externaliz
     @Override protected PortableSchema createSchema() {
         BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, arr, start, null);
 
-        return reader.createSchema();
+        return reader.getOrCreateSchema();
     }
 
     /** {@inheritDoc} */

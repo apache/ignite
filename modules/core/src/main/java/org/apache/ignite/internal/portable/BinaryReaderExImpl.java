@@ -2556,13 +2556,52 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
     }
 
     /**
+     * Get or create object schema.
+     *
+     * @return Schema.
+     */
+    public PortableSchema getOrCreateSchema() {
+        parseHeaderIfNeeded();
+
+        PortableSchema schema = ctx.schemaRegistry(typeId).schema(schemaId);
+
+        if (schema == null) {
+            if (fieldIdLen != PortableUtils.FIELD_ID_LEN) {
+                BinaryTypeImpl type = (BinaryTypeImpl)ctx.metaData(typeId);
+
+                if (type == null || type.metadata() == null)
+                    throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
+                        typeId);
+
+                for (PortableSchema typeSchema : type.metadata().schemas()) {
+                    if (schemaId == typeSchema.schemaId()) {
+                        schema = typeSchema;
+
+                        break;
+                    }
+                }
+
+                if (schema == null)
+                    throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
+                        "typeId=" + typeId + ", schemaId=" + schemaId + ']');
+            }
+            else
+                schema = createSchema();
+
+            assert schema != null;
+
+            ctx.schemaRegistry(typeId).addSchema(schemaId, schema);
+        }
+
+        return schema;
+    }
+
+    /**
      * Create schema.
      *
      * @return Schema.
      */
-    public PortableSchema createSchema() {
-        parseHeaderIfNeeded();
-
+    private PortableSchema createSchema() {
         assert fieldIdLen == PortableUtils.FIELD_ID_LEN;
 
         PortableSchema.Builder builder = PortableSchema.Builder.newBuilder();
@@ -2617,40 +2656,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
             PortableSchema schema0 = schema;
 
             if (schema0 == null) {
-                schema0 = ctx.schemaRegistry(typeId).schema(schemaId);
-
-                if (schema0 == null) {
-                    if (fieldIdLen == 0) {
-                        BinaryTypeImpl type = (BinaryTypeImpl)ctx.metaData(typeId);
-
-                        if (type == null || type.metadata() == null)
-                            throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
-                                typeId);
-
-                        for (PortableSchema typeSchema : type.metadata().schemas()) {
-                            if (schemaId == typeSchema.schemaId()) {
-                                schema0 = typeSchema;
-
-                                break;
-                            }
-                        }
-
-                        if (schema0 == null)
-                            throw new BinaryObjectException("Cannot find schema for object with compact fotter [" +
-                                "typeId=" + typeId + ", schemaId=" + schemaId + ']');
-                    }
-                    else
-                        schema0 = createSchema();
-
-                    assert schema0 != null;
-
-                    ctx.schemaRegistry(typeId).addSchema(schemaId, schema0);
-                }
+                schema0 = getOrCreateSchema();
 
                 schema = schema0;
             }
 
-            int order = schema.order(id);
+            int order = schema0.order(id);
 
             if (order != PortableSchema.ORDER_NOT_FOUND) {
                 int offsetPos = footerStart + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;

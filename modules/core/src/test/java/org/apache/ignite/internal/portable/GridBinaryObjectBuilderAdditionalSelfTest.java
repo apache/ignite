@@ -373,7 +373,9 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
         float[] arr = mutObj.getField("fArr");
         arr[0] = 2.0f;
 
-        TestObjectAllTypes res = mutObj.build().deserialize();
+        BinaryObject resBinary = mutObj.build();
+
+        TestObjectAllTypes res = resBinary.deserialize();
 
         Assert.assertArrayEquals(new float[] {2.0f, 1.0f, 1.0f}, res.fArr, 0);
     }

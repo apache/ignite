@@ -44,8 +44,11 @@ public class PortableSchema implements Externalizable {
     /** Inline flag. */
     private boolean inline;
 
-    /** Map with offsets. */
-    private HashMap<Integer, Integer> map;
+    /** Map with ID to order. */
+    private HashMap<Integer, Integer> idToOrder;
+
+    /** IDs depending on order. */
+    private ArrayList<Integer> ids;
 
     /** ID 1. */
     private int id0;
@@ -74,49 +77,11 @@ public class PortableSchema implements Externalizable {
     /** Schema ID. */
     private int schemaId;
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(schemaId);
-
-        if (inline) {
-            out.writeBoolean(true);
-
-            out.writeInt(id0);
-            out.writeInt(id1);
-            out.writeInt(id2);
-            out.writeInt(id3);
-            out.writeInt(id4);
-            out.writeInt(id5);
-            out.writeInt(id6);
-            out.writeInt(id7);
-        }
-        else {
-            out.writeBoolean(false);
-            U.writeMap(out, map);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        schemaId = in.readInt();
-
-        if (in.readBoolean()) {
-            inline = true;
-
-            id0 = in.readInt();
-            id1 = in.readInt();
-            id2 = in.readInt();
-            id3 = in.readInt();
-            id4 = in.readInt();
-            id5 = in.readInt();
-            id6 = in.readInt();
-            id7 = in.readInt();
-        }
-        else {
-            inline = false;
-
-            map = U.readHashMap(in);
-        }
+    /**
+     * {@link Externalizable} support.
+     */
+    public PortableSchema() {
+        // No-op.
     }
 
     /**
@@ -142,17 +107,22 @@ public class PortableSchema implements Externalizable {
             id6 = iter.hasNext() ? iter.next() : 0;
             id7 = iter.hasNext() ? iter.next() : 0;
 
-            map = null;
+            idToOrder = null;
         }
         else {
             inline = false;
 
             id0 = id1 = id2 = id3 = id4 = id5 = id6 = id7 = 0;
 
-            map = new HashMap<>();
+            ids = new ArrayList<>();
+            idToOrder = new HashMap<>();
 
-            for (int i = 0; i < fieldIds.size(); i++)
-                map.put(fieldIds.get(i), i);
+            for (int i = 0; i < fieldIds.size(); i++) {
+                int fieldId = fieldIds.get(i);
+
+                ids.add(fieldId);
+                idToOrder.put(fieldId, i);
+            }
         }
     }
 
@@ -164,7 +134,50 @@ public class PortableSchema implements Externalizable {
     }
 
     /**
-     * Get field position in footer by schema ID.
+     * Get field ID by order in footer.
+     *
+     * @param order Order.
+     * @return Field ID.
+     */
+    public int fieldId(int order) {
+        if (inline) {
+            switch (order) {
+                case 0:
+                    return id0;
+
+                case 1:
+                    return id1;
+
+                case 2:
+                    return id2;
+
+                case 3:
+                    return id3;
+
+                case 4:
+                    return id4;
+
+                case 5:
+                    return id5;
+
+                case 6:
+                    return id6;
+
+                case 7:
+                    return id7;
+
+                default:
+                    assert false : "Should not reach here.";
+
+                    return 0;
+            }
+        }
+        else
+            return ids.get(order);
+    }
+
+    /**
+     * Get field order in footer by field ID.
      *
      * @param id Field ID.
      * @return Offset or {@code 0} if there is no such field.
@@ -198,7 +211,7 @@ public class PortableSchema implements Externalizable {
             return ORDER_NOT_FOUND;
         }
         else {
-            Integer order = map.get(id);
+            Integer order = idToOrder.get(id);
 
             return order != null ? order : ORDER_NOT_FOUND;
         }
@@ -212,6 +225,65 @@ public class PortableSchema implements Externalizable {
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return o != null && o instanceof PortableSchema && schemaId == ((PortableSchema)o).schemaId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(schemaId);
+
+        if (inline) {
+            out.writeBoolean(true);
+
+            out.writeInt(id0);
+            out.writeInt(id1);
+            out.writeInt(id2);
+            out.writeInt(id3);
+            out.writeInt(id4);
+            out.writeInt(id5);
+            out.writeInt(id6);
+            out.writeInt(id7);
+        }
+        else {
+            out.writeBoolean(false);
+
+            out.writeInt(ids.size());
+
+            for (Integer id : ids)
+                out.writeInt(id);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        schemaId = in.readInt();
+
+        if (in.readBoolean()) {
+            inline = true;
+
+            id0 = in.readInt();
+            id1 = in.readInt();
+            id2 = in.readInt();
+            id3 = in.readInt();
+            id4 = in.readInt();
+            id5 = in.readInt();
+            id6 = in.readInt();
+            id7 = in.readInt();
+        }
+        else {
+            inline = false;
+
+            int size = in.readInt();
+
+            ids = new ArrayList<>(size);
+            idToOrder = U.newHashMap(size);
+
+            for (int i = 0; i < size; i++) {
+                int fieldId = in.readInt();
+
+                ids.add(fieldId);
+                idToOrder.put(fieldId, i);
+            }
+        }
     }
 
     /**

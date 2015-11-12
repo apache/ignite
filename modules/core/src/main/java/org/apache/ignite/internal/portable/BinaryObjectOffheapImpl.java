@@ -136,7 +136,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
             start,
             null);
 
-        return reader.createSchema();
+        return reader.getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -206,8 +206,10 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
 
         short flags = PortablePrimitives.readShort(ptr, start + GridPortableMarshaller.FLAGS_POS);
 
+        int fieldIdLen = PortableUtils.isCompactFooter(flags) ? 0 : PortableUtils.FIELD_ID_LEN;
         int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
-        int fieldOffsetPos = start + schemaOffset + order * (4 + fieldOffsetLen) + 4;
+
+        int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
 
         int fieldPos;
 

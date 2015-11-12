@@ -27,6 +27,7 @@ import org.apache.ignite.internal.portable.PortablePositionReadable;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.PortablePrimitives;
 import org.apache.ignite.internal.portable.BinaryReaderExImpl;
+import org.apache.ignite.internal.portable.PortableSchema;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -78,6 +79,13 @@ public class PortableBuilderReader implements PortablePositionReadable {
      */
     public void registerObject(BinaryObjectBuilderImpl obj) {
         objMap.put(obj.start(), obj);
+    }
+
+    /**
+     * @return Object's schema.
+     */
+    public PortableSchema schema() {
+        return reader.getOrCreateSchema();
     }
 
     /**

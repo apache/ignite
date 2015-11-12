@@ -28,6 +28,7 @@ import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.PortableSchema;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.F;
@@ -204,6 +205,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             Set<Integer> remainsFlds = null;
 
             if (reader != null) {
+                PortableSchema schema = reader.schema();
+
                 Map<Integer, Object> assignedFldsById;
 
                 if (assignedVals != null) {
@@ -216,7 +219,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     }
 
                     remainsFlds = assignedFldsById.keySet();
-                } else
+                }
+                else
                     assignedFldsById = Collections.emptyMap();
 
                 // Get footer details.
@@ -234,8 +238,10 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 // Position reader on data.
                 reader.position(start + hdrLen);
 
+                int idx = 0;
+
                 while (reader.position() + fieldIdLen < rawPos) {
-                    int fieldId = reader.readIntPositioned(footerPos);
+                    int fieldId = schema.fieldId(idx++);
                     int fieldLen =
                         fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen).get2();
 
@@ -296,12 +302,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                     String name = entry.getKey();
 
-                    int fldId = ctx.fieldId(typeId, name);
+                    int fieldId = ctx.fieldId(typeId, name);
 
-                    if (remainsFlds != null && !remainsFlds.contains(fldId))
+                    if (remainsFlds != null && !remainsFlds.contains(fieldId))
                         continue;
 
-                    writer.writeFieldId(fldId);
+                    writer.writeFieldId(fieldId);
 
                     serializer.writeValue(writer, val);
 
@@ -419,9 +425,13 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * Initialize read cache if needed.
      */
     private void ensureReadCacheInit() {
+        assert reader != null;
+
         if (readCache == null) {
             int fieldIdLen = PortableUtils.fieldIdLength(flags);
             int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
+
+            PortableSchema schema = reader.schema();
 
             Map<Integer, Object> readCache = new HashMap<>();
 
@@ -432,8 +442,10 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
 
+            int idx = 0;
+
             while (footerPos + fieldIdLen < footerEnd) {
-                int fieldId = reader.readIntPositioned(footerPos);
+                int fieldId = schema.fieldId(idx++);
 
                 IgniteBiTuple<Integer, Integer> posAndLen =
                     fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen);
