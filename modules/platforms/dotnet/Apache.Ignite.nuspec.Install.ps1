@@ -12,15 +12,13 @@
 
 param($installPath, $toolsPath, $package, $project)
 
-$configItem = $project.ProjectItems.Item("NLog.config")
+ForEach ($item in $project.ProjectItems) 
+{ 
+    # Copy Always = 1
+    # Copy if Newer = 2  
+    # $item.Properties.Item("CopyToOutputDirectory").Value = 2
+    Write-Host $item.Name 
 
-# set 'Copy To Output Directory' to 'Copy if newer'
-$copyToOutput = $configItem.Properties.Item("CopyToOutputDirectory")
-
-# Copy Always Always copyToOutput.Value = 1
-# Copy if Newer copyToOutput.Value = 2  
-$copyToOutput.Value = 2
-
-# set 'Build Action' to 'Content'
-$buildAction = $configItem.Properties.Item("BuildAction")
-$buildAction.Value = 2
+    #$buildAction = $item.Properties.Item("BuildAction")
+    #$buildAction.Value = 2
+}
