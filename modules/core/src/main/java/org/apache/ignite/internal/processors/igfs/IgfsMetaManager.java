@@ -3806,4 +3806,13 @@ public class IgfsMetaManager extends IgfsManager {
             return S.toString(LockFileProcessor.class, this);
         }
     }
+
+    /**
+     * Gets the busy lock.
+     *
+     * @return The busy lock.
+     */
+    GridSpinBusyLock busyLock() {
+        return busyLock;
+    }
 }
