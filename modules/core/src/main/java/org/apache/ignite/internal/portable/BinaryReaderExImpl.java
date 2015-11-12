@@ -159,6 +159,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
     /** Schema Id. */
     private int schemaId;
 
+    /** Whether this is user type or not. */
+    private boolean userType;
+
     /** Whether field IDs exist. */
     private int fieldIdLen;
 
@@ -224,6 +227,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
         PortableUtils.checkProtocolVersion(in.readByte());
 
         short flags = in.readShort();
+
+        userType = PortableUtils.isUserType(flags);
 
         fieldIdLen = PortableUtils.fieldIdLength(flags);
         fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
@@ -2567,7 +2572,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
 
         if (schema == null) {
             if (fieldIdLen != PortableUtils.FIELD_ID_LEN) {
-                BinaryTypeImpl type = (BinaryTypeImpl)ctx.metaData(typeId);
+                BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId);
 
                 if (type == null || type.metadata() == null)
                     throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
@@ -2633,7 +2638,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
         int searchPos = footerStart;
         int searchTail = searchPos + footerLen;
 
-        if (fieldIdLen != 0 && hasLowFieldsCount(footerLen)) {
+        if (!userType || (fieldIdLen != 0 && hasLowFieldsCount(footerLen))) {
             while (true) {
                 if (searchPos >= searchTail)
                     return 0;

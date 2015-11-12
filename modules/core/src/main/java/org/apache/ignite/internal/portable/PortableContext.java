@@ -813,7 +813,7 @@ public class PortableContext implements Externalizable {
      * @return Meta data.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public BinaryType metaData(int typeId) throws BinaryObjectException {
+    @Nullable public BinaryType metadata(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata(typeId) : null;
     }
 

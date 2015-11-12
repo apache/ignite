@@ -336,7 +336,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     public void postWrite(boolean userType) {
         short flags = userType ? PortableUtils.FLAG_USR_TYP : 0;
 
-        if (ctx.isCompactFooter())
+        boolean useCompactFooter = ctx.isCompactFooter() && userType;
+
+        if (useCompactFooter)
             flags |= PortableUtils.FLAG_COMPACT_FOOTER;
         
         if (schema != null) {
@@ -349,7 +351,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, out.position() - start);
 
             // Write the schema.
-            int offsetByteCnt = schema.write(this, fieldCnt, ctx.isCompactFooter());
+            int offsetByteCnt = schema.write(this, fieldCnt, useCompactFooter);
 
             if (offsetByteCnt == PortableUtils.OFFSET_1)
                 flags |= PortableUtils.FLAG_OFFSET_ONE_BYTE;

@@ -289,7 +289,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 }
             }
 
-            BinaryType meta = ctx.metaData(typeId);
+            BinaryType meta = ctx.metadata(typeId);
 
             Map<String, Integer> fieldsMeta = null;
 

@@ -171,7 +171,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
         if (ctx == null)
             throw new BinaryObjectException("PortableContext is not set for the object.");
 
-        return ctx.metaData(typeId());
+        return ctx.metadata(typeId());
     }
 
     /** {@inheritDoc} */
