@@ -12,19 +12,21 @@
 
 param($installPath, $toolsPath, $package, $project)
 
-Write-Host "Welcome to Apache Ignite .NET!"
-    
-SetProperties $project.ProjectItems.Item["Content"].Item["default-config.xml"]
-
-ForEach ($item in $project.ProjectItems.Item["Libs"].Items) 
-    SetProperties $item
-
 Function SetProperties
 {
 	param ($projItem)
     
     Write-Host $projItem.Name 
 
-    $projItem.Properties.Item("BuildAction") = 2  # content
     $projItem.Properties.Item("CopyToOutputDirectory").Value = 2  # copy if newer
 }
+
+SetProperties $project.ProjectItems.Item("Config").ProjectItems.Item("default-config.xml")
+
+ForEach ($item in $project.ProjectItems.Item("Libs").ProjectItems) 
+{
+    SetProperties $item
+}
+
+
+Write-Host "Welcome to Apache Ignite.NET!"
