@@ -18,35 +18,56 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.yardstick.cache.model.SampleValue;
+import org.apache.ignite.IgniteTransactions;
 import org.yardstickframework.BenchmarkConfiguration;
 
+import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.doInTransaction;
+
 /**
- * Ignite benchmark that performs transactional put operations.
+ * Ignite benchmark that performs transactional putAll operations.
  */
-public class IgnitePutTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+public class IgniteGetAllPutAllTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, Integer> {
+    /** */
+    private IgniteTransactions txs;
+
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        if (!IgniteSystemProperties.getBoolean("SKIP_MAP_CHECK"))
-            ignite().compute().broadcast(new WaitMapExchangeFinishCallable());
+        txs = ignite().transactions();
     }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int key = nextRandom(args.range());
+        final ThreadRange r = threadRange();
 
-        // Implicit transaction is used.
-        cache.put(key, new SampleValue(key));
+        doInTransaction(txs, args.txConcurrency(), args.txIsolation(), new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                SortedMap<Integer, Integer> vals = new TreeMap<>();
+
+                for (int i = 0; i < args.batch(); i++) {
+                    int key = r.nextRandom();
+
+                    vals.put(key, key);
+                }
+
+                cache.getAll(vals.keySet());
+
+                cache.putAll(vals);
+
+                return null;
+            }
+        });
 
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCache<Integer, Object> cache() {
+    @Override protected IgniteCache<Integer, Integer> cache() {
         return ignite().cache("tx");
     }
 }

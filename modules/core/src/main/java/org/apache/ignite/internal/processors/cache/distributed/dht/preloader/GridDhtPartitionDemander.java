@@ -114,6 +114,10 @@ public class GridDhtPartitionDemander {
     @Deprecated//Backward compatibility. To be removed in future.
     private final AtomicInteger dmIdx = new AtomicInteger();
 
+    /** DemandWorker. */
+    @Deprecated//Backward compatibility. To be removed in future.
+    private volatile DemandWorker worker;
+
     /** Cached rebalance topics. */
     private final Map<Integer, Object> rebalanceTopics;
 
@@ -165,6 +169,11 @@ public class GridDhtPartitionDemander {
         catch (Exception ex) {
             rebalanceFut.onDone(false);
         }
+
+        DemandWorker dw = worker;
+
+        if (dw != null)
+            dw.cancel();
 
         lastExchangeFut = null;
 
@@ -426,9 +435,9 @@ public class GridDhtPartitionDemander {
                 d.timeout(cctx.config().getRebalanceTimeout());
                 d.workerId(0);//old api support.
 
-                DemandWorker dw = new DemandWorker(dmIdx.incrementAndGet(), fut);
+                worker = new DemandWorker(dmIdx.incrementAndGet(), fut);
 
-                dw.run(node, d);
+                worker.run(node, d);
             }
         }
 
@@ -1137,6 +1146,13 @@ public class GridDhtPartitionDemander {
             return TOPIC_CACHE.topic(cctx.namexx(), cctx.nodeId(), id, idx);
         }
 
+        /** */
+        public void cancel() {
+            msgQ.clear();
+
+            msgQ.offer(new SupplyMessage(null, null));
+        }
+
         /**
          * @param node Node to demand from.
          * @param topVer Topology version.
@@ -1159,7 +1175,7 @@ public class GridDhtPartitionDemander {
             d.topic(topic(cntr));
             d.workerId(id);
 
-            if (topologyChanged(fut))
+            if (fut.isDone() || topologyChanged(fut))
                 return;
 
             cctx.io().addOrderedHandler(d.topic(), new CI2<UUID, GridDhtPartitionSupplyMessage>() {
@@ -1191,7 +1207,7 @@ public class GridDhtPartitionDemander {
 
                     // While.
                     // =====
-                    while (!topologyChanged(fut)) {
+                    while (!fut.isDone() && !topologyChanged(fut)) {
                         SupplyMessage s = poll(msgQ, timeout);
 
                         // If timed out.
@@ -1227,6 +1243,9 @@ public class GridDhtPartitionDemander {
                             else
                                 continue; // While.
                         }
+
+                        if (s.senderId() == null)
+                            return; // Stopping now.
 
                         // Check that message was received from expected node.
                         if (!s.senderId().equals(node.id())) {
@@ -1350,7 +1369,7 @@ public class GridDhtPartitionDemander {
                         }
                     }
                 }
-                while (retry && !topologyChanged(fut));
+                while (retry && !fut.isDone() && !topologyChanged(fut));
             }
             finally {
                 cctx.io().removeOrderedHandler(d.topic());

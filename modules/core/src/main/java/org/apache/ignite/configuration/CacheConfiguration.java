@@ -174,8 +174,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default size for onheap SQL row cache size. */
     public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
 
+    /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
+    public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
+
     /** Cache name. */
     private String name;
+
+    /** Threshold for concurrent loading of keys from {@link CacheStore}. */
+    private int storeConcurrentLoadAllThreshold = DFLT_CONCURRENT_LOAD_ALL_THRESHOLD;
 
     /** Rebalance thread pool size. */
     @Deprecated
@@ -829,6 +835,37 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public CacheConfiguration<K, V> setCacheStoreFactory(
         Factory<? extends CacheStore<? super K, ? super V>> storeFactory) {
         this.storeFactory = storeFactory;
+
+        return this;
+    }
+
+    /**
+     * Gets the threshold used in cases when values for multiple keys are being loaded from an underlying
+     * {@link CacheStore} in parallel. In the situation when several threads load the same or intersecting set of keys
+     * and the total number of keys to load is less or equal to this threshold then there will be no a second call to
+     * the storage in order to load a key from thread A if the same key is already being loaded by thread B.
+     *
+     * The threshold should be controlled wisely. On the one hand if it's set to a big value then the interaction with
+     * a storage during the load of missing keys will be minimal. On the other hand the big value may result in
+     * significant performance degradation because it is needed to check for every key whether it's being loaded or not.
+     *
+     * When not set, default value is {@link #DFLT_CONCURRENT_LOAD_ALL_THRESHOLD}.
+     *
+     * @return The concurrent load-all threshold.
+     */
+    public int getStoreConcurrentLoadAllThreshold() {
+        return storeConcurrentLoadAllThreshold;
+    }
+
+    /**
+     * Sets the concurrent load-all threshold used for cases when keys' values are being loaded from {@link CacheStore}
+     * in parallel.
+     *
+     * @param storeConcurrentLoadAllThreshold The concurrent load-all threshold.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setStoreConcurrentLoadAllThreshold(int storeConcurrentLoadAllThreshold) {
+        this.storeConcurrentLoadAllThreshold = storeConcurrentLoadAllThreshold;
 
         return this;
     }
