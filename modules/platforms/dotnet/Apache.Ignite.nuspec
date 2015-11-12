@@ -24,7 +24,8 @@
     <files>
         <file src="Apache.Ignite.Core\bin\x64\Release\Apache.Ignite.Core.dll" target="bin" />
         
-        <!-- TODO: This should take everything except OPTIONAL from Java release folder -->
-        <file src="libs\**" target="libs" />
+        <file src="..\..\..\target\release-package\libs\*.jar" target="libs" />
+        <file src="..\..\..\target\release-package\libs\ignite-spring\*.jar" target="libs" />
+        <file src="..\..\..\target\release-package\libs\ignite-indexing\*.jar" target="libs" />
     </files>
 </package>
