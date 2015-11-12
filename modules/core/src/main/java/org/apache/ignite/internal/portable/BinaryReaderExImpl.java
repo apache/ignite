@@ -229,14 +229,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
 
         typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
 
-        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start, offsetSize);
+        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start);
 
         footerStart = footer.get1();
         footerLen = footer.get2() - footerStart;
 
         schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
 
-        rawOff = PortableUtils.rawOffsetAbsolute(in, start, offsetSize);
+        rawOff = PortableUtils.rawOffsetAbsolute(in, start);
 
         if (typeId == UNREGISTERED_TYPE_ID) {
             // Skip to the class name position.

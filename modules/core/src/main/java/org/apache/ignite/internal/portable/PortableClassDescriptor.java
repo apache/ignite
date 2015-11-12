@@ -682,7 +682,6 @@ public class PortableClassDescriptor {
 
         PortableUtils.writeHeader(
             writer,
-            userType,
             registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID,
             obj instanceof CacheObjectImpl ? 0 : obj.hashCode(),
             registered ? null : cls.getName()

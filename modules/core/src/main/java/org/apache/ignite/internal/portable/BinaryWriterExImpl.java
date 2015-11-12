@@ -339,7 +339,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param userType User type flag.
      */
     public void postWrite(boolean userType) {
+        short flags = userType ? PortableUtils.FLAG_USR_TYP : 0;
+
         if (schema != null) {
+            flags |= PortableUtils.FLAG_HAS_SCHEMA;
+
             // Write schema ID.
             out.writeInt(start + SCHEMA_ID_POS, schemaId);
 
@@ -350,31 +354,29 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             int offsetByteCnt = schema.write(this, fieldCnt);
 
             // Write raw offset if needed.
-            if (rawOffPos != 0)
+            if (rawOffPos != 0) {
+                flags |= PortableUtils.FLAG_HAS_RAW;
+
                 out.writeInt(rawOffPos - start);
-
-            if (offsetByteCnt == PortableUtils.OFFSET_1) {
-                int flags = (userType ? PortableUtils.FLAG_USR_TYP : 0) | PortableUtils.FLAG_OFFSET_ONE_BYTE;
-
-                out.writeShort(start + FLAGS_POS, (short)flags);
             }
-            else if (offsetByteCnt == PortableUtils.OFFSET_2) {
-                int flags = (userType ? PortableUtils.FLAG_USR_TYP : 0) | PortableUtils.FLAG_OFFSET_TWO_BYTES;
 
-                out.writeShort(start + FLAGS_POS, (short)flags);
-            }
+            if (offsetByteCnt == PortableUtils.OFFSET_1)
+                flags |= PortableUtils.FLAG_OFFSET_ONE_BYTE;
+            else if (offsetByteCnt == PortableUtils.OFFSET_2)
+                flags |= PortableUtils.FLAG_OFFSET_TWO_BYTES;
         }
         else {
-            // Write raw-only flag is needed.
-            int flags = (userType ? PortableUtils.FLAG_USR_TYP : 0) | PortableUtils.FLAG_RAW_ONLY;
-
-            out.writeShort(start + FLAGS_POS, (short)flags);
+            if (rawOffPos != 0)
+                flags |= PortableUtils.FLAG_HAS_RAW;
 
             // If there are no schema, we are free to write raw offset to schema offset.
             out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
         }
 
-        // 5. Write length.
+        // Write flags.
+        out.writeShort(start + FLAGS_POS, (short)flags);
+
+        // Write length.
         out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
     }
 

@@ -196,7 +196,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     void serializeTo(BinaryWriterExImpl writer, PortableBuilderSerializer serializer) {
         try {
             PortableUtils.writeHeader(writer,
-                true,
                 registeredType ? typeId : UNREGISTERED_TYPE_ID,
                 hashCode,
                 registeredType ? null : clsNameToWrite);
@@ -222,13 +221,13 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 // Get footer details.
                 int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
 
-                IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start, fieldOffsetSize);
+                IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start);
 
                 int footerPos = footer.get1();
                 int footerEnd = footer.get2();
 
                 // Get raw position.
-                int rawPos = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
+                int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
 
                 // Position reader on data.
                 reader.position(start + hdrLen);
@@ -354,9 +353,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             if (reader != null) {
                 // Write raw data if any.
-                int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
-
-                int rawOff = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
+                int rawOff = PortableUtils.rawOffsetAbsolute(reader, start);
                 int footerStart = PortableUtils.footerStartAbsolute(reader, start);
 
                 if (rawOff < footerStart) {
@@ -424,12 +421,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             Map<Integer, Object> readCache = new HashMap<>();
 
-            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start, fieldOffsetSize);
+            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start);
 
             int footerPos = footer.get1();
             int footerEnd = footer.get2();
 
-            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
+            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
 
             while (footerPos + 4 < footerEnd) {
                 int fieldId = reader.readIntPositioned(footerPos);
