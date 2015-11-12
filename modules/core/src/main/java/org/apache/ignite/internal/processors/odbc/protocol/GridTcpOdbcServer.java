@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.processors.query.odbc;
+package org.apache.ignite.internal.processors.odbc.protocol;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -16,7 +16,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
@@ -64,20 +63,7 @@ public class GridTcpOdbcServer {
 
         lsnr = new GridTcpOdbcNioListener(log, this, ctx);
 
-        GridNioParser parser = new GridNioParser() {
-            @Nullable
-            @Override
-            public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-                byte[] bytes = new byte[buf.remaining()];
-                buf.get(bytes);
-                return bytes;
-            }
-
-            @Override
-            public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
-                return null;
-            }
-        };
+        GridNioParser parser = new GridOdbcParser();
 
         try {
             host = resolveOdbcTcpHost(ctx.config());

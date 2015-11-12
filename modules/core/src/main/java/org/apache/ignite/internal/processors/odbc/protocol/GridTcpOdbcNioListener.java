@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.odbc;
+package org.apache.ignite.internal.processors.odbc.protocol;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -57,7 +57,7 @@ public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<byte[]>
     public void onMessage(GridNioSession ses, byte[] msg) {
         System.out.println("onMessage");
         System.out.println("length: " + msg.length);
-        for (int i = 0; i < msg.length && i < 32; ++i) {
+        for (int i = 0; i < msg.length && i < 64; ++i) {
             System.out.println("msg[" + i + "] = " + msg[i]);
         }
     }
