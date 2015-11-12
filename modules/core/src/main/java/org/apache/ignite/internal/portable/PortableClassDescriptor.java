@@ -583,10 +583,14 @@ public class PortableClassDescriptor {
                                 else
                                     ((Binarylizable)obj).writeBinary(collector);
 
+                                PortableSchema newSchema = collector.schema();
+
                                 BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
-                                    affKeyFieldName, collector.schemas());
+                                    affKeyFieldName, Collections.singleton(newSchema));
 
                                 ctx.updateMetadata(typeId, meta);
+
+                                schemaReg.addSchema(newSchema.schemaId(), newSchema);
                             }
                         }
                     }

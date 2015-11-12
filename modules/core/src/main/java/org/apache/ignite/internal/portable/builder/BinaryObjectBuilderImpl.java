@@ -29,6 +29,7 @@ import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableSchema;
+import org.apache.ignite.internal.portable.PortableSchemaRegistry;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.F;
@@ -365,7 +366,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             // Update metadata if needed.
             int schemaId = writer.schemaId();
 
-            if (ctx.schemaRegistry(typeId).schema(schemaId) == null) {
+            PortableSchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
+
+            if (schemaReg.schema(schemaId) == null) {
                 String typeName = this.typeName;
 
                 if (typeName == null) {
@@ -374,8 +377,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     typeName = meta.typeName();
                 }
 
+                PortableSchema curSchema = writer.currentSchema();
+
                 ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta,
-                    ctx.affinityKeyFieldName(typeId), Collections.singleton(writer.currentSchema())));
+                    ctx.affinityKeyFieldName(typeId), Collections.singleton(curSchema)));
+
+                schemaReg.addSchema(curSchema.schemaId(), curSchema);
             }
         }
         finally {

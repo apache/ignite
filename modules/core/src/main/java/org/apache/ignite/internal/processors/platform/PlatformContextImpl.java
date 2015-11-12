@@ -359,7 +359,7 @@ public class PlatformContextImpl implements PlatformContext {
         );
 
         for (T4<Integer, String, String, Map<String, Integer>> meta : metas)
-            cacheObjProc.updateMetaData(meta.get1(), meta.get2(), meta.get3(), meta.get4());
+            cacheObjProc.updateMetadata(meta.get1(), meta.get2(), meta.get3(), meta.get4());
     }
 
     /** {@inheritDoc} */

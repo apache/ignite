@@ -440,7 +440,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
+    @Override public void updateMetadata(int typeId, String typeName, @Nullable String affKeyFieldName,
         Map<String, Integer> fieldTypeIds) throws BinaryObjectException {
         portableCtx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null));
     }

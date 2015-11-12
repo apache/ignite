@@ -59,7 +59,7 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @param fieldTypeIds Fields map.
      * @throws IgniteException In case of error.
      */
-    public void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
+    public void updateMetadata(int typeId, String typeName, @Nullable String affKeyFieldName,
         Map<String, Integer> fieldTypeIds) throws IgniteException;
 
     /**

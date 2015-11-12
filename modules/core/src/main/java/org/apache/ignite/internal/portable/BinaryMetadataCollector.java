@@ -17,23 +17,22 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryWriter;
+import org.jetbrains.annotations.Nullable;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryWriter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Writer for meta data collection.
@@ -77,8 +76,8 @@ class BinaryMetadataCollector implements BinaryWriter {
     /**
      * @return Schemas.
      */
-    Collection<PortableSchema> schemas() {
-        return Collections.singleton(schemaBuilder.build());
+    PortableSchema schema() {
+        return schemaBuilder.build();
     }
 
     /** {@inheritDoc} */
