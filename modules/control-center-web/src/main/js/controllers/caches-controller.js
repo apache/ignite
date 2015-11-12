@@ -81,7 +81,6 @@ consoleModule.controller('cachesController', [
 
             $scope.evictionPolicies = [
                 {value: 'LRU', label: 'LRU'},
-                {value: 'RND', label: 'Random'},
                 {value: 'FIFO', label: 'FIFO'},
                 {value: 'SORTED', label: 'Sorted'},
                 {value: undefined, label: 'Not set'}
