@@ -30,7 +30,7 @@ import java.util.Arrays;
 /**
  * Contains tests for compact offsets.
  */
-public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbstractTest {
     /** 2 pow 8. */
     private static int POW_8 = 1 << 8;
 
@@ -51,10 +51,19 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
 
         marsh = new PortableMarshaller();
 
+        marsh.setCompactFooter(compactFooter());
+
         marsh.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(TestObject.class.getName())));
         marsh.setContext(new MarshallerContextTestImpl(null));
 
         IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", ctx);
+    }
+
+    /**
+     * @return Whether to use compact footers.
+     */
+    protected boolean compactFooter() {
+        return true;
     }
 
     /**
