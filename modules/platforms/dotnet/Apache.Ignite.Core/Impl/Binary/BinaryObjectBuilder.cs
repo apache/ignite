@@ -678,23 +678,27 @@ namespace Apache.Ignite.Core.Impl.Binary
                                 WriteField(ctx, valEntry.Value);
                             }
 
+                            var flags = inHeader.IsUserType
+                                ? BinaryObjectHeader.Flag.UserType
+                                : BinaryObjectHeader.Flag.None;
+
                             // Write raw data.
                             int outRawOff = outStream.Position - outStartPos;
 
-                            int inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
-                            int inRawLen = inHeader.SchemaOffset - inRawOff;
+                            if (inHeader.HasRaw)
+                            {
+                                var inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
+                                var inRawLen = inHeader.SchemaOffset - inRawOff;
 
-                            if (inRawLen > 0)
+                                flags |= BinaryObjectHeader.Flag.HasRaw;
+
                                 outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inRawLen);
+                            }
 
                             // Write schema
                             int outSchemaOff = outRawOff;
                             var schemaPos = outStream.Position;
                             int outSchemaId;
-                            
-                            var flags = inHeader.IsUserType
-                                ? BinaryObjectHeader.Flag.UserType
-                                : BinaryObjectHeader.Flag.None;
 
                             var hasSchema = outSchema.WriteSchema(outStream, schemaIdx, out outSchemaId, ref flags);
 
@@ -704,12 +708,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                                 
                                 flags |= BinaryObjectHeader.Flag.HasSchema;
 
-                                if (inRawLen > 0)
-                                {
+                                if (inHeader.HasRaw)
                                     outStream.WriteInt(outRawOff);
-
-                                    flags |= BinaryObjectHeader.Flag.HasRaw;
-                                }
                             }
 
                             var outLen = outStream.Position - outStartPos;
