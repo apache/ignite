@@ -78,7 +78,7 @@ public class PortableMarshaller extends AbstractMarshaller {
     public static final boolean DFLT_KEEP_DESERIALIZED = true;
 
     /** Default value of "compact footer" flag. */
-    public static final boolean DFLT_COMPACT_FOOTER = false;
+    public static final boolean DFLT_COMPACT_FOOTER = true;
 
     // TODO ignite-1282 Move to IgniteConfiguration.
     /** Class names. */
