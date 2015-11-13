@@ -497,7 +497,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
                 }
 
                 @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
-                    return new DirectMessageReader(factory, this);
+                    return new DirectMessageReader(factory);
                 }
             };
         }

@@ -32,7 +32,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import sun.misc.Unsafe;
@@ -220,9 +219,6 @@ public class DirectByteBufferStream {
     private final MessageFactory msgFactory;
 
     /** */
-    private final MessageFormatter msgFormatter;
-
-    /** */
     private ByteBuffer buf;
 
     /** */
@@ -288,16 +284,11 @@ public class DirectByteBufferStream {
     /** */
     private boolean lastFinished;
 
-    /** */
-    private MessageReader reader;
-
     /**
      * @param msgFactory Message factory.
-     * @param msgFormatter Message formatter.
      */
-    public DirectByteBufferStream(MessageFactory msgFactory, MessageFormatter msgFormatter) {
+    public DirectByteBufferStream(MessageFactory msgFactory) {
         this.msgFactory = msgFactory;
-        this.msgFormatter = msgFormatter;
     }
 
     /**
@@ -942,7 +933,7 @@ public class DirectByteBufferStream {
      * @return Message.
      */
     @SuppressWarnings("unchecked")
-    public <T extends Message> T readMessage() {
+    public <T extends Message> T readMessage(MessageReader reader) {
         if (!msgTypeDone) {
             if (!buf.hasRemaining()) {
                 lastFinished = false;
@@ -954,13 +945,21 @@ public class DirectByteBufferStream {
 
             msg = type == Byte.MIN_VALUE ? null : msgFactory.create(type);
 
-            if (msg != null)
-                reader = msgFormatter.reader(msgFactory, msg.getClass());
-
             msgTypeDone = true;
         }
 
-        lastFinished = msg == null || msg.readFrom(buf, reader);
+        if (msg != null) {
+            try {
+                reader.beforeInnerMessageRead();
+
+                lastFinished = msg.readFrom(buf, reader);
+            }
+            finally {
+                reader.afterInnerMessageRead(lastFinished);
+            }
+        }
+        else
+            lastFinished = true;
 
         if (lastFinished) {
             Message msg0 = msg;
@@ -977,10 +976,11 @@ public class DirectByteBufferStream {
     /**
      * @param itemType Component type.
      * @param itemCls Component class.
+     * @param reader Reader.
      * @return Array.
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls) {
+    public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -995,7 +995,7 @@ public class DirectByteBufferStream {
                 objArr = itemCls != null ? (Object[])Array.newInstance(itemCls, readSize) : new Object[readSize];
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(itemType);
+                Object item = read(itemType, reader);
 
                 if (!lastFinished)
                     return null;
@@ -1019,10 +1019,11 @@ public class DirectByteBufferStream {
 
     /**
      * @param itemType Item type.
+     * @param reader Reader.
      * @return Collection.
      */
     @SuppressWarnings("unchecked")
-    public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType) {
+    public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1037,7 +1038,7 @@ public class DirectByteBufferStream {
                 col = new ArrayList<>(readSize);
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(itemType);
+                Object item = read(itemType, reader);
 
                 if (!lastFinished)
                     return null;
@@ -1063,11 +1064,12 @@ public class DirectByteBufferStream {
      * @param keyType Key type.
      * @param valType Value type.
      * @param linked Whether linked map should be created.
+     * @param reader Reader.
      * @return Map.
      */
     @SuppressWarnings("unchecked")
     public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType,
-        boolean linked) {
+        boolean linked, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1083,7 +1085,7 @@ public class DirectByteBufferStream {
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
-                    Object key = read(keyType);
+                    Object key = read(keyType, reader);
 
                     if (!lastFinished)
                         return null;
@@ -1092,7 +1094,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                Object val = read(valType);
+                Object val = read(valType, reader);
 
                 if (!lastFinished)
                     return null;
@@ -1389,9 +1391,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param type Type.
+     * @param reader Reader.
      * @return Value.
      */
-    private Object read(MessageCollectionItemType type) {
+    private Object read(MessageCollectionItemType type, MessageReader reader) {
         switch (type) {
             case BYTE:
                 return readByte();
@@ -1454,7 +1457,7 @@ public class DirectByteBufferStream {
                 return readIgniteUuid();
 
             case MSG:
-                return readMessage();
+                return readMessage(reader);
 
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);
