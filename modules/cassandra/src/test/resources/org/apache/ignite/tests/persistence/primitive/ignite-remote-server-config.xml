@@ -10,8 +10,8 @@
     <bean id="loadBalancingPolicy" class="com.datastax.driver.core.policies.RoundRobinPolicy"/>
 
     <util:list id="contactPoints" value-type="java.lang.String">
-        <value>ecsa001005b9.epam.com</value>
-        <value>ecsa001005bd.epam.com</value>
+        <value>cassandra-node-1.abc.com</value>
+        <value>cassandra-node-2.abc.com</value>
     </util:list>
 
     <bean id="cassandraAdminDataSource" class="org.apache.ignite.cache.store.cassandra.utils.datasource.DataSource">
