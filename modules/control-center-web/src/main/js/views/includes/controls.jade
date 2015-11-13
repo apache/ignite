@@ -110,7 +110,7 @@ mixin table-pair(header, tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder,
                             a.labelFormField(ng-click='tableStartEdit(backupItem, field, $index)') {{compactJavaName(field.model, $index + 1, 55, [item.#{keyFld}, item.#{valFld}], '#{divider}')}}
                             +btn-remove('tableRemove(backupItem, field, $index)', 'field.removeTip')
                         td.col-sm-12(ng-show='tableEditing(field, $index)')
-                            +table-pair-edit('cur', keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, '{{::field.focusId}}', '$index', divider)
+                            +table-pair-edit('cur', keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, '{{::field.focusId + $index}}', '$index', divider)
                 tfoot(ng-show='tableNewItemActive(field)')
                     tr
                         td.col-sm-12
@@ -153,7 +153,7 @@ mixin table-igfs-path-mode(header, tblMdl, keyFld, valFld, keyPlaceholder, valPl
                             a.labelFormField(ng-click='tableStartEdit(backupItem, field, $index)') {{item.#{keyFld} + " [" + item.#{valFld} + "]"}}
                             +btn-remove('tableRemove(backupItem, field, $index)', 'field.removeTip')
                         td.col-sm-12(ng-show='tableEditing(field, $index)')
-                            +table-igfs-path-mode-edit('cur', keyPlaceholder, valPlaceholder, '{{::field.focusId}}', '$index')
+                            +table-igfs-path-mode-edit('cur', keyPlaceholder, valPlaceholder, '{{::field.focusId + $index}}', '$index')
                 tfoot(ng-show='tableNewItemActive(field)')
                     tr
                         td.col-sm-12
@@ -225,7 +225,7 @@ mixin details-row
                                         label.labelField {{$index + 1}})
                                         +btn-save('tableSimpleSaveVisible(detail, index)', 'tableSimpleSave(tableSimpleValid, backupItem, detail, $index)')
                                         .input-tip.form-group.has-feedback
-                                            input.form-control(id='cur{{::detail.focusId}}' name='{{detail.model}}.edit' type='text' ng-model='detail.curValue' placeholder='{{::detail.placeholder}}' on-enter='tableSimpleSaveVisible(detail, index) && tableSimpleSave(tableSimpleValid, backupItem, detail, $index)' on-escape='tableReset()')&attributes(customValidators)
+                                            input.form-control(id='cur{{::detail.focusId + $index}}' name='{{detail.model}}.edit' type='text' ng-model='detail.curValue' placeholder='{{::detail.placeholder}}' on-enter='tableSimpleSaveVisible(detail, index) && tableSimpleSave(tableSimpleValid, backupItem, detail, $index)' on-escape='tableReset()')&attributes(customValidators)
                                             +ico-exclamation('{{detail.model}}.edit', 'ipaddress', 'Invalid address, see help for format description.')
                         tfoot(ng-show='tableNewItemActive(detail)')
                             tr
@@ -277,7 +277,7 @@ mixin table-db-field-edit(prefix, focusId, index)
         .input-tip
             button.form-control(id=javaTypeId ng-model=javaTypeModel data-placeholder='Java type' ng-class='{placeholder: !#{javaTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJavaTypes}}' on-enter=btnVisibleAndSave on-escape='tableReset()' tabindex='0')
 
-mixin table-index-item-edit(prefix, index, sortAvailable)
+mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
     -var fieldName = prefix + 'FieldName'
     -var direction = prefix + 'Direction'
 
@@ -292,17 +292,17 @@ mixin table-index-item-edit(prefix, index, sortAvailable)
         label.placeholder Field name
         label.fieldSep /
         .input-tip
-            input.form-control(id=fieldName enter-focus-next=direction type='text' ng-model=fieldNameModel placeholder='Field name' on-escape='tableReset()')
+            input.form-control(id='{{::"#{fieldName}S" + #{idAddition}}}' enter-focus-next='{{::"#{direction}S" + #{idAddition}}}' type='text' ng-model=fieldNameModel placeholder='Field name' on-escape='tableReset()')
     .col-xs-4.col-sm-4.col-md-4(ng-show=sortAvailable)
         label.placeholder Sort order
         +btn-save(btnVisible, btnSave)
         .input-tip
-            button.form-control(id=direction ng-model=directionModel bs-select bs-options='item.value as item.label for item in {{sortDirections}}' on-enter=btnVisibleAndSave on-escape='tableReset()' tabindex='0')
+            button.form-control(id='{{::"#{direction}S" + #{idAddition}}}' ng-model=directionModel bs-select bs-options='item.value as item.label for item in {{sortDirections}}' on-enter=btnVisibleAndSave on-escape='tableReset()' tabindex='0')
     .col-xs-12(ng-show='!(#{sortAvailable})')
         label.placeholder Field name
         +btn-save(btnVisible, btnSave)
         .input-tip
-            input.form-control(id=fieldName enter-focus-next=direction type='text' ng-model=fieldNameModel placeholder='Field name' on-escape='tableReset()')
+            input.form-control(id='{{::"#{fieldName}" + #{idAddition}}}' type='text' ng-model=fieldNameModel placeholder='Field name' on-enter=btnVisibleAndSave on-escape='tableReset()')
 
 mixin form-row(dataSource)
     +form-row-custom(['col-xs-4 col-sm-4 col-md-4'], ['col-xs-8 col-sm-8 col-md-8'], dataSource)
@@ -405,7 +405,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                         label.labelField {{$index + 1}})
                                         +btn-save('tableSimpleSaveVisible(field, $index)', 'tableSimpleSave(tableSimpleValid, backupItem, field, $index)')
                                         .input-tip
-                                            input.form-control(id='cur{{::field.focusId}}' type='text' ng-model='field.curValue' placeholder='{{::field.placeholder}}' on-enter='tableSimpleSaveVisible(field) && tableSimpleSave(tableSimpleValid, backupItem, field, $index)' on-escape='tableReset()')
+                                            input.form-control(id='cur{{::field.focusId + $index}}' type='text' ng-model='field.curValue' placeholder='{{::field.placeholder}}' on-enter='tableSimpleSaveVisible(field) && tableSimpleSave(tableSimpleValid, backupItem, field, $index)' on-escape='tableReset()')
                         tfoot(ng-show='tableNewItemActive(field)')
                             tr
                                 td
@@ -436,8 +436,8 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                     div(ng-show='!tableEditing(field, $index)')
                                         a.labelFormField(ng-click='tableStartEdit(backupItem, field, $index)') {{$index + 1}}) {{item.databaseFieldName}} / {{item.databaseFieldType}} / {{item.javaFieldName}} / {{item.javaFieldType}}
                                         +btn-remove('tableRemove(backupItem, field, $index)', 'field.removeTip')
-                                    div(ng-if='tableEditing(field, $index)')
-                                        +table-db-field-edit('cur', '{{::field.focusId}}', '$index')
+                                    div(ng-show='tableEditing(field, $index)')
+                                        +table-db-field-edit('cur', '{{::field.focusId + $index}}', '$index')
                         tfoot(ng-show='tableNewItemActive(field)')
                             tr
                                 td
@@ -465,12 +465,12 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                             label.placeholder Index name
                                             label.fieldSep /
                                             .input-tip
-                                                input#curIndexName.form-control(type='text' enter-focus-next="curIndexType" ng-model='field.curIndexName' placeholder='Index name' on-enter=btnVisibleAndSave on-escape='tableReset()')
+                                                input.form-control(id='{{"curIndexName" + $index}}' type='text' enter-focus-next='{{"curIndexType" + $index}}' ng-model='field.curIndexName' placeholder='Index name' on-enter=btnVisibleAndSave on-escape='tableReset()')
                                         .col-sm-5
                                             label.placeholder Index type
                                             +btn-save('tableIndexSaveVisible(field, $index)', 'tableIndexSave(field, $index)')
                                             .input-tip
-                                                button#curIndexType.form-control(bs-select ng-model='field.curIndexType' data-placeholder='Select index type' bs-options="item.value as item.label for item in indexType" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
+                                                button.form-control(id='{{"curIndexType" + $index}}' bs-select ng-model='field.curIndexType' data-placeholder='Select index type' bs-options="item.value as item.label for item in indexType" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
                                     .margin-left-dflt
                                         table.links-edit-sub(st-table='item.fields' ng-init='itemIndex = $index')
                                             tbody
@@ -481,11 +481,11 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                                             a.labelFormField(ng-if='item.indexType != "SORTED"' ng-click='tableIndexItemStartEdit(field, itemIndex, $index)') {{$index + 1}}) {{itemItem.name}}
                                                             +btn-remove('tableRemoveIndexItem(item, $index)', 'field.removeItemTip')
                                                         div(ng-show='tableIndexItemEditing(itemIndex, $index)')
-                                                            +table-index-item-edit('cur', '$index', '{{item.indexType == "SORTED"}}')
+                                                            +table-index-item-edit('cur', '$index', 'item.indexType == "SORTED"', 'itemIndex + "-" + $index')
                                             tfoot(ng-show='tableIndexNewItemActive(itemIndex)')
                                                 tr(style='padding-left: 18px')
                                                     td
-                                                        +table-index-item-edit('new', '-1', '{{item.indexType == "SORTED"}}')
+                                                        +table-index-item-edit('new', '-1', 'item.indexType == "SORTED"', 'itemIndex')
                         tfoot(ng-show='tableNewItemActive(field)')
                             tr
                                 td

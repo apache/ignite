@@ -984,20 +984,6 @@ consoleModule.controller('metadataController', [
                     });
             };
 
-            $scope.tableSimpleValid = function (item, field, name, index) {
-                var model = item[field.model];
-
-                if ($common.isDefined(model)) {
-                    var idx = _.indexOf(model, name);
-
-                    // Found duplicate.
-                    if (idx >= 0 && idx != index)
-                        return showPopoverMessage(null, null, $table.tableFieldId(index, 'TextField'), 'Field with such name already exists!');
-                }
-
-                return true;
-            };
-
             $scope.toggleValid = function () {
                 $scope.ui.showValid = !$scope.ui.showValid;
 
@@ -1031,7 +1017,7 @@ consoleModule.controller('metadataController', [
 
                         // Found duplicate by key.
                         if (idx >= 0 && idx != index)
-                            return showPopoverMessage(null, null, $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
+                            return showPopoverMessage($scope.panels, 'query', $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
                     }
 
                     if (pairField.classValidation && !$common.isValidJavaClass(pairField.msg, pairValue.value, true, $table.tableFieldId(index, 'Value' + pairField.id)))
@@ -1069,7 +1055,7 @@ consoleModule.controller('metadataController', [
 
                     var model = item[field.model];
 
-                    if (!$common.isValidJavaIdentifier(dbFieldTable.msg + ' java name', dbFieldValue.javaFieldName, $table.tableFieldId(index, 'JavaName' + dbFieldTable.id)))
+                    if (!$common.isValidJavaIdentifier(dbFieldTable.msg + ' java name', dbFieldValue.javaFieldName, $table.tableFieldId(index, 'JavaFieldName' + dbFieldTable.id)))
                         return false;
 
                     if ($common.isDefined(model)) {
@@ -1079,7 +1065,7 @@ consoleModule.controller('metadataController', [
 
                         // Found duplicate.
                         if (idx >= 0 && index != idx)
-                            return showPopoverMessage(null, null, $table.tableFieldId(index, 'DatabaseName' + dbFieldTable.id), 'Field with such database name already exists!');
+                            return showPopoverMessage($scope.panels, 'store', $table.tableFieldId(index, 'DatabaseFieldName' + dbFieldTable.id), 'Field with such database name already exists!');
 
                         idx = _.findIndex(model, function (dbMeta) {
                             return dbMeta.javaFieldName == dbFieldValue.javaFieldName;
@@ -1087,7 +1073,7 @@ consoleModule.controller('metadataController', [
 
                         // Found duplicate.
                         if (idx >= 0 && index != idx)
-                            return showPopoverMessage(null, null, $table.tableFieldId(index, 'JavaName' + dbFieldTable.id), 'Field with such java name already exists!');
+                            return showPopoverMessage($scope.panels, 'store', $table.tableFieldId(index, 'JavaFieldName' + dbFieldTable.id), 'Field with such java name already exists!');
 
                         if (index < 0) {
                             model.push(dbFieldValue);
@@ -1143,7 +1129,7 @@ consoleModule.controller('metadataController', [
 
                     // Found duplicate.
                     if (idx >= 0 && idx != curIdx)
-                        return showPopoverMessage(null, null, $table.tableFieldId(curIdx, 'IndexName'), 'Index with such name already exists!');
+                        return showPopoverMessage($scope.panels, 'query', $table.tableFieldId(curIdx, 'IndexName'), 'Index with such name already exists!');
                 }
 
                 if (curIdx < 0) {
@@ -1172,9 +1158,11 @@ consoleModule.controller('metadataController', [
             };
 
             $scope.tableIndexNewItem = function (field, indexIdx) {
-                var indexName = $scope.backupItem.indexes[indexIdx].name;
+                var index = $scope.backupItem.indexes[indexIdx];
 
-                $table.tableNewItem({ui: 'table-index-fields', model: indexName});
+                var indexName = index.name;
+
+                $table.tableNewItem({ui: 'table-index-fields', model: indexName, sorted: index.indexType == 'SORTED', indexIdx: indexIdx});
 
                 field.newFieldName = null;
                 field.newDirection = true;
@@ -1222,7 +1210,7 @@ consoleModule.controller('metadataController', [
                 field.curFieldName = indexItem.name;
                 field.curDirection = indexItem.direction;
 
-                $focus('curFieldName');
+                $focus('curFieldName' + (index.indexType == 'SORTED' ? 'S' : '') + indexIdx + '-' + curIdx);
             };
 
             $scope.tableIndexItemSaveVisible = function (field, index) {
@@ -1232,7 +1220,9 @@ consoleModule.controller('metadataController', [
             $scope.tableIndexItemSave = function (field, indexIdx, curIdx) {
                 var indexItemValue = tableIndexItemValue(field, curIdx);
 
-                var fields = $scope.backupItem.indexes[indexIdx].fields;
+                var index = $scope.backupItem.indexes[indexIdx];
+
+                var fields = index.fields;
 
                 if ($common.isDefined(fields)) {
                     var idx = _.findIndex(fields, function (field) {
@@ -1241,10 +1231,8 @@ consoleModule.controller('metadataController', [
 
                     // Found duplicate.
                     if (idx >= 0 && idx != curIdx)
-                        return showPopoverMessage(null, null, $table.tableFieldId(curIdx, 'FieldName'), 'Field with such name already exists in index!');
+                        return showPopoverMessage($scope.panels, 'query', $table.tableFieldId(curIdx, 'FieldName' + (index.indexType == 'SORTED' ? 'S' : '') + indexIdx + (curIdx >= 0 ? '-' : '')), 'Field with such name already exists in index!');
                 }
-
-                var index = $scope.backupItem.indexes[indexIdx];
 
                 if (curIdx < 0) {
                     if (index.fields)

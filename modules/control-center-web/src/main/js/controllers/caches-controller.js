@@ -165,8 +165,8 @@ consoleModule.controller('cachesController', [
                         var exist = false;
 
                         if ($common.isDefined(model)) {
-                            model.forEach(function (val) {
-                                if (val.split('=')[0] == key)
+                            model.forEach(function (val, ix) {
+                                if (ix != index && val.split('=')[0] == key)
                                     exist = true;
                             })
                         }

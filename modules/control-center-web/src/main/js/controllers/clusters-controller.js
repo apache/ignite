@@ -159,7 +159,7 @@ consoleModule.controller('clustersController', [
                     var simpleTable = simpleTables[field.model];
 
                     if (simpleTable) {
-                        $common.showPopoverMessage(null, null, $table.tableFieldId(index, 'trustManagers'), simpleTable.msg);
+                        $common.showPopoverMessage(null, null, $table.tableFieldId(index, simpleTable.id), simpleTable.msg);
 
                         return $table.tableFocusInvalidField(index, simpleTable.id);
                     }

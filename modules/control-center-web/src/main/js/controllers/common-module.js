@@ -1124,7 +1124,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
     }
 
     function _tableFocus(focusId, index) {
-        $focus((index < 0 ? 'new' : 'cur') + focusId);
+        $focus((index < 0 ? 'new' : 'cur') + focusId + (index >= 0 ? index : ''));
     }
 
     function _tableSimpleValue(filed, index) {
@@ -1159,7 +1159,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
             field.curJavaFieldName = val.javaFieldName;
             field.curJavaFieldType = val.javaFieldType;
 
-            _tableFocus('DatabaseName' + field.focusId, index);
+            _tableFocus('DatabaseFieldName' + field.focusId, index);
         }
         else if (ui == 'table-indexes') {
             field.curIndexName = val.name;
@@ -1192,7 +1192,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
             field.newJavaFieldName = null;
             field.newJavaFieldType = null;
 
-            _tableFocus('DatabaseName' + field.focusId, -1);
+            _tableFocus('DatabaseFieldName' + field.focusId, -1);
         }
         else if (ui == 'table-indexes') {
             field.newIndexName = null;
@@ -1202,7 +1202,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
             _tableFocus(field.focusId, -1);
         }
         else if (ui == 'table-index-fields') {
-            _tableFocus('FieldName', -1);
+            _tableFocus('FieldName' + (field.sorted ? 'S' : '') + field.indexIdx, -1);
         }
     }
 
@@ -1313,7 +1313,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
             return false;
         },
         tableFieldId: function (index, id) {
-            return (index < 0 ? 'new' : 'cur') + id;
+            return (index < 0 ? 'new' : 'cur') + id + (index >= 0 ? index : '');
         }
     }
 }]);
