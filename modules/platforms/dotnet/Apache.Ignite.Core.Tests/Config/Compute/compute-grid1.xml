@@ -70,6 +70,7 @@
         <!-- Portable marshaller configuration -->
         <property name="marshaller">
             <bean class="org.apache.ignite.marshaller.portable.PortableMarshaller">
+                <property name="compactFooter" value="false" />
                 <property name="typeConfigurations">
                     <list>
                         <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
