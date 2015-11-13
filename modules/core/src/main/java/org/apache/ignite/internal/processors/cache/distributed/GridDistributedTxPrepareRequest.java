@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -55,6 +56,9 @@ import org.jetbrains.annotations.Nullable;
 public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Version in which direct marshalling of tx nodes was introduced. */
+    public static final IgniteProductVersion TX_NODES_DIRECT_MARSHALLABLE_SINCE = IgniteProductVersion.fromString("1.5.0");
 
     /** Collection to message converter. */
     public static final C1<Collection<UUID>, UUIDCollectionMessage> COL_TO_MSG = new C1<Collection<UUID>, UUIDCollectionMessage>() {
@@ -327,9 +331,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         if (txNodesMsg == null)
             txNodesMsg = F.viewReadOnly(txNodes, COL_TO_MSG);
 
-        // TODO backward compatibility.
-//        if (txNodes != null)
-//            txNodesBytes = ctx.marshaller().marshal(txNodes);
+        // Marshal txNodes only if there is a node in topology with an older version.
+        if (txNodes != null && ctx.exchange().minimumNodeVersion(topologyVersion()).compareTo(TX_NODES_DIRECT_MARSHALLABLE_SINCE) < 0)
+            txNodesBytes = ctx.marshaller().marshal(txNodes);
     }
 
     /** {@inheritDoc} */

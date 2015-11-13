@@ -873,7 +873,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         if (log.isDebugEnabled())
                             log.debug("Got removed entry when adding lock (will retry): " + entry);
                     }
-                    catch (IgniteCheckedException | GridDistributedLockCancelledException e) {
+                    catch (GridDistributedLockCancelledException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to add entry [err=" + e + ", entry=" + entry + ']');
 
