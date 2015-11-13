@@ -5,6 +5,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcCommandHandler;
+import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcQueryCommandHandler;
 import org.apache.ignite.internal.processors.odbc.protocol.GridOdbcCommand;
 import org.apache.ignite.internal.processors.odbc.protocol.GridTcpOdbcServer;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -194,7 +195,9 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (isOdbcEnabled()) {
-            super.start();
+
+            // Register handlers.
+            addHandler(new GridOdbcQueryCommandHandler(ctx));
 
             srv.start(protoHnd);
         }
@@ -203,8 +206,6 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (isOdbcEnabled()) {
-            super.stop(cancel);
-
             srv.stop();
         }
     }
@@ -247,7 +248,26 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
         }
     }
 
+    /**
+     * @return Whether or not ODBC is enabled.
+     */
     public boolean isOdbcEnabled() {
         return ctx.config().getOdbcConfiguration().isEnabled();
+    }
+
+    /**
+     * @param hnd Command handler.
+     */
+    private void addHandler(GridOdbcCommandHandler hnd) {
+        assert !handlers.containsValue(hnd);
+
+        if (log.isDebugEnabled())
+            log.debug("Added ODBC command handler: " + hnd);
+
+        for (GridOdbcCommand cmd : hnd.supportedCommands()) {
+            assert !handlers.containsKey(cmd) : cmd;
+
+            handlers.put(cmd, hnd);
+        }
     }
 }

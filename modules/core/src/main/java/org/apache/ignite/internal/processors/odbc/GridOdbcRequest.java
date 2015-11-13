@@ -19,6 +19,9 @@ public class GridOdbcRequest {
     /** Page size. */
     private Integer pageSize;
 
+    /** Cache name. */
+    private String cacheName;
+
     /**
      * @param sqlQry SQL query.
      * @param pageSize Page size.
@@ -93,6 +96,20 @@ public class GridOdbcRequest {
      */
     public int pageSize() {
         return pageSize;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    public void cacheName(String cacheName) {
+        this.cacheName = cacheName;
+    }
+
+    /**
+     * @return Cache name.
+     */
+    public String cacheName() {
+        return cacheName;
     }
 
 }

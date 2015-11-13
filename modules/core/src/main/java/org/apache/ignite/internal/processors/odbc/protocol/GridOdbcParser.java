@@ -6,6 +6,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.portable.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.odbc.GridOdbcRequest;
 import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
+import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcQueryResult;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
@@ -79,17 +80,30 @@ public class GridOdbcParser implements GridNioParser {
         return message == null ? null : parseMessage(message);
     }
 
-    @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
-        assert msg != null;
+    @Override public ByteBuffer encode(GridNioSession ses, Object msg0) throws IOException, IgniteCheckedException {
+        assert msg0 != null;
 
-        byte[] messageBytes = (byte[])msg;
+        GridOdbcResponse msg = (GridOdbcResponse)msg0;
 
-        ByteBuffer result = ByteBuffer.allocate(messageBytes.length + 4);
+        //TODO: implement error encoding.
+        if (msg.getSuccessStatus() != GridOdbcResponse.STATUS_SUCCESS) {
+            ses.close();
 
-        result.putInt(messageBytes.length);
-        result.put(messageBytes);
+            return null;
+        }
 
-        return result;
+        Object result0 = msg.getResponse();
+
+        assert result0 instanceof GridOdbcQueryResult;
+
+        GridOdbcQueryResult result = (GridOdbcQueryResult) result0;
+
+        ByteBuffer response = ByteBuffer.allocate(8 + 4);
+
+        response.putInt(8);
+        response.putLong(result.getQueryId());
+
+        return response;
     }
 
     private GridOdbcRequest parseMessage(byte[] msg) {

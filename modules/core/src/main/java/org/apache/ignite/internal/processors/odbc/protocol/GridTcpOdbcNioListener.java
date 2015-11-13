@@ -35,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
  * Listener for ODBC driver connection.
  */
 public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<GridOdbcRequest> {
-
     /** Server. */
     private GridTcpOdbcServer srv;
 
@@ -57,12 +56,19 @@ public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<GridOdb
 
     @Override
     public void onConnected(GridNioSession ses) {
-        System.out.println("onConnected");
+        System.out.println("Driver connected");
     }
 
     @Override
     public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-        System.out.println("onDisconnected");
+        System.out.println("Driver disconnected");
+
+        if (e != null) {
+            if (e instanceof RuntimeException)
+                U.error(log, "Failed to process request from remote client: " + ses, e);
+            else
+                U.warn(log, "Closed client session due to exception [ses=" + ses + ", msg=" + e.getMessage() + ']');
+        }
     }
 
     @Override
