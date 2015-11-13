@@ -525,8 +525,11 @@ consoleModule.controller('sqlController',
             curCols.forEach(function (curCol) {
                 var col = _.find(availableCols, {label: curCol.label});
 
-                if (col && acceptableType(col.type))
+                if (col && acceptableType(col.type)) {
+                    col.aggFx = curCol.aggFx;
+
                     retainedCols.push(col);
+                }
             });
 
             // If nothing was restored, add first acceptable column.
@@ -969,7 +972,7 @@ consoleModule.controller('sqlController',
                 return _sum(rows, idx);
 
             case 'AVG':
-                return len > 0 ? _sum(idx) / len : 0;
+                return len > 0 ? _sum(rows, idx) / len : 0;
 
             case 'COUNT':
                 return len;
