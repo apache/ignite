@@ -647,44 +647,69 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             var qry = new ContinuousQuery<int, int>(new Listener<int>());
 
+            var key = PrimaryKey(cache);
+
             using (cache.QueryContinuous(qry))
             {
                 // First update
-                cache.Put(PrimaryKey(cache), 1);
+                cache.Put(key, 1);
 
                 CallbackEvent cbEvt;
                 FilterEvent filterEvt;
 
                 Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
                 var evt = filterEvt.entry;
-                Assert.AreEqual(PrimaryKey(cache), evt.Key);
+                Assert.AreEqual(key, evt.Key);
                 Assert.IsFalse(evt.HasOldValue);
+                Assert.IsTrue(evt.HasValue);
                 Assert.AreEqual(0, evt.OldValue);
                 Assert.AreEqual(1, evt.Value);
 
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
                 var cbEntry = cbEvt.entries.Single();
                 Assert.IsFalse(cbEntry.HasOldValue);
-                Assert.AreEqual(PrimaryKey(cache), cbEntry.Key);
+                Assert.IsTrue(evt.HasValue);
+                Assert.AreEqual(key, cbEntry.Key);
                 Assert.AreEqual(null, cbEntry.OldValue);
-                Assert.AreEqual(Entry(1), 1);
+                Assert.AreEqual(1, cbEntry.Value);
 
                 // Second update
-                cache.Put(PrimaryKey(cache), 1);
+                cache.Put(key, 2);
 
                 Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
                 evt = filterEvt.entry;
-                Assert.AreEqual(PrimaryKey(cache), evt.Key);
-                Assert.IsFalse(evt.HasOldValue);
-                Assert.AreEqual(0, evt.OldValue);
-                Assert.AreEqual(1, evt.Value);
+                Assert.AreEqual(key, evt.Key);
+                Assert.IsTrue(evt.HasOldValue);
+                Assert.IsTrue(evt.HasValue);
+                Assert.AreEqual(1, evt.OldValue);
+                Assert.AreEqual(2, evt.Value);
 
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
                 cbEntry = cbEvt.entries.Single();
-                Assert.IsFalse(cbEntry.HasOldValue);
-                Assert.AreEqual(PrimaryKey(cache), cbEntry.Key);
-                Assert.AreEqual(null, cbEntry.OldValue);
-                Assert.AreEqual(Entry(1), 1);
+                Assert.IsTrue(cbEntry.HasOldValue);
+                Assert.IsTrue(evt.HasValue);
+                Assert.AreEqual(key, cbEntry.Key);
+                Assert.AreEqual(1, cbEntry.OldValue);
+                Assert.AreEqual(2, cbEntry.Value);
+
+                // Remove
+                cache.Remove(key);
+
+                Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
+                evt = filterEvt.entry;
+                Assert.AreEqual(key, evt.Key);
+                Assert.IsTrue(evt.HasOldValue);
+                Assert.IsFalse(evt.HasValue);
+                Assert.AreEqual(2, evt.OldValue);
+                Assert.AreEqual(0, evt.Value);
+
+                Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
+                cbEntry = cbEvt.entries.Single();
+                Assert.IsTrue(cbEntry.HasOldValue);
+                Assert.IsFalse(cbEntry.HasValue);
+                Assert.AreEqual(key, cbEntry.Key);
+                Assert.AreEqual(2, cbEntry.OldValue);
+                Assert.AreEqual(0, cbEntry.Value);
             }
         }
 
