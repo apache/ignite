@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// True if current schema was non empty; false otherwise.
         /// </returns>
         public bool WriteSchema(IBinaryStream stream, int schemaOffset, out int schemaId, 
-            out BinaryObjectHeader.Flag flags)
+            ref BinaryObjectHeader.Flag flags)
         {
             schemaId = Fnv1Hash.Basis;
             flags = 0;
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (count == 0) 
                 return false;
 
-            flags = BinaryObjectHeader.WriteSchema(_fields, stream, schemaOffset, count);
+            flags |= BinaryObjectHeader.WriteSchema(_fields, stream, schemaOffset, count);
 
             for (var i = schemaOffset; i < _idx; i++)
                 schemaId = Fnv1Hash.Update(schemaId, _fields[i].Id);

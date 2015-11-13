@@ -1090,20 +1090,32 @@ namespace Apache.Ignite.Core.Impl.Binary
                     var schemaOffset = _stream.Position - pos;
 
                     int schemaId;
-                    BinaryObjectHeader.Flag flags;
-                    var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, out flags);
+                    
+                    var flags = desc.UserType
+                        ? BinaryObjectHeader.Flag.UserType
+                        : BinaryObjectHeader.Flag.None;
+
+                    var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags);
 
                     if (!hasSchema)
                         schemaOffset = BinaryObjectHeader.Size;
+                    else
+                    {
+                        flags |= BinaryObjectHeader.Flag.HasSchema;
 
-                    // Calculate and write header.
-                    if (hasSchema && _curRawPos > 0)
-                        _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
+                        // Calculate and write header.
+                        if (_curRawPos > 0)
+                        {
+                            _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
+
+                            flags |= BinaryObjectHeader.Flag.HasRaw;
+                        }
+                    }
 
                     var len = _stream.Position - pos;
 
-                    var header = new BinaryObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len,
-                        schemaId, schemaOffset, !hasSchema, flags);
+                    var header = new BinaryObjectHeader(desc.TypeId, obj.GetHashCode(), len,
+                        schemaId, schemaOffset, flags);
 
                     BinaryObjectHeader.Write(header, _stream, pos);
 

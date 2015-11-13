@@ -71,28 +71,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryObjectHeader" /> struct.
         /// </summary>
-        /// <param name="userType">User type flag.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="hashCode">Hash code.</param>
         /// <param name="length">Length.</param>
         /// <param name="schemaId">Schema ID.</param>
         /// <param name="schemaOffset">Schema offset.</param>
-        /// <param name="hasRaw">Raw flag.</param>
         /// <param name="flags">The flags.</param>
-        public BinaryObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset, 
-            bool hasRaw, Flag flags)
+        public BinaryObjectHeader(int typeId, int hashCode, int length, int schemaId, int schemaOffset, Flag flags)
         {
             Header = BinaryUtils.HdrFull;
             Version = BinaryUtils.ProtoVer;
 
             Debug.Assert(schemaOffset <= length);
             Debug.Assert(schemaOffset >= Size);
-
-            if (userType)
-                flags |= Flag.UserType;
-
-            if (hasRaw)
-                flags |= Flag.HasRaw;
 
             Flags = flags;
 
