@@ -873,7 +873,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_curRaw)
                 throw new BinaryObjectException("Cannot read named fields after raw data is read.");
 
-            if (_curHdr.IsRawOnly)
+            if (!_curHdr.HasSchema)
                 return false;
 
             var actionId = _curStruct.CurStructAction;

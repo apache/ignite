@@ -403,25 +403,29 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             stream.Seek(position, SeekOrigin.Begin);
 
+            BinaryObjectHeader hdr;
+
             if (BitConverter.IsLittleEndian)
             {
-                var hdr = new BinaryObjectHeader();
-
                 stream.Read((byte*) &hdr, Size);
 
                 Debug.Assert(hdr.Version == BinaryUtils.ProtoVer);
                 Debug.Assert(hdr.SchemaOffset <= hdr.Length);
                 Debug.Assert(hdr.SchemaOffset >= Size);
 
-                // Only one of the flags can be set
-                var f = hdr.Flags;
-                Debug.Assert((f & (Flag.OffsetOneByte | Flag.OffsetTwoBytes)) !=
-                             (Flag.OffsetOneByte | Flag.OffsetTwoBytes));
-
-                return hdr;
             }
+            else
+                hdr = new BinaryObjectHeader(stream);
 
-            return new BinaryObjectHeader(stream);
+            // Compact schema is not supported
+            if (hdr.IsCompactFooter)
+                throw new NotSupportedException("Compact binary object footer is not supported in Ignite.NET.");
+
+            // Only one of the flags can be set
+            var f = hdr.Flags;
+            Debug.Assert((f & (Flag.OffsetOneByte | Flag.OffsetTwoBytes)) !=
+                         (Flag.OffsetOneByte | Flag.OffsetTwoBytes));
+            return hdr;
         }
 
         /** <inheritdoc> */
