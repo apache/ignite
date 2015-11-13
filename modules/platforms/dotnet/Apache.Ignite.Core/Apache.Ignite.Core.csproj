@@ -51,6 +51,7 @@
     <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
     <Compile Include="Cache\CacheException.cs" />
+    <Compile Include="Cache\CacheExtensions.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
     <Compile Include="Cache\Event\CacheEntryEventType.cs" />
@@ -148,6 +149,10 @@
     <Compile Include="Impl\Cache\Event\CacheEntryCreateEvent.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryRemoveEvent.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryUpdateEvent.cs" />
+    <Compile Include="Impl\Cache\Extensions\CacheEntryDelegateEventFilter.cs" />
+    <Compile Include="Impl\Cache\Extensions\CacheEntryDelegateEventListener.cs" />
+    <Compile Include="Impl\Cache\Extensions\CacheEntryDelegateFilter.cs" />
+    <Compile Include="Impl\Cache\Extensions\CacheEntryDelegateProcessor.cs" />
     <Compile Include="Impl\Cache\MutableCacheEntry.cs" />
     <Compile Include="Impl\Cache\Query\AbstractQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryFilter.cs" />
@@ -181,6 +186,7 @@
     <Compile Include="Impl\Common\IgniteHome.cs" />
     <Compile Include="Impl\Common\LoadedAssembliesResolver.cs" />
     <Compile Include="Impl\Common\ResizeableArray.cs" />
+    <Compile Include="Impl\Common\SerializableObjectHolder.cs" />
     <Compile Include="Impl\Common\TypeCaster.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeAbstractClosureTask.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeActionJob.cs" />
