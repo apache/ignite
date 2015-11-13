@@ -37,18 +37,18 @@ Creating NuGet package:
         <owners>Apache Software Foundation</owners>
         <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
         <projectUrl>https://ignite.apache.org/</projectUrl>
-        <iconUrl>http://i.imgur.com/DTgSopV.png</iconUrl>
+        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
             Apache Ignite.NET In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.
+            WARNING: this only works with x64 build targets.
         </description>
         <summary>
-            Apache Ignite.NET In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.
-            WARNING: this only works with x64 build targets.
+            High-performance in-memory platform for computing and transacting on large-scale data sets in real-time.
         </summary>
-        <releaseNotes>TEST RELEASE</releaseNotes>
+        <releaseNotes></releaseNotes>
         <copyright>Copyright 2015</copyright>
-        <tags>Apache Ignite In-Memory Distributed Computing</tags>
+        <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
     </metadata>
     <files>
         <!-- Dll will be included automatically in the lib folder. -->
