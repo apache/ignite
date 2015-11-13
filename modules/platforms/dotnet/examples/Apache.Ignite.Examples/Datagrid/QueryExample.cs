@@ -96,7 +96,7 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             const int zip = 94109;
 
-            var qry = cache.Query(new SqlQuery(typeof(Employee), "zip = ?", zip));
+            var qry = cache.SqlQuery("zip = ?", zip);
 
             Console.WriteLine();
             Console.WriteLine(">>> Employees with zipcode " + zip + ":");
@@ -113,9 +113,8 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             const string orgName = "Apache";
 
-            var qry = cache.Query(new SqlQuery("Employee",
-                "from Employee, Organization " +
-                "where Employee.organizationId = Organization._key and Organization.name = ?", orgName));
+            var qry = cache.SqlQuery("from Employee, Organization " +
+                                     "where Employee.organizationId = Organization._key and Organization.name = ?");
 
             Console.WriteLine();
             Console.WriteLine(">>> Employees working for " + orgName + ":");
@@ -145,7 +144,7 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="cache">Cache.</param>
         private static void FullTextQueryExample(ICache<EmployeeKey, Employee> cache)
         {
-            var qry = cache.Query(new TextQuery("Employee", "TX"));
+            var qry = cache.TextQuery("TX");
 
             Console.WriteLine();
             Console.WriteLine(">>> Employees living in Texas:");
