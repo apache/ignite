@@ -18,23 +18,32 @@
 package org.apache.ignite.cache.store.cassandra.utils.datasource;
 
 /**
- * Simple implementation of ${@link org.apache.ignite.cache.store.cassandra.utils.datasource.Credentials} which
- * just uses its constructor to hold user/password values
+ * Simple implementation of {@link Credentials} which just uses its constructor to hold user/password values.
  */
 public class PlainCredentials implements Credentials {
+    /** TODO IGNITE-1371: add comment */
     private String user;
-    private String password;
+    /** TODO IGNITE-1371: add comment */
+    private String pwd;
 
-    public PlainCredentials(String user, String password) {
+    /**
+     * TODO IGNITE-1371: add comment.
+     *
+     * @param user
+     * @param pwd
+     */
+    public PlainCredentials(String user, String pwd) {
         this.user = user;
-        this.password = password;
+        this.pwd = pwd;
     }
 
+    /** {@inheritDoc} */
     @Override public String getUser() {
         return user;
     }
 
+    /** {@inheritDoc} */
     @Override public String getPassword() {
-        return password;
+        return pwd;
     }
 }

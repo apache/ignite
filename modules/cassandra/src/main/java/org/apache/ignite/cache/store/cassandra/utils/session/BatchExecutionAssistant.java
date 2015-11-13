@@ -24,26 +24,36 @@ import org.apache.ignite.cache.store.cassandra.utils.persistence.KeyValuePersist
 
 /**
  * Provides information for batch operations (loadAll, deleteAll, writeAll) of Ignite cache
- * backed by ${@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}
+ * backed by {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}.
+ *
  * @param <R> Type of the result returned from batch operation
  * @param <V> Type of the value used in batch operation
  */
 public interface BatchExecutionAssistant<R, V> {
+    /** TODO IGNITE-1371: add comment */
     public boolean tableExistenceRequired();
 
+    /** TODO IGNITE-1371: add comment */
     public String getStatement();
 
+    /** TODO IGNITE-1371: add comment */
     public BoundStatement bindStatement(PreparedStatement statement, V obj);
 
+    /** TODO IGNITE-1371: add comment */
     public KeyValuePersistenceSettings getPersistenceSettings();
 
+    /** TODO IGNITE-1371: add comment */
     public String operationName();
 
-    public void process(Row row, int sequenceNumber);
+    /** TODO IGNITE-1371: add comment */
+    public void process(Row row, int seqNum);
 
-    public boolean alreadyProcessed(int sequenceNumber);
+    /** TODO IGNITE-1371: add comment */
+    public boolean alreadyProcessed(int seqNum);
 
+    /** TODO IGNITE-1371: add comment */
     public int processedCount();
 
+    /** TODO IGNITE-1371: add comment */
     public R processedData();
 }

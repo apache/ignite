@@ -30,7 +30,9 @@ import org.apache.ignite.cache.store.cassandra.utils.session.CassandraSessionImp
  * Cassandra driver sessions pool
  */
 public class SessionPool {
+    /** TODO IGNITE-1371: add comment */
     private static class SessionMonitor extends Thread {
+        /** {@inheritDoc} */
         @Override public void run() {
             try {
                 while (true) {
@@ -43,10 +45,10 @@ public class SessionPool {
 
                     List<Map.Entry<CassandraSessionImpl, SessionWrapper>> expiredSessions = new LinkedList<>();
 
-                    int sessionsCount;
+                    int sessionsCnt;
 
                     synchronized (sessions) {
-                        sessionsCount = sessions.size();
+                        sessionsCnt = sessions.size();
 
                         for (Map.Entry<CassandraSessionImpl, SessionWrapper> entry : sessions.entrySet()) {
                             if (entry.getValue().expired())
@@ -61,7 +63,7 @@ public class SessionPool {
                         entry.getValue().release();
 
                     // all sessions in the pool expired, thus we don't need additional thread to manage sessions in the pool
-                    if (sessionsCount == expiredSessions.size())
+                    if (sessionsCnt == expiredSessions.size())
                         return;
                 }
             }
@@ -71,10 +73,13 @@ public class SessionPool {
         }
     }
 
+    /** TODO IGNITE-1371: add comment */
     private static final long SLEEP_TIMEOUT = 60000; // 1 minute
 
+    /** TODO IGNITE-1371: add comment */
     private static final Map<CassandraSessionImpl, SessionWrapper> sessions = new HashMap<>();
 
+    /** TODO IGNITE-1371: add comment */
     private static SessionMonitor monitorSingleton;
 
     static {
@@ -85,14 +90,15 @@ public class SessionPool {
         });
     }
 
-    public static void put(CassandraSessionImpl cassandraSession, Session driverSession) {
-        if (cassandraSession == null || driverSession == null)
+    /** TODO IGNITE-1371: add comment */
+    public static void put(CassandraSessionImpl cassandraSes, Session driverSes) {
+        if (cassandraSes == null || driverSes == null)
             return;
 
         SessionWrapper old;
 
         synchronized (sessions) {
-            old = sessions.put(cassandraSession, new SessionWrapper(driverSession));
+            old = sessions.put(cassandraSes, new SessionWrapper(driverSes));
 
             if (monitorSingleton == null || State.TERMINATED.equals(monitorSingleton.getState())) {
                 monitorSingleton = new SessionMonitor();
@@ -106,19 +112,21 @@ public class SessionPool {
             old.release();
     }
 
-    public static Session get(CassandraSessionImpl cassandraSession) {
-        if (cassandraSession == null)
+    /** TODO IGNITE-1371: add comment */
+    public static Session get(CassandraSessionImpl cassandraSes) {
+        if (cassandraSes == null)
             return null;
 
         SessionWrapper wrapper;
 
         synchronized (sessions) {
-            wrapper = sessions.remove(cassandraSession);
+            wrapper = sessions.remove(cassandraSes);
         }
 
         return wrapper == null ? null : wrapper.driverSession();
     }
 
+    /** TODO IGNITE-1371: add comment */
     public static void release() {
         Collection<SessionWrapper> wrappers;
 

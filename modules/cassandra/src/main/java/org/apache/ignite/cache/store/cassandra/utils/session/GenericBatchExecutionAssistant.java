@@ -27,33 +27,40 @@ import java.util.Set;
  * @param <V> Type of the value used in batch operation
  */
 public abstract class GenericBatchExecutionAssistant<R, V> implements BatchExecutionAssistant<R, V> {
+    /** TODO IGNITE-1371: add comment */
     private Set<Integer> processed = new HashSet<>();
 
-    @Override public void process(Row row, int sequenceNumber) {
-        if (processed.contains(sequenceNumber))
+    /** {@inheritDoc} */
+    @Override public void process(Row row, int seqNum) {
+        if (processed.contains(seqNum))
             return;
 
-        processed.add(sequenceNumber);
+        processed.add(seqNum);
 
         process(row);
     }
 
-    @Override public boolean alreadyProcessed(int sequenceNumber) {
-        return processed.contains(sequenceNumber);
+    /** {@inheritDoc} */
+    @Override public boolean alreadyProcessed(int seqNum) {
+        return processed.contains(seqNum);
     }
 
+    /** {@inheritDoc} */
     @Override public int processedCount() {
         return processed.size();
     }
 
+    /** {@inheritDoc} */
     @Override public R processedData() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean tableExistenceRequired() {
         return false;
     }
 
+    /** {@inheritDoc} */
     protected void process(Row row) {
     }
 }

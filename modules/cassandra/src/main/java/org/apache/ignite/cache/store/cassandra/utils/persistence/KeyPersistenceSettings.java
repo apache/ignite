@@ -29,67 +29,76 @@ import org.w3c.dom.NodeList;
  * Stores persistence settings for Ignite cache key
  */
 public class KeyPersistenceSettings extends PersistenceSettings {
+    /** TODO IGNITE-1371: add comment */
     private static final String PARTITION_KEY_ELEMENT = "partitionKey";
+    /** TODO IGNITE-1371: add comment */
     private static final String CLUSTER_KEY_ELEMENT = "clusterKey";
+    /** TODO IGNITE-1371: add comment */
     private static final String FIELD_ELEMENT = "field";
 
+    /** TODO IGNITE-1371: add comment */
     private List<PojoField> fields = new LinkedList<>();
-    private List<PojoField> partitionKeyFields = new LinkedList<>();
+    /** TODO IGNITE-1371: add comment */
+    private List<PojoField> partKeyFields = new LinkedList<>();
+    /** TODO IGNITE-1371: add comment */
     private List<PojoField> clusterKeyFields = new LinkedList<>();
 
+    /** TODO IGNITE-1371: add comment */
     public KeyPersistenceSettings(Element el) {
         super(el);
 
         if (!PersistenceStrategy.POJO.equals(getStrategy()))
             return;
 
-        Element partitionKeysNode = el.getElementsByTagName(PARTITION_KEY_ELEMENT) != null ?
+        Element partKeysNode = el.getElementsByTagName(PARTITION_KEY_ELEMENT) != null ?
             (Element)el.getElementsByTagName(PARTITION_KEY_ELEMENT).item(0) : null;
 
         Element clusterKeysNode = el.getElementsByTagName(CLUSTER_KEY_ELEMENT) != null ?
             (Element)el.getElementsByTagName(CLUSTER_KEY_ELEMENT).item(0) : null;
 
-        if (partitionKeysNode == null && clusterKeysNode != null) {
+        if (partKeysNode == null && clusterKeysNode != null) {
             throw new IllegalArgumentException("It's not allowed to specify cluster key fields mapping, but " +
                 "doesn't specify partition key mappings");
         }
 
-        partitionKeyFields = detectFields(partitionKeysNode, getPartitionKeyDescriptors());
+        partKeyFields = detectFields(partKeysNode, getPartitionKeyDescriptors());
 
-        if (partitionKeyFields == null || partitionKeyFields.isEmpty()) {
+        if (partKeyFields == null || partKeyFields.isEmpty()) {
             throw new IllegalStateException("Failed to initialize partition key fields for class '" +
                 getJavaClass().getName() + "'");
         }
 
-        clusterKeyFields = detectFields(clusterKeysNode, getClusterKeyDescriptors(partitionKeyFields));
+        clusterKeyFields = detectFields(clusterKeysNode, getClusterKeyDescriptors(partKeyFields));
 
         fields = new LinkedList<>();
-        fields.addAll(partitionKeyFields);
+        fields.addAll(partKeyFields);
         fields.addAll(clusterKeyFields);
 
         checkDuplicates(fields);
     }
 
+    /** {@inheritDoc} */
     @Override public List<PojoField> getFields() {
         return fields;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getPrimaryKeyDDL() {
-        StringBuilder partitionKey = new StringBuilder();
+        StringBuilder partKey = new StringBuilder();
 
-        List<String> columns = getPartitionKeyColumns();
-        for (String column : columns) {
-            if (partitionKey.length() != 0)
-                partitionKey.append(", ");
+        List<String> cols = getPartitionKeyColumns();
+        for (String column : cols) {
+            if (partKey.length() != 0)
+                partKey.append(", ");
 
-            partitionKey.append(column);
+            partKey.append(column);
         }
 
         StringBuilder clusterKey = new StringBuilder();
 
-        columns = getClusterKeyColumns();
-        if (columns != null) {
-            for (String column : columns) {
+        cols = getClusterKeyColumns();
+        if (cols != null) {
+            for (String column : cols) {
                 if (clusterKey.length() != 0)
                     clusterKey.append(", ");
 
@@ -98,10 +107,11 @@ public class KeyPersistenceSettings extends PersistenceSettings {
         }
 
         return clusterKey.length() == 0 ?
-            "primary key ((" + partitionKey.toString() + "))" :
-            "primary key ((" + partitionKey.toString() + "), " + clusterKey.toString() + ")";
+            "primary key ((" + partKey.toString() + "))" :
+            "primary key ((" + partKey.toString() + "), " + clusterKey.toString() + ")";
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getClusteringDDL() {
         StringBuilder builder = new StringBuilder();
 
@@ -122,37 +132,41 @@ public class KeyPersistenceSettings extends PersistenceSettings {
         return builder.length() == 0 ? null : "clustering order by (" + builder.toString() + ")";
     }
 
+    /** {@inheritDoc} */
     @Override protected String defaultColumnName() {
         return "key";
     }
 
+    /** TODO IGNITE-1371: add comment */
     private List<String> getPartitionKeyColumns() {
-        List<String> columns = new LinkedList<>();
+        List<String> cols = new LinkedList<>();
 
         if (PersistenceStrategy.BLOB.equals(getStrategy()) || PersistenceStrategy.PRIMITIVE.equals(getStrategy())) {
-            columns.add(getColumn());
-            return columns;
+            cols.add(getColumn());
+            return cols;
         }
 
-        if (partitionKeyFields != null) {
-            for (PojoField field : partitionKeyFields)
-                columns.add(field.getColumn());
+        if (partKeyFields != null) {
+            for (PojoField field : partKeyFields)
+                cols.add(field.getColumn());
         }
 
-        return columns;
+        return cols;
     }
 
+    /** TODO IGNITE-1371: add comment */
     private List<String> getClusterKeyColumns() {
-        List<String> columns = new LinkedList<>();
+        List<String> cols = new LinkedList<>();
 
         if (clusterKeyFields != null) {
             for (PojoField field : clusterKeyFields)
-                columns.add(field.getColumn());
+                cols.add(field.getColumn());
         }
 
-        return columns;
+        return cols;
     }
 
+    /** TODO IGNITE-1371: add comment */
     private List<PojoField> detectFields(Element el, List<PropertyDescriptor> descriptors) {
         List<PojoField> list = new LinkedList<>();
 
@@ -167,20 +181,20 @@ public class KeyPersistenceSettings extends PersistenceSettings {
         }
 
         NodeList nodes = el.getElementsByTagName(FIELD_ELEMENT);
-        int count = nodes == null ? 0 : nodes.getLength();
+        int cnt = nodes == null ? 0 : nodes.getLength();
 
-        if (count == 0) {
+        if (cnt == 0) {
             throw new IllegalArgumentException("Incorrect configuration of Cassandra key persistence settings, " +
                 "no cluster key fields specified inside '" + PARTITION_KEY_ELEMENT + "/" +
                 CLUSTER_KEY_ELEMENT + "' element");
         }
 
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < cnt; i++) {
             PojoKeyField field = new PojoKeyField((Element)nodes.item(i), getJavaClass());
 
-            PropertyDescriptor descriptor = findPropertyDescriptor(descriptors, field.getName());
+            PropertyDescriptor desc = findPropertyDescriptor(descriptors, field.getName());
 
-            if (descriptor == null) {
+            if (desc == null) {
                 throw new IllegalArgumentException("Specified POJO field '" + field.getName() +
                     "' doesn't exist in '" + getJavaClass().getName() + "' class");
             }
@@ -191,6 +205,7 @@ public class KeyPersistenceSettings extends PersistenceSettings {
         return list;
     }
 
+    /** TODO IGNITE-1371: add comment */
     private List<PropertyDescriptor> getPartitionKeyDescriptors() {
         List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(),
             AffinityKeyMapped.class, true);
@@ -200,16 +215,16 @@ public class KeyPersistenceSettings extends PersistenceSettings {
             PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
     }
 
-    private List<PropertyDescriptor> getClusterKeyDescriptors(List<PojoField> partitionKeyFields) {
+    /** TODO IGNITE-1371: add comment */
+    private List<PropertyDescriptor> getClusterKeyDescriptors(List<PojoField> partKeyFields) {
         List<PropertyDescriptor> primitivePropDescriptors =
             PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
 
         if (primitivePropDescriptors == null || primitivePropDescriptors.isEmpty() ||
-            partitionKeyFields.size() == primitivePropDescriptors.size()) {
+            partKeyFields.size() == primitivePropDescriptors.size())
             return null;
-        }
 
-        for (PojoField field : partitionKeyFields) {
+        for (PojoField field : partKeyFields) {
             for (int i = 0; i < primitivePropDescriptors.size(); i++) {
                 if (primitivePropDescriptors.get(i).getName().equals(field.getName())) {
                     primitivePropDescriptors.remove(i);

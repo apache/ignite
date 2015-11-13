@@ -26,66 +26,81 @@ import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 
 /**
- * Factory class to instantiate ${@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}
+ * Factory class to instantiate {@link CassandraCacheStore}.
+ *
  * @param <K> Ignite cache key type
  * @param <V> Ignite cache value type
  */
 public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheStore<K, V>> {
+    /** TODO IGNITE-1371: add comment */
     @SpringApplicationContextResource
-    private Object appContext;
+    private Object appCtx;
 
-    private String dataSourceBean;
+    /** TODO IGNITE-1371: add comment */
+    private String dataSrcBean;
+
+    /** TODO IGNITE-1371: add comment */
     private String persistenceSettingsBean;
 
-    private transient DataSource dataSource;
+    /** TODO IGNITE-1371: add comment */
+    private transient DataSource dataSrc;
+
+    /** TODO IGNITE-1371: add comment */
     private transient KeyValuePersistenceSettings persistenceSettings;
 
+    /** {@inheritDoc} */
     @Override public CassandraCacheStore<K, V> create() {
         return new CassandraCacheStore<>(getDataSource(), getPersistenceSettings());
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
-    public CassandraCacheStoreFactory<K, V> setDataSource(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public CassandraCacheStoreFactory<K, V> setDataSource(DataSource dataSrc) {
+        this.dataSrc = dataSrc;
         return this;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public CassandraCacheStoreFactory<K, V> setDataSourceBean(String bean) {
-        this.dataSourceBean = bean;
+        this.dataSrcBean = bean;
         return this;
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public CassandraCacheStoreFactory<K, V> setPersistenceSettings(KeyValuePersistenceSettings settings) {
         this.persistenceSettings = settings;
         return this;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public CassandraCacheStoreFactory<K, V> setPersistenceSettingsBean(String bean) {
         this.persistenceSettingsBean = bean;
         return this;
     }
 
+    /** TODO IGNITE-1371: add comment */
     private DataSource getDataSource() {
-        if (dataSource != null)
-            return dataSource;
+        if (dataSrc != null)
+            return dataSrc;
 
-        if (dataSourceBean == null)
+        if (dataSrcBean == null)
             throw new IllegalStateException("Either DataSource bean or DataSource itself should be specified");
 
-        if (appContext == null) {
+        if (appCtx == null) {
             throw new IllegalStateException("Can't get Cassandra DataSource cause Spring application " +
                 "context wasn't injected into CassandraCacheStoreFactory");
         }
 
-        Object obj = loadSpringContextBean(appContext, dataSourceBean);
+        Object obj = loadSpringContextBean(appCtx, dataSrcBean);
 
         if (!(obj instanceof DataSource))
-            throw new IllegalStateException("Incorrect connection bean '" + dataSourceBean + "' specified");
+            throw new IllegalStateException("Incorrect connection bean '" + dataSrcBean + "' specified");
 
-        return dataSource = (DataSource)obj;
+        return dataSrc = (DataSource)obj;
     }
 
+    /** TODO IGNITE-1371: add comment */
     private KeyValuePersistenceSettings getPersistenceSettings() {
         if (persistenceSettings != null)
             return persistenceSettings;
@@ -95,12 +110,12 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
                 "should be specified");
         }
 
-        if (appContext == null) {
+        if (appCtx == null) {
             throw new IllegalStateException("Can't get Cassandra persistence settings cause Spring application " +
                 "context wasn't injected into CassandraCacheStoreFactory");
         }
 
-        Object obj = loadSpringContextBean(appContext, persistenceSettingsBean);
+        Object obj = loadSpringContextBean(appCtx, persistenceSettingsBean);
 
         if (!(obj instanceof KeyValuePersistenceSettings)) {
             throw new IllegalStateException("Incorrect persistence settings bean '" +
@@ -110,13 +125,14 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
         return persistenceSettings = (KeyValuePersistenceSettings)obj;
     }
 
-    private Object loadSpringContextBean(Object appContext, String beanName) {
+    /** TODO IGNITE-1371: add comment */
+    private Object loadSpringContextBean(Object appCtx, String beanName) {
         try {
             IgniteSpringHelper spring = IgniteComponentType.SPRING.create(false);
-            return spring.loadBeanFromAppContext(appContext, beanName);
+            return spring.loadBeanFromAppContext(appCtx, beanName);
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to load bean in application context [beanName=" + beanName + ", igniteConfig=" + appContext + ']', e);
+            throw new IgniteException("Failed to load bean in application context [beanName=" + beanName + ", igniteConfig=" + appCtx + ']', e);
         }
     }
 
