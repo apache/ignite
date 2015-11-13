@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsMode;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -56,22 +55,13 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        igfsSecondaryFileSystem = createSecondaryFileSystemStack();
+        igfsSecondaryFileSystem =  null;
+        igfsSecondary = null;
+        secIgfsEx = null;
 
-        Ignite ignitePrimary = G.start(getConfiguration(getTestGridName(1)));
+        Ignite ignitePrimary = G.start(getConfiguration(getTestGridName(0/*1*/)));
 
         igfs = (IgfsImpl) ignitePrimary.fileSystem("igfs");
-    }
-
-    /**{@inheritDoc} */
-    protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
-        Ignite igniteSecondary = G.start(getConfiguration(getTestGridName(0)));
-
-        IgfsEx secondaryIgfsImpl = (IgfsEx)igniteSecondary.fileSystem("igfs");
-
-        igfsSecondary = new IgfsExUniversalFileSystemAdapter(secondaryIgfsImpl);
-
-        return secondaryIgfsImpl.asSecondary();
     }
 
     /**

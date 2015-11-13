@@ -71,6 +71,9 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgfsPrimaryOffheapValuesSelfTest.class));
         suite.addTest(new TestSuite(IgfsDualSyncSelfTest.class));
         suite.addTest(new TestSuite(IgfsDualAsyncSelfTest.class));
+        suite.addTestSuite(IgfsBackupsPrimarySelfTest.class);
+        suite.addTestSuite(IgfsBackupsDualSyncSelfTest.class);
+        suite.addTestSuite(IgfsBackupsDualAsyncSelfTest.class);
 
         suite.addTest(new TestSuite(IgfsSizeSelfTest.class));
         suite.addTest(new TestSuite(IgfsAttributesSelfTest.class));
@@ -89,12 +92,6 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgfsStreamsSelfTest.class));
         suite.addTest(new TestSuite(IgfsModesSelfTest.class));
         suite.addTest(new TestSuite(IgfsMetricsSelfTest.class));
-
-        suite.addTest(new TestSuite(IgfsPrimarySelfTest.class));
-        suite.addTest(new TestSuite(IgfsPrimaryOffheapTieredSelfTest.class));
-        suite.addTest(new TestSuite(IgfsPrimaryOffheapValuesSelfTest.class));
-        suite.addTest(new TestSuite(IgfsDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(IgfsDualAsyncSelfTest.class));
 
         suite.addTest(new TestSuite(IgfsClientCacheSelfTest.class));
         suite.addTest(new TestSuite(IgfsOneClientNodeTest.class));
@@ -115,11 +112,6 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTestSuite(IgfsGroupDataBlockKeyMapperHashSelfTest.class);
 
         suite.addTestSuite(IgfsStartCacheTest.class);
-
-        suite.addTestSuite(IgfsBackupsPrimarySelfTest.class);
-        suite.addTestSuite(IgfsBackupsDualSyncSelfTest.class);
-        suite.addTestSuite(IgfsBackupsDualAsyncSelfTest.class);
-
         // TODO: Enable when IGFS failover is fixed.
         //suite.addTestSuite(IgfsBackupFailoverSelfTest.class);
 

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -30,7 +28,6 @@ import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMetrics;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.G;
@@ -47,6 +44,7 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 
 /**
  * Test for IGFS metrics.
+ * Runs operations on multiple nodes with
  */
 public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     /** Primary IGFS name. */
@@ -123,14 +121,8 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(IGFS_PRIMARY);
         igfsCfg.setBlockSize(PRIMARY_BLOCK_SIZE);
-        igfsCfg.setDefaultMode(PRIMARY);
+        igfsCfg.setDefaultMode(DUAL_SYNC);
         igfsCfg.setSecondaryFileSystem(igfsSecondary.asSecondary());
-
-        Map<String, IgfsMode> pathModes = new HashMap<>();
-
-        pathModes.put("/fileRemote", DUAL_SYNC);
-
-        igfsCfg.setPathModes(pathModes);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -221,9 +213,16 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testMetrics() throws Exception {
-        IgniteFileSystem fs = igfsPrimary[0];
+        testMetrics0(igfsPrimary[0]);
+    }
 
+    /** @throws Exception If failed. */
+    static void testMetrics0(IgniteFileSystem fs) throws Exception {
         assertNotNull(fs);
+
+        fs.format();
+
+        fs.resetMetrics();
 
         IgfsMetrics m = fs.metrics();
 
@@ -361,7 +360,14 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testMultipleClose() throws Exception {
-        IgniteFileSystem fs = igfsPrimary[0];
+        testMultipleClose0(igfsPrimary[0]);
+    }
+
+    /** @throws Exception If failed. */
+    static void testMultipleClose0(IgniteFileSystem fs) throws Exception {
+        fs.format();
+
+        fs.resetMetrics();
 
         IgfsOutputStream out = fs.create(new IgfsPath("/file"), false);
 
@@ -385,19 +391,41 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBlockMetrics() throws Exception {
-        IgfsEx igfs = (IgfsEx)igfsPrimary[0];
+        testBlockMetrics0((IgfsEx)igfsPrimary[0], igfsSecondary);
+    }
 
-        IgfsPath fileRemote = new IgfsPath("/fileRemote");
+    /**
+     * Test block metrics. (Static delegate).
+     *
+     * @throws Exception If failed.
+     */
+    static void testBlockMetrics0(IgfsEx igfs, IgfsImpl igfsSecondary) throws Exception {
+        igfs.format();
+
+        igfs.resetMetrics();
+
+        IgfsPath fileRemote = null;
+
         IgfsPath file1 = new IgfsPath("/file1");
         IgfsPath file2 = new IgfsPath("/file2");
 
-        // Create remote file and write some data to it.
-        IgfsOutputStream out = igfsSecondary.create(fileRemote, 256, true, null, 1, 256, null);
+        int rmtBlockSize = -1;
 
-        int rmtBlockSize = igfsSecondary.info(fileRemote).blockSize();
+        if (igfsSecondary != null) {
+            igfsSecondary.format();
 
-        out.write(new byte[rmtBlockSize]);
-        out.close();
+            igfsSecondary.resetMetrics();
+
+            fileRemote = new IgfsPath("/fileRemote");
+
+            // Create remote file and write some data to it.
+            IgfsOutputStream out = igfsSecondary.create(fileRemote, 256, true, null, 1, 256, null);
+
+            rmtBlockSize = igfsSecondary.info(fileRemote).blockSize();
+
+            out.write(new byte[rmtBlockSize]);
+            out.close();
+        }
 
         // Start metrics measuring.
         IgfsMetrics initMetrics = igfs.metrics();
@@ -414,96 +442,105 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         os.write(new byte[blockSize * 2]);
         os.close();
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 2, 0, blockSize * 2);
+        checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 2, igfsSecondary != null ? 2 : 0, blockSize * 2);
 
         // Write one more file (one block).
         os = igfs.create(file2, 256, true, null, 1, 256, null);
         os.write(new byte[blockSize]);
         os.close();
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 3, 0, blockSize * 3);
+        checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 3, igfsSecondary != null ? 3 : 0, blockSize * 3);
 
         // Read data from the first file.
         IgfsInputStreamAdapter is = igfs.open(file1);
         is.readFully(0, new byte[blockSize * 2]);
         is.close();
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 2, 0, blockSize * 2, 3, 0, blockSize * 3);
+        checkBlockMetrics(initMetrics, igfs.metrics(), 2, 0, blockSize * 2, 3, igfsSecondary != null ? 3 : 0,
+            blockSize * 3);
 
         // Read data from the second file with hits.
         is = igfs.open(file2);
         is.readChunks(0, blockSize);
         is.close();
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, 0, blockSize * 3);
+        checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, igfsSecondary != null ? 3 : 0,
+            blockSize * 3);
 
         // Clear the first file.
         igfs.create(file1, true).close();
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, 0, blockSize * 3);
+        checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, igfsSecondary != null ? 3 : 0,
+            blockSize * 3);
 
         // Delete the second file.
         igfs.delete(file2, false);
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, 0, blockSize * 3);
+        checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, igfsSecondary != null ? 3 : 0,
+            blockSize * 3);
 
-        // Read remote file.
-        is = igfs.open(fileRemote);
-        is.readChunks(0, rmtBlockSize);
-        is.close();
+        IgfsMetrics metrics;
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 4, 1, blockSize * 3 + rmtBlockSize, 3, 0, blockSize * 3);
+        if (fileRemote != null) {
+            // Read remote file.
+            is = igfs.open(fileRemote);
+            is.readChunks(0, rmtBlockSize);
+            is.close();
 
-        // Lets wait for blocks will be placed to cache
-        U.sleep(300);
+            checkBlockMetrics(initMetrics, igfs.metrics(), 4, 1, blockSize * 3 + rmtBlockSize, 3,
+                3, blockSize * 3);
 
-        // Read remote file again.
-        is = igfs.open(fileRemote);
-        is.readChunks(0, rmtBlockSize);
-        is.close();
+            // Lets wait for blocks will be placed to cache
+            U.sleep(300);
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 5, 1, blockSize * 3 + rmtBlockSize * 2, 3, 0, blockSize * 3);
+            // Read remote file again.
+            is = igfs.open(fileRemote);
+            is.readChunks(0, rmtBlockSize);
+            is.close();
 
-        IgfsMetrics metrics = igfs.metrics();
+            checkBlockMetrics(initMetrics, igfs.metrics(), 5, 1, blockSize * 3 + rmtBlockSize * 2, 3, 3, blockSize * 3);
 
-        assert metrics.secondarySpaceSize() == rmtBlockSize;
+            metrics = igfs.metrics();
 
-        // Write some data to the file working in DUAL mode.
-        os = igfs.append(fileRemote, false);
-        os.write(new byte[rmtBlockSize]);
-        os.close();
+            assertEquals(rmtBlockSize, metrics.secondarySpaceSize());
 
-        // Additional block read here due to file ending synchronization.
-        checkBlockMetrics(initMetrics, igfs.metrics(), 5, 1, blockSize * 3 + rmtBlockSize * 2, 4, 1,
-            blockSize * 3 + rmtBlockSize);
+            // Write some data to the file working in DUAL mode.
+            os = igfs.append(fileRemote, false);
+            os.write(new byte[rmtBlockSize]);
+            os.close();
 
-        metrics = igfs.metrics();
+            // Additional block read here due to file ending synchronization.
+            checkBlockMetrics(initMetrics, igfs.metrics(), 5, 1, blockSize * 3 + rmtBlockSize * 2, 4, 4,
+                blockSize * 3 + rmtBlockSize);
 
-        assert metrics.secondarySpaceSize() == rmtBlockSize * 2;
+            metrics = igfs.metrics();
 
-        igfs.delete(fileRemote, false);
+            assert metrics.secondarySpaceSize() == rmtBlockSize * 2;
 
-        U.sleep(300);
+            igfs.delete(fileRemote, false);
 
-        assert igfs.metrics().secondarySpaceSize() == 0;
+            U.sleep(300);
 
-        // Write partial block to the first file.
-        os = igfs.append(file1, false);
-        os.write(new byte[blockSize / 2]);
-        os.close();
+            assert igfs.metrics().secondarySpaceSize() == 0;
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 5, 1, blockSize * 3 + rmtBlockSize * 2, 5, 1,
-            blockSize * 7 / 2 + rmtBlockSize);
+            // Write partial block to the first file.
+            os = igfs.append(file1, false);
+            os.write(new byte[blockSize / 2]);
+            os.close();
 
-        // Now read partial block.
-        // Read remote file again.
-        is = igfs.open(file1);
-        is.seek(blockSize * 2);
-        is.readChunks(0, blockSize / 2);
-        is.close();
+            checkBlockMetrics(initMetrics, igfs.metrics(), 5, 1, blockSize * 3 + rmtBlockSize * 2, 5, 5,
+                blockSize * 7 / 2 + rmtBlockSize);
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 6, 1, blockSize * 7 / 2 + rmtBlockSize * 2, 5, 1,
-            blockSize * 7 / 2 + rmtBlockSize);
+            // Now read partial block.
+            // Read remote file again.
+            is = igfs.open(file1);
+            is.seek(blockSize * 2);
+            is.readChunks(0, blockSize / 2);
+            is.close();
+
+            checkBlockMetrics(initMetrics, igfs.metrics(), 6, 1, blockSize * 7 / 2 + rmtBlockSize * 2, 5, 5,
+                blockSize * 7 / 2 + rmtBlockSize);
+        }
 
         igfs.resetMetrics();
 
@@ -517,6 +554,9 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assert metrics.bytesReadTime() == 0;
         assert metrics.bytesWritten() == 0;
         assert metrics.bytesWriteTime() == 0;
+
+        assert metrics.bytesReadTime() >= 0;
+        assert metrics.bytesWriteTime() >= 0;
     }
 
     /**
@@ -532,7 +572,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @param bytesWrite Bytes write.
      * @throws Exception If failed.
      */
-    private void checkBlockMetrics(IgfsMetrics initMetrics, IgfsMetrics metrics, long blocksRead,
+    private static void checkBlockMetrics(IgfsMetrics initMetrics, IgfsMetrics metrics, long blocksRead,
         long blocksReadRemote, long bytesRead, long blocksWrite, long blocksWriteRemote, long bytesWrite)
         throws Exception {
         assert metrics != null;

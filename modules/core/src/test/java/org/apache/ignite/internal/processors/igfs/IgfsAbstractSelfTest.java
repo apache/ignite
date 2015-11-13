@@ -55,6 +55,7 @@ import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointType;
+import org.apache.ignite.igfs.IgfsMetrics;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
@@ -175,6 +176,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** Primary IGFS. */
     protected static IgfsImpl igfs;
 
+    /** Igfs that represents secondary file ssystem in this test. */
+    protected static IgfsEx secIgfsEx;
+
     /** Secondary IGFS */
     protected static IgfsSecondaryFileSystem igfsSecondaryFileSystem;
 
@@ -257,14 +261,23 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception On error.
      */
     protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
-        Ignite igniteSecondary = startGridWithIgfs("ignite-secondary", "igfs-secondary", PRIMARY, null,
-            SECONDARY_REST_CFG);
+        if (dual) {
+            Ignite igniteSecondary = startGridWithIgfs("ignite-secondary", "igfs-secondary", PRIMARY, null,
+                SECONDARY_REST_CFG);
 
-        IgfsEx secondaryIgfsImpl = (IgfsEx) igniteSecondary.fileSystem("igfs-secondary");
+            secIgfsEx = (IgfsEx) igniteSecondary.fileSystem("igfs-secondary");
 
-        igfsSecondary = new IgfsExUniversalFileSystemAdapter(secondaryIgfsImpl);
+            igfsSecondary = new IgfsExUniversalFileSystemAdapter(secIgfsEx);
 
-        return secondaryIgfsImpl.asSecondary();
+            return secIgfsEx.asSecondary();
+        }
+        else {
+            secIgfsEx = null;
+
+            igfsSecondary = null;
+
+            return null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -1031,7 +1044,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOpenDoesNotExist() throws Exception {
-        igfsSecondary.delete(FILE.toString(), false);
+        if (igfsSecondary != null)
+            igfsSecondary.delete(FILE.toString(), false);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -3234,5 +3248,154 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         clear(igfs, igfsSecondary);
+    }
+
+    /**
+     * Checks #localSpaceSize() and #secondarySpaceSize() Metrics methods.
+     */
+    public void testMetricsSpaceSize() throws Exception {
+        final IgniteFileSystem fs = igfs;
+
+        // Needed to suppress influence of previous tests:
+        fs.resetMetrics();
+
+        checkMetricsZero(fs);
+
+        try (IgfsOutputStream os = fs.create(new IgfsPath("/file1"), 128, true/*overwrite*/, null, 0, 256, null)) {
+            os.write(chunk);
+        }
+
+        IgfsMetrics m = fs.metrics();
+
+        // TODO: This assertion fails for OFFHEAP_TIRED mode,
+        // TODO: see https://issues.apache.org/jira/browse/IGNITE-304.
+        assertTrue(m.localSpaceSize() > 0);
+
+        if (dual)
+            //assertTrue(m.secondarySpaceSize() > 0);
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return fs.metrics().secondarySpaceSize() > 0;
+                }
+            }, 1000L));
+        else
+            assertEquals(0, m.secondarySpaceSize());
+
+        try (IgfsOutputStream os = fs.create(new IgfsPath("/file2"), 128, true/*overwrite*/, null, 0, 256, null)) {
+            os.write(chunk);
+        }
+
+        fs.delete(new IgfsPath("/file1"), false);
+
+        m = fs.metrics();
+
+        assertEquals(chunk.length * 2, m.bytesWritten());
+        assertEquals(1, m.filesCount());
+
+        assertEquals(0, m.filesOpenedForRead());
+        assertEquals(0, m.filesOpenedForWrite());
+
+        assertTrue(m.localSpaceSize() > 0);
+
+        if (dual)
+            assertTrue(m.secondarySpaceSize() > 0);
+        else
+            assertEquals(0, m.secondarySpaceSize());
+
+        fs.delete(new IgfsPath("/foo1"), true);
+        fs.delete(new IgfsPath("/file2"), true);
+
+        m = fs.metrics();
+
+        assertEquals(0, m.directoriesCount());
+        assertEquals(0, m.filesCount());
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return fs.metrics().localSpaceSize() == 0;
+            }
+        }, 1000L));
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return fs.metrics().secondarySpaceSize() == 0;
+            }
+        }, 1000L));
+
+        fs.resetMetrics();
+
+        checkMetricsZero(fs);
+    }
+
+    /**
+     * Checks zero metrics state (e.g. after reset).
+     *
+     * @param fs IgniteFileSystem to test the metrics.
+     */
+    private void checkMetricsZero(final IgniteFileSystem fs) throws Exception {
+        IgfsMetrics m = fs.metrics();
+
+        assertEquals(0, m.blocksReadRemote());
+        assertEquals(0, m.blocksReadTotal());
+
+        assertEquals(0, m.blocksWrittenRemote());
+        assertEquals(0, m.blocksWrittenTotal());
+
+        assertEquals(0, m.bytesRead());
+        assertEquals(0, m.bytesReadTime());
+
+        assertEquals(0, m.bytesWriteTime());
+        assertEquals(0, m.bytesWritten());
+
+        assertEquals(0, m.directoriesCount());
+        assertEquals(0, m.filesCount());
+
+        assertEquals(0, m.filesOpenedForRead());
+        assertEquals(0, m.filesOpenedForWrite());
+
+        assertTrue(m.maxSpaceSize() > 0);
+
+        // Sizes are updated asynchronously, so we need to wait
+        // this to change:
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return fs.metrics().localSpaceSize() == 0;
+            }
+        }, 2000L);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return fs.metrics().secondarySpaceSize() == 0;
+            }
+        }, 2000L);
+    }
+
+    /**
+     * Checks block metrics.
+     *
+     * @throws Exception
+     */
+    public void testMetricsBlock() throws Exception {
+        assert dual == (secIgfsEx != null);
+
+        IgfsMetricsSelfTest.testBlockMetrics0(igfs, (IgfsImpl)secIgfsEx);
+    }
+
+    /**
+     * Checks basic metrics.
+     *
+     * @throws Exception
+     */
+    public void testMetricsBasic() throws Exception {
+        IgfsMetricsSelfTest.testMetrics0(igfs);
+    }
+
+    /**
+     * Checks metrics after the file system closed twice.
+     *
+     * @throws Exception
+     */
+    public void testMetricsMultipleFsClose() throws Exception {
+        IgfsMetricsSelfTest.testMultipleClose0(igfs);
     }
 }
