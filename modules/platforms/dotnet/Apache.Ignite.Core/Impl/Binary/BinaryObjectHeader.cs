@@ -33,6 +33,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Size, equals to sizeof(BinaryObjectHeader). */
         public const int Size = 24;
 
+        /// <summary>
+        /// Flags.
+        /// </summary>
         [Flags]
         public enum Flag : short
         {
@@ -127,23 +130,32 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets a user type flag.
+        /// Gets the user type flag.
         /// </summary>
         public bool IsUserType
         {
             get { return (Flags & Flag.UserType) == Flag.UserType; }
         }
 
+        /// <summary>
+        /// Gets the schema flag.
+        /// </summary>
         public bool HasSchema
         {
             get { return (Flags & Flag.HasSchema) == Flag.HasSchema; }
         }
 
+        /// <summary>
+        /// Gets the raw flag.
+        /// </summary>
         public bool HasRaw
         {
             get { return (Flags & Flag.HasRaw) == Flag.HasRaw; }
         }
 
+        /// <summary>
+        /// Gets the compact footer flag.
+        /// </summary>
         public bool IsCompactFooter
         {
             get { return (Flags & Flag.CompactFooter) == Flag.CompactFooter; }
