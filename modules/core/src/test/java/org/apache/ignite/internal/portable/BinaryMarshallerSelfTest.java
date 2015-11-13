@@ -75,7 +75,7 @@ import static org.junit.Assert.assertArrayEquals;
  * Portable marshaller tests.
  */
 @SuppressWarnings({"OverlyStrongTypeCast", "ArrayHashCode", "ConstantConditions"})
-public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
+public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -2134,7 +2134,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testClass() throws Exception {
         PortableMarshaller marsh = createMarshaller();
 
-        Class cls = GridPortableMarshallerSelfTest.class;
+        Class cls = BinaryMarshallerSelfTest.class;
 
         Class unmarshalledCls = marshalUnmarshal(cls, marsh);
 
@@ -2148,7 +2148,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = createMarshaller();
 
         ObjectWithClassFields obj = new ObjectWithClassFields();
-        obj.cls1 = GridPortableMarshallerSelfTest.class;
+        obj.cls1 = BinaryMarshallerSelfTest.class;
 
         byte[] marshal = marsh.marshal(obj);
 
@@ -2407,9 +2407,18 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     private PortableMarshaller createMarshaller() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
+        marsh.setCompactFooter(compactFooter());
+
         initializePortableContext(marsh);
 
         return marsh;
+    }
+
+    /**
+     * @return Whether to use compact footers or not.
+     */
+    protected boolean compactFooter() {
+        return true;
     }
 
     /**

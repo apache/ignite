@@ -25,7 +25,7 @@ import sun.misc.Unsafe;
 /**
  * Compact offsets tests for offheap portable objects.
  */
-public class PortableCompactOffsetsOffheapSelfTest extends PortableCompactOffsetsAbstractSelfTest {
+public class BinaryFooterOffsetsOffheapSelfTest extends BinaryFooterOffsetsAbstractSelfTest {
     /** Unsafe instance. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 

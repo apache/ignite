@@ -46,10 +46,12 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @return Portable marshaller.
      * @throws Exception If failed.
      */
-    protected static PortableMarshaller createMarshaller() throws Exception {
+    protected PortableMarshaller createMarshaller() throws Exception {
         PortableContext ctx = new PortableContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
 
         PortableMarshaller marsh = new PortableMarshaller();
+
+        marsh.setCompactFooter(compactFooter());
 
         marsh.setTypeConfigurations(Arrays.asList(
             new BinaryTypeConfiguration(TestObject.class.getName()),
@@ -62,6 +64,13 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
         IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", ctx);
 
         return marsh;
+    }
+
+    /**
+     * @return Whether to use compact footer.
+     */
+    protected boolean compactFooter() {
+        return true;
     }
 
     /**
