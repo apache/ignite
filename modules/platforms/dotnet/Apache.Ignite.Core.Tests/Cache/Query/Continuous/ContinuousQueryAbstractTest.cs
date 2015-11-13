@@ -649,8 +649,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             using (cache.QueryContinuous(qry))
             {
-                // 1. Local put.
-                cache.GetAndPut(PrimaryKey(cache), 1);
+                // First update
+                cache.Put(PrimaryKey(cache), 1);
 
                 CallbackEvent cbEvt;
                 FilterEvent filterEvt;
@@ -663,9 +663,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.AreEqual(1, evt.Value);
 
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
-                Assert.AreEqual(1, cbEvt.entries.Count);
-                Assert.AreEqual(PrimaryKey(cache), cbEvt.entries.First().Key);
-                Assert.AreEqual(null, cbEvt.entries.First().OldValue);
+                var cbEntry = cbEvt.entries.Single();
+                Assert.IsFalse(cbEntry.HasOldValue);
+                Assert.AreEqual(PrimaryKey(cache), cbEntry.Key);
+                Assert.AreEqual(null, cbEntry.OldValue);
+                Assert.AreEqual(Entry(1), 1);
+
+                // Second update
+                cache.Put(PrimaryKey(cache), 1);
+
+                Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
+                evt = filterEvt.entry;
+                Assert.AreEqual(PrimaryKey(cache), evt.Key);
+                Assert.IsFalse(evt.HasOldValue);
+                Assert.AreEqual(0, evt.OldValue);
+                Assert.AreEqual(1, evt.Value);
+
+                Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
+                cbEntry = cbEvt.entries.Single();
+                Assert.IsFalse(cbEntry.HasOldValue);
+                Assert.AreEqual(PrimaryKey(cache), cbEntry.Key);
+                Assert.AreEqual(null, cbEntry.OldValue);
                 Assert.AreEqual(Entry(1), 1);
             }
         }
