@@ -978,24 +978,32 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> SqlQuery(string sql, params object[] args)
         {
+            IgniteArgumentCheck.NotNullOrEmpty(sql, "sql");
+
             return Query(new SqlQuery(typeof (TV), sql, args));
         }
 
         /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> SqlQuery(string sql, bool local, params object[] args)
         {
+            IgniteArgumentCheck.NotNullOrEmpty(sql, "sql");
+
             return Query(new SqlQuery(typeof(TV), sql, local, args));
         }
 
         /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> TextQuery(string text)
         {
+            IgniteArgumentCheck.NotNullOrEmpty(text, "text");
+
             return Query(new TextQuery(typeof(TV), text));
         }
 
         /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> TextQuery(string text, bool local)
         {
+            IgniteArgumentCheck.NotNullOrEmpty(text, "text");
+
             return Query(new TextQuery(typeof(TV), text, local));
         }
 
