@@ -637,6 +637,38 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     (cbEvt.entries.First().Value as IBinaryObject).Deserialize<PortableEntry>());
             }
         }
+        /// <summary>
+        /// Test value types (special handling is required for nulls).
+        /// </summary>
+        [Test]
+        public void TestValueTypes()
+        {
+            var cache = grid1.GetCache<int, int>(cacheName);
+
+            var qry = new ContinuousQuery<int, int>(new Listener<int>());
+
+            using (cache.QueryContinuous(qry))
+            {
+                // 1. Local put.
+                cache.GetAndPut(PrimaryKey(cache), 1);
+
+                CallbackEvent cbEvt;
+                FilterEvent filterEvt;
+
+                Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
+                var evt = filterEvt.entry;
+                Assert.AreEqual(PrimaryKey(cache), evt.Key);
+                Assert.IsFalse(evt.HasOldValue);
+                Assert.AreEqual(0, evt.OldValue);
+                Assert.AreEqual(1, evt.Value);
+
+                Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
+                Assert.AreEqual(1, cbEvt.entries.Count);
+                Assert.AreEqual(PrimaryKey(cache), cbEvt.entries.First().Key);
+                Assert.AreEqual(null, cbEvt.entries.First().OldValue);
+                Assert.AreEqual(Entry(1), 1);
+            }
+        }
 
         /// <summary>
         /// Test whether buffer size works fine.
