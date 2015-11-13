@@ -26,13 +26,15 @@ namespace Apache.Ignite.Core.Impl.Cache.Extensions
     /// Cache entry processor from delegate.
     /// </summary>
     [Serializable]
-    internal class CacheEntryDelegateProcessor<K, V, A, R>  : SerializableObjectHolder<Func<IMutableCacheEntry<K, V>, A, R>>, ICacheEntryProcessor<K, V, A, R>
+    internal class CacheEntryDelegateProcessor<TK, TV, TA, TR>
+        : SerializableObjectHolder<Func<IMutableCacheEntry<TK, TV>, TA, TR>>
+            , ICacheEntryProcessor<TK, TV, TA, TR>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryDelegateProcessor{K, V, A, R}"/> class.
         /// </summary>
         /// <param name="obj">The delegate.</param>
-        public CacheEntryDelegateProcessor(Func<IMutableCacheEntry<K, V>, A, R> obj) : base(obj)
+        public CacheEntryDelegateProcessor(Func<IMutableCacheEntry<TK, TV>, TA, TR> obj) : base(obj)
         {
             // No-op.
         }
@@ -46,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Extensions
         }
 
         /** <inheritdoc /> */
-        public R Process(IMutableCacheEntry<K, V> entry, A arg)
+        public TR Process(IMutableCacheEntry<TK, TV> entry, TA arg)
         {
             return WrappedObject(entry, arg);
         }

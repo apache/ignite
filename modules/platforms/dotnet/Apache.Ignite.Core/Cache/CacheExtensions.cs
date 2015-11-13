@@ -42,10 +42,10 @@ namespace Apache.Ignite.Core.Cache
         /// to process each entry, as the case may be in a non-local cache topology. 
         /// </summary>
         /// <param name="cache">Cache instance.</param> 
-        /// <typeparam name="K">Key type.</typeparam>
-        /// <typeparam name="V">Value type.</typeparam>
-        /// <typeparam name="R">The type of the result.</typeparam> 
-        /// <typeparam name="A">The type of the argument.</typeparam> 
+        /// <typeparam name="TK">Key type.</typeparam>
+        /// <typeparam name="TV">Value type.</typeparam>
+        /// <typeparam name="TR">The type of the result.</typeparam> 
+        /// <typeparam name="TA">The type of the argument.</typeparam> 
         /// <param name="keys">The keys.</param> 
         /// <param name="processor">The processor.</param> 
         /// <param name="arg">The argument.</param> 
@@ -55,13 +55,13 @@ namespace Apache.Ignite.Core.Cache
         /// No mappings will be returned for processors that return a null value for a key. 
         /// </returns> 
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception> 
-        public static IDictionary<K, ICacheEntryProcessorResult<R>> InvokeAll<K, V, R, A>(this ICache<K, V> cache,
-            IEnumerable<K> keys, Func<IMutableCacheEntry<K, V>, A, R> processor, A arg)
+        public static IDictionary<TK, ICacheEntryProcessorResult<TR>> InvokeAll<TK, TV, TR, TA>(this ICache<TK, TV> cache,
+            IEnumerable<TK> keys, Func<IMutableCacheEntry<TK, TV>, TA, TR> processor, TA arg)
         {
             AC.NotNull(cache, "cache");
             AC.NotNull(processor, "processor");
 
-            return cache.InvokeAll(keys, new CacheEntryDelegateProcessor<K, V, A, R>(processor), arg);
+            return cache.InvokeAll(keys, new CacheEntryDelegateProcessor<TK, TV, TA, TR>(processor), arg);
         }
 
         /// <summary> 
@@ -71,22 +71,22 @@ namespace Apache.Ignite.Core.Cache
         /// or a surrogate entry, consisting of the key with a null value is used instead.
         /// </summary>
         /// <param name="cache">Cache instance.</param> 
-        /// <typeparam name="K">Key type.</typeparam>
-        /// <typeparam name="V">Value type.</typeparam>
-        /// <typeparam name="R">The type of the result.</typeparam> 
-        /// <typeparam name="A">The type of the argument.</typeparam> 
+        /// <typeparam name="TK">Key type.</typeparam>
+        /// <typeparam name="TV">Value type.</typeparam>
+        /// <typeparam name="TR">The type of the result.</typeparam> 
+        /// <typeparam name="TA">The type of the argument.</typeparam> 
         /// <param name="key">The key.</param> 
         /// <param name="processor">The processor.</param> 
         /// <param name="arg">The argument.</param> 
         /// <returns>Result of the processing.</returns> 
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception> 
-        public static R Invoke<K, V, R, A>(this ICache<K, V> cache, K key, 
-            Func<IMutableCacheEntry<K, V>, A, R> processor, A arg)
+        public static TR Invoke<TK, TV, TR, TA>(this ICache<TK, TV> cache, TK key, 
+            Func<IMutableCacheEntry<TK, TV>, TA, TR> processor, TA arg)
         {
             AC.NotNull(cache, "cache");
             AC.NotNull(processor, "processor");
 
-            return cache.Invoke(key, new CacheEntryDelegateProcessor<K, V, A, R>(processor), arg);
+            return cache.Invoke(key, new CacheEntryDelegateProcessor<TK, TV, TA, TR>(processor), arg);
         }
 
         /// <summary> 
@@ -103,17 +103,17 @@ namespace Apache.Ignite.Core.Cache
         /// <returns> 
         /// Handle to get initial query cursor or stop query execution. 
         /// </returns> 
-        public static IContinuousQueryHandle<ICacheEntry<K, V>> QueryContinuous<K, V>(this ICache<K, V> cache, 
-            Action<IEnumerable<ICacheEntryEvent<K, V>>> localListener, Func<ICacheEntryEvent<K, V>, bool> remoteFilter,
+        public static IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous<TK, TV>(this ICache<TK, TV> cache, 
+            Action<IEnumerable<ICacheEntryEvent<TK, TV>>> localListener, Func<ICacheEntryEvent<TK, TV>, bool> remoteFilter,
             bool local, QueryBase initialQry)  
         {
             AC.NotNull(cache, "cache");
             AC.NotNull(localListener, "localListener");
 
-            var lsnr = new CacheEntryDelegateEventListener<K, V>(localListener);
-            var filter = remoteFilter == null ? null : new CacheEntryDelegateEventFilter<K, V>(remoteFilter);
+            var lsnr = new CacheEntryDelegateEventListener<TK, TV>(localListener);
+            var filter = remoteFilter == null ? null : new CacheEntryDelegateEventFilter<TK, TV>(remoteFilter);
 
-            var qry = new ContinuousQuery<K, V>(lsnr, filter, local);
+            var qry = new ContinuousQuery<TK, TV>(lsnr, filter, local);
 
             return cache.QueryContinuous(qry, initialQry);
         }
@@ -126,17 +126,17 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="remoteFilter">Optional filter.</param>
         /// <param name="local">Whether query should be executed locally.</param>
         /// <returns>Handle to stop query execution.</returns> 
-        public static IContinuousQueryHandle QueryContinuous<K, V>(this ICache<K, V> cache,
-            Action<IEnumerable<ICacheEntryEvent<K, V>>> localListener, Func<ICacheEntryEvent<K, V>, bool> remoteFilter,
+        public static IContinuousQueryHandle QueryContinuous<TK, TV>(this ICache<TK, TV> cache,
+            Action<IEnumerable<ICacheEntryEvent<TK, TV>>> localListener, Func<ICacheEntryEvent<TK, TV>, bool> remoteFilter,
             bool local)
         {
             AC.NotNull(cache, "cache");
             AC.NotNull(localListener, "localListener");
 
-            var lsnr = new CacheEntryDelegateEventListener<K, V>(localListener);
-            var filter = remoteFilter == null ? null : new CacheEntryDelegateEventFilter<K, V>(remoteFilter);
+            var lsnr = new CacheEntryDelegateEventListener<TK, TV>(localListener);
+            var filter = remoteFilter == null ? null : new CacheEntryDelegateEventFilter<TK, TV>(remoteFilter);
 
-            var qry = new ContinuousQuery<K, V>(lsnr, filter, local);
+            var qry = new ContinuousQuery<TK, TV>(lsnr, filter, local);
 
             return cache.QueryContinuous(qry);
         }
@@ -154,12 +154,12 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="args"> 
         /// Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />. 
         /// </param> 
-        public static void LocalLoadCache<K, V>(this ICache<K, V> cache, Func<ICacheEntry<K, V>, bool> filter, 
+        public static void LocalLoadCache<TK, TV>(this ICache<TK, TV> cache, Func<ICacheEntry<TK, TV>, bool> filter, 
             params object[] args)
         {
             AC.NotNull(cache, "cache");
 
-            var filter0 = filter == null ? null : new CacheEntryDelegateFilter<K, V>(filter);
+            var filter0 = filter == null ? null : new CacheEntryDelegateFilter<TK, TV>(filter);
 
             cache.LocalLoadCache(filter0, args);
         }
@@ -174,12 +174,12 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="args"> 
         /// Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />. 
         /// </param> 
-        public static void LoadCache<K, V>(this ICache<K, V> cache, Func<ICacheEntry<K, V>, bool> filter, 
+        public static void LoadCache<TK, TV>(this ICache<TK, TV> cache, Func<ICacheEntry<TK, TV>, bool> filter, 
             params object[] args)
         {
             AC.NotNull(cache, "cache");
 
-            var filter0 = filter == null ? null : new CacheEntryDelegateFilter<K, V>(filter);
+            var filter0 = filter == null ? null : new CacheEntryDelegateFilter<TK, TV>(filter);
 
             cache.LoadCache(filter0, args);
         }
@@ -187,13 +187,13 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Executes scan query over all cache entries.
         /// </summary>
-        /// <typeparam name="K">Key type.</typeparam>
-        /// <typeparam name="V">Value type.</typeparam>
+        /// <typeparam name="TK">Key type.</typeparam>
+        /// <typeparam name="TV">Value type.</typeparam>
         /// <param name="cache">The cache.</param>
         /// <returns>
         /// Query cursor.
         /// </returns>
-        public static IQueryCursor<ICacheEntry<K, V>> ScanQuery<K, V>(this ICache<K, V> cache)
+        public static IQueryCursor<ICacheEntry<TK, TV>> ScanQuery<TK, TV>(this ICache<TK, TV> cache)
         {
             return ScanQuery(cache, null);
         }
@@ -201,21 +201,21 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Executes scan query over cache entries. Will accept all the entries if no predicate was set.
         /// </summary>
-        /// <typeparam name="K">Key type.</typeparam>
-        /// <typeparam name="V">Value type.</typeparam>
+        /// <typeparam name="TK">Key type.</typeparam>
+        /// <typeparam name="TV">Value type.</typeparam>
         /// <param name="cache">The cache.</param>
         /// <param name="filter">Optional filter.</param>
         /// <returns>
         /// Query cursor.
         /// </returns>
-        public static IQueryCursor<ICacheEntry<K, V>> ScanQuery<K, V>(this ICache<K, V> cache, 
-            Func<ICacheEntry<K, V>, bool> filter)
+        public static IQueryCursor<ICacheEntry<TK, TV>> ScanQuery<TK, TV>(this ICache<TK, TV> cache, 
+            Func<ICacheEntry<TK, TV>, bool> filter)
         {
             AC.NotNull(cache, "cache");
 
-            var filter0 = filter == null ? null : new CacheEntryDelegateFilter<K, V>(filter);
+            var filter0 = filter == null ? null : new CacheEntryDelegateFilter<TK, TV>(filter);
 
-            return cache.Query(new ScanQuery<K, V>(filter0));
+            return cache.Query(new ScanQuery<TK, TV>(filter0));
         }
     }
 }
