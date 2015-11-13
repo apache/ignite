@@ -684,7 +684,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.IsFalse(cbEntry.HasValue);
                 Assert.AreEqual(key, cbEntry.Key);
                 Assert.AreEqual(2, cbEntry.OldValue);
-                Assert.AreEqual(0, cbEntry.Value);
+                Assert.AreEqual(null, cbEntry.Value);
             }
         }
 
@@ -1140,11 +1140,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             /** <inheritDoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<int, V>> evts)
             {
-                ICollection<ICacheEntryEvent<object, object>> entries0 =
-                    new List<ICacheEntryEvent<object, object>>();
-
-                foreach (ICacheEntryEvent<int, V> evt in evts)
-                    entries0.Add(CQU.CreateEvent<object, object>(evt.Key, evt.OldValue, evt.Value));
+                var entries0 = evts.Select(evt => CQU.CreateEvent<object, object>(evt.Key,
+                    evt.HasOldValue ? (object) evt.OldValue : null,
+                    evt.HasValue ? (object) evt.Value : null)).ToList();
 
                 CB_EVTS.Add(new CallbackEvent(entries0));
             }
