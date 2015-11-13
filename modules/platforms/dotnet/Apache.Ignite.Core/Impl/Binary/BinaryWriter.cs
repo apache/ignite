@@ -1090,7 +1090,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     var schemaOffset = _stream.Position - pos;
 
                     int schemaId;
-                    short flags;
+                    BinaryObjectHeader.Flag flags;
                     var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, out flags);
 
                     if (!hasSchema)

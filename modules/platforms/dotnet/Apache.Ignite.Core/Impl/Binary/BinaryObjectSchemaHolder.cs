@@ -82,12 +82,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">The stream.</param>
         /// <param name="schemaOffset">The schema offset.</param>
         /// <param name="schemaId">The schema identifier.</param>
-        /// <param name="flags">Flags according to offset sizes: <see cref="BinaryObjectHeader.FlagByteOffsets" />,
-        /// <see cref="BinaryObjectHeader.FlagShortOffsets" />, or 0.</param>
+        /// <param name="flags">Flags according to offset sizes.</param>
         /// <returns>
         /// True if current schema was non empty; false otherwise.
         /// </returns>
-        public bool WriteSchema(IBinaryStream stream, int schemaOffset, out int schemaId, out short flags)
+        public bool WriteSchema(IBinaryStream stream, int schemaOffset, out int schemaId, 
+            out BinaryObjectHeader.Flag flags)
         {
             schemaId = Fnv1Hash.Basis;
             flags = 0;
