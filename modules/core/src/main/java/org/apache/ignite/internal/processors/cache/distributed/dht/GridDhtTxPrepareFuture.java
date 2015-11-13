@@ -985,7 +985,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 }
             }
         }
-        catch (GridCacheEntryRemovedException e) {
+        catch (GridCacheEntryRemovedException ignore) {
             assert false : "Got removed exception on entry with dht local candidate: " + entries;
         }
 

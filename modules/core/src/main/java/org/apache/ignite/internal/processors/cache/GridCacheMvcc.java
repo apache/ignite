@@ -1370,12 +1370,4 @@ public final class GridCacheMvcc {
     @Override public String toString() { // Synchronize to ensure one-thread at a time.
         return S.toString(GridCacheMvcc.class, this);
     }
-
-    public static void main(String[] args) {
-        ArrayList<String> col1 = new ArrayList<>(5);
-
-        for (int i = 0; i < 5; i++) {
-            col1.add("" + i);
-        }
-    }
 }

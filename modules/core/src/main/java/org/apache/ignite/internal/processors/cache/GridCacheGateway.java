@@ -63,9 +63,9 @@ public class GridCacheGateway<K, V> {
         if (ctx.deploymentEnabled())
             ctx.deploy().onEnter();
 
-//        rwLock.readLock();
+        rwLock.readLock();
 
-//        checkState(true, true);
+        checkState(true, true);
     }
 
     /**
@@ -106,11 +106,9 @@ public class GridCacheGateway<K, V> {
         onEnter();
 
         // Must unlock in case of unexpected errors to avoid deadlocks during kernal stop.
-//        rwLock.readLock();
-//
-//        return checkState(true, false);
+        rwLock.readLock();
 
-        return true;
+        return checkState(true, false);
     }
 
     /**
@@ -121,8 +119,7 @@ public class GridCacheGateway<K, V> {
     public boolean enterIfNotStoppedNoLock() {
         onEnter();
 
-//        return checkState(false, false);
-        return true;
+        return checkState(false, false);
     }
 
     /**
@@ -145,7 +142,7 @@ public class GridCacheGateway<K, V> {
            leaveNoLock();
         }
         finally {
-//            rwLock.readUnlock();
+            rwLock.readUnlock();
         }
     }
 
@@ -171,9 +168,9 @@ public class GridCacheGateway<K, V> {
 
         onEnter();
 
-//        rwLock.readLock();
-//
-//        checkState(true, true);
+        rwLock.readLock();
+
+        checkState(true, true);
 
         // Must unlock in case of unexpected errors to avoid
         // deadlocks during kernal stop.
@@ -181,7 +178,7 @@ public class GridCacheGateway<K, V> {
             return setOperationContextPerCall(opCtx);
         }
         catch (Throwable e) {
-//            rwLock.readUnlock();
+            rwLock.readUnlock();
 
             throw e;
         }
@@ -222,7 +219,7 @@ public class GridCacheGateway<K, V> {
             leaveNoLock(prev);
         }
         finally {
-//            rwLock.readUnlock();
+            rwLock.readUnlock();
         }
     }
 

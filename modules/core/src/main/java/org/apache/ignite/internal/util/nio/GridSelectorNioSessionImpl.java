@@ -21,14 +21,14 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Session implementation bound to selector API and socket API.
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  */
 class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /** Pending write requests. */
-    private final ConcurrentLinkedQueue<GridNioFuture<?>> queue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedDeque8<GridNioFuture<?>> queue = new ConcurrentLinkedDeque8<>();
 
     /** Selection key associated with this session. */
     @GridToStringExclude
@@ -47,7 +47,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     private final int selectorIdx;
 
     /** Size counter. */
-    private final AtomicBoolean wakeupSelector = new AtomicBoolean();
+    private final AtomicInteger queueSize = new AtomicInteger();
 
     /** Semaphore. */
     @GridToStringExclude
@@ -163,14 +163,14 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param writeFut Write request.
      * @return Updated size of the queue.
      */
-    boolean offerSystemFuture(GridNioFuture<?> writeFut) {
+    int offerSystemFuture(GridNioFuture<?> writeFut) {
         writeFut.messageThread(true);
 
-        boolean res = queue.offer(writeFut);
+        boolean res = queue.offerFirst(writeFut);
 
         assert res : "Future was not added to queue";
 
-        return !wakeupSelector.get() && wakeupSelector.compareAndSet(false, true);
+        return queueSize.incrementAndGet();
     }
 
     /**
@@ -183,7 +183,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param writeFut Write request to add.
      * @return Updated size of the queue.
      */
-    boolean offerFuture(GridNioFuture<?> writeFut) {
+    int offerFuture(GridNioFuture<?> writeFut) {
         boolean msgThread = GridNioBackPressureControl.threadProcessingMessage();
 
         if (sem != null && !msgThread)
@@ -195,7 +195,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         assert res : "Future was not added to queue";
 
-        return !wakeupSelector.get() && wakeupSelector.compareAndSet(false, true);
+        return queueSize.incrementAndGet();
     }
 
     /**
@@ -208,7 +208,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         assert add;
 
-        wakeupSelector.set(false);
+        boolean set = queueSize.compareAndSet(0, futs.size());
+
+        assert set;
     }
 
     /**
@@ -217,13 +219,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     @Nullable GridNioFuture<?> pollFuture() {
         GridNioFuture<?> last = queue.poll();
 
-        if (last == null) {
-            wakeupSelector.set(false);
-
-            last = queue.poll();
-        }
-
         if (last != null) {
+            queueSize.decrementAndGet();
+
             if (sem != null && !last.messageThread())
                 sem.release();
 
@@ -248,12 +246,22 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     }
 
     /**
+     * @param fut Future.
+     * @return {@code True} if future was removed from queue.
+     */
+    boolean removeFuture(GridNioFuture<?> fut) {
+        assert closed();
+
+        return queue.removeLastOccurrence(fut);
+    }
+
+    /**
      * Gets number of write requests in a queue that have not been processed yet.
      *
      * @return Number of write requests.
      */
     int writeQueueSize() {
-        return queue.size();
+        return queueSize.get();
     }
 
     /** {@inheritDoc} */

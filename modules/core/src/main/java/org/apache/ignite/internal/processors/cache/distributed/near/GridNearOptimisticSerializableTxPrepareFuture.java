@@ -389,9 +389,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         for (GridDistributedTxMapping m : mappings.values()) {
             assert !m.empty();
 
-            MiniFuture fut = new MiniFuture(m);
-
-            add(fut);
+            add(new MiniFuture(m));
         }
 
         Collection<IgniteInternalFuture<?>> futs = (Collection)futures();
