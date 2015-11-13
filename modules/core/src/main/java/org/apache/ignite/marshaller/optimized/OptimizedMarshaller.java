@@ -57,6 +57,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
  * // Enforce Serializable interface.
  * marshaller.setRequireSerializable(true);
  *
+ * // Set check object EXTERNALIZABLE or SERIALIZABLE sum.
+ * marshaller.setVerifyChecksum(true | false);
+ *
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override marshaller.
@@ -94,6 +97,9 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     /** Whether or not to require an object to be serializable in order to be marshalled. */
     private boolean requireSer = true;
 
+    /** Check object sum on EXTERNALIZABLE or SERIALIZABLE */
+    private boolean verifyChecksum = true;
+
     /** ID mapper. */
     private OptimizedMarshallerIdMapper mapper;
 
@@ -128,6 +134,15 @@ public class OptimizedMarshaller extends AbstractMarshaller {
      */
     public void setRequireSerializable(boolean requireSer) {
         this.requireSer = requireSer;
+    }
+
+    /**
+     * Set check object EXTERNALIZABLE or SERIALIZABLE sum.
+     *
+     * @param verifyChecksum if true will check sum on EXTERNALIZABLE or SERIALIZABLE
+     */
+    public void setVerifyChecksum(boolean verifyChecksum) {
+        this.verifyChecksum = verifyChecksum;
     }
 
     /**
@@ -212,7 +227,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, verifyChecksum);
 
             objIn.in().inputStream(in);
 
@@ -241,7 +256,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, verifyChecksum);
 
             objIn.in().bytes(arr, arr.length);
 
