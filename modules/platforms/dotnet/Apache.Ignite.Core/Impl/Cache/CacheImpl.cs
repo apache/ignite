@@ -915,6 +915,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         #region Queries
 
+        /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
             IgniteArgumentCheck.NotNull(qry, "qry");
