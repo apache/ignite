@@ -33,22 +33,35 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Size, equals to sizeof(BinaryObjectHeader). */
         public const int Size = 24;
 
-        /** User type flag. */
-        public const short FlagUserType = 0x1;
+        [Flags]
+        public enum Flag : short
+        {
+            /** No flags. */
+            None            = 0x00,
 
-        /** Raw only flag. */
-        public const short FlagRawOnly = 0x2;
+            /** Flag: user type. */
+            UserType        = 0x01,
+            
+            /** Flag: schema exists. */
+            HasSchema       = 0x02,
 
-        /** Byte-sized field offsets flag. */
-        public const short FlagByteOffsets = 0x4;
+            /** Flag indicating that object has raw data. */
+            HasRaw          = 0x04,
 
-        /** Short-sized field offsets flag. */
-        public const short FlagShortOffsets = 0x8;
+            /** Flag: offsets take 1 byte. */
+            OffsetOneByte   = 0x08,
+
+            /** Flag: offsets take 2 bytes. */
+            OffsetTwoBytes  = 0x10,
+
+            /** Flag: compact footer, no field IDs. */
+            CompactFooter   = 0x20
+        }
 
         /** Actual header layout */
         public readonly byte Header;        // Header code, always 103 (HdrFull)
         public readonly byte Version;       // Protocol version
-        public readonly short Flags;        // Flags
+        public readonly Flag Flags;         // Flags
         public readonly int TypeId;         // Type ID
         public readonly int HashCode;       // Hash code
         public readonly int Length;         // Length, including header
@@ -64,10 +77,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="length">Length.</param>
         /// <param name="schemaId">Schema ID.</param>
         /// <param name="schemaOffset">Schema offset.</param>
-        /// <param name="rawOnly">Raw flag.</param>
+        /// <param name="hasRaw">Raw flag.</param>
         /// <param name="flags">The flags.</param>
         public BinaryObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset, 
-            bool rawOnly, short flags)
+            bool hasRaw, Flag flags)
         {
             Header = BinaryUtils.HdrFull;
             Version = BinaryUtils.ProtoVer;
@@ -76,10 +89,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(schemaOffset >= Size);
 
             if (userType)
-                flags |= FlagUserType;
+                flags |= Flag.UserType;
 
-            if (rawOnly)
-                flags |= FlagRawOnly;
+            if (hasRaw)
+                flags |= Flag.HasRaw;
 
             Flags = flags;
 
@@ -98,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Header = stream.ReadByte();
             Version = stream.ReadByte();
-            Flags = stream.ReadShort();
+            Flags = (Flag) stream.ReadShort();
             Length = stream.ReadInt();
             TypeId = stream.ReadInt();
             HashCode = stream.ReadInt();
@@ -114,7 +127,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             stream.WriteByte(Header);
             stream.WriteByte(Version);
-            stream.WriteShort(Flags);
+            stream.WriteShort((short) Flags);
             stream.WriteInt(Length);
             stream.WriteInt(TypeId);
             stream.WriteInt(HashCode);
@@ -127,27 +140,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public bool IsUserType
         {
-            get { return (Flags & FlagUserType) == FlagUserType; }
+            get { return (Flags & Flag.UserType) == Flag.UserType; }
         }
 
-        /// <summary>
-        /// Gets a raw-only flag.
-        /// </summary>
-        public bool IsRawOnly
+        public bool HasSchema
         {
-            get { return (Flags & FlagRawOnly) == FlagRawOnly; }
+            get { return (Flags & Flag.HasSchema) == Flag.HasSchema; }
         }
 
-        /// <summary>
-        /// Gets a value indicating whether this instance has raw offset.
-        /// </summary>
-        public bool HasRawOffset
+        public bool HasRaw
         {
-            get
-            {
-                // Remainder => raw offset is the very last 4 bytes in object.
-                return !IsRawOnly && ((Length - SchemaOffset) % SchemaFieldSize) == 4;
-            }
+            get { return (Flags & Flag.HasRaw) == Flag.HasRaw; }
+        }
+
+        public bool IsCompactFooter
+        {
+            get { return (Flags & Flag.CompactFooter) == Flag.CompactFooter; }
         }
 
         /// <summary>
@@ -157,10 +165,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             get
             {
-                if ((Flags & FlagByteOffsets) == FlagByteOffsets)
+                if ((Flags & Flag.OffsetOneByte) == Flag.OffsetOneByte)
                     return 1;
 
-                if ((Flags & FlagShortOffsets) == FlagShortOffsets)
+                if ((Flags & Flag.OffsetTwoBytes) == Flag.OffsetTwoBytes)
                     return 2;
 
                 return 4;
@@ -182,7 +190,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             get
             {
-                if (IsRawOnly)
+                if (!HasSchema)
                     return 0;
 
                 var schemaSize = Length - SchemaOffset;
@@ -201,7 +209,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(stream != null);
 
-            if (!HasRawOffset)
+            if (!HasSchema)
                 return SchemaOffset;
 
             stream.Seek(position + Length - 4, SeekOrigin.Begin);
@@ -297,10 +305,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="offset">Offset in the array.</param>
         /// <param name="count">Field count to write.</param>
         /// <returns>
-        /// Flags according to offset sizes: <see cref="BinaryObjectHeader.FlagByteOffsets" />,
-        /// <see cref="BinaryObjectHeader.FlagShortOffsets" />, or 0.
+        /// Flags according to offset sizes: <see cref="Flag.OffsetOneByte" />,
+        /// <see cref="Flag.OffsetTwoBytes" />, or 0.
         /// </returns>
-        public static unsafe short WriteSchema(BinaryObjectSchemaField[] fields, IBinaryStream stream, int offset,
+        public static unsafe Flag WriteSchema(BinaryObjectSchemaField[] fields, IBinaryStream stream, int offset,
             int count)
         {
             Debug.Assert(fields != null);
@@ -324,7 +332,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         stream.WriteByte((byte)field.Offset);
                     }
 
-                    return FlagByteOffsets;
+                    return Flag.OffsetOneByte;
                 }
 
                 if (maxFieldOffset <= ushort.MaxValue)
@@ -338,7 +346,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         stream.WriteShort((short)field.Offset);
                     }
 
-                    return FlagShortOffsets;
+                    return Flag.OffsetTwoBytes;
                 }
 
                 if (BitConverter.IsLittleEndian)
@@ -359,9 +367,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     }
                 }
 
-                return 0;
+                return Flag.None;
             }
-
         }
 
         /// <summary>
@@ -408,7 +415,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 // Only one of the flags can be set
                 var f = hdr.Flags;
-                Debug.Assert((f & (FlagShortOffsets | FlagByteOffsets)) != (FlagShortOffsets | FlagByteOffsets));
+                Debug.Assert((f & (Flag.OffsetOneByte | Flag.OffsetTwoBytes)) !=
+                             (Flag.OffsetOneByte | Flag.OffsetTwoBytes));
 
                 return hdr;
             }
