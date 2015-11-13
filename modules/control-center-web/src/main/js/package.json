@@ -52,9 +52,104 @@
     "ws": "~0.8.0"
   },
   "devDependencies": {
-    "morgan": "~1.6.1",
-    "supertest": "^1.1.0",
+    "jspm": "^0.16.14",
     "mocha": "~2.3.3",
-    "should": "~7.1.1"
+    "morgan": "~1.6.1",
+    "should": "~7.1.1",
+    "supertest": "^1.1.0"
+  },
+  "jspm": {
+    "dependencies": {
+      "ace": "github:ajaxorg/ace-builds@^1.2.2",
+      "angular": "github:angular/bower-angular@^1.4.7",
+      "angular-animate": "github:angular/bower-angular-animate@^1.4.7",
+      "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@^1.3.0",
+      "angular-grid": "github:ceolter/ag-grid@^2.3.5",
+      "angular-loading": "github:darthwade/angular-loading@^0.1.4",
+      "angular-nvd3": "github:krispo/angular-nvd3@^1.0.3",
+      "angular-sanitize": "github:angular/bower-angular-sanitize@^1.4.7",
+      "angular-smart-table": "github:lorenzofox3/Smart-Table@^2.1.4",
+      "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852",
+      "angular-tree-control": "github:wix/angular-tree-control@^0.2.22",
+      "angular-ui-ace": "github:angular-ui/ui-ace@^0.2.3",
+      "jquery": "github:components/jquery@^2.1.4",
+      "lodash": "npm:lodash@^3.10.1",
+      "spinjs": "github:fgnass/spin.js@^2.3.2"
+    },
+    "devDependencies": {
+      "babel": "npm:babel-core@^5.8.24",
+      "babel-runtime": "npm:babel-runtime@^5.8.24",
+      "core-js": "npm:core-js@^1.1.4"
+    },
+    "overrides": {
+      "github:krispo/angular-nvd3@1.0.3": {
+        "dependencies": {
+          "angular": "^1",
+          "nvd3": "npm:nvd3@1.8.1",
+          "d3": "npm:d3@3.5.8"
+        },
+        "shim": {
+          "dist/angular-nvd3": {
+            "deps": [
+              "angular",
+              "d3",
+              "nvd3"
+            ]
+          }
+        }
+      },
+      "github:components/jquery@2.1.4": {
+        "format": "global"
+      },
+      "github:akuznetsov-gridgain/angular-strap@fix-1852": {
+        "main": "dist/angular-strap.tpl",
+        "shim": {
+          "dist/angular-strap.tpl": {
+            "deps": [
+              "./angular-strap"
+            ]
+          }
+        }
+      },
+      "github:ajaxorg/ace-builds@1.2.2": {
+        "format": "global",
+        "main": "theme-chrome",
+        "shim": {
+          "theme-chrome": {
+            "exports": "ace",
+            "deps": [
+              "./ace",
+              "./mode-xml",
+              "./mode-java",
+              "./mode-sql",
+              "./ext-language_tools"
+            ]
+          },
+          "ace": {
+            "exports": "ace"
+          },
+          "mode-xml": {
+            "deps": [
+              "./ace"
+            ]
+          },
+          "mode-java": {
+            "deps": [
+              "./ace"
+            ]
+          },
+          "mode-sql": {
+            "deps": [
+              "./ace"
+            ]
+          },
+          "ext-language_tools": {
+            "deps": [
+              "./ace"
+            ]
+          }
+        }
+      }
+    }
   }
 }
