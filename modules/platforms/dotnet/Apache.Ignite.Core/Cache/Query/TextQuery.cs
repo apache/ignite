@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Cache.Query
     using Apache.Ignite.Core.Impl.Cache;
 
     /// <summary>
-    /// Text query.
+    /// Text query based on Lucene indexing.
     /// </summary>
     public class TextQuery : QueryBase
     {

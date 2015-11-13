@@ -915,7 +915,6 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         #region Queries
 
-        /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
             IgniteArgumentCheck.NotNull(qry, "qry");
@@ -963,7 +962,43 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return new QueryCursor<TK, TV>(cursor, Marshaller, _flagKeepBinary);
         }
-                
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> ScanQuery()
+        {
+            return Query(new ScanQuery<TK, TV>());
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> ScanQuery(ICacheEntryFilter<TK, TV> filter)
+        {
+            return Query(new ScanQuery<TK, TV>(filter));
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> SqlQuery(string sql, params object[] args)
+        {
+            return Query(new SqlQuery(typeof (TV), sql, args));
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> SqlQuery(string sql, bool local, params object[] args)
+        {
+            return Query(new SqlQuery(typeof(TV), sql, local, args));
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> TextQuery(string text)
+        {
+            return Query(new TextQuery(typeof(TV), text));
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> TextQuery(string text, bool local)
+        {
+            return Query(new TextQuery(typeof(TV), text, local));
+        }
+
         /// <summary>
         /// Write query arguments.
         /// </summary>

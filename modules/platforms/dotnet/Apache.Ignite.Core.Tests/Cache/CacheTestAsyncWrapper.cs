@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Wraps IGridCache implementation to simplify async mode testing.
@@ -429,6 +428,42 @@ namespace Apache.Ignite.Core.Tests.Cache
         public IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry)
         {
             return _cache.Query(qry);
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> ScanQuery()
+        {
+            return _cache.ScanQuery();
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> ScanQuery(ICacheEntryFilter<TK, TV> filter)
+        {
+            return _cache.ScanQuery(filter);
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> SqlQuery(string sql, params object[] args)
+        {
+            return _cache.SqlQuery(sql, args);
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> SqlQuery(string sql, bool local, params object[] args)
+        {
+            return _cache.SqlQuery(sql, local, args);
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> TextQuery(string text)
+        {
+            return _cache.TextQuery(text);
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> TextQuery(string text, bool local)
+        {
+            return _cache.TextQuery(text, local);
         }
 
         /** <inheritDoc /> */
