@@ -34,7 +34,6 @@ consoleModule.controller('summaryController', [
 
     $scope.evictionPolicies = [
         {value: 'LRU', label: 'LRU'},
-        {value: 'RND', label: 'Random'},
         {value: 'FIFO', label: 'FIFO'},
         {value: 'SORTED', label: 'Sorted'},
         {value: undefined, label: 'Not set'}
@@ -94,7 +93,7 @@ consoleModule.controller('summaryController', [
 
     $scope.generateJavaServer = function () {
         $scope.javaServer = $generatorJava.cluster($scope.selectedItem,
-            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false);
+            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false, false);
     };
 
     function selectPojoClass(config) {
@@ -169,7 +168,7 @@ consoleModule.controller('summaryController', [
         $scope.xmlClient = $generatorXml.cluster($scope.selectedItem, $scope.backupItem.nearConfiguration);
         $scope.javaClient = $generatorJava.cluster($scope.selectedItem,
             $scope.backupItem.javaClassClient === 2 ? 'ClientConfigurationFactory' : false,
-            $scope.backupItem.nearConfiguration, $scope.configServer.useConstructor);
+            $scope.backupItem.nearConfiguration, true);
     };
 
     $scope.$watch('backupItem', $scope.generateClient, true);

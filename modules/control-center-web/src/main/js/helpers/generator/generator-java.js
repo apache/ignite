@@ -1789,8 +1789,9 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
  * @param cluster Cluster to process.
  * @param javaClass Class name for generate factory class otherwise generate code snippet.
  * @param clientNearCfg Near cache configuration for client node.
+ * @param clientMode If `true` generates code for client mode or server mode otherwise.
  */
-$generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
+$generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode) {
     var res = $generatorCommon.builder();
 
     if (cluster) {
