@@ -32,9 +32,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
-    using CQU = Apache.Ignite.Core.Impl.Cache.Query.Continuous.ContinuousQueryUtils;
 
     /// <summary>
     /// Tests for continuous query.
@@ -996,6 +996,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
+        /// Creates object-typed event.
+        /// </summary>
+        private static ICacheEntryEvent<object, object> CreateEvent<T, V>(ICacheEntryEvent<T,V> e)
+        {
+            if (!e.HasOldValue)
+                return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
+
+            if (!e.HasValue)
+                return new CacheEntryRemoveEvent<object, object>(e.Key, e.OldValue);
+
+            return new CacheEntryUpdateEvent<object, object>(e.Key, e.OldValue, e.Value);
+        }
+
+        /// <summary>
         /// Portable entry.
         /// </summary>
         public class PortableEntry
@@ -1053,8 +1067,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 if (err)
                     throw new Exception("Filter error.");
 
-                FILTER_EVTS.Add(new FilterEvent(ignite,
-                    CQU.CreateEvent<object, object>(evt.Key, evt.OldValue, evt.Value)));
+                FILTER_EVTS.Add(new FilterEvent(ignite, CreateEvent(evt)));
 
                 return res;
             }
@@ -1140,11 +1153,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             /** <inheritDoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<int, V>> evts)
             {
-                var entries0 = evts.Select(evt => CQU.CreateEvent<object, object>(evt.Key,
-                    evt.HasOldValue ? (object) evt.OldValue : null,
-                    evt.HasValue ? (object) evt.Value : null)).ToList();
-
-                CB_EVTS.Add(new CallbackEvent(entries0));
+                CB_EVTS.Add(new CallbackEvent(evts.Select(CreateEvent).ToList()));
             }
         }
 
