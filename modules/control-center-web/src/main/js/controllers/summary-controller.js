@@ -93,7 +93,7 @@ consoleModule.controller('summaryController', [
 
     $scope.generateJavaServer = function () {
         $scope.javaServer = $generatorJava.cluster($scope.selectedItem,
-            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false, false);
+            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false, null, false);
     };
 
     function selectPojoClass(config) {
@@ -214,8 +214,8 @@ consoleModule.controller('summaryController', [
         zip.file('config/' + cluster.name + '-server.xml', $generatorXml.cluster(cluster));
         zip.file('config/' + cluster.name + '-client.xml', $generatorXml.cluster(cluster, clientNearConfiguration));
 
-        zip.file(srcPath + 'ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'ServerConfigurationFactory'));
-        zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', clientNearConfiguration));
+        zip.file(srcPath + 'ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'ServerConfigurationFactory', null, false));
+        zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', clientNearConfiguration, true));
         zip.file(srcPath + 'NodeStartup.java', $generatorJava.nodeStartup(cluster));
 
         zip.file('pom.xml', $generatorPom.pom(cluster.caches, '1.5.0-IWC').asString());
