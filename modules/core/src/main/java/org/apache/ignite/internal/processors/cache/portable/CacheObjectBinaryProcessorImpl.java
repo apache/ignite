@@ -184,7 +184,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                             else
                                 metaBuf.remove(typeId);
                         }
+                        else
+                            return;
                     }
+
+                    assert metaDataCache != null;
 
                     CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(portableCtx));
                 }
