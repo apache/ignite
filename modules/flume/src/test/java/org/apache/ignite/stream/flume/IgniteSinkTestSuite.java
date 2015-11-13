@@ -17,31 +17,21 @@
 
 package org.apache.ignite.stream.flume;
 
-import org.apache.flume.Event;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.stream.StreamAdapter;
-import org.apache.ignite.stream.StreamMultipleTupleExtractor;
+import junit.framework.TestSuite;
 
 /**
- * Flume streamer that receives events from a sink and feeds key-value pairs into an {@link IgniteDataStreamer}.
- *
- * @param <T> Type of Flume Event.
- * @param <K> Type of cache key.
- * @param <V> Type of cache value.
+ * Tests for a Flume sink for Ignite.
  */
-public class FlumeStreamer<T extends Event, K, V> extends StreamAdapter<T, K, V> {
-
-    /** {@inheritDoc} */
-    protected FlumeStreamer(IgniteDataStreamer<K, V> stmr, StreamMultipleTupleExtractor<T, K, V> extractor) {
-        super(stmr, extractor);
-    }
-
+public class IgniteSinkTestSuite extends TestSuite {
     /**
-     * Writes a Flume event.
-     *
-     * @param event Flume event.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    protected void writeEvent(T event) {
-        addMessage(event);
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Apache Flume NG Sink Test Suite");
+
+        suite.addTest(new TestSuite(IgniteSinkTest.class));
+
+        return suite;
     }
 }

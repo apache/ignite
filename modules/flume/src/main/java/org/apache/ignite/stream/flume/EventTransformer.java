@@ -17,21 +17,20 @@
 
 package org.apache.ignite.stream.flume;
 
-import junit.framework.TestSuite;
+import java.util.List;
+import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Tests for a Flume sink for Ignite.
+ * Flume event transformer to convert a list of Flume {@link Event} to cache entries.
  */
-public class IgniteFlumeSinkTestSuite extends TestSuite {
+public interface EventTransformer<Event, K, V> {
+
     /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
+     * Transforms a list of Flume {@link Event} to cache entries.
+     *
+     * @param events List of Flume events to transform.
+     * @return Cache entries to be written into the grid.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Apache Flume NG Sink Test Suite");
-
-        suite.addTest(new TestSuite(IgniteFlumeSinkTest.class));
-
-        return suite;
-    }
+    @Nullable Map<K, V> transform(List<Event> events);
 }

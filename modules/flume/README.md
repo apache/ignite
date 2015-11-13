@@ -2,7 +2,7 @@
 
 ## Setting up and running
 
-1. Create an extractor by implementing StreamMultipleTupleExtractor interface.
+1. Create a transformer by implementing EventTransformer interface.
 2. Build it and copy to ${FLUME_HOME}/plugins.d/ignite-sink/lib.
 3. Copy other Ignite-related jar files to ${FLUME_HOME}/plugins.d/ignite-sink/libext to have them as shown below.
 
@@ -10,7 +10,7 @@
 plugins.d/
 `-- ignite
     |-- lib
-    |   `-- ignite-flume-extractor-x.x.x.jar <-- your jar
+    |   `-- ignite-flume-transformer-x.x.x.jar <-- your jar
     `-- libext
         |-- cache-api-1.0.0.jar
         |-- ignite-core-x.x.x.jar
@@ -23,17 +23,17 @@ plugins.d/
         `-- spring-expression-4.1.0.RELEASE.jar
 ```
 
-4. Specify Ignite configuration XML file's location, cache name and your EventTransformer's implementation class,
-and optionally igniteAllowOverwrite flag, igniteFlushFreq, igniteSkipStore flag, igniteNodeBufferSize and igniteNodeParallelOps.
+4. Specify Ignite configuration XML file's location with cache properties (see [Apache Ignite](http://apacheignite.gridgain.org)
+with cache name specified for cache creation, cache name (same as in Ignite configuration file),
+your EventTransformer's implementation class, and, optionally, batch size.
 
 ```
 # Describe the sink
 a1.sinks.k1.type = org.apache.ignite.stream.flume.IgniteSink
 a1.sinks.k1.igniteCfg = /some-path/ignite.xml
-a1.sinks.k1.igniteCacheName = testCache
-a1.sinks.k1.igniteEventTransformer = org.apache.ignite.stream.flume.MyEventTransformer
-a1.sinks.k1.igniteAllowOverwrite = true
-a1.sinks.k1.igniteFlushFreq = 10
+a1.sinks.k1.cacheName = testCache
+a1.sinks.k1.eventTransformer = my.company.MyEventTransformer
+a1.sinks.k1.batchSize = 100
 ```
 
 Now you are ready to run a Flume agent.

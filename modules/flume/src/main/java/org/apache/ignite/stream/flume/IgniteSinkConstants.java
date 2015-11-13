@@ -18,15 +18,11 @@
 package org.apache.ignite.stream.flume;
 
 /**
- * Configuration strings for data streamer used in Flume agent configuration file.
+ * Configuration strings for sending data to cache. Used in Flume agent configuration file.
  */
 public class IgniteSinkConstants {
     public static final String CFG_PATH = "igniteCfg";
-    public static final String CFG_CACHE_NAME = "igniteCacheName";
-    public static final String CFG_TUPLE_EXTRACTOR = "igniteTupleExtractor";
-    public static final String CFG_STREAMER_OVERWRITE = "igniteAllowOverwrite";
-    public static final String CFG_STREAMER_FLUSH_FREQ = "igniteFlushFreq";
-    public static final String CFG_STREAMER_SKIP_STORE = "igniteSkipStore";
-    public static final String CFG_STREAMER_NODE_BUFFER_SIZE = "igniteNodeBufferSize";
-    public static final String CFG_STREAMER_NODE_PARALLEL_OPS = "igniteNodeParallelOps";
+    public static final String CFG_CACHE_NAME = "cacheName";
+    public static final String CFG_EVENT_TRANSFORMER = "eventTransformer";
+    public static final String CFG_BATCH_SIZE = "batchSize";
 }

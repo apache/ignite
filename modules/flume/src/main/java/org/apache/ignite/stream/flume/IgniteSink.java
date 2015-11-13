@@ -17,6 +17,8 @@
 
 package org.apache.ignite.stream.flume;
 
+import com.google.common.collect.Lists;
+import java.util.List;
 import org.apache.flume.Channel;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
@@ -24,20 +26,22 @@ import org.apache.flume.EventDeliveryException;
 import org.apache.flume.FlumeException;
 import org.apache.flume.Transaction;
 import org.apache.flume.conf.Configurable;
+import org.apache.flume.instrumentation.SinkCounter;
 import org.apache.flume.sink.AbstractSink;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Flume custom sink for Apache Ignite.
+ * Flume sink for Apache Ignite.
  */
 public class IgniteSink extends AbstractSink implements Configurable {
     private static final Logger log = LoggerFactory.getLogger(IgniteSink.class);
+
+    /** Default batch size. */
+    private static final int DFLT_BATCH_SIZE = 100;
 
     /** Ignite configuration file. */
     private String springCfgPath;
@@ -46,25 +50,16 @@ public class IgniteSink extends AbstractSink implements Configurable {
     private String cacheName;
 
     /** Event transformer implementation class. */
-    private String tupleExtractorCls;
+    private String eventTransformerCls;
 
-    /** Flag to enable overwriting existing values in cache. See {@link IgniteDataStreamer}. */
-    private boolean streamerAllowOverwrite;
+    /** Number of events to be written per Flume transaction. */
+    private int batchSize;
 
-    /** Flush frequency. See {@link IgniteDataStreamer}. See {@link IgniteDataStreamer}. */
-    private long streamerFlushFreq;
+    /** Monitoring counter. */
+    private SinkCounter sinkCounter;
 
-    /** Flag to disable write-through behavior. See {@link IgniteDataStreamer}. */
-    private boolean skipStore;
-
-    /** Size of per node key-value pairs buffer. See {@link IgniteDataStreamer}. */
-    private int perNodeDataSize;
-
-    /** Maximum number of parallel stream operations for a single node. See {@link IgniteDataStreamer}. */
-    private int perNodeParallelOps;
-
-    /** Flume streamer. */
-    private FlumeStreamer<Event, Object, Object> flumeStreamer;
+    /** Event transformer. */
+    private EventTransformer<Event, Object, Object> eventTransformer;
 
     /** Ignite instance. */
     private Ignite ignite;
@@ -99,79 +94,91 @@ public class IgniteSink extends AbstractSink implements Configurable {
     @Override public void configure(Context context) {
         springCfgPath = context.getString(IgniteSinkConstants.CFG_PATH);
         cacheName = context.getString(IgniteSinkConstants.CFG_CACHE_NAME);
-        tupleExtractorCls = context.getString(IgniteSinkConstants.CFG_TUPLE_EXTRACTOR);
-        streamerAllowOverwrite = context.getBoolean(IgniteSinkConstants.CFG_STREAMER_OVERWRITE, false);
-        streamerFlushFreq = context.getLong(IgniteSinkConstants.CFG_STREAMER_FLUSH_FREQ, 0L);
-        skipStore = context.getBoolean(IgniteSinkConstants.CFG_STREAMER_SKIP_STORE, false);
-        perNodeDataSize = context.getInteger(IgniteSinkConstants.CFG_STREAMER_NODE_BUFFER_SIZE, IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE);
-        perNodeParallelOps = context.getInteger(IgniteSinkConstants.CFG_STREAMER_NODE_PARALLEL_OPS, IgniteDataStreamer.DFLT_MAX_PARALLEL_OPS);
+        eventTransformerCls = context.getString(IgniteSinkConstants.CFG_EVENT_TRANSFORMER);
+        batchSize = context.getInteger(IgniteSinkConstants.CFG_BATCH_SIZE, DFLT_BATCH_SIZE);
+
+        if (sinkCounter == null)
+            sinkCounter = new SinkCounter(getName());
     }
 
     /**
-     * Starts a grid and a streamer.
+     * Starts a grid and initializes na event transformer.
      */
     @Override synchronized public void start() {
-        A.notNull(tupleExtractorCls, "Tuple Extractor class");
         A.notNull(springCfgPath, "Ignite config file");
+        A.notNull(cacheName, "Cache name");
+        A.notNull(eventTransformerCls, "Event transformer class");
+
+        sinkCounter.start();
 
         try {
             if (ignite == null)
                 ignite = Ignition.start(springCfgPath);
 
-            ignite.getOrCreateCache(cacheName);
-
-            if (tupleExtractorCls != null && !tupleExtractorCls.isEmpty()) {
-                Class<? extends StreamMultipleTupleExtractor> clazz =
-                    (Class<? extends StreamMultipleTupleExtractor>)Class.forName(tupleExtractorCls);
-                StreamMultipleTupleExtractor<Event, Object, Object> tupleExtractor = clazz.newInstance();
-                flumeStreamer = new FlumeStreamer(ignite.dataStreamer(cacheName), tupleExtractor);
-                flumeStreamer.getStreamer().allowOverwrite(streamerAllowOverwrite);
-                flumeStreamer.getStreamer().autoFlushFrequency(streamerFlushFreq);
-                flumeStreamer.getStreamer().skipStore(skipStore);
-                flumeStreamer.getStreamer().perNodeBufferSize(perNodeDataSize);
-                flumeStreamer.getStreamer().perNodeParallelOperations(perNodeParallelOps);
+            if (eventTransformerCls != null && !eventTransformerCls.isEmpty()) {
+                Class<? extends EventTransformer> clazz =
+                    (Class<? extends EventTransformer>)Class.forName(eventTransformerCls);
+                eventTransformer = clazz.newInstance();
             }
         }
         catch (Exception e) {
-            log.error("Failed while starting an Ignite streamer", e);
-            throw new FlumeException("Failed while starting an Ignite streamer", e);
+            log.error("Failed to start grid", e);
+            throw new FlumeException("Failed to start grid", e);
         }
 
         super.start();
     }
 
     /**
-     * Stops the streamer and the grid.
+     * Stops the grid.
      */
     @Override synchronized public void stop() {
-        if (flumeStreamer != null)
-            flumeStreamer.getStreamer().close();
-
         if (ignite != null)
             ignite.close();
 
+        sinkCounter.stop();
         super.stop();
     }
 
     /**
-     * Processes Flume events from the sink.
+     * Processes Flume events.
      */
     @Override public Status process() throws EventDeliveryException {
-        Status status = Status.READY;
         Channel channel = getChannel();
         Transaction transaction = channel.getTransaction();
-        Event event;
+        int eventCount = 0;
 
         try {
             transaction.begin();
-            event = channel.take();
 
-            if (event != null)
-                flumeStreamer.writeEvent(event);
-            else
-                status = Status.BACKOFF;
+            List<Event> batch = Lists.newLinkedList();
+            for (; eventCount < batchSize; ++eventCount) {
+                Event event = channel.take();
+
+                if (event == null) {
+                    break;
+                }
+
+                batch.add(event);
+            }
+
+            if (batch.size() > 0) {
+                ignite.cache(cacheName).putAll(eventTransformer.transform(batch));
+
+                if (batch.size() < batchSize)
+                    sinkCounter.incrementBatchUnderflowCount();
+                else
+                    sinkCounter.incrementBatchCompleteCount();
+            }
+            else {
+                sinkCounter.incrementBatchEmptyCount();
+            }
+
+            sinkCounter.addToEventDrainAttemptCount(batch.size());
 
             transaction.commit();
+            
+            sinkCounter.addToEventDrainSuccessCount(batch.size());
         }
         catch (Exception e) {
             log.error("Failed to process events", e);
@@ -182,6 +189,6 @@ public class IgniteSink extends AbstractSink implements Configurable {
             transaction.close();
         }
 
-        return status;
+        return eventCount == 0 ? Status.BACKOFF : Status.READY;
     }
 }

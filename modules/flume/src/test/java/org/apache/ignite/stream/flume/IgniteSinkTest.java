@@ -25,7 +25,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.flume.Channel;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
-import org.apache.flume.channel.PseudoTxnMemoryChannel;
+import org.apache.flume.Sink;
+import org.apache.flume.Transaction;
+import org.apache.flume.channel.MemoryChannel;
 import org.apache.flume.conf.Configurables;
 import org.apache.flume.event.EventBuilder;
 import org.apache.ignite.IgniteCache;
@@ -39,34 +41,39 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /**
  * {@link IgniteSink} test.
  */
-public class IgniteFlumeSinkTest extends GridCommonAbstractTest {
-    private static final int CNT = 1000;
+public class IgniteSinkTest extends GridCommonAbstractTest {
+    private static final int EVENT_CNT = 10000;
+    private static final String CACHE_NAME = "testCache";
     private IgniteSink sink;
     private Context ctx;
 
     /** Constructor. */
-    public IgniteFlumeSinkTest() {
+    public IgniteSinkTest() {
         super(true);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
-        grid().<String, Integer>getOrCreateCache(defaultCacheConfiguration());
+        grid().<String, Integer>getOrCreateCache(defaultCacheConfiguration().setName(CACHE_NAME));
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
-    public void testFlumeSink() throws Exception {
+    public void testSink() throws Exception {
         initContext();
-        Channel channel = new PseudoTxnMemoryChannel();
-        Configurables.configure(channel, new Context());
+
+        Context channelContext = new Context();
+        channelContext.put("capacity", String.valueOf(EVENT_CNT));
+        channelContext.put("transactionCapacity", String.valueOf(EVENT_CNT));
+        Channel memoryChannel = new MemoryChannel();
+        Configurables.configure(memoryChannel, channelContext);
 
         final List<UUID> opId = new ArrayList<>(1);
-        final CountDownLatch latch = new CountDownLatch(CNT);
+        final CountDownLatch latch = new CountDownLatch(EVENT_CNT);
         final IgniteBiPredicate<UUID, CacheEvent> callback = new IgniteBiPredicate<UUID, CacheEvent>() {
             @Override public boolean apply(UUID uuid, CacheEvent evt) {
                 latch.countDown();
@@ -81,23 +88,33 @@ public class IgniteFlumeSinkTest extends GridCommonAbstractTest {
                 opId.add(grid().events(grid().cluster().forCacheNodes(sink.getCacheName())).remoteListen(callback, null, EVT_CACHE_OBJECT_PUT));
             }
         };
+        sink.setName("IgniteSink");
+
         Configurables.configure(sink, ctx);
-        sink.setChannel(channel);
+        sink.setChannel(memoryChannel);
         sink.start();
 
-        for (int i = 0; i < CNT; i++) {
+        Transaction tx = memoryChannel.getTransaction();
+        tx.begin();
+        for (int i = 0; i < EVENT_CNT; i++) {
             Event event = EventBuilder.withBody((String.valueOf(i) + ": " + i).getBytes());
-            channel.put(event);
-            sink.process();
+            memoryChannel.put(event);
+        }
+        tx.commit();
+        tx.close();
+
+        Sink.Status status = Sink.Status.READY;
+        while (status != Sink.Status.BACKOFF) {
+            status = sink.process();
         }
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
         // check with Ignite
         IgniteCache<String, Integer> cache = grid().cache(sink.getCacheName());
-        for (int i = 0; i < CNT; i++) {
+        for (int i = 0; i < EVENT_CNT; i++) {
             assertEquals(i, (int)cache.get(String.valueOf(i)));
         }
-        assertEquals(CNT, cache.size(CachePeekMode.PRIMARY));
+        assertEquals(EVENT_CNT, cache.size(CachePeekMode.PRIMARY));
 
         if (opId != null && opId.size() == 1)
             grid().events(grid().cluster().forCacheNodes(sink.getCacheName())).stopRemoteListen(opId.get(0));
@@ -110,9 +127,8 @@ public class IgniteFlumeSinkTest extends GridCommonAbstractTest {
      */
     private void initContext() {
         ctx = new Context();
-        ctx.put(IgniteSinkConstants.CFG_CACHE_NAME, "testCache");
-        ctx.put(IgniteSinkConstants.CFG_TUPLE_EXTRACTOR, "org.apache.ignite.stream.flume.TestTupleExtractor");
-        ctx.put(IgniteSinkConstants.CFG_STREAMER_OVERWRITE, "true");
-        ctx.put(IgniteSinkConstants.CFG_STREAMER_FLUSH_FREQ, "10");
+        ctx.put(IgniteSinkConstants.CFG_CACHE_NAME, CACHE_NAME);
+        ctx.put(IgniteSinkConstants.CFG_PATH, "path/to/ignite.xml");
+        ctx.put(IgniteSinkConstants.CFG_EVENT_TRANSFORMER, "org.apache.ignite.stream.flume.TestEventTransformer");
     }
 }
