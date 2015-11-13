@@ -200,7 +200,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(stream != null);
 
-            if (!HasRaw)
+            if (!HasRaw || !HasSchema)
                 return SchemaOffset;
 
             stream.Seek(position + Length - 4, SeekOrigin.Begin);
