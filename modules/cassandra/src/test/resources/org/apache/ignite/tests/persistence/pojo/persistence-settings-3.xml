@@ -8,7 +8,7 @@ Attributes:
   2) table    [required] - Cassandra tables which should be used to store key/value pairs
   3) ttl      [optional] - expiration period for the table rows (in seconds)
 -->
-<persistence keyspace="my_keyspace" table="my_table" ttl="86400">
+<persistence keyspace="test1" table="pojo_test3" ttl="86400">
     <!--
     Cassandra keyspace options which should be used to create provided keyspace if it doesn't exist.
 
@@ -55,7 +55,7 @@ Attributes:
       4) column     [optional] - specifies column name for PRIMITIVE and BLOB strategies where to store key value.
         If not specified column having 'key' name will be used. Shouldn't be used for POJO strategy.
     -->
-    <keyPersistence class="org.mycompany.MyKeyClass" strategy="..." serializer="..." column="...">
+    <keyPersistence class="org.apache.ignite.tests.pojos.PersonId" strategy="POJO">
         <!--
         Partition key fields if POJO strategy used.
 
@@ -127,7 +127,9 @@ Attributes:
       4) column     [optional] - specifies column name for PRIMITIVE and BLOB strategies where to store value.
         If not specified column having 'value' name will be used. Shouldn't be used for POJO strategy.
     -->
-    <valuePersistence class="org.mycompany.MyValueClass" strategy="..." serializer="..." column="">
+    <valuePersistence class="org.apache.ignite.tests.pojos.Person"
+                      strategy="POJO"
+                      serializer="org.apache.ignite.cache.store.cassandra.utils.serializer.KryoSerializer">
         <!--
          Mapping from POJO field to Cassandra table column.
 
