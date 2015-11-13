@@ -74,16 +74,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <returns>Event.</returns>
         private static ICacheEntryEvent<TK, TV> ReadEvent0<TK, TV>(BinaryReader reader)
         {
-            reader.DetachNext();
-            TK key = reader.ReadObject<TK>();
+            var key = reader.DetachNext().ReadObject<TK>();
 
-            reader.DetachNext();
-            TV oldVal = reader.ReadObject<TV>();
+            // Read as objects: TV may be value type
+            var oldVal = reader.DetachNext().ReadObject<object>();
+            var val = reader.DetachNext().ReadObject<object>();
 
-            reader.DetachNext();
-            TV val = reader.ReadObject<TV>();
-
-            return CreateEvent(key, oldVal, val);
+            return CreateEvent<TK, TV>(key, oldVal, val);
         }
 
         /// <summary>
@@ -93,23 +90,23 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="oldVal">Old value.</param>
         /// <param name="val">Value.</param>
         /// <returns>Event.</returns>
-        public static ICacheEntryEvent<TK, TV> CreateEvent<TK, TV>(TK key, TV oldVal, TV val)
+        public static ICacheEntryEvent<TK, TV> CreateEvent<TK, TV>(TK key, object oldVal, object val)
         {
             if (oldVal == null)
             {
                 Debug.Assert(val != null);
 
-                return new CacheEntryCreateEvent<TK, TV>(key, val);
+                return new CacheEntryCreateEvent<TK, TV>(key, (TV) val);
             }
 
             if (val == null)
             {
                 Debug.Assert(oldVal != null);
 
-                return new CacheEntryRemoveEvent<TK, TV>(key, oldVal);
+                return new CacheEntryRemoveEvent<TK, TV>(key, (TV) oldVal);
             }
-            
-            return new CacheEntryUpdateEvent<TK, TV>(key, oldVal, val);
+
+            return new CacheEntryUpdateEvent<TK, TV>(key, (TV) oldVal, (TV) val);
         }
     }
 }

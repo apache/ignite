@@ -503,9 +503,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Enable detach mode for the next object read. 
         /// </summary>
-        public void DetachNext()
+        public BinaryReader DetachNext()
         {
             _detach = true;
+
+            return this;
         }
 
         /// <summary>
