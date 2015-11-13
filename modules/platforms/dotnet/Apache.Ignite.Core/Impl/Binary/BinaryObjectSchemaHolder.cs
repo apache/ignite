@@ -90,7 +90,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             ref BinaryObjectHeader.Flag flags)
         {
             schemaId = Fnv1Hash.Basis;
-            flags = 0;
 
             var count = _idx - schemaOffset;
 
