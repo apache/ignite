@@ -36,11 +36,13 @@ public class TestEventTransformer implements EventTransformer<Event, String, Int
      */
     private Map<String, Integer> transform(Event event) {
         final Map<String, Integer> map = new HashMap<>();
+
         String eventStr = new String(event.getBody());
 
         if (!eventStr.isEmpty()) {
             // expects column-delimited one line
             String[] tokens = eventStr.split(":");
+
             map.put(tokens[0].trim(), Integer.valueOf(tokens[1].trim()));
         }
 

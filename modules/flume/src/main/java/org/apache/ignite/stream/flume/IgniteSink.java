@@ -17,7 +17,7 @@
 
 package org.apache.ignite.stream.flume;
 
-import com.google.common.collect.Lists;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.flume.Channel;
 import org.apache.flume.Context;
@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
  * Flume sink for Apache Ignite.
  */
 public class IgniteSink extends AbstractSink implements Configurable {
+    /** Logger. */
     private static final Logger log = LoggerFactory.getLogger(IgniteSink.class);
 
     /** Default batch size. */
@@ -68,23 +69,23 @@ public class IgniteSink extends AbstractSink implements Configurable {
     public IgniteSink() {
     }
 
-    /**
-     * Constructor with provided grid instance.
-     *
-     * @param ignite Grid instance.
-     */
-    public IgniteSink(Ignite ignite) {
-        this.ignite = ignite;
-    }
+//    /**
+//     * Constructor with provided grid instance.
+//     *
+//     * @param ignite Grid instance.
+//     */
+//    public IgniteSink(Ignite ignite) {
+//        this.ignite = ignite;
+//    }
 
-    /**
-     * Returns cache name for the sink.
-     *
-     * @return Cache name.
-     */
-    public String getCacheName() {
-        return cacheName;
-    }
+//    /**
+//     * Returns cache name for the sink.
+//     *
+//     * @return Cache name.
+//     */
+//    public String getCacheName() {
+//        return cacheName;
+//    }
 
     /**
      * Sink configurations with Ignite-specific settings.
@@ -104,6 +105,7 @@ public class IgniteSink extends AbstractSink implements Configurable {
     /**
      * Starts a grid and initializes na event transformer.
      */
+    @SuppressWarnings("unchecked")
     @Override synchronized public void start() {
         A.notNull(springCfgPath, "Ignite config file");
         A.notNull(cacheName, "Cache name");
@@ -117,12 +119,14 @@ public class IgniteSink extends AbstractSink implements Configurable {
 
             if (eventTransformerCls != null && !eventTransformerCls.isEmpty()) {
                 Class<? extends EventTransformer> clazz =
-                    (Class<? extends EventTransformer>)Class.forName(eventTransformerCls);
+                    (Class<? extends EventTransformer<Event, Object, Object>>)Class.forName(eventTransformerCls);
+
                 eventTransformer = clazz.newInstance();
             }
         }
         catch (Exception e) {
             log.error("Failed to start grid", e);
+
             throw new FlumeException("Failed to start grid", e);
         }
 
@@ -137,6 +141,7 @@ public class IgniteSink extends AbstractSink implements Configurable {
             ignite.close();
 
         sinkCounter.stop();
+
         super.stop();
     }
 
@@ -145,13 +150,16 @@ public class IgniteSink extends AbstractSink implements Configurable {
      */
     @Override public Status process() throws EventDeliveryException {
         Channel channel = getChannel();
+
         Transaction transaction = channel.getTransaction();
+
         int eventCount = 0;
 
         try {
             transaction.begin();
 
-            List<Event> batch = Lists.newLinkedList();
+            List<Event> batch = new ArrayList<>(batchSize);
+
             for (; eventCount < batchSize; ++eventCount) {
                 Event event = channel.take();
 
@@ -162,7 +170,7 @@ public class IgniteSink extends AbstractSink implements Configurable {
                 batch.add(event);
             }
 
-            if (batch.size() > 0) {
+            if (!batch.isEmpty()) {
                 ignite.cache(cacheName).putAll(eventTransformer.transform(batch));
 
                 if (batch.size() < batchSize)
@@ -177,12 +185,14 @@ public class IgniteSink extends AbstractSink implements Configurable {
             sinkCounter.addToEventDrainAttemptCount(batch.size());
 
             transaction.commit();
-            
+
             sinkCounter.addToEventDrainSuccessCount(batch.size());
         }
         catch (Exception e) {
             log.error("Failed to process events", e);
+
             transaction.rollback();
+
             throw new EventDeliveryException(e);
         }
         finally {

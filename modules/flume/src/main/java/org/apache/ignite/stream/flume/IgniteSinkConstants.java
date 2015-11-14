@@ -21,8 +21,15 @@ package org.apache.ignite.stream.flume;
  * Configuration strings for sending data to cache. Used in Flume agent configuration file.
  */
 public class IgniteSinkConstants {
+    /** Ignite configuration file path. */
     public static final String CFG_PATH = "igniteCfg";
+
+    /** Cache name. */
     public static final String CFG_CACHE_NAME = "cacheName";
+
+    /** Event transformer implementation. */
     public static final String CFG_EVENT_TRANSFORMER = "eventTransformer";
+
+    /** Batch size. */
     public static final String CFG_BATCH_SIZE = "batchSize";
 }
