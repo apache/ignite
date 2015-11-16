@@ -51,7 +51,13 @@ public class GridOdbcParser implements GridNioParser {
         ctx = context;
     }
 
-    private byte[] tryConstructMessage(ByteBuffer buf) {
+    /**
+     * Process data chunk and try to construct new message using stored and freshly received data.
+     * @param buf Fresh data buffer.
+     * @return Instance of the {@link BinaryReaderExImpl} positioned to read from the beginning of the message on
+     * success and null otherwise.
+     */
+    private BinaryReaderExImpl tryConstructMessage(ByteBuffer buf) {
         if (leftToReceive != 0) {
             // Still receiving message
             int toConsume = Math.min(leftToReceive, buf.remaining());
@@ -64,17 +70,20 @@ public class GridOdbcParser implements GridNioParser {
             if (leftToReceive != 0)
                 return null;
 
-            byte[] result = new byte[currentMessage.capacity()];
+            BinaryReaderExImpl reader = new BinaryReaderExImpl(null, currentMessage.array(), 0, null);
 
-            currentMessage.get(result);
             currentMessage = null;
 
-            return result;
+            return reader;
         }
 
         // Receiving new message
         // Getting message length. It's in the first four bytes of the message.
-        int messageLen = buf.getInt();
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, buf.array(), buf.position(), null);
+
+        int messageLen = reader.readInt();
+        buf.getInt();
+
         int remaining = buf.remaining();
 
         if (messageLen > remaining) {
@@ -86,62 +95,56 @@ public class GridOdbcParser implements GridNioParser {
             return null;
         }
 
-        byte[] result = new byte[messageLen];
-        buf.get(result, 0, messageLen);
+        buf.position(buf.position() + messageLen);
 
-        return result;
+        return reader;
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public GridOdbcRequest decode(GridNioSession ses, ByteBuffer buf) throws IOException,
             IgniteCheckedException {
-        byte[] message = tryConstructMessage(buf);
+        BinaryReaderExImpl messageReader = tryConstructMessage(buf);
 
-        return message == null ? null : parseMessage(ses, message);
+        return messageReader == null ? null : readRequest(ses, messageReader);
     }
 
-    @Override public ByteBuffer encode(GridNioSession ses, Object msg0) throws IOException, IgniteCheckedException {
-        assert msg0 != null;
-        assert msg0 instanceof GridOdbcResponse;
+    /** {@inheritDoc} */
+    @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
+        assert msg != null;
+        assert msg instanceof GridOdbcResponse;
 
         System.out.println("Encoding query processing result");
 
-        GridOdbcResponse msg = (GridOdbcResponse)msg0;
-
-        //TODO: implement error encoding.
-        if (msg.getSuccessStatus() != GridOdbcResponse.STATUS_SUCCESS) {
-
-            System.out.println("Error: " + msg.getError());
-
-            ses.close();
-
-            return null;
-        }
-
-        Object result0 = msg.getResponse();
-
-        assert result0 instanceof GridOdbcQueryResult;
-
-        GridOdbcQueryResult result = (GridOdbcQueryResult) result0;
-
-        System.out.println("Resulting query ID: " + result.getQueryId());
-
-        ByteBuffer buf = ByteBuffer.allocate(8 + 4);
-
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, 0, false);
 
-        buf.putInt(8);
-        buf.putLong(result.getQueryId());
+        // Reserving space for the message length.
+        int msgLenPos = writer.reserveInt();
 
-        System.out.println("Remaining: " + buf.remaining());
+        writeResponse(ses, writer, (GridOdbcResponse)msg);
+
+        int msgLenWithHdr = writer.out().position() - msgLenPos;
+
+        int msgLen = msgLenWithHdr - 4;
+
+        writer.writeInt(msgLenPos, msgLen);
+
+        ByteBuffer buf = ByteBuffer.allocate(msgLenWithHdr);
+
+        buf.put(writer.out().array(), msgLenPos, msgLenWithHdr);
 
         buf.flip();
 
         return buf;
     }
 
-    private GridOdbcRequest parseMessage(GridNioSession ses, byte[] msg) throws IOException {
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, msg, 0, null);
-
+    /**
+     * Read ODBC request from the raw data using provided {@link BinaryReaderExImpl} instance.
+     * @param ses Current session.
+     * @param reader Reader positioned to read the request.
+     * @return Instance of the {@link GridOdbcRequest}.
+     * @throws IOException if the type of the request is unknown to the parser.
+     */
+    private GridOdbcRequest readRequest(GridNioSession ses, BinaryReaderExImpl reader) throws IOException {
         GridOdbcRequest res;
 
         byte cmd = reader.readByte();
@@ -189,5 +192,36 @@ public class GridOdbcParser implements GridNioParser {
         }
 
         return res;
+    }
+
+    /**
+     * Write ODBC response using provided {@link BinaryWriterExImpl} instance.
+     * @param ses Current session.
+     * @param writer Writer.
+     * @param rsp ODBC response that should be written.
+     * @throws IOException if the type of the response is unknown to the parser.
+     */
+    private void writeResponse(GridNioSession ses, BinaryWriterExImpl writer, GridOdbcResponse rsp) throws IOException {
+        //TODO: implement error encoding.
+        if (rsp.getSuccessStatus() != GridOdbcResponse.STATUS_SUCCESS) {
+
+            System.out.println("Error: " + rsp.getError());
+
+            ses.close();
+
+            return;
+        }
+
+        Object res0 = rsp.getResponse();
+
+        if (res0 instanceof GridOdbcQueryResult) {
+            GridOdbcQueryResult res = (GridOdbcQueryResult) res0;
+
+            System.out.println("Resulting query ID: " + res.getQueryId());
+
+            writer.writeLong(res.getQueryId());
+        } else {
+            throw new IOException("Failed to serialize response packet (unknown response type) [ses=" + ses + "]");
+        }
     }
 }
