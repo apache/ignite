@@ -107,7 +107,12 @@
     <Compile Include="Compute\IComputeJobResult.cs" />
     <Compile Include="Compute\IComputeReducer.cs" />
     <Compile Include="Compute\IComputeTask.cs" />
+    <Compile Include="Configuration\CacheAtomicityMode.cs" />
+    <Compile Include="Configuration\CacheAtomicWriteOrderMode.cs" />
     <Compile Include="Configuration\CacheConfiguration.cs" />
+    <Compile Include="Configuration\CacheMemoryMode.cs" />
+    <Compile Include="Configuration\CacheMode.cs" />
+    <Compile Include="Configuration\CacheRebalanceMode.cs" />
     <Compile Include="Configuration\CacheWriteSynchronizationMode.cs" />
     <Compile Include="Datastream\IDataStreamer.cs" />
     <Compile Include="Datastream\IStreamReceiver.cs" />
