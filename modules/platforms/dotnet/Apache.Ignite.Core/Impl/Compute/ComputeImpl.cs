@@ -583,7 +583,17 @@ namespace Apache.Ignite.Core.Impl.Compute
             var jobHandle = Marshaller.Ignite.HandleRegistry.Allocate(jobHolder);
 
             writer.WriteLong(jobHandle);
-            writer.WriteObject(jobHolder);
+
+            try
+            {
+                writer.WriteObject(jobHolder);
+            }
+            catch (Exception)
+            {
+                Marshaller.Ignite.HandleRegistry.Release(jobHandle);
+
+                throw;
+            }
 
             return jobHandle;
         }
