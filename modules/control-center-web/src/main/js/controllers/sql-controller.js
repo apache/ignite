@@ -386,6 +386,8 @@ consoleModule.controller('sqlController',
         if (paragraph.result === new_result)
             return;
 
+        _saveChartSettings(paragraph);
+
         paragraph.result = new_result;
 
         if (paragraph.chart())
@@ -992,11 +994,12 @@ consoleModule.controller('sqlController',
 
                 if (paragraph.chartTimeLineEnabled()) {
                     var aggFx = valCol.aggFx;
+                    var colLbl = valCol.label + ' [' + aggFx + ']';
 
                     if (paragraph.charts && paragraph.charts.length == 1)
                         datum = paragraph.charts[0].data;
 
-                    var chartData = _.find(datum, {key: valCol.label});
+                    var chartData = _.find(datum, {series: valCol.label});
 
                     var leftBound = new Date();
                     leftBound.setMinutes(leftBound.getMinutes() - parseInt(paragraph.timeLineSpan));
@@ -1023,7 +1026,7 @@ consoleModule.controller('sqlController',
                                 });
                         });
 
-                        datum.push({key: valCol.label, values: values});
+                        datum.push({series: valCol.label, key: colLbl, values: values});
                     }
                 }
                 else {
@@ -1043,7 +1046,7 @@ consoleModule.controller('sqlController',
                         return v;
                     });
 
-                    datum.push({key: valCol.label, values: values});
+                    datum.push({series: valCol.label, key: valCol.label, values: values});
                 }
             });
         }
@@ -1071,7 +1074,7 @@ consoleModule.controller('sqlController',
                     return v;
                 });
 
-                datum.push({key: valCol.label, values: values});
+                datum.push({series: valCol.label, key: valCol.label, values: values});
             });
         }
 
@@ -1088,6 +1091,27 @@ consoleModule.controller('sqlController',
 
         return '1';
     };
+
+    function _saveChartSettings(paragraph) {
+        if (!$common.isEmptyArray(paragraph.charts)) {
+            var chart = paragraph.charts[0].api.getScope().chart;
+
+            if (!$common.isDefined(paragraph.chartsOptions))
+                paragraph.chartsOptions = {barChart: {stacked: true}, areaChart: {style: 'stack'}};
+
+            switch (paragraph.result) {
+                case 'bar':
+                    paragraph.chartsOptions.barChart.stacked = chart.stacked();
+
+                    break;
+
+                case 'area':
+                    paragraph.chartsOptions.areaChart.style = chart.style();
+
+                    break;
+            }
+        }
+    }
 
     function _chartApplySettings(paragraph, resetCharts) {
         if (resetCharts)
@@ -1221,6 +1245,10 @@ consoleModule.controller('sqlController',
         var datum = _chartDatum(paragraph);
 
         if ($common.isEmptyArray(paragraph.charts)) {
+            var stacked = paragraph.chartsOptions && paragraph.chartsOptions.barChart
+                ? paragraph.chartsOptions.barChart.stacked
+                : true;
+
             var options = {
                 chart: {
                     type: 'multiBarChart',
@@ -1239,7 +1267,7 @@ consoleModule.controller('sqlController',
                         tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS,
-                    stacked: true,
+                    stacked: stacked,
                     showControls: true
                 }
             };
@@ -1323,6 +1351,10 @@ consoleModule.controller('sqlController',
         var datum = _chartDatum(paragraph);
 
         if ($common.isEmptyArray(paragraph.charts)) {
+            var style = paragraph.chartsOptions && paragraph.chartsOptions.areaChart
+                ? paragraph.chartsOptions.areaChart.style
+                : 'stack';
+
             var options = {
                 chart: {
                     type: 'stackedAreaChart',
@@ -1340,7 +1372,8 @@ consoleModule.controller('sqlController',
                         axisLabel:  _yAxisLabel(paragraph),
                         tickFormat: _yAxisFormat
                     },
-                    color: CHART_COLORS
+                    color: CHART_COLORS,
+                    style: style
                 }
             };
 
