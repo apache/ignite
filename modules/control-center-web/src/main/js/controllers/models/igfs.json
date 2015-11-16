@@ -14,7 +14,7 @@
   "moreInfo": {
     "title": "IGFS screen",
     "content": [
-      "Manage you IGFS file systems on current screen.",
+      "Manage your IGFS file systems on current screen.",
       "IGFS can be assigned to specified <a href='/configuration/clusters'>clusters</a>.",
       "Generated cluster with IGFS available on <a href='/configuration/summary'>summary</a> screen."
     ]
