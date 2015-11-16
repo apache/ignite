@@ -1008,7 +1008,7 @@ consoleModule.controller('sqlController',
 
                         values.push({
                             x: lastItem.tm,
-                            y: _aggregate(lastItem.rows[0], aggFx, colIdx, index++)
+                            y: _aggregate(lastItem.rows, aggFx, colIdx, index++)
                         });
 
                         while (values.length > 0 && values[0].x < leftBound)
@@ -1118,12 +1118,23 @@ consoleModule.controller('sqlController',
         _chartApplySettings(paragraph, true);
     };
 
-    function _colLabel(col) {
-        return col.label;
+    function _xAxisLabel(paragraph) {
+        return $common.isEmptyArray(paragraph.chartKeyCols) ? 'X' : paragraph.chartKeyCols[0].label;
     }
 
-    function _chartAxisLabel(cols, dflt) {
-        return $common.isEmptyArray(cols) ? dflt : _.map(cols, _colLabel).join(', ');
+    function _yAxisLabel(paragraph) {
+        var cols = paragraph.chartValCols;
+
+        var tml = paragraph.chartTimeLineEnabled();
+
+        return $common.isEmptyArray(cols) ? 'Y' : _.map(cols, function (col) {
+            var lbl = col.label;
+
+            if (tml)
+             lbl += ' [' + col.aggFx + ']';
+
+            return lbl;
+        }).join(', ');
     }
 
     function _xX(d) {
@@ -1219,12 +1230,12 @@ consoleModule.controller('sqlController',
                     x: _xX,
                     y: _yY,
                     xAxis: {
-                        axisLabel: _chartAxisLabel(paragraph.chartKeyCols, 'X'),
+                        axisLabel: _xAxisLabel(paragraph),
                         tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
                         showMaxMin: false
                     },
                     yAxis: {
-                        axisLabel:  _chartAxisLabel(paragraph.chartValCols, 'Y'),
+                        axisLabel:  _yAxisLabel(paragraph),
                         tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS,
@@ -1287,12 +1298,12 @@ consoleModule.controller('sqlController',
                     x: _xX,
                     y: _yY,
                     xAxis: {
-                        axisLabel: _chartAxisLabel(paragraph.chartKeyCols, 'X'),
+                        axisLabel: _xAxisLabel(paragraph),
                         tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
                         showMaxMin: false
                     },
                     yAxis: {
-                        axisLabel:  _chartAxisLabel(paragraph.chartValCols, 'Y'),
+                        axisLabel:  _yAxisLabel(paragraph),
                         tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS,
@@ -1321,12 +1332,12 @@ consoleModule.controller('sqlController',
                     x: _xX,
                     y: _yY,
                     xAxis: {
-                        axisLabel:  _chartAxisLabel(paragraph.chartKeyCols, 'X'),
+                        axisLabel: _xAxisLabel(paragraph),
                         tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
                         showMaxMin: false
                     },
                     yAxis: {
-                        axisLabel:  _chartAxisLabel(paragraph.chartValCols, 'Y'),
+                        axisLabel:  _yAxisLabel(paragraph),
                         tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS
