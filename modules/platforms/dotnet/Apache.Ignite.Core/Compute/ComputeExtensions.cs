@@ -27,6 +27,8 @@ namespace Apache.Ignite.Core.Compute
     /// </summary>
     public static class ComputeExtensions
     {
+        // TODO: Async methods!
+
         /// <summary>
         /// Executes provided job on a node in this grid projection. The result of the
         /// job execution is returned from the result closure.
