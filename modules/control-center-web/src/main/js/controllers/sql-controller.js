@@ -386,6 +386,8 @@ consoleModule.controller('sqlController',
         if (paragraph.result === new_result)
             return;
 
+        _saveChartSettings(paragraph);
+
         paragraph.result = new_result;
 
         if (paragraph.chart())
@@ -525,8 +527,11 @@ consoleModule.controller('sqlController',
             curCols.forEach(function (curCol) {
                 var col = _.find(availableCols, {label: curCol.label});
 
-                if (col && acceptableType(col.type))
+                if (col && acceptableType(col.type)) {
+                    col.aggFx = curCol.aggFx;
+
                     retainedCols.push(col);
+                }
             });
 
             // If nothing was restored, add first acceptable column.
@@ -969,7 +974,7 @@ consoleModule.controller('sqlController',
                 return _sum(rows, idx);
 
             case 'AVG':
-                return len > 0 ? _sum(idx) / len : 0;
+                return len > 0 ? _sum(rows, idx) / len : 0;
 
             case 'COUNT':
                 return len;
@@ -989,11 +994,12 @@ consoleModule.controller('sqlController',
 
                 if (paragraph.chartTimeLineEnabled()) {
                     var aggFx = valCol.aggFx;
+                    var colLbl = valCol.label + ' [' + aggFx + ']';
 
                     if (paragraph.charts && paragraph.charts.length == 1)
                         datum = paragraph.charts[0].data;
 
-                    var chartData = _.find(datum, {key: valCol.label});
+                    var chartData = _.find(datum, {series: valCol.label});
 
                     var leftBound = new Date();
                     leftBound.setMinutes(leftBound.getMinutes() - parseInt(paragraph.timeLineSpan));
@@ -1005,7 +1011,7 @@ consoleModule.controller('sqlController',
 
                         values.push({
                             x: lastItem.tm,
-                            y: _aggregate(lastItem.rows[0], aggFx, colIdx, index++)
+                            y: _aggregate(lastItem.rows, aggFx, colIdx, index++)
                         });
 
                         while (values.length > 0 && values[0].x < leftBound)
@@ -1020,7 +1026,7 @@ consoleModule.controller('sqlController',
                                 });
                         });
 
-                        datum.push({key: valCol.label, values: values});
+                        datum.push({series: valCol.label, key: colLbl, values: values});
                     }
                 }
                 else {
@@ -1040,7 +1046,7 @@ consoleModule.controller('sqlController',
                         return v;
                     });
 
-                    datum.push({key: valCol.label, values: values});
+                    datum.push({series: valCol.label, key: valCol.label, values: values});
                 }
             });
         }
@@ -1068,7 +1074,7 @@ consoleModule.controller('sqlController',
                     return v;
                 });
 
-                datum.push({key: valCol.label, values: values});
+                datum.push({series: valCol.label, key: valCol.label, values: values});
             });
         }
 
@@ -1085,6 +1091,27 @@ consoleModule.controller('sqlController',
 
         return '1';
     };
+
+    function _saveChartSettings(paragraph) {
+        if (!$common.isEmptyArray(paragraph.charts)) {
+            var chart = paragraph.charts[0].api.getScope().chart;
+
+            if (!$common.isDefined(paragraph.chartsOptions))
+                paragraph.chartsOptions = {barChart: {stacked: true}, areaChart: {style: 'stack'}};
+
+            switch (paragraph.result) {
+                case 'bar':
+                    paragraph.chartsOptions.barChart.stacked = chart.stacked();
+
+                    break;
+
+                case 'area':
+                    paragraph.chartsOptions.areaChart.style = chart.style();
+
+                    break;
+            }
+        }
+    }
 
     function _chartApplySettings(paragraph, resetCharts) {
         if (resetCharts)
@@ -1115,12 +1142,23 @@ consoleModule.controller('sqlController',
         _chartApplySettings(paragraph, true);
     };
 
-    function _colLabel(col) {
-        return col.label;
+    function _xAxisLabel(paragraph) {
+        return $common.isEmptyArray(paragraph.chartKeyCols) ? 'X' : paragraph.chartKeyCols[0].label;
     }
 
-    function _chartAxisLabel(cols, dflt) {
-        return $common.isEmptyArray(cols) ? dflt : _.map(cols, _colLabel).join(', ');
+    function _yAxisLabel(paragraph) {
+        var cols = paragraph.chartValCols;
+
+        var tml = paragraph.chartTimeLineEnabled();
+
+        return $common.isEmptyArray(cols) ? 'Y' : _.map(cols, function (col) {
+            var lbl = col.label;
+
+            if (tml)
+             lbl += ' [' + col.aggFx + ']';
+
+            return lbl;
+        }).join(', ');
     }
 
     function _xX(d) {
@@ -1207,6 +1245,10 @@ consoleModule.controller('sqlController',
         var datum = _chartDatum(paragraph);
 
         if ($common.isEmptyArray(paragraph.charts)) {
+            var stacked = paragraph.chartsOptions && paragraph.chartsOptions.barChart
+                ? paragraph.chartsOptions.barChart.stacked
+                : true;
+
             var options = {
                 chart: {
                     type: 'multiBarChart',
@@ -1216,16 +1258,16 @@ consoleModule.controller('sqlController',
                     x: _xX,
                     y: _yY,
                     xAxis: {
-                        axisLabel: _chartAxisLabel(paragraph.chartKeyCols, 'X'),
+                        axisLabel: _xAxisLabel(paragraph),
                         tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
                         showMaxMin: false
                     },
                     yAxis: {
-                        axisLabel:  _chartAxisLabel(paragraph.chartValCols, 'Y'),
+                        axisLabel:  _yAxisLabel(paragraph),
                         tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS,
-                    stacked: true,
+                    stacked: stacked,
                     showControls: true
                 }
             };
@@ -1284,12 +1326,12 @@ consoleModule.controller('sqlController',
                     x: _xX,
                     y: _yY,
                     xAxis: {
-                        axisLabel: _chartAxisLabel(paragraph.chartKeyCols, 'X'),
+                        axisLabel: _xAxisLabel(paragraph),
                         tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
                         showMaxMin: false
                     },
                     yAxis: {
-                        axisLabel:  _chartAxisLabel(paragraph.chartValCols, 'Y'),
+                        axisLabel:  _yAxisLabel(paragraph),
                         tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS,
@@ -1309,6 +1351,10 @@ consoleModule.controller('sqlController',
         var datum = _chartDatum(paragraph);
 
         if ($common.isEmptyArray(paragraph.charts)) {
+            var style = paragraph.chartsOptions && paragraph.chartsOptions.areaChart
+                ? paragraph.chartsOptions.areaChart.style
+                : 'stack';
+
             var options = {
                 chart: {
                     type: 'stackedAreaChart',
@@ -1318,15 +1364,16 @@ consoleModule.controller('sqlController',
                     x: _xX,
                     y: _yY,
                     xAxis: {
-                        axisLabel:  _chartAxisLabel(paragraph.chartKeyCols, 'X'),
+                        axisLabel: _xAxisLabel(paragraph),
                         tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
                         showMaxMin: false
                     },
                     yAxis: {
-                        axisLabel:  _chartAxisLabel(paragraph.chartValCols, 'Y'),
+                        axisLabel:  _yAxisLabel(paragraph),
                         tickFormat: _yAxisFormat
                     },
-                    color: CHART_COLORS
+                    color: CHART_COLORS,
+                    style: style
                 }
             };
 

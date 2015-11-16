@@ -130,22 +130,24 @@ consoleModule.controller('cachesController', [
             };
 
             $scope.required = function (field) {
-                var model = $common.isDefined(field.path) ? field.path + '.' + field.model : field.model;
-
                 var backupItem = $scope.backupItem;
 
-                var memoryMode = backupItem.memoryMode;
+                if (backupItem) {
+                    var model = $common.isDefined(field.path) ? field.path + '.' + field.model : field.model;
 
-                var onHeapTired = memoryMode == 'ONHEAP_TIERED';
-                var offHeapTired = memoryMode == 'OFFHEAP_TIERED';
+                    var memoryMode = backupItem.memoryMode;
 
-                var offHeapMaxMemory = backupItem.offHeapMaxMemory;
+                    var onHeapTired = memoryMode == 'ONHEAP_TIERED';
+                    var offHeapTired = memoryMode == 'OFFHEAP_TIERED';
 
-                if (model == 'offHeapMaxMemory' && offHeapTired)
-                    return true;
+                    var offHeapMaxMemory = backupItem.offHeapMaxMemory;
 
-                if (model == 'evictionPolicy.kind' && onHeapTired)
-                    return backupItem.swapEnabled || ($common.isDefined(offHeapMaxMemory) && offHeapMaxMemory >= 0);
+                    if (model == 'offHeapMaxMemory' && offHeapTired)
+                        return true;
+
+                    if (model == 'evictionPolicy.kind' && onHeapTired)
+                        return backupItem.swapEnabled || ($common.isDefined(offHeapMaxMemory) && offHeapMaxMemory >= 0);
+                }
 
                 return false;
             };
@@ -165,8 +167,8 @@ consoleModule.controller('cachesController', [
                         var exist = false;
 
                         if ($common.isDefined(model)) {
-                            model.forEach(function (val) {
-                                if (val.split('=')[0] == key)
+                            model.forEach(function (val, ix) {
+                                if (ix != index && val.split('=')[0] == key)
                                     exist = true;
                             })
                         }

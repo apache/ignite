@@ -98,6 +98,15 @@ $generatorJava.declareVariable = function (res, varName, varFullType, varFullAct
 };
 
 /**
+ * Clear list of declared variables.
+ *
+ * @param res
+ */
+$generatorJava.resetVariables = function (res) {
+    res.vars = {};
+};
+
+/**
  * Add property via setter / property name.
  *
  * @param res Resulting output with generated code.
@@ -1789,8 +1798,9 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
  * @param cluster Cluster to process.
  * @param javaClass Class name for generate factory class otherwise generate code snippet.
  * @param clientNearCfg Near cache configuration for client node.
+ * @param clientMode If `true` generates code for client mode or server mode otherwise.
  */
-$generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
+$generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode) {
     var res = $generatorCommon.builder();
 
     if (cluster) {
@@ -1878,6 +1888,31 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
 
             res.needEmptyLine = true;
 
+            if (clientMode && clientNearCfg) {
+                res.line('/**');
+                res.line(' * Configure client near cache configuration.');
+                res.line(' *');
+                res.line(' * @return Near cache configuration.');
+                res.line(' * @throws Exception If failed to construct near cache configuration instance.');
+                res.line(' */');
+                res.startBlock('public static NearCacheConfiguration createNearCacheConfiguration() throws Exception {');
+
+                $generatorJava.resetVariables(res);
+
+                $generatorJava.declareVariable(res, 'nearCfg', 'org.apache.ignite.configuration.NearCacheConfiguration');
+
+                if (clientNearCfg.nearStartSize)
+                    $generatorJava.property(res, 'nearCfg', clientNearCfg, 'nearStartSize');
+
+                if (clientNearCfg.nearEvictionPolicy && clientNearCfg.nearEvictionPolicy.kind)
+                    $generatorJava.evictionPolicy(res, 'nearCfg', clientNearCfg.nearEvictionPolicy, 'nearEvictionPolicy');
+
+                res.line('return nearCfg;');
+                res.endBlock('}')
+            }
+
+            res.needEmptyLine = true;
+
             res.line('/**');
             res.line(' * Sample usage of ' + javaClass + '.');
             res.line(' *');
@@ -1886,9 +1921,24 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
             res.line(' */');
 
             res.startBlock('public static void main(String[] args) throws Exception {');
-            res.startBlock('try (Ignite ignite = Ignition.start(' + javaClass + '.createConfiguration())) {');
-            res.line('System.out.println("Write some code here...");');
-            res.endBlock('}');
+
+            if (clientMode) {
+                res.startBlock('try (Ignite ignite = Ignition.start(' + javaClass + '.createConfiguration())) {');
+
+                if ($commonUtils.isDefinedAndNotEmpty(cluster.caches)) {
+                    res.line('// Example of near cache creation on client node.');
+                    res.line('ignite.getOrCreateNearCache("' + cluster.caches[0].name + '", ' + javaClass + '.createNearCacheConfiguration());');
+
+                    res.needEmptyLine = true;
+                }
+
+                res.line('System.out.println("Write some code here...");');
+
+                res.endBlock('}');
+            }
+            else
+                res.line('Ignition.start(' + javaClass + '.createConfiguration());');
+
             res.endBlock('}');
 
             res.endBlock('}');

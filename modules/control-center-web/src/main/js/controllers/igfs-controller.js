@@ -107,7 +107,7 @@ consoleModule.controller('igfsController', [
 
                     // Found duplicate.
                     if (idx >= 0 && idx != index)
-                        return showPopoverMessage(null, null, $table.tableFieldId(index, 'KeyPathMode'), 'Such path already exists!');
+                        return showPopoverMessage($scope.panels, 'misc', $table.tableFieldId(index, 'KeyPathMode'), 'Such path already exists!');
                 }
 
                 return true;

@@ -34,7 +34,6 @@ consoleModule.controller('summaryController', [
 
     $scope.evictionPolicies = [
         {value: 'LRU', label: 'LRU'},
-        {value: 'RND', label: 'Random'},
         {value: 'FIFO', label: 'FIFO'},
         {value: 'SORTED', label: 'Sorted'},
         {value: undefined, label: 'Not set'}
@@ -94,7 +93,7 @@ consoleModule.controller('summaryController', [
 
     $scope.generateJavaServer = function () {
         $scope.javaServer = $generatorJava.cluster($scope.selectedItem,
-            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false);
+            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false, null, false);
     };
 
     function selectPojoClass(config) {
@@ -169,7 +168,7 @@ consoleModule.controller('summaryController', [
         $scope.xmlClient = $generatorXml.cluster($scope.selectedItem, $scope.backupItem.nearConfiguration);
         $scope.javaClient = $generatorJava.cluster($scope.selectedItem,
             $scope.backupItem.javaClassClient === 2 ? 'ClientConfigurationFactory' : false,
-            $scope.backupItem.nearConfiguration, $scope.configServer.useConstructor);
+            $scope.backupItem.nearConfiguration, true);
     };
 
     $scope.$watch('backupItem', $scope.generateClient, true);
@@ -215,11 +214,11 @@ consoleModule.controller('summaryController', [
         zip.file('config/' + cluster.name + '-server.xml', $generatorXml.cluster(cluster));
         zip.file('config/' + cluster.name + '-client.xml', $generatorXml.cluster(cluster, clientNearConfiguration));
 
-        zip.file(srcPath + 'ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'ServerConfigurationFactory'));
-        zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', clientNearConfiguration));
+        zip.file(srcPath + 'ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'ServerConfigurationFactory', null, false));
+        zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', clientNearConfiguration, true));
         zip.file(srcPath + 'NodeStartup.java', $generatorJava.nodeStartup(cluster));
 
-        zip.file('pom.xml', $generatorPom.pom(cluster.caches, '1.5.0-IWC').asString());
+        zip.file('pom.xml', $generatorPom.pom(cluster, '1.5.0-IWC').asString());
 
         zip.file('README.txt', $generatorReadme.readme().asString());
         zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());

@@ -466,6 +466,7 @@ var NotebookSchema = new Schema({
         timeLineSpan: String,
         hideSystemColumns: Boolean,
         cacheName: String,
+        chartsOptions: {barChart: {stacked: Boolean}, areaChart: {style: String}},
         rate: {
             value: Number,
             unit: Number
