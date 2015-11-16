@@ -386,6 +386,8 @@ consoleModule.controller('sqlController',
         if (paragraph.result === new_result)
             return;
 
+        _saveChartSettings(paragraph);
+
         paragraph.result = new_result;
 
         if (paragraph.chart())
@@ -1089,6 +1091,24 @@ consoleModule.controller('sqlController',
         return '1';
     };
 
+    function _saveChartSettings(paragraph) {
+        if (!$common.isEmptyArray(paragraph.charts)) {
+            var chart = paragraph.charts[0].api.getScope().chart;
+
+            switch (paragraph.result) {
+                case 'bar':
+                    paragraph.barCharOptions = {stacked: chart.stacked()};
+
+                    break;
+
+                case 'area':
+                    paragraph.areaCharOptions = {style: chart.style()};
+
+                    break;
+            }
+        }
+    }
+
     function _chartApplySettings(paragraph, resetCharts) {
         if (resetCharts)
             paragraph.charts = [];
@@ -1239,7 +1259,7 @@ consoleModule.controller('sqlController',
                         tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS,
-                    stacked: true,
+                    stacked: paragraph.barCharOptions ? paragraph.barCharOptions.stacked : true,
                     showControls: true
                 }
             };
@@ -1340,7 +1360,8 @@ consoleModule.controller('sqlController',
                         axisLabel:  _yAxisLabel(paragraph),
                         tickFormat: _yAxisFormat
                     },
-                    color: CHART_COLORS
+                    color: CHART_COLORS,
+                    style: paragraph.areaCharOptions ? paragraph.areaCharOptions.style : 'stack'
                 }
             };
 
