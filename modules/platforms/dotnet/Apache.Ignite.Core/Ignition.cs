@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
@@ -268,7 +269,33 @@ namespace Apache.Ignite.Core
             _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
 
             // 3. Send configuration details to Java
-            // TODO: Write cache configurations
+            WriteConfiguration(outStream, cfg);
+        }
+
+        /// <summary>
+        /// Writes the configuration.
+        /// </summary>
+        /// <param name="outStream">The out stream.</param>
+        /// <param name="cfg">The CFG.</param>
+        private static void WriteConfiguration(PlatformMemoryStream outStream, IgniteConfiguration cfg)
+        {
+            Debug.Assert(outStream != null && cfg != null);
+
+            var caches = cfg.CacheConfiguration;
+
+            if (caches == null)
+                outStream.WriteInt(0);
+            else
+            {
+                outStream.WriteInt(caches.Count);
+
+                var writer = _startup.Marshaller.StartMarshal(outStream);
+
+                foreach (var cache in caches)
+                {
+                    writer.WriteString(cache.Name);
+                }
+            }
         }
 
         /// <summary>
