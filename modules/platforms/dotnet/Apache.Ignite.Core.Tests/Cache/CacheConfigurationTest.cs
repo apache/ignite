@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 CacheConfiguration = new List<CacheConfiguration>
                 {
-                    new CacheConfiguration {Name = "cacheName"}
+                    new CacheConfiguration("cacheName")
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions()
@@ -43,7 +43,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             using (var ignite = Ignition.Start(cfg))
             {
-                Assert.AreEqual(cacheName, ignite.GetCache<int, int>(cacheName).Name);
+                var cache = ignite.GetCache<int, int>(cacheName);
+
+                Assert.AreEqual(cacheName, cache.Name);
+
+                var cfg0 = cache.GetConfiguration();
+
+                Assert.AreEqual(cacheName, cfg0.Name);
             }
         }
     }

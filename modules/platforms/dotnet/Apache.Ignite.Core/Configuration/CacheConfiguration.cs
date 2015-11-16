@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
-        public CacheConfiguration(string name)
+        public CacheConfiguration(string name = null)
         {
             Name = name;
         }
