@@ -69,24 +69,6 @@ public class IgniteSink extends AbstractSink implements Configurable {
     public IgniteSink() {
     }
 
-//    /**
-//     * Constructor with provided grid instance.
-//     *
-//     * @param ignite Grid instance.
-//     */
-//    public IgniteSink(Ignite ignite) {
-//        this.ignite = ignite;
-//    }
-
-//    /**
-//     * Returns cache name for the sink.
-//     *
-//     * @return Cache name.
-//     */
-//    public String getCacheName() {
-//        return cacheName;
-//    }
-
     /**
      * Sink configurations with Ignite-specific settings.
      *

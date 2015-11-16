@@ -21,7 +21,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.flume.Channel;
 import org.apache.flume.Context;
-import org.apache.flume.Event;
 import org.apache.flume.Sink;
 import org.apache.flume.Transaction;
 import org.apache.flume.channel.MemoryChannel;
@@ -31,7 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -47,16 +46,8 @@ public class IgniteSinkTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "testCache";
 
-    /** Sink. */
-    private IgniteSink sink;
-
-    /** Sink context. */
-    private Context ctx;
-
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        G.stop(Thread.currentThread().getName(), true);
-
         stopAllGrids();
     }
 
@@ -65,12 +56,10 @@ public class IgniteSinkTest extends GridCommonAbstractTest {
      */
     public void testSink() throws Exception {
         IgniteConfiguration cfg = loadConfiguration("modules/flume/src/test/resources/example-ignite.xml");
-        
+
         cfg.setClientMode(false);
 
-        final Ignite grid = startGrid(Thread.currentThread().getName(), cfg);
-
-        initContext();
+        final Ignite grid = startGrid("igniteServerNode", cfg);
 
         Context channelContext = new Context();
 
@@ -83,8 +72,8 @@ public class IgniteSinkTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(EVENT_CNT);
 
-        final IgnitePredicate<org.apache.ignite.events.Event> putLsnr = new IgnitePredicate<org.apache.ignite.events.Event>() {
-            @Override public boolean apply(org.apache.ignite.events.Event evt) {
+        final IgnitePredicate<Event> putLsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 assert evt != null;
 
                 latch.countDown();
@@ -93,62 +82,61 @@ public class IgniteSinkTest extends GridCommonAbstractTest {
             }
         };
 
-        sink = new IgniteSink() {
-            // setting the listener on cache before sink processing starts.
+        IgniteSink sink = new IgniteSink() {
+            // Setting the listener on cache before sink processing starts.
             @Override synchronized public void start() {
                 super.start();
+
                 grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).localListen(putLsnr, EVT_CACHE_OBJECT_PUT);
             }
         };
+
         sink.setName("IgniteSink");
         sink.setChannel(memoryChannel);
+
+        Context ctx = new Context();
+
+        ctx.put(IgniteSinkConstants.CFG_CACHE_NAME, CACHE_NAME);
+        ctx.put(IgniteSinkConstants.CFG_PATH, "example-ignite.xml");
+        ctx.put(IgniteSinkConstants.CFG_EVENT_TRANSFORMER, "org.apache.ignite.stream.flume.TestEventTransformer");
 
         Configurables.configure(sink, ctx);
 
         sink.start();
 
-        Transaction tx = memoryChannel.getTransaction();
+        try {
+            Transaction tx = memoryChannel.getTransaction();
 
-        tx.begin();
+            tx.begin();
 
-        for (int i = 0; i < EVENT_CNT; i++) {
-            Event event = EventBuilder.withBody((String.valueOf(i) + ": " + i).getBytes());
+            for (int i = 0; i < EVENT_CNT; i++)
+                memoryChannel.put(EventBuilder.withBody((String.valueOf(i) + ": " + i).getBytes()));
 
-            memoryChannel.put(event);
+            tx.commit();
+            tx.close();
+
+            Sink.Status status = Sink.Status.READY;
+
+            while (status != Sink.Status.BACKOFF) {
+                status = sink.process();
+            }
         }
-        tx.commit();
-        tx.close();
-
-        Sink.Status status = Sink.Status.READY;
-
-        while (status != Sink.Status.BACKOFF) {
-            status = sink.process();
+        finally {
+            sink.stop();
         }
 
+        // Checks that 10000 events successfully processed in 10 seconds.
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
-        // Data check.
+        grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).stopLocalListen(putLsnr);
+
         IgniteCache<String, Integer> cache = grid.cache(CACHE_NAME);
 
+        // Checks that each event was processed properly.
         for (int i = 0; i < EVENT_CNT; i++) {
             assertEquals(i, (int)cache.get(String.valueOf(i)));
         }
 
         assertEquals(EVENT_CNT, cache.size(CachePeekMode.PRIMARY));
-
-        grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).stopLocalListen(putLsnr);
-
-        sink.stop();
-    }
-
-    /**
-     * Flume sink's context needed to start a data streamer.
-     */
-    private void initContext() {
-        ctx = new Context();
-
-        ctx.put(IgniteSinkConstants.CFG_CACHE_NAME, CACHE_NAME);
-        ctx.put(IgniteSinkConstants.CFG_PATH, "example-ignite.xml");
-        ctx.put(IgniteSinkConstants.CFG_EVENT_TRANSFORMER, "org.apache.ignite.stream.flume.TestEventTransformer");
     }
 }

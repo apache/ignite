@@ -40,8 +40,7 @@ public class TestEventTransformer implements EventTransformer<Event, String, Int
         String eventStr = new String(event.getBody());
 
         if (!eventStr.isEmpty()) {
-            // expects column-delimited one line
-            String[] tokens = eventStr.split(":");
+            String[] tokens = eventStr.split(":"); // Expects column-delimited one line.
 
             map.put(tokens[0].trim(), Integer.valueOf(tokens[1].trim()));
         }

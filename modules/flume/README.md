@@ -1,4 +1,4 @@
-#FlumeNG sink and Ignite streamer
+#Flume NG sink
 
 ## Setting up and running
 
@@ -23,9 +23,10 @@ plugins.d/
         `-- spring-expression-4.1.0.RELEASE.jar
 ```
 
-4. Specify Ignite configuration XML file's location with cache properties (see [Apache Ignite](http://apacheignite.gridgain.org)
-with cache name specified for cache creation, cache name (same as in Ignite configuration file),
-your EventTransformer's implementation class, and, optionally, batch size.
+4. In Flume configuration file, specify Ignite configuration XML file's location with cache properties
+(see [Apache Ignite](https://apacheignite.readme.io/) with cache name specified for cache creation,
+cache name (same as in Ignite configuration file), your EventTransformer's implementation class,
+and, optionally, batch size (default -- 100).
 
 ```
 # Describe the sink
@@ -36,4 +37,4 @@ a1.sinks.k1.eventTransformer = my.company.MyEventTransformer
 a1.sinks.k1.batchSize = 100
 ```
 
-Now you are ready to run a Flume agent.
+After specifying your source and channel (see Flume's docs), you are ready to run a Flume agent.
