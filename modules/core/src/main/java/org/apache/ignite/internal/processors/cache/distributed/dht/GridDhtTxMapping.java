@@ -52,22 +52,25 @@ public class GridDhtTxMapping {
     public void addMapping(List<ClusterNode> nodes) {
         ClusterNode primary = F.first(nodes);
 
-        Collection<ClusterNode> backups = F.view(nodes, F.notEqualTo(primary));
-
         if (last == null || !last.primary.equals(primary.id())) {
-            last = new TxMapping(primary, backups);
+            last = new TxMapping(primary);
 
             mappings.add(last);
         }
-        else
-            last.add(backups);
 
         Collection<UUID> storedBackups = txNodes.get(last.primary);
 
         if (storedBackups == null)
             txNodes.put(last.primary, storedBackups = new HashSet<>());
 
-        storedBackups.addAll(last.backups);
+        // Add backups.
+        for (int i = 1; i < nodes.size(); i++) {
+            ClusterNode backup = nodes.get(i);
+
+            last.add(backup);
+
+            storedBackups.add(backup.id());
+        }
     }
 
     /**
@@ -153,22 +156,18 @@ public class GridDhtTxMapping {
 
         /**
          * @param primary Primary node.
-         * @param backups Backup nodes.
          */
-        private TxMapping(ClusterNode primary, Iterable<ClusterNode> backups) {
+        private TxMapping(ClusterNode primary) {
             this.primary = primary.id();
 
-            this.backups = new HashSet<>();
-
-            add(backups);
+            backups = new HashSet<>();
         }
 
         /**
-         * @param backups Backup nodes.
+         * @param backup Backup node.
          */
-        private void add(Iterable<ClusterNode> backups) {
-            for (ClusterNode n : backups)
-                this.backups.add(n.id());
+        private void add(ClusterNode backup) {
+            backups.add(backup.id());
         }
     }
 }

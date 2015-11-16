@@ -71,7 +71,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Implicit single flag. */
     private boolean implicitSingle;
 
-    /** Explicit lock flag. Set to true if at leat one entry was explicitly locked. */
+    /** Explicit lock flag. Set to true if at least one entry was explicitly locked. */
     private boolean explicitLock;
 
     /** Subject ID. */

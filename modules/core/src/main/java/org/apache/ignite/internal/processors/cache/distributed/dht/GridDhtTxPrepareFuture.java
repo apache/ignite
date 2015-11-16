@@ -1111,18 +1111,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                             GridCacheContext<?, ?> cacheCtx = cached.context();
 
-                            if (entry.explicitVersion() == null) {
-                                GridCacheMvccCandidate added = cached.candidate(version());
-
-                                assert added != null : "Null candidate for non-group-lock entry " +
-                                    "[added=" + added + ", entry=" + entry + ']';
-                                assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
-                                    "[added=" + added + ", entry=" + entry + ']';
-
-                                if (added != null && added.ownerVersion() != null)
-                                    req.owned(entry.txKey(), added.ownerVersion());
-                            }
-
                             // Do not invalidate near entry on originating transaction node.
                             req.invalidateNearEntry(idx, !tx.nearNodeId().equals(n.id()) &&
                                 cached.readerId(n.id()) != null);
@@ -1131,7 +1119,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 List<ClusterNode> owners = cacheCtx.topology().owners(cached.partition(),
                                     tx != null ? tx.topologyVersion() : cacheCtx.affinity().affinityTopologyVersion());
 
-                                // Do not preload if local node is partition owner.
+                                // Do not preload if local node is a partition owner.
                                 if (!owners.contains(cctx.localNode()))
                                     req.markKeyForPreload(idx);
                             }
