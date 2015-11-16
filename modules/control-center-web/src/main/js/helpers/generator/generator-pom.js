@@ -21,14 +21,16 @@ $generatorPom = {};
 /**
  * Generate pom.xml.
  *
- * @param caches Collection of caches to take info about used JDBC dialects.
+ * @param cluster Cluster  to take info about dependencies.
  * @param igniteVersion Ignite version for Ignite dependencies.
  * @param res Resulting output with generated pom.
  * @returns {string} Generated content.
  */
-$generatorPom.pom = function (caches, igniteVersion, res) {
+$generatorPom.pom = function (cluster, igniteVersion, res) {
     if (!res)
         res = $generatorCommon.builder();
+
+    var caches = cluster.caches;
 
     var dialect = {};
 
@@ -108,6 +110,9 @@ $generatorPom.pom = function (caches, igniteVersion, res) {
     addDependency('org.apache.ignite', 'ignite-indexing', igniteVersion);
     addDependency('org.apache.ignite', 'ignite-rest-http', igniteVersion);
 
+    if (dialect.Generic)
+        addDependency('com.mchange', 'c3p0', '0.9.5.1');
+
     if (dialect.MySQL)
         addDependency('mysql', 'mysql-connector-java', '5.1.37');
 
@@ -125,6 +130,9 @@ $generatorPom.pom = function (caches, igniteVersion, res) {
 
     if (dialect.SQLServer)
         addDependency('microsoft', 'jdbc', '4.1', 'sqljdbc41.jar');
+
+    if (_.findIndex(cluster.igfss, function (igfs) { return igfs.secondaryFileSystemEnabled; }) >= 0)
+        addDependency('org.apache.ignite', 'ignite-hadoop', igniteVersion);
 
     res.endBlock('</dependencies>');
 
