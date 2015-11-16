@@ -93,6 +93,25 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests WaitForLocal.
+        /// </summary>
+        [Test]
+        public void TestWaitForLocalAsync()
+        {
+            Task.Factory.StartNew(() =>
+            {
+                Thread.Sleep(100);
+                GenerateTaskEvent();
+            });
+
+            int evtType = EvtType;  // test variable capture
+
+            var evt = Events.WaitForLocalAsync<JobEvent>(e => e.Type == evtType, EvtType).Result;
+
+            Assert.IsNotNull(evt);
+        }
+
+        /// <summary>
         /// Tests RemoteQuery.
         /// </summary>
         [Test]
@@ -103,6 +122,10 @@ namespace Apache.Ignite.Core.Tests
             int evtType = EvtType;  // test variable capture
 
             var events = Events.RemoteQuery<IEvent>(e => e.Type == evtType);
+
+            Assert.IsTrue(events.Cast<JobEvent>().Any());
+
+            events = Events.RemoteQueryAsync<IEvent>(e => e.Type == evtType).Result;
 
             Assert.IsTrue(events.Cast<JobEvent>().Any());
         }

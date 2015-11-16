@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Events
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Events;
     using A = Apache.Ignite.Core.Impl.Common.IgniteArgumentCheck;
 
@@ -72,6 +73,25 @@ namespace Apache.Ignite.Core.Events
         }
         
         /// <summary> 
+        /// Waits for the specified events. 
+        /// </summary>
+        /// <param name="events">Events instance.</param> 
+        /// <typeparam name="T">Type of events.</typeparam> 
+        /// <param name="filter">Optional filtering predicate. Event wait will end as soon as it returns false.</param> 
+        /// <param name="types">Types of the events to wait for.  
+        /// If not provided, all events will be passed to the filter.</param> 
+        /// <returns>Grid event.</returns> 
+        public static Task<T> WaitForLocalAsync<T>(this IEvents events, Func<T, bool> filter, params int[] types)
+            where T : IEvent
+        {
+            A.NotNull(events, "events");
+
+            var filter0 = filter == null ? null : new EventDelegateFilter<T>(filter);
+
+            return events.WaitForLocalAsync(filter0, types);
+        }
+        
+        /// <summary> 
         /// Queries nodes in this cluster group for events using passed in predicate filter for event selection. 
         /// </summary>
         /// <param name="events">Events instance.</param> 
@@ -88,6 +108,25 @@ namespace Apache.Ignite.Core.Events
             var filter0 = filter == null ? null : new EventDelegateFilter<T>(filter);
 
             return events.RemoteQuery(filter0, timeout, types);
+        }
+
+        /// <summary> 
+        /// Queries nodes in this cluster group for events using passed in predicate filter for event selection. 
+        /// </summary>
+        /// <param name="events">Events instance.</param> 
+        /// <typeparam name="T">Type of events.</typeparam> 
+        /// <param name="filter">Predicate filter used to query events on remote nodes.</param> 
+        /// <param name="timeout">Maximum time to wait for result, null or 0 to wait forever.</param> 
+        /// <param name="types">Event types to be queried.</param> 
+        /// <returns>Collection of grid events returned from specified nodes.</returns> 
+        public static Task<ICollection<T>> RemoteQueryAsync<T>(this IEvents events, Func<T, bool> filter, 
+            TimeSpan? timeout = null, params int[] types) where T : IEvent
+        {
+            A.NotNull(events, "events");
+
+            var filter0 = filter == null ? null : new EventDelegateFilter<T>(filter);
+
+            return events.RemoteQueryAsync(filter0, timeout, types);
         }
     }
 }
