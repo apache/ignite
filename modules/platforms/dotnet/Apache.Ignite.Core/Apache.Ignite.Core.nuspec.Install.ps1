@@ -16,7 +16,7 @@ Write-Host "Updating content files properties..."
 
 Function SetProperties
 {
-	param ($projItem)
+    param ($projItem)
     
     Write-Host $projItem.Name 
 
