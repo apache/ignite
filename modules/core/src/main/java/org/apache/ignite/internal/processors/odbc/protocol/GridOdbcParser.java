@@ -28,10 +28,12 @@ import org.apache.ignite.internal.processors.odbc.request.QueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.request.QueryFetchRequest;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 
 /**
  * ODBC protocol parser.
@@ -202,14 +204,12 @@ public class GridOdbcParser implements GridNioParser {
      * @throws IOException if the type of the response is unknown to the parser.
      */
     private void writeResponse(GridNioSession ses, BinaryWriterExImpl writer, GridOdbcResponse rsp) throws IOException {
-        //TODO: implement error encoding.
+        // Writing status
+        writer.writeByte(rsp.getSuccessStatus());
+
         if (rsp.getSuccessStatus() != GridOdbcResponse.STATUS_SUCCESS) {
-
-            System.out.println("Error: " + rsp.getError());
-
-            ses.close();
-
-            return;
+            //TODO: implement error encoding.
+            throw new IOException(rsp.getError());
         }
 
         Object res0 = rsp.getResponse();
@@ -220,6 +220,13 @@ public class GridOdbcParser implements GridNioParser {
             System.out.println("Resulting query ID: " + res.getQueryId());
 
             writer.writeLong(res.getQueryId());
+
+            Collection<Object> items = res.getItems();
+            if (items != null) {
+                writer.writeBoolean(res.getLast());
+
+                U.writeCollection(writer, items);
+            }
         } else {
             throw new IOException("Failed to serialize response packet (unknown response type) [ses=" + ses + "]");
         }

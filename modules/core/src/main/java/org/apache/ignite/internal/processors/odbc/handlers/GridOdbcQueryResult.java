@@ -10,10 +10,10 @@ public class GridOdbcQueryResult {
     private long queryId;
 
     /** Query result rows. */
-    private List<Object> items;
+    private List<Object> items = null;
 
     /** Flag indicating the query has no unfetched results. */
-    private boolean last;
+    private boolean last = false;
 
     /**
      * @param queryId Query ID.
