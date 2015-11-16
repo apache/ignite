@@ -296,7 +296,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             markInitialized();
         }
         catch (TransactionTimeoutException e) {
-            onError( e);
+            onError(e);
         }
     }
 
@@ -359,8 +359,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             return;
         }
-
-        tx.addEntryMapping(mappings);
 
         cctx.mvcc().recheckPendingLocks();
 
@@ -543,6 +541,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
             }
         }
+
+        tx.addEntryMapping(primary, cacheCtx.isNear(), entry.explicitVersion() != null, entry);
 
         return cur;
     }

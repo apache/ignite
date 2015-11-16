@@ -548,36 +548,35 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /**
-     * @param maps Mappings.
+     * Adds mapping to the transaction. Note that transaction must hold a copy of TX mapping because
+     * tx mapping will be sent to remote nodes.
+     *
+     * @param primary Primary node for which the mapping is being added.
+     * @param near Near mapping flag.
+     * @param explicitLock Explicit lock flag.
+     * @param txEntry Transaction entry being added.
      */
-    void addEntryMapping(@Nullable Collection<GridDistributedTxMapping> maps) {
-        if (!F.isEmpty(maps)) {
-            for (GridDistributedTxMapping map : maps) {
-                ClusterNode n = map.node();
+    void addEntryMapping(ClusterNode primary, boolean near, boolean explicitLock, IgniteTxEntry txEntry) {
+        UUID nodeId = primary.id();
+        GridDistributedTxMapping m = mappings.get(nodeId);
 
-                GridDistributedTxMapping m = mappings.get(n.id());
+        if (m == null) {
+            GridDistributedTxMapping old = mappings.putIfAbsent(nodeId, m = new GridDistributedTxMapping(primary));
 
-                if (m == null) {
-                    GridDistributedTxMapping old = mappings.putIfAbsent(map.node().id(), map);
-
-                    assert old == null : "Failed to add mapping to transaction: " + this;
-                }
-                else {
-                    if (map.near())
-                        m.near(map.near());
-
-                    if (map.explicitLock())
-                        m.markExplicitLock();
-
-                    for (IgniteTxEntry entry : map.entries())
-                        m.add(entry);
-                }
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Added mappings to transaction [locId=" + cctx.localNodeId() + ", mappings=" + maps +
-                    ", tx=" + this + ']');
+            assert old == null : "Failed to add mapping to transaction: " + this;
         }
+
+        if (near)
+            m.near(true);
+
+        if (explicitLock)
+            m.markExplicitLock();
+
+        m.add(txEntry);
+
+        if (log.isDebugEnabled())
+            log.debug("Added mapping to transaction [locId=" + cctx.localNodeId() + ", primaryId=" + nodeId +
+                ", entry=" + txEntry + ']');
     }
 
     /**

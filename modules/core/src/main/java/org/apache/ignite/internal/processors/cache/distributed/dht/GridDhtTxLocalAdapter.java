@@ -394,19 +394,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
-     * @param mappings Mappings to add.
-     */
-    public void addDhtMapping(Map<UUID, GridDistributedTxMapping> mappings) {
-        addMapping0(mappings, dhtMap);
-    }
-
-    /**
-     * @param mappings Mappings to add.
-     */
-    public void addNearMapping(Map<UUID, GridDistributedTxMapping> mappings) {
-        addMapping0(mappings, nearMap);
-    }
-    /**
      * @param nodeId Node ID.
      * @return {@code True} if mapping was removed.
      */
@@ -486,26 +473,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                     m.add(txEntry);
                 }
-            }
-        }
-    }
-
-    /**
-     * @param mappings Mappings to add.
-     * @param dst Map to add to.
-     */
-    private void addMapping0(
-        Map<UUID, GridDistributedTxMapping> mappings,
-        Map<UUID, GridDistributedTxMapping> dst
-    ) {
-        for (Map.Entry<UUID, GridDistributedTxMapping> entry : mappings.entrySet()) {
-            GridDistributedTxMapping targetMapping = dst.get(entry.getKey());
-
-            if (targetMapping == null)
-                dst.put(entry.getKey(), entry.getValue());
-            else {
-                for (IgniteTxEntry txEntry : entry.getValue().entries())
-                    targetMapping.add(txEntry);
             }
         }
     }
