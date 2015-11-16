@@ -6,8 +6,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcCommandHandler;
 import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcQueryCommandHandler;
-import org.apache.ignite.internal.processors.odbc.protocol.GridOdbcCommand;
 import org.apache.ignite.internal.processors.odbc.protocol.GridTcpOdbcServer;
+import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -21,6 +21,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.jsr166.LongAdder8;
 
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
@@ -43,7 +44,7 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /** Command handlers. */
-    protected final Map<GridOdbcCommand, GridOdbcCommandHandler> handlers = new EnumMap<>(GridOdbcCommand.class);
+    protected final Map<Integer, GridOdbcCommandHandler> handlers = new HashMap<>();
 
     /** Protocol handler. */
     private final GridOdbcProtocolHandler protoHnd = new GridOdbcProtocolHandler() {
@@ -264,7 +265,7 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Added ODBC command handler: " + hnd);
 
-        for (GridOdbcCommand cmd : hnd.supportedCommands()) {
+        for (int cmd : hnd.supportedCommands()) {
             assert !handlers.containsKey(cmd) : cmd;
 
             handlers.put(cmd, hnd);

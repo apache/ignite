@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.odbc.GridOdbcProtocolHandler;
-import org.apache.ignite.internal.processors.odbc.GridOdbcRequest;
+import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
 import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
@@ -75,23 +75,25 @@ public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<GridOdb
     public void onMessage(GridNioSession ses, GridOdbcRequest msg) {
         assert msg != null;
 
-        System.out.println("Query: " + msg.sqlQuery());
+        System.out.println("Query: " + msg.command());
 
         hnd.handleAsync(msg).listen(new CI1<IgniteInternalFuture<GridOdbcResponse>>() {
             @Override public void apply(IgniteInternalFuture<GridOdbcResponse> fut) {
-                GridOdbcResponse restRes;
+                GridOdbcResponse res;
 
                 try {
-                    restRes = fut.get();
+                    res = fut.get();
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to process client request: " + msg, e);
 
-                    restRes = new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
+                    res = new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
                         "Failed to process client request: " + e.getMessage());
                 }
 
-                GridNioFuture<?> sf = ses.send(restRes);
+                System.out.println("Resulting success status: " + res.getSuccessStatus());
+
+                GridNioFuture<?> sf = ses.send(res);
 
                 // Check if send failed.
                 if (sf.isDone())

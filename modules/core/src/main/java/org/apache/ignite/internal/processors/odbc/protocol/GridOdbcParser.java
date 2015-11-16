@@ -1,12 +1,15 @@
 package org.apache.ignite.internal.processors.odbc.protocol;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.portable.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.odbc.GridOdbcRequest;
+import org.apache.ignite.internal.portable.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
 import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
 import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcQueryResult;
+import org.apache.ignite.internal.processors.odbc.request.QueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.request.QueryExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.request.QueryFetchRequest;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
@@ -77,16 +80,22 @@ public class GridOdbcParser implements GridNioParser {
             IgniteCheckedException {
         byte[] message = tryConstructMessage(buf);
 
-        return message == null ? null : parseMessage(message);
+        return message == null ? null : parseMessage(ses, message);
     }
 
     @Override public ByteBuffer encode(GridNioSession ses, Object msg0) throws IOException, IgniteCheckedException {
         assert msg0 != null;
+        assert msg0 instanceof GridOdbcResponse;
+
+        System.out.println("Encoding query processing result");
 
         GridOdbcResponse msg = (GridOdbcResponse)msg0;
 
         //TODO: implement error encoding.
         if (msg.getSuccessStatus() != GridOdbcResponse.STATUS_SUCCESS) {
+
+            System.out.println("Error: " + msg.getError());
+
             ses.close();
 
             return null;
@@ -98,28 +107,71 @@ public class GridOdbcParser implements GridNioParser {
 
         GridOdbcQueryResult result = (GridOdbcQueryResult) result0;
 
-        ByteBuffer response = ByteBuffer.allocate(8 + 4);
+        System.out.println("Resulting query ID: " + result.getQueryId());
 
-        response.putInt(8);
-        response.putLong(result.getQueryId());
+        ByteBuffer buf = ByteBuffer.allocate(8 + 4);
 
-        return response;
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, 0, false);
+
+        buf.putInt(8);
+        buf.putLong(result.getQueryId());
+
+        System.out.println("Remaining: " + buf.remaining());
+
+        buf.flip();
+
+        return buf;
     }
 
-    private GridOdbcRequest parseMessage(byte[] msg) {
+    private GridOdbcRequest parseMessage(GridNioSession ses, byte[] msg) throws IOException {
         BinaryReaderExImpl reader = new BinaryReaderExImpl(null, msg, 0, null);
 
-        boolean local = reader.readBoolean();
-        String sql = reader.readString();
-        int pageSize = reader.readInt();
-        int argsNum = reader.readInt();
+        GridOdbcRequest res;
 
-        System.out.println("Message:");
-        System.out.println("local: " + local);
-        System.out.println("query: " + sql);
-        System.out.println("pageSize: " + pageSize);
-        System.out.println("argsNum: " + argsNum);
+        byte cmd = reader.readByte();
 
-        return new GridOdbcRequest(sql, pageSize);
+        switch (cmd) {
+            case GridOdbcRequest.EXECUTE_SQL_QUERY: {
+                String cache = reader.readString();
+                String sql = reader.readString();
+                int argsNum = reader.readInt();
+
+                System.out.println("Message EXECUTE_SQL_QUERY:");
+                System.out.println("cache: " + cache);
+                System.out.println("query: " + sql);
+                System.out.println("argsNum: " + argsNum);
+
+                res = new QueryExecuteRequest(cache, sql);
+                break;
+            }
+
+            case GridOdbcRequest.FETCH_SQL_QUERY: {
+                long queryId = reader.readLong();
+                int pageSize = reader.readInt();
+
+                System.out.println("Message FETCH_SQL_QUERY:");
+                System.out.println("queryId: " + queryId);
+                System.out.println("pageSize: " + pageSize);
+
+                res = new QueryFetchRequest(queryId, pageSize);
+                break;
+            }
+
+            case GridOdbcRequest.CLOSE_SQL_QUERY: {
+                long queryId = reader.readLong();
+
+                System.out.println("Message CLOSE_SQL_QUERY:");
+                System.out.println("queryId: " + queryId);
+
+                res = new QueryCloseRequest(queryId);
+                break;
+            }
+
+            default:
+                throw new IOException("Failed to parse incoming packet (unknown command type) [ses=" + ses +
+                        ", cmd=[" + Byte.toString(cmd) + ']');
+        }
+
+        return res;
     }
 }

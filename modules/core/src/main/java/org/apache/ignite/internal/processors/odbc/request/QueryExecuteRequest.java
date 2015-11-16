@@ -1,59 +1,36 @@
-package org.apache.ignite.internal.processors.odbc;
-
-import org.apache.ignite.internal.processors.odbc.protocol.GridOdbcCommand;
+package org.apache.ignite.internal.processors.odbc.request;
 
 /**
- * ODBC command request.
+ * ODBC query execute request.
  */
-public class GridOdbcRequest {
-
-    /** Command. */
-    private GridOdbcCommand cmd;
-
+public class QueryExecuteRequest extends GridOdbcRequest {
     /** Sql query. */
     private String sqlQry;
 
     /** Sql query arguments. */
     private Object[] args;
 
-    /** Page size. */
-    private Integer pageSize;
-
     /** Cache name. */
     private String cacheName;
 
     /**
+     * @param cacheName Cache name.
      * @param sqlQry SQL query.
-     * @param pageSize Page size.
      */
-    public GridOdbcRequest(String sqlQry, int pageSize) {
-        this(sqlQry, pageSize, null);
+    public QueryExecuteRequest(String cacheName, String sqlQry) {
+        this(cacheName, sqlQry, null);
     }
 
     /**
+     * @param cacheName Cache name.
      * @param sqlQry SQL query.
-     * @param pageSize Page size.
      * @param args Arguments list.
      */
-    public GridOdbcRequest(String sqlQry, int pageSize, Object[] args) {
-        this.cmd = GridOdbcCommand.EXECUTE_SQL_QUERY;
+    public QueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
+        super(EXECUTE_SQL_QUERY);
+        this.cacheName = cacheName;
         this.sqlQry = sqlQry;
-        this.pageSize = pageSize;
         this.args = args;
-    }
-
-    /**
-     * @return Command.
-     */
-    public GridOdbcCommand command() {
-        return cmd;
-    }
-
-    /**
-     * @param cmd Command.
-     */
-    public void command(GridOdbcCommand cmd) {
-        this.cmd = cmd;
     }
 
     /**
@@ -85,20 +62,6 @@ public class GridOdbcRequest {
     }
 
     /**
-     * @param pageSize Page size.
-     */
-    public void pageSize(Integer pageSize) {
-        this.pageSize = pageSize;
-    }
-
-    /**
-     * @return Page size.
-     */
-    public int pageSize() {
-        return pageSize;
-    }
-
-    /**
      * @param cacheName Cache name.
      */
     public void cacheName(String cacheName) {
@@ -111,5 +74,4 @@ public class GridOdbcRequest {
     public String cacheName() {
         return cacheName;
     }
-
 }

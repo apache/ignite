@@ -1,11 +1,19 @@
 package org.apache.ignite.internal.processors.odbc.handlers;
 
+import java.util.List;
+
 /**
  * Query result.
  */
 public class GridOdbcQueryResult {
     /** Query ID. */
     private long queryId;
+
+    /** Query result rows. */
+    private List<Object> items;
+
+    /** Flag indicating the query has no unfetched results. */
+    private boolean last;
 
     /**
      * @param queryId Query ID.
@@ -19,5 +27,33 @@ public class GridOdbcQueryResult {
      */
     public long getQueryId() {
         return queryId;
+    }
+
+    /**
+     * @param items Query result rows.
+     */
+    public void setItems(List<Object> items) {
+        this.items = items;
+    }
+
+    /**
+     * @return Query result rows.
+     */
+    public List<Object> getItems() {
+        return items;
+    }
+
+    /**
+     * @return Flag indicating the query has no unfetched results.
+     */
+    public boolean getLast() {
+        return last;
+    }
+
+    /**
+     * @param last Flag indicating the query has no unfetched results.
+     */
+    public void setLast(boolean last) {
+        this.last = last;
     }
 }

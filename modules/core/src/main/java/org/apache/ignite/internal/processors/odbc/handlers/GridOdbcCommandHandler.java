@@ -1,9 +1,8 @@
 package org.apache.ignite.internal.processors.odbc.handlers;
 
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.odbc.GridOdbcRequest;
+import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
 import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
-import org.apache.ignite.internal.processors.odbc.protocol.GridOdbcCommand;
 
 import java.util.Collection;
 
@@ -14,7 +13,7 @@ public interface GridOdbcCommandHandler {
     /**
      * @return Collection of supported commands.
      */
-    public Collection<GridOdbcCommand> supportedCommands();
+    public Collection<Integer> supportedCommands();
 
     /**
      * @param req Request.
