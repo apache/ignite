@@ -74,41 +74,22 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <returns>Event.</returns>
         private static ICacheEntryEvent<TK, TV> ReadEvent0<TK, TV>(BinaryReader reader)
         {
-            reader.DetachNext();
-            TK key = reader.ReadObject<TK>();
+            var key = reader.DetachNext().ReadObject<TK>();
 
-            reader.DetachNext();
-            TV oldVal = reader.ReadObject<TV>();
+            // Read as objects: TV may be value type
+            TV oldVal, val;
 
-            reader.DetachNext();
-            TV val = reader.ReadObject<TV>();
+            var hasOldVal = reader.DetachNext().TryDeserialize(out oldVal);
+            var hasVal = reader.DetachNext().TryDeserialize(out val);
 
-            return CreateEvent(key, oldVal, val);
-        }
+            Debug.Assert(hasVal || hasOldVal);
 
-        /// <summary>
-        /// Create event.
-        /// </summary>
-        /// <param name="key">Key.</param>
-        /// <param name="oldVal">Old value.</param>
-        /// <param name="val">Value.</param>
-        /// <returns>Event.</returns>
-        public static ICacheEntryEvent<TK, TV> CreateEvent<TK, TV>(TK key, TV oldVal, TV val)
-        {
-            if (oldVal == null)
-            {
-                Debug.Assert(val != null);
-
+            if (!hasOldVal)
                 return new CacheEntryCreateEvent<TK, TV>(key, val);
-            }
 
-            if (val == null)
-            {
-                Debug.Assert(oldVal != null);
-
+            if (!hasVal)
                 return new CacheEntryRemoveEvent<TK, TV>(key, oldVal);
-            }
-            
+
             return new CacheEntryUpdateEvent<TK, TV>(key, oldVal, val);
         }
     }
