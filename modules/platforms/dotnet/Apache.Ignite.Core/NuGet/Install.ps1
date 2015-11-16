@@ -31,7 +31,7 @@ SetProperties $project.ProjectItems.Item("Config").ProjectItems.Item("default-co
 #    SetProperties $item
 # }
 
-. (Join-Path $toolsPath "GetSqlCEPostBuildCmd.ps1")
+. (Join-Path $toolsPath "PostBuild.ps1")
 
 # Get the current Post Build Event cmd
 $currentPostBuildCmd = $project.Properties.Item("PostBuildEvent").Value

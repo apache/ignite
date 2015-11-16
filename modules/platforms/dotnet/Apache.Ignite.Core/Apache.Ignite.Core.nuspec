@@ -56,6 +56,7 @@ Creating NuGet package:
         
         <!-- Install script should be in tools -->
         <file src="NuGet\Install.ps1" target="tools" />
+        <file src="NuGet\PostBuild.ps1" target="tools" />
         
         <!-- Other files should go to Content folder to be automatically included in project. -->
         <file src="..\..\..\..\config\default-config.xml" target="Content\Config" />
