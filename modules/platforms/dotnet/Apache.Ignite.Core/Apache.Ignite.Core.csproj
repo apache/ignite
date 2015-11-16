@@ -107,6 +107,7 @@
     <Compile Include="Compute\IComputeJobResult.cs" />
     <Compile Include="Compute\IComputeReducer.cs" />
     <Compile Include="Compute\IComputeTask.cs" />
+    <Compile Include="Configuration\CacheConfiguration.cs" />
     <Compile Include="Datastream\IDataStreamer.cs" />
     <Compile Include="Datastream\IStreamReceiver.cs" />
     <Compile Include="Datastream\StreamTransformer.cs" />
@@ -370,6 +371,7 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.snk" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

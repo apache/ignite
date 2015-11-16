@@ -168,6 +168,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     private void processPrepareResult(PlatformInputStream in) {
         assert cfg != null;
 
+        // TODO: Read configuration details from PrepareConfiguration
+
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);
         List<PlatformLifecycleBean> newBeans = new ArrayList<>();
 
