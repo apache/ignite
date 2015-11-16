@@ -22,5 +22,9 @@ namespace Apache.Ignite.Core.Configuration
     /// </summary>
     public class CacheConfiguration
     {
+        /// <summary>
+        /// Gets or sets the cache name.
+        /// </summary>
+        public string Name { get; set; }
     }
 }

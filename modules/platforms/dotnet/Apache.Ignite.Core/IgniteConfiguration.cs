@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Lifecycle;
 
     /// <summary>
@@ -58,8 +59,8 @@ namespace Apache.Ignite.Core
             JvmClasspath = cfg.JvmClasspath;
             SuppressWarnings = cfg.SuppressWarnings;
 
-            JvmOptions = cfg.JvmOptions != null ? new List<string>(cfg.JvmOptions) : null;
-            Assemblies = cfg.Assemblies != null ? new List<string>(cfg.Assemblies) : null;
+            JvmOptions = CopyList(cfg.JvmOptions);
+            Assemblies = CopyList(cfg.Assemblies);
 
             BinaryConfiguration = cfg.BinaryConfiguration != null
                 ? new BinaryConfiguration(cfg.BinaryConfiguration)
@@ -69,6 +70,8 @@ namespace Apache.Ignite.Core
 
             JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
+
+            CacheConfiguration = CopyList(cfg.CacheConfiguration);
         }
 
         /// <summary>
@@ -78,6 +81,14 @@ namespace Apache.Ignite.Core
         /// The binary configuration.
         /// </value>
         public BinaryConfiguration BinaryConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache configuration.
+        /// </summary>
+        /// <value>
+        /// The cache configuration.
+        /// </value>
+        public ICollection<CacheConfiguration> CacheConfiguration { get; set; }
 
         /// <summary>
         /// URL to Spring configuration file.
@@ -115,7 +126,7 @@ namespace Apache.Ignite.Core
         /// assemblies reside.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public IList<string> Assemblies { get; set; }
+        public ICollection<string> Assemblies { get; set; }
 
         /// <summary>
         /// Whether to suppress warnings.
@@ -139,5 +150,13 @@ namespace Apache.Ignite.Core
         /// Defaults to <see cref="DefaultJvmMaxMem"/>.
         /// </summary>
         public int JvmMaxMemoryMb { get; set; }
+
+        /// <summary>
+        /// Copies the list.
+        /// </summary>
+        private static List<T> CopyList<T>(ICollection<T> collection)
+        {
+            return collection == null ? null : new List<T>(collection);
+        }
     }
 }
