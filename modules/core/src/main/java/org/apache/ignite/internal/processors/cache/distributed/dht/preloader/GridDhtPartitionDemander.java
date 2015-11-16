@@ -420,8 +420,8 @@ public class GridDhtPartitionDemander {
                                     rebalanceTopics.get(cnt), initD, cctx.ioPolicy(), initD.timeout());
                         }
 
-                        if (log.isDebugEnabled())
-                            log.debug("Requested rebalancing [from node=" + node.id() + ", listener index=" +
+                       // if (log.isDebugEnabled())
+                            U.log(log, "Requested rebalancing [from node=" + node.id() + ", listener index=" +
                                 cnt + ", partitions count=" + sParts.get(cnt).size() +
                                 " (" + partitionsList(sParts.get(cnt)) + ")]");
                     }
@@ -952,6 +952,8 @@ public class GridDhtPartitionDemander {
                 if (isDone())
                     return;
 
+                U.log(log, "Loaded partition: [cache=" + cctx.name() + ", part=" + p + ", fromNode=" + nodeId + "]");
+
                 if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_LOADED))
                     preloadEvent(p, EVT_CACHE_REBALANCE_PART_LOADED,
                         exchFut.discoveryEvent());
@@ -1037,6 +1039,23 @@ public class GridDhtPartitionDemander {
                     ((GridFutureAdapter)cctx.preloader().syncFuture()).onDone();
 
                 onDone(!cancelled);
+            }
+        }
+    }
+
+    /**
+     * Dumps debug information.
+     */
+    public void dumpDebugInfo() {
+        synchronized (rebalanceFut) {
+            if (!rebalanceFut.remaining.isEmpty()) {
+                U.warn(log, "Rebalancing demander unfinished partitions:");
+
+                for (Map.Entry<UUID, T2<Long, Collection<Integer>>> entry : rebalanceFut.remaining.entrySet()) {
+                    if (entry.getValue().get2() != null) {
+                        U.warn(log, ">>> [node=" + entry.getKey() + ", parts=" + entry.getValue().get2().toString());
+                    }
+                }
             }
         }
     }

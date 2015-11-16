@@ -825,6 +825,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         }
 
         supplier.dumpDebugInfo();
+        demander.dumpDebugInfo();
     }
 
     /**

@@ -35,13 +35,26 @@ public class IgniteCacheFailoverTestSuite3 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Failover Test Suite3");
 
-        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
-        suite.addTestSuite(IgniteCachePutRetryAtomicPrimaryWriteOrderSelfTest.class);
-        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
+//        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
+//        suite.addTestSuite(IgniteCachePutRetryAtomicPrimaryWriteOrderSelfTest.class);
+//        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
 
         // Disable SSL test with old JDK because of https://bugs.openjdk.java.net/browse/JDK-8013809.
         if (!IgniteUtils.isHotSpot() || IgniteUtils.isJavaVersionAtLeast("1.7.0_65"))
             suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
 
         return suite;
     }
