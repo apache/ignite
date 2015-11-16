@@ -126,6 +126,7 @@
     <Compile Include="Events\DiscoveryEvent.cs" />
     <Compile Include="Events\EventBase.cs" />
     <Compile Include="Events\EventReader.cs" />
+    <Compile Include="Events\EventsExtensions.cs" />
     <Compile Include="Events\EventType.cs" />
     <Compile Include="Events\IEvent.cs" />
     <Compile Include="Events\IEventFilter.cs" />
@@ -220,6 +221,7 @@
     <Compile Include="Impl\Datastream\DataStreamerRemoveEntry.cs" />
     <Compile Include="Impl\Datastream\StreamReceiverHolder.cs" />
     <Compile Include="Impl\DataStructures\AtomicLong.cs" />
+    <Compile Include="Impl\Events\EventDelegateFilter.cs" />
     <Compile Include="Impl\Events\Events.cs" />
     <Compile Include="Impl\Events\RemoteListenEventFilter.cs" />
     <Compile Include="Impl\ExceptionUtils.cs" />
