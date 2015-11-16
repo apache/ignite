@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System;
     using System.Linq;
     using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Tests;
     using NUnit.Framework;
@@ -32,7 +33,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class ComputeExtensionsTest : IgniteTestBase
     {
         /** */
-        private string testCapturedString = "testFieldValue";
+        private string _testCapturedString = "testFieldValue";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeExtensionsTest"/> class.
@@ -66,13 +67,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(testVal, Compute.Call(new Func<object>[] {() => testVal}, x => x.Single()));
 
             // Test captured field
-            Assert.AreEqual(testCapturedString, Compute.Call(() => testCapturedString));
+            Assert.AreEqual(_testCapturedString, Compute.Call(() => _testCapturedString));
 
-            CollectionAssert.AreEquivalent(new[] {testCapturedString},
-                Compute.Call(new Func<object>[] {() => testCapturedString}));
+            CollectionAssert.AreEquivalent(new[] {_testCapturedString},
+                Compute.Call(new Func<object>[] {() => _testCapturedString}));
 
-            Assert.AreEqual(testCapturedString,
-                Compute.Call(new Func<object>[] {() => testCapturedString}, x => x.Single()));
+            Assert.AreEqual(_testCapturedString,
+                Compute.Call(new Func<object>[] {() => _testCapturedString}, x => x.Single()));
 
             // Test unsupported types
             testVal = new NonSerializable();
@@ -94,9 +95,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(testVal, result);
 
             // Test captured field
-            result = Compute.AffinityCall(null, 1, () => testCapturedString);
+            result = Compute.AffinityCall(null, 1, () => _testCapturedString);
 
-            Assert.AreEqual(testCapturedString, result);
+            Assert.AreEqual(_testCapturedString, result);
 
             // Test unsupported types
             testVal = new NonSerializable();
@@ -131,20 +132,20 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual("test1", Compute.Apply(x => testVal + x, new[] { 1 }, x => x.Single()));
 
             // Test captured field
-            Assert.AreEqual(testCapturedString + 1, Compute.Apply(x => testCapturedString + x, 1));
+            Assert.AreEqual(_testCapturedString + 1, Compute.Apply(x => _testCapturedString + x, 1));
 
-            CollectionAssert.AreEquivalent(args.Select(x => testCapturedString + x),
-                Compute.Apply<int, string>(x => testCapturedString + x, args));
+            CollectionAssert.AreEquivalent(args.Select(x => _testCapturedString + x),
+                Compute.Apply<int, string>(x => _testCapturedString + x, args));
 
-            Assert.AreEqual(testCapturedString + 1,
-                Compute.Apply(x => testCapturedString + x, new[] {1}, x => x.Single()));
+            Assert.AreEqual(_testCapturedString + 1,
+                Compute.Apply(x => _testCapturedString + x, new[] {1}, x => x.Single()));
 
             // Test unsupported types
             var testInvalid = new NonSerializable();
 
-            Assert.Throws<SerializationException>(() => Compute.Apply(x => x.ToString(), testInvalid));
+            Assert.Throws<BinaryObjectException>(() => Compute.Apply(x => x.ToString(), testInvalid));
 
-            Assert.Throws<SerializationException>(
+            Assert.Throws<BinaryObjectException>(
                 () => Compute.Apply<object, string>(x => x.ToString(), new[] {testInvalid}));
 
             Assert.Throws<SerializationException>(
@@ -174,11 +175,11 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(5, x);
 
             // Test captured field
-            var expected = testCapturedString + "1";
+            var expected = _testCapturedString + "1";
 
-            Grid.GetCluster().ForLocal().GetCompute().Run(() => testCapturedString += "1");
+            Grid.GetCluster().ForLocal().GetCompute().Run(() => _testCapturedString += "1");
 
-            Assert.AreEqual(expected, testCapturedString);
+            Assert.AreEqual(expected, _testCapturedString);
 
             // Test unsupported type
             var testInvalid = new NonSerializable();
@@ -207,11 +208,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 if (isLocal)
                 {
-                    var expected = testCapturedString + "1";
+                    var expected = _testCapturedString + "1";
                     
-                    Compute.AffinityRun(null, i, () => testCapturedString += "1");
+                    Compute.AffinityRun(null, i, () => _testCapturedString += "1");
 
-                    Assert.AreEqual(expected, testCapturedString);
+                    Assert.AreEqual(expected, _testCapturedString);
                 }
 
                 // Test unsupported type
@@ -235,11 +236,11 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(2, x);
 
             // field capture
-            var expected = testCapturedString + "1";
+            var expected = _testCapturedString + "1";
 
-            Compute.Broadcast(() => testCapturedString += "1");
+            Compute.Broadcast(() => _testCapturedString += "1");
 
-            Assert.AreEqual(expected, testCapturedString);
+            Assert.AreEqual(expected, _testCapturedString);
 
             // unsupported type
             Assert.Throws<SerializationException>(() =>
@@ -265,8 +266,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(new[] { 10, 10 }, Compute.Broadcast(() => x));
 
             // field capture
-            Assert.AreEqual(new[] {testCapturedString, testCapturedString}, 
-                Compute.Broadcast(() => testCapturedString));
+            Assert.AreEqual(new[] {_testCapturedString, _testCapturedString}, 
+                Compute.Broadcast(() => _testCapturedString));
 
             // unsupported type
             Assert.Throws<SerializationException>(() =>
@@ -292,8 +293,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(new[] { 13, 13 }, Compute.Broadcast(a => x + a, 3));
 
             // field capture
-            Assert.AreEqual(new[] {testCapturedString + "5", testCapturedString + "5"}, 
-                Compute.Broadcast(a => testCapturedString + a, "5"));
+            Assert.AreEqual(new[] {_testCapturedString + "5", _testCapturedString + "5"}, 
+                Compute.Broadcast(a => _testCapturedString + a, "5"));
 
             // unsupported type
             Assert.Throws<SerializationException>(() =>
