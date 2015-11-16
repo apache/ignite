@@ -289,6 +289,9 @@ public class DirectByteBufferStream {
     private long prim;
 
     /** */
+    private int primShift;
+
+    /** */
     private boolean lastFinished;
 
     /** */
@@ -365,17 +368,17 @@ public class DirectByteBufferStream {
      * @param val Value.
      */
     public void writeInt(int val) {
-        if (val == Integer.MAX_VALUE)
-            val = Integer.MIN_VALUE;
-        else
-            val++;
-
         lastFinished = buf.remaining() >= 5;
 
         if (lastFinished) {
+            if (val == Integer.MAX_VALUE)
+                val = Integer.MIN_VALUE;
+            else
+                val++;
+
             int pos = buf.position();
 
-            while ((val & 0xFFFFFF80) != 0) {
+            while ((val & 0xFFFF_FF80) != 0) {
                 byte b = (byte)(val | 0x80);
 
                 UNSAFE.putByte(heapArr, baseOff + pos++, b);
@@ -383,7 +386,7 @@ public class DirectByteBufferStream {
                 val >>>= 7;
             }
 
-            UNSAFE.putByte(heapArr, baseOff + pos++, (byte) val);
+            UNSAFE.putByte(heapArr, baseOff + pos++, (byte)val);
 
             buf.position(pos);
         }
@@ -396,9 +399,14 @@ public class DirectByteBufferStream {
         lastFinished = buf.remaining() >= 10;
 
         if (lastFinished) {
+            if (val == Long.MAX_VALUE)
+                val = Long.MIN_VALUE;
+            else
+                val++;
+
             int pos = buf.position();
 
-            while ((val & 0xFFFFFFFFFFFFFF80L) != 0) {
+            while ((val & 0xFFFF_FFFF_FFFF_FF80L) != 0) {
                 byte b = (byte)(val | 0x80);
 
                 UNSAFE.putByte(heapArr, baseOff + pos++, b);
@@ -406,7 +414,7 @@ public class DirectByteBufferStream {
                 val >>>= 7;
             }
 
-            UNSAFE.putByte(heapArr, baseOff + pos++, (byte) val);
+            UNSAFE.putByte(heapArr, baseOff + pos++, (byte)val);
 
             buf.position(pos);
         }
@@ -781,12 +789,14 @@ public class DirectByteBufferStream {
         while (buf.hasRemaining()) {
             byte b = UNSAFE.getByte(heapArr, baseOff + initPos + shift);
 
-            prim |= ((long)b & 0x7F) << (7 * shift);
+            prim |= ((long)b & 0x7F) << (7 * primShift);
 
+            primShift++;
             shift++;
 
             if ((b & 0x80) == 0) {
                 lastFinished = true;
+                primShift = 0;
 
                 val = (int)prim;
 
@@ -820,14 +830,21 @@ public class DirectByteBufferStream {
         while (buf.hasRemaining()) {
             byte b = UNSAFE.getByte(heapArr, baseOff + initPos + shift);
 
-            prim |= ((long)b & 0x7F) << (7 * shift);
+            prim |= ((long)b & 0x7F) << (7 * primShift);
 
             shift++;
+            primShift++;
 
             if ((b & 0x80) == 0) {
                 lastFinished = true;
+                primShift = 0;
 
                 val = prim;
+
+                if (val == Long.MIN_VALUE)
+                    val = Long.MAX_VALUE;
+                else
+                    val--;
 
                 prim = 0;
 
