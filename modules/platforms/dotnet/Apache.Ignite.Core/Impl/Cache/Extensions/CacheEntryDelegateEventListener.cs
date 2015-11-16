@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Extensions
     /// </summary>
     [Serializable]
     internal class CacheEntryDelegateEventListener<K, V> 
-        : SerializableObjectHolder<Action<IEnumerable<ICacheEntryEvent<K, V>>>>, ICacheEntryEventListener<K, V>
+        : SerializableWrapper<Action<IEnumerable<ICacheEntryEvent<K, V>>>>, ICacheEntryEventListener<K, V>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryDelegateEventListener{K, V}"/> class.

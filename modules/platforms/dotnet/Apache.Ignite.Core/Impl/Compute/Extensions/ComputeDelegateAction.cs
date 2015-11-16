@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Extensions
     /// Compute action from delegate.
     /// </summary>
     [Serializable]
-    internal class ComputeDelegateAction : SerializableObjectHolder<Action>, IComputeAction
+    internal class ComputeDelegateAction : SerializableWrapper<Action>, IComputeAction
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeDelegateAction"/> class.

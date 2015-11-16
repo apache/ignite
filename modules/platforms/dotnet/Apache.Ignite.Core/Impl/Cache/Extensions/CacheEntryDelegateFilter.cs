@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Extensions
     /// Cache entry filter from delegate.
     /// </summary>
     [Serializable]
-    internal class CacheEntryDelegateFilter<K, V> : SerializableObjectHolder<Func<ICacheEntry<K, V>, bool>>, 
+    internal class CacheEntryDelegateFilter<K, V> : SerializableWrapper<Func<ICacheEntry<K, V>, bool>>, 
         ICacheEntryFilter<K, V>
     {
         /// <summary>

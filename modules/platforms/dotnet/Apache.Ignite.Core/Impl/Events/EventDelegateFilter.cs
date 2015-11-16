@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Events
     /// EventFilter from a delegate.
     /// </summary>
     [Serializable]
-    internal class EventDelegateFilter<T> : SerializableObjectHolder<Func<T, bool>>, 
+    internal class EventDelegateFilter<T> : SerializableWrapper<Func<T, bool>>, 
         IEventFilter<T>, IEventListener<T> where T : IEvent
     {
         /// <summary>

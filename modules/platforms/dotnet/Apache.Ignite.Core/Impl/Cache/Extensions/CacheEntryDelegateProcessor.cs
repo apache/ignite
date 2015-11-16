@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Extensions
     /// </summary>
     [Serializable]
     internal class CacheEntryDelegateProcessor<TK, TV, TA, TR>
-        : SerializableObjectHolder<Func<IMutableCacheEntry<TK, TV>, TA, TR>>
+        : SerializableWrapper<Func<IMutableCacheEntry<TK, TV>, TA, TR>>
             , ICacheEntryProcessor<TK, TV, TA, TR>
     {
         /// <summary>

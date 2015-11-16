@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
     /// MessageFilter from a delegate.
     /// </summary>
     [Serializable]
-    internal class MessageDelegateFilter<T> : SerializableObjectHolder<Func<Guid, T, bool>>, IMessageListener<T>
+    internal class MessageDelegateFilter<T> : SerializableWrapper<Func<Guid, T, bool>>, IMessageListener<T>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MessageDelegateFilter{T}"/> class.

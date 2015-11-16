@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Extensions
     /// Compute job from delegate.
     /// </summary>
     [Serializable]
-    internal class ComputeDelegateJob<TRes> : SerializableObjectHolder<Func<TRes>>, IComputeJob<TRes>
+    internal class ComputeDelegateJob<TRes> : SerializableWrapper<Func<TRes>>, IComputeJob<TRes>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeDelegateJob{T}"/> class.

@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Extensions
     /// </summary>
     [Serializable]
     internal class CacheEntryDelegateEventFilter<K, V>
-        : SerializableObjectHolder<Func<ICacheEntryEvent<K, V>, bool>>, ICacheEntryEventFilter<K, V>
+        : SerializableWrapper<Func<ICacheEntryEvent<K, V>, bool>>, ICacheEntryEventFilter<K, V>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryDelegateEventFilter{K, V}"/> class.

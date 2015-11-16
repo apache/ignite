@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.Common
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests <see cref="SerializableObjectHolder{T}"/>.
+    /// Tests <see cref="SerializableWrapper{T}"/>.
     /// </summary>
     [Serializable]
     public class SerializableWrapperTest
@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Tests.Common
         {
             var bf = new BinaryFormatter();
 
-            var holder = new SerializableObjectHolder<T>(obj);
+            var holder = new SerializableWrapper<T>(obj);
 
             using (var memStream = new MemoryStream())
             {
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Common
 
                 memStream.Seek(0, SeekOrigin.Begin);
 
-                var holder0 = (SerializableObjectHolder<T>)bf.Deserialize(memStream);
+                var holder0 = (SerializableWrapper<T>)bf.Deserialize(memStream);
 
                 return holder0.WrappedObject;
             }

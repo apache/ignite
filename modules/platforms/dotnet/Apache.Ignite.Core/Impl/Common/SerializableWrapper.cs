@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Allows serializing object graphs with non-serializable anonymous types.
     /// </summary>
     [Serializable]
-    internal class SerializableObjectHolder<T> : ISerializable  // TODO: Rename! The same class exists
+    internal class SerializableWrapper<T> : ISerializable
     {
         /** Type field. */
         private const string ValType = "Type";
@@ -47,10 +47,10 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly T _obj;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SerializableObjectHolder{T}"/> class.
+        /// Initializes a new instance of the <see cref="SerializableWrapper{T}"/> class.
         /// </summary>
         /// <param name="obj">The object to wrap.</param>
-        public SerializableObjectHolder(T obj)
+        public SerializableWrapper(T obj)
         {
             Debug.Assert(obj != null);
             Debug.Assert(obj is Delegate || IsCompilerGenerated(obj.GetType()));
@@ -59,11 +59,11 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SerializableObjectHolder{T}"/> class.
+        /// Initializes a new instance of the <see cref="SerializableWrapper{T}"/> class.
         /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="context">Streaming context.</param>
-        public SerializableObjectHolder(SerializationInfo info, StreamingContext context)
+        public SerializableWrapper(SerializationInfo info, StreamingContext context)
         {
             var objType = (Type) info.GetValue(ValType, typeof (Type));
 
@@ -126,7 +126,7 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             var value = info.GetValue(name, typeof(object));
 
-            var holder = value as SerializableObjectHolder<object>;
+            var holder = value as SerializableWrapper<object>;
 
             if (holder != null)
                 value = holder.WrappedObject;
@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void AddValue(SerializationInfo info, string name, object value)
         {
             if (value != null && IsCompilerGenerated(value.GetType()))
-                value = new SerializableObjectHolder<object>(value);
+                value = new SerializableWrapper<object>(value);
 
             info.AddValue(name, value);
         }

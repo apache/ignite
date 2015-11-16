@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Extensions
     /// Compute func from a delegate.
     /// </summary>
     [Serializable]
-    internal class ComputeDelegateFunc<TRes> : SerializableObjectHolder<Func<TRes>>, IComputeFunc<TRes>
+    internal class ComputeDelegateFunc<TRes> : SerializableWrapper<Func<TRes>>, IComputeFunc<TRes>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeDelegateFunc{R}"/> class.
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Extensions
     /// Compute func from a delegate.
     /// </summary>
     [Serializable]
-    internal class ComputeDelegateFunc<TArg, TRes> : SerializableObjectHolder<Func<TArg, TRes>>, IComputeFunc<TArg, TRes>
+    internal class ComputeDelegateFunc<TArg, TRes> : SerializableWrapper<Func<TArg, TRes>>, IComputeFunc<TArg, TRes>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeDelegateFunc{R}"/> class.
