@@ -19,13 +19,9 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PlatformConfiguration;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableContext;
-import org.apache.ignite.internal.portable.PortableMetaDataHandler;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
@@ -137,7 +133,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             try (PlatformMemory inMem = memMgr.allocate()) {
                 PlatformOutputStream out = outMem.output();
 
-                BinaryRawWriterEx writer = marshaller().writer(out);
+                GridPortableMarshaller marshaller = marshaller();
+                BinaryRawWriterEx writer = marshaller.writer(out);
 
                 PlatformUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
@@ -155,7 +152,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 gate.extensionCallbackInLongLongOutLong(
                     PlatformUtils.OP_PREPARE_DOT_NET, outMem.pointer(), inMem.pointer());
 
-                processPrepareResult(inMem.input());
+                processPrepareResult(marshaller.reader(inMem.input()));
             }
         }
     }
@@ -165,10 +162,10 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      *
      * @param in Input stream.
      */
-    private void processPrepareResult(PlatformInputStream in) {
+    private void processPrepareResult(BinaryReaderExImpl in) {
         assert cfg != null;
 
-        // TODO: Read configuration details from PrepareConfiguration
+        readCacheConfiguration(cfg, in);
 
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);
         List<PlatformLifecycleBean> newBeans = new ArrayList<>();
@@ -220,6 +217,31 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         }
 
         return res;
+    }
+
+    /**
+     * Reads cache configurations from a stream and updates provided IgniteConfiguration.
+     * @param cfg IgniteCOnfiguration to update.
+     * @param in Reader.
+     */
+    private static void readCacheConfiguration(IgniteConfiguration cfg, BinaryReaderExImpl in) {
+        int len = in.readInt();
+
+        if (len == 0)
+            return;
+
+        List<CacheConfiguration> caches = new ArrayList<>();
+
+        for (int i = 0; i < len; i++) {
+            caches.add(new CacheConfiguration(in.readString()));
+        }
+
+        // TODO: Common method to merge
+        /*
+        CacheConfiguration[] oldCfg = cfg.getCacheConfiguration();
+
+        if (oldCfg != null)
+            newBeans.addAll(oldCfg)*/
     }
 
     /**
