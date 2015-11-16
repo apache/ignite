@@ -369,6 +369,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.nuspec" />
+    <None Include="NuGet\Uninstall.ps1" />
     <None Include="NuGet\PostBuild.ps1" />
     <None Include="NuGet\Install.ps1" />
     <None Include="Apache.Ignite.Core.snk" />
