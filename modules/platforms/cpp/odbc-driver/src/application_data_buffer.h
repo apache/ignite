@@ -24,6 +24,9 @@ namespace ignite
 {
     namespace odbc
     {
+        /**
+         * User application data buffer.
+         */
         class ApplicationDataBuffer
         {
         public:

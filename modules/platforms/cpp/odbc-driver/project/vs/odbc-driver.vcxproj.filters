@@ -34,6 +34,9 @@
     <ClCompile Include="..\..\src\application_data_buffer.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\common_types.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -63,6 +66,12 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\application_data_buffer.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common_types.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cursor.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

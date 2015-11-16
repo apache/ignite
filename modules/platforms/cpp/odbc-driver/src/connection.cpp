@@ -20,6 +20,7 @@
 #include <sstream>
 
 #include "connection.h"
+#include "utility.h"
 
 // TODO: implement appropriate protocol with de-/serialisation.
 namespace
@@ -36,7 +37,7 @@ namespace ignite
 {
     namespace odbc
     {
-        Connection::Connection() : socket(), connected(false)
+        Connection::Connection() : socket(), connected(false), cache()
         {
             // No-op.
         }
@@ -46,10 +47,15 @@ namespace ignite
             // No-op.
         }
 
-        bool Connection::Establish(const std::string& host, uint16_t port)
+        bool Connection::Establish(const std::string& host, uint16_t port, const std::string& cache)
         {
             if (connected)
                 return false;
+
+            if (cache.empty())
+                return false;
+
+            this->cache = cache;
 
             connected = socket.Connect(host.c_str(), port);
 
@@ -99,10 +105,13 @@ namespace ignite
 
             OdbcProtocolHeader hdr;
 
-            bool success = socket.Receive(reinterpret_cast<uint8_t*>(&hdr), sizeof(hdr)) == sizeof(hdr);
+            int received = socket.Receive(reinterpret_cast<uint8_t*>(&hdr), sizeof(hdr));
+            LOG_MSG("Received: %d\n", received);
 
-            if (!success)
+            if (received != sizeof(hdr))
                 return false;
+
+            hdr.len = ntohl(hdr.len);
 
             size_t remain = hdr.len;
             size_t receivedAtAll = 0;
@@ -111,8 +120,10 @@ namespace ignite
 
             while (remain)
             {
-                int received = socket.Receive(&msg[receivedAtAll], remain);
-                
+                received = socket.Receive(&msg[receivedAtAll], remain);
+                LOG_MSG("Received: %d\n", received);
+                LOG_MSG("remain: %d\n", remain);
+
                 if (received <= 0)
                 {
                     msg.resize(receivedAtAll);

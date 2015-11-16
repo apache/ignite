@@ -70,7 +70,7 @@ namespace ignite
              *
              * @return Server port.
              */
-            uint16_t GetServetPort() const
+            uint16_t GetPort() const
             {
                 return port;
             }
@@ -100,9 +100,19 @@ namespace ignite
              *
              * @return Server host.
              */
-            const std::string& GetServetHost() const
+            const std::string& GetHost() const
             {
                 return host;
+            }
+
+            /**
+             * Get cache.
+             *
+             * @return Cache name.
+             */
+            const std::string& GetCache() const
+            {
+                return cache;
             }
 
         private:
@@ -129,6 +139,9 @@ namespace ignite
 
             /** Port of the server. */
             uint16_t port;
+
+            /** Cache name. */
+            std::string cache;
         };
     }
 }

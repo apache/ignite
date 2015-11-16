@@ -23,6 +23,7 @@
 #include <map>
 
 #include "application_data_buffer.h"
+#include "common_types.h"
 
 namespace ignite
 {
@@ -30,6 +31,10 @@ namespace ignite
     {
         class Connection;
 
+        /**
+         * SQL-statement abstraction. Holds SQL query user buffers data and
+         * call result.
+         */
         class Statement
         {
             friend class Connection;
@@ -38,6 +43,14 @@ namespace ignite
              * Destructor.
              */
             ~Statement();
+
+            /**
+             * Bind result column to specified data buffer.
+             *
+             * @param columnIdx Column index.
+             * @param buffer Buffer to put column data to.
+             */
+            void BindResultColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer);
 
             /**
              * Execute SQL query.
@@ -50,16 +63,17 @@ namespace ignite
             bool ExecuteSqlQuery(const char* query, size_t len);
 
             /**
-             * Bind result column to specified data buffer.
+             * Fetch query result row.
              *
-             * @param columnIdx Column index.
-             * @param buffer Buffer to put column data to.
+             * @return True on success.
              */
-            void BindResultColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer);
+            SqlResult FetchRow();
 
         private:
             /**
              * Constructor.
+             * Called by friend classes.
+             * @param parent Connection associated with the statement.
              */
             Statement(Connection& parent);
 
@@ -73,8 +87,8 @@ namespace ignite
             ColumnBindingMap columnBindings;
 
             //TODO: Move to separate Cursor class.
-            /** Cursor id.*/
-            int32_t resultCursorId;
+            /** Cursor id. */
+            int64_t resultQueryId;
         };
     }
 }

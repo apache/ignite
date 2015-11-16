@@ -43,9 +43,10 @@ namespace ignite
              *
              * @param host Host.
              * @param port Port.
+             * @param cache Cache name to connect to.
              * @return True on success.
              */
-            bool Establish(const std::string& host, uint16_t port);
+            bool Establish(const std::string& host, uint16_t port, const std::string& cache);
             
             /**
              * Release established connection.
@@ -78,6 +79,16 @@ namespace ignite
              */
             bool Receive(std::vector<uint8_t>& msg);
 
+            /**
+             * Get name of the assotiated cache.
+             *
+             * @return Cache name.
+             */
+            const std::string& GetCache() const
+            {
+                return cache;
+            }
+
         private:
             /**
              * Constructor.
@@ -89,6 +100,9 @@ namespace ignite
 
             /** State flag. */
             bool connected;
+
+            /** Cache name. */
+            std::string cache;
         };
     }
 }

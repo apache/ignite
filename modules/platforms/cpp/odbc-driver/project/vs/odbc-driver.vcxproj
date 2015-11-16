@@ -146,6 +146,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\socket_client.cpp" />
+    <ClCompile Include="..\..\src\common_types.cpp" />
     <ClCompile Include="..\..\src\configuration.cpp" />
     <ClCompile Include="..\..\src\connection.cpp" />
     <ClCompile Include="..\..\src\environment.cpp" />
@@ -167,8 +168,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\os\win\socket_client.h" />
+    <ClInclude Include="..\..\src\common_types.h" />
     <ClInclude Include="..\..\src\configuration.h" />
     <ClInclude Include="..\..\src\connection.h" />
+    <ClInclude Include="..\..\src\cursor.h" />
     <ClInclude Include="..\..\src\environment.h" />
     <ClInclude Include="..\..\src\application_data_buffer.h" />
     <ClInclude Include="..\..\src\statement.h" />

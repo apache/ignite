@@ -31,8 +31,8 @@ namespace ignite
 {
     namespace odbc
     {
-        Statement::Statement(Connection& parent) : 
-            connection(parent), columnBindings(), resultCursorId(0)
+        Statement::Statement(Connection& parent) :
+            connection(parent), columnBindings(), resultQueryId(0)
         {
             // No-op.
         }
@@ -40,6 +40,11 @@ namespace ignite
         Statement::~Statement()
         {
             // No-op.
+        }
+
+        void Statement::BindResultColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer)
+        {
+            columnBindings[columnIdx] = buffer;
         }
 
         bool Statement::ExecuteSqlQuery(const char* query, size_t len)
@@ -51,17 +56,15 @@ namespace ignite
 
             ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
 
-            writer.WriteBool(false);
+            const std::string& cacheName = connection.GetCache();
+
+            LOG_MSG("Cache name: %s\n", cacheName.c_str());
+
+            writer.WriteString(cacheName.c_str(), static_cast<int32_t>(cacheName.size()));
             writer.WriteString(query, static_cast<int32_t>(len));
             writer.WriteInt32(DEFAULT_PAGE_SIZE);
 
             writer.WriteInt32(0);
-
-            // TODO: implement argument support.
-            //writer.WriteInt32(static_cast<int32_t>(args.size()));
-
-            //for (std::vector<QueryArgumentBase*>::const_iterator it = args.begin(); it != args.end(); ++it)
-            //    (*it)->Write(writer);
 
             bool sent = connection.Send(reinterpret_cast<uint8_t*>(outMem.Data()), outStream.Position());
 
@@ -75,21 +78,27 @@ namespace ignite
             if (!responseReceived)
                 return false;
 
+            LOG_MSG("Received response %d bytes long\n", response.size());
+
             InteropUnpooledMemory inMem(static_cast<int32_t>(response.size()));
 
             // TODO: optimize me.
             memcpy(inMem.Data(), response.data(), response.size());
+            inMem.Length(static_cast<int32_t>(response.size()));
 
             InteropInputStream inStream(&inMem);
 
-            resultCursorId = inStream.ReadInt32();
+            resultQueryId = inStream.ReadInt64();
+
+            LOG_MSG("Query id: %lld\n", resultQueryId);
 
             return true;
         }
 
-        void Statement::BindResultColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer)
+        SqlResult Statement::FetchRow()
         {
-            columnBindings[columnIdx] = buffer;
+            //
+            return SQL_RESULT_NO_DATA;
         }
     }
 }

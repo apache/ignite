@@ -37,8 +37,8 @@ namespace ignite
         namespace utils
         {
             /**
-             * Transform string into lowercase.
-             *
+             * Replace all alphabetic symbols of the string with their lowercase
+             * versions.
              * @param str String to be transformed.
              */
             inline void IntoLower(std::string& str)

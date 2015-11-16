@@ -43,6 +43,9 @@ namespace ignite
 
             /** Default value for port attribute. */
             const uint16_t port = 11443;
+
+            /** Default value for cache attribute. */
+            const std::string cache = "Persons";
         }
 
         /** Connection attribute keywords. */
@@ -59,11 +62,15 @@ namespace ignite
 
             /** Connection attribute keyword for server port attribute. */
             const std::string port = "port";
+
+            /** Default value for cache attribute. */
+            const std::string cache = "cache";
         }
 
         Configuration::Configuration() :
             dsn(dflt::dsn), driver(dflt::driver),
-            host(dflt::host), port(dflt::port)
+            host(dflt::host), port(dflt::port),
+            cache(dflt::cache)
         {
             // No-op.
         }
@@ -104,6 +111,12 @@ namespace ignite
                 port = atoi(it->second.c_str());
             else
                 port = dflt::port;
+
+            it = connect_attributes.find(attrkey::cache);
+            if (it != connect_attributes.end())
+                cache = it->second;
+            else
+                cache = dflt::cache;
         }
 
         std::string Configuration::ToConnectString() const
@@ -121,6 +134,9 @@ namespace ignite
 
             if (!dsn.empty())
                 connect_string_buffer << attrkey::dsn << '=' << dsn << ';';
+
+            if (!cache.empty())
+                connect_string_buffer << attrkey::cache << '=' << cache << ';';
 
             return connect_string_buffer.str();
         }

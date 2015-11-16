@@ -18,6 +18,11 @@
 #ifndef _IGNITE_ODBC_DRIVER_UTILITY
 #define _IGNITE_ODBC_DRIVER_UTILITY
 
+#include <string>
+#include <stdint.h>
+
+#include <ignite/common/utils.h>
+
 extern FILE* log_file;
 void logInit(const char*);
 
@@ -28,14 +33,13 @@ void logInit(const char*);
         fflush(log_file); \
     } while (false)
 
-
-#include <string>
-#include <stdint.h>
-
 namespace ignite
 {
     namespace utility
     {
+        /** Using common version of the util. */
+        using ignite::common::utils::IntoLower;
+
         /**
          * Skip leading spaces.
          * 
@@ -95,17 +99,6 @@ namespace ignite
             std::copy(skipped_leading, skipped_trailing, std::back_insert_iterator<std::string>(res));
 
             return res;
-        }
-
-        /**
-         * Replace all alphabetic symbols of the string to its lowercase
-         * version.
-         * @param str String to be processed.
-         */
-        inline void IntoLower(std::string& str)
-        {
-            for (std::string::iterator i = str.begin(); i != str.end(); ++i)
-                *i = tolower(*i);
         }
     }
 }

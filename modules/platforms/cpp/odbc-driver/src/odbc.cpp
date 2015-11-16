@@ -309,7 +309,7 @@ SQLRETURN SQL_API SQLDriverConnect(
 
     config.FillFromConnectString(reinterpret_cast<const char*>(InConnectionString), StringLength1);
 
-    bool connected = connection->Establish(config.GetServetHost(), config.GetServetPort());
+    bool connected = connection->Establish(config.GetHost(), config.GetPort(), config.GetCache());
 
     if (!connected)
         return SQL_ERROR;
@@ -399,6 +399,20 @@ SQLRETURN SQL_API SQLBindCol(SQLHSTMT       stmt,
     return SQL_SUCCESS;
 }
 
+SQLRETURN SQL_API SQLFetch(SQLHSTMT stmt)
+{
+    using ignite::odbc::Statement;
+
+    LOG_MSG("SQLFetch called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    return statement->FetchRow();
+}
+
 ///// SQLCancel /////
 
 SQLRETURN SQL_API SQLCancel(SQLHSTMT arg0)
@@ -472,14 +486,6 @@ SQLRETURN SQL_API SQLError(HENV arg0,
 SQLRETURN SQL_API SQLExecute(SQLHSTMT arg0)
 {
     LOG_MSG("SQLExecute called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLFetch /////
-
-SQLRETURN SQL_API SQLFetch(SQLHSTMT arg0)
-{
-    LOG_MSG("SQLFetch called\n");
     return SQL_SUCCESS;
 }
 
