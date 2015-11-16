@@ -26,13 +26,13 @@ namespace Apache.Ignite.Core.Impl.Compute.Extensions
     /// Compute job from delegate.
     /// </summary>
     [Serializable]
-    internal class ComputeDelegateJob<T> : SerializableObjectHolder<Func<T>>, IComputeJob<T>
+    internal class ComputeDelegateJob<TRes> : SerializableObjectHolder<Func<TRes>>, IComputeJob<TRes>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeDelegateJob{T}"/> class.
         /// </summary>
         /// <param name="del">The delegate.</param>
-        public ComputeDelegateJob(Func<T> del) : base(del)
+        public ComputeDelegateJob(Func<TRes> del) : base(del)
         {
             // No-op.
         }
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Extensions
         }
 
         /** <inheritdoc /> */
-        public T Execute()
+        public TRes Execute()
         {
             return WrappedObject();
         }

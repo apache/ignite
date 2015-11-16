@@ -26,13 +26,13 @@ namespace Apache.Ignite.Core.Impl.Compute.Extensions
     /// Compute func from a delegate.
     /// </summary>
     [Serializable]
-    internal class ComputeDelegateFunc<R> : SerializableObjectHolder<Func<R>>, IComputeFunc<R>
+    internal class ComputeDelegateFunc<TRes> : SerializableObjectHolder<Func<TRes>>, IComputeFunc<TRes>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeDelegateFunc{R}"/> class.
         /// </summary>
         /// <param name="func">The function to wrap.</param>
-        public ComputeDelegateFunc(Func<R> func) : base(func)
+        public ComputeDelegateFunc(Func<TRes> func) : base(func)
         {
             // No-op.
         }
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Extensions
         }
 
         /** <inheritdoc /> */
-        public R Invoke()
+        public TRes Invoke()
         {
             return WrappedObject();
         }
@@ -58,13 +58,13 @@ namespace Apache.Ignite.Core.Impl.Compute.Extensions
     /// Compute func from a delegate.
     /// </summary>
     [Serializable]
-    internal class ComputeDelegateFunc<T, R> : SerializableObjectHolder<Func<T, R>>, IComputeFunc<T, R>
+    internal class ComputeDelegateFunc<TArg, TRes> : SerializableObjectHolder<Func<TArg, TRes>>, IComputeFunc<TArg, TRes>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeDelegateFunc{R}"/> class.
         /// </summary>
         /// <param name="func">The function to wrap.</param>
-        public ComputeDelegateFunc(Func<T, R> func) : base(func)
+        public ComputeDelegateFunc(Func<TArg, TRes> func) : base(func)
         {
             // No-op.
         }
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Extensions
         }
 
         /** <inheritdoc /> */
-        public R Invoke(T arg)
+        public TRes Invoke(TArg arg)
         {
             return WrappedObject(arg);
         }

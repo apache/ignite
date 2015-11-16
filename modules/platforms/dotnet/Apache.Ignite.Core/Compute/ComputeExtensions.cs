@@ -37,18 +37,18 @@ namespace Apache.Ignite.Core.Compute
         /// Instance functions should have serializable target (owning class).
         /// Anonymous functions which capture fields should have field owning classes serializable.
         /// </summary>
-        /// <typeparam name="R">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
         /// <param name="compute">Compute instance.</param>
         /// <param name="func">Func to execute.</param>
         /// <returns>
         /// Job result for this execution.
         /// </returns>
-        public static R Call<R>(this ICompute compute, Func<R> func)
+        public static TRes Call<TRes>(this ICompute compute, Func<TRes> func)
         {
             AC.NotNull(compute, "compute");
             AC.NotNull(func, "func");
 
-            return compute.Call(new ComputeDelegateFunc<R>(func));
+            return compute.Call(new ComputeDelegateFunc<TRes>(func));
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Compute
         /// Instance functions should have serializable target (owning class).
         /// Anonymous functions which capture fields should have field owning classes serializable.
         /// </summary>
-        /// <typeparam name="R">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
         /// <param name="compute">Compute instance.</param>
         /// <param name="cacheName">Name of the cache to use for affinity co-location.</param>
         /// <param name="affinityKey">Affinity key.</param>
@@ -69,12 +69,12 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>
         /// Job result for this execution.
         /// </returns>
-        public static R AffinityCall<R>(this ICompute compute, string cacheName, object affinityKey, Func<R> func)
+        public static TRes AffinityCall<TRes>(this ICompute compute, string cacheName, object affinityKey, Func<TRes> func)
         {
             AC.NotNull(compute, "compute");
             AC.NotNull(func, "func");
 
-            return compute.AffinityCall(cacheName, affinityKey, new ComputeDelegateFunc<R>(func));
+            return compute.AffinityCall(cacheName, affinityKey, new ComputeDelegateFunc<TRes>(func));
         }
 
         /// <summary>
@@ -89,9 +89,9 @@ namespace Apache.Ignite.Core.Compute
         /// Instance functions should have serializable target (owning class).
         /// Anonymous functions which capture fields should have field owning classes serializable.
         /// </summary>
-        /// <typeparam name="T">Type of argument.</typeparam>
-        /// <typeparam name="R1">Type of job result.</typeparam>
-        /// <typeparam name="R2">Type of reduced result.</typeparam>
+        /// <typeparam name="TArg">Type of argument.</typeparam>
+        /// <typeparam name="TFuncRes">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of reduced result.</typeparam>
         /// <param name="compute">Compute instance.</param>
         /// <param name="func">Job to run.</param>
         /// <param name="args">Job arguments.</param>
@@ -99,8 +99,8 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>
         /// Reduced job result for this execution.
         /// </returns>
-        public static R2 Apply<T, R1, R2>(this ICompute compute, Func<T, R1> func, ICollection<T> args,
-            Func<IList<R1>, R2> reduce)
+        public static TRes Apply<TArg, TFuncRes, TRes>(this ICompute compute, Func<TArg, TFuncRes> func, 
+            ICollection<TArg> args, Func<IList<TFuncRes>, TRes> reduce)
         {
             return Apply(compute, func, args, x => true, reduce);
         }
@@ -117,9 +117,9 @@ namespace Apache.Ignite.Core.Compute
         /// Instance functions should have serializable target (owning class).
         /// Anonymous functions which capture fields should have field owning classes serializable.
         /// </summary>
-        /// <typeparam name="T">Type of argument.</typeparam>
-        /// <typeparam name="R1">Type of job result.</typeparam>
-        /// <typeparam name="R2">Type of reduced result.</typeparam>
+        /// <typeparam name="TArg">Type of argument.</typeparam>
+        /// <typeparam name="TFuncRes">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of reduced result.</typeparam>
         /// <param name="compute">Compute instance.</param>
         /// <param name="func">Job to run.</param>
         /// <param name="args">Job arguments.</param>
@@ -130,16 +130,16 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>
         /// Reduced job result for this execution.
         /// </returns>
-        public static R2 Apply<T, R1, R2>(this ICompute compute, Func<T, R1> func, ICollection<T> args,
-            Func<R1, bool> collect, Func<IList<R1>, R2> reduce)
+        public static TRes Apply<TArg, TFuncRes, TRes>(this ICompute compute, Func<TArg, TFuncRes> func, 
+            ICollection<TArg> args, Func<TFuncRes, bool> collect, Func<IList<TFuncRes>, TRes> reduce)
         {
             AC.NotNull(compute, "compute");
             AC.NotNull(func, "func");
             AC.NotNull(collect, "collect");
             AC.NotNull(reduce, "reduce");
 
-            return compute.Apply(new ComputeDelegateFunc<T, R1>(func), args,
-                new ComputeDelegateReducer<R1, R2>(collect, reduce));
+            return compute.Apply(new ComputeDelegateFunc<TArg, TFuncRes>(func), args,
+                new ComputeDelegateReducer<TFuncRes, TRes>(collect, reduce));
         }
 
         /// <summary> 
@@ -157,14 +157,15 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="func">Job to run.</param> 
         /// <param name="args">Job arguments.</param> 
         /// <returns>Сollection of job results.</returns> 
-        /// <typeparam name="T">Type of argument.</typeparam> 
-        /// <typeparam name="R">Type of job result.</typeparam> 
-        public static ICollection<R> Apply<T, R>(this ICompute compute, Func<T, R> func, ICollection<T> args)
+        /// <typeparam name="TArg">Type of argument.</typeparam> 
+        /// <typeparam name="TRes">Type of job result.</typeparam> 
+        public static ICollection<TRes> Apply<TArg, TRes>(this ICompute compute, Func<TArg, TRes> func, 
+            ICollection<TArg> args)
         {
             AC.NotNull(compute, "compute");
             AC.NotNull(func, "func");
 
-            return compute.Apply(new ComputeDelegateFunc<T, R>(func), args);
+            return compute.Apply(new ComputeDelegateFunc<TArg, TRes>(func), args);
         }
 
         /// <summary> 
@@ -180,14 +181,14 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="func">Job to run.</param> 
         /// <param name="arg">Job argument.</param> 
         /// <returns>Job result for this execution.</returns> 
-        /// <typeparam name="T">Type of argument.</typeparam> 
-        /// <typeparam name="R">Type of job result.</typeparam> 
-        public static R Apply<T, R>(this ICompute compute, Func<T, R> func, T arg)
+        /// <typeparam name="TArg">Type of argument.</typeparam> 
+        /// <typeparam name="TRes">Type of job result.</typeparam> 
+        public static TRes Apply<TArg, TRes>(this ICompute compute, Func<TArg, TRes> func, TArg arg)
         {
             AC.NotNull(compute, "compute");
             AC.NotNull(func, "func");
 
-            return compute.Apply(new ComputeDelegateFunc<T, R>(func), arg);
+            return compute.Apply(new ComputeDelegateFunc<TArg, TRes>(func), arg);
         }
 
         /// <summary> 
@@ -288,14 +289,14 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="func">Job to broadcast to all projection nodes.</param> 
         /// <param name="arg">Job closure argument.</param> 
         /// <returns>Collection of results for this execution.</returns> 
-        /// <typeparam name="T">Type of argument.</typeparam> 
-        /// <typeparam name="R">Type of job result.</typeparam> 
-        public static ICollection<R> Broadcast<T, R>(this ICompute compute, Func<T, R> func, T arg)
+        /// <typeparam name="TArg">Type of argument.</typeparam> 
+        /// <typeparam name="TRes">Type of job result.</typeparam> 
+        public static ICollection<TRes> Broadcast<TArg, TRes>(this ICompute compute, Func<TArg, TRes> func, TArg arg)
         {
             AC.NotNull(compute, "compute");
             AC.NotNull(func, "func");
 
-            return compute.Broadcast(new ComputeDelegateFunc<T, R>(func), arg);
+            return compute.Broadcast(new ComputeDelegateFunc<TArg, TRes>(func), arg);
         }
 
         /// <summary> 
@@ -310,12 +311,12 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="compute">Compute instance.</param> 
         /// <param name="func">Job to broadcast to all projection nodes.</param> 
         /// <returns>Collection of results for this execution.</returns> 
-        public static ICollection<R> Broadcast<R>(this ICompute compute, Func<R> func)
+        public static ICollection<TRes> Broadcast<TRes>(this ICompute compute, Func<TRes> func)
         {
             AC.NotNull(compute, "compute");
             AC.NotNull(func, "func");
 
-            return compute.Broadcast(new ComputeDelegateFunc<R>(func));
+            return compute.Broadcast(new ComputeDelegateFunc<TRes>(func));
         }
 
         /// <summary> 
@@ -330,16 +331,16 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="compute">Compute instance.</param> 
         /// <param name="funcs">Collection of jobs to execute.</param> 
         /// <returns>Collection of job results for this execution.</returns> 
-        /// <typeparam name="R">Type of job result.</typeparam> 
-        public static ICollection<R> Call<R>(this ICompute compute, ICollection<Func<R>> funcs)
+        /// <typeparam name="TRes">Type of job result.</typeparam> 
+        public static ICollection<TRes> Call<TRes>(this ICompute compute, ICollection<Func<TRes>> funcs)
         {
             AC.NotNull(compute, "compute");
             AC.NotNull(funcs, "funcs");
 
-            var funcs0 = new List<IComputeFunc<R>>(funcs.Count);
+            var funcs0 = new List<IComputeFunc<TRes>>(funcs.Count);
 
             foreach (var func in funcs)
-                funcs0.Add(new ComputeDelegateFunc<R>(func));
+                funcs0.Add(new ComputeDelegateFunc<TRes>(func));
 
             return compute.Call(funcs0);
         }
@@ -357,9 +358,10 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="funcs">Collection of jobs to execute.</param> 
         /// <param name="reduce">Reduce function: combine job results into final result.</param>
         /// <returns>Reduced job result for this execution.</returns> 
-        /// <typeparam name="R1">Type of job result.</typeparam> 
-        /// <typeparam name="R2">Type of reduced result.</typeparam> 
-        public static R2 Call<R1, R2>(this ICompute compute, ICollection<Func<R1>> funcs, Func<IList<R1>, R2> reduce)
+        /// <typeparam name="TFuncRes">Type of job result.</typeparam> 
+        /// <typeparam name="TRes">Type of reduced result.</typeparam> 
+        public static TRes Call<TFuncRes, TRes>(this ICompute compute, ICollection<Func<TFuncRes>> funcs, 
+            Func<IList<TFuncRes>, TRes> reduce)
         {
             AC.NotNull(compute, "compute");
             AC.NotNull(funcs, "funcs");
@@ -384,22 +386,22 @@ namespace Apache.Ignite.Core.Compute
         /// </param>
         /// <param name="reduce">Reduce function: combine job results into final result.</param>
         /// <returns>Reduced job result for this execution.</returns> 
-        /// <typeparam name="R1">Type of job result.</typeparam> 
-        /// <typeparam name="R2">Type of reduced result.</typeparam> 
-        public static R2 Call<R1, R2>(this ICompute compute, ICollection<Func<R1>> funcs, Func<R1, bool> collect,
-            Func<IList<R1>, R2> reduce)
+        /// <typeparam name="TFuncRes">Type of job result.</typeparam> 
+        /// <typeparam name="TRes">Type of reduced result.</typeparam> 
+        public static TRes Call<TFuncRes, TRes>(this ICompute compute, ICollection<Func<TFuncRes>> funcs, 
+            Func<TFuncRes, bool> collect, Func<IList<TFuncRes>, TRes> reduce)
         {
             AC.NotNull(compute, "compute");
             AC.NotNull(funcs, "funcs");
             AC.NotNull(collect, "collect");
             AC.NotNull(reduce, "reduce");
 
-            var funcs0 = new List<IComputeFunc<R1>>(funcs.Count);
+            var funcs0 = new List<IComputeFunc<TFuncRes>>(funcs.Count);
 
             foreach (var func in funcs)
-                funcs0.Add(new ComputeDelegateFunc<R1>(func));
+                funcs0.Add(new ComputeDelegateFunc<TFuncRes>(func));
 
-            return compute.Call(funcs0, new ComputeDelegateReducer<R1, R2>(collect, reduce));
+            return compute.Call(funcs0, new ComputeDelegateReducer<TFuncRes, TRes>(collect, reduce));
         }
     }
 }

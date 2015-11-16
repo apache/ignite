@@ -24,40 +24,40 @@ namespace Apache.Ignite.Core.Impl.Compute.Extensions
     /// <summary>
     /// Compute reducer from delegates.
     /// </summary>
-    internal class ComputeDelegateReducer<R1, R2> : IComputeReducer<R1, R2>
+    internal class ComputeDelegateReducer<TFuncRes, TRes> : IComputeReducer<TFuncRes, TRes>
     {
         /** */
-        private readonly Func<R1, bool> collect;
+        private readonly Func<TFuncRes, bool> _collect;
 
         /** */
-        private readonly Func<IList<R1>, R2> reduce;
+        private readonly Func<IList<TFuncRes>, TRes> _reduce;
 
         /** */
-        private readonly List<R1> results = new List<R1>();
+        private readonly List<TFuncRes> _results = new List<TFuncRes>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeDelegateReducer{R1, R2}"/> class.
         /// </summary>
         /// <param name="collect">Collect.</param>
         /// <param name="reduce">Reduce.</param>
-        public ComputeDelegateReducer(Func<R1, bool> collect, Func<IList<R1>,  R2> reduce)
+        public ComputeDelegateReducer(Func<TFuncRes, bool> collect, Func<IList<TFuncRes>,  TRes> reduce)
         {
-            this.collect = collect;
-            this.reduce = reduce;
+            _collect = collect;
+            _reduce = reduce;
         }
 
         /** <inheritdoc /> */
-        public bool Collect(R1 res)
+        public bool Collect(TFuncRes res)
         {
-            results.Add(res);
+            _results.Add(res);
 
-            return collect(res);
+            return _collect(res);
         }
 
         /** <inheritdoc /> */
-        public R2 Reduce()
+        public TRes Reduce()
         {
-            return reduce(results);
+            return _reduce(_results);
         }
     }
 }
