@@ -994,11 +994,12 @@ consoleModule.controller('sqlController',
 
                 if (paragraph.chartTimeLineEnabled()) {
                     var aggFx = valCol.aggFx;
+                    var colLbl = valCol.label + ' [' + aggFx + ']';
 
                     if (paragraph.charts && paragraph.charts.length == 1)
                         datum = paragraph.charts[0].data;
 
-                    var chartData = _.find(datum, {key: valCol.label});
+                    var chartData = _.find(datum, {series: valCol.label});
 
                     var leftBound = new Date();
                     leftBound.setMinutes(leftBound.getMinutes() - parseInt(paragraph.timeLineSpan));
@@ -1025,7 +1026,7 @@ consoleModule.controller('sqlController',
                                 });
                         });
 
-                        datum.push({key: valCol.label, values: values});
+                        datum.push({series: valCol.label, key: colLbl, values: values});
                     }
                 }
                 else {
@@ -1045,7 +1046,7 @@ consoleModule.controller('sqlController',
                         return v;
                     });
 
-                    datum.push({key: valCol.label, values: values});
+                    datum.push({series: valCol.label, key: valCol.label, values: values});
                 }
             });
         }
@@ -1073,7 +1074,7 @@ consoleModule.controller('sqlController',
                     return v;
                 });
 
-                datum.push({key: valCol.label, values: values});
+                datum.push({series: valCol.label, key: valCol.label, values: values});
             });
         }
 
