@@ -97,6 +97,7 @@
     <Compile Include="Common\IgniteException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
+    <Compile Include="Compute\ComputeExtensions.cs" />
     <Compile Include="Compute\ComputeJobAdapter.cs" />
     <Compile Include="Compute\ComputeJobFailoverException.cs" />
     <Compile Include="Compute\ComputeJobResultPolicy.cs" />
@@ -209,6 +210,10 @@
     <Compile Include="Impl\Compute\ComputeJobResultImpl.cs" />
     <Compile Include="Impl\Compute\ComputeOutFunc.cs" />
     <Compile Include="Impl\Compute\ComputeTaskHolder.cs" />
+    <Compile Include="Impl\Compute\Extensions\ComputeDelegateAction.cs" />
+    <Compile Include="Impl\Compute\Extensions\ComputeDelegateFunc.cs" />
+    <Compile Include="Impl\Compute\Extensions\ComputeDelegateJob.cs" />
+    <Compile Include="Impl\Compute\Extensions\ComputeDelegateReducer.cs" />
     <Compile Include="Impl\Datastream\DataStreamerBatch.cs" />
     <Compile Include="Impl\Datastream\DataStreamerEntry.cs" />
     <Compile Include="Impl\Datastream\DataStreamerImpl.cs" />

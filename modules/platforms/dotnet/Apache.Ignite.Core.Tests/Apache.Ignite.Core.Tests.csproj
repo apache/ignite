@@ -86,6 +86,7 @@
     <Compile Include="Cache\Store\CacheTestParallelLoadStore.cs" />
     <Compile Include="Cache\Store\CacheTestStore.cs" />
     <Compile Include="Common\SerializableWrapperTest.cs" />
+    <Compile Include="Compute\ComputeExtensionsTest.cs" />
     <Compile Include="Compute\Forked\ForkedPortableClosureTaskTest.cs" />
     <Compile Include="Compute\Forked\ForkedResourceTaskTest.cs" />
     <Compile Include="Compute\Forked\ForkedSerializableClosureTaskTest.cs" />
