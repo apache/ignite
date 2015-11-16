@@ -66,19 +66,25 @@
       "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@^1.3.0",
       "angular-grid": "github:ceolter/ag-grid@^2.3.5",
       "angular-loading": "github:darthwade/angular-loading@^0.1.4",
+      "angular-motion": "github:mgcrea/angular-motion@^0.4.3",
       "angular-nvd3": "github:krispo/angular-nvd3@^1.0.3",
       "angular-sanitize": "github:angular/bower-angular-sanitize@^1.4.7",
       "angular-smart-table": "github:lorenzofox3/Smart-Table@^2.1.4",
       "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852",
       "angular-tree-control": "github:wix/angular-tree-control@^0.2.22",
       "angular-ui-ace": "github:angular-ui/ui-ace@^0.2.3",
+      "css": "github:systemjs/plugin-css@^0.1.19",
+      "font-awesome": "npm:font-awesome@^4.4.0",
       "jquery": "github:components/jquery@^2.1.4",
       "lodash": "npm:lodash@^3.10.1",
+      "sass": "github:mobilexag/plugin-sass@^0.0.10",
+      "scss": "github:theefer/plugin-sass@master",
       "spinjs": "github:fgnass/spin.js@^2.3.2"
     },
     "devDependencies": {
       "babel": "npm:babel-core@^5.8.24",
       "babel-runtime": "npm:babel-runtime@^5.8.24",
+      "clean-css": "npm:clean-css@^3.4.8",
       "core-js": "npm:core-js@^1.1.4"
     },
     "overrides": {
@@ -122,6 +128,7 @@
               "./mode-xml",
               "./mode-java",
               "./mode-sql",
+              "./worker-xml",
               "./ext-language_tools"
             ]
           },
@@ -144,6 +151,11 @@
             ]
           },
           "ext-language_tools": {
+            "deps": [
+              "./ace"
+            ]
+          },
+          "worker-xml": {
             "deps": [
               "./ace"
             ]
