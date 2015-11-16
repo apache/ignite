@@ -391,15 +391,17 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBlockMetrics() throws Exception {
-        testBlockMetrics0((IgfsEx)igfsPrimary[0], igfsSecondary);
+        testBlockMetrics0((IgfsEx)igfsPrimary[0], igfsSecondary, igfsSecondary != null);
     }
 
     /**
      * Test block metrics. (Static delegate).
+     * Note that 'dual' may not always the same as 'igfsSecondary != null', because in case of Hadoop we have
+     * secondary file system, but do not have direct access to IgfsImpl instance that implements it.
      *
      * @throws Exception If failed.
      */
-    static void testBlockMetrics0(IgfsEx igfs, IgfsImpl igfsSecondary) throws Exception {
+    public static void testBlockMetrics0(IgfsEx igfs, IgfsImpl igfsSecondary, boolean dual) throws Exception {
         igfs.format();
 
         igfs.resetMetrics();
@@ -442,21 +444,21 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         os.write(new byte[blockSize * 2]);
         os.close();
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 2, igfsSecondary != null ? 2 : 0, blockSize * 2);
+        checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 2, dual ? 2 : 0, blockSize * 2);
 
         // Write one more file (one block).
         os = igfs.create(file2, 256, true, null, 1, 256, null);
         os.write(new byte[blockSize]);
         os.close();
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 3, igfsSecondary != null ? 3 : 0, blockSize * 3);
+        checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 3, dual ? 3 : 0, blockSize * 3);
 
         // Read data from the first file.
         IgfsInputStreamAdapter is = igfs.open(file1);
         is.readFully(0, new byte[blockSize * 2]);
         is.close();
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 2, 0, blockSize * 2, 3, igfsSecondary != null ? 3 : 0,
+        checkBlockMetrics(initMetrics, igfs.metrics(), 2, 0, blockSize * 2, 3, dual ? 3 : 0,
             blockSize * 3);
 
         // Read data from the second file with hits.
@@ -464,19 +466,19 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         is.readChunks(0, blockSize);
         is.close();
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, igfsSecondary != null ? 3 : 0,
+        checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, dual ? 3 : 0,
             blockSize * 3);
 
         // Clear the first file.
         igfs.create(file1, true).close();
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, igfsSecondary != null ? 3 : 0,
+        checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, dual ? 3 : 0,
             blockSize * 3);
 
         // Delete the second file.
         igfs.delete(file2, false);
 
-        checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, igfsSecondary != null ? 3 : 0,
+        checkBlockMetrics(initMetrics, igfs.metrics(), 3, 0, blockSize * 3, 3, dual ? 3 : 0,
             blockSize * 3);
 
         IgfsMetrics metrics;

@@ -3267,9 +3267,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         IgfsMetrics m = fs.metrics();
 
-        // TODO: This assertion fails for OFFHEAP_TIRED mode,
+        // TODO: NB: This assertion fails for OFFHEAP_TIRED mode,
         // TODO: see https://issues.apache.org/jira/browse/IGNITE-304.
-        assertTrue(m.localSpaceSize() > 0);
+        assertTrue("https://issues.apache.org/jira/browse/IGNITE-304", m.localSpaceSize() > 0);
 
         if (dual)
             //assertTrue(m.secondarySpaceSize() > 0);
@@ -3378,7 +3378,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMetricsBlock() throws Exception {
         assert dual == (secIgfsEx != null);
 
-        IgfsMetricsSelfTest.testBlockMetrics0(igfs, (IgfsImpl)secIgfsEx);
+        IgfsMetricsSelfTest.testBlockMetrics0(igfs, (IgfsImpl)secIgfsEx, secIgfsEx != null);
     }
 
     /**
