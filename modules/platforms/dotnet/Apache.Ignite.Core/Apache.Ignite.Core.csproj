@@ -108,6 +108,7 @@
     <Compile Include="Compute\IComputeReducer.cs" />
     <Compile Include="Compute\IComputeTask.cs" />
     <Compile Include="Configuration\CacheConfiguration.cs" />
+    <Compile Include="Configuration\CacheWriteSynchronizationMode.cs" />
     <Compile Include="Datastream\IDataStreamer.cs" />
     <Compile Include="Datastream\IStreamReceiver.cs" />
     <Compile Include="Datastream\StreamTransformer.cs" />
