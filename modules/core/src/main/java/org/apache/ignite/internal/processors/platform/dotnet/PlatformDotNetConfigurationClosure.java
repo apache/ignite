@@ -232,16 +232,22 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         List<CacheConfiguration> caches = new ArrayList<>();
 
-        for (int i = 0; i < len; i++) {
+        for (int i = 0; i < len; i++)
             caches.add(new CacheConfiguration(in.readString()));
+
+        CacheConfiguration[] oldCaches = cfg.getCacheConfiguration();
+        CacheConfiguration[] caches0 = caches.toArray(new CacheConfiguration[caches.size()]);
+
+        if (oldCaches == null)
+            cfg.setCacheConfiguration(caches0);
+        else {
+            CacheConfiguration[] mergedCaches = new CacheConfiguration[oldCaches.length + caches.size()];
+
+            System.arraycopy(oldCaches, 0, mergedCaches, 0, oldCaches.length);
+            System.arraycopy(caches0, 0, mergedCaches, oldCaches.length, caches.size());
+
+            cfg.setCacheConfiguration(mergedCaches);
         }
-
-        // TODO: Common method to merge
-        /*
-        CacheConfiguration[] oldCfg = cfg.getCacheConfiguration();
-
-        if (oldCfg != null)
-            newBeans.addAll(oldCfg)*/
     }
 
     /**
