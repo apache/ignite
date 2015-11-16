@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
+    using Apache.Ignite.Core.Binary;
+
     /// <summary>
     /// Defines grid cache configuration.
     /// </summary>
@@ -26,5 +28,23 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the cache name.
         /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        public CacheConfiguration(string name)
+        {
+            Name = name;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        internal CacheConfiguration(IBinaryRawReader reader)
+        {
+            Name = reader.ReadString();
+        }
     }
 }
