@@ -56,19 +56,23 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             // static
             Assert.AreEqual(Cache.Get(1) + 2, Cache.Invoke(1, (e, a) => e.Value + a, 2));
+            Assert.AreEqual(Cache.Get(1) + 2, Cache.InvokeAsync(1, (e, a) => e.Value + a, 2).Result);
 
             // field capture
             Assert.AreEqual(Cache.Get(1) + _testField, Cache.Invoke(1, (e, a) => e.Value + _testField, 2));
+            Assert.AreEqual(Cache.Get(1) + _testField, Cache.InvokeAsync(1, (e, a) => e.Value + _testField, 2).Result);
 
             // variable capture
             var testVal = 7;
 
             Assert.AreEqual(Cache.Get(1) + testVal, Cache.Invoke(1, (e, a) => e.Value + testVal, 2));
+            Assert.AreEqual(Cache.Get(1) + testVal, Cache.InvokeAsync(1, (e, a) => e.Value + testVal, 2).Result);
 
             // unsupported
             var invalid = new NonSerializable { Prop = 10 };
 
             Assert.Throws<SerializationException>(() => Cache.Invoke(1, (e, a) => e.Value + invalid.Prop, 0));
+            Assert.Throws<SerializationException>(() => Cache.InvokeAsync(1, (e, a) => e.Value + invalid.Prop, 0));
         }
 
         /// <summary>
