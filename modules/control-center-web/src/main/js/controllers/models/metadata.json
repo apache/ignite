@@ -15,7 +15,7 @@
   },
   "moreInfo": {
     "title": "Metadata screen",
-    "content": ["Manage you type metadata on current screen.",
+    "content": ["Manage your type metadata on current screen.",
       "Metadata can be assigned to specified <a href='/configuration/caches'>caches</a>.",
       "Generated cluster with caches with metadata configuration available on <a href='/configuration/summary'>summary</a> screen."]
   },
