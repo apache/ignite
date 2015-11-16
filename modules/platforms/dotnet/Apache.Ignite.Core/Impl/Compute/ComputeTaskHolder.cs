@@ -259,6 +259,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <returns>Job handle list.</returns>
         private static List<long> WriteJobs(BinaryWriter writer, IDictionary<IComputeJob<T>, IClusterNode> map)
         {
+            Debug.Assert(writer != null && map != null);
+
             writer.WriteInt(map.Count); // Amount of mapped jobs.
 
             var jobHandles = new List<long>(map.Count);
