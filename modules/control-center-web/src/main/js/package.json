@@ -60,6 +60,8 @@
   },
   "jspm": {
     "dependencies": {
+      "Blob": "github:eligrey/Blob.js@master",
+      "FileSaver": "github:eligrey/FileSaver.js@master",
       "ace": "github:ajaxorg/ace-builds@^1.2.2",
       "angular": "github:angular/bower-angular@^1.4.7",
       "angular-animate": "github:angular/bower-angular-animate@^1.4.7",
@@ -76,7 +78,10 @@
       "css": "github:systemjs/plugin-css@^0.1.19",
       "font-awesome": "npm:font-awesome@^4.4.0",
       "jquery": "github:components/jquery@^2.1.4",
+      "jszip": "github:Stuk/jszip@^2.5.0",
       "lodash": "npm:lodash@^3.10.1",
+      "nvd3": "npm:nvd3@^1.8.1",
+      "query-command-supported": "github:zenorocha/document.queryCommandSupported@^1.0.0",
       "sass": "github:mobilexag/plugin-sass@^0.0.10",
       "scss": "github:theefer/plugin-sass@master",
       "spinjs": "github:fgnass/spin.js@^2.3.2"
@@ -88,6 +93,25 @@
       "core-js": "npm:core-js@^1.1.4"
     },
     "overrides": {
+      "github:Stuk/jszip@2.5.0": {
+        "format": "global",
+        "main": "./dist/jszip"
+      },
+      "github:zenorocha/document.queryCommandSupported@1.0.0": {
+        "format": "global"
+      },
+      "github:angular/bower-angular@1.4.7": {
+        "dependencies": {
+          "jquery": "github:components/jquery@^2.1.4"
+        },
+        "shim": {
+          "angular": {
+            "deps": [
+              "jquery"
+            ]
+          }
+        }
+      },
       "github:krispo/angular-nvd3@1.0.3": {
         "dependencies": {
           "angular": "^1",
@@ -129,7 +153,8 @@
               "./mode-java",
               "./mode-sql",
               "./worker-xml",
-              "./ext-language_tools"
+              "./ext-language_tools",
+              "./mode-dockerfile"
             ]
           },
           "ace": {
@@ -159,8 +184,19 @@
             "deps": [
               "./ace"
             ]
+          },
+          "mode-dockerfile": {
+            "deps": [
+              "./ace"
+            ]
           }
         }
+      },
+      "github:eligrey/FileSaver.js@master": {
+        "format": "global"
+      },
+      "github:eligrey/Blob.js@master": {
+        "format": "global"
       }
     }
   }

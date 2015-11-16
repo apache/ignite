@@ -13,6 +13,8 @@ System.config({
   },
 
   map: {
+    "Blob": "github:eligrey/Blob.js@master",
+    "FileSaver": "github:eligrey/FileSaver.js@master",
     "ace": "github:ajaxorg/ace-builds@1.2.2",
     "angular": "github:angular/bower-angular@1.4.7",
     "angular-animate": "github:angular/bower-angular-animate@1.4.7",
@@ -34,7 +36,10 @@ System.config({
     "css": "github:systemjs/plugin-css@0.1.19",
     "font-awesome": "npm:font-awesome@4.4.0",
     "jquery": "github:components/jquery@2.1.4",
+    "jszip": "github:Stuk/jszip@2.5.0",
     "lodash": "npm:lodash@3.10.1",
+    "nvd3": "npm:nvd3@1.8.1",
+    "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
     "sass": "github:mobilexag/plugin-sass@0.0.10",
     "scss": "github:theefer/plugin-sass@master",
     "spinjs": "github:fgnass/spin.js@2.3.2",
@@ -46,6 +51,9 @@ System.config({
     },
     "github:angular/bower-angular-sanitize@1.4.7": {
       "angular": "github:angular/bower-angular@1.4.7"
+    },
+    "github:angular/bower-angular@1.4.7": {
+      "jquery": "github:components/jquery@2.1.4"
     },
     "github:jspm/nodelibs-assert@0.1.0": {
       "assert": "npm:assert@1.3.0"

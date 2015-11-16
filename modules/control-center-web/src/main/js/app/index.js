@@ -1,4 +1,4 @@
-import $ from 'jquery'
+import jQuery from 'jquery'
 import _ from 'lodash'
 import ace from 'ace'
 import angular from 'angular';
@@ -20,9 +20,14 @@ import 'angular-tree-control/css/tree-control.css!'
 import 'angular-tree-control/css/tree-control-attribute.css!'
 import 'angular-motion/dist/angular-motion.css!'
 
-import 'spinjs'
+import 'nvd3/build/nv.d3.css!'
 
-window.$ = $;
+import 'spinjs'
+import 'query-command-supported'
+import 'jszip'
+import 'FileSaver'
+import 'Blob'
+
 window._ = _;
 window.ace = ace;
 window.require = ace.require;

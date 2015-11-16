@@ -14,11 +14,7 @@
 
 extends ../templates/layout
 
-append css
-    link(rel='stylesheet', href='//cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.1/nv.d3.css')
 append scripts
-    script(src='//cdn.rawgit.com/zenorocha/document.queryCommandSupported/v1.0.0/dist/queryCommandSupported.min.js')
-
     script(src='/sql-controller.js')
 
 mixin btn-toolbar(btn, click, tip, focusId)
