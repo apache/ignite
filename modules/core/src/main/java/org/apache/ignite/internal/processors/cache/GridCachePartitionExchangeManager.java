@@ -866,14 +866,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         IgniteProductVersion minVer = cctx.localNode().version();
         IgniteProductVersion maxVer = cctx.localNode().version();
 
-        for (ClusterNode node : exchFut.discoveryEvent().topologyNodes()) {
-            IgniteProductVersion ver = node.version();
+        if (err == null) {
+            assert !F.isEmpty(exchFut.discoveryEvent().topologyNodes()) : exchFut.discoveryEvent();
 
-            if (ver.compareTo(minVer) < 0)
-                minVer = ver;
+            for (ClusterNode node : exchFut.discoveryEvent().topologyNodes()) {
+                IgniteProductVersion ver = node.version();
 
-            if (ver.compareTo(maxVer) > 0)
-                maxVer = ver;
+                if (ver.compareTo(minVer) < 0)
+                    minVer = ver;
+
+                if (ver.compareTo(maxVer) > 0)
+                    maxVer = ver;
+            }
         }
 
         nodeVers.put(topVer, new IgnitePair<>(minVer, maxVer));
