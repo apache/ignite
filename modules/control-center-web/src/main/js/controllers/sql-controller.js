@@ -1095,14 +1095,17 @@ consoleModule.controller('sqlController',
         if (!$common.isEmptyArray(paragraph.charts)) {
             var chart = paragraph.charts[0].api.getScope().chart;
 
+            if (!$common.isDefined(paragraph.chartsOptions))
+                paragraph.chartsOptions = {barChart: {stacked: true}, areaChart: {style: 'stack'}};
+
             switch (paragraph.result) {
                 case 'bar':
-                    paragraph.barCharOptions = {stacked: chart.stacked()};
+                    paragraph.chartsOptions.barChart.stacked = chart.stacked();
 
                     break;
 
                 case 'area':
-                    paragraph.areaCharOptions = {style: chart.style()};
+                    paragraph.chartsOptions.areaChart.style = chart.style();
 
                     break;
             }
@@ -1241,6 +1244,10 @@ consoleModule.controller('sqlController',
         var datum = _chartDatum(paragraph);
 
         if ($common.isEmptyArray(paragraph.charts)) {
+            var stacked = paragraph.chartsOptions && paragraph.chartsOptions.barChart
+                ? paragraph.chartsOptions.barChart.stacked
+                : true;
+
             var options = {
                 chart: {
                     type: 'multiBarChart',
@@ -1259,7 +1266,7 @@ consoleModule.controller('sqlController',
                         tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS,
-                    stacked: paragraph.barCharOptions ? paragraph.barCharOptions.stacked : true,
+                    stacked: stacked,
                     showControls: true
                 }
             };
@@ -1343,6 +1350,10 @@ consoleModule.controller('sqlController',
         var datum = _chartDatum(paragraph);
 
         if ($common.isEmptyArray(paragraph.charts)) {
+            var style = paragraph.chartsOptions && paragraph.chartsOptions.areaChart
+                ? paragraph.chartsOptions.areaChart.style
+                : 'stack';
+
             var options = {
                 chart: {
                     type: 'stackedAreaChart',
@@ -1361,7 +1372,7 @@ consoleModule.controller('sqlController',
                         tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS,
-                    style: paragraph.areaCharOptions ? paragraph.areaCharOptions.style : 'stack'
+                    style: style
                 }
             };
 
