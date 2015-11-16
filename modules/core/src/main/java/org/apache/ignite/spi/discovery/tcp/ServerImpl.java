@@ -2101,6 +2101,24 @@ class ServerImpl extends TcpDiscoveryImpl {
             initConnectionCheckFrequency();
         }
 
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException {
+            try {
+                super.body();
+            }
+            catch (Throwable e) {
+                if (!spi.isNodeStopping0() && spi.ignite() != null) {
+                    log.error("TcpDiscoverSpi's message worker thread failed abnormally. Stopping the grid in order " +
+                        "to prevent cluster wide instability.", e);
+
+                    spi.ignite().close();
+                }
+
+                // Must be processed by IgniteSpiThread as well.
+                throw e;
+            }
+        }
+
         /**
          * Initializes connection check frequency. Used only when failure detection timeout is enabled.
          */
