@@ -55,13 +55,17 @@ Creating NuGet package:
         <!--<file src="bin\x64\Release\*.dll" target="lib\net40" />-->
         
         <!-- Install script should be in tools -->
-        <file src="Apache.Ignite.Core.nuspec.Install.ps1" target="tools\Install.ps1" />
+        <file src="NuGet\Install.ps1" target="tools" />
         
         <!-- Other files should go to Content folder to be automatically included in project. -->
         <file src="..\..\..\..\config\default-config.xml" target="Content\Config" />
         
-        <file src="..\..\..\..\target\release-package\libs\*.jar" target="Content\Libs" />
-        <file src="..\..\..\..\target\release-package\libs\ignite-spring\*.jar" target="Content\Libs" />
-        <file src="..\..\..\..\target\release-package\libs\ignite-indexing\*.jar" target="Content\Libs" />
+        <!-- 
+            Library files (jars) should not be included in project, so that NuGet package restore works properly.
+            We keep jars in NuGet dir and copy them over in PostBuild event.
+        -->
+        <file src="..\..\..\..\target\release-package\libs\*.jar" target="Jars" />
+        <file src="..\..\..\..\target\release-package\libs\ignite-spring\*.jar" target="Jars" />
+        <file src="..\..\..\..\target\release-package\libs\ignite-indexing\*.jar" target="Jars" />
     </files>
 </package>

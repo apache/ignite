@@ -12,7 +12,7 @@
 
 param($installPath, $toolsPath, $package, $project)
 
-Write-Host "Updating content files properties..."
+Write-Host "Updating project properties..."
 
 Function SetProperties
 {
@@ -23,12 +23,22 @@ Function SetProperties
     $projItem.Properties.Item("CopyToOutputDirectory").Value = 2  # copy if newer
 }
 
+# Copy default config to output dir for user conveniece
 SetProperties $project.ProjectItems.Item("Config").ProjectItems.Item("default-config.xml")
 
-ForEach ($item in $project.ProjectItems.Item("Libs").ProjectItems) 
-{
-    SetProperties $item
-}
+# ForEach ($item in $project.ProjectItems.Item("Libs").ProjectItems) 
+# {
+#    SetProperties $item
+# }
 
+. (Join-Path $toolsPath "GetSqlCEPostBuildCmd.ps1")
+
+# Get the current Post Build Event cmd
+$currentPostBuildCmd = $project.Properties.Item("PostBuildEvent").Value
+
+# Append our post build command if it's not already there
+if (!$currentPostBuildCmd.Contains($IgnitePostBuildCmd)) {
+    $project.Properties.Item("PostBuildEvent").Value += $IgnitePostBuildCmd
+}
 
 Write-Host "Welcome to Apache Ignite.NET!"

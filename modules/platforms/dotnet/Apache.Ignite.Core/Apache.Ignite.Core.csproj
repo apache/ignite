@@ -369,7 +369,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.nuspec" />
-    <None Include="Apache.Ignite.Core.nuspec.Install.ps1" />
+    <None Include="NuGet\PostBuild.ps1" />
+    <None Include="NuGet\Install.ps1" />
     <None Include="Apache.Ignite.Core.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
