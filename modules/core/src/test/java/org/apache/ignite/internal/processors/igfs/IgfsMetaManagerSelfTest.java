@@ -31,6 +31,7 @@ import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -309,8 +310,13 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         expectsRenameFail("/a/k", "/a/b/", "Failed to perform move because destination already " +
             "contains entry with the same name existing file");
 
-        mgr.delete(a.id(), "k", k.id());
-        mgr.delete(b.id(), "k", z.id());
+        T2<Integer,Integer> t2 = mgr.delete(a.id(), Collections.singletonMap("k", k.id()));
+        assert t2.get1() == 1;
+        assert t2.get2() == 0;
+
+        t2 = mgr.delete(b.id(), Collections.singletonMap("k", z.id()));
+        assert t2.get1() == 1;
+        assert t2.get2() == 0;
 
         System.out.println("/: " + mgr.directoryListing(ROOT_ID));
         System.out.println("a: " + mgr.directoryListing(a.id()));
