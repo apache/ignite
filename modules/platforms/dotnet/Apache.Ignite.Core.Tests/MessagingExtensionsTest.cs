@@ -77,5 +77,27 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(15, counter);
         }
+
+        /// <summary>
+        /// Tests RemoteListen.
+        /// </summary>
+        [Test]
+        public void TestRemoteListenAsync()
+        {
+            int counter = 0;
+
+            var listenId = Messaging.RemoteListenAsync<int>((nodeId, msg) => (counter += msg) > 0).Result;
+
+            Messaging.Send(5);
+            Messaging.Send(10);
+
+            Assert.AreEqual(15, counter);
+
+            Messaging.StopRemoteListen(listenId);
+
+            Messaging.Send(10);
+
+            Assert.AreEqual(15, counter);
+        }
     }
 }

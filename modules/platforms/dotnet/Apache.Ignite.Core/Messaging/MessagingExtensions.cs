@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Messaging
 {
     using System;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Messaging;
     using A = Apache.Ignite.Core.Impl.Common.IgniteArgumentCheck;
 
@@ -72,6 +73,28 @@ namespace Apache.Ignite.Core.Messaging
             var filter0 = new MessageDelegateFilter<T>(filter);
 
             return messaging.RemoteListen(filter0, topic);
+        }
+
+        /// <summary>
+        /// Adds a message listener for a given topic to all nodes in the cluster group (possibly including
+        /// this node if it belongs to the cluster group as well). This means that any node within this cluster
+        /// group can send a message for a given topic and all nodes within the cluster group will receive
+        /// listener notifications.
+        /// </summary>
+        /// <param name="messaging">Messaging instance.</param>
+        /// <param name="filter">Listener predicate.</param>
+        /// <param name="topic">Topic to unsubscribe from.</param>
+        /// <returns>
+        /// Operation ID that can be passed to <see cref="IMessaging.StopRemoteListen"/> method to stop listening.
+        /// </returns>
+        public static Task<Guid> RemoteListenAsync<T>(this IMessaging messaging, Func<Guid, T, bool> filter, object topic = null)
+        {
+            A.NotNull(messaging, "messaging");
+            A.NotNull(filter, "filter");
+
+            var filter0 = new MessageDelegateFilter<T>(filter);
+
+            return messaging.RemoteListenAsync(filter0, topic);
         }
     }
 }
