@@ -1087,6 +1087,16 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(_grid1.GetCompute().ClusterGroup.GetNodes().Count, res);
         }
 
+        [Test]
+        public void TestExceptions()
+        {
+            Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
+
+            Assert.Throws<BinaryObjectException>(
+                () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
+                    typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
+        }
+
         /// <summary>
         /// Create configuration.
         /// </summary>
@@ -1143,7 +1153,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             for (int i = 0; i < subgrid.Count; i++)
             {
-                NetSimpleJob job = new NetSimpleJob {Arg = arg};
+                var job = arg.Arg > 0 ? new NetSimpleJob {Arg = arg} : new InvalidNetSimpleJob();
 
                 jobs[job] = subgrid[i];
             }
@@ -1181,6 +1191,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             // No-op.
         }
+    }
+
+    class InvalidNetSimpleJob : NetSimpleJob
+    {
+        // No-op.
     }
 
     [Serializable]
@@ -1232,6 +1247,11 @@ namespace Apache.Ignite.Core.Tests.Compute
             Interlocked.Increment(ref InvokeCount);
             LastNodeId = _grid.GetCluster().GetLocalNode().Id;
         }
+    }
+
+    class InvalidComputeAction : ComputeAction
+    {
+        // No-op.
     }
 
     interface IUserInterface<out T>
