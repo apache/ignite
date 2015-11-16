@@ -496,7 +496,7 @@ consoleModule.controller('sqlController',
         paragraph.chartKeyCols = _retainColumns(paragraph.chartColumns, paragraph.chartKeyCols, _notObjectType, true);
 
         // We could accept only numeric columns for Y axis.
-        paragraph.chartValCols = _retainColumns(paragraph.chartColumns, paragraph.chartValCols, _numberType, false);
+        paragraph.chartValCols = _retainColumns(paragraph.chartColumns, paragraph.chartValCols, _numberType, false, paragraph.chartKeyCols);
     };
 
     $scope.toggleSystemColumns = function (paragraph) {
@@ -516,7 +516,7 @@ consoleModule.controller('sqlController',
         });
     };
 
-    function _retainColumns(allCols, curCols, acceptableType, xAxis) {
+    function _retainColumns(allCols, curCols, acceptableType, xAxis, unwantedCols) {
         var retainedCols = [];
 
         var availableCols = xAxis ? allCols : _.filter(allCols, function (col) {
@@ -536,9 +536,17 @@ consoleModule.controller('sqlController',
 
             // If nothing was restored, add first acceptable column.
             if ($common.isEmptyArray(retainedCols)) {
-                var col = _.find(availableCols, function (col) {
-                    return acceptableType(col.type);
-                });
+                var col;
+
+                if (unwantedCols)
+                    col = _.find(availableCols, function (col) {
+                        return !_.find(unwantedCols, {label: col.label}) && acceptableType(col.type);
+                    });
+
+                if (!col)
+                    col = _.find(availableCols, function (col) {
+                        return acceptableType(col.type);
+                    });
 
                 if (col)
                     retainedCols.push(col);
