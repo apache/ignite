@@ -236,7 +236,11 @@ public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundFuture<
 
             // Register DHT version.
             m.dhtVersion(res.dhtVersion(), writeVer);
-            tx.mappings().get(nodeId).dhtVersion(res.dhtVersion(), writeVer);
+
+            GridDistributedTxMapping map = tx.mappings().get(nodeId);
+
+            if (map != null)
+                map.dhtVersion(res.dhtVersion(), writeVer);
 
             if (m.near())
                 tx.readyNearLocks(m, res.pending(), res.committedVersions(), res.rolledbackVersions());
