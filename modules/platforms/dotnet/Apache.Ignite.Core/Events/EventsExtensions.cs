@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Events
         /// <returns>
         /// Event filter to be used in <see cref="IEvents.StopLocalListen{T}(IEventListener{T}, int[])"/>.
         /// </returns>
-        public static IEventFilter<T> LocalListen<T>(this IEvents events, Func<T, bool> listener, params int[] types)
+        public static IEventListener<T> LocalListen<T>(this IEvents events, Func<T, bool> listener, params int[] types)
             where T : IEvent
         {
             A.NotNull(events, "events");
