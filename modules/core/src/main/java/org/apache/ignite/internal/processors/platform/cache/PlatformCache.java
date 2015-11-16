@@ -28,6 +28,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.portable.BinaryRawReaderEx;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -176,6 +177,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_REPLACE_3 = 38;
+
+    /** */
+    public static final int OP_GET_CONFIG = 39;
 
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
@@ -512,6 +516,14 @@ public class PlatformCache extends PlatformAbstractTarget {
                 writer.writeBoolean(metrics.isWriteThrough());
                 writer.writeFloat(metrics.getCacheHitPercentage());
                 writer.writeFloat(metrics.getCacheMissPercentage());
+
+                break;
+
+            case OP_GET_CONFIG:
+                CacheConfiguration ccfg = ((IgniteCache<Object, Object>)cache).
+                        getConfiguration(CacheConfiguration.class);
+
+                writer.writeString(ccfg.getName());
 
                 break;
 
