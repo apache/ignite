@@ -16,5 +16,5 @@ $path = $installPath.Replace($solutionDir, "`$(SolutionDir)")
 $Jars = Join-Path $path "Jars\*.*"
 
 $IgnitePostBuildCmd = "
-if not exist `"`$(TargetDir)Jars`" md `"`$(TargetDir)Jars`"
-xcopy /s /y `"$Jars`" `"`$(TargetDir)Jars`""
+if not exist `"`$(TargetDir)Libs`" md `"`$(TargetDir)Libs`"
+xcopy /s /y `"$Jars`" `"`$(TargetDir)Libs`""
