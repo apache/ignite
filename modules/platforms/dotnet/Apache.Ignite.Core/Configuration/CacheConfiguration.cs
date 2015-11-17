@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Configuration
 {
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Store;
 
     /// <summary>
     /// Defines grid cache configuration.
@@ -168,7 +169,7 @@ namespace Apache.Ignite.Core.Configuration
             SqlOnheapRowCacheSize = DefaultSqlOnheapRowCacheSize;
             StartSize = DefaultStartSize;
             StartSize = DefaultStartSize;
-            SwapEnabled = DefaultSwapEnabled;
+            EnableSwap = DefaultSwapEnabled;
             WriteBehindBatchSize = DefaultWriteBehindBatchSize;
             WriteBehindEnabled = DefaultWriteBehindEnabled;
             WriteBehindFlushFrequency = DefaultWriteBehindFlushFrequency;
@@ -186,13 +187,13 @@ namespace Apache.Ignite.Core.Configuration
         }
 
         /// <summary>
-        /// Gets write synchronization mode. This mode controls whether the main        
+        /// Gets or sets write synchronization mode. This mode controls whether the main        
         /// caller should wait for update on other nodes to complete or not.
         /// </summary>
         public CacheWriteSynchronizationMode WriteSynchronizationMode { get; set; }
 
         /// <summary>
-        /// Gets flag indicating whether eviction is synchronized between primary, backup and near nodes.        
+        /// Gets or sets flag indicating whether eviction is synchronized between primary, backup and near nodes.        
         /// If this parameter is true and swap is disabled then <see cref="ICache{TK,TV}.LocalEvict"/>
         /// will involve all nodes where an entry is kept.  
         /// If this property is set to false then eviction is done independently on different cache nodes.        
@@ -202,12 +203,12 @@ namespace Apache.Ignite.Core.Configuration
         public bool EvictSynchronized { get; set; }
 
         /// <summary>
-        /// Gets size of the key buffer for synchronized evictions.
+        /// Gets or sets size of the key buffer for synchronized evictions.
         /// </summary>
         public int EvictSynchronizedKeyBufferSize { get; set; }
 
         /// <summary>
-        /// Gets concurrency level for synchronized evictions. 
+        /// Gets or sets concurrency level for synchronized evictions. 
         /// This flag only makes sense with <see cref="EvictSynchronized"/> set to true. 
         /// When synchronized evictions are enabled, it is possible that local eviction policy will try 
         /// to evict entries faster than evictions can be synchronized with backup or near nodes. 
@@ -217,7 +218,7 @@ namespace Apache.Ignite.Core.Configuration
         public int EvictSynchronizedConcurrencyLevel { get; set; }
 
         /// <summary>
-        /// Gets timeout for synchronized evictions
+        /// Gets or sets timeout for synchronized evictions
         /// </summary>
         public long EvictSynchronizedTimeout { get; set; }
 
@@ -232,18 +233,18 @@ namespace Apache.Ignite.Core.Configuration
         public float MaxEvictionOverflowRatio { get; set; }
 
         /// <summary>
-        /// Gets flag indicating whether expired cache entries will be eagerly removed from cache. 
+        /// Gets or sets flag indicating whether expired cache entries will be eagerly removed from cache. 
         /// When set to false, expired entries will be removed on next entry access.        
         /// </summary>
         public bool EagerTtl { get; set; }
 
         /// <summary>
-        /// Gets initial cache size which will be used to pre-create internal hash table after start.
+        /// Gets or sets initial cache size which will be used to pre-create internal hash table after start.
         /// </summary>
         public int StartSize { get; set; }
 
         /// <summary>
-        /// Gets flag indicating whether value should be loaded from store if it is not in the cache 
+        /// Gets or sets flag indicating whether value should be loaded from store if it is not in the cache 
         /// for the following cache operations:   
         /// <list type="bullet">
         /// <item><term><see cref="ICache{TK,TV}.PutIfAbsent"/></term></item>
@@ -258,34 +259,35 @@ namespace Apache.Ignite.Core.Configuration
         public bool LoadPreviousValue { get; set; }
 
         /// <summary>
-        /// Gets factory for underlying persistent storage for read-through and write-through operations.
+        /// Gets or sets factory for underlying persistent storage for read-through and write-through operations.
         /// </summary>
         public bool KeepPortableInStore { get; set; }
 
         /// <summary>
-        /// Gets caching mode to use. You can configure cache either to be local-only,        fully replicated, partitioned, or near. If not provided, { CacheMode#PARTITIONED}        mode will be used by default (defined by { #DEFAULT_CACHE_MODE} constant).
+        /// Gets or sets caching mode to use.
         /// </summary>
         public CacheMode CacheMode { get; set; }
 
         /// <summary>
-        /// Gets cache atomicity mode.        <para/>        Default value is defined by { #DEFAULT_CACHE_ATOMICITY_MODE}.
+        /// Gets or sets cache atomicity mode.
         /// </summary>
         public CacheAtomicityMode AtomicityMode { get; set; }
 
         /// <summary>
-        /// Gets cache write ordering mode. This property can be enabled only for { CacheAtomicityMode#ATOMIC}        cache (for other atomicity modes it will be ignored).
+        /// Gets or sets cache write ordering mode.
         /// </summary>
         public CacheAtomicWriteOrderMode AtomicWriteOrderMode { get; set; }
 
         /// <summary>
-        /// Gets number of nodes used to back up single partition for { CacheMode#PARTITIONED} cache.        <para/>        If not set, default value is { #DEFAULT_BACKUPS}.
+        /// Gets or sets number of nodes used to back up single partition for 
+        /// <see cref="Configuration.CacheMode.Partitioned"/> cache.
         /// </summary>
         public int Backups { get; set; }
 
         /// <summary>
-        /// Gets default lock acquisition timeout. Default value is defined by { #DEFAULT_LOCK_TIMEOUT}        which is { 0} and means that lock acquisition will never timeout.
+        /// Gets or sets default lock acquisition timeout.
         /// </summary>
-        public long LockTimeout { get; set; }
+        public long LockTimeout { get; set; }  // TODO: Timespan
 
         /// <summary>
         /// Invalidation flag. If true, values will be invalidated (nullified) upon commit in near cache.
@@ -293,102 +295,135 @@ namespace Apache.Ignite.Core.Configuration
         public bool Invalidate { get; set; }
 
         /// <summary>
-        /// Gets class name of transaction manager finder for integration for JEE app servers.
+        /// Gets or sets cache rebalance mode.
         /// </summary>
         public CacheRebalanceMode RebalanceMode { get; set; }
 
         /// <summary>
-        /// Gets size (in number bytes) to be loaded within a single rebalance message.        Rebalancing algorithm will split total data set on every node into multiple        batches prior to sending data. Default value is defined by        { #DEFAULT_REBALANCE_BATCH_SIZE}.
+        /// Gets or sets size (in number bytes) to be loaded within a single rebalance message.
+        /// Rebalancing algorithm will split total data set on every node into multiple batches prior to sending data.
         /// </summary>
         public int RebalanceBatchSize { get; set; }
 
         /// <summary>
-        /// Flag indicating whether Ignite should use swap storage by default. By default        swap is disabled which is defined via { #DEFAULT_SWAP_ENABLED} constant.
+        /// Flag indicating whether Ignite should use swap storage by default.
         /// </summary>
-        public bool SwapEnabled { get; set; }
+        public bool EnableSwap { get; set; }
 
         /// <summary>
-        /// Gets maximum number of allowed concurrent asynchronous operations. If 0 returned then number        of concurrent asynchronous operations is unlimited.        <para/>        If not set, default value is { #DEFAULT_MAX_CONCURRENT_ASYNC_OPS}.        <para/>        If user threads do not wait for asynchronous operations to complete, it is possible to overload        a system. This property enables back-pressure control by limiting number of scheduled asynchronous        cache operations.
+        /// Gets or sets maximum number of allowed concurrent asynchronous operations, 0 for unlimited.
         /// </summary>
         public int MaxConcurrentAsyncOperations { get; set; }
 
         /// <summary>
-        /// Flag indicating whether Ignite should use write-behind behaviour for the cache store.        By default write-behind is disabled which is defined via { #DEFAULT_WRITE_BEHIND_ENABLED}        constant.
+        /// Flag indicating whether Ignite should use write-behind behaviour for the cache store.
         /// </summary>
         public bool WriteBehindEnabled { get; set; }
 
         /// <summary>
-        /// Maximum size of the write-behind cache. If cache size exceeds this value,        all cached items are flushed to the cache store and write cache is cleared.        <p/>        If not provided, default value is { #DEFAULT_WRITE_BEHIND_FLUSH_SIZE}.        If this value is { 0}, then flush is performed according to the flush frequency interval.        <p/>        Note that you cannot set both, { flush} size and { flush frequency}, to { 0}.
+        /// Maximum size of the write-behind cache. If cache size exceeds this value, all cached items are flushed 
+        /// to the cache store and write cache is cleared.
         /// </summary>
         public int WriteBehindFlushSize { get; set; }
 
         /// <summary>
-        /// Frequency with which write-behind cache is flushed to the cache store in milliseconds.        This value defines the maximum time interval between object insertion/deletion from the cache        ant the moment when corresponding operation is applied to the cache store.        <para/>        If not provided, default value is { #DEFAULT_WRITE_BEHIND_FLUSH_FREQUENCY}.        If this value is { 0}, then flush is performed according to the flush size.        <para/>        Note that you cannot set both, { flush} size and { flush frequency}, to { 0}.
+        /// Frequency with which write-behind cache is flushed to the cache store in milliseconds.
+        /// This value defines the maximum time interval between object insertion/deletion from the cache
+        /// at the moment when corresponding operation is applied to the cache store.
+        /// <para/> 
+        /// If this value is 0, then flush is performed according to the flush size.
+        /// <para/>
+        /// Note that you cannot set both
+        /// <see cref="WriteBehindFlushSize"/> and <see cref="WriteBehindFlushFrequency"/> to 0.
         /// </summary>
         public long WriteBehindFlushFrequency { get; set; }
 
         /// <summary>
-        /// Number of threads that will perform cache flushing. Cache flushing is performed        when cache size exceeds value defined by        { #getWriteBehindFlushSize}, or flush interval defined by        { #getWriteBehindFlushFrequency} is elapsed.        <p/>        If not provided, default value is { #DEFAULT_WRITE_FROM_BEHIND_FLUSH_THREAD_CNT}.
+        /// Number of threads that will perform cache flushing. Cache flushing is performed when cache size exceeds 
+        /// value defined by <see cref="WriteBehindFlushSize"/>, or flush interval defined by 
+        /// <see cref="WriteBehindFlushFrequency"/> is elapsed.
         /// </summary>
         public int WriteBehindFlushThreadCount { get; set; }
 
         /// <summary>
-        /// Maximum batch size for write-behind cache store operations. Store operations (get or remove)        are combined in a batch of this size to be passed to        { CacheStore#writeAll(Collection)} or        { CacheStore#deleteAll(Collection)} methods.        <p/>        If not provided, default value is { #DEFAULT_WRITE_BEHIND_BATCH_SIZE}.
+        /// Maximum batch size for write-behind cache store operations. 
+        /// Store operations (get or remove) are combined in a batch of this size to be passed to 
+        /// <see cref="ICacheStore.WriteAll"/> or <see cref="ICacheStore.DeleteAll"/> methods. 
         /// </summary>
         public int WriteBehindBatchSize { get; set; }
 
         /// <summary>
-        /// Gets size of rebalancing thread pool. Note that size serves as a hint and implementation        may create more threads for rebalancing than specified here (but never less threads).        <para/>        Default value is { #DEFAULT_REBALANCE_THREAD_POOL_SIZE}.
+        /// Gets or sets size of rebalancing thread pool. Note that size serves as a hint and implementation 
+        /// may create more threads for rebalancing than specified here (but never less threads).
         /// </summary>
         public int RebalanceThreadPoolSize { get; set; }
 
         /// <summary>
-        /// Gets rebalance timeout (ms).        <para/>        Default value is { #DEFAULT_REBALANCE_TIMEOUT}.
+        /// Gets or sets rebalance timeout (ms).
         /// </summary>
-        public long RebalanceTimeout { get; set; }
+        public long RebalanceTimeout { get; set; }  // TODO: Timespan
 
         /// <summary>
-        /// Gets delay in milliseconds upon a node joining or leaving topology (or crash) after which rebalancing        should be started automatically. Rebalancing should be delayed if you plan to restart nodes        after they leave topology, or if you plan to start multiple nodes at once or one after another        and don't want to repartition and rebalance until all nodes are started.        <para/>        For better efficiency user should usually make sure that new nodes get placed on        the same place of consistent hash ring as the left nodes, and that nodes are        restarted before this delay expires. To place nodes on the same place in consistent hash ring,        use { IgniteConfiguration#setConsistentId(Serializable)}        to make sure that a node maps to the same hash ID event if restarted. As an example,        node IP address and port combination may be used in this case.        <para/>        Default value is { 0} which means that repartitioning and rebalancing will start        immediately upon node leaving topology. If { -1} is returned, then rebalancing        will only be started manually by calling { IgniteCache#rebalance()} method or        from management console.
+        /// Gets or sets delay in milliseconds upon a node joining or leaving topology (or crash) 
+        /// after which rebalancing should be started automatically. 
+        /// Rebalancing should be delayed if you plan to restart nodes
+        /// after they leave topology, or if you plan to start multiple nodes at once or one after another
+        /// and don't want to repartition and rebalance until all nodes are started.
         /// </summary>
         public long RebalanceDelay { get; set; }
 
         /// <summary>
-        /// Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network.        When rebalancing large data sets, the CPU or network can get over-consumed with rebalancing messages,        which consecutively may slow down the application performance. This parameter helps tune        the amount of time to wait between rebalance messages to make sure that rebalancing process        does not have any negative performance impact. Note that application will continue to work        properly while rebalancing is still in progress.        <para/>        Value of { 0} means that throttling is disabled. By default throttling is disabled -        the default is defined by { #DEFAULT_REBALANCE_THROTTLE} constant.
+        /// Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network.
+        /// When rebalancing large data sets, the CPU or network can get over-consumed with rebalancing messages,
+        /// which consecutively may slow down the application performance. This parameter helps tune 
+        /// the amount of time to wait between rebalance messages to make sure that rebalancing process
+        /// does not have any negative performance impact. Note that application will continue to work
+        /// properly while rebalancing is still in progress.
+        /// <para/>
+        /// Value of 0 means that throttling is disabled.
         /// </summary>
         public long RebalanceThrottle { get; set; }
 
         /// <summary>
-        /// Gets maximum amount of memory available to off-heap storage. Possible values are        <ul>        <li>{ -1} - Means that off-heap storage is disabled.</li>        <li>            { 0} - Ignite will not limit off-heap storage (it's up to user to properly            add and remove entries from cache to ensure that off-heap storage does not grow            indefinitely.        </li>        <li>Any positive value specifies the limit of off-heap storage in bytes.</li>        </ul>        Default value is { -1}, specified by { #DEFAULT_OFFHEAP_MEMORY} constant        which means that off-heap storage is disabled by default.        <para/>        Use off-heap storage to load gigabytes of data in memory without slowing down        Garbage Collection. Essentially in this case you should allocate very small amount        of memory to JVM and Ignite will cache most of the data in off-heap space        without affecting JVM performance at all.        <para/>        Note that Ignite will throw an exception if max memory is set to { -1} and        { offHeapValuesOnly} flag is set to true.
+        /// Gets or sets maximum amount of memory available to off-heap storage. Possible values are
+        /// -1 means that off-heap storage is disabled. 0 means that Ignite will not limit off-heap storage 
+        /// (it's up to user to properly add and remove entries from cache to ensure that off-heap storage 
+        /// does not grow indefinitely.
+        /// Any positive value specifies the limit of off-heap storage in bytes.
         /// </summary>
         public long OffHeapMaxMemory { get; set; }
 
         /// <summary>
-        /// Gets memory mode for cache. Memory mode helps control whether value is stored in on-heap memory,        off-heap memory, or swap space. Refer to { CacheMemoryMode} for more info.        <para/>        Default value is { #DEFAULT_MEMORY_MODE}.
+        /// Gets or sets memory mode for cache.
         /// </summary>
         public CacheMemoryMode MemoryMode { get; set; }
 
         /// <summary>
-        /// Gets flag indicating whether data can be read from backup.        If false always get data from primary node (never from backup).        <para/>        Default value is defined by { #DEFAULT_READ_FROM_BACKUP}.
+        /// Gets or sets flag indicating whether data can be read from backup.
         /// </summary>
         public bool ReadFromBackup { get; set; }
 
         /// <summary>
-        /// Gets flag indicating whether copy of of the value stored in cache should be created        for cache operation implying return value. Also if this flag is set copies are created for values        passed to { CacheInterceptor} and to { CacheEntryProcessor}.
+        /// Gets or sets flag indicating whether copy of of the value stored in cache should be created
+        /// for cache operation implying return value. 
         /// </summary>
         public bool CopyOnRead { get; set; }
 
         /// <summary>
-        /// Gets classes with methods annotated by { QuerySqlFunction}        to be used as user-defined functions from SQL queries.
+        /// Gets or sets the timeout after which long query warning will be printed.
         /// </summary>
-        public long LongQueryWarningTimeout { get; set; }
+        public long LongQueryWarningTimeout { get; set; }  // TODO
 
         /// <summary>
-        /// If true all the SQL table and field names will be escaped with double quotes like        ({ "tableName"."fieldsName"}). This enforces case sensitivity for field names and        also allows having special characters in table and field names.
+        /// If true all the SQL table and field names will be escaped with double quotes like 
+        /// ({ "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+        /// also allows having special characters in table and field names.
         /// </summary>
         public bool SqlEscapeAll { get; set; }
 
         /// <summary>
-        /// Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.        This setting only makes sense when offheap is enabled for this cache.
+        /// Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
+        /// This setting only makes sense when offheap is enabled for this cache.
         /// </summary>
         public int SqlOnheapRowCacheSize { get; set; }
     }
