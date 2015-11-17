@@ -206,9 +206,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default size for onheap SQL row cache size. */
     public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
 
-    /** Default value for keep portable in store behavior .*/
+    /** Default value for keep binary in store behavior .*/
     @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
-    public static final Boolean DFLT_KEEP_PORTABLE_IN_STORE = new Boolean(true);
+    public static final Boolean DFLT_KEEP_BINARY_IN_STORE = new Boolean(true);
 
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
@@ -269,7 +269,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Factory storeFactory;
 
     /** */
-    private Boolean keepPortableInStore = DFLT_KEEP_PORTABLE_IN_STORE;
+    private Boolean keepBinaryInStore = DFLT_KEEP_BINARY_IN_STORE;
 
     /** */
     private boolean loadPrevVal = DFLT_LOAD_PREV_VAL;
@@ -441,8 +441,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
         isWriteThrough = cc.isWriteThrough();
-        keepPortableInStore = cc.isKeepPortableInStore() != null ? cc.isKeepPortableInStore() :
-            DFLT_KEEP_PORTABLE_IN_STORE;
+        keepBinaryInStore = cc.isKeepBinaryInStore() != null ? cc.isKeepBinaryInStore() :
+            DFLT_KEEP_BINARY_IN_STORE;
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
@@ -886,34 +886,34 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Flag indicating that {@link CacheStore} implementation
-     * is working with portable objects instead of Java objects.
-     * Default value of this flag is {@link #DFLT_KEEP_PORTABLE_IN_STORE},
+     * is working with binary objects instead of Java objects.
+     * Default value of this flag is {@link #DFLT_KEEP_BINARY_IN_STORE},
      * because this is recommended behavior from performance standpoint.
      * <p>
      * If set to {@code false}, Ignite will deserialize keys and
-     * values stored in portable format before they are passed
+     * values stored in binary format before they are passed
      * to cache store.
      * <p>
      * Note that setting this flag to {@code false} can simplify
      * store implementation in some cases, but it can cause performance
      * degradation due to additional serializations and deserializations
-     * of portable objects. You will also need to have key and value
+     * of binary objects. You will also need to have key and value
      * classes on all nodes since binary will be deserialized when
      * store is called.
      *
      * @return Keep binary in store flag.
      */
-    public Boolean isKeepPortableInStore() {
-        return keepPortableInStore;
+    public Boolean isKeepBinaryInStore() {
+        return keepBinaryInStore;
     }
 
     /**
      * Sets keep binary in store flag.
      *
-     * @param keepPortableInStore Keep binary in store flag.
+     * @param keepBinaryInStore Keep binary in store flag.
      */
-    public void setKeepPortableInStore(boolean keepPortableInStore) {
-        this.keepPortableInStore = keepPortableInStore;
+    public void setKeepBinaryInStore(boolean keepBinaryInStore) {
+        this.keepBinaryInStore = keepBinaryInStore;
     }
 
     /**
