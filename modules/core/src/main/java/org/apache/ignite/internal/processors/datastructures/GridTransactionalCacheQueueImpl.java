@@ -80,6 +80,9 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+        catch (RuntimeException e) {
+            throw e;
+        }
         catch (Exception e) {
             throw new IgniteException(e.getMessage(), e);
         }
@@ -115,6 +118,9 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        }
+        catch (RuntimeException e) {
+            throw e;
         }
         catch (Exception e) {
             throw new IgniteException(e.getMessage(), e);
@@ -162,6 +168,9 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+        catch (RuntimeException e) {
+            throw e;
+        }
         catch (Exception e) {
             throw new IgniteException(e.getMessage(), e);
         }
@@ -190,6 +199,9 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                     return null;
                 }
             }).call();
+        }
+        catch (RuntimeException e) {
+            throw e;
         }
         catch (Exception e) {
             throw new IgniteCheckedException(e);
