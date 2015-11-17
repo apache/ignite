@@ -184,7 +184,43 @@ namespace Apache.Ignite.Core.Configuration
         /// <param name="reader">The reader.</param>
         internal CacheConfiguration(IBinaryRawReader reader)
         {
+            AtomicityMode = (CacheAtomicityMode) reader.ReadInt();
+            AtomicWriteOrderMode = (CacheAtomicWriteOrderMode) reader.ReadInt();
+            Backups = reader.ReadInt();
+            CacheMode = (CacheMode) reader.ReadInt();
+            CopyOnRead = reader.ReadBoolean();
+            EagerTtl = reader.ReadBoolean();
+            EnableSwap = reader.ReadBoolean();
+            EvictSynchronized = reader.ReadBoolean();
+            EvictSynchronizedConcurrencyLevel = reader.ReadInt();
+            EvictSynchronizedKeyBufferSize = reader.ReadInt();
+            EvictSynchronizedTimeout = TimeSpan.FromMilliseconds(reader.ReadLong());
+            Invalidate = reader.ReadBoolean();
+            KeepPortableInStore = reader.ReadBoolean();
+            LoadPreviousValue = reader.ReadBoolean();
+            LockTimeout = TimeSpan.FromMilliseconds(reader.ReadLong());
+            LongQueryWarningTimeout = TimeSpan.FromMilliseconds(reader.ReadLong());
+            MaxConcurrentAsyncOperations = reader.ReadInt();
+            MaxEvictionOverflowRatio = reader.ReadFloat();
+            MemoryMode = (CacheMemoryMode) reader.ReadInt();
             Name = reader.ReadString();
+            OffHeapMaxMemory = reader.ReadLong();
+            ReadFromBackup = reader.ReadBoolean();
+            RebalanceBatchSize = reader.ReadInt();
+            RebalanceDelay = TimeSpan.FromMilliseconds(reader.ReadLong());
+            RebalanceMode = (CacheRebalanceMode) reader.ReadInt();
+            RebalanceThreadPoolSize = reader.ReadInt();
+            RebalanceThrottle = TimeSpan.FromMilliseconds(reader.ReadLong());
+            RebalanceTimeout = TimeSpan.FromMilliseconds(reader.ReadLong());
+            SqlEscapeAll = reader.ReadBoolean();
+            SqlOnheapRowCacheSize = reader.ReadInt();
+            StartSize = reader.ReadInt();
+            WriteBehindBatchSize = reader.ReadInt();
+            WriteBehindEnabled = reader.ReadBoolean();
+            WriteBehindFlushFrequency = TimeSpan.FromMilliseconds(reader.ReadLong());
+            WriteBehindFlushSize = reader.ReadInt();
+            WriteBehindFlushThreadCount = reader.ReadInt();
+            WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
         }
 
         /// <summary>
