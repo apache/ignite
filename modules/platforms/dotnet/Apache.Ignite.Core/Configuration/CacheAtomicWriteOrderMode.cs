@@ -17,8 +17,27 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
+    /// <summary>
+    /// Cache write ordering mode. This enumeration is taken into account only in 
+    /// <see cref="CacheAtomicityMode.Atomic"/> atomicity mode.
+    /// Write ordering mode determines which node assigns the write version, sender or the primary node.
+    /// </summary>
     public enum CacheAtomicWriteOrderMode
     {
-        
+        /// <summary>
+        /// In this mode, write versions are assigned on a sender node which generally leads to better
+        /// performance in <see cref="CacheWriteSynchronizationMode.FullSync"/> synchronization mode, 
+        /// since in this case sender can send write requests to primary and backups at the same time.
+        /// <para/>
+        /// This mode will be automatically configured only with <see cref="CacheWriteSynchronizationMode.FullSync"/>
+        /// write synchronization mode, as for other synchronization modes it does not render better performance.
+        /// </summary>
+        Clock,
+
+        /// <summary>
+        /// Cache version is assigned only on primary node. This means that sender will only send write request
+        /// to primary node, which in turn will assign write version and forward it to backups.
+        /// </summary>
+        Primary
     }
 }
