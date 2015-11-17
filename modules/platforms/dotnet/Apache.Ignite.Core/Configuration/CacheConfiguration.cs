@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Configuration
         public static bool DefaultSwapEnabled = false;
 
         /** Default value for 'maxConcurrentAsyncOps'. */
-        public static int DefaultMaxConcurrentAsyncOps = 500;
+        public static int DefaultMaxConcurrentAsyncOperations = 500;
 
         /** Default value for 'writeBehindEnabled' flag. */
         public static bool DefaultWriteBehindEnabled = false;
@@ -97,20 +97,17 @@ namespace Apache.Ignite.Core.Configuration
         /** Default flush size for write-behind cache store. */
         public static int DefaultWriteBehindFlushSize = 10240; // 10K
 
-        /** Default critical size used when flush size is not specified. */
-        public static int DefaultWriteBehindCriticalSize = 16384; // 16K
-
         /** Default flush frequency for write-behind cache store in milliseconds. */
         public static long DefaultWriteBehindFlushFrequency = 5000;
 
         /** Default count of flush threads for write-behind cache store. */
-        public static int DefaultWriteFromBehindFlushThreadCnt = 1;
+        public static int DefaultWriteFromBehindFlushThreadCount = 1;
 
         /** Default batch size for write-behind cache store. */
         public static int DefaultWriteBehindBatchSize = 512;
 
         /** Default value for load previous value flag. */
-        public static bool DefaultLoadPrevVal = false;
+        public static bool DefaultLoadPreviousValue = false;
 
         /** Default memory mode. */
         public static CacheMemoryMode DefaultMemoryMode = CacheMemoryMode.OnheapTiered;
@@ -119,13 +116,17 @@ namespace Apache.Ignite.Core.Configuration
         public static bool DefaultReadFromBackup = true;
 
         /** Default timeout after which long query warning will be printed. */
-        public static long DefaultLongQryWarnTimeout = 3000;
+        public static long DefaultLongQueryWarningTimeout = 3000;
 
         /** Default size for onheap SQL row cache size. */
         public static int DefaultSqlOnheapRowCacheSize = 10*1024;
 
         /** Default value for keep portable in store behavior .*/
         public static bool DefaultKeepPortableInStore = true;
+
+        /** Default value for 'copyOnRead' flag. */
+        public static bool DefaultCopyOnRead = true;
+
 
         /// <summary>
         /// Gets or sets the cache name.
@@ -138,9 +139,42 @@ namespace Apache.Ignite.Core.Configuration
         /// <param name="name">The name.</param>
         public CacheConfiguration(string name = null)
         {
-            // TODO: Default values!!
-
             Name = name;
+
+            Backups = DefaultBackups;
+            AtomicityMode = DefaultCacheAtomicityMode;
+            CacheMode = DefaultCacheMode;
+            CopyOnRead = DefaultCopyOnRead;
+            StartSize = DefaultCacheSize;
+            EagerTtl = DefaultEagerTtl;
+            EvictSynchronizedKeyBufferSize = DefaultEvictKeyBufferSize;
+            EvictSynchronized = DefaultEvictSynchronized;
+            EvictSynchronizedConcurrencyLevel = DefaultEvictSynchronizedConcurrencyLevel;
+            EvictSynchronizedTimeout = DefaultEvictSynchronizedTimeout;
+            Invalidate = DefaultInvalidate;
+            KeepPortableInStore = DefaultKeepPortableInStore;
+            LoadPreviousValue = DefaultLoadPreviousValue;
+            LockTimeout = DefaultLockTimeout;
+            LongQueryWarningTimeout = DefaultLongQueryWarningTimeout;
+            MaxConcurrentAsyncOperations = DefaultMaxConcurrentAsyncOperations;
+            MaxEvictionOverflowRatio = DefaultMaxEvictionOverflowRatio;
+            MemoryMode = DefaultMemoryMode;
+            OffHeapMaxMemory = DefaultOffheapMemory;
+            ReadFromBackup = DefaultReadFromBackup;
+            RebalanceBatchSize = DefaultRebalanceBatchSize;
+            RebalanceMode = DefaultRebalanceMode;
+            RebalanceThreadPoolSize = DefaultRebalanceThreadPoolSize;
+            RebalanceThrottle = DefaultRebalanceThrottle;
+            RebalanceTimeout = DefaultRebalanceTimeout;
+            SqlOnheapRowCacheSize = DefaultSqlOnheapRowCacheSize;
+            StartSize = DefaultStartSize;
+            StartSize = DefaultStartSize;
+            SwapEnabled = DefaultSwapEnabled;
+            WriteBehindBatchSize = DefaultWriteBehindBatchSize;
+            WriteBehindEnabled = DefaultWriteBehindEnabled;
+            WriteBehindFlushFrequency = DefaultWriteBehindFlushFrequency;
+            WriteBehindFlushSize = DefaultWriteBehindFlushSize;
+            WriteBehindFlushThreadCount= DefaultWriteFromBehindFlushThreadCount;
         }
 
         /// <summary>
@@ -206,7 +240,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// This value denotes the maximum size of eviction queue in percents of cache        size in case of distributed cache (replicated and partitioned) and using        synchronized eviction (that is if { #isEvictSynchronized()} returns        true).        <p>        That queue is used internally as a buffer to decrease network costs for        synchronized eviction. Once queue size reaches specified value all required        requests for all entries in the queue are sent to remote nodes and the queue        is cleared.        <p>        Default value is defined by { #DEFAULT_MAX_EVICTION_OVERFLOW_RATIO} and        equals to { 10%}.
         /// </summary>
-        public float EvictMaxOverflowRatio { get; set; }
+        public float MaxEvictionOverflowRatio { get; set; }
 
         /// <summary>
         /// Gets eviction filter to specify which entries should not be evicted        (except explicit evict by calling { IgniteCache#localEvict(Collection)}).        If { EvictionFilter#evictAllowed(Cache.Entry)} method        returns { false} then eviction policy will not be notified and entry will        never be evicted.        <p>        If not provided, any entry may be evicted depending on        { #getEvictionPolicy() eviction policy} configuration.
@@ -272,11 +306,6 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets class name of transaction manager finder for integration for JEE app servers.
         /// </summary>
         public CacheRebalanceMode RebalanceMode { get; set; }
-
-        /// <summary>
-        /// Gets rebalance mode for distributed cache.        <p>        Default is defined by { #DEFAULT_REBALANCE_MODE}.
-        /// </summary>
-        public int RebalanceOrder { get; set; }
 
         /// <summary>
         /// Gets size (in number bytes) to be loaded within a single rebalance message.        Rebalancing algorithm will split total data set on every node into multiple        batches prior to sending data. Default value is defined by        { #DEFAULT_REBALANCE_BATCH_SIZE}.
