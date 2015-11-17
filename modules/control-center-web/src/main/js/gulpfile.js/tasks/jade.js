@@ -25,13 +25,18 @@ var paths = [
     './views/**/*.jade'
 ];
 
+var pluginPaths = [
+    './ignite_modules/**/*.jade'
+];
+
 var options = {
 };
 
 gulp.task('jade', function() {
-    return gulp.src(paths)
-        .pipe(jade(options))
-        .pipe(gulp.dest('./build'))
+    return sequence(
+        gulp.src(paths).pipe(jade(options)).pipe(gulp.dest('./build')),
+        gulp.src(pluginPaths).pipe(jade(options)).pipe(gulp.dest('./build/ignite_modules'))
+    );
 });
 
 gulp.task('jade:watch', function () {

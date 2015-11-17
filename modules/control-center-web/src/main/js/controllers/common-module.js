@@ -20,6 +20,7 @@ var consoleModule = angular.module('ignite-web-console',
         'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'agGrid', 'nvd3', 'dndLists'
         /* ignite:modules */
         , 'ignite-web-console.navbar'
+        , 'ignite-web-console.configuration.sidebar'
         /* endignite */
         /* ignite:plugins */
         /* endignite */
@@ -1950,7 +1951,7 @@ consoleModule.controller('activeLink', [
         ];
 
         $scope.isActive = function (path) {
-            return window.location.pathname.substr(0, path.length) == path;
+            return new RegExp(path).test(window.location.pathname);
         };
     }]);
 

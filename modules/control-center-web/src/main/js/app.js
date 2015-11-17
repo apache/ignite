@@ -27,6 +27,7 @@ var session = require('express-session');
 var mongoStore = require('connect-mongo')(session);
 var forceSSL = require('express-force-ssl');
 var config = require('./helpers/configuration-loader.js');
+var shell = require('shelljs');
 
 var publicRoutes = require('./routes/public');
 var notebooksRoutes = require('./routes/notebooks');
@@ -141,6 +142,11 @@ app.use('/notebooks', mustAuthenticated, notebooksRoutes);
 app.use('/sql', mustAuthenticated, sqlRouter);
 
 app.use('/agent', mustAuthenticated, agentRouter);
+
+var modulesRoutes = shell.find(path.resolve(__dirname, 'ignite_modules'))
+    .filter(function(file) { return file.match(/\/routes\/.+\.js$/); });
+
+modulesRoutes.forEach(function(route) { require(route)(app); });
 
 // Catch 404 and forward to error handler.
 app.use(function (req, res, next) {

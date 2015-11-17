@@ -1366,11 +1366,17 @@ $generatorXml.generateDataSources = function (datasources, res) {
             res.startBlock('<bean id="' + beanId + '" class="' + item.className + '">');
 
             switch (item.dialect) {
+                case 'Generic':
+                    res.line('<property name="jdbcUrl" value="${' + beanId + '.jdbc.url}" />');
+
+                    break;
+
                 case 'DB2':
                     res.line('<property name="serverName" value="${' + beanId + '.jdbc.server_name}" />');
                     res.line('<property name="portNumber" value="${' + beanId + '.jdbc.port_number}" />');
                     res.line('<property name="databaseName" value="${' + beanId + '.jdbc.database_name}" />');
                     res.line('<property name="driverType" value="${' + beanId + '.jdbc.driver_type}" />');
+
                     break;
 
                 default:

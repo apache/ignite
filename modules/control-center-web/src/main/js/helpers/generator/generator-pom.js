@@ -110,6 +110,12 @@ $generatorPom.pom = function (cluster, igniteVersion, res) {
     addDependency('org.apache.ignite', 'ignite-indexing', igniteVersion);
     addDependency('org.apache.ignite', 'ignite-rest-http', igniteVersion);
 
+    if (_.find(cluster.igfss, function (igfs) { return igfs.secondaryFileSystemEnabled; }))
+        addDependency('org.apache.ignite', 'ignite-hadoop', igniteVersion);
+
+    if (_.find(caches, {"cacheStoreFactory" : {"kind" : "CacheHibernateBlobStoreFactory"}}))
+        addDependency('org.apache.ignite', 'ignite-hibernate', igniteVersion);
+
     if (dialect.Generic)
         addDependency('com.mchange', 'c3p0', '0.9.5.1');
 
@@ -130,9 +136,6 @@ $generatorPom.pom = function (cluster, igniteVersion, res) {
 
     if (dialect.SQLServer)
         addDependency('microsoft', 'jdbc', '4.1', 'sqljdbc41.jar');
-
-    if (_.findIndex(cluster.igfss, function (igfs) { return igfs.secondaryFileSystemEnabled; }) >= 0)
-        addDependency('org.apache.ignite', 'ignite-hadoop', igniteVersion);
 
     res.endBlock('</dependencies>');
 
