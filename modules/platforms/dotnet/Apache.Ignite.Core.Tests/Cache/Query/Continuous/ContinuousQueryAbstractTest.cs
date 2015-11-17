@@ -32,9 +32,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
-    using CQU = Apache.Ignite.Core.Impl.Cache.Query.Continuous.ContinuousQueryUtils;
 
     /// <summary>
     /// Tests for continuous query.
@@ -637,6 +637,56 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     (cbEvt.entries.First().Value as IBinaryObject).Deserialize<PortableEntry>());
             }
         }
+        /// <summary>
+        /// Test value types (special handling is required for nulls).
+        /// </summary>
+        [Test]
+        public void TestValueTypes()
+        {
+            var cache = grid1.GetCache<int, int>(cacheName);
+
+            var qry = new ContinuousQuery<int, int>(new Listener<int>());
+
+            var key = PrimaryKey(cache);
+
+            using (cache.QueryContinuous(qry))
+            {
+                // First update
+                cache.Put(key, 1);
+
+                CallbackEvent cbEvt;
+
+                Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
+                var cbEntry = cbEvt.entries.Single();
+                Assert.IsFalse(cbEntry.HasOldValue);
+                Assert.IsTrue(cbEntry.HasValue);
+                Assert.AreEqual(key, cbEntry.Key);
+                Assert.AreEqual(null, cbEntry.OldValue);
+                Assert.AreEqual(1, cbEntry.Value);
+
+                // Second update
+                cache.Put(key, 2);
+
+                Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
+                cbEntry = cbEvt.entries.Single();
+                Assert.IsTrue(cbEntry.HasOldValue);
+                Assert.IsTrue(cbEntry.HasValue);
+                Assert.AreEqual(key, cbEntry.Key);
+                Assert.AreEqual(1, cbEntry.OldValue);
+                Assert.AreEqual(2, cbEntry.Value);
+
+                // Remove
+                cache.Remove(key);
+
+                Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
+                cbEntry = cbEvt.entries.Single();
+                Assert.IsTrue(cbEntry.HasOldValue);
+                Assert.IsFalse(cbEntry.HasValue);
+                Assert.AreEqual(key, cbEntry.Key);
+                Assert.AreEqual(2, cbEntry.OldValue);
+                Assert.AreEqual(null, cbEntry.Value);
+            }
+        }
 
         /// <summary>
         /// Test whether buffer size works fine.
@@ -946,6 +996,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
+        /// Creates object-typed event.
+        /// </summary>
+        private static ICacheEntryEvent<object, object> CreateEvent<T, V>(ICacheEntryEvent<T,V> e)
+        {
+            if (!e.HasOldValue)
+                return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
+
+            if (!e.HasValue)
+                return new CacheEntryRemoveEvent<object, object>(e.Key, e.OldValue);
+
+            return new CacheEntryUpdateEvent<object, object>(e.Key, e.OldValue, e.Value);
+        }
+
+        /// <summary>
         /// Portable entry.
         /// </summary>
         public class PortableEntry
@@ -1003,8 +1067,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 if (err)
                     throw new Exception("Filter error.");
 
-                FILTER_EVTS.Add(new FilterEvent(ignite,
-                    CQU.CreateEvent<object, object>(evt.Key, evt.OldValue, evt.Value)));
+                FILTER_EVTS.Add(new FilterEvent(ignite, CreateEvent(evt)));
 
                 return res;
             }
@@ -1090,13 +1153,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             /** <inheritDoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<int, V>> evts)
             {
-                ICollection<ICacheEntryEvent<object, object>> entries0 =
-                    new List<ICacheEntryEvent<object, object>>();
-
-                foreach (ICacheEntryEvent<int, V> evt in evts)
-                    entries0.Add(CQU.CreateEvent<object, object>(evt.Key, evt.OldValue, evt.Value));
-
-                CB_EVTS.Add(new CallbackEvent(entries0));
+                CB_EVTS.Add(new CallbackEvent(evts.Select(CreateEvent).ToList()));
             }
         }
 
