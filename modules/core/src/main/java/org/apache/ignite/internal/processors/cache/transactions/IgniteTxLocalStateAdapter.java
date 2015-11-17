@@ -17,21 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Collection;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Local transaction API.
+ *
  */
-public interface IgniteTxRemoteEx extends IgniteInternalTx {
+public abstract class IgniteTxLocalStateAdapter implements IgniteTxLocalState {
     /**
-     * @param baseVer Base version.
-     * @param committedVers Committed version.
-     * @param rolledbackVers Rolled back version.
-     * @param pendingVers Pending versions.
+     * @param cacheCtx Cache context.
+     * @param tx Transaction.
+     * @param commit {@code False} if transaction rolled back.
      */
-    public void doneRemote(GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers);
+    protected final void onTxEnd(GridCacheContext cacheCtx, IgniteInternalTx tx, boolean commit) {
+        if (cacheCtx.cache().configuration().isStatisticsEnabled()) {
+            // Convert start time from ms to ns.
+            if (commit)
+                cacheCtx.cache().metrics0().onTxCommit((U.currentTimeMillis() - tx.startTime()) * 1000);
+            else
+                cacheCtx.cache().metrics0().onTxRollback((U.currentTimeMillis() - tx.startTime()) * 1000);
+        }
+    }
 }

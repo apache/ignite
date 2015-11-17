@@ -17,21 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Collection;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-
 /**
- * Local transaction API.
+ *
  */
-public interface IgniteTxRemoteEx extends IgniteInternalTx {
+public interface IgniteTxLocalState extends IgniteTxState {
     /**
-     * @param baseVer Base version.
-     * @param committedVers Committed version.
-     * @param rolledbackVers Rolled back version.
-     * @param pendingVers Pending versions.
+     * @param entry Entry.
      */
-    public void doneRemote(GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers);
+    public void addEntry(IgniteTxEntry entry);
+
+    /**
+     * @param txSize Transaction size.
+     * @return {@code True} if transaction was successfully  started.
+     */
+    public boolean init(int txSize);
+
+    /**
+     * @return {@code True} if init method was called.
+     */
+    public boolean initialized();
+
+    /**
+     *
+     */
+    public void seal();
 }
