@@ -535,7 +535,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 writer.writeInt(ccfg.getEvictSynchronizedKeyBufferSize());
                 writer.writeLong(ccfg.getEvictSynchronizedTimeout());
                 writer.writeBoolean(ccfg.isInvalidate());
-                writer.writeBoolean(ccfg.isKeepPortableInStore());
+                writer.writeBoolean(ccfg.isKeepBinaryInStore());
                 writer.writeBoolean(ccfg.isLoadPreviousValue());
                 writer.writeLong(ccfg.getDefaultLockTimeout());
                 writer.writeLong(ccfg.getLongQueryWarningTimeout());

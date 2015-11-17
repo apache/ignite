@@ -247,7 +247,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             ccfg.setEvictSynchronizedKeyBufferSize(in.readInt());
             ccfg.setEvictSynchronizedTimeout(in.readLong());
             ccfg.setInvalidate(in.readBoolean());
-            ccfg.setKeepPortableInStore(in.readBoolean());
+            ccfg.setKeepBinaryInStore(in.readBoolean());
             ccfg.setLoadPreviousValue(in.readBoolean());
             ccfg.setDefaultLockTimeout(in.readLong());
             ccfg.setLongQueryWarningTimeout(in.readLong());
