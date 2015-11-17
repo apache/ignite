@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Configuration
     public enum CacheAtomicityMode
     {
         /// <summary>
-        /// Specified fully ACID-compliant transactional cache behavior.
+        /// Specifies fully ACID-compliant transactional cache behavior.
         /// </summary>
         Transactional,
 
