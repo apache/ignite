@@ -17,8 +17,24 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
+    /// <summary>
+    /// Memory modes define whether cache entries are stored on heap memory, offheap memory, or in swap space.
+    /// </summary>
     public enum CacheMemoryMode
     {
-        
+        /// <summary>
+        /// Entries will be stored on-heap first.
+        /// </summary>
+        OnheapTiered,
+
+        /// <summary>
+        /// Entries will be stored off-heap in unmanaged memory.
+        /// </summary>
+        OffheapTiered,
+
+        /// <summary>
+        /// Entry keys will be stored on heap memory, and values will be stored in offheap memory.
+        /// </summary>
+        OffheapValues
     }
 }
