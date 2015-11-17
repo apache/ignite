@@ -720,7 +720,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             tx.activeCachesDeploymentEnabled());
 
         if (prepErr == null) {
-            if (tx.needReturnValue() || tx.nearOnOriginatingNode())
+            if (tx.needReturnValue() || tx.nearOnOriginatingNode() || tx.hasInterceptor())
                 addDhtValues(res);
 
             GridCacheVersion min = tx.minVersion();

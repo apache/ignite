@@ -1383,7 +1383,7 @@ public class GridNioServer<T> {
 
                     long now = U.currentTimeMillis();
 
-                    if (now - lastIdleCheck > 5000) {
+                    if (now - lastIdleCheck > 2000) {
                         lastIdleCheck = now;
 
                         checkIdle(selector.keys());

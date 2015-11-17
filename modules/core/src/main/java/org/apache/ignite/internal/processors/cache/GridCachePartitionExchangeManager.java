@@ -867,16 +867,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         IgniteProductVersion maxVer = cctx.localNode().version();
 
         if (err == null) {
-            assert !F.isEmpty(exchFut.discoveryEvent().topologyNodes()) : exchFut.discoveryEvent();
+            if (!F.isEmpty(exchFut.discoveryEvent().topologyNodes())) {
+                for (ClusterNode node : exchFut.discoveryEvent().topologyNodes()) {
+                    IgniteProductVersion ver = node.version();
 
-            for (ClusterNode node : exchFut.discoveryEvent().topologyNodes()) {
-                IgniteProductVersion ver = node.version();
+                    if (ver.compareTo(minVer) < 0)
+                        minVer = ver;
 
-                if (ver.compareTo(minVer) < 0)
-                    minVer = ver;
-
-                if (ver.compareTo(maxVer) > 0)
-                    maxVer = ver;
+                    if (ver.compareTo(maxVer) > 0)
+                        maxVer = ver;
+                }
             }
         }
 
@@ -1103,7 +1103,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             int cnt = 0;
 
-            for (GridDhtPartitionsExchangeFuture fut : exchFuts) {
+            for (GridDhtPartitionsExchangeFuture fut : exchFuts.values()) {
                 U.warn(log, ">>> " + fut);
 
                 if (++cnt == 10)
