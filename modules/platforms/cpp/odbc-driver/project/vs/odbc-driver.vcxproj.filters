@@ -74,5 +74,14 @@
     <ClInclude Include="..\..\src\cursor.h">
       <Filter>Code</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\interop_stack_memory.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\message.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\parser.h">
+      <Filter>Code</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

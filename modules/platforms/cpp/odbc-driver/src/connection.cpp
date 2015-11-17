@@ -79,24 +79,27 @@ namespace ignite
             return new Statement(*this);
         }
 
-        bool Connection::Send(const uint8_t* data, size_t len)
+        bool Connection::Send(const int8_t* data, size_t len)
         {
             if (!connected)
                 return false;
 
-            OdbcProtocolHeader hdr;
+            size_t sent = 0;
 
-            hdr.len = static_cast<int32_t>(len);
+            while (sent != len) 
+            {
+                size_t res = socket.Send(data + sent, len - sent);
 
-            bool success = socket.Send(reinterpret_cast<uint8_t*>(&hdr), sizeof(hdr)) == sizeof(hdr);
+                if (res <= 0)
+                    return false;
 
-            if (!success)
-                return false;
+                sent += res;
+            }
 
-            return socket.Send(data, len) == len;
+            return true;
         }
 
-        bool Connection::Receive(std::vector<uint8_t>& msg)
+        bool Connection::Receive(std::vector<int8_t>& msg)
         {
             if (!connected)
                 return false;
@@ -105,7 +108,7 @@ namespace ignite
 
             OdbcProtocolHeader hdr;
 
-            int received = socket.Receive(reinterpret_cast<uint8_t*>(&hdr), sizeof(hdr));
+            int received = socket.Receive(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
             LOG_MSG("Received: %d\n", received);
 
             if (received != sizeof(hdr))

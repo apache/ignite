@@ -22,8 +22,14 @@
 
 #include <map>
 
+#include <ignite/impl/interop/interop_output_stream.h>
+#include <ignite/impl/interop/interop_input_stream.h>
+#include <ignite/impl/binary/binary_writer_impl.h>
+
 #include "application_data_buffer.h"
+#include "parser.h"
 #include "common_types.h"
+
 
 namespace ignite
 {
@@ -51,6 +57,34 @@ namespace ignite
              * @param buffer Buffer to put column data to.
              */
             void BindResultColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer);
+
+            /**
+             * Synchronously send request message and receive response.
+             * @param req Request message.
+             * @param rsp Response message.
+             * @return True on success.
+             */
+            template<typename ReqT, typename RspT>
+            bool SyncMessage(const ReqT& req, RspT& rsp)
+            {
+                std::vector<int8_t> tempBuffer;
+
+                parser.Encode(req, tempBuffer);
+
+                bool requestSent = connection.Send(tempBuffer.data(), tempBuffer.size());
+
+                if (!requestSent)
+                    return false;
+
+                bool responseReceived = connection.Receive(tempBuffer);
+
+                if (!responseReceived)
+                    return false;
+
+                parser.Decode(rsp, tempBuffer);
+
+                return true;
+            }
 
             /**
              * Execute SQL query.
@@ -89,6 +123,9 @@ namespace ignite
             //TODO: Move to separate Cursor class.
             /** Cursor id. */
             int64_t resultQueryId;
+
+            /** Message parser. */
+            Parser parser;
         };
     }
 }

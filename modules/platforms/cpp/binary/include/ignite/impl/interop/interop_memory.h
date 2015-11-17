@@ -199,6 +199,13 @@ namespace ignite
                 int32_t Capacity() const;
 
                 /**
+                * Set capacity.
+                *
+                * @param val Capacity.
+                */
+                void Capacity(int32_t val);
+
+                /**
                  * Get length.
                  *
                  * @return Length.

@@ -118,6 +118,11 @@ namespace ignite
                 return Capacity(memPtr);
             }
 
+            void InteropMemory::Capacity(int32_t val)
+            {
+                Capacity(memPtr, val);
+            }
+
             int32_t InteropMemory::Length() const
             {
                 return Length(memPtr);

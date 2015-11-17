@@ -17,22 +17,19 @@
 
 #include "connection.h"
 
-#include <ignite/impl/interop/interop_output_stream.h>
-#include <ignite/impl/interop/interop_input_stream.h>
-#include <ignite/impl/binary/binary_writer_impl.h>
-
 #include "utility.h"
+#include "message.h"
 #include "statement.h"
 
 // Temporary solution
-#define DEFAULT_PAGE_SIZE 1024
+#define DEFAULT_PAGE_SIZE 32
 
 namespace ignite
 {
     namespace odbc
     {
         Statement::Statement(Connection& parent) :
-            connection(parent), columnBindings(), resultQueryId(0)
+            connection(parent), columnBindings(), resultQueryId(0), parser()
         {
             // No-op.
         }
@@ -51,44 +48,18 @@ namespace ignite
         {
             using namespace ignite::impl::interop;
 
-            InteropUnpooledMemory outMem(1024);
-            InteropOutputStream outStream(&outMem);
-
-            ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
-
+            std::string sql(query, len);
             const std::string& cacheName = connection.GetCache();
 
-            LOG_MSG("Cache name: %s\n", cacheName.c_str());
+            QueryExecuteRequest req(cacheName, sql);
+            QueryExecuteResponse rsp;
 
-            writer.WriteString(cacheName.c_str(), static_cast<int32_t>(cacheName.size()));
-            writer.WriteString(query, static_cast<int32_t>(len));
-            writer.WriteInt32(DEFAULT_PAGE_SIZE);
+            bool success = SyncMessage(req, rsp);
 
-            writer.WriteInt32(0);
-
-            bool sent = connection.Send(reinterpret_cast<uint8_t*>(outMem.Data()), outStream.Position());
-
-            if (!sent)
+            if (!success)
                 return false;
 
-            std::vector<uint8_t> response;
-
-            bool responseReceived = connection.Receive(response);
-
-            if (!responseReceived)
-                return false;
-
-            LOG_MSG("Received response %d bytes long\n", response.size());
-
-            InteropUnpooledMemory inMem(static_cast<int32_t>(response.size()));
-
-            // TODO: optimize me.
-            memcpy(inMem.Data(), response.data(), response.size());
-            inMem.Length(static_cast<int32_t>(response.size()));
-
-            InteropInputStream inStream(&inMem);
-
-            resultQueryId = inStream.ReadInt64();
+            resultQueryId = rsp.GetQueryId();
 
             LOG_MSG("Query id: %lld\n", resultQueryId);
 

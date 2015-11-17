@@ -69,7 +69,7 @@ namespace ignite
              * @param len Data length.
              * @return True on success.
              */
-            bool Send(const uint8_t* data, size_t len);
+            bool Send(const int8_t* data, size_t len);
 
             /**
              * Receive next message.
@@ -77,7 +77,7 @@ namespace ignite
              * @param msg Buffer for message.
              * @return True on success.
              */
-            bool Receive(std::vector<uint8_t>& msg);
+            bool Receive(std::vector<int8_t>& msg);
 
             /**
              * Get name of the assotiated cache.
