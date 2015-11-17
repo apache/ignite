@@ -59,7 +59,7 @@ public abstract class GridCachePortableStoreAbstractSelfTest extends GridCommonA
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
         cacheCfg.setCacheStoreFactory(singletonFactory(STORE));
-        cacheCfg.setKeepPortableInStore(keepPortableInStore());
+        cacheCfg.setKeepBinaryInStore(keepPortableInStore());
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);

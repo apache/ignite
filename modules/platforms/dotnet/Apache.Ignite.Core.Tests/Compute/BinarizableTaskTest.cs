@@ -27,26 +27,26 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Task test result.
     /// </summary>
-    public class PortableTaskTest : AbstractTaskTest
+    public class BinarizableTaskTest : AbstractTaskTest
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public PortableTaskTest() : base(false) { }
+        public BinarizableTaskTest() : base(false) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="fork">Fork flag.</param>
-        protected PortableTaskTest(bool fork) : base(fork) { }
+        protected BinarizableTaskTest(bool fork) : base(fork) { }
 
         /// <summary>
         /// Test for task result.
         /// </summary>
         [Test]
-        public void TestPortableObjectInTask()
+        public void TestBinarizableObjectInTask()
         {
-            var taskArg = new PortableWrapper {Item = ToPortable(Grid1, new PortableTaskArgument(100))};
+            var taskArg = new BinarizableWrapper {Item = ToBinary(Grid1, new BinarizableTaskArgument(100))};
 
             TestTask task = new TestTask(Grid1, taskArg);
 
@@ -56,12 +56,12 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(400, res.GetField<int>("val"));
 
-            PortableTaskResult resObj = res.Deserialize<PortableTaskResult>();
+            BinarizableTaskResult resObj = res.Deserialize<BinarizableTaskResult>();
 
             Assert.AreEqual(400, resObj.Val);
         }
 
-        private static IBinaryObject ToPortable(IIgnite grid, object obj)
+        private static IBinaryObject ToBinary(IIgnite grid, object obj)
         {
             var cache = grid.GetCache<object, object>(Cache1Name).WithKeepBinary<object, object>();
 
@@ -71,34 +71,34 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        override protected void PortableTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        override protected void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableJobArgument)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableJobResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableTaskArgument)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableTaskResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableJob)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableWrapper)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJobArgument)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJobResult)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableTaskArgument)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableTaskResult)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJob)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableWrapper)));
         }
 
         /// <summary>
         /// Test task.
         /// </summary>
-        class TestTask : ComputeTaskAdapter<PortableWrapper, PortableWrapper, PortableWrapper>
+        class TestTask : ComputeTaskAdapter<BinarizableWrapper, BinarizableWrapper, BinarizableWrapper>
         {
             /** */
             private readonly IIgnite _grid;
 
-            private readonly PortableWrapper _taskArgField;
+            private readonly BinarizableWrapper _taskArgField;
 
-            public TestTask(IIgnite grid, PortableWrapper taskArgField)
+            public TestTask(IIgnite grid, BinarizableWrapper taskArgField)
             {
                 _grid = grid;
                 _taskArgField = taskArgField;
             }
 
             /** <inheritDoc /> */
-            override public IDictionary<IComputeJob<PortableWrapper>, IClusterNode> Map(IList<IClusterNode> subgrid, PortableWrapper arg)
+            override public IDictionary<IComputeJob<BinarizableWrapper>, IClusterNode> Map(IList<IClusterNode> subgrid, BinarizableWrapper arg)
             {
                 Assert.AreEqual(3, subgrid.Count);
                 Assert.NotNull(_grid);
@@ -109,16 +109,16 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 CheckTaskArgument(_taskArgField);
 
-                var jobs = new Dictionary<IComputeJob<PortableWrapper>, IClusterNode>();
+                var jobs = new Dictionary<IComputeJob<BinarizableWrapper>, IClusterNode>();
 
 
                 foreach (IClusterNode node in subgrid)
                 {
                     if (!Grid3Name.Equals(node.GetAttribute<string>("org.apache.ignite.ignite.name"))) // Grid3 does not have cache.
                     {
-                        var job = new PortableJob
+                        var job = new BinarizableJob
                         {
-                            Arg = new PortableWrapper {Item = ToPortable(_grid, new PortableJobArgument(200))}
+                            Arg = new BinarizableWrapper {Item = ToBinary(_grid, new BinarizableJobArgument(200))}
                         };
 
                         jobs.Add(job, node);
@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 return jobs;
             }
 
-            private void CheckTaskArgument(PortableWrapper arg)
+            private void CheckTaskArgument(BinarizableWrapper arg)
             {
                 Assert.IsNotNull(arg);
                 
@@ -140,13 +140,13 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.AreEqual(100, taskArg.GetField<int>("val"));
 
-                PortableTaskArgument taskArgObj = taskArg.Deserialize<PortableTaskArgument>();
+                BinarizableTaskArgument taskArgObj = taskArg.Deserialize<BinarizableTaskArgument>();
 
                 Assert.AreEqual(100, taskArgObj.Val);
             }
 
             /** <inheritDoc /> */
-            override public PortableWrapper Reduce(IList<IComputeJobResult<PortableWrapper>> results)
+            override public BinarizableWrapper Reduce(IList<IComputeJobResult<BinarizableWrapper>> results)
             {
                 Assert.NotNull(_grid);
 
@@ -160,24 +160,24 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                     Assert.AreEqual(300, jobRes.GetField<int>("val"));
 
-                    PortableJobResult jobResObj = jobRes.Deserialize<PortableJobResult>();
+                    BinarizableJobResult jobResObj = jobRes.Deserialize<BinarizableJobResult>();
 
                     Assert.AreEqual(300, jobResObj.Val);
                 }
 
-                return new PortableWrapper {Item = ToPortable(_grid, new PortableTaskResult(400))};
+                return new BinarizableWrapper {Item = ToBinary(_grid, new BinarizableTaskResult(400))};
             }
         }
 
         /// <summary>
         ///
         /// </summary>
-        class PortableJobArgument
+        class BinarizableJobArgument
         {
             /** */
-            public int Val;
+            public readonly int Val;
 
-            public PortableJobArgument(int val)
+            public BinarizableJobArgument(int val)
             {
                 Val = val;
             }
@@ -186,12 +186,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        class PortableJobResult
+        class BinarizableJobResult
         {
             /** */
-            public int Val;
+            public readonly int Val;
 
-            public PortableJobResult(int val)
+            public BinarizableJobResult(int val)
             {
                 Val = val;
             }
@@ -200,12 +200,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        class PortableTaskArgument
+        class BinarizableTaskArgument
         {
             /** */
-            public int Val;
+            public readonly int Val;
 
-            public PortableTaskArgument(int val)
+            public BinarizableTaskArgument(int val)
             {
                 Val = val;
             }
@@ -214,12 +214,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        class PortableTaskResult
+        class BinarizableTaskResult
         {
             /** */
-            public int Val;
+            public readonly int Val;
 
-            public PortableTaskResult(int val)
+            public BinarizableTaskResult(int val)
             {
                 Val = val;
             }
@@ -228,17 +228,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        class PortableJob : IComputeJob<PortableWrapper>
+        class BinarizableJob : IComputeJob<BinarizableWrapper>
         {
             [InstanceResource]
-            private IIgnite _grid = null;
+            private readonly IIgnite _grid = null;
             
             /** */
-            public PortableWrapper Arg;
+            public BinarizableWrapper Arg;
 
             /** <inheritDoc /> */
 
-            public PortableWrapper Execute()
+            public BinarizableWrapper Execute()
             {
                 Assert.IsNotNull(Arg);
 
@@ -248,11 +248,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.AreEqual(200, arg.GetField<int>("val"));
 
-                PortableJobArgument argObj = arg.Deserialize<PortableJobArgument>();
+                var argObj = arg.Deserialize<BinarizableJobArgument>();
 
                 Assert.AreEqual(200, argObj.Val);
 
-                return new PortableWrapper {Item = ToPortable(_grid, new PortableJobResult(300))};
+                return new BinarizableWrapper {Item = ToBinary(_grid, new BinarizableJobResult(300))};
             }
 
             public void Cancel()
@@ -261,7 +261,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
         }
 
-        class PortableWrapper
+        class BinarizableWrapper
         {
             public IBinaryObject Item { get; set; }
         }

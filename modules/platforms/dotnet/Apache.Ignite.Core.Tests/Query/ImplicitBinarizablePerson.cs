@@ -15,28 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+namespace Apache.Ignite.Core.Tests.Query
+{
+    /// <summary>
+    /// Test person.
+    /// </summary>
+    internal class ImplicitBinarizablePerson
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImplicitBinarizablePerson"/> class.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="age">The age.</param>
+        public ImplicitBinarizablePerson(string name, int age)
+        {
+            Name = name;
+            Age = age;
+        }
 
-/**
- * Portable object for task tests.
- */
-public class PlatformComputePortable {
-    /** Field. */
-    public int field;
+        /// <summary>
+        /// Gets or sets the name.
+        /// </summary>
+        public string Name { get; set; }
 
-    /**
-     * Constructor.
-     */
-    public PlatformComputePortable() {
-        // No-op.
-    }
-
-    /**
-     * Constructor,
-     *
-     * @param field Field.
-     */
-    public PlatformComputePortable(int field) {
-        this.field = field;
+        /// <summary>
+        /// Gets or sets the age.
+        /// </summary>
+        public int Age { get; set; }
     }
 }

@@ -764,6 +764,7 @@
                                         <exclude>**/*.fxcop</exclude>
                                         <exclude>**/*.metaproj</exclude>
                                         <exclude>**/*.metaproj.tmp</exclude>
+                                        <exclude>**/*.nunit</exclude>
                                         <exclude>**/teamcity_boost.cpp</exclude>
                                         <exclude>**/teamcity_messages.h</exclude>
                                         <exclude>**/teamcity_messages.cpp</exclude>

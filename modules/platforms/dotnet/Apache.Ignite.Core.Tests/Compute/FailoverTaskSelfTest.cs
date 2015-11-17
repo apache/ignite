@@ -73,10 +73,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test for GridComputeJobFailoverException with portable job.
+        /// Test for GridComputeJobFailoverException with binary job.
         /// </summary>
         [Test]
-        public void TestTaskAdapterFailoverExceptionPortable()
+        public void TestTaskAdapterFailoverExceptionBinarizable()
         {
             TestTaskAdapterFailoverException(false);
         }
@@ -111,9 +111,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        override protected void PortableTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        override protected void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestPortableJob)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestBinarizableJob)));
         }
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 if (serializable)
                     job = new TestSerializableJob();
                 else
-                    job = new TestPortableJob();
+                    job = new TestBinarizableJob();
 
                 foreach (IClusterNode node in subgrid) {
                     bool add = local ? node.IsLocal : !node.IsLocal;
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         class TestClosure : IComputeFunc<int>
         {
             [InstanceResource]
-            private IIgnite _grid = null;
+            private readonly IIgnite _grid = null;
 
             /** <inheritDoc /> */
             public int Invoke()
@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         class TestSerializableJob : IComputeJob<int>
         {
             [InstanceResource]
-            private IIgnite _grid = null;
+            private readonly IIgnite _grid = null;
 
             /** <inheritDoc /> */
             public int Execute()
@@ -206,10 +206,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        class TestPortableJob : IComputeJob<int>
+        class TestBinarizableJob : IComputeJob<int>
         {
             [InstanceResource]
-            private IIgnite _grid = null;
+            private readonly IIgnite _grid = null;
 
             /** <inheritDoc /> */
             public int Execute()

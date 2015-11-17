@@ -43,10 +43,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Test portable filter logic.
+        /// Test binary filter logic.
         /// </summary>
         [Test]
-        public void TestFilterPortableLocal()
+        public void TestFilterBinarizableLocal()
         {
             CheckFilter(true, true);
         }

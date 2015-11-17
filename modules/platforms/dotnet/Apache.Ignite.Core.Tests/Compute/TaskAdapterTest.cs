@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Test for job adapter.
         /// </summary>
         [Test]
-        public void TestPortableJobAdapter()
+        public void TestBinarizableJobAdapter()
         {
             for (int i = 0; i < 10; i++)
             {
@@ -99,9 +99,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        override protected void PortableTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        override protected void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableJob)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJob)));
         }
 
         /// <summary>
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 if (serializable)
                     jobs.Add(new SerializableJob(100, "str"));
                 else
-                    jobs.Add(new PortableJob(100, "str"));
+                    jobs.Add(new BinarizableJob(100, "str"));
 
                 return jobs;
             }
@@ -236,14 +236,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test portable job.
+        /// Test binary job.
         /// </summary>
-        public class PortableJob : ComputeJobAdapter<bool>
+        public class BinarizableJob : ComputeJobAdapter<bool>
         {
             [InstanceResource]
             private IIgnite _grid = null;
 
-            public PortableJob(params object[] args) : base(args)
+            public BinarizableJob(params object[] args) : base(args)
             {
                 // No-op.
             }

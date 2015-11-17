@@ -24,40 +24,40 @@ namespace Apache.Ignite.Core.Tests.Compute
     using NUnit.Framework;
 
     /// <summary>
-    /// Closure execution tests for portable objects.
+    /// Closure execution tests for binary objects.
     /// </summary>
-    public class PortableClosureTaskTest : ClosureTaskTest
+    public class BinarizableClosureTaskTest : ClosureTaskTest
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public PortableClosureTaskTest() : base(false) { }
+        public BinarizableClosureTaskTest() : base(false) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="fork">Fork flag.</param>
-        protected PortableClosureTaskTest(bool fork) : base(fork) { }
+        protected BinarizableClosureTaskTest(bool fork) : base(fork) { }
 
         /** <inheritDoc /> */
-        protected override void PortableTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        protected override void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableOutFunc)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableFunc)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableException)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableOutFunc)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableFunc)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableResult)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableException)));
         }
 
         /** <inheritDoc /> */
         protected override IComputeFunc<object> OutFunc(bool err)
         {
-            return new PortableOutFunc(err);
+            return new BinarizableOutFunc(err);
         }
 
         /** <inheritDoc /> */
         protected override IComputeFunc<object, object> Func(bool err)
         {
-            return new PortableFunc(err);
+            return new BinarizableFunc(err);
         }
 
         /** <inheritDoc /> */
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.IsTrue(res != null);
 
-            PortableResult res0 = res as PortableResult;
+            BinarizableResult res0 = res as BinarizableResult;
 
             Assert.IsTrue(res0 != null);
             Assert.AreEqual(1, res0.Res);
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.IsTrue(err != null);
 
-            PortableException err0 = err as PortableException;
+            BinarizableException err0 = err as BinarizableException;
 
             Assert.IsTrue(err0 != null);
             Assert.AreEqual(ErrMsg, err0.Msg);
@@ -85,24 +85,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// 
         /// </summary>
-        private class PortableOutFunc : IComputeFunc<object>
+        private class BinarizableOutFunc : IComputeFunc<object>
         {
             /** Error. */
-            private bool _err;
-
-            /// <summary>
-            /// 
-            /// </summary>
-            public PortableOutFunc()
-            {
-                // No-op.
-            }
+            private readonly bool _err;
 
             /// <summary>
             /// 
             /// </summary>
             /// <param name="err"></param>
-            public PortableOutFunc(bool err)
+            public BinarizableOutFunc(bool err)
             {
                 _err = err;
             }
@@ -111,32 +103,24 @@ namespace Apache.Ignite.Core.Tests.Compute
             public object Invoke()
             {
                 if (_err)
-                    throw new PortableException(ErrMsg);
-                return new PortableResult(1);
+                    throw new BinarizableException(ErrMsg);
+                return new BinarizableResult(1);
             }
         }
 
         /// <summary>
         /// 
         /// </summary>
-        private class PortableFunc : IComputeFunc<object, object>
+        private class BinarizableFunc : IComputeFunc<object, object>
         {
             /** Error. */
-            private bool _err;
-
-            /// <summary>
-            /// 
-            /// </summary>
-            public PortableFunc()
-            {
-                // No-op.
-            }
+            private readonly bool _err;
 
             /// <summary>
             /// 
             /// </summary>
             /// <param name="err"></param>
-            public PortableFunc(bool err)
+            public BinarizableFunc(bool err)
             {
                 _err = err;
             }
@@ -145,15 +129,15 @@ namespace Apache.Ignite.Core.Tests.Compute
             public object Invoke(object arg)
             {
                 if (_err)
-                    throw new PortableException(ErrMsg);
-                return new PortableResult(1);
+                    throw new BinarizableException(ErrMsg);
+                return new BinarizableResult(1);
             }
         }
 
         /// <summary>
         /// 
         /// </summary>
-        private class PortableException : Exception, IBinarizable
+        private class BinarizableException : Exception, IBinarizable
         {
             /** */
             public string Msg;
@@ -161,16 +145,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <summary>
             /// 
             /// </summary>
-            public PortableException()
-            {
-                // No-op.
-            }
-
-            /// <summary>
-            /// 
-            /// </summary>
             /// <param name="msg"></param>
-            public PortableException(string msg) : this()
+            public BinarizableException(string msg)
             {
                 Msg = msg;
             }
@@ -191,24 +167,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// 
         /// </summary>
-        private class PortableResult
+        private class BinarizableResult
         {
             /** */
-            public int Res;
-
-            /// <summary>
-            /// 
-            /// </summary>
-            public PortableResult()
-            {
-                // No-op.
-            }
+            public readonly int Res;
 
             /// <summary>
             /// 
             /// </summary>
             /// <param name="res"></param>
-            public PortableResult(int res)
+            public BinarizableResult(int res)
             {
                 Res = res;
             }

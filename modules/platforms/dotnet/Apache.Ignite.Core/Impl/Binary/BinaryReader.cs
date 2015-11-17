@@ -520,7 +520,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (!TryDeserialize(out res) && default(T) != null)
                 throw new BinaryObjectException(string.Format("Invalid data on deserialization. " +
-                                                              "Expected: '{0}' But was: null", typeof (T)));
+                    "Expected: '{0}' But was: null", typeof (T)));
 
             return res;
         }
@@ -543,18 +543,22 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 case BinaryUtils.HdrNull:
                     res = default(T);
+
                     return false;
 
                 case BinaryUtils.HdrHnd:
                     res = ReadHandleObject<T>(pos);
+
                     return true;
 
                 case BinaryUtils.HdrFull:
                     res = ReadFullObject<T>(pos);
+
                     return true;
 
                 case BinaryUtils.TypeBinary:
                     res = ReadBinaryObject<T>(doDetach);
+
                     return true;
             }
 

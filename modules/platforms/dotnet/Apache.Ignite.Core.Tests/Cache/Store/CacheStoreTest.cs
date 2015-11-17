@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     public class CacheStoreTest
     {
         /** */
-        private const string PortableStoreCacheName = "portable_store";
+        private const string BinaryStoreCacheName = "binary_store";
 
         /** */
         private const string ObjectStoreCacheName = "object_store";
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
-            cfg.GridName = GridName();
+            cfg.GridName = GridName;
             cfg.JvmClasspath = TestUtils.CreateTestClasspath();
             cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = "config\\native-client-test-cache-store.xml";
@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TearDown]
         public void AfterTest()
         {
-            var cache = Cache();
+            var cache = GetCache();
 
             cache.Clear();
 
@@ -191,7 +191,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             CacheTestStore.Reset();
 
-            TestUtils.AssertHandleRegistryHasItems(300, _storeCount, Ignition.GetIgnite(GridName()));
+            TestUtils.AssertHandleRegistryHasItems(300, _storeCount, Ignition.GetIgnite(GridName));
 
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
         }
@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestLoadCache()
         {
-            var cache = Cache();
+            var cache = GetCache();
 
             Assert.AreEqual(0, cache.GetSize());
 
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestLocalLoadCache()
         {
-            var cache = Cache();
+            var cache = GetCache();
 
             Assert.AreEqual(0, cache.GetSize());
 
@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             CacheTestStore.LoadObjects = true;
 
-            var cache = Cache();
+            var cache = GetCache();
 
             Assert.AreEqual(0, cache.GetSize());
 
@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestLoadCacheAsync()
         {
-            var cache = Cache();
+            var cache = GetCache();
 
             Assert.AreEqual(0, cache.GetSize());
 
@@ -272,7 +272,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestPutLoad()
         {
-            var cache = Cache();
+            var cache = GetCache();
 
             cache.Put(1, "val");
 
@@ -290,9 +290,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         }
 
         [Test]
-        public void TestPutLoadPortables()
+        public void TestPutLoadBinarizable()
         {
-            var cache = PortableStoreCache<int, Value>();
+            var cache = GetBinaryStoreCache<int, Value>();
 
             cache.Put(1, new Value(1));
 
@@ -316,7 +316,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestPutLoadObjects()
         {
-            var cache = ObjectStoreCache<int, Value>();
+            var cache = GetObjectStoreCache<int, Value>();
 
             cache.Put(1, new Value(1));
 
@@ -345,7 +345,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             for (int i = 0; i < 10; i++)
                 putMap.Add(i, "val_" + i);
 
-            var cache = Cache();
+            var cache = GetCache();
 
             cache.PutAll(putMap);
 
@@ -378,7 +378,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestRemove()
         {
-            var cache = Cache();
+            var cache = GetCache();
 
             for (int i = 0; i < 10; i++)
                 cache.Put(i, "val_" + i);
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestRemoveAll()
         {
-            var cache = Cache();
+            var cache = GetCache();
 
             for (int i = 0; i < 10; i++)
                 cache.Put(i, "val_" + i);
@@ -419,7 +419,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestTx()
         {
-            var cache = Cache();
+            var cache = GetCache();
 
             using (var tx = cache.Ignite.GetTransactions().TxStart())
             {
@@ -444,7 +444,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             CacheTestStore.LoadMultithreaded = true;
 
-            var cache = Cache();
+            var cache = GetCache();
 
             Assert.AreEqual(0, cache.GetSize());
 
@@ -459,7 +459,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestCustomStoreProperties()
         {
-            var cache = CustomStoreCache();
+            var cache = GetCustomStoreCache();
             Assert.IsNotNull(cache);
 
             Assert.AreEqual(42, CacheTestStore.intProperty);
@@ -469,7 +469,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestDynamicStoreStart()
         {
-            var cache = TemplateStoreCache();
+            var cache = GetTemplateStoreCache();
 
             Assert.IsNotNull(cache);
 
@@ -483,10 +483,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         /// Get's grid name for this test.
         /// </summary>
-        /// <returns>Grid name.</returns>
-        protected virtual string GridName()
+        /// <value>Grid name.</value>
+        protected virtual string GridName
         {
-            return null;
+            get { return null; }
         }
 
         private IDictionary StoreMap()
@@ -494,31 +494,31 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             return CacheTestStore.Map;
         }
 
-        private ICache<int, string> Cache()
+        private ICache<int, string> GetCache()
         {
-            return PortableStoreCache<int, string>();
+            return GetBinaryStoreCache<int, string>();
         }
 
-        private ICache<TK, TV> PortableStoreCache<TK, TV>()
+        private ICache<TK, TV> GetBinaryStoreCache<TK, TV>()
         {
-            return Ignition.GetIgnite(GridName()).GetCache<TK, TV>(PortableStoreCacheName);
+            return Ignition.GetIgnite(GridName).GetCache<TK, TV>(BinaryStoreCacheName);
         }
 
-        private ICache<TK, TV> ObjectStoreCache<TK, TV>()
+        private ICache<TK, TV> GetObjectStoreCache<TK, TV>()
         {
-            return Ignition.GetIgnite(GridName()).GetCache<TK, TV>(ObjectStoreCacheName);
+            return Ignition.GetIgnite(GridName).GetCache<TK, TV>(ObjectStoreCacheName);
         }
 
-        private ICache<int, string> CustomStoreCache()
+        private ICache<int, string> GetCustomStoreCache()
         {
-            return Ignition.GetIgnite(GridName()).GetCache<int, string>(CustomStoreCacheName);
+            return Ignition.GetIgnite(GridName).GetCache<int, string>(CustomStoreCacheName);
         }
 
-        private ICache<int, string> TemplateStoreCache()
+        private ICache<int, string> GetTemplateStoreCache()
         {
             var cacheName = TemplateStoreCacheName.Replace("*", Guid.NewGuid().ToString());
             
-            return Ignition.GetIgnite(GridName()).GetOrCreateCache<int, string>(cacheName);
+            return Ignition.GetIgnite(GridName).GetOrCreateCache<int, string>(cacheName);
         }
     }
 
@@ -528,9 +528,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     public class NamedNodeCacheStoreTest : CacheStoreTest
     {
         /** <inheritDoc /> */
-        protected override string GridName()
+        protected override string GridName
         {
-            return "name";
+            get { return "name"; }
         }
     }
 }

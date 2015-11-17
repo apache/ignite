@@ -99,19 +99,19 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Test for task result.
         /// </summary>
         [Test]
-        public void TestTaskResultPortable()
+        public void TestTaskResultBinarizable()
         {
-            TestTask<PortableResult> task = new TestTask<PortableResult>();
+            TestTask<BinarizableResult> task = new TestTask<BinarizableResult>();
 
-            PortableResult val = new PortableResult(100);
+            BinarizableResult val = new BinarizableResult(100);
 
-            PortableResult res = Grid1.GetCompute().Execute(task, new Tuple<bool, PortableResult>(true, val));
+            BinarizableResult res = Grid1.GetCompute().Execute(task, new Tuple<bool, BinarizableResult>(true, val));
 
             Assert.AreEqual(val.Val, res.Val);
 
             val.Val = 101;
 
-            res = Grid1.GetCompute().Execute(task, new Tuple<bool, PortableResult>(false, val));
+            res = Grid1.GetCompute().Execute(task, new Tuple<bool, BinarizableResult>(false, val));
 
             Assert.AreEqual(val.Val, res.Val);
         }
@@ -156,18 +156,18 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        override protected void PortableTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        override protected void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestPortableJob)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableOutFunc)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableFunc)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableResult)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestBinarizableJob)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableOutFunc)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableFunc)));
         }
 
         [Test]
         public void TestOutFuncResultPrimitive1()
         {
-            ICollection<int> res = Grid1.GetCompute().Broadcast(new PortableOutFunc());
+            ICollection<int> res = Grid1.GetCompute().Broadcast(new BinarizableOutFunc());
 
             Assert.AreEqual(3, res.Count);
 
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestFuncResultPrimitive1()
         {
-            ICollection<int> res = Grid1.GetCompute().Broadcast(new PortableFunc(), 10);
+            ICollection<int> res = Grid1.GetCompute().Broadcast(new BinarizableFunc(), 10);
 
             Assert.AreEqual(3, res.Count);
 
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test function.
         /// </summary>
-        public class PortableFunc : IComputeFunc<int, int>, IUserInterface<int, int>
+        public class BinarizableFunc : IComputeFunc<int, int>, IUserInterface<int, int>
         {
             int IComputeFunc<int, int>.Invoke(int arg)
             {
@@ -252,7 +252,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test function.
         /// </summary>
-        public class PortableOutFunc : IComputeFunc<int>
+        public class BinarizableOutFunc : IComputeFunc<int>
         {
             public int Invoke()
             {
@@ -291,9 +291,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 IComputeJob<T> job;
 
-                if (res is PortableResult)
+                if (res is BinarizableResult)
                 {
-                    TestPortableJob job0 = new TestPortableJob();
+                    TestBinarizableJob job0 = new TestBinarizableJob();
 
                     job0.SetArguments(res);
 
@@ -365,12 +365,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        class PortableResult
+        class BinarizableResult
         {
             /** */
             public int Val;
 
-            public PortableResult(int val)
+            public BinarizableResult(int val)
             {
                 Val = val;
             }
@@ -398,7 +398,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         class TestJob<T> : ComputeJobAdapter<T>
         {
             [InstanceResource]
-            private IIgnite _grid = null;
+            private readonly IIgnite _grid = null;
 
             /** <inheritDoc /> */
             override public T Execute()
@@ -416,19 +416,19 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        class TestPortableJob : ComputeJobAdapter<PortableResult>
+        class TestBinarizableJob : ComputeJobAdapter<BinarizableResult>
         {
             [InstanceResource]
-            private IIgnite _grid = null;
+            private readonly IIgnite _grid = null;
 
             /** <inheritDoc /> */
-            override public PortableResult Execute()
+            override public BinarizableResult Execute()
             {
                 Assert.IsNotNull(_grid);
 
                 _gridName = _grid.Name;
 
-                PortableResult res = GetArgument<PortableResult>(0);
+                BinarizableResult res = GetArgument<BinarizableResult>(0);
 
                 return res;
             }

@@ -206,21 +206,21 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         int taskNameHash
     ) {
         super(
-            cctx, 
-            xidVer, 
-            implicit, 
-            implicitSingle, 
-            /*local*/true, 
-            sys, 
+            cctx,
+            xidVer,
+            implicit,
+            implicitSingle,
+            /*local*/true,
+            sys,
             plc,
-            concurrency, 
-            isolation, 
+            concurrency,
+            isolation,
             timeout,
             invalidate,
-            storeEnabled, 
+            storeEnabled,
             onePhaseCommit,
             txSize,
-            subjId, 
+            subjId,
             taskNameHash
         );
 
@@ -1062,7 +1062,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             eventNodeId(),
                                             txEntry.nodeId(),
                                             false,
-                                            false,
                                             evt,
                                             metrics,
                                             txEntry.keepBinary(),
@@ -1079,7 +1078,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 null,
                                                 eventNodeId(),
                                                 nodeId,
-                                                false,
                                                 false,
                                                 false,
                                                 metrics,

@@ -18,13 +18,13 @@
 package org.apache.ignite.platform;
 
 /**
- * Portable object defined only in Java.
+ * Binarizable object defined only in Java.
  */
-public class PlatformComputeJavaPortable extends PlatformComputePortable {
+public class PlatformComputeJavaBinarizable extends PlatformComputeBinarizable {
     /**
      * Constructor.
      */
-    public PlatformComputeJavaPortable() {
+    public PlatformComputeJavaBinarizable() {
         // No-op.
     }
 
@@ -33,7 +33,7 @@ public class PlatformComputeJavaPortable extends PlatformComputePortable {
      *
      * @param field Field.
      */
-    public PlatformComputeJavaPortable(int field) {
+    public PlatformComputeJavaBinarizable(int field) {
         super(field);
     }
 }
