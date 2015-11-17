@@ -232,17 +232,28 @@ namespace Apache.Ignite.Core.Configuration
         public float MaxEvictionOverflowRatio { get; set; }
 
         /// <summary>
-        /// Gets flag indicating whether expired cache entries will be eagerly removed from cache. When        set to { false}, expired entries will be removed on next entry access.        <para/>        When not set, default value is { #DEFAULT_EAGER_TTL}.        <para/>        <b>Note</b> that this flag only matters for entries expiring based on        { ExpiryPolicy} and should not be confused with entry        evictions based on configured { EvictionPolicy}.
+        /// Gets flag indicating whether expired cache entries will be eagerly removed from cache. 
+        /// When set to false, expired entries will be removed on next entry access.        
         /// </summary>
         public bool EagerTtl { get; set; }
 
         /// <summary>
-        /// Gets initial cache size which will be used to pre-create internal        hash table after start. Default value is defined by { #DEFAULT_START_SIZE}.
+        /// Gets initial cache size which will be used to pre-create internal hash table after start.
         /// </summary>
         public int StartSize { get; set; }
 
         /// <summary>
-        /// Gets flag indicating whether value should be loaded from store if it is not in the cache        for following cache operations:        <ul>            <li>{ IgniteCache#putIfAbsent(Object, Object)}</li>            <li>{ IgniteCache#replace(Object, Object)}</li>            <li>{ IgniteCache#replace(Object, Object, Object)}</li>            <li>{ IgniteCache#remove(Object, Object)}</li>            <li>{ IgniteCache#getAndPut(Object, Object)}</li>            <li>{ IgniteCache#getAndRemove(Object)}</li>            <li>{ IgniteCache#getAndReplace(Object, Object)}</li>            <li>{ IgniteCache#getAndPutIfAbsent(Object, Object)}</li>       </ul>
+        /// Gets flag indicating whether value should be loaded from store if it is not in the cache 
+        /// for the following cache operations:   
+        /// <list type="bullet">
+        /// <item><term><see cref="ICache{TK,TV}.PutIfAbsent"/></term></item>
+        /// <item><term><see cref="ICache{TK,TV}.Replace(TK,TV)"/></term></item>
+        /// <item><term><see cref="ICache{TK,TV}.Remove(TK)"/></term></item>
+        /// <item><term><see cref="ICache{TK,TV}.GetAndPut"/></term></item>
+        /// <item><term><see cref="ICache{TK,TV}.GetAndRemove"/></term></item>
+        /// <item><term><see cref="ICache{TK,TV}.GetAndReplace"/></term></item>
+        /// <item><term><see cref="ICache{TK,TV}.GetAndPutIfAbsent"/></term></item>
+        /// </list>     
         /// </summary>
         public bool LoadPreviousValue { get; set; }
 
@@ -357,7 +368,7 @@ namespace Apache.Ignite.Core.Configuration
         public CacheMemoryMode MemoryMode { get; set; }
 
         /// <summary>
-        /// Gets flag indicating whether data can be read from backup.        If { false} always get data from primary node (never from backup).        <para/>        Default value is defined by { #DEFAULT_READ_FROM_BACKUP}.
+        /// Gets flag indicating whether data can be read from backup.        If false always get data from primary node (never from backup).        <para/>        Default value is defined by { #DEFAULT_READ_FROM_BACKUP}.
         /// </summary>
         public bool ReadFromBackup { get; set; }
 
