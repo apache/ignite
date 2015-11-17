@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Portable
+namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
     using System.Collections.Generic;
@@ -26,10 +26,10 @@ namespace Apache.Ignite.Core.Tests.Portable
     using NUnit.Framework;
 
     /// <summary>
-    /// Contains tests for portable type structure.
+    /// Contains tests for binary type structure.
     /// </summary>
     [TestFixture]
-    public class PortableStructureTest
+    public class BinaryStructureTest
     {
         /** Repeat count. */
         public static readonly int RepeatCnt = 10;

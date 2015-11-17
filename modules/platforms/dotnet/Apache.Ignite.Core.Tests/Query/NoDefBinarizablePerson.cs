@@ -17,53 +17,19 @@
 
 namespace Apache.Ignite.Core.Tests.Query
 {
-    using Apache.Ignite.Core.Binary;
-
     /// <summary>
     /// Test person.
     /// </summary>
-    internal class PortablePerson : IBinarizable
+    internal class NoDefBinarizablePerson
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PortablePerson"/> class.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="age">The age.</param>
-        public PortablePerson(string name, int age)
-        {
-            Name = name;
-            Age = age;
-        }
-
         /// <summary>
         /// Gets or sets the name.
         /// </summary>
         public string Name { get; set; }
 
         /// <summary>
-        /// Gets or sets the address.
-        /// </summary>
-        public string Address { get; set; }
-
-        /// <summary>
         /// Gets or sets the age.
         /// </summary>
         public int Age { get; set; }
-
-        /** <ineritdoc /> */
-        public void WriteBinary(IBinaryWriter writer)
-        {
-            writer.WriteString("name", Name);
-            writer.WriteString("address", Address);
-            writer.WriteInt("age", Age);
-        }
-
-        /** <ineritdoc /> */
-        public void ReadBinary(IBinaryReader reader)
-        {
-            Name = reader.ReadString("name");
-            Address = reader.ReadString("address");
-            Age = reader.ReadInt("age");
-        }
     }
 }

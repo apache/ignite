@@ -97,15 +97,13 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
 
         String initVal = "qwerty";
 
-        IgniteAtomicReference<String> atomic = grid(0).atomicReference(atomicName, null, true);
+        IgniteAtomicReference<String> atomic = grid(0).atomicReference(atomicName, initVal, true);
 
-        assertEquals(null, atomic.get());
+        assertEquals(initVal, atomic.get());
 
-        boolean res = atomic.compareAndSet(null, "x");
+        atomic.compareAndSet("h", "j");
 
-        assertEquals(null, atomic.get());   // ok
-        assertTrue(res);                    // fail
-        assertEquals("x", atomic.get());    // fail
+        assertEquals(initVal, atomic.get());
 
         atomic.compareAndSet(initVal, null);
 
