@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -84,16 +83,13 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     protected Map<UUID, GridDistributedTxMapping> dhtMap = new ConcurrentHashMap8<>();
 
     /** Mapped flag. */
-    protected AtomicBoolean mapped = new AtomicBoolean();
+    protected volatile boolean mapped;
 
     /** */
     private long dhtThreadId;
 
     /** */
     protected boolean explicitLock;
-
-    /** */
-    private boolean needsCompletedVers;
 
     /** Versions of pending locks for entries of this tx. */
     private Collection<GridCacheVersion> pendingVers;
@@ -141,15 +137,15 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         int taskNameHash
     ) {
         super(
-            cctx, 
-            xidVer, 
-            implicit, 
-            implicitSingle, 
-            sys, 
-            plc, 
-            concurrency, 
-            isolation, 
-            timeout, 
+            cctx,
+            xidVer,
+            implicit,
+            implicitSingle,
+            sys,
+            plc,
+            concurrency,
+            isolation,
+            timeout,
             invalidate,
             storeEnabled,
             onePhaseCommit,
@@ -244,16 +240,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      */
     protected abstract void sendFinishReply(boolean commit, @Nullable Throwable err);
 
-    /**
-     * @param needsCompletedVers {@code True} if needs completed versions.
-     */
-    public void needsCompletedVersions(boolean needsCompletedVers) {
-        this.needsCompletedVers |= needsCompletedVers;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean needsCompletedVersions() {
-        return needsCompletedVers;
+        return nearOnOriginatingNode;
     }
 
     /**
@@ -281,10 +270,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * Map explicit locks.
      */
     protected void mapExplicitLocks() {
-        if (!mapped.get()) {
+        if (!mapped) {
             // Explicit locks may participate in implicit transactions only.
             if (!implicit()) {
-                mapped.set(true);
+                mapped = true;
 
                 return;
             }
@@ -343,7 +332,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             if (!F.isEmpty(nearEntryMap))
                 addNearNodeEntryMapping(nearEntryMap);
 
-            mapped.set(true);
+            mapped = true;
         }
     }
 

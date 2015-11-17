@@ -111,4 +111,22 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
 
         assertEquals(null, atomic.get());
     }
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCompareAndSetNullValue() throws Exception {
+        String atomicName = UUID.randomUUID().toString();
+
+        IgniteAtomicReference<String> atomic = grid(0).atomicReference(atomicName, null, true);
+
+        assertEquals(null, atomic.get());
+
+        boolean success = atomic.compareAndSet(null, "newVal");
+
+        assertTrue(success);
+        assertEquals("newVal", atomic.get());
+    }
 }

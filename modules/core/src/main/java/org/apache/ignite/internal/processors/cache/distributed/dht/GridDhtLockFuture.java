@@ -787,14 +787,12 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             if (log.isDebugEnabled())
                 log.debug("Mapping entry for DHT lock future: " + this);
 
-            boolean hasRmtNodes = false;
-
             // Assign keys to primary nodes.
             for (GridDhtCacheEntry entry : entries) {
                 try {
                     while (true) {
                         try {
-                            hasRmtNodes = cctx.dhtMap(
+                            cctx.dhtMap(
                                 nearNodeId,
                                 topVer,
                                 entry,
@@ -827,9 +825,6 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                     assert false : "DHT lock should never get invalid partition [err=" + e + ", fut=" + this + ']';
                 }
             }
-
-            if (tx != null)
-                tx.needsCompletedVersions(hasRmtNodes);
 
             if (isDone()) {
                 if (log.isDebugEnabled())

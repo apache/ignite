@@ -17,7 +17,6 @@ import java.util.AbstractSet;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
-import java.util.Deque;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -28,6 +27,9 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
@@ -264,12 +266,14 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
         private volatile V val;
 
         /** Reference to a node in queue for fast removal operations. */
+        @GridToStringExclude
         private volatile ConcurrentLinkedDeque8.Node node;
 
         /** Modification count of the map for duplicates exclusion. */
         private volatile int modCnt;
 
         /** Link to the next entry in a bucket */
+        @GridToStringExclude
         private final HashEntry<K, V> next;
 
         /**
@@ -331,6 +335,11 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
         @SuppressWarnings("unchecked")
         static <K, V> HashEntry<K, V>[] newArray(int i) {
             return new HashEntry[i];
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(HashEntry.class, this, "key", key, "val", val);
         }
     }
 
@@ -749,7 +758,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
                             recordInsert(e, (ConcurrentLinkedDeque8)segEntryQ);
 
                             if (maxCap > 0)
-                                checkRemoveEldestEntrySegment();
+                                checkRemoveEldestEntrySegment(c);
 
                             break;
 
@@ -757,7 +766,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
                             segEntryQ.add(e);
 
                             if (maxCap > 0)
-                                checkRemoveEldestEntrySegment();
+                                checkRemoveEldestEntrySegment(c);
 
                             break;
 
@@ -779,23 +788,21 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
         }
 
         /**
-         *
+         * @param cnt Segment entries count.
          */
-        private void checkRemoveEldestEntrySegment() {
+        private void checkRemoveEldestEntrySegment(int cnt) {
             assert maxCap > 0;
 
-            int rmvCnt = sizex() - maxCap;
-
-            for (int i = 0; i < rmvCnt; i++) {
+            if (cnt - ((maxCap / segments.length) + 1) > 0) {
                 HashEntry<K, V> e0 = segEntryQ.poll();
 
-                if (e0 == null)
-                    break;
+                assert e0 != null;
 
-                removeLocked(e0.key, e0.hash, null /*no need to compare*/, false);
-
-                if (sizex() <= maxCap)
-                    break;
+                removeLocked(
+                    e0.key,
+                    e0.hash,
+                    null /*no need to compare*/,
+                    false);
             }
         }
 
@@ -1812,34 +1819,22 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
          * @param asc {@code True} for ascending iterator.
          */
         HashIterator(boolean asc) {
-            // TODO GG-4788 - Need to fix iterators for ConcurrentLinkedHashMap in perSegment mode
-            if (qPlc != SINGLE_Q)
-                throw new IllegalStateException("Iterators are not supported in 'perSegmentQueue' modes.");
-
             modCnt = ConcurrentLinkedHashMap.this.modCnt.intValue();
 
             // Init delegate.
-            delegate = asc ? entryQ.iterator() : entryQ.descendingIterator();
+            switch (qPlc) {
+                case SINGLE_Q:
+                    delegate = asc ? entryQ.iterator() : entryQ.descendingIterator();
+
+                    break;
+
+                default:
+                    assert qPlc == PER_SEGMENT_Q || qPlc == PER_SEGMENT_Q_OPTIMIZED_RMV : qPlc;
+
+                    delegate = new HashIteratorDelegate();
+            }
 
             advance();
-        }
-
-        /**
-         * @return Copy of the queue.
-         */
-        private Deque<HashEntry<K, V>> copyQueue() {
-            int i = entryQ.sizex();
-
-            Deque<HashEntry<K, V>> res = new ArrayDeque<>(i);
-
-            Iterator<HashEntry<K, V>> iter = entryQ.iterator();
-
-            while (iter.hasNext() && i-- >= 0)
-                res.add(iter.next());
-
-            assert !iter.hasNext() : "Entries queue has been modified.";
-
-            return res;
         }
 
         /**
@@ -1897,6 +1892,130 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
                     break;
                 }
             }
+        }
+    }
+
+    /**
+     *
+     */
+    private class HashIteratorDelegate implements Iterator<HashEntry<K, V>> {
+        /** */
+        private HashEntry<K, V>[] curTbl;
+
+        /** */
+        private int nextSegIdx;
+
+        /** */
+        private int nextTblIdx;
+
+        /** */
+        private HashEntry<K, V> next;
+
+        /** */
+        private HashEntry<K, V> next0;
+
+        /** */
+        private HashEntry<K, V> cur;
+
+        /**
+         *
+         */
+        public HashIteratorDelegate() {
+            nextSegIdx = segments.length - 1;
+            nextTblIdx = -1;
+
+            advance();
+        }
+
+        /**
+         *
+         */
+        private void advance() {
+            if (next0 != null && advanceInBucket(next0, true))
+                return;
+
+            while (nextTblIdx >= 0) {
+                HashEntry<K, V> bucket = curTbl[nextTblIdx--];
+
+                if (bucket != null && advanceInBucket(bucket, false))
+                    return;
+            }
+
+            while (nextSegIdx >= 0) {
+                int nextSegIdx0 = nextSegIdx--;
+
+                Segment seg = segments[nextSegIdx0];
+
+                curTbl = seg.tbl;
+
+                for (int j = curTbl.length - 1; j >= 0; --j) {
+                    HashEntry<K, V> bucket = curTbl[j];
+
+                    if (bucket != null && advanceInBucket(bucket, false)) {
+                        nextTblIdx = j - 1;
+
+                        return;
+                    }
+                }
+            }
+        }
+
+        /**
+         * @param e Current next.
+         * @return {@code True} if advance succeeded.
+         */
+        @SuppressWarnings( {"unchecked"})
+        private boolean advanceInBucket(@Nullable HashEntry<K, V> e, boolean skipFirst) {
+            if (e == null)
+                return false;
+
+            next0 = e;
+
+            do {
+                if (!skipFirst) {
+                    next = next0;
+
+                    return true;
+                }
+                else
+                    skipFirst = false;
+            }
+            while ((next0 = next0.next) != null);
+
+            assert next0 == null;
+
+            next = null;
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return next != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public HashEntry<K, V> next() {
+            HashEntry<K, V> e = next;
+
+            if (e == null)
+                throw new NoSuchElementException();
+
+            advance();
+
+            return e;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            if (cur == null)
+                throw new IllegalStateException();
+
+            HashEntry<K, V> e = cur;
+
+            cur = null;
+
+            ConcurrentLinkedHashMap.this.remove(e.key, e.val);
         }
     }
 
@@ -2154,12 +2273,16 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
          * the fastest &quot;natural&quot; evicts for bounded maps.
          * <p>
          * NOTE: Remove operations on map are slower than with other policies.
+         * <p>
+         * NOTE: Iteration order is not preserved, i.e. iteration goes as if it was ordinary hash map.
          */
         PER_SEGMENT_Q,
 
         /**
          * Instance of {@code GridConcurrentLinkedDequeue} is created for each segment. This gives
          * faster &quot;natural&quot; evicts for bounded queues and better remove operation times.
+         * <p>
+         * NOTE: Iteration order is not preserved, i.e. iteration goes as if it was ordinary hash map.
          */
         PER_SEGMENT_Q_OPTIMIZED_RMV
     }

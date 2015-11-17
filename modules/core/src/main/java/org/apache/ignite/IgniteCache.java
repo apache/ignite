@@ -108,6 +108,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @return Random entry, or {@code null} if cache is empty.
      */
+    @Deprecated
     public Entry<K, V> randomEntry();
 
     /**
