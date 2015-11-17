@@ -17,8 +17,38 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
+    using Apache.Ignite.Core.Cache;
+
+    /// <summary>
+    /// Cache atomicity mode.
+    /// </summary>
     public enum CacheAtomicityMode
     {
-        
+        /// <summary>
+        /// Specified fully ACID-compliant transactional cache behavior.
+        /// </summary>
+        Transactional,
+
+        /// <summary>
+        /// Specifies atomic-only cache behaviour. In this mode distributed transactions and distributed
+        /// locking are not supported. Disabling transactions and locking allows to achieve much higher
+        /// performance and throughput ratios.
+        /// <para/>
+        /// In addition to transactions and locking, one of the main differences to <see cref="Atomic"/> mode
+        /// is that bulk writes, such as <see cref="ICache{TK,TV}.PutAll"/> 
+        /// and <see cref="ICache{TK,TV}.RemoveAll(System.Collections.Generic.IEnumerable{TK})"/> methods, 
+        /// become simple batch operations which can partially fail. In case of partial
+        /// failure, <see cref="CachePartialUpdateException"/>will be thrown which will contain a list of keys 
+        /// for which the update failed. It is recommended that bulk writes are used
+        /// whenever multiple keys need to be inserted or updated in cache, as they reduce number of network trips and
+        /// provide better performance.
+        /// <para/>
+        /// Note that even without locking and transactions, <see cref="Atomic"/> mode still provides
+        /// full consistency guarantees across all cache nodes.
+        /// <para/>
+        /// Also note that all data modifications in <see cref="Atomic"/> mode are guaranteed to be atomic
+        /// and consistent with writes to the underlying persistent store, if one is configured.        
+        /// </summary>
+        Atomic
     }
 }
