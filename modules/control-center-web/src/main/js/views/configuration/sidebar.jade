@@ -25,24 +25,20 @@ append scripts
     script(src='/generator/generator-xml.js')
     script(src='/generator/generator-java.js')
 
-mixin sidebar-item(ref, num, txt)
-    li
-        a(ng-class='{active: isActive("#{ref}")}' href='#{ref}')
-            span.fa-stack
-                i.fa.fa-circle-thin.fa-stack-2x
-                i.fa.fa-stack-1x #{num}
-            | #{txt}
-
 block container
     .row
         .col-xs-3.col-sm-3.col-md-2.border-right.section-left.greedy
             .sidebar-nav(bs-affix)
-                ul.menu(ng-controller='activeLink')
-                    +sidebar-item('/configuration/clusters', 1, 'Clusters')
-                    +sidebar-item('/configuration/caches', 2, 'Caches')
-                    +sidebar-item('/configuration/metadata', 3, 'Metadata')
-                    +sidebar-item('/configuration/igfs', 4, 'IGFS')
-                    +sidebar-item('/configuration/summary', 5, 'Summary')
+                ul.menu(ignite-configuration-sidebar ng-controller='activeLink')
+                    li(ng-repeat='item in sidebar.items')
+                        a(ng-class='{active: isActive("{{::item.href}}$")}' href='{{::item.href}}')
+                            span.fa-stack
+                                i.fa.fa-circle-thin.fa-stack-2x
+                                i.fa.fa-stack-1x {{::$index + 1}}
+                            | {{::item.label}}
+                        ul(ng-if='item.subItems' style='margin-left:30px')
+                            li(ng-repeat='subItem in item.subItems')
+                                a(ng-class='{active: isActive("{{::subItem.href}}")}' href='{{::subItem.href}}') {{::subItem.label}}
 
         .col-xs-9.col-sm-9.col-md-10.border-left.section-right
             .docs-content
