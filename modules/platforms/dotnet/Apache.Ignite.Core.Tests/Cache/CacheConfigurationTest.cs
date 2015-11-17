@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 EvictSynchronizedConcurrencyLevel = 9,
                 EvictSynchronizedTimeout = TimeSpan.FromSeconds(10),
                 Invalidate = true,
-                KeepPortableInStore = true,
+                KeepBinaryInStore = true,
                 LockTimeout = TimeSpan.FromSeconds(11),
                 MaxEvictionOverflowRatio = 0.5f,
                 MemoryMode = CacheMemoryMode.OffheapValues,
@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronizedConcurrencyLevel, cfg.EvictSynchronizedConcurrencyLevel);
             Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronizedTimeout, cfg.EvictSynchronizedTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultInvalidate, cfg.Invalidate);
-            Assert.AreEqual(CacheConfiguration.DefaultKeepPortableInStore, cfg.KeepPortableInStore);
+            Assert.AreEqual(CacheConfiguration.DefaultKeepPortableInStore, cfg.KeepBinaryInStore);
             Assert.AreEqual(CacheConfiguration.DefaultLoadPreviousValue, cfg.LoadPreviousValue);
             Assert.AreEqual(CacheConfiguration.DefaultLockTimeout, cfg.LockTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultLongQueryWarningTimeout, cfg.LongQueryWarningTimeout);
@@ -170,7 +170,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.EvictSynchronizedConcurrencyLevel, y.EvictSynchronizedConcurrencyLevel);
             Assert.AreEqual(x.EvictSynchronizedTimeout, y.EvictSynchronizedTimeout);
             Assert.AreEqual(x.Invalidate, y.Invalidate);
-            Assert.AreEqual(x.KeepPortableInStore, y.KeepPortableInStore);
+            Assert.AreEqual(x.KeepBinaryInStore, y.KeepBinaryInStore);
             Assert.AreEqual(x.LoadPreviousValue, y.LoadPreviousValue);
             Assert.AreEqual(x.LockTimeout, y.LockTimeout);
             Assert.AreEqual(x.LongQueryWarningTimeout, y.LongQueryWarningTimeout);

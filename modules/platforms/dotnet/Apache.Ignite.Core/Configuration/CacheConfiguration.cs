@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Configuration
             EvictSynchronizedConcurrencyLevel = DefaultEvictSynchronizedConcurrencyLevel;
             EvictSynchronizedTimeout = DefaultEvictSynchronizedTimeout;
             Invalidate = DefaultInvalidate;
-            KeepPortableInStore = DefaultKeepPortableInStore;
+            KeepBinaryInStore = DefaultKeepPortableInStore;
             LoadPreviousValue = DefaultLoadPreviousValue;
             LockTimeout = DefaultLockTimeout;
             LongQueryWarningTimeout = DefaultLongQueryWarningTimeout;
@@ -194,7 +194,7 @@ namespace Apache.Ignite.Core.Configuration
             EvictSynchronizedKeyBufferSize = reader.ReadInt();
             EvictSynchronizedTimeout = TimeSpan.FromMilliseconds(reader.ReadLong());
             Invalidate = reader.ReadBoolean();
-            KeepPortableInStore = reader.ReadBoolean();
+            KeepBinaryInStore = reader.ReadBoolean();
             LoadPreviousValue = reader.ReadBoolean();
             LockTimeout = TimeSpan.FromMilliseconds(reader.ReadLong());
             LongQueryWarningTimeout = TimeSpan.FromMilliseconds(reader.ReadLong());
@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt(EvictSynchronizedKeyBufferSize);
             writer.WriteLong((long) EvictSynchronizedTimeout.TotalMilliseconds);
             writer.WriteBoolean(Invalidate);
-            writer.WriteBoolean(KeepPortableInStore);
+            writer.WriteBoolean(KeepBinaryInStore);
             writer.WriteBoolean(LoadPreviousValue);
             writer.WriteLong((long) LockTimeout.TotalMilliseconds);
             writer.WriteLong((long) LongQueryWarningTimeout.TotalMilliseconds);
@@ -339,9 +339,10 @@ namespace Apache.Ignite.Core.Configuration
         public bool LoadPreviousValue { get; set; }
 
         /// <summary>
-        /// Gets or sets factory for underlying persistent storage for read-through and write-through operations.
+        /// Gets or sets the flag indicating whether <see cref="ICacheStore"/> is working with binary objects 
+        /// instead of deserialized objects.
         /// </summary>
-        public bool KeepPortableInStore { get; set; }
+        public bool KeepBinaryInStore { get; set; }
 
         /// <summary>
         /// Gets or sets caching mode to use.
