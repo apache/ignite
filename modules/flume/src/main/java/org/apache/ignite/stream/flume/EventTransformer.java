@@ -22,12 +22,12 @@ import java.util.Map;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Flume event transformer to convert a list of Flume {@link Event} to cache entries.
+ * Flume event transformer to convert a list of Flume Events to cache entries.
  */
 public interface EventTransformer<Event, K, V> {
 
     /**
-     * Transforms a list of Flume {@link Event} to cache entries.
+     * Transforms a list of Flume Events to cache entries.
      *
      * @param events List of Flume events to transform.
      * @return Cache entries to be written into the grid.
