@@ -20,7 +20,9 @@ package org.apache.ignite.internal.direct;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.RandomAccess;
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -213,7 +215,10 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType) {
-        stream.writeCollection(col, itemType, this);
+        if (col instanceof List && col instanceof RandomAccess)
+            stream.writeRandomAccessList((List<T>)col, itemType, this);
+        else
+            stream.writeCollection(col, itemType, this);
 
         return stream.lastFinished();
     }
