@@ -563,6 +563,9 @@ consoleModule.controller('sqlController',
 
     var _processQueryResult = function (paragraph, refreshMode) {
         return function (res) {
+            var prevKeyCols = paragraph.chartKeyCols;
+            var prevValCols = paragraph.chartValCols;
+
             if (res.meta && !refreshMode) {
                 paragraph.meta = [];
 
@@ -643,8 +646,20 @@ consoleModule.controller('sqlController',
 
             if (paragraph.result == 'none' || paragraph.queryArgs.type != "QUERY")
                 paragraph.result = 'table';
-            else if (paragraph.chart())
-                _chartApplySettings(paragraph, queryChanged);
+            else if (paragraph.chart()) {
+                var resetCharts = queryChanged;
+
+                if (!resetCharts) {
+                    var curKeyCols = paragraph.chartKeyCols;
+                    var curValCols = paragraph.chartValCols;
+
+                    resetCharts = !prevKeyCols || !prevValCols ||
+                        prevKeyCols.length != curKeyCols.length ||
+                        prevValCols.length != curValCols.length;
+                }
+
+                _chartApplySettings(paragraph, resetCharts);
+            }
         }
     };
 
