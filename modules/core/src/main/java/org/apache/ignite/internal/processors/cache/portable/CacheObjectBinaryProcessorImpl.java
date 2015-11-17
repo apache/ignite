@@ -337,7 +337,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onUtilityCacheStarted() throws IgniteCheckedException {
-        metaDataCache = ctx.cache().jcache(CU.UTILITY_CACHE_NAME);
+        metaDataCache = (IgniteCacheProxy)ctx.cache().jcache(CU.UTILITY_CACHE_NAME).withNoRetries();
 
         if (clientNode) {
             assert !metaDataCache.context().affinityNode();
