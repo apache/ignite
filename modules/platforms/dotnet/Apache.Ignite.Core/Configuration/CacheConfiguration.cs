@@ -224,6 +224,51 @@ namespace Apache.Ignite.Core.Configuration
         }
 
         /// <summary>
+        /// Writes this instane to the specified writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        internal void Write(IBinaryRawWriter writer)
+        {
+            writer.WriteInt((int) AtomicityMode);
+            writer.WriteInt((int) AtomicWriteOrderMode);
+            writer.WriteInt(Backups);
+            writer.WriteInt((int) CacheMode);
+            writer.WriteBoolean(CopyOnRead);
+            writer.WriteBoolean(EagerTtl);
+            writer.WriteBoolean(EnableSwap);
+            writer.WriteBoolean(EvictSynchronized);
+            writer.WriteInt(EvictSynchronizedConcurrencyLevel);
+            writer.WriteInt(EvictSynchronizedKeyBufferSize);
+            writer.WriteLong((long) EvictSynchronizedTimeout.TotalMilliseconds);
+            writer.WriteBoolean(Invalidate);
+            writer.WriteBoolean(KeepPortableInStore);
+            writer.WriteBoolean(LoadPreviousValue);
+            writer.WriteLong((long) LockTimeout.TotalMilliseconds);
+            writer.WriteLong((long) LongQueryWarningTimeout.TotalMilliseconds);
+            writer.WriteInt(MaxConcurrentAsyncOperations);
+            writer.WriteFloat(MaxEvictionOverflowRatio);
+            writer.WriteInt((int) MemoryMode);
+            writer.WriteString(Name);
+            writer.WriteLong(OffHeapMaxMemory);
+            writer.WriteBoolean(ReadFromBackup);
+            writer.WriteInt(RebalanceBatchSize);
+            writer.WriteLong((long) RebalanceDelay.TotalMilliseconds);
+            writer.WriteInt((int) RebalanceMode);
+            writer.WriteInt(RebalanceThreadPoolSize);
+            writer.WriteLong((long) RebalanceThrottle.TotalMilliseconds);
+            writer.WriteLong((long) RebalanceTimeout.TotalMilliseconds);
+            writer.WriteBoolean(SqlEscapeAll);
+            writer.WriteInt(SqlOnheapRowCacheSize);
+            writer.WriteInt(StartSize);
+            writer.WriteInt(WriteBehindBatchSize);
+            writer.WriteBoolean(WriteBehindEnabled);
+            writer.WriteLong((long) WriteBehindFlushFrequency.TotalMilliseconds);
+            writer.WriteInt(WriteBehindFlushSize);
+            writer.WriteInt(WriteBehindFlushThreadCount);
+            writer.WriteInt((int) WriteSynchronizationMode);
+        }
+
+        /// <summary>
         /// Gets or sets write synchronization mode. This mode controls whether the main        
         /// caller should wait for update on other nodes to complete or not.
         /// </summary>

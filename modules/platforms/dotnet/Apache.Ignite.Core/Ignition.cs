@@ -292,9 +292,7 @@ namespace Apache.Ignite.Core
                 var writer = _startup.Marshaller.StartMarshal(outStream);
 
                 foreach (var cache in caches)
-                {
-                    writer.WriteString(cache.Name);
-                }
+                    cache.Write(writer);
             }
         }
 
