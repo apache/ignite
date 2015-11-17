@@ -637,7 +637,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Invalid
             exp = PopulateCache(cache, loc, cnt, x => x < 50);
             qry = new ScanQuery<int, TV>(new InvalidScanQueryFilter<TV>());
-            Assert.Throws<BinaryObjectException>(() => ValidateQueryResults(cache, qry, exp, keepPortable));
+            Assert.Throws<BinaryObjectException>(() => ValidateQueryResults(cache, qry, exp, keepBinary));
 
             // Exception
             exp = PopulateCache(cache, loc, cnt, x => x < 50);
