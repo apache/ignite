@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultCacheAtomicityMode, cfg.AtomicityMode);
             Assert.AreEqual(CacheConfiguration.DefaultCacheMode, cfg.CacheMode);
             Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
-            Assert.AreEqual(CacheConfiguration.DefaultCacheSize, cfg.StartSize);
+            Assert.AreEqual(CacheConfiguration.DefaultStartSize, cfg.StartSize);
             Assert.AreEqual(CacheConfiguration.DefaultEagerTtl, cfg.EagerTtl);
             Assert.AreEqual(CacheConfiguration.DefaultEvictKeyBufferSize, cfg.EvictSynchronizedKeyBufferSize);
             Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronized, cfg.EvictSynchronized);

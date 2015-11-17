@@ -146,7 +146,6 @@ namespace Apache.Ignite.Core.Configuration
             AtomicityMode = DefaultCacheAtomicityMode;
             CacheMode = DefaultCacheMode;
             CopyOnRead = DefaultCopyOnRead;
-            StartSize = DefaultCacheSize;
             EagerTtl = DefaultEagerTtl;
             EvictSynchronizedKeyBufferSize = DefaultEvictKeyBufferSize;
             EvictSynchronized = DefaultEvictSynchronized;
@@ -168,7 +167,6 @@ namespace Apache.Ignite.Core.Configuration
             RebalanceThrottle = DefaultRebalanceThrottle;
             RebalanceTimeout = DefaultRebalanceTimeout;
             SqlOnheapRowCacheSize = DefaultSqlOnheapRowCacheSize;
-            StartSize = DefaultStartSize;
             StartSize = DefaultStartSize;
             EnableSwap = DefaultSwapEnabled;
             WriteBehindBatchSize = DefaultWriteBehindBatchSize;
