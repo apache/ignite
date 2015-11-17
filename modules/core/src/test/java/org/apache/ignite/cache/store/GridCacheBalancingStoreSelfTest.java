@@ -17,10 +17,14 @@
 
 package org.apache.ignite.cache.store;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,9 +32,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheStoreBalancingWrapper;
 import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -118,6 +125,119 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentLoad() throws Exception {
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        assertEquals(CacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD, cfg.getStoreConcurrentLoadAllThreshold());
+
+        doTestConcurrentLoad(5, 50, CacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentLoadCustomThreshold() throws Exception {
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setStoreConcurrentLoadAllThreshold(15);
+
+        assertEquals(15, cfg.getStoreConcurrentLoadAllThreshold());
+
+        doTestConcurrentLoad(5, 50, cfg.getStoreConcurrentLoadAllThreshold());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestConcurrentLoad(int threads, final int keys, int threshold) throws Exception {
+        final CyclicBarrier beforeBarrier = new CyclicBarrier(threads);
+
+        ConcurrentVerifyStore store = new ConcurrentVerifyStore(keys);
+
+        final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<>(store, threshold);
+
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                for (int i = 0; i < keys; i++) {
+                    try {
+                        beforeBarrier.await();
+                    }
+                    catch (InterruptedException | BrokenBarrierException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    info("Load key: " + i);
+
+                    wrapper.load(i);
+                }
+            }
+        }, threads, "load-thread");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentLoadAll() throws Exception {
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        assertEquals(CacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD, cfg.getStoreConcurrentLoadAllThreshold());
+
+        doTestConcurrentLoadAll(5, CacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD, 150);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentLoadAllCustomThreshold() throws Exception {
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setStoreConcurrentLoadAllThreshold(15);
+
+        assertEquals(15, cfg.getStoreConcurrentLoadAllThreshold());
+
+        doTestConcurrentLoadAll(5, cfg.getStoreConcurrentLoadAllThreshold(), 150);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestConcurrentLoadAll(int threads, final int threshold, final int keysCnt) throws Exception {
+        final CyclicBarrier beforeBarrier = new CyclicBarrier(threads);
+
+        ConcurrentVerifyStore store = new ConcurrentVerifyStore(keysCnt);
+
+        final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<>(store, threshold);
+
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                for (int i = 0; i < keysCnt; i += threshold) {
+                    try {
+                        beforeBarrier.await();
+                    }
+                    catch (InterruptedException | BrokenBarrierException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    List<Integer> keys = new ArrayList<>(threshold);
+
+                    for (int j = i; j < i + threshold; j++)
+                        keys.add(j);
+
+                    info("Load keys: " + keys);
+
+                    wrapper.loadAll(keys, new IgniteBiInClosure<Integer, Integer>() {
+                        @Override public void apply(Integer integer, Integer integer2) {
+                            // No-op.
+                        }
+                    });
+                }
+            }
+        }, threads, "load-thread");
+    }
+
+    /**
      *
      */
     private static class VerifyStore implements CacheStore<Integer, Integer> {
@@ -200,6 +320,104 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public void sessionEnd(boolean commit) {
+            // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ConcurrentVerifyStore implements CacheStore<Integer, Integer> {
+
+        /** Cnts. */
+        private final AtomicInteger[] cnts;
+
+        /**
+         */
+        private ConcurrentVerifyStore(int keys) {
+            this.cnts = new AtomicInteger[keys];
+
+            for (int i = 0; i < keys; i++)
+                cnts[i] = new AtomicInteger();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public Integer load(Integer key) {
+            try {
+                U.sleep(500);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw new RuntimeException(e);
+            }
+
+            assertEquals("Redundant load call.", 1, cnts[key].incrementAndGet());
+
+            return key;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, @Nullable Object... args) {
+            // No-op.
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public Map<Integer, Integer> loadAll(Iterable<? extends Integer> keys) {
+            try {
+                U.sleep(500);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                e.printStackTrace();
+            }
+
+            Map<Integer, Integer> loaded = new HashMap<>();
+
+            for (Integer key : keys) {
+                assertEquals("Redundant loadAll call.", 1, cnts[key].incrementAndGet());
+
+                loaded.put(key, key);
+            }
+
+            return loaded;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> entry) {
+            // No-op.
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void writeAll(Collection<Cache.Entry<? extends Integer, ? extends Integer>> entries) {
+            // No-op.
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void delete(Object key) {
+            // No-op.
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void deleteAll(Collection<?> keys) {
+            // No-op.
+        }
+
+        /**
+         * {@inheritDoc}
+         */
         @Override public void sessionEnd(boolean commit) {
             // No-op.
         }

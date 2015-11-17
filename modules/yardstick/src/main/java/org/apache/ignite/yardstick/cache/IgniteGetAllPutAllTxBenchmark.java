@@ -18,55 +18,56 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.yardstick.cache.model.SampleValue;
 import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.doInTransaction;
 
 /**
- * Ignite benchmark that performs transactional put and get operations.
+ * Ignite benchmark that performs transactional putAll operations.
  */
-public class IgnitePutGetTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+public class IgniteGetAllPutAllTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, Integer> {
     /** */
     private IgniteTransactions txs;
-
-    /** */
-    private Callable<Void> clo;
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
         txs = ignite().transactions();
-
-        clo = new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                int key = nextRandom(0, args.range() / 2);
-
-                Object val = cache.get(key);
-
-                if (val != null)
-                    key = nextRandom(args.range() / 2, args.range());
-
-                cache.put(key, new SampleValue(key));
-
-                return null;
-            }
-        };
     }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        doInTransaction(txs, args.txConcurrency(), args.txIsolation(), clo);
+        final ThreadRange r = threadRange();
+
+        doInTransaction(txs, args.txConcurrency(), args.txIsolation(), new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                SortedMap<Integer, Integer> vals = new TreeMap<>();
+
+                for (int i = 0; i < args.batch(); i++) {
+                    int key = r.nextRandom();
+
+                    vals.put(key, key);
+                }
+
+                cache.getAll(vals.keySet());
+
+                cache.putAll(vals);
+
+                return null;
+            }
+        });
 
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCache<Integer, Object> cache() {
+    @Override protected IgniteCache<Integer, Integer> cache() {
         return ignite().cache("tx");
     }
 }
