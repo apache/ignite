@@ -57,7 +57,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  */
 public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends IgniteCollectionAbstractTest {
     /** */
-    private static final long TEST_TIMEOUT = 2 * 60 * 1000;
+    private static final long TEST_TIMEOUT = 3 * 60 * 1000;
 
     /** */
     private static final String NEW_GRID_NAME = "newGrid";
@@ -667,8 +667,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
          * @return Future.
          */
         IgniteInternalFuture<?> startChangingTopology(final IgniteClosure<Ignite, ?> callback) {
-            final boolean partitioned = collectionCacheMode() == CacheMode.PARTITIONED;
-
             IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
@@ -684,21 +682,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                                 callback.apply(g);
                             }
                             finally {
-                                if (i != TOP_CHANGE_CNT - 1) {
-                                    stopGrid(name, !partitioned);
-
-                                    if (partitioned) {
-                                        while (true) {
-                                            try {
-                                                awaitPartitionMapExchange();
-
-                                                break;
-                                            } catch(Exception ex){
-                                                U.error(log, ex.getMessage());
-                                            }
-                                        }
-                                    }
-                                }
+                                if (i != TOP_CHANGE_CNT - 1)
+                                    stopGrid(name);
                             }
                         }
                     }
@@ -790,15 +775,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                         for (String name : startedNodes) {
                             stopGrid(name, false);
 
-                            while (true) {
-                                try {
-                                    awaitPartitionMapExchange();
-
-                                    break;
-                                } catch(Exception ex){
-                                    U.error(log, ex.getMessage());
-                                }
-                            }
+                            awaitPartitionMapExchange();
                         }
 
                         startedNodes.clear();
