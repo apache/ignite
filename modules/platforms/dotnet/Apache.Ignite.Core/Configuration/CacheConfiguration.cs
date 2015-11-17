@@ -20,6 +20,7 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace Apache.Ignite.Core.Configuration
 {
+    using System;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
@@ -32,11 +33,11 @@ namespace Apache.Ignite.Core.Configuration
         /** Default size of rebalance thread pool. */
         public const int DefaultRebalanceThreadPoolSize = 2;
 
-        /** Default rebalance timeout (ms).*/
-        public const long DefaultRebalanceTimeout = 10000;
+        /** Default rebalance timeout.*/
+        public static readonly TimeSpan DefaultRebalanceTimeout = TimeSpan.FromMilliseconds(10000);
 
-        /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
-        public const long DefaultRebalanceThrottle = 0;
+        /** Time to wait between rebalance messages to avoid overloading CPU. */
+        public static readonly TimeSpan DefaultRebalanceThrottle = TimeSpan.Zero;
 
         /** Default number of backups. */
         public const int DefaultBackups = 0;
@@ -48,7 +49,7 @@ namespace Apache.Ignite.Core.Configuration
         public const CacheAtomicityMode DefaultCacheAtomicityMode = CacheAtomicityMode.Atomic;
 
         /** Default lock timeout. */
-        public const long DefaultLockTimeout = 0;
+        public static readonly TimeSpan DefaultLockTimeout = TimeSpan.Zero;
 
         /** Initial default cache size. */
         public const int DefaultStartSize = 1500000;
@@ -74,8 +75,8 @@ namespace Apache.Ignite.Core.Configuration
         /** Default eviction key buffer size for batching synchronized evicts. */
         public const int DefaultEvictKeyBufferSize = 1024;
 
-        /** Default synchronous eviction timeout in milliseconds. */
-        public const long DefaultEvictSynchronizedTimeout = 10000;
+        /** Default synchronous eviction timeout. */
+        public static readonly TimeSpan DefaultEvictSynchronizedTimeout = TimeSpan.FromMilliseconds(10000);
 
         /** Default synchronous eviction concurrency level. */
         public const int DefaultEvictSynchronizedConcurrencyLevel = 4;
@@ -98,8 +99,8 @@ namespace Apache.Ignite.Core.Configuration
         /** Default flush size for write-behind cache store. */
         public const int DefaultWriteBehindFlushSize = 10240; // 10K
 
-        /** Default flush frequency for write-behind cache store in milliseconds. */
-        public const long DefaultWriteBehindFlushFrequency = 5000;
+        /** Default flush frequency for write-behind cache store. */
+        public static readonly TimeSpan DefaultWriteBehindFlushFrequency = TimeSpan.FromMilliseconds(5000);
 
         /** Default count of flush threads for write-behind cache store. */
         public const int DefaultWriteFromBehindFlushThreadCount = 1;
@@ -117,7 +118,7 @@ namespace Apache.Ignite.Core.Configuration
         public const bool DefaultReadFromBackup = true;
 
         /** Default timeout after which long query warning will be printed. */
-        public const long DefaultLongQueryWarningTimeout = 3000;
+        public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
 
         /** Default size for onheap SQL row cache size. */
         public const int DefaultSqlOnheapRowCacheSize = 10*1024;
@@ -220,7 +221,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets timeout for synchronized evictions
         /// </summary>
-        public long EvictSynchronizedTimeout { get; set; }
+        public TimeSpan EvictSynchronizedTimeout { get; set; }
 
         /// <summary>
         /// This value denotes the maximum size of eviction queue in percents of cache size 
@@ -287,7 +288,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets default lock acquisition timeout.
         /// </summary>
-        public long LockTimeout { get; set; }  // TODO: Timespan
+        public TimeSpan LockTimeout { get; set; }
 
         /// <summary>
         /// Invalidation flag. If true, values will be invalidated (nullified) upon commit in near cache.
@@ -327,7 +328,7 @@ namespace Apache.Ignite.Core.Configuration
         public int WriteBehindFlushSize { get; set; }
 
         /// <summary>
-        /// Frequency with which write-behind cache is flushed to the cache store in milliseconds.
+        /// Frequency with which write-behind cache is flushed to the cache store.
         /// This value defines the maximum time interval between object insertion/deletion from the cache
         /// at the moment when corresponding operation is applied to the cache store.
         /// <para/> 
@@ -336,7 +337,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Note that you cannot set both
         /// <see cref="WriteBehindFlushSize"/> and <see cref="WriteBehindFlushFrequency"/> to 0.
         /// </summary>
-        public long WriteBehindFlushFrequency { get; set; }
+        public TimeSpan WriteBehindFlushFrequency { get; set; }
 
         /// <summary>
         /// Number of threads that will perform cache flushing. Cache flushing is performed when cache size exceeds 
@@ -359,21 +360,21 @@ namespace Apache.Ignite.Core.Configuration
         public int RebalanceThreadPoolSize { get; set; }
 
         /// <summary>
-        /// Gets or sets rebalance timeout (ms).
+        /// Gets or sets rebalance timeout.
         /// </summary>
-        public long RebalanceTimeout { get; set; }  // TODO: Timespan
+        public TimeSpan RebalanceTimeout { get; set; }
 
         /// <summary>
-        /// Gets or sets delay in milliseconds upon a node joining or leaving topology (or crash) 
+        /// Gets or sets delay upon a node joining or leaving topology (or crash) 
         /// after which rebalancing should be started automatically. 
         /// Rebalancing should be delayed if you plan to restart nodes
         /// after they leave topology, or if you plan to start multiple nodes at once or one after another
         /// and don't want to repartition and rebalance until all nodes are started.
         /// </summary>
-        public long RebalanceDelay { get; set; }
+        public TimeSpan RebalanceDelay { get; set; }
 
         /// <summary>
-        /// Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network.
+        /// Time to wait between rebalance messages to avoid overloading of CPU or network.
         /// When rebalancing large data sets, the CPU or network can get over-consumed with rebalancing messages,
         /// which consecutively may slow down the application performance. This parameter helps tune 
         /// the amount of time to wait between rebalance messages to make sure that rebalancing process
@@ -382,7 +383,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <para/>
         /// Value of 0 means that throttling is disabled.
         /// </summary>
-        public long RebalanceThrottle { get; set; }
+        public TimeSpan RebalanceThrottle { get; set; }
 
         /// <summary>
         /// Gets or sets maximum amount of memory available to off-heap storage. Possible values are
@@ -412,7 +413,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets the timeout after which long query warning will be printed.
         /// </summary>
-        public long LongQueryWarningTimeout { get; set; }  // TODO
+        public TimeSpan LongQueryWarningTimeout { get; set; }
 
         /// <summary>
         /// If true all the SQL table and field names will be escaped with double quotes like 
