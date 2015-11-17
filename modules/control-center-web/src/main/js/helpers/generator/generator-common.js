@@ -256,7 +256,7 @@ $generatorCommon.igfsMetaCache = function(igfs) {
 
 // Pairs of supported databases and their data sources.
 $generatorCommon.DATA_SOURCES = {
-    Generic: 'com.mchange.v2.c3p0.jboss.C3P0PooledDataSource',
+    Generic: 'com.mchange.v2.c3p0.ComboPooledDataSource',
     Oracle: 'oracle.jdbc.pool.OracleDataSource',
     DB2: 'com.ibm.db2.jcc.DB2DataSource',
     SQLServer: 'com.microsoft.sqlserver.jdbc.SQLServerDataSource',

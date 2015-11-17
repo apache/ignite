@@ -207,16 +207,13 @@ $generatorJava.multiparamProperty = function (res, varName, obj, propName, dataT
     if (val && val.length > 0) {
         res.emptyLineIfNeeded();
 
-        res.append(varName + '.' + $generatorJava.setterName(propName, setterName) + '(');
+        res.startBlock(varName + '.' + $generatorJava.setterName(propName, setterName) + '(');
 
         _.forEach(val, function(v, ix) {
-            if (ix > 0)
-                res.append(', ');
-
-            res.append($generatorJava.toJavaCode(v, dataType));
+            res.append($generatorJava.toJavaCode(v, dataType) + (ix < val.length - 1 ? ', ' : ''));
         });
 
-        res.line(');');
+        res.endBlock(');');
     }
 };
 
@@ -269,17 +266,19 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                             var val = bean[propName];
 
                             if (val && val.length > 0) {
-                                res.line('Properties ' + descr.propVarName + ' = new Properties();');
+                                $generatorJava.declareVariable(res, descr.propVarName, 'java.util.Properties');
 
                                 _.forEach(val, function(nameAndValue) {
                                     var eqIndex = nameAndValue.indexOf('=');
 
                                     if (eqIndex >= 0) {
-                                        res.line(descr.propVarName + '.setProperty('
-                                            + nameAndValue.substring(0, eqIndex) + ', '
-                                            + nameAndValue.substr(eqIndex + 1) + ');');
+                                        res.line(descr.propVarName + '.setProperty(' +
+                                            '"' + nameAndValue.substring(0, eqIndex) + '", ' +
+                                            '"' + nameAndValue.substr(eqIndex + 1) + '");');
                                     }
                                 });
+
+                                res.needEmptyLine = true;
 
                                 res.line(beanVarName + '.' + $generatorJava.setterName(propName) + '(' + descr.propVarName + ');');
                             }
@@ -816,6 +815,8 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
         });
 
         res.endBlock(');');
+
+        res.needEmptyLine = true;
     }
 
     $generatorJava.multiparamProperty(res, varName, cache, 'sqlFunctionClasses', 'class');
@@ -831,6 +832,7 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
  * Generate cache store group.
  *
  * @param cache Cache descriptor.
+ * @param metadatas Metadata descriptors.
  * @param cacheVarName Cache variable name.
  * @param res Resulting output with generated code.
  * @returns {*} Java code for cache store configuration.
@@ -864,11 +866,17 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
                     $generatorJava.declareVariable(res, 'dataSource', dsClsName);
 
                     switch (storeFactory.dialect) {
+                        case 'Generic':
+                            res.line('dataSource.setJdbcUrl(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
+
+                            break;
+
                         case 'DB2':
                             res.line('dataSource.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
                             res.line('dataSource.setPortNumber(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.port_number")));');
                             res.line('dataSource.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
                             res.line('dataSource.setDriverType(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.driver_type")));');
+
                             break;
 
                         default:
@@ -1507,8 +1515,6 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
  * @param includeKeyFields If 'true' then include key fields into value POJO.
  */
 $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
-    var metadataNames = [];
-
     var metadatas = [];
 
     _.forEach(caches, function(cache) {
@@ -1887,8 +1893,10 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
             res.endBlock('}');
 
             res.needEmptyLine = true;
+        }
 
-            if (clientMode && clientNearCfg) {
+        if (clientMode && clientNearCfg) {
+            if (javaClass) {
                 res.line('/**');
                 res.line(' * Configure client near cache configuration.');
                 res.line(' *');
@@ -1898,21 +1906,28 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
                 res.startBlock('public static NearCacheConfiguration createNearCacheConfiguration() throws Exception {');
 
                 $generatorJava.resetVariables(res);
+            }
 
-                $generatorJava.declareVariable(res, 'nearCfg', 'org.apache.ignite.configuration.NearCacheConfiguration');
+            $generatorJava.declareVariable(res, 'clientNearCfg', 'org.apache.ignite.configuration.NearCacheConfiguration');
 
-                if (clientNearCfg.nearStartSize)
-                    $generatorJava.property(res, 'nearCfg', clientNearCfg, 'nearStartSize');
+            if (clientNearCfg.nearStartSize) {
+                $generatorJava.property(res, 'clientNearCfg', clientNearCfg, 'nearStartSize');
 
-                if (clientNearCfg.nearEvictionPolicy && clientNearCfg.nearEvictionPolicy.kind)
-                    $generatorJava.evictionPolicy(res, 'nearCfg', clientNearCfg.nearEvictionPolicy, 'nearEvictionPolicy');
+                res.needEmptyLine = true;
+            }
 
-                res.line('return nearCfg;');
-                res.endBlock('}')
+            if (clientNearCfg.nearEvictionPolicy && clientNearCfg.nearEvictionPolicy.kind)
+                $generatorJava.evictionPolicy(res, 'clientNearCfg', clientNearCfg.nearEvictionPolicy, 'nearEvictionPolicy');
+
+            if (javaClass) {
+                res.line('return clientNearCfg;');
+                res.endBlock('}');
             }
 
             res.needEmptyLine = true;
+        }
 
+        if (javaClass) {
             res.line('/**');
             res.line(' * Sample usage of ' + javaClass + '.');
             res.line(' *');
