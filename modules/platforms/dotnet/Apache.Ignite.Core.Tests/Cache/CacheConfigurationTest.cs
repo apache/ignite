@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Primary,
                 AtomicityMode = CacheAtomicityMode.Atomic,
                 Backups = 8,
-                CacheMode = CacheMode.Replicated,
+                CacheMode = CacheMode.Partitioned,
                 EagerTtl = true,
                 EnableSwap = true,
                 EvictSynchronizedConcurrencyLevel = 9,
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 SqlEscapeAll = true,
                 SqlOnheapRowCacheSize = 17,
                 WriteBehindBatchSize = 18,
-                WriteBehindEnabled = true,
+                WriteBehindEnabled = false,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync
             };
 
