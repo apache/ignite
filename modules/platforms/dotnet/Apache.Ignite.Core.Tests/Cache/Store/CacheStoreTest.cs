@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
@@ -90,6 +91,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     }
 
     /// <summary>
+    /// Cache entry predicate that throws an exception.
+    /// </summary>
+    [Serializable]
+    public class ExceptionalEntryFilter : ICacheEntryFilter<int, string>
+    {
+        /** <inheritdoc /> */
+        public bool Invoke(ICacheEntry<int, string> entry)
+        {
+            throw new Exception("Expected exception in ExceptionalEntryFilter");
+        }
+    }
+
+    /// <summary>
+    /// Filter that can't be serialized.
+    /// </summary>
+    public class InvalidCacheEntryFilter : CacheEntryFilter
+    {
+        // No-op.
+    }
+
+    /// <summary>
     ///
     /// </summary>
     public class CacheStoreTest
@@ -105,6 +127,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         /** */
         private const string TemplateStoreCacheName = "template_store*";
+
+        /** */
+        private volatile int _storeCount = 3;
 
         /// <summary>
         ///
@@ -166,6 +191,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             CacheTestStore.Reset();
 
+            TestUtils.AssertHandleRegistryHasItems(300, _storeCount, Ignition.GetIgnite(GridName()));
+
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
         }
 
@@ -182,6 +209,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             for (int i = 105; i < 110; i++)
                 Assert.AreEqual("val_" + i, cache.Get(i));
+
+            // Test invalid filter
+            Assert.Throws<BinaryObjectException>(() => cache.LoadCache(new InvalidCacheEntryFilter(), 100, 10));
+
+            // Test exception in filter
+            Assert.Throws<CacheStoreException>(() => cache.LoadCache(new ExceptionalEntryFilter(), 100, 10));
         }
 
         [Test]
@@ -443,6 +476,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             cache.Put(1, cache.Name);
 
             Assert.AreEqual(cache.Name, CacheTestStore.Map[1]);
+
+            _storeCount++;
         }
 
         /// <summary>

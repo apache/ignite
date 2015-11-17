@@ -272,7 +272,18 @@ namespace Apache.Ignite.Core.Impl.Cache
                 {
                     var p0 = new CacheEntryFilterHolder(p, (k, v) => p.Invoke(new CacheEntry<TK, TV>((TK)k, (TV)v)),
                         Marshaller, IsKeepBinary);
-                    writer.WriteObject(p0);
+
+                    try
+                    {
+                        writer.WriteObject(p0);
+                    }
+                    catch (Exception)
+                    {
+                        writer.Marshaller.Ignite.HandleRegistry.Release(p0.Handle);
+
+                        throw;
+                    }
+
                     writer.WriteLong(p0.Handle);
                 }
                 else

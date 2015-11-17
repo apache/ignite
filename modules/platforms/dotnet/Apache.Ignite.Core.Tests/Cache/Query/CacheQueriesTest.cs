@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using System.Text;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -114,6 +115,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 Assert.IsTrue(cache.IsEmpty());
             }
+
+            TestUtils.AssertHandleRegistryIsEmpty(300,
+                Enumerable.Range(0, GridCnt).Select(x => Ignition.GetIgnite("grid-" + x)).ToArray());
 
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
         }
@@ -625,6 +629,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             qry = new ScanQuery<int, TV>(new PortableScanQueryFilter<TV>());
             ValidateQueryResults(cache, qry, exp, keepPortable);
 
+            // Invalid
+            exp = PopulateCache(cache, loc, cnt, x => x < 50);
+            qry = new ScanQuery<int, TV>(new InvalidScanQueryFilter<TV>());
+            Assert.Throws<BinaryObjectException>(() => ValidateQueryResults(cache, qry, exp, keepPortable));
+
             // Exception
             exp = PopulateCache(cache, loc, cnt, x => x < 50);
             qry = new ScanQuery<int, TV>(new ScanQueryFilter<TV> {ThrowErr = true});
@@ -916,5 +925,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             ThrowErr = r.ReadBoolean();
         }
+    }
+
+    /// <summary>
+    /// Filter that can't be serialized.
+    /// </summary>
+    public class InvalidScanQueryFilter<TV> : ScanQueryFilter<TV>
+    {
+        // No-op.
     }
 }
