@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace Apache.Ignite.Core.Configuration
 {
     using Apache.Ignite.Core.Binary;
@@ -26,107 +29,103 @@ namespace Apache.Ignite.Core.Configuration
     public class CacheConfiguration
     {
         /** Default size of rebalance thread pool. */
-        public static int DefaultRebalanceThreadPoolSize = 2;
+        public const int DefaultRebalanceThreadPoolSize = 2;
 
         /** Default rebalance timeout (ms).*/
-        public static long DefaultRebalanceTimeout = 10000;
+        public const long DefaultRebalanceTimeout = 10000;
 
         /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
-        public static long DefaultRebalanceThrottle = 0;
+        public const long DefaultRebalanceThrottle = 0;
 
         /** Default number of backups. */
-        public static int DefaultBackups = 0;
+        public const int DefaultBackups = 0;
 
         /** Default caching mode. */
-        public static CacheMode DefaultCacheMode = CacheMode.Partitioned;
+        public const CacheMode DefaultCacheMode = CacheMode.Partitioned;
 
         /** Default atomicity mode. */
-        public static CacheAtomicityMode DefaultCacheAtomicityMode = CacheAtomicityMode.Atomic;
+        public const CacheAtomicityMode DefaultCacheAtomicityMode = CacheAtomicityMode.Atomic;
 
         /** Default lock timeout. */
-        public static long DefaultLockTimeout = 0;
+        public const long DefaultLockTimeout = 0;
 
         /** Initial default cache size. */
-        public static int DefaultStartSize = 1500000;
+        public const int DefaultStartSize = 1500000;
 
         /** Default cache size to use with eviction policy. */
-        public static int DefaultCacheSize = 100000;
-
-        /** Initial default near cache size. */
-        public static int DefaultNearStartSize = DefaultStartSize/4;
+        public const int DefaultCacheSize = 100000;
 
         /** Default value for 'invalidate' flag that indicates if this is invalidation-based cache. */
-        public static bool DefaultInvalidate = false;
+        public const bool DefaultInvalidate = false;
 
         /** Default rebalance mode for distributed cache. */
-        public static CacheRebalanceMode DefaultRebalanceMode = CacheRebalanceMode.Async;
+        public const CacheRebalanceMode DefaultRebalanceMode = CacheRebalanceMode.Async;
 
         /** Default rebalance batch size in bytes. */
-        public static int DefaultRebalanceBatchSize = 512*1024; // 512K
+        public const int DefaultRebalanceBatchSize = 512*1024; // 512K
 
         /** Default maximum eviction queue ratio. */
-        public static float DefaultMaxEvictionOverflowRatio = 10;
+        public const float DefaultMaxEvictionOverflowRatio = 10;
 
         /** Default eviction synchronized flag. */
-        public static bool DefaultEvictSynchronized = false;
+        public const bool DefaultEvictSynchronized = false;
 
         /** Default eviction key buffer size for batching synchronized evicts. */
-        public static int DefaultEvictKeyBufferSize = 1024;
+        public const int DefaultEvictKeyBufferSize = 1024;
 
         /** Default synchronous eviction timeout in milliseconds. */
-        public static long DefaultEvictSynchronizedTimeout = 10000;
+        public const long DefaultEvictSynchronizedTimeout = 10000;
 
         /** Default synchronous eviction concurrency level. */
-        public static int DefaultEvictSynchronizedConcurrencyLevel = 4;
+        public const int DefaultEvictSynchronizedConcurrencyLevel = 4;
 
         /** Default value for eager ttl flag. */
-        public static bool DefaultEagerTtl = true;
+        public const bool DefaultEagerTtl = true;
 
         /** Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. */
-        public static long DefaultOffheapMemory = -1;
+        public const long DefaultOffheapMemory = -1;
 
         /** Default value for 'swapEnabled' flag. */
-        public static bool DefaultSwapEnabled = false;
+        public const bool DefaultSwapEnabled = false;
 
         /** Default value for 'maxConcurrentAsyncOps'. */
-        public static int DefaultMaxConcurrentAsyncOperations = 500;
+        public const int DefaultMaxConcurrentAsyncOperations = 500;
 
         /** Default value for 'writeBehindEnabled' flag. */
-        public static bool DefaultWriteBehindEnabled = false;
+        public const bool DefaultWriteBehindEnabled = false;
 
         /** Default flush size for write-behind cache store. */
-        public static int DefaultWriteBehindFlushSize = 10240; // 10K
+        public const int DefaultWriteBehindFlushSize = 10240; // 10K
 
         /** Default flush frequency for write-behind cache store in milliseconds. */
-        public static long DefaultWriteBehindFlushFrequency = 5000;
+        public const long DefaultWriteBehindFlushFrequency = 5000;
 
         /** Default count of flush threads for write-behind cache store. */
-        public static int DefaultWriteFromBehindFlushThreadCount = 1;
+        public const int DefaultWriteFromBehindFlushThreadCount = 1;
 
         /** Default batch size for write-behind cache store. */
-        public static int DefaultWriteBehindBatchSize = 512;
+        public const int DefaultWriteBehindBatchSize = 512;
 
         /** Default value for load previous value flag. */
-        public static bool DefaultLoadPreviousValue = false;
+        public const bool DefaultLoadPreviousValue = false;
 
         /** Default memory mode. */
-        public static CacheMemoryMode DefaultMemoryMode = CacheMemoryMode.OnheapTiered;
+        public const CacheMemoryMode DefaultMemoryMode = CacheMemoryMode.OnheapTiered;
 
         /** Default value for 'readFromBackup' flag. */
-        public static bool DefaultReadFromBackup = true;
+        public const bool DefaultReadFromBackup = true;
 
         /** Default timeout after which long query warning will be printed. */
-        public static long DefaultLongQueryWarningTimeout = 3000;
+        public const long DefaultLongQueryWarningTimeout = 3000;
 
         /** Default size for onheap SQL row cache size. */
-        public static int DefaultSqlOnheapRowCacheSize = 10*1024;
+        public const int DefaultSqlOnheapRowCacheSize = 10*1024;
 
         /** Default value for keep portable in store behavior .*/
-        public static bool DefaultKeepPortableInStore = true;
+        public const bool DefaultKeepPortableInStore = true;
 
         /** Default value for 'copyOnRead' flag. */
-        public static bool DefaultCopyOnRead = true;
-
+        public const bool DefaultCopyOnRead = true;
 
         /// <summary>
         /// Gets or sets the cache name.
@@ -187,25 +186,10 @@ namespace Apache.Ignite.Core.Configuration
         }
 
         /// <summary>
-        /// Gets cache eviction policy. By default, returns null which means that evictions are disabled for cache.
-        /// </summary>
-        //public EvictionPolicy EvictionPolicy { get; set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        //public NearCacheConfiguration NearConfiguration { get; set; }
-
-        /// <summary>
         /// Gets write synchronization mode. This mode controls whether the main        
         /// caller should wait for update on other nodes to complete or not.
         /// </summary>
         public CacheWriteSynchronizationMode WriteSynchronizationMode { get; set; }
-
-        /// <summary>
-        /// Gets filter which determines on what nodes the cache should be started.
-        /// </summary>
-        //public IgnitePredicate<ClusterNode> NodeFilter { get; set; }
 
         /// <summary>
         /// Gets flag indicating whether eviction is synchronized between primary, backup and near nodes.        
@@ -233,22 +217,22 @@ namespace Apache.Ignite.Core.Configuration
         public int EvictSynchronizedConcurrencyLevel { get; set; }
 
         /// <summary>
-        /// Gets timeout for synchronized evictions.        <p>        Node that initiates eviction waits for responses        from remote nodes within this timeout.        <p>        Default value is defined by { #DEFAULT_EVICT_SYNCHRONIZED_TIMEOUT}.
+        /// Gets timeout for synchronized evictions
         /// </summary>
         public long EvictSynchronizedTimeout { get; set; }
 
         /// <summary>
-        /// This value denotes the maximum size of eviction queue in percents of cache        size in case of distributed cache (replicated and partitioned) and using        synchronized eviction (that is if { #isEvictSynchronized()} returns        true).        <p>        That queue is used internally as a buffer to decrease network costs for        synchronized eviction. Once queue size reaches specified value all required        requests for all entries in the queue are sent to remote nodes and the queue        is cleared.        <p>        Default value is defined by { #DEFAULT_MAX_EVICTION_OVERFLOW_RATIO} and        equals to { 10%}.
+        /// This value denotes the maximum size of eviction queue in percents of cache size 
+        /// in case of distributed cache (replicated and partitioned) and using synchronized eviction
+        /// <para/>        
+        /// That queue is used internally as a buffer to decrease network costs for synchronized eviction. 
+        /// Once queue size reaches specified value all required requests for all entries in the queue 
+        /// are sent to remote nodes and the queue is cleared.
         /// </summary>
         public float MaxEvictionOverflowRatio { get; set; }
 
         /// <summary>
-        /// Gets eviction filter to specify which entries should not be evicted        (except explicit evict by calling { IgniteCache#localEvict(Collection)}).        If { EvictionFilter#evictAllowed(Cache.Entry)} method        returns { false} then eviction policy will not be notified and entry will        never be evicted.        <p>        If not provided, any entry may be evicted depending on        { #getEvictionPolicy() eviction policy} configuration.
-        /// </summary>
-        //public EvictionFilter<K, EvictionFilter { get; set; }
-
-        /// <summary>
-        /// Gets flag indicating whether expired cache entries will be eagerly removed from cache. When        set to { false}, expired entries will be removed on next entry access.        <p>        When not set, default value is { #DEFAULT_EAGER_TTL}.        <p>        <b>Note</b> that this flag only matters for entries expiring based on        { ExpiryPolicy} and should not be confused with entry        evictions based on configured { EvictionPolicy}.
+        /// Gets flag indicating whether expired cache entries will be eagerly removed from cache. When        set to { false}, expired entries will be removed on next entry access.        <para/>        When not set, default value is { #DEFAULT_EAGER_TTL}.        <para/>        <b>Note</b> that this flag only matters for entries expiring based on        { ExpiryPolicy} and should not be confused with entry        evictions based on configured { EvictionPolicy}.
         /// </summary>
         public bool EagerTtl { get; set; }
 
@@ -268,17 +252,12 @@ namespace Apache.Ignite.Core.Configuration
         public bool KeepPortableInStore { get; set; }
 
         /// <summary>
-        /// Gets key topology resolver to provide mapping from keys to nodes.
-        /// </summary>
-        //public AffinityFunction Affinity { get; set; }
-
-        /// <summary>
         /// Gets caching mode to use. You can configure cache either to be local-only,        fully replicated, partitioned, or near. If not provided, { CacheMode#PARTITIONED}        mode will be used by default (defined by { #DEFAULT_CACHE_MODE} constant).
         /// </summary>
         public CacheMode CacheMode { get; set; }
 
         /// <summary>
-        /// Gets cache atomicity mode.        <p>        Default value is defined by { #DEFAULT_CACHE_ATOMICITY_MODE}.
+        /// Gets cache atomicity mode.        <para/>        Default value is defined by { #DEFAULT_CACHE_ATOMICITY_MODE}.
         /// </summary>
         public CacheAtomicityMode AtomicityMode { get; set; }
 
@@ -288,7 +267,7 @@ namespace Apache.Ignite.Core.Configuration
         public CacheAtomicWriteOrderMode AtomicWriteOrderMode { get; set; }
 
         /// <summary>
-        /// Gets number of nodes used to back up single partition for { CacheMode#PARTITIONED} cache.        <p>        If not set, default value is { #DEFAULT_BACKUPS}.
+        /// Gets number of nodes used to back up single partition for { CacheMode#PARTITIONED} cache.        <para/>        If not set, default value is { #DEFAULT_BACKUPS}.
         /// </summary>
         public int Backups { get; set; }
 
@@ -318,7 +297,7 @@ namespace Apache.Ignite.Core.Configuration
         public bool SwapEnabled { get; set; }
 
         /// <summary>
-        /// Gets maximum number of allowed concurrent asynchronous operations. If 0 returned then number        of concurrent asynchronous operations is unlimited.        <p>        If not set, default value is { #DEFAULT_MAX_CONCURRENT_ASYNC_OPS}.        <p>        If user threads do not wait for asynchronous operations to complete, it is possible to overload        a system. This property enables back-pressure control by limiting number of scheduled asynchronous        cache operations.
+        /// Gets maximum number of allowed concurrent asynchronous operations. If 0 returned then number        of concurrent asynchronous operations is unlimited.        <para/>        If not set, default value is { #DEFAULT_MAX_CONCURRENT_ASYNC_OPS}.        <para/>        If user threads do not wait for asynchronous operations to complete, it is possible to overload        a system. This property enables back-pressure control by limiting number of scheduled asynchronous        cache operations.
         /// </summary>
         public int MaxConcurrentAsyncOperations { get; set; }
 
@@ -333,7 +312,7 @@ namespace Apache.Ignite.Core.Configuration
         public int WriteBehindFlushSize { get; set; }
 
         /// <summary>
-        /// Frequency with which write-behind cache is flushed to the cache store in milliseconds.        This value defines the maximum time interval between object insertion/deletion from the cache        ant the moment when corresponding operation is applied to the cache store.        <p>        If not provided, default value is { #DEFAULT_WRITE_BEHIND_FLUSH_FREQUENCY}.        If this value is { 0}, then flush is performed according to the flush size.        <p>        Note that you cannot set both, { flush} size and { flush frequency}, to { 0}.
+        /// Frequency with which write-behind cache is flushed to the cache store in milliseconds.        This value defines the maximum time interval between object insertion/deletion from the cache        ant the moment when corresponding operation is applied to the cache store.        <para/>        If not provided, default value is { #DEFAULT_WRITE_BEHIND_FLUSH_FREQUENCY}.        If this value is { 0}, then flush is performed according to the flush size.        <para/>        Note that you cannot set both, { flush} size and { flush frequency}, to { 0}.
         /// </summary>
         public long WriteBehindFlushFrequency { get; set; }
 
@@ -348,52 +327,37 @@ namespace Apache.Ignite.Core.Configuration
         public int WriteBehindBatchSize { get; set; }
 
         /// <summary>
-        /// Gets size of rebalancing thread pool. Note that size serves as a hint and implementation        may create more threads for rebalancing than specified here (but never less threads).        <p>        Default value is { #DEFAULT_REBALANCE_THREAD_POOL_SIZE}.
+        /// Gets size of rebalancing thread pool. Note that size serves as a hint and implementation        may create more threads for rebalancing than specified here (but never less threads).        <para/>        Default value is { #DEFAULT_REBALANCE_THREAD_POOL_SIZE}.
         /// </summary>
         public int RebalanceThreadPoolSize { get; set; }
 
         /// <summary>
-        /// Gets rebalance timeout (ms).        <p>        Default value is { #DEFAULT_REBALANCE_TIMEOUT}.
+        /// Gets rebalance timeout (ms).        <para/>        Default value is { #DEFAULT_REBALANCE_TIMEOUT}.
         /// </summary>
         public long RebalanceTimeout { get; set; }
 
         /// <summary>
-        /// Gets delay in milliseconds upon a node joining or leaving topology (or crash) after which rebalancing        should be started automatically. Rebalancing should be delayed if you plan to restart nodes        after they leave topology, or if you plan to start multiple nodes at once or one after another        and don't want to repartition and rebalance until all nodes are started.        <p>        For better efficiency user should usually make sure that new nodes get placed on        the same place of consistent hash ring as the left nodes, and that nodes are        restarted before this delay expires. To place nodes on the same place in consistent hash ring,        use { IgniteConfiguration#setConsistentId(Serializable)}        to make sure that a node maps to the same hash ID event if restarted. As an example,        node IP address and port combination may be used in this case.        <p>        Default value is { 0} which means that repartitioning and rebalancing will start        immediately upon node leaving topology. If { -1} is returned, then rebalancing        will only be started manually by calling { IgniteCache#rebalance()} method or        from management console.
+        /// Gets delay in milliseconds upon a node joining or leaving topology (or crash) after which rebalancing        should be started automatically. Rebalancing should be delayed if you plan to restart nodes        after they leave topology, or if you plan to start multiple nodes at once or one after another        and don't want to repartition and rebalance until all nodes are started.        <para/>        For better efficiency user should usually make sure that new nodes get placed on        the same place of consistent hash ring as the left nodes, and that nodes are        restarted before this delay expires. To place nodes on the same place in consistent hash ring,        use { IgniteConfiguration#setConsistentId(Serializable)}        to make sure that a node maps to the same hash ID event if restarted. As an example,        node IP address and port combination may be used in this case.        <para/>        Default value is { 0} which means that repartitioning and rebalancing will start        immediately upon node leaving topology. If { -1} is returned, then rebalancing        will only be started manually by calling { IgniteCache#rebalance()} method or        from management console.
         /// </summary>
         public long RebalanceDelay { get; set; }
 
         /// <summary>
-        /// Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network.        When rebalancing large data sets, the CPU or network can get over-consumed with rebalancing messages,        which consecutively may slow down the application performance. This parameter helps tune        the amount of time to wait between rebalance messages to make sure that rebalancing process        does not have any negative performance impact. Note that application will continue to work        properly while rebalancing is still in progress.        <p>        Value of { 0} means that throttling is disabled. By default throttling is disabled -        the default is defined by { #DEFAULT_REBALANCE_THROTTLE} constant.
+        /// Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network.        When rebalancing large data sets, the CPU or network can get over-consumed with rebalancing messages,        which consecutively may slow down the application performance. This parameter helps tune        the amount of time to wait between rebalance messages to make sure that rebalancing process        does not have any negative performance impact. Note that application will continue to work        properly while rebalancing is still in progress.        <para/>        Value of { 0} means that throttling is disabled. By default throttling is disabled -        the default is defined by { #DEFAULT_REBALANCE_THROTTLE} constant.
         /// </summary>
         public long RebalanceThrottle { get; set; }
 
         /// <summary>
-        /// Affinity key mapper used to provide custom affinity key for any given key.        Affinity mapper is particularly useful when several objects need to be collocated        on the same node (they will also be backed up on the same nodes as well).        <p>        If not provided, then default implementation will be used. The default behavior        is described in { AffinityKeyMapper} documentation.
-        /// </summary>
-        //public AffinityKeyMapper AffinityMapper { get; set; }
-
-        /// <summary>
-        /// Gets maximum amount of memory available to off-heap storage. Possible values are        <ul>        <li>{ -1} - Means that off-heap storage is disabled.</li>        <li>            { 0} - Ignite will not limit off-heap storage (it's up to user to properly            add and remove entries from cache to ensure that off-heap storage does not grow            indefinitely.        </li>        <li>Any positive value specifies the limit of off-heap storage in bytes.</li>        </ul>        Default value is { -1}, specified by { #DEFAULT_OFFHEAP_MEMORY} constant        which means that off-heap storage is disabled by default.        <p>        Use off-heap storage to load gigabytes of data in memory without slowing down        Garbage Collection. Essentially in this case you should allocate very small amount        of memory to JVM and Ignite will cache most of the data in off-heap space        without affecting JVM performance at all.        <p>        Note that Ignite will throw an exception if max memory is set to { -1} and        { offHeapValuesOnly} flag is set to true.
+        /// Gets maximum amount of memory available to off-heap storage. Possible values are        <ul>        <li>{ -1} - Means that off-heap storage is disabled.</li>        <li>            { 0} - Ignite will not limit off-heap storage (it's up to user to properly            add and remove entries from cache to ensure that off-heap storage does not grow            indefinitely.        </li>        <li>Any positive value specifies the limit of off-heap storage in bytes.</li>        </ul>        Default value is { -1}, specified by { #DEFAULT_OFFHEAP_MEMORY} constant        which means that off-heap storage is disabled by default.        <para/>        Use off-heap storage to load gigabytes of data in memory without slowing down        Garbage Collection. Essentially in this case you should allocate very small amount        of memory to JVM and Ignite will cache most of the data in off-heap space        without affecting JVM performance at all.        <para/>        Note that Ignite will throw an exception if max memory is set to { -1} and        { offHeapValuesOnly} flag is set to true.
         /// </summary>
         public long OffHeapMaxMemory { get; set; }
 
         /// <summary>
-        /// Gets memory mode for cache. Memory mode helps control whether value is stored in on-heap memory,        off-heap memory, or swap space. Refer to { CacheMemoryMode} for more info.        <p>        Default value is { #DEFAULT_MEMORY_MODE}.
+        /// Gets memory mode for cache. Memory mode helps control whether value is stored in on-heap memory,        off-heap memory, or swap space. Refer to { CacheMemoryMode} for more info.        <para/>        Default value is { #DEFAULT_MEMORY_MODE}.
         /// </summary>
         public CacheMemoryMode MemoryMode { get; set; }
 
         /// <summary>
-        /// Gets cache interceptor.
-        /// </summary>
-        //public CacheInterceptor Interceptor { get; set; }
-
-        /// <summary>
-        /// Gets collection of type metadata objects.
-        /// </summary>
-        //public ICollection<CacheTypeMetadata> TypeMetadata { get; set; }
-
-        /// <summary>
-        /// Gets flag indicating whether data can be read from backup.        If { false} always get data from primary node (never from backup).        <p>        Default value is defined by { #DEFAULT_READ_FROM_BACKUP}.
+        /// Gets flag indicating whether data can be read from backup.        If { false} always get data from primary node (never from backup).        <para/>        Default value is defined by { #DEFAULT_READ_FROM_BACKUP}.
         /// </summary>
         public bool ReadFromBackup { get; set; }
 
@@ -413,18 +377,8 @@ namespace Apache.Ignite.Core.Configuration
         public bool SqlEscapeAll { get; set; }
 
         /// <summary>
-        /// Array of key and value type pairs to be indexed (thus array length must be always even).        It means each even (0,2,4...) class in the array will be considered as key type for cache entry,        each odd (1,3,5...) class will be considered as value type for cache entry.        <p>        The same key class can occur multiple times for different value classes, but each value class must be unique        because SQL table will be named as value class simple name.        <p>        To expose fields of these types onto SQL level and to index them you have to use annotations        from package { org.apache.ignite.cache.query.annotations}.
-        /// </summary>
-        //public Class<?>...IndexedTypes { get; set; }
-
-        /// <summary>
         /// Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.        This setting only makes sense when offheap is enabled for this cache.
         /// </summary>
         public int SqlOnheapRowCacheSize { get; set; }
-
-        /// <summary>
-        /// Gets a collection of configured  query entities.
-        /// </summary>
-        //public Collection<QueryEntity> QueryEntities { get; set; }
     }
 }
