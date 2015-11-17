@@ -17,8 +17,35 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
+    /// <summary>
+    /// Cache rebalance mode. When rebalancing is enabled (i.e. has value other than <see cref="None"/>), 
+    /// distributed caches will attempt to rebalance all necessary values from other grid nodes. 
+    /// <para />
+    /// Replicated caches will try to load the full set of cache entries from other nodes, 
+    /// while partitioned caches will only load the entries for which current node is primary or backup.
+    /// <para />
+    /// Note that rebalance mode only makes sense for <see cref="CacheMode.Replicated"/> 
+    /// and <see cref="CacheMode.Partitioned"/> caches. Caches with <see cref="CacheMode.Local"/> 
+    /// mode are local by definition and therefore cannot rebalance any values from neighboring nodes.
+    /// </summary>
     public enum CacheRebalanceMode
     {
-        
+        /// <summary>
+        /// Synchronous rebalance mode. Distributed caches will not start until all necessary data
+        /// is loaded from other available grid nodes.
+        /// </summary>
+        Sync,
+
+        /// <summary>
+        /// Asynchronous rebalance mode. Distributed caches will start immediately and will load all necessary
+        /// data from other available grid nodes in the background.
+        /// </summary>
+        Async,
+
+        /// <summary>
+        /// In this mode no rebalancing will take place which means that caches will be either loaded on
+        /// demand from persistent store whenever data is accessed, or will be populated explicitly.
+        /// </summary>
+        None
     }
 }
