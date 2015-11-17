@@ -82,6 +82,6 @@ public class CacheOsStoreManager extends GridCacheStoreManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean configuredConvertPortable() {
-        return !(ctx.config().getMarshaller() instanceof PortableMarshaller && cfg.isKeepPortableInStore());
+        return !(ctx.config().getMarshaller() instanceof PortableMarshaller && cfg.isKeepBinaryInStore());
     }
 }

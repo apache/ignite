@@ -221,34 +221,8 @@ namespace Apache.Ignite.Core.Impl.Compute
                     else
                     {
                         writer.WriteBoolean(true); // Map produced result.
-                        writer.WriteInt(map.Count); // Amount of mapped jobs.
 
-                        var jobHandles = new List<long>(map.Count);
-
-                        foreach (KeyValuePair<IComputeJob<T>, IClusterNode> mapEntry in map)
-                        {
-                            var job = new ComputeJobHolder(_compute.ClusterGroup.Ignite as Ignite, mapEntry.Key.ToNonGeneric());
-
-                            IClusterNode node = mapEntry.Value;
-
-                            var jobHandle = ignite.HandleRegistry.Allocate(job);
-
-                            jobHandles.Add(jobHandle);
-
-                            writer.WriteLong(jobHandle);
-
-                            if (node.IsLocal)
-                                writer.WriteBoolean(false); // Job is not serialized.
-                            else
-                            {
-                                writer.WriteBoolean(true); // Job is serialized.
-                                writer.WriteObject(job);
-                            }
-
-                            writer.WriteGuid(node.Id);
-                        }
-
-                        _jobHandles = jobHandles;
+                        _jobHandles = WriteJobs(writer, map);
                     }
                 }
                 else
@@ -275,6 +249,57 @@ namespace Apache.Ignite.Core.Impl.Compute
             {
                 prj.Marshaller.FinishMarshal(writer);
             }
+        }
+
+        /// <summary>
+        /// Writes job map.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="map">Map</param>
+        /// <returns>Job handle list.</returns>
+        private static List<long> WriteJobs(BinaryWriter writer, IDictionary<IComputeJob<T>, IClusterNode> map)
+        {
+            Debug.Assert(writer != null && map != null);
+
+            writer.WriteInt(map.Count); // Amount of mapped jobs.
+
+            var jobHandles = new List<long>(map.Count);
+            var ignite = writer.Marshaller.Ignite;
+
+            try
+            {
+                foreach (KeyValuePair<IComputeJob<T>, IClusterNode> mapEntry in map)
+                {
+                    var job = new ComputeJobHolder(ignite, mapEntry.Key.ToNonGeneric());
+
+                    IClusterNode node = mapEntry.Value;
+
+                    var jobHandle = ignite.HandleRegistry.Allocate(job);
+
+                    jobHandles.Add(jobHandle);
+
+                    writer.WriteLong(jobHandle);
+
+                    if (node.IsLocal)
+                        writer.WriteBoolean(false); // Job is not serialized.
+                    else
+                    {
+                        writer.WriteBoolean(true); // Job is serialized.
+                        writer.WriteObject(job);
+                    }
+
+                    writer.WriteGuid(node.Id);
+                }
+            }
+            catch (Exception)
+            {
+                foreach (var handle in jobHandles)
+                    ignite.HandleRegistry.Release(handle);
+
+                throw;
+            }
+
+            return jobHandles;
         }
 
         /** <inheritDoc /> */

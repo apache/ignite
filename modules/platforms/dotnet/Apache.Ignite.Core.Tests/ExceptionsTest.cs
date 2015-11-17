@@ -107,18 +107,18 @@ namespace Apache.Ignite.Core.Tests
             TestPartialUpdateException(false, (x, g) => x);
 
             // User type
-            TestPartialUpdateException(false, (x, g) => new PortableEntry(x));
+            TestPartialUpdateException(false, (x, g) => new BinarizableEntry(x));
         }
 
         /// <summary>
-        /// Tests CachePartialUpdateException keys propagation in portable mode.
+        /// Tests CachePartialUpdateException keys propagation in binary mode.
         /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
-        public void TestPartialUpdateExceptionPortable()
+        public void TestPartialUpdateExceptionBinarizable()
         {
             // User type
-            TestPartialUpdateException(false, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new PortableEntry(x)));
+            TestPartialUpdateException(false, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new BinarizableEntry(x)));
         }
 
         /// <summary>
@@ -195,17 +195,17 @@ namespace Apache.Ignite.Core.Tests
             TestPartialUpdateException(true, (x, g) => x);
 
             // User type
-            TestPartialUpdateException(true, (x, g) => new PortableEntry(x));
+            TestPartialUpdateException(true, (x, g) => new BinarizableEntry(x));
         }
 
         /// <summary>
-        /// Tests CachePartialUpdateException keys propagation in portable mode.
+        /// Tests CachePartialUpdateException keys propagation in binary mode.
         /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
-        public void TestPartialUpdateExceptionAsyncPortable()
+        public void TestPartialUpdateExceptionAsyncBinarizable()
         {
-            TestPartialUpdateException(true, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new PortableEntry(x)));
+            TestPartialUpdateException(true, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new BinarizableEntry(x)));
         }
 
         /// <summary>
@@ -295,16 +295,16 @@ namespace Apache.Ignite.Core.Tests
                 {
                     TypeConfigurations = new[]
                     {
-                        new BinaryTypeConfiguration(typeof (PortableEntry))
+                        new BinaryTypeConfiguration(typeof (BinarizableEntry))
                     }
                 }
             });
         }
 
         /// <summary>
-        /// Portable entry.
+        /// Binarizable entry.
         /// </summary>
-        private class PortableEntry
+        private class BinarizableEntry
         {
             /** Value. */
             private readonly int _val;
@@ -319,7 +319,7 @@ namespace Apache.Ignite.Core.Tests
             /// Constructor.
             /// </summary>
             /// <param name="val">Value.</param>
-            public PortableEntry(int val)
+            public BinarizableEntry(int val)
             {
                 _val = val;
             }
@@ -327,12 +327,12 @@ namespace Apache.Ignite.Core.Tests
             /** <inheritDoc /> */
             public override bool Equals(object obj)
             {
-                return obj is PortableEntry && ((PortableEntry)obj)._val == _val;
+                return obj is BinarizableEntry && ((BinarizableEntry)obj)._val == _val;
             }
         }
 
         /// <summary>
-        /// Portable entry.
+        /// Serializable entry.
         /// </summary>
         [Serializable]
         private class SerializableEntry

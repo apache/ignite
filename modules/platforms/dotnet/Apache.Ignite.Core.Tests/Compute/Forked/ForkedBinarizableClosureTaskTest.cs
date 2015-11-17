@@ -15,21 +15,16 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Query
+namespace Apache.Ignite.Core.Tests.Compute.Forked
 {
     /// <summary>
-    /// Test person.
+    /// Forked closure execution tests for binary objects.
     /// </summary>
-    internal class NoDefPortablePerson
+    public class ForkedBinarizableClosureTaskTest : BinarizableClosureTaskTest
     {
         /// <summary>
-        /// Gets or sets the name.
+        /// Constructor.
         /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// Gets or sets the age.
-        /// </summary>
-        public int Age { get; set; }
+        public ForkedBinarizableClosureTaskTest() : base(true) { }
     }
 }

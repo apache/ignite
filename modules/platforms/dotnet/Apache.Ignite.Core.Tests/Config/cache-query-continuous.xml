@@ -40,7 +40,7 @@
                     <property name="typeMetadata">
                         <list>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="PortableEntry"/>
+                                <property name="valueType" value="BinarizableEntry"/>
                                 <property name="ascendingFields">
                                     <map>
                                         <entry key="val" value="java.lang.Integer"/>
@@ -70,7 +70,7 @@
                     <property name="typeMetadata">
                         <list>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="PortableEntry"/>
+                                <property name="valueType" value="BinarizableEntry"/>
                                 <property name="ascendingFields">
                                     <map>
                                         <entry key="val" value="java.lang.Integer"/>
@@ -100,7 +100,7 @@
                     <property name="typeMetadata">
                         <list>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="PortableEntry"/>
+                                <property name="valueType" value="BinarizableEntry"/>
                                 <property name="ascendingFields">
                                     <map>
                                         <entry key="val" value="java.lang.Integer"/>
@@ -130,7 +130,7 @@
                     <property name="typeMetadata">
                         <list>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="PortableEntry"/>
+                                <property name="valueType" value="BinarizableEntry"/>
                                 <property name="ascendingFields">
                                     <map>
                                         <entry key="val" value="java.lang.Integer"/>

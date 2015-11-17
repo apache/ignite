@@ -15,16 +15,28 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Compute.Forked
-{
-    /// <summary>
-    /// Forked closure execution tests for portable objects.
-    /// </summary>
-    public class ForkedPortableClosureTaskTest : PortableClosureTaskTest
-    {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public ForkedPortableClosureTaskTest() : base(true) { }
+package org.apache.ignite.platform;
+
+/**
+ * Binarizable object for task tests.
+ */
+public class PlatformComputeBinarizable {
+    /** Field. */
+    public int field;
+
+    /**
+     * Constructor.
+     */
+    public PlatformComputeBinarizable() {
+        // No-op.
+    }
+
+    /**
+     * Constructor,
+     *
+     * @param field Field.
+     */
+    public PlatformComputeBinarizable(int field) {
+        this.field = field;
     }
 }

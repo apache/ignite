@@ -536,9 +536,8 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
 
     /**
      * @param commitVer Commit version.
-     * @return {@code True} if version was set.
      */
-    public boolean commitVersion(GridCacheVersion commitVer);
+    public void commitVersion(GridCacheVersion commitVer);
 
     /**
      * @return End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)

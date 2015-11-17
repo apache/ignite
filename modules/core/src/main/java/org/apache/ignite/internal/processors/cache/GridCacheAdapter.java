@@ -99,7 +99,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -122,7 +121,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
@@ -3525,10 +3523,26 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * @return Random cache entry.
      */
+    @Deprecated
     @Nullable public Cache.Entry<K, V> randomEntry() {
-        GridCacheMapEntry e = map.randomEntry();
+        GridCacheMapEntry entry;
 
-        return e == null || e.obsolete() ? null : e.<K, V>wrapLazyValue();
+        if (ctx.offheapTiered()) {
+            Iterator<Cache.Entry<K, V>> it;
+
+            try {
+                it = ctx.swap().offheapIterator(true, true, ctx.affinity().affinityTopologyVersion());
+            }
+            catch (IgniteCheckedException e) {
+                throw CU.convertToCacheException(e);
+            }
+
+            return it.hasNext() ? it.next() : null;
+        }
+        else
+            entry = map.randomEntry();
+
+        return entry == null || entry.obsolete() ? null : entry.<K, V>wrapLazyValue();
     }
 
     /** {@inheritDoc} */

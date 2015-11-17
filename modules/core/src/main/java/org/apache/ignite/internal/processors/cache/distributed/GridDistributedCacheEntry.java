@@ -403,7 +403,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
             doomed = mvcc == null ? null : mvcc.candidate(ver);
 
-            if (doomed == null || doomed.dhtLocal() || (!doomed.local() && !doomed.nearLocal()))
+            if (doomed == null)
                 addRemoved(ver);
 
             GridCacheVersion obsoleteVer = obsoleteVersionExtras();

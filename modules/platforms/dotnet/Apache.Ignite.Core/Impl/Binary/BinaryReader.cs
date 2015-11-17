@@ -503,9 +503,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Enable detach mode for the next object read. 
         /// </summary>
-        public void DetachNext()
+        public BinaryReader DetachNext()
         {
             _detach = true;
+
+            return this;
         }
 
         /// <summary>
@@ -513,6 +515,21 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <returns>Deserialized object.</returns>
         public T Deserialize<T>()
+        {
+            T res;
+
+            if (!TryDeserialize(out res) && default(T) != null)
+                throw new BinaryObjectException(string.Format("Invalid data on deserialization. " +
+                    "Expected: '{0}' But was: null", typeof (T)));
+
+            return res;
+        }
+
+        /// <summary>
+        /// Deserialize object.
+        /// </summary>
+        /// <returns>Deserialized object.</returns>
+        public bool TryDeserialize<T>(out T res)
         {
             int pos = Stream.Position;
 
@@ -525,24 +542,32 @@ namespace Apache.Ignite.Core.Impl.Binary
             switch (hdr)
             {
                 case BinaryUtils.HdrNull:
-                    if (default(T) != null)
-                        throw new BinaryObjectException(string.Format("Invalid data on deserialization. " +
-                            "Expected: '{0}' But was: null", typeof (T)));
+                    res = default(T);
 
-                    return default(T);
+                    return false;
 
                 case BinaryUtils.HdrHnd:
-                    return ReadHandleObject<T>(pos);
+                    res = ReadHandleObject<T>(pos);
+
+                    return true;
 
                 case BinaryUtils.HdrFull:
-                    return ReadFullObject<T>(pos);
+                    res = ReadFullObject<T>(pos);
+
+                    return true;
 
                 case BinaryUtils.TypeBinary:
-                    return ReadBinaryObject<T>(doDetach);
+                    res = ReadBinaryObject<T>(doDetach);
+
+                    return true;
             }
 
             if (BinaryUtils.IsPredefinedType(hdr))
-                return BinarySystemHandlers.ReadSystemType<T>(hdr, this);
+            {
+                res = BinarySystemHandlers.ReadSystemType<T>(hdr, this);
+
+                return true;
+            }
 
             throw new BinaryObjectException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']');
         }
