@@ -996,7 +996,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Portable entry.
+        /// Creates object-typed event.
         /// </summary>
         private static ICacheEntryEvent<object, object> CreateEvent<T, V>(ICacheEntryEvent<T,V> e)
         {
