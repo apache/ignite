@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Configuration
         public const CacheMode DefaultCacheMode = CacheMode.Partitioned;
 
         /** Default atomicity mode. */
-        public const CacheAtomicityMode DefaultCacheAtomicityMode = CacheAtomicityMode.Atomic;
+        public const CacheAtomicityMode DefaultAtomicityMode = CacheAtomicityMode.Atomic;
 
         /** Default lock timeout. */
         public static readonly TimeSpan DefaultLockTimeout = TimeSpan.Zero;
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Configuration
         public const bool DefaultEvictSynchronized = false;
 
         /** Default eviction key buffer size for batching synchronized evicts. */
-        public const int DefaultEvictKeyBufferSize = 1024;
+        public const int DefaultEvictSynchronizedKeyBufferSize = 1024;
 
         /** Default synchronous eviction timeout. */
         public static readonly TimeSpan DefaultEvictSynchronizedTimeout = TimeSpan.FromMilliseconds(10000);
@@ -85,10 +85,10 @@ namespace Apache.Ignite.Core.Configuration
         public const bool DefaultEagerTtl = true;
 
         /** Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. */
-        public const long DefaultOffheapMemory = -1;
+        public const long DefaultOffHeapMaxMemory = -1;
 
         /** Default value for 'swapEnabled' flag. */
-        public const bool DefaultSwapEnabled = false;
+        public const bool DefaultEnableSwap = false;
 
         /** Default value for 'maxConcurrentAsyncOps'. */
         public const int DefaultMaxConcurrentAsyncOperations = 500;
@@ -143,11 +143,11 @@ namespace Apache.Ignite.Core.Configuration
             Name = name;
 
             Backups = DefaultBackups;
-            AtomicityMode = DefaultCacheAtomicityMode;
+            AtomicityMode = DefaultAtomicityMode;
             CacheMode = DefaultCacheMode;
             CopyOnRead = DefaultCopyOnRead;
             EagerTtl = DefaultEagerTtl;
-            EvictSynchronizedKeyBufferSize = DefaultEvictKeyBufferSize;
+            EvictSynchronizedKeyBufferSize = DefaultEvictSynchronizedKeyBufferSize;
             EvictSynchronized = DefaultEvictSynchronized;
             EvictSynchronizedConcurrencyLevel = DefaultEvictSynchronizedConcurrencyLevel;
             EvictSynchronizedTimeout = DefaultEvictSynchronizedTimeout;
@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Configuration
             MaxConcurrentAsyncOperations = DefaultMaxConcurrentAsyncOperations;
             MaxEvictionOverflowRatio = DefaultMaxEvictionOverflowRatio;
             MemoryMode = DefaultMemoryMode;
-            OffHeapMaxMemory = DefaultOffheapMemory;
+            OffHeapMaxMemory = DefaultOffHeapMaxMemory;
             ReadFromBackup = DefaultReadFromBackup;
             RebalanceBatchSize = DefaultRebalanceBatchSize;
             RebalanceMode = DefaultRebalanceMode;
@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Configuration
             RebalanceTimeout = DefaultRebalanceTimeout;
             SqlOnheapRowCacheSize = DefaultSqlOnheapRowCacheSize;
             StartSize = DefaultStartSize;
-            EnableSwap = DefaultSwapEnabled;
+            EnableSwap = DefaultEnableSwap;
             WriteBehindBatchSize = DefaultWriteBehindBatchSize;
             WriteBehindEnabled = DefaultWriteBehindEnabled;
             WriteBehindFlushFrequency = DefaultWriteBehindFlushFrequency;
