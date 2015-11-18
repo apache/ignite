@@ -31,61 +31,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         private IIgnite _ignite;
 
         /** */
-        private CacheConfiguration _cacheConfiguration;
-
-        /** */
         private const string CacheName = "cacheName";
 
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            _cacheConfiguration = new CacheConfiguration
-            {
-                Name = CacheName,
-                OffHeapMaxMemory = 1,
-                StartSize = 2,
-                MaxConcurrentAsyncOperations = 3,
-                WriteBehindFlushThreadCount = 4,
-                LongQueryWarningTimeout = TimeSpan.FromSeconds(5),
-                LoadPreviousValue = true,
-                EvictSynchronizedKeyBufferSize = 6,
-                CopyOnRead = true,
-                WriteBehindFlushFrequency = TimeSpan.FromSeconds(6),
-                WriteBehindFlushSize = 7,
-                EvictSynchronized = true,
-                AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Primary,
-                AtomicityMode = CacheAtomicityMode.Atomic,
-                Backups = 8,
-                CacheMode = CacheMode.Partitioned,
-                EagerTtl = true,
-                EnableSwap = true,
-                EvictSynchronizedConcurrencyLevel = 9,
-                EvictSynchronizedTimeout = TimeSpan.FromSeconds(10),
-                Invalidate = true,
-                KeepBinaryInStore = true,
-                LockTimeout = TimeSpan.FromSeconds(11),
-                MaxEvictionOverflowRatio = 0.5f,
-                MemoryMode = CacheMemoryMode.OffheapValues,
-                ReadFromBackup = true,
-                RebalanceBatchSize = 12,
-                RebalanceDelay = TimeSpan.FromSeconds(13),
-                RebalanceMode = CacheRebalanceMode.Async,
-                RebalanceThreadPoolSize = 14,
-                RebalanceThrottle = TimeSpan.FromSeconds(15),
-                RebalanceTimeout = TimeSpan.FromSeconds(16),
-                SqlEscapeAll = true,
-                SqlOnheapRowCacheSize = 17,
-                WriteBehindBatchSize = 18,
-                WriteBehindEnabled = false,
-                WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync
-            };
-
             var cfg = new IgniteConfiguration
             {
                 CacheConfiguration = new List<CacheConfiguration>
                 {
                     new CacheConfiguration(),
-                    _cacheConfiguration,
+                     GetCustomCacheConfiguration()
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions()
@@ -111,7 +67,31 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestCustomConfiguration()
         {
-            AssertConfigsAreEqual(_cacheConfiguration, _ignite.GetCache<int, int>(CacheName).GetConfiguration());
+            AssertConfigsAreEqual(GetCustomCacheConfiguration(),
+                _ignite.GetCache<int, int>(CacheName).GetConfiguration());
+        }
+
+        [Test]
+        public void TestCreateFromConfiguration()
+        {
+            var cacheName = Guid.NewGuid().ToString();
+            var cfg = GetCustomCacheConfiguration(cacheName);
+
+            var cache = _ignite.CreateCache<int, int>(cfg);
+            AssertConfigsAreEqual(cfg, cache.GetConfiguration());
+        }
+
+        [Test]
+        public void TestGetOrCreateFromConfiguration()
+        {
+            var cacheName = Guid.NewGuid().ToString();
+            var cfg = GetCustomCacheConfiguration(cacheName);
+
+            var cache = _ignite.GetOrCreateCache<int, int>(cfg);
+            AssertConfigsAreEqual(cfg, cache.GetConfiguration());
+
+            var cache2 = _ignite.GetOrCreateCache<int, int>(cfg);
+            AssertConfigsAreEqual(cfg, cache2.GetConfiguration());
         }
 
         /// <summary>
@@ -192,6 +172,53 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindEnabled, y.WriteBehindEnabled);
             Assert.AreEqual(x.WriteBehindFlushFrequency, y.WriteBehindFlushFrequency);
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
+        }
+
+        /// <summary>
+        /// Gets the custom cache configuration.
+        /// </summary>
+        private static CacheConfiguration GetCustomCacheConfiguration(string name = null)
+        {
+            return new CacheConfiguration
+            {
+                Name = name ?? CacheName,
+                OffHeapMaxMemory = 1,
+                StartSize = 2,
+                MaxConcurrentAsyncOperations = 3,
+                WriteBehindFlushThreadCount = 4,
+                LongQueryWarningTimeout = TimeSpan.FromSeconds(5),
+                LoadPreviousValue = true,
+                EvictSynchronizedKeyBufferSize = 6,
+                CopyOnRead = true,
+                WriteBehindFlushFrequency = TimeSpan.FromSeconds(6),
+                WriteBehindFlushSize = 7,
+                EvictSynchronized = true,
+                AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Primary,
+                AtomicityMode = CacheAtomicityMode.Atomic,
+                Backups = 8,
+                CacheMode = CacheMode.Partitioned,
+                EagerTtl = true,
+                EnableSwap = true,
+                EvictSynchronizedConcurrencyLevel = 9,
+                EvictSynchronizedTimeout = TimeSpan.FromSeconds(10),
+                Invalidate = true,
+                KeepBinaryInStore = true,
+                LockTimeout = TimeSpan.FromSeconds(11),
+                MaxEvictionOverflowRatio = 0.5f,
+                MemoryMode = CacheMemoryMode.OffheapValues,
+                ReadFromBackup = true,
+                RebalanceBatchSize = 12,
+                RebalanceDelay = TimeSpan.FromSeconds(13),
+                RebalanceMode = CacheRebalanceMode.Async,
+                RebalanceThreadPoolSize = 14,
+                RebalanceThrottle = TimeSpan.FromSeconds(15),
+                RebalanceTimeout = TimeSpan.FromSeconds(16),
+                SqlEscapeAll = true,
+                SqlOnheapRowCacheSize = 17,
+                WriteBehindBatchSize = 18,
+                WriteBehindEnabled = false,
+                WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync
+            };
         }
     }
 }
