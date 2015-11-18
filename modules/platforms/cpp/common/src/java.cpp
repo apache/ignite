@@ -1153,7 +1153,7 @@ namespace ignite
 
             jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo)
             {
-                return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_createCache, errInfo);
+                return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_createCacheFromConfig, errInfo);
             }
 
             jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr) {
@@ -1162,7 +1162,7 @@ namespace ignite
 
             jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo)
             {
-                return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateCache, errInfo);
+                return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateCacheFromConfig, errInfo);
             }
 
             jobject JniContext::ProcessorAffinity(jobject obj, const char* name) {
