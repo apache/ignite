@@ -26,9 +26,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSemaphore;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.G;
@@ -45,6 +47,7 @@ import org.junit.rules.ExpectedException;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Cache semaphore self test.
@@ -79,9 +82,85 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     /**
      * @throws Exception If failed.
      */
+    public void testFailover() throws Exception {
+        if (atomicsCacheMode() == LOCAL)
+            return;
+
+        checkFailover(true);
+        checkFailover(false);
+    }
+
+    /**
+     * @param failoverSafe Failover safe flag.
+     * @throws Exception
+     */
+    private void checkFailover(boolean failoverSafe) throws Exception {
+        IgniteEx g = startGrid(NODES_CNT + 1);
+
+        // For vars locality.
+        {
+            // Ensure not exists.
+            assert g.semaphore("sem", 2, failoverSafe, false) == null;
+
+            IgniteSemaphore sem = g.semaphore(
+                "sem",
+                2,
+                failoverSafe,
+                true);
+
+            sem.acquire(2);
+
+            assert !sem.tryAcquire();
+            assertEquals(
+                0,
+                sem.availablePermits());
+        }
+
+        Ignite g0 = grid(0);
+
+        final IgniteSemaphore sem0 = g0.semaphore(
+            "sem",
+            -10,
+            false,
+            false);
+
+        assert !sem0.tryAcquire();
+        assertEquals(0, sem0.availablePermits());
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    sem0.acquire();
+
+                    info("Acquired in separate thread.");
+
+                    return null;
+                }
+            },
+            1);
+
+        Thread.sleep(100);
+
+        g.close();
+
+        try {
+            fut.get(500);
+        }
+        catch (IgniteCheckedException e) {
+            if (!failoverSafe && e.hasCause(InterruptedException.class))
+                info("Ignored expected exception: " + e);
+            else
+                throw e;
+        }
+
+        sem0.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     private void checkSemaphore() throws Exception {
         // Test API.
-
         checkAcquire();
 
         checkRelease();

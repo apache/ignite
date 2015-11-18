@@ -435,12 +435,15 @@ public interface Ignite extends AutoCloseable {
      *
      * @param name Name of the semaphore.
      * @param cnt Count for new semaphore creation. Ignored if {@code create} flag is {@code false}.
-     * @param fair {@code True} to enable fairness.
+     * @param failoverSafe {@code True} to create failover safe semaphore which means that
+     *      if any node leaves topology permits already acquired by that node are silently released
+     *      and become available for alive nodes to acquire. If flag is {@code false} then
+     *      all threads waiting for available permits get interrupted.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Semaphore for the given name.
      * @throws IgniteException If semaphore could not be fetched or created.
      */
-    public IgniteSemaphore semaphore(String name, int cnt, boolean fair, boolean create)
+    public IgniteSemaphore semaphore(String name, int cnt, boolean failoverSafe, boolean create)
         throws IgniteException;
 
     /**

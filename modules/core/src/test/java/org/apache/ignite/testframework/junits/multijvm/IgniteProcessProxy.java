@@ -536,7 +536,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteSemaphore semaphore(String name, int cnt, boolean fair,
+    @Override public IgniteSemaphore semaphore(String name, int cnt, boolean failoverSafe,
         boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }

@@ -2940,13 +2940,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Nullable @Override public IgniteSemaphore semaphore(
         String name,
         int cnt,
-        boolean fair,
+        boolean failoverSafe,
         boolean create
     ) {
         guard();
 
         try {
-            return ctx.dataStructures().semaphore(name, cnt, fair, create);
+            return ctx.dataStructures().semaphore(name, cnt, failoverSafe, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

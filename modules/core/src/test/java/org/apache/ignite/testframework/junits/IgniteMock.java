@@ -316,7 +316,7 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Nullable @Override public IgniteSemaphore semaphore(String name,
         int cnt,
-        boolean fair,
+        boolean failoverSafe,
         boolean create)
     {
         return null;
