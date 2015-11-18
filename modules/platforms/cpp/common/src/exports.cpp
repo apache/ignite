@@ -66,6 +66,14 @@ extern "C" {
         return ctx->ProcessorGetOrCreateCache(static_cast<jobject>(obj), name);
     }
 
+    void* IGNITE_CALL IgniteProcessorCreateCacheFromConfig(gcj::JniContext* ctx, void* obj, long memPtr) {
+        return ctx->ProcessorCreateCacheFromConfig(static_cast<jobject>(obj), memPtr);
+    }
+
+    void* IGNITE_CALL IgniteProcessorGetOrCreateCacheFromConfig(gcj::JniContext* ctx, void* obj, long memPtr) {
+        return ctx->ProcessorGetOrCreateCacheFromConfig(static_cast<jobject>(obj), memPtr);
+    }
+
     void* IGNITE_CALL IgniteProcessorAffinity(gcj::JniContext* ctx, void* obj, char* name) {
         return ctx->ProcessorAffinity(static_cast<jobject>(obj), name);
     }

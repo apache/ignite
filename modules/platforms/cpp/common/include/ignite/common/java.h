@@ -482,6 +482,10 @@ namespace ignite
                 jobject ProcessorCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo);
                 jobject ProcessorGetOrCreateCache(jobject obj, const char* name);
                 jobject ProcessorGetOrCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo);
+                jobject ProcessorCreateCacheFromConfig(jobject obj, long memPtr);
+                jobject ProcessorCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo);
+                jobject ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr);
+                jobject ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo);
                 jobject ProcessorAffinity(jobject obj, const char* name);
                 jobject ProcessorDataStreamer(jobject obj, const char* name, bool keepPortable);
                 jobject ProcessorTransactions(jobject obj);
@@ -604,6 +608,7 @@ namespace ignite
                 void ExceptionCheck(JNIEnv* env, JniErrorInfo* errInfo);
                 jobject LocalToGlobal(JNIEnv* env, jobject obj);
                 jobject ProcessorCache0(jobject proc, const char* name, jmethodID mthd, JniErrorInfo* errInfo);
+                jobject ProcessorCacheFromConfig0(jobject proc, long memPtr, jmethodID mthd, JniErrorInfo* errInfo);
             };
 
             JNIEXPORT jlong JNICALL JniCacheStoreCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);

@@ -1106,6 +1106,17 @@ namespace ignite
                 return LocalToGlobal(env, cache);
             }
 
+            jobject JniContext::ProcessorCacheFromConfig0(jobject obj, long memPtr, jmethodID mthd, JniErrorInfo* errInfo)
+            {
+                JNIEnv* env = Attach();
+
+                jobject cache = env->CallObjectMethod(obj, mthd, memPtr);
+
+                ExceptionCheck(env, errInfo);
+
+                return LocalToGlobal(env, cache);
+            }
+
             jobject JniContext::ProcessorCache(jobject obj, const char* name) {
                 return ProcessorCache(obj, name, NULL);
             }
@@ -1130,6 +1141,24 @@ namespace ignite
             jobject JniContext::ProcessorGetOrCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo)
             {
                 return ProcessorCache0(obj, name, jvm->GetMembers().m_PlatformProcessor_getOrCreateCache, errInfo);
+            }
+
+            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long memPtr) {
+                return ProcessorCreateCacheFromConfig(obj, memPtr, NULL);
+            }
+
+            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo)
+            {
+                return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_createCache, errInfo);
+            }
+
+            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr) {
+                return ProcessorGetOrCreateCacheFromConfig(obj, memPtr, NULL);
+            }
+
+            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo)
+            {
+                return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateCache, errInfo);
             }
 
             jobject JniContext::ProcessorAffinity(jobject obj, const char* name) {
