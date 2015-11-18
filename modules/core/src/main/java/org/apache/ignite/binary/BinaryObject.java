@@ -137,15 +137,6 @@ public interface BinaryObject extends Serializable, Cloneable {
     public boolean hasField(String fieldName);
 
     /**
-     * Gets field descriptor.
-     *
-     * @param fieldName Field name.
-     * @return Field descriptor.
-     * @throws BinaryObjectException If failed.
-     */
-    public BinaryField fieldDescriptor(String fieldName) throws BinaryObjectException;
-
-    /**
      * Gets fully deserialized instance of binary object.
      *
      * @return Fully deserialized instance of binary object.

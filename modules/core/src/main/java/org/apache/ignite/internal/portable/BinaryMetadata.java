@@ -27,92 +27,111 @@ import java.util.Map;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Portable meta data implementation.
+ * Portable metadata which is passed over a wire.
  */
-public class BinaryMetaDataImpl implements BinaryType, Binarylizable, Externalizable {
+public class BinaryMetadata implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Type ID. */
+    private int typeId;
+
+    /** Type name. */
     private String typeName;
 
-    /** */
+    /** Recorded object fields. */
     @GridToStringInclude
-    private Map<String, String> fields;
+    private Map<String, Integer> fields;
 
-    /** */
-    private volatile Map<Integer, String> fldIdToName;
-
-    /** */
+    /** Affinity key field name. */
     private String affKeyFieldName;
 
     /**
      * For {@link Externalizable}.
      */
-    public BinaryMetaDataImpl() {
+    public BinaryMetadata() {
         // No-op.
     }
 
     /**
+     * Constructor.
+     *
+     * @param typeId Type ID.
      * @param typeName Type name.
      * @param fields Fields map.
      * @param affKeyFieldName Affinity key field name.
      */
-    public BinaryMetaDataImpl(String typeName, @Nullable Map<String, String> fields,
+    public BinaryMetadata(int typeId, String typeName, @Nullable Map<String, Integer> fields,
         @Nullable String affKeyFieldName) {
         assert typeName != null;
 
+        this.typeId = typeId;
         this.typeName = typeName;
         this.fields = fields;
         this.affKeyFieldName = affKeyFieldName;
     }
 
-    /** {@inheritDoc} */
-    @Override public String typeName() {
+    /**
+     * @return Type ID.
+     */
+    public int typeId() {
+        return typeId;
+    }
+
+    /**
+     * @return Type name.
+     */
+    public String typeName() {
         return typeName;
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<String> fields() {
+    /**
+     * @return Fields.
+     */
+    public Collection<String> fields() {
         return fields != null ? fields.keySet() : Collections.<String>emptyList();
     }
 
     /**
      * @return Fields.
      */
-    public Map<String, String> fields0() {
-        return fields != null ? fields : Collections.<String, String>emptyMap();
+    public Map<String, Integer> fieldsMap() {
+        return fields != null ? fields : Collections.<String, Integer>emptyMap();
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public String fieldTypeName(String fieldName) {
-        return fields != null ? fields.get(fieldName) : null;
+    /**
+     * @param fieldName Field name.
+     * @return Field type name.
+     */
+    @Nullable public String fieldTypeName(String fieldName) {
+        Integer typeId = fields != null ? fields.get(fieldName) : null;
+
+        return typeId != null ? PortableUtils.fieldTypeName(typeId) : null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public String affinityKeyFieldName() {
+    /**
+     * @return Affinity key field name.
+     */
+    @Nullable public String affinityKeyFieldName() {
         return affKeyFieldName;
     }
 
     /**
-     * @return Fields meta data.
+     * Wrap metadata into binary type.
+     *
+     * @param ctx Portable context.
+     * @return Binary type.
      */
-    public Map<String, String> fieldsMeta() {
-        return fields != null ? fields : Collections.<String, String>emptyMap();
+    public BinaryTypeImpl wrap(PortableContext ctx) {
+        return new BinaryTypeImpl(ctx, this);
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(typeId);
         U.writeString(out, typeName);
         U.writeMap(out, fields);
         U.writeString(out, affKeyFieldName);
@@ -120,31 +139,14 @@ public class BinaryMetaDataImpl implements BinaryType, Binarylizable, Externaliz
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        typeId = in.readInt();
         typeName = U.readString(in);
         fields = U.readMap(in);
         affKeyFieldName = U.readString(in);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-        BinaryRawWriter raw = writer.rawWriter();
-
-        raw.writeString(typeName);
-        raw.writeString(affKeyFieldName);
-        raw.writeMap(fields);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-        BinaryRawReader raw = reader.rawReader();
-
-        typeName = raw.readString();
-        affKeyFieldName = raw.readString();
-        fields = raw.readMap();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(BinaryMetaDataImpl.class, this);
+        return S.toString(BinaryMetadata.class, this);
     }
 }

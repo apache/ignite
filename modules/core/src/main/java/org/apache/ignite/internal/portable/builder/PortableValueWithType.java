@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.portable.builder;
 
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -48,9 +47,11 @@ class PortableValueWithType implements PortableLazyValue {
             ctx.writeValue(writer, val);
     }
 
-    /** {@inheritDoc} */
-    public String typeName() {
-        return CacheObjectBinaryProcessorImpl.fieldTypeName(type);
+    /**
+     * @return Type ID.
+     */
+    public int typeId() {
+        return type;
     }
 
     /** {@inheritDoc} */

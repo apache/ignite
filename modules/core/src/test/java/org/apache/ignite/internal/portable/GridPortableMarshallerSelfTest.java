@@ -82,17 +82,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
-    /** */
-    protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, BinaryType meta) {
-            // No-op.
-        }
-
-        @Override public BinaryType metadata(int typeId) {
-            return null;
-        }
-    };
-
     /**
      * @throws Exception If failed.
      */
@@ -2414,7 +2403,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     protected PortableContext initPortableContext(PortableMarshaller marsh) throws IgniteCheckedException {
         IgniteConfiguration iCfg = new IgniteConfiguration();
 
-        PortableContext ctx = new PortableContext(META_HND, iCfg);
+        PortableContext ctx = new PortableContext(BinaryNoopMetadataHandler.instance(), iCfg);
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
