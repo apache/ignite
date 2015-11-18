@@ -349,7 +349,9 @@ namespace Apache.Ignite.Core.Impl
 
                 configuration.Write(writer);
 
-                return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, stream.MemoryPointer));
+                stream.SynchronizeOutput();
+
+                return Cache<TK, TV>(UU.ProcessorGetOrCreateCache(_proc, stream.MemoryPointer));
             }
         }
 
@@ -372,7 +374,9 @@ namespace Apache.Ignite.Core.Impl
 
                 configuration.Write(writer);
 
-                return Cache<TK, TV>(UU.ProcessorGetOrCreateCache(_proc, stream.MemoryPointer));
+                stream.SynchronizeOutput();
+
+                return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, stream.MemoryPointer));
             }
         }
 

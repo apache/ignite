@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
@@ -79,6 +80,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var cache = _ignite.CreateCache<int, int>(cfg);
             AssertConfigsAreEqual(cfg, cache.GetConfiguration());
+
+            // Can't create existing cache
+            Assert.Throws<IgniteException>(() => _ignite.CreateCache<int, int>(cfg));
         }
 
         [Test]
