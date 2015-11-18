@@ -90,14 +90,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** Length: integer. */
     private static final int LEN_INT = 4;
 
-    /** */
+    /** Initial capacity. */
     private static final int INIT_CAP = 1024;
-
-    /** FNV1 hash offset basis. */
-    private static final int FNV1_OFFSET_BASIS = 0x811C9DC5;
-
-    /** FNV1 hash prime. */
-    private static final int FNV1_PRIME = 0x01000193;
 
     /** Maximum offset which fits in 1 byte. */
     private static final int MAX_OFFSET_1 = 1 << 8;
@@ -139,7 +133,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     private SchemaHolder schema;
 
     /** Schema ID. */
-    private int schemaId;
+    private int schemaId = PortableUtils.schemaInitialId();
 
     /** Amount of written fields. */
     private int fieldCnt;
@@ -332,6 +326,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * Perform post-write activity. This includes:
+     * - writing flags;
      * - writing object length;
      * - writing schema offset;
      * - writing schema to the tail.
@@ -339,7 +334,16 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param userType User type flag.
      */
     public void postWrite(boolean userType) {
+        short flags = userType ? PortableUtils.FLAG_USR_TYP : 0;
+
+        boolean useCompactFooter = ctx.isCompactFooter() && userType;
+
+        if (useCompactFooter)
+            flags |= PortableUtils.FLAG_COMPACT_FOOTER;
+        
         if (schema != null) {
+            flags |= PortableUtils.FLAG_HAS_SCHEMA;
+
             // Write schema ID.
             out.writeInt(start + SCHEMA_ID_POS, schemaId);
 
@@ -347,34 +351,35 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, out.position() - start);
 
             // Write the schema.
-            int offsetByteCnt = schema.write(this, fieldCnt);
+            int offsetByteCnt = schema.write(this, fieldCnt, useCompactFooter);
 
+            if (offsetByteCnt == PortableUtils.OFFSET_1)
+                flags |= PortableUtils.FLAG_OFFSET_ONE_BYTE;
+            else if (offsetByteCnt == PortableUtils.OFFSET_2)
+                flags |= PortableUtils.FLAG_OFFSET_TWO_BYTES;
+            
             // Write raw offset if needed.
-            if (rawOffPos != 0)
+            if (rawOffPos != 0) {
+                flags |= PortableUtils.FLAG_HAS_RAW;
+
                 out.writeInt(rawOffPos - start);
-
-            if (offsetByteCnt == PortableUtils.OFFSET_1) {
-                int flags = (userType ? PortableUtils.FLAG_USR_TYP : 0) | PortableUtils.FLAG_OFFSET_ONE_BYTE;
-
-                out.writeShort(start + FLAGS_POS, (short)flags);
-            }
-            else if (offsetByteCnt == PortableUtils.OFFSET_2) {
-                int flags = (userType ? PortableUtils.FLAG_USR_TYP : 0) | PortableUtils.FLAG_OFFSET_TWO_BYTES;
-
-                out.writeShort(start + FLAGS_POS, (short)flags);
             }
         }
         else {
-            // Write raw-only flag is needed.
-            int flags = (userType ? PortableUtils.FLAG_USR_TYP : 0) | PortableUtils.FLAG_RAW_ONLY;
+            if (rawOffPos != 0) {
+                // If there are no schema, we are free to write raw offset to schema offset.
+                flags |= PortableUtils.FLAG_HAS_RAW;
 
-            out.writeShort(start + FLAGS_POS, (short)flags);
-
-            // If there are no schema, we are free to write raw offset to schema offset.
-            out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
+                out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, rawOffPos - start);
+            }
+            else
+                out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, 0);
         }
 
-        // 5. Write length.
+        // Write flags.
+        out.writeShort(start + FLAGS_POS, flags);
+
+        // Write length.
         out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
     }
 
@@ -1737,26 +1742,32 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
                 SCHEMA.set(schema);
             }
-
-            // Initialize offset when the first field is written.
-            schemaId = FNV1_OFFSET_BASIS;
         }
 
-        // Advance schema hash.
-        int schemaId0 = schemaId ^ (fieldId & 0xFF);
-        schemaId0 = schemaId0 * FNV1_PRIME;
-        schemaId0 = schemaId0 ^ ((fieldId >> 8) & 0xFF);
-        schemaId0 = schemaId0 * FNV1_PRIME;
-        schemaId0 = schemaId0 ^ ((fieldId >> 16) & 0xFF);
-        schemaId0 = schemaId0 * FNV1_PRIME;
-        schemaId0 = schemaId0 ^ ((fieldId >> 24) & 0xFF);
-        schemaId0 = schemaId0 * FNV1_PRIME;
-
-        schemaId = schemaId0;
+        schemaId = PortableUtils.updateSchemaId(schemaId, fieldId);
 
         schema.push(fieldId, fieldOff);
 
         fieldCnt++;
+    }
+
+    /**
+     * @return Current schema ID.
+     */
+    public int schemaId() {
+        return schemaId;
+    }
+
+    /**
+     * @return Current writer's schema.
+     */
+    public PortableSchema currentSchema() {
+        PortableSchema.Builder builder = PortableSchema.Builder.newBuilder();
+
+        if (schema != null)
+            schema.build(builder, fieldCnt);
+
+        return builder.build();
     }
 
     /**
@@ -1844,13 +1855,25 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         }
 
         /**
+         * Build the schema.
+         *
+         * @param builder Builder.
+         * @param fieldCnt Fields count.
+         */
+        public void build(PortableSchema.Builder builder, int fieldCnt) {
+            for (int curIdx = idx - fieldCnt * 2; curIdx < idx; curIdx += 2)
+                builder.addField(data[curIdx]);
+        }
+
+        /**
          * Write collected frames and pop them.
          *
          * @param writer Writer.
          * @param fieldCnt Count.
-         * @return Amount of bytes dedicated to
+         * @param compactFooter Whether footer should be written in compact form.
+         * @return Amount of bytes dedicated to each field offset. Could be 1, 2 or 4.
          */
-        public int write(BinaryWriterExImpl writer, int fieldCnt) {
+        public int write(BinaryWriterExImpl writer, int fieldCnt, boolean compactFooter) {
             int startIdx = idx - fieldCnt * 2;
 
             assert startIdx >= 0;
@@ -1859,29 +1882,51 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             int res;
 
-            if (lastOffset < MAX_OFFSET_1) {
-                for (int idx0 = startIdx; idx0 < idx; ) {
-                    writer.writeInt(data[idx0++]);
-                    writer.writeByte((byte) data[idx0++]);
-                }
+            if (compactFooter) {
+                if (lastOffset < MAX_OFFSET_1) {
+                    for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
+                        writer.writeByte((byte)data[curIdx]);
 
-                res = PortableUtils.OFFSET_1;
-            }
-            else if (lastOffset < MAX_OFFSET_2) {
-                for (int idx0 = startIdx; idx0 < idx; ) {
-                    writer.writeInt(data[idx0++]);
-                    writer.writeShort((short)data[idx0++]);
+                    res = PortableUtils.OFFSET_1;
                 }
+                else if (lastOffset < MAX_OFFSET_2) {
+                    for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
+                        writer.writeShort((short)data[curIdx]);
 
-                res = PortableUtils.OFFSET_2;
+                    res = PortableUtils.OFFSET_2;
+                }
+                else {
+                    for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
+                        writer.writeInt(data[curIdx]);
+
+                    res = PortableUtils.OFFSET_4;
+                }
             }
             else {
-                for (int idx0 = startIdx; idx0 < idx; ) {
-                    writer.writeInt(data[idx0++]);
-                    writer.writeInt(data[idx0++]);
-                }
+                if (lastOffset < MAX_OFFSET_1) {
+                    for (int curIdx = startIdx; curIdx < idx;) {
+                        writer.writeInt(data[curIdx++]);
+                        writer.writeByte((byte) data[curIdx++]);
+                    }
 
-                res = PortableUtils.OFFSET_4;
+                    res = PortableUtils.OFFSET_1;
+                }
+                else if (lastOffset < MAX_OFFSET_2) {
+                    for (int curIdx = startIdx; curIdx < idx;) {
+                        writer.writeInt(data[curIdx++]);
+                        writer.writeShort((short)data[curIdx++]);
+                    }
+
+                    res = PortableUtils.OFFSET_2;
+                }
+                else {
+                    for (int curIdx = startIdx; curIdx < idx;) {
+                        writer.writeInt(data[curIdx++]);
+                        writer.writeInt(data[curIdx++]);
+                    }
+
+                    res = PortableUtils.OFFSET_4;
+                }
             }
 
             return res;

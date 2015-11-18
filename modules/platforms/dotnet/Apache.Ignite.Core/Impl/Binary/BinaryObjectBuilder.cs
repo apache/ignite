@@ -678,28 +678,37 @@ namespace Apache.Ignite.Core.Impl.Binary
                                 WriteField(ctx, valEntry.Value);
                             }
 
+                            var flags = inHeader.IsUserType
+                                ? BinaryObjectHeader.Flag.UserType
+                                : BinaryObjectHeader.Flag.None;
+
                             // Write raw data.
                             int outRawOff = outStream.Position - outStartPos;
 
-                            int inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
-                            int inRawLen = inHeader.SchemaOffset - inRawOff;
+                            if (inHeader.HasRaw)
+                            {
+                                var inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
+                                var inRawLen = inHeader.SchemaOffset - inRawOff;
 
-                            if (inRawLen > 0)
+                                flags |= BinaryObjectHeader.Flag.HasRaw;
+
                                 outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inRawLen);
+                            }
 
                             // Write schema
                             int outSchemaOff = outRawOff;
                             var schemaPos = outStream.Position;
                             int outSchemaId;
-                            short flags;
 
-                            var hasSchema = outSchema.WriteSchema(outStream, schemaIdx, out outSchemaId, out flags);
+                            var hasSchema = outSchema.WriteSchema(outStream, schemaIdx, out outSchemaId, ref flags);
 
                             if (hasSchema)
                             {
                                 outSchemaOff = schemaPos - outStartPos;
+                                
+                                flags |= BinaryObjectHeader.Flag.HasSchema;
 
-                                if (inRawLen > 0)
+                                if (inHeader.HasRaw)
                                     outStream.WriteInt(outRawOff);
                             }
 
@@ -707,8 +716,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                             var outHash = changeHash ? hash : inHeader.HashCode;
 
-                            var outHeader = new BinaryObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash,
-                                outLen, outSchemaId, outSchemaOff, !hasSchema, flags);
+                            var outHeader = new BinaryObjectHeader(inHeader.TypeId, outHash, outLen, 
+                                outSchemaId, outSchemaOff, flags);
 
                             BinaryObjectHeader.Write(outHeader, outStream, outStartPos);
 

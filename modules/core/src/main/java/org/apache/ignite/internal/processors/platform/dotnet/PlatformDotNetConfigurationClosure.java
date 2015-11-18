@@ -92,7 +92,11 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         Marshaller marsh = igniteCfg.getMarshaller();
 
         if (marsh == null) {
-            igniteCfg.setMarshaller(new PortableMarshaller());
+            PortableMarshaller marsh0 = new PortableMarshaller();
+
+            marsh0.setCompactFooter(false);
+
+            igniteCfg.setMarshaller(marsh0);
 
             dotNetCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
                 PortableMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
@@ -100,6 +104,9 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         else if (!(marsh instanceof PortableMarshaller))
             throw new IgniteException("Unsupported marshaller (only " + PortableMarshaller.class.getName() +
                 " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
+        else if (((PortableMarshaller)marsh).isCompactFooter())
+            throw new IgniteException("Unsupported " + PortableMarshaller.class.getName() +
+                " \"compactFooter\" flag: must be false when running Apache Ignite.NET.");
 
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();

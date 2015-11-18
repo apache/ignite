@@ -67,7 +67,7 @@ import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestCl
 /**
  *
  */
-public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTest {
+public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -79,6 +79,8 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
         cfg.setCacheConfiguration(cacheCfg);
 
         PortableMarshaller marsh = new PortableMarshaller();
+
+        marsh.setCompactFooter(compactFooter());
 
         marsh.setClassNames(Arrays.asList("org.apache.ignite.internal.portable.mutabletest.*"));
 
@@ -100,6 +102,13 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         jcache(0).clear();
+    }
+
+    /**
+     * @return Compact footer.
+     */
+    protected boolean compactFooter() {
+        return true;
     }
 
     /**
@@ -373,7 +382,9 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
         float[] arr = mutObj.getField("fArr");
         arr[0] = 2.0f;
 
-        TestObjectAllTypes res = mutObj.build().deserialize();
+        BinaryObject resBinary = mutObj.build();
+
+        TestObjectAllTypes res = resBinary.deserialize();
 
         Assert.assertArrayEquals(new float[] {2.0f, 1.0f, 1.0f}, res.fArr, 0);
     }
