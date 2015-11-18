@@ -1027,7 +1027,7 @@ public class IgnitionEx {
     /**
      * Gets a name of the grid, which is owner of current thread.
      * <p>
-     * This method have to be invoked only under {@link IgniteThread}.
+     * This method have to be invoked only under {@link IgniteSpiThread}.
      *
      * @return The name of the current grid. This method could return {@code null}.
      * @throws IllegalArgumentException Thrown if this method was invoked under a thread, that is not
