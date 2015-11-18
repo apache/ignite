@@ -78,6 +78,7 @@
         <module>modules/jms11</module>
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
+        <module>modules/camel</module>
         <module>modules/platform</module>
     </modules>
 
