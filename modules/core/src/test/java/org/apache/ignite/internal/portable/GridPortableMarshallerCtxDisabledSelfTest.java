@@ -25,7 +25,7 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerContextAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.io.Externalizable;
@@ -42,12 +42,14 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testObjectExchange() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryMarshaller marsh = new BinaryMarshaller();
         marsh.setContext(new MarshallerContextWithNoStorage());
 
-        PortableContext context = new PortableContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration());
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
-        IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", context);
+        PortableContext context = new PortableContext(BinaryNoopMetadataHandler.instance(), cfg);
+
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", context, cfg);
 
         SimpleObject simpleObj = new SimpleObject();
 

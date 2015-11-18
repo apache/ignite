@@ -21,17 +21,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinarySerializer;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -73,123 +69,9 @@ import org.jetbrains.annotations.Nullable;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class PortableMarshaller extends AbstractMarshaller {
-    // TODO ignite-1282 Move to IgniteConfiguration.
-    /** Class names. */
-    private Collection<String> clsNames;
-
-    /** ID mapper. */
-    private BinaryIdMapper idMapper;
-
-    /** Serializer. */
-    private BinarySerializer serializer;
-
-    /** Types. */
-    private Collection<BinaryTypeConfiguration> typeCfgs;
-
-    /** Keep deserialized flag. */
-    private boolean keepDeserialized = true;
-
+public class BinaryMarshaller extends AbstractMarshaller {
     /** */
     private GridPortableMarshaller impl;
-
-    /**
-     * Gets class names.
-     *
-     * @return Class names.
-     */
-    public Collection<String> getClassNames() {
-        return clsNames;
-    }
-
-    /**
-     * Sets class names of portable objects explicitly.
-     *
-     * @param clsNames Class names.
-     */
-    public void setClassNames(Collection<String> clsNames) {
-        this.clsNames = new ArrayList<>(clsNames.size());
-
-        for (String clsName : clsNames)
-            this.clsNames.add(clsName.trim());
-    }
-
-    /**
-     * Gets ID mapper.
-     *
-     * @return ID mapper.
-     */
-    public BinaryIdMapper getIdMapper() {
-        return idMapper;
-    }
-
-    /**
-     * Sets ID mapper.
-     *
-     * @param idMapper ID mapper.
-     */
-    public void setIdMapper(BinaryIdMapper idMapper) {
-        this.idMapper = idMapper;
-    }
-
-    /**
-     * Gets serializer.
-     *
-     * @return Serializer.
-     */
-    public BinarySerializer getSerializer() {
-        return serializer;
-    }
-
-    /**
-     * Sets serializer.
-     *
-     * @param serializer Serializer.
-     */
-    public void setSerializer(BinarySerializer serializer) {
-        this.serializer = serializer;
-    }
-
-    /**
-     * Gets types configuration.
-     *
-     * @return Types configuration.
-     */
-    public Collection<BinaryTypeConfiguration> getTypeConfigurations() {
-        return typeCfgs;
-    }
-
-    /**
-     * Sets type configurations.
-     *
-     * @param typeCfgs Type configurations.
-     */
-    public void setTypeConfigurations(Collection<BinaryTypeConfiguration> typeCfgs) {
-        this.typeCfgs = typeCfgs;
-    }
-
-    /**
-     * If {@code true}, {@link org.apache.ignite.binary.BinaryObject} will cache deserialized instance after
-     * {@link org.apache.ignite.binary.BinaryObject#deserialize()} is called. All consequent calls of this
-     * method on the same instance of {@link org.apache.ignite.binary.BinaryObject} will return that cached
-     * value without actually deserializing portable object. If you need to override this
-     * behaviour for some specific type, use {@link org.apache.ignite.binary.BinaryTypeConfiguration#setKeepDeserialized(Boolean)}
-     * method.
-     * <p>
-     * Default value if {@code true}.
-     *
-     * @return Whether deserialized value is kept.
-     */
-    public boolean isKeepDeserialized() {
-        return keepDeserialized;
-    }
-
-    /**
-     * @param keepDeserialized Whether deserialized value is kept.
-     */
-    public void setKeepDeserialized(boolean keepDeserialized) {
-        this.keepDeserialized = keepDeserialized;
-    }
 
     /**
      * Returns currently set {@link MarshallerContext}.
@@ -206,8 +88,8 @@ public class PortableMarshaller extends AbstractMarshaller {
      * @param ctx Portable context.
      */
     @SuppressWarnings("UnusedDeclaration")
-    private void setPortableContext(PortableContext ctx) {
-        ctx.configure(this);
+    private void setPortableContext(PortableContext ctx, IgniteConfiguration cfg) {
+        ctx.configure(this, cfg);
 
         impl = new GridPortableMarshaller(ctx);
     }
@@ -238,12 +120,13 @@ public class PortableMarshaller extends AbstractMarshaller {
     @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
-        byte[] arr = new byte[4096];
-        int cnt;
-
         // we have to fully read the InputStream because GridPortableMarshaller requires support of a method that
         // returns number of bytes remaining.
         try {
+            byte[] arr = new byte[4096];
+
+            int cnt;
+
             while ((cnt = in.read(arr)) != -1)
                 buf.write(arr, 0, cnt);
 

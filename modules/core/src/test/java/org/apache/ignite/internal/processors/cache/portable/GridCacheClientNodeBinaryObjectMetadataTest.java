@@ -20,16 +20,17 @@ package org.apache.ignite.internal.processors.cache.portable;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -62,19 +63,23 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setClassNames(Arrays.asList(TestObject1.class.getName(), TestObject2.class.getName()));
+        BinaryConfiguration bCfg = new BinaryConfiguration();
+
+        bCfg.setClassNames(Arrays.asList(TestObject1.class.getName(), TestObject2.class.getName()));
 
         BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
 
-        typeCfg.setClassName(TestObject1.class.getName());
+        typeCfg.setTypeName(TestObject1.class.getName());
 
         CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(TestObject1.class.getName(), "val2");
 
         cfg.setCacheKeyCfg(keyCfg);
 
-        marsh.setTypeConfigurations(Arrays.asList(typeCfg));
+        bCfg.setTypeConfigurations(Arrays.asList(typeCfg));
+
+        cfg.setBinaryConfiguration(bCfg);
 
         if (gridName.equals(getTestGridName(gridCount() - 1)))
             cfg.setClientMode(true);

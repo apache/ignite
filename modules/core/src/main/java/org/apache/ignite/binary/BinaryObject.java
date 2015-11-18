@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.TreeMap;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
  * Wrapper for binary object in binary format. Once an object is defined as binary,
@@ -47,7 +46,7 @@ import org.apache.ignite.marshaller.portable.PortableMarshaller;
  * </pre>
  * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
  * typed objects at all times. In this case we do incur the deserialization cost. However, if
- * {@link PortableMarshaller#isKeepDeserialized()} is {@code true} then Ignite will only deserialize on the first access
+ * {@link org.apache.ignite.marshaller.portable.BinaryMarshaller#isKeepDeserialized()} is {@code true} then Ignite will only deserialize on the first access
  * and will cache the deserialized object, so it does not have to be deserialized again:
  * <pre name=code class=java>
  * IgniteCache&lt;MyKey.class, MyValue.class&gt; cache = grid.cache(null);

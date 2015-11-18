@@ -51,6 +51,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -70,7 +71,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -147,9 +148,6 @@ public class PortableContext implements Externalizable {
 
     /** */
     private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller();
-
-    /** */
-    private boolean keepDeserialized;
 
     /** Object schemas. */
     private volatile Map<Integer, PortableSchemaRegistry> schemas;
@@ -243,58 +241,40 @@ public class PortableContext implements Externalizable {
      * @param marsh Portable marshaller.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public void configure(PortableMarshaller marsh) throws BinaryObjectException {
+    public void configure(BinaryMarshaller marsh, IgniteConfiguration cfg) throws BinaryObjectException {
         if (marsh == null)
             return;
 
-        keepDeserialized = marsh.isKeepDeserialized();
-
         marshCtx = marsh.getContext();
+
+        BinaryConfiguration binaryCfg = cfg.getBinaryConfiguration();
+
+        if (binaryCfg == null)
+            binaryCfg = new BinaryConfiguration();
 
         assert marshCtx != null;
 
         optmMarsh.setContext(marshCtx);
 
         configure(
-            marsh.getIdMapper(),
-            marsh.getSerializer(),
-            marsh.isKeepDeserialized(),
-            marsh.getClassNames(),
-            marsh.getTypeConfigurations()
+            binaryCfg.getIdMapper(),
+            binaryCfg.getSerializer(),
+            binaryCfg.getTypeConfigurations()
         );
     }
 
     /**
      * @param globalIdMapper ID mapper.
      * @param globalSerializer Serializer.
-     * @param globalKeepDeserialized Keep deserialized flag.
-     * @param clsNames Class names.
      * @param typeCfgs Type configurations.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     private void configure(
         BinaryIdMapper globalIdMapper,
         BinarySerializer globalSerializer,
-        boolean globalKeepDeserialized,
-        Collection<String> clsNames,
         Collection<BinaryTypeConfiguration> typeCfgs
     ) throws BinaryObjectException {
         TypeDescriptors descs = new TypeDescriptors();
-
-        if (clsNames != null) {
-            BinaryIdMapper idMapper = new IdMapperWrapper(globalIdMapper);
-
-            for (String clsName : clsNames) {
-                if (clsName.endsWith(".*")) { // Package wildcard
-                    String pkgName = clsName.substring(0, clsName.length() - 2);
-
-                    for (String clsName0 : classesInPackage(pkgName))
-                        descs.add(clsName0, idMapper, null, null, globalKeepDeserialized, true);
-                }
-                else // Regular single class
-                    descs.add(clsName, idMapper, null, null, globalKeepDeserialized, true);
-            }
-        }
 
         Map<String, String> affFields = new HashMap<>();
 
@@ -305,7 +285,7 @@ public class PortableContext implements Externalizable {
 
         if (typeCfgs != null) {
             for (BinaryTypeConfiguration typeCfg : typeCfgs) {
-                String clsName = typeCfg.getClassName();
+                String clsName = typeCfg.getTypeName();
 
                 if (clsName == null)
                     throw new BinaryObjectException("Class name is required for portable type configuration.");
@@ -322,25 +302,21 @@ public class PortableContext implements Externalizable {
                 if (typeCfg.getSerializer() != null)
                     serializer = typeCfg.getSerializer();
 
-                boolean keepDeserialized = typeCfg.isKeepDeserialized() != null ? typeCfg.isKeepDeserialized() :
-                    globalKeepDeserialized;
-
                 if (clsName.endsWith(".*")) {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
                     for (String clsName0 : classesInPackage(pkgName))
                         descs.add(clsName0, idMapper, serializer, affFields.get(clsName0),
-                            keepDeserialized, true);
+                            true);
                 }
                 else
                     descs.add(clsName, idMapper, serializer, affFields.get(clsName),
-                        keepDeserialized, false);
+                        false);
             }
         }
 
         for (TypeDescriptor desc : descs.descriptors()) {
-            registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName,
-                desc.keepDeserialized);
+            registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName);
         }
     }
 
@@ -507,7 +483,6 @@ public class PortableContext implements Externalizable {
                 BASIC_CLS_ID_MAPPER,
                 null,
                 false,
-                keepDeserialized,
                 true, /* registered */
                 false /* predefined */
             );
@@ -553,7 +528,6 @@ public class PortableContext implements Externalizable {
             idMapper,
             null,
             true,
-            keepDeserialized,
             registered,
             false /* predefined */
         );
@@ -697,7 +671,6 @@ public class PortableContext implements Externalizable {
             DFLT_ID_MAPPER,
             null,
             false,
-            false,
             true, /* registered */
             true /* predefined */
         );
@@ -715,15 +688,13 @@ public class PortableContext implements Externalizable {
      * @param idMapper ID mapper.
      * @param serializer Serializer.
      * @param affKeyFieldName Affinity key field name.
-     * @param keepDeserialized Keep deserialized flag.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("ErrorNotRethrown")
     public void registerUserType(String clsName,
         BinaryIdMapper idMapper,
         @Nullable BinarySerializer serializer,
-        @Nullable String affKeyFieldName,
-        boolean keepDeserialized)
+        @Nullable String affKeyFieldName)
         throws BinaryObjectException {
         assert idMapper != null;
 
@@ -761,7 +732,6 @@ public class PortableContext implements Externalizable {
                 idMapper,
                 serializer,
                 true,
-                keepDeserialized,
                 true, /* registered */
                 false /* predefined */
             );
@@ -1021,7 +991,7 @@ public class PortableContext implements Externalizable {
      */
     private static class TypeDescriptors {
         /** Descriptors map. */
-        private final Map<String, TypeDescriptor> descs = new HashMap<>();
+        private final Map<String, TypeDescriptor> descs = new LinkedHashMap<>();
 
         /**
          * Add type descriptor.
@@ -1030,7 +1000,6 @@ public class PortableContext implements Externalizable {
          * @param idMapper ID mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
-         * @param keepDeserialized Keep deserialized flag.
          * @param canOverride Whether this descriptor can be override.
          * @throws org.apache.ignite.binary.BinaryObjectException If failed.
          */
@@ -1038,14 +1007,12 @@ public class PortableContext implements Externalizable {
             BinaryIdMapper idMapper,
             BinarySerializer serializer,
             String affKeyFieldName,
-            boolean keepDeserialized,
             boolean canOverride)
             throws BinaryObjectException {
             TypeDescriptor desc = new TypeDescriptor(clsName,
                 idMapper,
                 serializer,
                 affKeyFieldName,
-                keepDeserialized,
                 canOverride);
 
             TypeDescriptor oldDesc = descs.get(clsName);
@@ -1082,9 +1049,6 @@ public class PortableContext implements Externalizable {
         /** Affinity key field name. */
         private String affKeyFieldName;
 
-        /** Keep deserialized flag. */
-        private boolean keepDeserialized;
-
         /** Whether this descriptor can be override. */
         private boolean canOverride;
 
@@ -1095,16 +1059,14 @@ public class PortableContext implements Externalizable {
          * @param idMapper ID mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
-         * @param keepDeserialized Keep deserialized flag.
          * @param canOverride Whether this descriptor can be override.
          */
         private TypeDescriptor(String clsName, BinaryIdMapper idMapper, BinarySerializer serializer,
-            String affKeyFieldName, boolean keepDeserialized, boolean canOverride) {
+            String affKeyFieldName, boolean canOverride) {
             this.clsName = clsName;
             this.idMapper = idMapper;
             this.serializer = serializer;
             this.affKeyFieldName = affKeyFieldName;
-            this.keepDeserialized = keepDeserialized;
             this.canOverride = canOverride;
         }
 
@@ -1121,7 +1083,6 @@ public class PortableContext implements Externalizable {
                 idMapper = other.idMapper;
                 serializer = other.serializer;
                 affKeyFieldName = other.affKeyFieldName;
-                keepDeserialized = other.keepDeserialized;
                 canOverride = other.canOverride;
             }
             else if (!other.canOverride)

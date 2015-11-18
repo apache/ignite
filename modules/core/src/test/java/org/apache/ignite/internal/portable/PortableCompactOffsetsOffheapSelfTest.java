@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import sun.misc.Unsafe;
 
@@ -47,7 +47,7 @@ public class PortableCompactOffsetsOffheapSelfTest extends PortableCompactOffset
     }
 
     /** {@inheritDoc} */
-    @Override protected BinaryObjectEx toPortable(PortableMarshaller marsh, Object obj) throws Exception {
+    @Override protected BinaryObjectEx toPortable(BinaryMarshaller marsh, Object obj) throws Exception {
         byte[] arr = marsh.marshal(obj);
 
         long ptr = UNSAFE.allocateMemory(arr.length);

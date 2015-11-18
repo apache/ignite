@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.builder.PortableBuilderEnum;
@@ -45,7 +46,7 @@ import org.apache.ignite.internal.portable.mutabletest.GridBinaryMarshalerAwareT
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.portable.IgniteBinaryImpl;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryObject;
@@ -78,11 +79,11 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        marsh.setClassNames(Arrays.asList("org.apache.ignite.internal.portable.mutabletest.*"));
+        bCfg.setClassNames(Arrays.asList("org.apache.ignite.internal.portable.mutabletest.*"));
 
-        cfg.setMarshaller(marsh);
+        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

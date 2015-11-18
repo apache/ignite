@@ -22,13 +22,18 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectAllTypes;
@@ -39,12 +44,7 @@ import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.T
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import sun.misc.Unsafe;
@@ -63,15 +63,10 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryTypeConfiguration customTypeCfg = new BinaryTypeConfiguration();
 
-        marsh.setClassNames(Arrays.asList(Key.class.getName(), Value.class.getName(),
-            "org.gridgain.grid.internal.util.portable.mutabletest.*"));
-
-        BinaryTypeConfiguration customIdMapper = new BinaryTypeConfiguration();
-
-        customIdMapper.setClassName(CustomIdMapper.class.getName());
-        customIdMapper.setIdMapper(new BinaryIdMapper() {
+        customTypeCfg.setTypeName(CustomIdMapper.class.getName());
+        customTypeCfg.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return ~PortableContext.DFLT_ID_MAPPER.typeId(clsName);
             }
@@ -81,9 +76,17 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        marsh.setTypeConfigurations(Collections.singleton(customIdMapper));
+        BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        cfg.setMarshaller(marsh);
+        bCfg.setTypeConfigurations(Arrays.asList(
+            new BinaryTypeConfiguration(Key.class.getName()),
+            new BinaryTypeConfiguration(Value.class.getName()),
+            new BinaryTypeConfiguration("org.gridgain.grid.internal.util.portable.mutabletest.*"),
+            customTypeCfg));
+
+        cfg.setBinaryConfiguration(bCfg);
+
+        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

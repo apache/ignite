@@ -142,6 +142,10 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
                         ", oldClsName=" + oldClsName + ']');
                 }
 
+                if (clsName.contains("PortableMetadataKey")) {
+                    U.debug("Adding type=" + clsName + ", set=" + System.identityHashCode(registeredSystemTypes) + ", url=" + url + ']');
+                }
+
                 registeredSystemTypes.add(clsName);
             }
         }
@@ -187,6 +191,10 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public boolean isSystemType(String typeName) {
+        if (typeName.contains("PortableMetaDataKey")) {
+            U.debug("Checking type=" + typeName + ", set=" + System.identityHashCode(registeredSystemTypes) + ']');
+        }
+
         return registeredSystemTypes.contains(typeName);
     }
 

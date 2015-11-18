@@ -20,11 +20,12 @@ package org.apache.ignite.internal.portable;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.math.BigDecimal;
@@ -38,7 +39,7 @@ import java.util.UUID;
  */
 public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTest {
     /** Marshaller. */
-    protected PortableMarshaller dfltMarsh;
+    protected BinaryMarshaller dfltMarsh;
 
     /**
      * Create marshaller.
@@ -46,20 +47,26 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @return Portable marshaller.
      * @throws Exception If failed.
      */
-    protected static PortableMarshaller createMarshaller() throws Exception {
+    protected static BinaryMarshaller createMarshaller() throws Exception {
         PortableContext ctx = new PortableContext(new TestCachingMetadataHandler(), new IgniteConfiguration());
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryConfiguration bCfg = new BinaryConfiguration();
+
+        bCfg.setTypeConfigurations(Arrays.asList(
             new BinaryTypeConfiguration(TestObject.class.getName()),
             new BinaryTypeConfiguration(TestOuterObject.class.getName()),
             new BinaryTypeConfiguration(TestInnerObject.class.getName())
         ));
 
+        IgniteConfiguration iCfg = new IgniteConfiguration();
+
+        iCfg.setBinaryConfiguration(bCfg);
+
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", ctx);
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, iCfg);
 
         return marsh;
     }
@@ -70,7 +77,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @param marsh Marshaller.
      * @return Portable context.
      */
-    protected static PortableContext portableContext(PortableMarshaller marsh) {
+    protected static PortableContext portableContext(BinaryMarshaller marsh) {
         GridPortableMarshaller impl = U.field(marsh, "impl");
 
         return impl.context();
@@ -375,7 +382,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @param exists Whether field should exist.
      * @throws Exception If failed.
      */
-    private void checkNormal(PortableMarshaller marsh, String fieldName, boolean exists) throws Exception {
+    private void checkNormal(BinaryMarshaller marsh, String fieldName, boolean exists) throws Exception {
         TestContext testCtx = context(marsh, fieldName);
 
         check0(fieldName, testCtx, exists);
@@ -389,7 +396,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @param exists Whether field should exist.
      * @throws Exception If failed.
      */
-    private void checkNested(PortableMarshaller marsh, String fieldName, boolean exists) throws Exception {
+    private void checkNested(BinaryMarshaller marsh, String fieldName, boolean exists) throws Exception {
         TestContext testCtx = nestedContext(marsh, fieldName);
 
         check0(fieldName, testCtx, exists);
@@ -468,7 +475,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @return Test context.
      * @throws Exception If failed.
      */
-    private TestContext context(PortableMarshaller marsh, String fieldName) throws Exception {
+    private TestContext context(BinaryMarshaller marsh, String fieldName) throws Exception {
         TestObject obj = createObject();
 
         BinaryObjectEx portObj = toPortable(marsh, obj);
@@ -486,7 +493,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @return Test context.
      * @throws Exception If failed.
      */
-    private TestContext nestedContext(PortableMarshaller marsh, String fieldName)
+    private TestContext nestedContext(BinaryMarshaller marsh, String fieldName)
         throws Exception {
         TestObject obj = createObject();
         TestOuterObject outObj = new TestOuterObject(obj);
@@ -518,7 +525,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @return Portable object.
      * @throws Exception If failed.
      */
-    protected abstract BinaryObjectEx toPortable(PortableMarshaller marsh, Object obj) throws Exception;
+    protected abstract BinaryObjectEx toPortable(BinaryMarshaller marsh, Object obj) throws Exception;
 
     /**
      * Outer test object.

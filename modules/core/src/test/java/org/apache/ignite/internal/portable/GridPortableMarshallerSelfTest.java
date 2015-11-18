@@ -41,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -48,13 +49,13 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -62,7 +63,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
@@ -384,9 +385,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryObject() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
         SimpleObject obj = simpleObject();
 
@@ -413,9 +412,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testEnum() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setClassNames(Arrays.asList(TestEnum.class.getName()));
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(TestEnum.class.getName())));
 
         assertEquals(TestEnum.B, marshalUnmarshal(TestEnum.B, marsh));
     }
@@ -426,9 +423,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testDateAndTimestampInSingleObject() throws Exception {
         BinaryTypeConfiguration cfg1 = new BinaryTypeConfiguration(DateClass1.class.getName());
 
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(cfg1));
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(cfg1));
 
         Date date = new Date();
         Timestamp ts = new Timestamp(System.currentTimeMillis());
@@ -453,9 +448,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSimpleObject() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -540,9 +533,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortable() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName()),
             new BinaryTypeConfiguration(TestBinary.class.getName())
         ));
@@ -704,15 +695,11 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassWithoutPublicConstructor() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
                 new BinaryTypeConfiguration(NoPublicConstructor.class.getName()),
                 new BinaryTypeConfiguration(NoPublicDefaultConstructor.class.getName()),
                 new BinaryTypeConfiguration(ProtectedConstructor.class.getName()))
         );
-
-        initPortableContext(marsh);
 
         NoPublicConstructor npc = new NoPublicConstructor();
         BinaryObject npc2 = marshal(npc, marsh);
@@ -734,14 +721,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomSerializer() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
         BinaryTypeConfiguration type =
             new BinaryTypeConfiguration(CustomSerializedObject1.class.getName());
 
         type.setSerializer(new CustomSerializer1());
 
-        marsh.setTypeConfigurations(Arrays.asList(type));
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(type));
 
         CustomSerializedObject1 obj1 = new CustomSerializedObject1(10);
 
@@ -754,10 +739,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomSerializerWithGlobal() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setSerializer(new CustomSerializer1());
-
         BinaryTypeConfiguration type1 =
             new BinaryTypeConfiguration(CustomSerializedObject1.class.getName());
         BinaryTypeConfiguration type2 =
@@ -765,7 +746,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         type2.setSerializer(new CustomSerializer2());
 
-        marsh.setTypeConfigurations(Arrays.asList(type1, type2));
+        BinaryMarshaller marsh = binaryMarshaller(new CustomSerializer1(), Arrays.asList(type1, type2));
 
         CustomSerializedObject1 obj1 = new CustomSerializedObject1(10);
 
@@ -784,8 +765,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomIdMapper() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
         BinaryTypeConfiguration type =
             new BinaryTypeConfiguration(CustomMappedObject1.class.getName());
 
@@ -808,7 +787,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        marsh.setTypeConfigurations(Arrays.asList(type));
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(type));
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str");
 
@@ -826,25 +805,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomIdMapperWithGlobal() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setIdMapper(new BinaryIdMapper() {
-            @Override public int typeId(String clsName) {
-                return 11111;
-            }
-
-            @Override public int fieldId(int typeId, String fieldName) {
-                assert typeId == 11111;
-
-                if ("val1".equals(fieldName)) return 22222;
-                else if ("val2".equals(fieldName)) return 33333;
-
-                assert false : "Unknown field: " + fieldName;
-
-                return 0;
-            }
-        });
-
         BinaryTypeConfiguration type1 =
             new BinaryTypeConfiguration(CustomMappedObject1.class.getName());
         BinaryTypeConfiguration type2 =
@@ -867,7 +827,24 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        marsh.setTypeConfigurations(Arrays.asList(type1, type2));
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryIdMapper() {
+            @Override public int typeId(String clsName) {
+                return 11111;
+            }
+
+            @Override public int fieldId(int typeId, String fieldName) {
+                assert typeId == 11111;
+
+                if ("val1".equals(fieldName))
+                    return 22222;
+                else if ("val2".equals(fieldName))
+                    return 33333;
+
+                assert false : "Unknown field: " + fieldName;
+
+                return 0;
+            }
+        }, Arrays.asList(type1, type2));
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str1");
 
@@ -896,9 +873,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDynamicObject() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(DynamicObject.class.getName())
         ));
 
@@ -943,9 +918,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCycleLink() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(CycleLinkObject.class.getName())
         ));
 
@@ -964,9 +937,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDetached() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(DetachedTestObject.class.getName()),
             new BinaryTypeConfiguration(DetachedInnerTestObject.class.getName())
         ));
@@ -1020,9 +991,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCollectionFields() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(CollectionFieldsObject.class.getName()),
             new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration(Value.class.getName())
@@ -1062,8 +1031,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDefaultMapping() throws Exception {
-        PortableMarshaller marsh1 = new PortableMarshaller();
-
         BinaryTypeConfiguration customMappingType =
             new BinaryTypeConfiguration(TestBinary.class.getName());
 
@@ -1090,7 +1057,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        marsh1.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh1 = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName()),
             customMappingType
         ));
@@ -1099,16 +1066,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectImpl po = marshal(obj, marsh1);
 
-        PortableMarshaller marsh2 = new PortableMarshaller();
-
-        marsh2.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh2 = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName()),
             new BinaryTypeConfiguration(TestBinary.class.getName())
         ));
 
-        PortableContext ctx = initPortableContext(marsh2);
-
-        po.context(ctx);
+        po = marshal(obj, marsh2);
 
         assertEquals(obj, po.deserialize());
     }
@@ -1117,8 +1080,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeNames() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
         customType1.setIdMapper(new BinaryIdMapper() {
@@ -1167,7 +1128,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration("org.gridgain.NonExistentClass3"),
             new BinaryTypeConfiguration("NonExistentClass4"),
@@ -1177,7 +1138,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             customType4
         ));
 
-        PortableContext ctx = initPortableContext(marsh);
+        PortableContext ctx = portableContext(marsh);
 
         assertEquals("notconfiguredclass".hashCode(), ctx.typeId("NotConfiguredClass"));
         assertEquals("key".hashCode(), ctx.typeId("Key"));
@@ -1193,8 +1154,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFieldIdMapping() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
         customType1.setIdMapper(new BinaryIdMapper() {
@@ -1237,12 +1196,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        marsh.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(Key.class.getName()),
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration("NonExistentClass2"),
             customType1,
             customType2));
 
-        PortableContext ctx = initPortableContext(marsh);
+        PortableContext ctx = portableContext(marsh);
 
         assertEquals("val".hashCode(), ctx.fieldId("key".hashCode(), "val"));
         assertEquals("val".hashCode(), ctx.fieldId("nonexistentclass2".hashCode(), "val"));
@@ -1259,8 +1218,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDuplicateTypeId() throws Exception {
-        final PortableMarshaller marsh = new PortableMarshaller();
-
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration("org.gridgain.Class1");
 
         customType1.setIdMapper(new BinaryIdMapper() {
@@ -1285,13 +1242,11 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        marsh.setTypeConfigurations(Arrays.asList(customType1, customType2));
-
         try {
-            initPortableContext(marsh);
+            binaryMarshaller(Arrays.asList(customType1, customType2));
         }
         catch (IgniteCheckedException e) {
-            assertEquals("Duplicate type ID [clsName=org.gridgain.Class1, id=100]",
+            assertEquals("Duplicate type ID [clsName=org.gridgain.Class2, id=100]",
                 e.getCause().getCause().getMessage());
 
             return;
@@ -1304,9 +1259,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopy() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1427,9 +1380,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyString() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1450,9 +1401,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyUuid() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1475,9 +1424,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyByteArray() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1514,9 +1461,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyShortArray() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1537,9 +1482,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyIntArray() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1560,9 +1503,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyLongArray() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1583,9 +1524,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyFloatArray() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1606,9 +1545,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyDoubleArray() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1629,9 +1566,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyCharArray() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1652,9 +1587,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyStringArray() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1675,9 +1608,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyObject() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1704,9 +1635,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyNonPrimitives() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1743,9 +1672,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPortableCopyMixed() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
         SimpleObject obj = simpleObject();
 
@@ -1789,82 +1716,26 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testKeepDeserialized() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
-        marsh.setClassNames(Arrays.asList(SimpleObject.class.getName()));
-        marsh.setKeepDeserialized(true);
+        BinaryObjectImpl po = marshal(simpleObject(), marsh);
 
-        BinaryObject po = marshal(simpleObject(), marsh);
+        CacheObjectContext coCtx = new CacheObjectContext(newContext(), null, false, true, false);
 
-        assert po.deserialize() == po.deserialize();
-
-        marsh = new PortableMarshaller();
-
-        marsh.setClassNames(Arrays.asList(SimpleObject.class.getName()));
-        marsh.setKeepDeserialized(false);
+        assert po.value(coCtx, false) == po.value(coCtx, false);
 
         po = marshal(simpleObject(), marsh);
 
         assert po.deserialize() != po.deserialize();
-
-        marsh = new PortableMarshaller();
-
-        marsh.setKeepDeserialized(true);
-        marsh.setTypeConfigurations(Arrays.asList(
-            new BinaryTypeConfiguration(SimpleObject.class.getName())));
-
-        po = marshal(simpleObject(), marsh);
-
-        assert po.deserialize() == po.deserialize();
-
-        marsh = new PortableMarshaller();
-
-        marsh.setKeepDeserialized(false);
-        marsh.setTypeConfigurations(Arrays.asList(
-            new BinaryTypeConfiguration(SimpleObject.class.getName())));
-
-        po = marshal(simpleObject(), marsh);
-
-        assert po.deserialize() != po.deserialize();
-
-        marsh = new PortableMarshaller();
-
-        marsh.setKeepDeserialized(true);
-
-        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(SimpleObject.class.getName());
-
-        typeCfg.setKeepDeserialized(false);
-
-        marsh.setTypeConfigurations(Arrays.asList(typeCfg));
-
-        po = marshal(simpleObject(), marsh);
-
-        assert po.deserialize() != po.deserialize();
-
-        marsh = new PortableMarshaller();
-
-        marsh.setKeepDeserialized(false);
-
-        typeCfg = new BinaryTypeConfiguration(SimpleObject.class.getName());
-
-        typeCfg.setKeepDeserialized(true);
-
-        marsh.setTypeConfigurations(Arrays.asList(typeCfg));
-
-        po = marshal(simpleObject(), marsh);
-
-        assert po.deserialize() == po.deserialize();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOffheapPortable() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
-        marsh.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
-
-        PortableContext ctx = initPortableContext(marsh);
+        PortableContext ctx = portableContext(marsh);
 
         SimpleObject simpleObj = simpleObject();
 
@@ -1956,10 +1827,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testReadResolve() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setClassNames(
-            Arrays.asList(MySingleton.class.getName(), SingletonMarker.class.getName()));
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+            new BinaryTypeConfiguration(MySingleton.class.getName()),
+            new BinaryTypeConfiguration(SingletonMarker.class.getName())));
 
         BinaryObjectImpl portableObj = marshal(MySingleton.INSTANCE, marsh);
 
@@ -1974,9 +1844,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testReadResolveOnPortableAware() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setClassNames(Collections.singletonList(MyTestClass.class.getName()));
+        BinaryMarshaller marsh = binaryMarshaller(Collections.singletonList(
+            new BinaryTypeConfiguration(MyTestClass.class.getName())));
 
         BinaryObjectImpl portableObj = marshal(new MyTestClass(), marsh);
 
@@ -1989,9 +1858,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If ecxeption thrown.
      */
     public void testDeclareReadResolveInParent() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setClassNames(Arrays.asList(ChildPortable.class.getName()));
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(ChildPortable.class.getName())));
 
         BinaryObjectImpl portableObj = marshal(new ChildPortable(), marsh);
 
@@ -2004,14 +1871,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testDecimalFields() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
+        Collection<BinaryTypeConfiguration> clsNames = new ArrayList<>();
 
-        Collection<String> clsNames = new ArrayList<>();
+        clsNames.add(new BinaryTypeConfiguration(DecimalReflective.class.getName()));
+        clsNames.add(new BinaryTypeConfiguration(DecimalMarshalAware.class.getName()));
 
-        clsNames.add(DecimalReflective.class.getName());
-        clsNames.add(DecimalMarshalAware.class.getName());
-
-        marsh.setClassNames(clsNames);
+        BinaryMarshaller marsh = binaryMarshaller(clsNames);
 
         // 1. Test reflective stuff.
         DecimalReflective obj1 = new DecimalReflective();
@@ -2050,7 +1915,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testFinalField() throws IgniteCheckedException {
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryMarshaller marsh = binaryMarshaller();
 
         SimpleObjectWithFinal obj = new SimpleObjectWithFinal();
 
@@ -2066,7 +1931,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         // Checking the writer directly.
         assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(initPortableContext(new PortableMarshaller()))) {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(portableContext(marsh))) {
             assertEquals(true, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
             writer.writeString("Thread local test");
@@ -2079,16 +1946,16 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         // Checking the portable marshaller.
         assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        initPortableContext(marsh);
+        marsh = binaryMarshaller();
 
         marsh.marshal(new SimpleObject());
 
         assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
+        marsh = binaryMarshaller();
+
         // Checking the builder.
-        BinaryObjectBuilder builder = new BinaryObjectBuilderImpl(initPortableContext(new PortableMarshaller()),
+        BinaryObjectBuilder builder = new BinaryObjectBuilderImpl(portableContext(marsh),
             "org.gridgain.foo.bar.TestClass");
 
         builder.setField("a", "1");
@@ -2102,9 +1969,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDuplicateName() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        initPortableContext(marsh);
+        BinaryMarshaller marsh = binaryMarshaller();
 
         Test1.Job job1 = new Test1().new Job();
         Test2.Job job2 = new Test2().new Job();
@@ -2125,9 +1990,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClass() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        initPortableContext(marsh);
+        BinaryMarshaller marsh = binaryMarshaller();
 
         Class cls = GridPortableMarshallerSelfTest.class;
 
@@ -2140,9 +2003,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassFieldsMarshalling() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        initPortableContext(marsh);
+        BinaryMarshaller marsh = binaryMarshaller();
 
         ObjectWithClassFields obj = new ObjectWithClassFields();
         obj.cls1 = GridPortableMarshallerSelfTest.class;
@@ -2165,9 +2026,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMarshallingThroughJdk() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        initPortableContext(marsh);
+        BinaryMarshaller marsh = binaryMarshaller();
 
         InetSocketAddress addr = new InetSocketAddress("192.168.0.2", 4545);
 
@@ -2203,9 +2062,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPredefinedTypeIds() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryMarshaller marsh = binaryMarshaller();
 
-        PortableContext pCtx = initPortableContext(marsh);
+        PortableContext pCtx = portableContext(marsh);
 
         Field field = pCtx.getClass().getDeclaredField("predefinedTypeNames");
 
@@ -2232,7 +2091,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCyclicReferencesMarshalling() throws Exception {
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryMarshaller marsh = binaryMarshaller();
 
         SimpleObject obj = simpleObject();
 
@@ -2367,7 +2226,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @return Result object.
      */
     private <T> T marshalUnmarshal(T obj) throws IgniteCheckedException {
-        return marshalUnmarshal(obj, new PortableMarshaller());
+        return marshalUnmarshal(obj, binaryMarshaller());
     }
 
     /**
@@ -2375,9 +2234,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @param marsh Marshaller.
      * @return Result object.
      */
-    private <T> T marshalUnmarshal(Object obj, PortableMarshaller marsh) throws IgniteCheckedException {
-        initPortableContext(marsh);
-
+    private <T> T marshalUnmarshal(Object obj, BinaryMarshaller marsh) throws IgniteCheckedException {
         byte[] bytes = marsh.marshal(obj);
 
         return marsh.unmarshal(bytes, null);
@@ -2388,9 +2245,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @param marsh Marshaller.
      * @return Portable object.
      */
-    private <T> BinaryObjectImpl marshal(T obj, PortableMarshaller marsh) throws IgniteCheckedException {
-        initPortableContext(marsh);
-
+    private <T> BinaryObjectImpl marshal(T obj, BinaryMarshaller marsh) throws IgniteCheckedException {
         byte[] bytes = marsh.marshal(obj);
 
         return new BinaryObjectImpl(U.<GridPortableMarshaller>field(marsh, "impl").context(),
@@ -2398,18 +2253,75 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param marsh Marshaller.
      * @return Portable context.
      */
-    protected PortableContext initPortableContext(PortableMarshaller marsh) throws IgniteCheckedException {
+    protected PortableContext portableContext(BinaryMarshaller marsh) {
+        GridPortableMarshaller impl = U.field(marsh, "impl");
+
+        return impl.context();
+    }
+
+    /**
+     *
+     */
+    protected BinaryMarshaller binaryMarshaller()
+        throws IgniteCheckedException {
+        return binaryMarshaller(null, null, null);
+    }
+
+    /**
+     *
+     */
+    protected BinaryMarshaller binaryMarshaller(Collection<BinaryTypeConfiguration> cfgs)
+        throws IgniteCheckedException {
+        return binaryMarshaller(null, null, cfgs);
+    }
+
+    /**
+     *
+     */
+    protected BinaryMarshaller binaryMarshaller(BinaryIdMapper mapper, Collection<BinaryTypeConfiguration> cfgs)
+        throws IgniteCheckedException {
+        return binaryMarshaller(mapper, null, cfgs);
+    }
+
+    /**
+     *
+     */
+    protected BinaryMarshaller binaryMarshaller(BinarySerializer serializer, Collection<BinaryTypeConfiguration> cfgs)
+        throws IgniteCheckedException {
+        return binaryMarshaller(null, serializer, cfgs);
+    }
+
+    /**
+     * @return Binary marshaller.
+     */
+    protected BinaryMarshaller binaryMarshaller(
+        BinaryIdMapper mapper,
+        BinarySerializer serializer,
+        Collection<BinaryTypeConfiguration> cfgs
+    ) throws IgniteCheckedException {
         IgniteConfiguration iCfg = new IgniteConfiguration();
+
+        BinaryConfiguration bCfg = new BinaryConfiguration();
+
+        bCfg.setIdMapper(mapper);
+        bCfg.setSerializer(serializer);
+
+        bCfg.setTypeConfigurations(cfgs);
+
+        iCfg.setBinaryConfiguration(bCfg);
 
         PortableContext ctx = new PortableContext(BinaryNoopMetadataHandler.instance(), iCfg);
 
+        BinaryMarshaller marsh = new BinaryMarshaller();
+
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", ctx);
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, iCfg);
 
-        return ctx;
+        return marsh;
     }
 
     /**

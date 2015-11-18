@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheMemoryModeSelfTest;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 
 /**
  * Memory models test.
@@ -29,7 +29,7 @@ public class GridCacheMemoryModePortableSelfTest extends GridCacheMemoryModeSelf
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new PortableMarshaller());
+        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

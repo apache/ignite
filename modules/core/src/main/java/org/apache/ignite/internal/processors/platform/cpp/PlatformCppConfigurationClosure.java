@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurat
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.platform.cpp.PlatformCppConfiguration;
 
 import java.util.Collections;
@@ -71,13 +71,13 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
         Marshaller marsh = igniteCfg.getMarshaller();
 
         if (marsh == null) {
-            igniteCfg.setMarshaller(new PortableMarshaller());
+            igniteCfg.setMarshaller(new BinaryMarshaller());
 
             cppCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
-                PortableMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
+                BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
         }
-        else if (!(marsh instanceof PortableMarshaller))
-            throw new IgniteException("Unsupported marshaller (only " + PortableMarshaller.class.getName() +
+        else if (!(marsh instanceof BinaryMarshaller))
+            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
                 " can be used when running Apache Ignite C++): " + marsh.getClass().getName());
 
         // Set Ignite home so that marshaller context works.

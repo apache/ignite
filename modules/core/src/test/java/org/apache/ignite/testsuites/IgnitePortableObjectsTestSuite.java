@@ -55,7 +55,7 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("GridGain Portable Objects Test Suite");
+        TestSuite suite = new TestSuite("Ignite Binary Objects Test Suite");
 
         suite.addTestSuite(GridPortableMarshallerSelfTest.class);
         suite.addTestSuite(GridPortableMarshallerCtxDisabledSelfTest.class);

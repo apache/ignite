@@ -15,58 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.binary;
+package org.apache.ignite.configuration;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.BinaryConfiguration;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 
 /**
- * Defines configuration properties for a specific binary type. Providing per-type
- * configuration is optional, as it is generally enough, and also optional, to provide global binary
- * configuration using {@link IgniteConfiguration#setBinaryConfiguration(BinaryConfiguration)}.
- * However, this class allows you to change configuration properties for a specific
- * binary type without affecting configuration for other binary types.
+ *
  */
-public class BinaryTypeConfiguration {
-    /** Class name. */
-    private String typeName;
-
+public class BinaryConfiguration {
     /** ID mapper. */
     private BinaryIdMapper idMapper;
 
     /** Serializer. */
     private BinarySerializer serializer;
 
-    /**
-     */
-    public BinaryTypeConfiguration() {
-        // No-op.
-    }
+    /** Types. */
+    private Collection<BinaryTypeConfiguration> typeCfgs;
 
     /**
-     * @param typeName Class name.
-     */
-    public BinaryTypeConfiguration(String typeName) {
-        this.typeName = typeName;
-    }
-
-    /**
-     * Gets type name.
+     * Sets class names of portable objects explicitly.
      *
-     * @return Type name.
+     * @param clsNames Class names.
      */
-    public String getTypeName() {
-        return typeName;
-    }
+    public void setClassNames(Collection<String> clsNames) {
+        if (typeCfgs == null)
+            typeCfgs = new ArrayList<>(clsNames.size());
 
-    /**
-     * Sets type name.
-     *
-     * @param typeName Type name.
-     */
-    public void setTypeName(String typeName) {
-        this.typeName = typeName;
+        for (String clsName : clsNames)
+            typeCfgs.add(new BinaryTypeConfiguration(clsName));
     }
 
     /**
@@ -105,8 +85,21 @@ public class BinaryTypeConfiguration {
         this.serializer = serializer;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(BinaryTypeConfiguration.class, this, super.toString());
+    /**
+     * Gets types configuration.
+     *
+     * @return Types configuration.
+     */
+    public Collection<BinaryTypeConfiguration> getTypeConfigurations() {
+        return typeCfgs;
+    }
+
+    /**
+     * Sets type configurations.
+     *
+     * @param typeCfgs Type configurations.
+     */
+    public void setTypeConfigurations(Collection<BinaryTypeConfiguration> typeCfgs) {
+        this.typeCfgs = typeCfgs;
     }
 }
