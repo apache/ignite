@@ -108,7 +108,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         private static final long serialVersionUID = 1192457210091910933L;
 
         /** Map containing number of acquired permits for each node waiting on this semaphore. */
-        protected Map<UUID, Integer> nodeMap;
+        private Map<UUID, Integer> nodeMap;
 
         /** Flag indicating that it is safe to continue after node that acquired semaphore fails. */
         final boolean failoverSafe;
@@ -145,6 +145,21 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                 }
             }
             return totalWaiters;
+        }
+
+        /**
+         * Get number of permits for node.
+         *
+         * @param nodeID
+         * @return Number of permits node has acquired at this semaphore. Can be less than 0 if
+         * more permits were released than acquired on node.
+         */
+        public int getPermitsForNode(UUID nodeID){
+            int ret = 0;
+            if(nodeMap.containsKey(nodeID)){
+                ret = nodeMap.get(nodeID);
+            }
+            return ret;
         }
 
         /**
@@ -465,27 +480,26 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     }
 
     @Override public void onNodeRemoved(UUID nodeID) {
-      if (sync.nodeMap.containsKey(nodeID)) {
-            int numPermits = sync.nodeMap.get(nodeID);
+        int numPermits = sync.getPermitsForNode(nodeID);
 
-            if (numPermits > 0) {
-                if (sync.failoverSafe) {
-                    // Release permits acquired by threads on failing node.
-                    sync.releaseFailedNode(nodeID);
+        if (numPermits > 0) {
+            if (sync.failoverSafe) {
+                // Release permits acquired by threads on failing node.
+                sync.releaseFailedNode(nodeID);
+            }
+            else {
+                // Interrupt every waiting thread if this semaphore is not failover safe.
+                sync.broken = true;
+
+                for(Thread t:sync.getSharedQueuedThreads()){
+                    t.interrupt();
                 }
-                else {
-                    // Interrupt every waiting thread if this semaphore is not failover safe.
-                    sync.broken = true;
 
-                    for(Thread t:sync.getSharedQueuedThreads()){
-                        t.interrupt();
-                    }
-
-                    // Try to notify any waiting threads.
-                    sync.releaseShared(0);
-                }
+                // Try to notify any waiting threads.
+                sync.releaseShared(0);
             }
         }
+
     }
 
     /** {@inheritDoc} */
