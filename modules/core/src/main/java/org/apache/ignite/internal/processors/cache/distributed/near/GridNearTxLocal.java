@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
@@ -52,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -525,11 +523,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         UUID nodeId = primary.id();
         GridDistributedTxMapping m = mappings.get(nodeId);
 
-        if (m == null) {
-            GridDistributedTxMapping old = mappings.putIfAbsent(nodeId, m = new GridDistributedTxMapping(primary));
-
-            assert old == null : "Failed to add mapping to transaction: " + this;
-        }
+        if (m == null)
+            mappings.put(m = new GridDistributedTxMapping(primary));
 
         if (near)
             m.near(true);

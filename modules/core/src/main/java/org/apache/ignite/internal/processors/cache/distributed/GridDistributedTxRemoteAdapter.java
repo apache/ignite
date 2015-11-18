@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -87,9 +86,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     implements IgniteTxRemoteEx {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final GridLongList EMPTY_LIST = new GridLongList();
 
     /** Explicit versions. */
     @GridToStringInclude
@@ -185,11 +181,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public UUID originatingNodeId() {
         return nodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridLongList activeCacheIds() {
-        return EMPTY_LIST;
     }
 
     /** {@inheritDoc} */

@@ -361,18 +361,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @return {@code True} if transaction participates in a cache that has an interceptor configured.
      */
     public boolean hasInterceptor() {
-        GridLongList activeCaches = activeCacheIds();
-
-        for (int i = 0; i < activeCaches.size(); i++) {
-            int cacheId = (int)activeCaches.get(i);
-
-            GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
-
-            if (cacheCtx.config().getInterceptor() != null)
-                return true;
-        }
-
-        return false;
+        return txState().hasInterceptor(cctx);
     }
 
     /**
