@@ -569,8 +569,12 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (!mini.isDone() && mini.futureId().equals(miniId))
-                    return mini;
+                if (mini.futureId().equals(miniId)) {
+                    if (!mini.isDone())
+                        return mini;
+                    else
+                        return null;
+                }
             }
         }
 

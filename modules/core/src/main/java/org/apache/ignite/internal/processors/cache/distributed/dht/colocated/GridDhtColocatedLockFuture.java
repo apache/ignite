@@ -472,8 +472,12 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (!mini.isDone() && mini.futureId().equals(miniId))
-                    return mini;
+                if (mini.futureId().equals(miniId)) {
+                    if (!mini.isDone())
+                        return mini;
+                    else
+                        return null;
+                }
             }
         }
 

@@ -130,8 +130,12 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             for (int i = 0; i < futs.size(); i++) {
                 MiniFuture mini = (MiniFuture)futs.get(i);
 
-                if (!mini.isDone() && mini.futureId().equals(miniId))
-                    return mini;
+                if (mini.futureId().equals(miniId)) {
+                    if (!mini.isDone())
+                        return mini;
+                    else
+                        return null;
+                }
             }
         }
 
