@@ -93,9 +93,37 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
 
     /**
      * @param cacheCtx Cache context.
+     * @param key Key.
+     * @param val Value.
+     * @param retval Return value flag.
+     * @param filter Filter.
+     * @return Future for put operation.
+     */
+    public <K, V> IgniteInternalFuture<GridCacheReturn> putAsync(
+        GridCacheContext cacheCtx,
+        K key,
+        V val,
+        boolean retval,
+        CacheEntryPredicate[] filter);
+
+    /**
+     * @param cacheCtx Cache context.
+     * @param key Key.
+     * @param entryProcessor Entry processor.
+     * @param invokeArgs Optional arguments for entry processor.
+     * @return Operation future.
+     */
+    public <K, V> IgniteInternalFuture<GridCacheReturn> invokeAsync(
+        GridCacheContext cacheCtx,
+        K key,
+        EntryProcessor<K, V, Object> entryProcessor,
+        Object... invokeArgs);
+
+    /**
+     * @param cacheCtx Cache context.
      * @param map Entry processors map.
      * @param invokeArgs Optional arguments for entry processor.
-     * @return Transform operation future.
+     * @return Operation future.
      */
     public <K, V, T> IgniteInternalFuture<GridCacheReturn> invokeAsync(
         GridCacheContext cacheCtx,

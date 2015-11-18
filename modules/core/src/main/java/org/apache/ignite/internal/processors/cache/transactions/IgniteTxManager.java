@@ -1092,13 +1092,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxCommit();
 
-                for (int cacheId : tx.activeCacheIds()) {
-                    GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-
-                    if (cacheCtx.cache().configuration().isStatisticsEnabled())
-                        // Convert start time from ms to ns.
-                        cacheCtx.cache().metrics0().onTxCommit((U.currentTimeMillis() - tx.startTime()) * 1000);
-                }
+                tx.txState().onTxEnd(cctx, tx, true);
             }
 
             if (slowTxWarnTimeout > 0 && tx.local() &&
@@ -1163,13 +1157,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxRollback();
 
-                for (int cacheId : tx.activeCacheIds()) {
-                    GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-
-                    if (cacheCtx.cache().configuration().isStatisticsEnabled())
-                        // Convert start time from ms to ns.
-                        cacheCtx.cache().metrics0().onTxRollback((U.currentTimeMillis() - tx.startTime()) * 1000);
-                }
+                tx.txState().onTxEnd(cctx, tx, false);
             }
 
             if (log.isDebugEnabled())
@@ -1233,7 +1221,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (!tx.system())
                 threadMap.remove(tx.threadId(), tx);
             else {
-                Integer cacheId = F.first(tx.activeCacheIds());
+                Integer cacheId = tx.txState().firstCacheId();
 
                 if (cacheId != null)
                     sysThreadMap.remove(new TxThreadKey(tx.threadId(), cacheId), tx);
