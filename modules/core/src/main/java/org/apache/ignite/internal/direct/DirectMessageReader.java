@@ -26,7 +26,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,26 +33,22 @@ import org.jetbrains.annotations.Nullable;
  * Message reader implementation.
  */
 public class DirectMessageReader implements MessageReader {
-    /** Stream. */
-    private final DirectByteBufferStream stream;
+    /** State. */
+    private final DirectMessageReaderState state;
 
     /** Whether last field was fully read. */
     private boolean lastRead;
 
-    /** Current state. */
-    private int state;
-
     /**
      * @param msgFactory Message factory.
-     * @param msgFormatter Message formatter.
      */
-    public DirectMessageReader(MessageFactory msgFactory, MessageFormatter msgFormatter) {
-        this.stream = new DirectByteBufferStream(msgFactory, msgFormatter);
+    public DirectMessageReader(MessageFactory msgFactory) {
+        state = new DirectMessageReaderState(msgFactory);
     }
 
     /** {@inheritDoc} */
     @Override public void setBuffer(ByteBuffer buf) {
-        stream.setBuffer(buf);
+        state.stream().setBuffer(buf);
     }
 
     /** {@inheritDoc} */
@@ -69,6 +64,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public byte readByte(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         byte val = stream.readByte();
 
         lastRead = stream.lastFinished();
@@ -78,6 +75,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public short readShort(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         short val = stream.readShort();
 
         lastRead = stream.lastFinished();
@@ -87,6 +86,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public int readInt(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         int val = stream.readInt();
 
         lastRead = stream.lastFinished();
@@ -96,6 +97,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public long readLong(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         long val = stream.readLong();
 
         lastRead = stream.lastFinished();
@@ -105,6 +108,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public float readFloat(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         float val = stream.readFloat();
 
         lastRead = stream.lastFinished();
@@ -114,6 +119,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public double readDouble(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         double val = stream.readDouble();
 
         lastRead = stream.lastFinished();
@@ -123,6 +130,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public char readChar(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         char val = stream.readChar();
 
         lastRead = stream.lastFinished();
@@ -132,6 +141,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public boolean readBoolean(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         boolean val = stream.readBoolean();
 
         lastRead = stream.lastFinished();
@@ -141,6 +152,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Nullable @Override public byte[] readByteArray(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         byte[] arr = stream.readByteArray();
 
         lastRead = stream.lastFinished();
@@ -150,6 +163,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Nullable @Override public short[] readShortArray(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         short[] arr = stream.readShortArray();
 
         lastRead = stream.lastFinished();
@@ -159,6 +174,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Nullable @Override public int[] readIntArray(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         int[] arr = stream.readIntArray();
 
         lastRead = stream.lastFinished();
@@ -168,6 +185,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Nullable @Override public long[] readLongArray(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         long[] arr = stream.readLongArray();
 
         lastRead = stream.lastFinished();
@@ -177,6 +196,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Nullable @Override public float[] readFloatArray(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         float[] arr = stream.readFloatArray();
 
         lastRead = stream.lastFinished();
@@ -186,6 +207,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Nullable @Override public double[] readDoubleArray(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         double[] arr = stream.readDoubleArray();
 
         lastRead = stream.lastFinished();
@@ -195,6 +218,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Nullable @Override public char[] readCharArray(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         char[] arr = stream.readCharArray();
 
         lastRead = stream.lastFinished();
@@ -204,6 +229,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Nullable @Override public boolean[] readBooleanArray(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         boolean[] arr = stream.readBooleanArray();
 
         lastRead = stream.lastFinished();
@@ -213,6 +240,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public String readString(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         String val = stream.readString();
 
         lastRead = stream.lastFinished();
@@ -222,6 +251,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public BitSet readBitSet(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         BitSet val = stream.readBitSet();
 
         lastRead = stream.lastFinished();
@@ -231,6 +262,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public UUID readUuid(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         UUID val = stream.readUuid();
 
         lastRead = stream.lastFinished();
@@ -240,6 +273,8 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public IgniteUuid readIgniteUuid(String name) {
+        DirectByteBufferStream stream = state.stream();
+
         IgniteUuid val = stream.readIgniteUuid();
 
         lastRead = stream.lastFinished();
@@ -249,7 +284,9 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Nullable @Override public <T extends Message> T readMessage(String name) {
-        T msg = stream.readMessage();
+        DirectByteBufferStream stream = state.stream();
+
+        T msg = stream.readMessage(this);
 
         lastRead = stream.lastFinished();
 
@@ -258,7 +295,9 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public <T> T[] readObjectArray(String name, MessageCollectionItemType itemType, Class<T> itemCls) {
-        T[] msg = stream.readObjectArray(itemType, itemCls);
+        DirectByteBufferStream stream = state.stream();
+
+        T[] msg = stream.readObjectArray(itemType, itemCls, this);
 
         lastRead = stream.lastFinished();
 
@@ -267,7 +306,9 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public <C extends Collection<?>> C readCollection(String name, MessageCollectionItemType itemType) {
-        C col = stream.readCollection(itemType);
+        DirectByteBufferStream stream = state.stream();
+
+        C col = stream.readCollection(itemType, this);
 
         lastRead = stream.lastFinished();
 
@@ -277,7 +318,9 @@ public class DirectMessageReader implements MessageReader {
     /** {@inheritDoc} */
     @Override public <M extends Map<?, ?>> M readMap(String name, MessageCollectionItemType keyType,
         MessageCollectionItemType valType, boolean linked) {
-        M map = stream.readMap(keyType, valType, linked);
+        DirectByteBufferStream stream = state.stream();
+
+        M map = stream.readMap(keyType, valType, linked, this);
 
         lastRead = stream.lastFinished();
 
@@ -291,11 +334,26 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public int state() {
-        return state;
+        return state.state();
     }
 
     /** {@inheritDoc} */
     @Override public void incrementState() {
-        state++;
+        state.incrementState();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeInnerMessageRead() {
+        state.beforeInnerMessageRead();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterInnerMessageRead(boolean finished) {
+        state.afterInnerMessageRead(finished);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        state.reset();
     }
 }

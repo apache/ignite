@@ -58,29 +58,26 @@ public class GridDirectParser implements GridNioParser {
     /** {@inheritDoc} */
     @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf)
         throws IOException, IgniteCheckedException {
+        MessageReader reader = ses.meta(READER_META_KEY);
+
+        if (reader == null)
+            ses.addMeta(READER_META_KEY, reader = formatter.reader(msgFactory, null)); // TODO: class in null
+
         Message msg = ses.removeMeta(MSG_META_KEY);
 
-        MessageReader reader = null;
-
-        if (msg == null && buf.hasRemaining()) {
+        if (msg == null && buf.hasRemaining())
             msg = msgFactory.create(buf.get());
-
-            ses.addMeta(READER_META_KEY, reader = formatter.reader(msgFactory, msg.getClass()));
-        }
 
         boolean finished = false;
 
-        if (buf.hasRemaining()) {
-            if (reader == null)
-                reader = ses.meta(READER_META_KEY);
-
-            assert reader != null;
-
+        if (buf.hasRemaining())
             finished = msg.readFrom(buf, reader);
-        }
 
-        if (finished)
+        if (finished) {
+            reader.reset();
+
             return msg;
+        }
         else {
             ses.addMeta(MSG_META_KEY, msg);
 

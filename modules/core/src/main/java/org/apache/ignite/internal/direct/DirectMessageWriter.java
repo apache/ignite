@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DirectMessageWriter implements MessageWriter {
     /** Stream. */
-    private final DirectByteBufferStream stream = new DirectByteBufferStream(null, null);
+    private final DirectByteBufferStream stream = new DirectByteBufferStream(null);
 
     /** State. */
     private final DirectMessageWriterState state = new DirectMessageWriterState();
