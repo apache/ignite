@@ -52,7 +52,7 @@ import sun.misc.Unsafe;
 /**
  * Portable builder test.
  */
-public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
+public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -64,6 +64,8 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         PortableMarshaller marsh = new PortableMarshaller();
+
+        marsh.setCompactFooter(compactFooter());
 
         marsh.setClassNames(Arrays.asList(Key.class.getName(), Value.class.getName(),
             "org.gridgain.grid.internal.util.portable.mutabletest.*"));
@@ -96,6 +98,13 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+    }
+
+    /**
+     * @return Whether to use compact footer.
+     */
+    protected boolean compactFooter() {
+        return true;
     }
 
     /**
@@ -914,7 +923,11 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         builder.removeField("str");
 
-        assertNull(builder.build().<TestObjectAllTypes>deserialize().str);
+        BinaryObject binary = builder.build();
+
+        TestObjectAllTypes deserialzied = binary.deserialize();
+
+        assertNull(deserialzied.str);
     }
 
     /**

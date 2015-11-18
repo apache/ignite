@@ -26,7 +26,9 @@
         <property name="connectorConfiguration"><null/></property>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.portable.PortableMarshaller" />
+            <bean class="org.apache.ignite.marshaller.portable.PortableMarshaller">
+                <property name="compactFooter" value="false"/>
+            </bean>
         </property>
 
         <property name="discoverySpi">

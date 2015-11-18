@@ -17,6 +17,23 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
+import org.apache.ignite.internal.portable.streams.PortableInputStream;
+import org.apache.ignite.internal.util.GridEnumCache;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
@@ -30,7 +47,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
@@ -39,22 +55,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
-import org.apache.ignite.internal.portable.streams.PortableInputStream;
-import org.apache.ignite.internal.util.GridEnumCache;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.ARR_LIST;
@@ -117,9 +117,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_AR
  */
 @SuppressWarnings("unchecked")
 public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, ObjectInput {
-    /** Length of a single field descriptor. */
-    private static final int FIELD_DESC_LEN = 16;
-
     /** */
     private final PortableContext ctx;
 
@@ -162,8 +159,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
     /** Schema Id. */
     private int schemaId;
 
+    /** Whether this is user type or not. */
+    private boolean userType;
+
+    /** Whether field IDs exist. */
+    private int fieldIdLen;
+
     /** Offset size in bytes. */
-    private int offsetSize;
+    private int fieldOffsetLen;
 
     /** Object schema. */
     private PortableSchema schema;
@@ -225,18 +228,21 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
 
         short flags = in.readShort();
 
-        offsetSize = PortableUtils.fieldOffsetSize(flags);
+        userType = PortableUtils.isUserType(flags);
+
+        fieldIdLen = PortableUtils.fieldIdLength(flags);
+        fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
 
         typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
 
-        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start, offsetSize);
+        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start);
 
         footerStart = footer.get1();
         footerLen = footer.get2() - footerStart;
 
         schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
 
-        rawOff = PortableUtils.rawOffsetAbsolute(in, start, offsetSize);
+        rawOff = PortableUtils.rawOffsetAbsolute(in, start);
 
         if (typeId == UNREGISTERED_TYPE_ID) {
             // Skip to the class name position.
@@ -2555,29 +2561,68 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
     }
 
     /**
+     * Get or create object schema.
+     *
+     * @return Schema.
+     */
+    public PortableSchema getOrCreateSchema() {
+        parseHeaderIfNeeded();
+
+        PortableSchema schema = ctx.schemaRegistry(typeId).schema(schemaId);
+
+        if (schema == null) {
+            if (fieldIdLen != PortableUtils.FIELD_ID_LEN) {
+                BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId);
+
+                if (type == null || type.metadata() == null)
+                    throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
+                        typeId);
+
+                for (PortableSchema typeSchema : type.metadata().schemas()) {
+                    if (schemaId == typeSchema.schemaId()) {
+                        schema = typeSchema;
+
+                        break;
+                    }
+                }
+
+                if (schema == null)
+                    throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
+                        "typeId=" + typeId + ", schemaId=" + schemaId + ']');
+            }
+            else
+                schema = createSchema();
+
+            assert schema != null;
+
+            ctx.schemaRegistry(typeId).addSchema(schemaId, schema);
+        }
+
+        return schema;
+    }
+
+    /**
      * Create schema.
      *
      * @return Schema.
      */
-    public PortableSchema createSchema() {
-        parseHeaderIfNeeded();
+    private PortableSchema createSchema() {
+        assert fieldIdLen == PortableUtils.FIELD_ID_LEN;
 
-        LinkedHashMap<Integer, Integer> fields = new LinkedHashMap<>();
+        PortableSchema.Builder builder = PortableSchema.Builder.newBuilder();
 
         int searchPos = footerStart;
         int searchEnd = searchPos + footerLen;
 
-        int idx = 0;
-
         while (searchPos < searchEnd) {
             int fieldId = in.readIntPositioned(searchPos);
 
-            fields.put(fieldId, idx++);
+            builder.addField(fieldId);
 
-            searchPos += 4 + offsetSize;
+            searchPos += PortableUtils.FIELD_ID_LEN + fieldOffsetLen;
         }
 
-        return new PortableSchema(fields);
+        return builder.build();
     }
 
     /**
@@ -2593,7 +2638,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
         int searchPos = footerStart;
         int searchTail = searchPos + footerLen;
 
-        if (hasLowFieldsCount(footerLen)) {
+        if (!userType || (fieldIdLen != 0 && hasLowFieldsCount(footerLen))) {
             while (true) {
                 if (searchPos >= searchTail)
                     return 0;
@@ -2601,37 +2646,32 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
                 int id0 = in.readIntPositioned(searchPos);
 
                 if (id0 == id) {
-                    int pos = start + PortableUtils.fieldOffsetRelative(in, searchPos + 4, offsetSize);
+                    int pos = start + PortableUtils.fieldOffsetRelative(in, searchPos + PortableUtils.FIELD_ID_LEN,
+                        fieldOffsetLen);
 
                     in.position(pos);
 
                     return pos;
                 }
 
-                searchPos += 4 + offsetSize;
+                searchPos += PortableUtils.FIELD_ID_LEN + fieldOffsetLen;
             }
         }
         else {
             PortableSchema schema0 = schema;
 
             if (schema0 == null) {
-                schema0 = ctx.schemaRegistry(typeId).schema(schemaId);
-
-                if (schema0 == null) {
-                    schema0 = createSchema();
-
-                    ctx.schemaRegistry(typeId).addSchema(schemaId, schema0);
-                }
+                schema0 = getOrCreateSchema();
 
                 schema = schema0;
             }
 
-            int order = schema.order(id);
+            int order = schema0.order(id);
 
             if (order != PortableSchema.ORDER_NOT_FOUND) {
-                int offsetPos = footerStart + order * (4 + offsetSize) + 4;
+                int offsetPos = footerStart + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
 
-                int pos = start + PortableUtils.fieldOffsetRelative(in, offsetPos, offsetSize);
+                int pos = start + PortableUtils.fieldOffsetRelative(in, offsetPos, fieldOffsetLen);
 
                 in.position(pos);
 
@@ -2650,7 +2690,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
     private boolean hasLowFieldsCount(int footerLen) {
         assert hdrParsed;
 
-        return footerLen < (FIELD_DESC_LEN << 4);
+        return footerLen < ((fieldOffsetLen + fieldIdLen) << 3);
     }
 
     /** {@inheritDoc} */

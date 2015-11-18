@@ -36,6 +36,9 @@ public final class IgniteNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_MARSHALLER_USE_DFLT_SUID = ATTR_PREFIX + ".marshaller.useDefaultSUID";
 
+    /** Attribute for marshaller compact footers. */
+    public static final String ATTR_MARSHALLER_COMPACT_FOOTER = ATTR_PREFIX + ".marshaller.compactFooter";
+
     /** Internal attribute name constant. */
     public static final String ATTR_JIT_NAME = ATTR_PREFIX + ".jit.name";
 
