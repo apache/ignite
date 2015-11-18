@@ -97,8 +97,25 @@ $generatorJava.declareVariable = function (res, varName, varFullType, varFullAct
     res.needEmptyLine = true;
 };
 
-$generatorJava.addVariable = function (res, varName) {
-    res.vars[varName] = true;
+/**
+ * Add custom variable declaration.
+ *
+ * @param res Resulting output with generated code.
+ * @param varName Variable name.
+ * @param varFullType Variable full class name to be added to imports.
+ * @param varExpr Custom variable creation expression.
+ */
+$generatorJava.declareVariableCustom = function (res, varName, varFullType, varExpr) {
+    var varType = res.importClass(varFullType);
+
+    var varNew = !res.vars[varName];
+
+    if (varNew)
+        res.vars[varName] = true;
+
+    res.line((varNew ? (varType + ' ') : '') + varName + ' = ' + varExpr + ';');
+
+    res.needEmptyLine = true;
 };
 
 /**
@@ -1843,15 +1860,9 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
         }) >= 0;
 
         if (haveDS || cluster.sslEnabled) {
-            res.line(res.importClass('java.net.URL') + ' res = IgniteConfiguration.class.getResource("/secret.properties");');
-            $generatorJava.addVariable(res, 'res');
+            $generatorJava.declareVariableCustom(res, 'res', 'java.net.URL', 'IgniteConfiguration.class.getResource("/secret.properties")');
 
-            res.needEmptyLine = true;
-
-            res.line(res.importClass('java.io.File') + ' propsFile = new File(res.toURI());');
-            $generatorJava.addVariable(res, 'propsFile');
-
-            res.needEmptyLine = true;
+            $generatorJava.declareVariableCustom(res, 'propsFile', 'java.io.File', 'new File(res.toURI())');
 
             $generatorJava.declareVariable(res, 'props', 'java.util.Properties');
 
@@ -1895,6 +1906,9 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
         $generatorJava.igfss(cluster.igfss, 'cfg', res);
 
         if (javaClass) {
+            if (clientMode)
+                res.importClass('org.apache.ignite.Ignite');
+
             res.importClass('org.apache.ignite.Ignition');
 
             res.line('return cfg;');
