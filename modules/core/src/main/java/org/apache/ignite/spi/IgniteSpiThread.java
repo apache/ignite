@@ -17,17 +17,19 @@
 
 package org.apache.ignite.spi;
 
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class provides convenient adapter for threads used by SPIs.
  * This class adds necessary plumbing on top of the {@link Thread} class:
  * <ul>
- * <li>Consistent naming of threads</li>
- * <li>Dedicated parent thread group</li>
+ *      <li>Consistent naming of threads</li>
+ *      <li>Dedicated parent thread group</li>
+ *      <li>Name of the grid this thread belongs to</li>
  * </ul>
  */
 public abstract class IgniteSpiThread extends Thread {
@@ -39,6 +41,9 @@ public abstract class IgniteSpiThread extends Thread {
 
     /** Grid logger. */
     private final IgniteLogger log;
+
+    /** The name of the grid this thread belongs to. */
+    private final String gridName;
 
     /**
      * Creates thread with given {@code name}.
@@ -52,7 +57,17 @@ public abstract class IgniteSpiThread extends Thread {
 
         assert log != null;
 
+        this.gridName = gridName;
         this.log = log;
+    }
+
+    /**
+     * Gets name of the grid this thread belongs to. Can be {@code null}.
+     *
+     * @return name of the grid.
+     */
+    public String getGridName() {
+        return gridName;
     }
 
     /** {@inheritDoc} */

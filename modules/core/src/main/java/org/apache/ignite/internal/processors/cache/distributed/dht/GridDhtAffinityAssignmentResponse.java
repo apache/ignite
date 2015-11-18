@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
-import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -29,8 +27,10 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.NotNull;
+
+import java.nio.ByteBuffer;
+import java.util.List;
 
 /**
  * Affinity assignment response.
@@ -115,22 +115,6 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
         if (affAssignmentBytes != null) {
             affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, ldr);
-
-            // TODO IGNITE-10: setting 'local' for nodes not needed when IGNITE-10 is implemented.
-            int assignments = affAssignment.size();
-
-            for (int n = 0; n < assignments; n++) {
-                List<ClusterNode> nodes = affAssignment.get(n);
-
-                int size = nodes.size();
-
-                for (int i = 0; i < size; i++) {
-                    ClusterNode node = nodes.get(i);
-
-                    if (node instanceof TcpDiscoveryNode)
-                        ((TcpDiscoveryNode)node).local(node.id().equals(ctx.localNodeId()));
-                }
-            }
         }
     }
 
