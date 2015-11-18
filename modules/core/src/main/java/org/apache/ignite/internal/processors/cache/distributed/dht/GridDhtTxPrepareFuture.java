@@ -450,20 +450,45 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      */
     public void onResult(UUID nodeId, GridDhtTxPrepareResponse res) {
         if (!isDone()) {
-            for (IgniteInternalFuture<IgniteInternalTx> fut : pending()) {
-                if (isMini(fut)) {
-                    MiniFuture f = (MiniFuture)fut;
+            MiniFuture mini = miniFuture(res.miniId());
 
-                    if (f.futureId().equals(res.miniId())) {
-                        assert f.node().id().equals(nodeId);
+            if (mini != null) {
+                assert mini.node().id().equals(nodeId);
 
-                        f.onResult(res);
+                mini.onResult(res);
+            }
+        }
+    }
 
-                        break;
-                    }
+    /**
+     * Finds pending mini future by the given mini ID.
+     *
+     * @param miniId Mini ID to find.
+     * @return Mini future.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private MiniFuture miniFuture(IgniteUuid miniId) {
+        // We iterate directly over the futs collection here to avoid copy.
+        synchronized (futs) {
+            // Avoid iterator creation.
+            for (int i = 0; i < futs.size(); i++) {
+                IgniteInternalFuture<IgniteInternalTx> fut = futs.get(i);
+
+                if (!isMini(fut))
+                    continue;
+
+                MiniFuture mini = (MiniFuture)fut;
+
+                if (mini.futureId().equals(miniId)) {
+                    if (!mini.isDone())
+                        return mini;
+                    else
+                        return null;
                 }
             }
         }
+
+        return null;
     }
 
     /**
@@ -693,7 +718,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             tx.activeCachesDeploymentEnabled());
 
         if (prepErr == null) {
-            addDhtValues(res);
+            if (tx.needReturnValue() || tx.nearOnOriginatingNode() || tx.hasInterceptor())
+                addDhtValues(res);
 
             GridCacheVersion min = tx.minVersion();
 
@@ -949,7 +975,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 }
             }
         }
-        catch (GridCacheEntryRemovedException e) {
+        catch (GridCacheEntryRemovedException ignore) {
             assert false : "Got removed exception on entry with dht local candidate: " + entries;
         }
 
@@ -1072,18 +1098,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                             GridCacheContext<?, ?> cacheCtx = cached.context();
 
-                            if (entry.explicitVersion() == null) {
-                                GridCacheMvccCandidate added = cached.candidate(version());
-
-                                assert added != null : "Null candidate for non-group-lock entry " +
-                                    "[added=" + added + ", entry=" + entry + ']';
-                                assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
-                                    "[added=" + added + ", entry=" + entry + ']';
-
-                                if (added != null && added.ownerVersion() != null)
-                                    req.owned(entry.txKey(), added.ownerVersion());
-                            }
-
                             // Do not invalidate near entry on originating transaction node.
                             req.invalidateNearEntry(idx, !tx.nearNodeId().equals(n.id()) &&
                                 cached.readerId(n.id()) != null);
@@ -1092,7 +1106,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 List<ClusterNode> owners = cacheCtx.topology().owners(cached.partition(),
                                     tx != null ? tx.topologyVersion() : cacheCtx.affinity().affinityTopologyVersion());
 
-                                // Do not preload if local node is partition owner.
+                                // Do not preload if local node is a partition owner.
                                 if (!owners.contains(cctx.localNode()))
                                     req.markKeyForPreload(idx);
                             }

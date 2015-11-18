@@ -35,6 +35,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -71,6 +72,9 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
     private NavigableMap<GridClockDeltaVersion, GridClockDeltaSnapshot> timeSyncHist =
         new GridBoundedConcurrentOrderedMap<>(MAX_TIME_SYNC_HISTORY);
 
+    /** Last recorded. */
+    private volatile T2<GridClockDeltaVersion, GridClockDeltaSnapshot> lastSnapshot;
+
     /** Time source. */
     private GridClockSource clockSrc;
 
@@ -99,7 +103,11 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
 
                 GridClockDeltaVersion ver = msg0.snapshotVersion();
 
-                timeSyncHist.put(ver, new GridClockDeltaSnapshot(ver, msg0.deltas()));
+                GridClockDeltaSnapshot snap = new GridClockDeltaSnapshot(ver, msg0.deltas());
+
+                lastSnapshot = new T2<>(ver, snap);
+
+                timeSyncHist.put(ver, snap);
             }
         });
 
@@ -265,11 +273,19 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
      * @return Adjusted time.
      */
     public long adjustedTime(long topVer) {
-        // Get last synchronized time on given topology version.
-        Map.Entry<GridClockDeltaVersion, GridClockDeltaSnapshot> entry = timeSyncHistory().lowerEntry(
-            new GridClockDeltaVersion(0, topVer + 1));
+        T2<GridClockDeltaVersion, GridClockDeltaSnapshot> fastSnap = lastSnapshot;
 
-        GridClockDeltaSnapshot snap = entry == null ? null : entry.getValue();
+        GridClockDeltaSnapshot snap;
+
+        if (fastSnap != null && fastSnap.get1().topologyVersion() == topVer)
+            snap = fastSnap.get2();
+        else {
+            // Get last synchronized time on given topology version.
+            Map.Entry<GridClockDeltaVersion, GridClockDeltaSnapshot> entry = timeSyncHistory().lowerEntry(
+                new GridClockDeltaVersion(0, topVer + 1));
+
+            snap = entry == null ? null : entry.getValue();
+        }
 
         long now = clockSrc.currentTimeMillis();
 
@@ -295,6 +311,8 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
             return;
 
         try {
+            lastSnapshot = new T2<>(snapshot.version(), snapshot);
+
             timeSyncHist.put(snapshot.version(), snapshot);
 
             for (ClusterNode n : top.topologyNodes()) {

@@ -46,6 +46,7 @@ import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedExceptio
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -210,17 +211,10 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     /** {@inheritDoc} */
     @Override public void onResult(UUID nodeId, GridNearTxPrepareResponse res) {
         if (!isDone()) {
-            for (IgniteInternalFuture<GridNearTxPrepareResponse> fut : pending()) {
-                if (isMini(fut)) {
-                    MiniFuture f = (MiniFuture)fut;
+            MiniFuture mini = miniFuture(res.miniId());
 
-                    if (f.futureId().equals(res.miniId())) {
-                        assert f.node().id().equals(nodeId);
-
-                        f.onResult(res);
-                    }
-                }
-            }
+            if (mini != null)
+                mini.onResult(res);
         }
     }
 
@@ -236,6 +230,37 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         }
 
         return onComplete();
+    }
+
+    /**
+     * Finds pending mini future by the given mini ID.
+     *
+     * @param miniId Mini ID to find.
+     * @return Mini future.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private MiniFuture miniFuture(IgniteUuid miniId) {
+        // We iterate directly over the futs collection here to avoid copy.
+        synchronized (futs) {
+            // Avoid iterator creation.
+            for (int i = 0; i < futs.size(); i++) {
+                IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+
+                if (!isMini(fut))
+                    continue;
+
+                MiniFuture mini = (MiniFuture)fut;
+
+                if (mini.futureId().equals(miniId)) {
+                    if (!mini.isDone())
+                        return mini;
+                    else
+                        return null;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -276,32 +301,27 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param remap Remap flag.
      */
     @Override protected void prepare0(boolean remap, boolean topLocked) {
-        try {
-            boolean txStateCheck = remap ? tx.state() == PREPARING : tx.state(PREPARING);
+        boolean txStateCheck = remap ? tx.state() == PREPARING : tx.state(PREPARING);
 
-            if (!txStateCheck) {
-                if (tx.setRollbackOnly()) {
-                    if (tx.timedOut())
-                        onError(null, new IgniteTxTimeoutCheckedException("Transaction timed out and " +
-                            "was rolled back: " + this));
-                    else
-                        onError(null, new IgniteCheckedException("Invalid transaction state for prepare " +
-                            "[state=" + tx.state() + ", tx=" + this + ']'));
-                }
+        if (!txStateCheck) {
+            if (tx.setRollbackOnly()) {
+                if (tx.timedOut())
+                    onError(null, new IgniteTxTimeoutCheckedException("Transaction timed out and " +
+                        "was rolled back: " + this));
                 else
-                    onError(null, new IgniteTxRollbackCheckedException("Invalid transaction state for " +
-                        "prepare [state=" + tx.state() + ", tx=" + this + ']'));
-
-                return;
+                    onError(null, new IgniteCheckedException("Invalid transaction state for prepare " +
+                        "[state=" + tx.state() + ", tx=" + this + ']'));
             }
+            else
+                onError(null, new IgniteTxRollbackCheckedException("Invalid transaction state for " +
+                    "prepare [state=" + tx.state() + ", tx=" + this + ']'));
 
-            prepare(tx.readEntries(), tx.writeEntries(), remap, topLocked);
+            return;
+        }
 
-            markInitialized();
-        }
-        catch (IgniteCheckedException e) {
-            onDone(e);
-        }
+        prepare(tx.readEntries(), tx.writeEntries(), remap, topLocked);
+
+        markInitialized();
     }
 
     /**
@@ -309,7 +329,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param writes Write entries.
      * @param remap Remap flag.
      * @param topLocked Topology locked flag.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     private void prepare(
@@ -317,7 +336,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         Iterable<IgniteTxEntry> writes,
         boolean remap,
         boolean topLocked
-    ) throws IgniteCheckedException {
+    ) {
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
         assert topVer.topologyVersion() > 0;
@@ -355,9 +374,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         for (GridDistributedTxMapping m : mappings.values()) {
             assert !m.empty();
 
-            MiniFuture fut = new MiniFuture(m);
-
-            add(fut);
+            add(new MiniFuture(m));
         }
 
         Collection<IgniteInternalFuture<?>> futs = (Collection)futures();

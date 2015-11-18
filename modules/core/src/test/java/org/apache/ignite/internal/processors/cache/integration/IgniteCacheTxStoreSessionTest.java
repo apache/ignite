@@ -285,7 +285,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
             expData.add(new ExpectedData(true, "write", new HashMap<>(), CACHE_NAME1));
             expData.add(new ExpectedData(true, "write", F.<Object, Object>asMap(0, "write"), null));
-            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "write", 1, "write"), null));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "write", 1, "write"), CACHE_NAME1));
 
             tx.commit();
         }
