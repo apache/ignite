@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
-import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCachePlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -120,10 +118,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     /** Implicit flag. */
     @GridToStringInclude
     protected boolean implicit;
-
-    /** Implicit with one key flag. */
-    @GridToStringInclude
-    protected boolean implicitSingle;
 
     /** Local flag. */
     @GridToStringInclude
@@ -263,7 +257,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @param cctx Cache registry.
      * @param xidVer Transaction ID.
      * @param implicit Implicit flag.
-     * @param implicitSingle Implicit with one key flag.
      * @param loc Local flag.
      * @param sys System transaction flag.
      * @param plc IO policy.
@@ -276,7 +269,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         GridCacheSharedContext<?, ?> cctx,
         GridCacheVersion xidVer,
         boolean implicit,
-        boolean implicitSingle,
         boolean loc,
         boolean sys,
         byte plc,
@@ -296,7 +288,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         this.cctx = cctx;
         this.xidVer = xidVer;
         this.implicit = implicit;
-        this.implicitSingle = implicitSingle;
         this.loc = loc;
         this.sys = sys;
         this.plc = plc;
@@ -363,7 +354,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         this.taskNameHash = taskNameHash;
 
         implicit = false;
-        implicitSingle = false;
         loc = false;
 
         if (log == null)
@@ -422,49 +412,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public boolean storeUsed() {
-        if (!storeEnabled())
-            return false;
-
-        GridLongList cacheIds = activeCacheIds();
-
-        if (!cacheIds.isEmpty()) {
-            for (int i = 0; i < cacheIds.size(); i++) {
-                int cacheId = (int)cacheIds.get(i);
-
-                CacheStoreManager store = cctx.cacheContext(cacheId).store();
-
-                if (store.configured())
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Store manager for current transaction.
-     *
-     * @return Store manager.
-     */
-    protected Collection<CacheStoreManager> stores() {
-        GridLongList cacheIds = activeCacheIds();
-
-        if (!cacheIds.isEmpty()) {
-            Collection<CacheStoreManager> stores = new ArrayList<>(cacheIds.size());
-
-            for (int i = 0; i < cacheIds.size(); i++) {
-                int cacheId = (int)cacheIds.get(i);
-
-                CacheStoreManager store = cctx.cacheContext(cacheId).store();
-
-                if (store.configured())
-                    stores.add(store);
-            }
-
-            return stores;
-        }
-
-        return null;
+        return storeEnabled() && txState().storeUsed(cctx);
     }
 
     /**
@@ -650,7 +598,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
-        return implicitSingle;
+        return txState().implicitSingle();
     }
 
     /** {@inheritDoc} */
@@ -1763,11 +1711,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public GridLongList activeCacheIds() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean activeCachesDeploymentEnabled() {
             return false;
         }
@@ -1879,6 +1822,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         /** {@inheritDoc} */
         @Override public UUID originatingNodeId() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteTxState txState() {
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -2151,11 +2099,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public boolean serializable() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean removed(IgniteTxKey key) {
             return false;
         }
 

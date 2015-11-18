@@ -24,9 +24,7 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -62,9 +60,6 @@ public class GridDistributedTxMapping implements Externalizable {
     /** {@code True} if this is last mapping for node. */
     private boolean last;
 
-    /** IDs of backup nodes receiving last prepare request during this mapping. */
-    private Collection<UUID> lastBackups;
-
     /** {@code True} if mapping is for near caches, {@code false} otherwise. */
     private boolean near;
 
@@ -85,20 +80,6 @@ public class GridDistributedTxMapping implements Externalizable {
         this.node = node;
 
         entries = new LinkedHashSet<>();
-    }
-
-    /**
-     * @return IDs of backup nodes receiving last prepare request during this mapping.
-     */
-    @Nullable public Collection<UUID> lastBackups() {
-        return lastBackups;
-    }
-
-    /**
-     * @param lastBackups IDs of backup nodes receiving last prepare request during this mapping.
-     */
-    public void lastBackups(@Nullable Collection<UUID> lastBackups) {
-        this.lastBackups = lastBackups;
     }
 
     /**
@@ -216,31 +197,6 @@ public class GridDistributedTxMapping implements Externalizable {
      */
     public boolean removeEntry(IgniteTxEntry entry) {
         return entries.remove(entry);
-    }
-
-    /**
-     * @param parts Evicts partitions from mapping.
-     */
-    public void evictPartitions(@Nullable int[] parts) {
-        if (!F.isEmpty(parts))
-            evictPartitions(parts, entries);
-    }
-
-    /**
-     * @param parts Partitions.
-     * @param c Collection.
-     */
-    private void evictPartitions(int[] parts, Collection<IgniteTxEntry> c) {
-        assert parts != null;
-
-        for (Iterator<IgniteTxEntry> it = c.iterator(); it.hasNext();) {
-            IgniteTxEntry e = it.next();
-
-            GridCacheEntryEx cached = e.cached();
-
-            if (U.containsIntArray(parts, cached.partition()))
-                it.remove();
-        }
     }
 
     /**

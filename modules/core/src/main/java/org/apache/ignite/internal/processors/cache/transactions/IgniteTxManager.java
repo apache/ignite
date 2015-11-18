@@ -1093,17 +1093,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxCommit();
 
-                GridLongList cacheIds = tx.activeCacheIds();
-
-                for (int i = 0; i < cacheIds.size(); i++) {
-                    int cacheId = (int)cacheIds.get(i);
-
-                    GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-
-                    if (cacheCtx.cache().configuration().isStatisticsEnabled())
-                        // Convert start time from ms to ns.
-                        cacheCtx.cache().metrics0().onTxCommit((U.currentTimeMillis() - tx.startTime()) * 1000);
-                }
+                tx.txState().onTxEnd(cctx, tx, true);
             }
 
             if (slowTxWarnTimeout > 0 && tx.local() &&
@@ -1168,17 +1158,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxRollback();
 
-                GridLongList cacheIds = tx.activeCacheIds();
-
-                for (int i = 0; i < cacheIds.size(); i++) {
-                    int cacheId = (int)cacheIds.get(i);
-
-                    GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-
-                    if (cacheCtx.cache().configuration().isStatisticsEnabled())
-                        // Convert start time from ms to ns.
-                        cacheCtx.cache().metrics0().onTxRollback((U.currentTimeMillis() - tx.startTime()) * 1000);
-                }
+                tx.txState().onTxEnd(cctx, tx, false);
             }
 
             if (log.isDebugEnabled())
@@ -1242,8 +1222,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (!tx.system())
                 threadMap.remove(tx.threadId(), tx);
             else {
-                if (!tx.activeCacheIds().isEmpty())
-                    sysThreadMap.remove(new TxThreadKey(tx.threadId(), (int)tx.activeCacheIds().get(0)), tx);
+                Integer cacheId = tx.txState().firstCacheId();
+
+                if (cacheId != null)
+                    sysThreadMap.remove(new TxThreadKey(tx.threadId(), cacheId), tx);
                 else {
                     for (Iterator<IgniteInternalTx> it = sysThreadMap.values().iterator(); it.hasNext(); ) {
                         IgniteInternalTx txx = it.next();

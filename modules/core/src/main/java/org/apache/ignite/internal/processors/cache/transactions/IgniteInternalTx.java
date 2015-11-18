@@ -276,9 +276,9 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public boolean implicitSingle();
 
     /**
-     * @return Collection of cache IDs involved in this transaction.
+     * @return Transaction state.
      */
-    public GridLongList activeCacheIds();
+    public IgniteTxState txState();
 
     /**
      * @return {@code true} or {@code false} if the deployment is enabled or disabled for all active caches involved
@@ -668,14 +668,6 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @return {@code True} if serializable.
      */
     public boolean serializable();
-
-    /**
-     * Checks whether given key has been removed within transaction.
-     *
-     * @param key Key to check.
-     * @return {@code True} if key has been removed.
-     */
-    public boolean removed(IgniteTxKey key);
 
     /**
      * Gets allowed remaining time for this transaction.

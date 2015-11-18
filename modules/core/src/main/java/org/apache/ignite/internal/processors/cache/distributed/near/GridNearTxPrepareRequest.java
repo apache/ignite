@@ -99,7 +99,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param near {@code True} if mapping is for near caches.
      * @param txNodes Transaction nodes mapping.
      * @param last {@code True} if this last prepare request for node.
-     * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
      * @param onePhaseCommit One phase commit flag.
      * @param retVal Return value flag.
      * @param implicitSingle Implicit single flag.
@@ -118,7 +117,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean near,
         Map<UUID, Collection<UUID>> txNodes,
         boolean last,
-        Collection<UUID> lastBackups,
         boolean onePhaseCommit,
         boolean retVal,
         boolean implicitSingle,
@@ -137,7 +135,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.topVer = topVer;
         this.near = near;
         this.last = last;
-        this.lastBackups = lastBackups;
         this.retVal = retVal;
         this.implicitSingle = implicitSingle;
         this.explicitLock = explicitLock;
@@ -153,12 +150,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         return firstClientReq;
     }
 
-    /**
-     * @return IDs of backup nodes receiving last prepare request during this prepare.
-     */
-    public Collection<UUID> lastBackups() {
-        return lastBackups;
-    }
 
     /**
      * @return {@code True} if this last prepare request for node.

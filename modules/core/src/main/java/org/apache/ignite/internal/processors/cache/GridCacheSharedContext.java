@@ -585,12 +585,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void endTx(IgniteInternalTx tx) throws IgniteCheckedException {
-        GridLongList cacheIds = tx.activeCacheIds();
-
-        if (!cacheIds.isEmpty()) {
-            for (int i = 0; i < cacheIds.size(); i++)
-                cacheContext((int)cacheIds.get(i)).cache().awaitLastFut();
-        }
+        tx.txState().awaitLastFut(this);
 
         tx.close();
     }
@@ -599,22 +594,17 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to commit.
      * @return Commit future.
      */
+    @SuppressWarnings("unchecked")
     public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(IgniteInternalTx tx) {
-        GridLongList cacheIds = tx.activeCacheIds();
+        GridCacheContext ctx = tx.txState().singleCacheContext(this);
 
-        if (cacheIds.isEmpty())
-            return tx.commitAsync();
-        else if (cacheIds.size() == 1) {
-            int cacheId = (int)cacheIds.get(0);
-
-            return cacheContext(cacheId).cache().commitTxAsync(tx);
-        }
-        else {
-            for (int i = 0; i < cacheIds.size(); i++)
-                cacheContext((int)cacheIds.get(i)).cache().awaitLastFut();
+        if (ctx == null) {
+            tx.txState().awaitLastFut(this);
 
             return tx.commitAsync();
         }
+        else
+            return ctx.cache().commitTxAsync(tx);
     }
 
     /**
@@ -623,12 +613,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Rollback future.
      */
     public IgniteInternalFuture rollbackTxAsync(IgniteInternalTx tx) throws IgniteCheckedException {
-        GridLongList cacheIds = tx.activeCacheIds();
-
-        if (!cacheIds.isEmpty()) {
-            for (int i = 0; i < cacheIds.size(); i++)
-                cacheContext((int)cacheIds.get(i)).cache().awaitLastFut();
-        }
+        tx.txState().awaitLastFut(this);
 
         return tx.rollbackAsync();
     }

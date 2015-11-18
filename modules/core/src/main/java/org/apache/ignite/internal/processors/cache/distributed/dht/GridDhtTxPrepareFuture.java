@@ -165,9 +165,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /** {@code True} if this is last prepare operation for node. */
     private boolean last;
 
-    /** IDs of backup nodes receiving last prepare request during this prepare. */
-    private Collection<UUID> lastBackups;
-
     /** Needs return value flag. */
     private boolean retVal;
 
@@ -197,7 +194,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @param dhtVerMap DHT versions map.
      * @param last {@code True} if this is last prepare operation for node.
      * @param retVal Return value flag.
-     * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
      */
     public GridDhtTxPrepareFuture(
         GridCacheSharedContext cctx,
@@ -205,8 +201,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         IgniteUuid nearMiniId,
         Map<IgniteTxKey, GridCacheVersion> dhtVerMap,
         boolean last,
-        boolean retVal,
-        Collection<UUID> lastBackups
+        boolean retVal
     ) {
         super(REDUCER);
 
@@ -214,7 +209,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         this.tx = tx;
         this.dhtVerMap = dhtVerMap;
         this.last = last;
-        this.lastBackups = lastBackups;
 
         futId = IgniteUuid.randomUuid();
 
@@ -890,14 +884,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     }
 
     /**
-     * @param backupId Backup node ID.
-     * @return {@code True} if backup node receives last prepare request for this transaction.
-     */
-    private boolean lastBackup(UUID backupId) {
-        return lastBackups != null && lastBackups.contains(backupId);
-    }
-
-    /**
      * Checks if this transaction needs previous value for the given tx entry. Will use passed in map to store
      * required key or will create new map if passed in map is {@code null}.
      *
@@ -1048,18 +1034,15 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
             {
-                Map<UUID, GridDistributedTxMapping> futDhtMap = new HashMap<>();
-                Map<UUID, GridDistributedTxMapping> futNearMap = new HashMap<>();
-
                 // Assign keys to primary nodes.
                 if (!F.isEmpty(writes)) {
                     for (IgniteTxEntry write : writes)
-                        map(tx.entry(write.txKey()), futDhtMap, futNearMap);
+                        map(tx.entry(write.txKey()));
                 }
 
                 if (!F.isEmpty(reads)) {
                     for (IgniteTxEntry read : reads)
-                        map(tx.entry(read.txKey()), futDhtMap, futNearMap);
+                        map(tx.entry(read.txKey()));
                 }
             }
 
@@ -1239,14 +1222,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
     /**
      * @param entry Transaction entry.
-     * @param futDhtMap DHT mapping.
-     * @param futNearMap Near mapping.
      */
-    private void map(
-        IgniteTxEntry entry,
-        Map<UUID, GridDistributedTxMapping> futDhtMap,
-        Map<UUID, GridDistributedTxMapping> futNearMap
-    ) {
+    private void map(IgniteTxEntry entry) {
         if (entry.cached().isLocal())
             return;
 
@@ -1272,25 +1249,24 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     log.debug("Mapping entry to DHT nodes [nodes=" + U.toShortString(dhtNodes) +
                         ", entry=" + entry + ']');
 
+                // Exclude local node.
+                map(entry, F.view(dhtNodes, F.remoteNodes(cctx.localNodeId())), dhtMap);
+
                 Collection<UUID> readers = cached.readers();
 
-                Collection<ClusterNode> nearNodes = null;
-
                 if (!F.isEmpty(readers)) {
-                    nearNodes = cctx.discovery().nodes(readers, F0.not(F.idForNodeId(tx.nearNodeId())));
+                    Collection<ClusterNode> nearNodes =
+                        cctx.discovery().nodes(readers, F0.not(F.idForNodeId(tx.nearNodeId())));
 
                     if (log.isDebugEnabled())
                         log.debug("Mapping entry to near nodes [nodes=" + U.toShortString(nearNodes) +
                             ", entry=" + entry + ']');
+
+                    // Exclude DHT nodes.
+                    map(entry, F.view(nearNodes, F0.notIn(dhtNodes)), nearMap);
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Entry has no near readers: " + entry);
-
-                // Exclude local node.
-                map(entry, F.view(dhtNodes, F.remoteNodes(cctx.localNodeId())), dhtMap, futDhtMap);
-
-                // Exclude DHT nodes.
-                map(entry, F.view(nearNodes, F0.notIn(dhtNodes)), nearMap, futNearMap);
 
                 break;
             }
@@ -1306,13 +1282,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @param entry Entry.
      * @param nodes Nodes.
      * @param globalMap Map.
-     * @param locMap Exclude map.
      */
     private void map(
         IgniteTxEntry entry,
         Iterable<ClusterNode> nodes,
-        Map<UUID, GridDistributedTxMapping> globalMap,
-        Map<UUID, GridDistributedTxMapping> locMap
+        Map<UUID, GridDistributedTxMapping> globalMap
     ) {
         if (nodes != null) {
             for (ClusterNode n : nodes) {
@@ -1335,13 +1309,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     globalMap.put(n.id(), global = new GridDistributedTxMapping(n));
 
                 global.add(entry);
-
-                GridDistributedTxMapping loc = locMap.get(n.id());
-
-                if (loc == null)
-                    locMap.put(n.id(), loc = new GridDistributedTxMapping(n));
-
-                loc.add(entry);
             }
         }
     }

@@ -70,9 +70,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
@@ -89,7 +87,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     private static final long serialVersionUID = 0L;
 
     /** DHT mappings. */
-    private ConcurrentMap<UUID, GridDistributedTxMapping> mappings = new ConcurrentHashMap8<>();
+    private IgniteTxMappings mappings;
 
     /** Future. */
     @GridToStringExclude
@@ -174,6 +172,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             subjId,
             taskNameHash);
 
+        mappings = implicitSingle ? new IgniteTxMappingsSingleImpl() : new IgniteTxMappingsImpl();
+
         initResult();
     }
 
@@ -205,13 +205,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /** {@inheritDoc} */
     @Override protected IgniteUuid nearFutureId() {
         assert false : "nearFutureId should not be called for colocated transactions.";
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteUuid nearMiniId() {
-        assert false : "nearMiniId should not be called for colocated transactions.";
 
         return null;
     }
@@ -282,19 +275,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @return {@code True} if transaction is fully synchronous.
      */
     private boolean sync() {
-        if (super.syncCommit())
-            return true;
-
-        GridLongList cacheIds = activeCacheIds();
-
-        for (int i = 0; i < cacheIds.size(); i++) {
-            int cacheId = (int)cacheIds.get(i);
-
-            if (cctx.cacheContext(cacheId).config().getWriteSynchronizationMode() == FULL_SYNC)
-                return true;
-        }
-
-        return false;
+        return super.syncCommit() || txState().sync(cctx);
     }
 
     /**
@@ -477,7 +458,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /**
      * @return DHT map.
      */
-    Map<UUID, GridDistributedTxMapping> mappings() {
+    IgniteTxMappings mappings() {
         return mappings;
     }
 
@@ -509,9 +490,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         GridDistributedTxMapping m = mappings.get(node.id());
 
         if (m == null)
-            mappings.put(node.id(), m = new GridDistributedTxMapping(node));
+            mappings.put(m = new GridDistributedTxMapping(node));
 
-        IgniteTxEntry txEntry = txMap.get(key);
+        IgniteTxEntry txEntry = entry(key);
 
         assert txEntry != null;
 
@@ -522,6 +503,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (log.isDebugEnabled())
             log.debug("Added mappings to transaction [locId=" + cctx.localNodeId() + ", key=" + key + ", node=" + node +
                 ", tx=" + this + ']');
+    }
+
+    /**
+     * @return Non-null entry if tx has only one write entry.
+     */
+    @Nullable IgniteTxEntry singleWrite() {
+        return txState.singleWrite();
     }
 
     /**
@@ -554,6 +542,25 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (log.isDebugEnabled())
             log.debug("Added mapping to transaction [locId=" + cctx.localNodeId() + ", primaryId=" + nodeId +
                 ", entry=" + txEntry + ']');
+    }
+
+    /**
+     * @param map Mapping.
+     * @param entry Entry.
+     */
+    void addSingleEntryMapping(GridDistributedTxMapping map, IgniteTxEntry entry) {
+        ClusterNode n = map.node();
+
+        GridDistributedTxMapping m = new GridDistributedTxMapping(n);
+
+        mappings.put(m);
+
+        m.near(map.near());
+
+        if (map.explicitLock())
+            m.markExplicitLock();
+
+        m.add(entry);
     }
 
     /**
@@ -592,8 +599,23 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers)
     {
-        Collection<IgniteTxEntry> entries = mapping.entries();
+        readyNearLocks(mapping.writes(), mapping.dhtVersion(), pendingVers, committedVers, rolledbackVers);
+        readyNearLocks(mapping.reads(), mapping.dhtVersion(), pendingVers, committedVers, rolledbackVers);
+    }
 
+    /**
+     * @param entries Entries.
+     * @param dhtVer DHT version.
+     * @param pendingVers Pending versions.
+     * @param committedVers Committed versions.
+     * @param rolledbackVers Rolled back versions.
+     */
+    void readyNearLocks(Collection<IgniteTxEntry> entries,
+        GridCacheVersion dhtVer,
+        Collection<GridCacheVersion> pendingVers,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers)
+    {
         for (IgniteTxEntry txEntry : entries) {
             while (true) {
                 GridCacheContext cacheCtx = txEntry.cached().context();
@@ -606,8 +628,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     // Handle explicit locks.
                     GridCacheVersion explicit = txEntry.explicitVersion();
 
-                    if (explicit == null)
-                        entry.readyNearLock(xidVer, mapping.dhtVersion(), committedVers, rolledbackVers, pendingVers);
+                    if (explicit == null) {
+                        entry.readyNearLock(xidVer,
+                            dhtVer,
+                            committedVers,
+                            rolledbackVers,
+                            pendingVers);
+                    }
 
                     break;
                 }
@@ -840,7 +867,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param writes Write entries.
      * @param txNodes Transaction nodes mapping.
      * @param last {@code True} if this is last prepare request.
-     * @param lastBackups IDs of backup nodes receiving last prepare request.
      * @return Future that will be completed when locks are acquired.
      */
     @SuppressWarnings("TypeMayBeWeakened")
@@ -848,8 +874,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         @Nullable Collection<IgniteTxEntry> reads,
         @Nullable Collection<IgniteTxEntry> writes,
         Map<UUID, Collection<UUID>> txNodes,
-        boolean last,
-        Collection<UUID> lastBackups
+        boolean last
     ) {
         if (state() != PREPARING) {
             if (timedOut())
@@ -870,8 +895,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             IgniteUuid.randomUuid(),
             Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
             last,
-            needReturnValue() && implicit(),
-            lastBackups);
+            needReturnValue() && implicit());
 
         try {
             // At this point all the entries passed in must be enlisted in transaction because this is an
@@ -1243,6 +1267,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearTxLocal.class, this, "mappings", mappings.keySet(), "super", super.toString());
+        return S.toString(GridNearTxLocal.class, this, "mappings", mappings, "super", super.toString());
     }
 }

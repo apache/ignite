@@ -89,7 +89,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     private boolean commit;
 
     /** Node mappings. */
-    private Map<UUID, GridDistributedTxMapping> mappings;
+    private IgniteTxMappings mappings;
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -349,8 +349,16 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         try {
             if (tx.finish(commit) || (!commit && tx.state() == UNKNOWN)) {
-                if ((tx.onePhaseCommit() && needFinishOnePhase()) || (!tx.onePhaseCommit() && mappings != null))
-                    finish(mappings.values());
+                if ((tx.onePhaseCommit() && needFinishOnePhase()) || (!tx.onePhaseCommit() && mappings != null)) {
+                    if (mappings.single()) {
+                        GridDistributedTxMapping mapping = mappings.singleMapping();
+
+                        if (mapping != null)
+                            finish(mapping);
+                    }
+                    else
+                        finish(mappings.mappings());
+                }
 
                 markInitialized();
 
@@ -391,11 +399,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      *
      */
     private void checkBackup() {
-        assert mappings.size() <= 1;
+        GridDistributedTxMapping mapping = mappings.singleMapping();
 
-        for (Map.Entry<UUID, GridDistributedTxMapping> entry : mappings.entrySet()) {
-            UUID nodeId = entry.getKey();
-            GridDistributedTxMapping mapping = entry.getValue();
+        if (mapping != null) {
+            UUID nodeId = mapping.node().id();
 
             Collection<UUID> backups = tx.transactionNodes().get(nodeId);
 
@@ -492,29 +499,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      *
      */
     private boolean needFinishOnePhase() {
-        if (F.isEmpty(tx.mappings()))
+        if (tx.mappings().empty())
             return false;
 
-        assert tx.mappings().size() == 1;
-
-        boolean finish = false;
-
-        GridLongList cacheIds = tx.activeCacheIds();
-
-        for (int i = 0; i < cacheIds.size(); i++) {
-            int cacheId = (int)cacheIds.get(i);
-
-            GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
-
-            if (cacheCtx.isNear()) {
-                finish = true;
-
-                break;
-            }
-        }
+        boolean finish = tx.txState().hasNearCache(cctx);
 
         if (finish) {
-            GridDistributedTxMapping mapping = F.first(tx.mappings().values());
+            GridDistributedTxMapping mapping = tx.mappings().singleMapping();
 
             if (FINISH_NEAR_ONE_PHASE_SINCE.compareTo(mapping.node().version()) > 0)
                 finish = false;
@@ -534,18 +525,16 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         finishOnePhaseCalled = true;
 
-        // No need to send messages as transaction was already committed on remote node.
-        // Finish local mapping only as we need send commit message to backups.
-        for (GridDistributedTxMapping m : mappings.values()) {
-            if (m.node().isLocal()) {
-                IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
+        GridDistributedTxMapping locMapping = mappings.localMapping();
 
-                // Add new future.
-                if (fut != null)
-                    add(fut);
+        if (locMapping != null) {
+            // No need to send messages as transaction was already committed on remote node.
+            // Finish local mapping only as we need send commit message to backups.
+            IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
 
-                break;
-            }
+            // Add new future.
+            if (fut != null)
+                add(fut);
         }
     }
 
@@ -558,7 +547,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
             mapping.dhtVersion(xidVer, xidVer);
 
-            tx.readyNearLocks(mapping, Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList(),
+            tx.readyNearLocks(mapping,
+                Collections.<GridCacheVersion>emptyList(),
+                Collections.<GridCacheVersion>emptyList(),
                 Collections.<GridCacheVersion>emptyList());
         }
     }

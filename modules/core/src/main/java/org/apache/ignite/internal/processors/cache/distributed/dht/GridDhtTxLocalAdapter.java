@@ -86,9 +86,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     protected volatile boolean mapped;
 
     /** */
-    private long dhtThreadId;
-
-    /** */
     protected boolean explicitLock;
 
     /** Versions of pending locks for entries of this tx. */
@@ -159,7 +156,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         this.explicitLock = explicitLock;
 
         threadId = Thread.currentThread().getId();
-        dhtThreadId = threadId;
     }
 
     /**
@@ -225,11 +221,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     protected abstract IgniteUuid nearFutureId();
 
     /**
-     * @return Near future mini ID.
-     */
-    protected abstract IgniteUuid nearMiniId();
-
-    /**
      * Adds reader to cached entry.
      *
      * @param msgId Message ID.
@@ -266,13 +257,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      */
     public void pendingVersions(Collection<GridCacheVersion> pendingVers) {
         this.pendingVers = pendingVers;
-    }
-
-    /**
-     * @return DHT thread ID.
-     */
-    long dhtThreadId() {
-        return dhtThreadId;
     }
 
     /**
@@ -364,22 +348,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
-     * @param nodeId Node ID.
-     * @return Mapping.
-     */
-    GridDistributedTxMapping dhtMapping(UUID nodeId) {
-        return dhtMap.get(nodeId);
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @return Mapping.
-     */
-    GridDistributedTxMapping nearMapping(UUID nodeId) {
-        return nearMap.get(nodeId);
-    }
-
-    /**
      * @param mappings Mappings to add.
      */
     void addDhtNodeEntryMapping(Map<ClusterNode, List<GridDhtCacheEntry>> mappings) {
@@ -431,7 +399,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             if (log.isDebugEnabled())
                 log.debug("Removing mapping for entry [nodeId=" + nodeId + ", entry=" + entry + ']');
 
-            IgniteTxEntry txEntry = txMap.get(entry.txKey());
+            IgniteTxEntry txEntry = entry(entry.txKey());
 
             if (txEntry == null)
                 return false;
@@ -465,7 +433,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             List<GridDhtCacheEntry> entries = mapping.getValue();
 
             for (GridDhtCacheEntry entry : entries) {
-                IgniteTxEntry txEntry = txMap.get(entry.txKey());
+                IgniteTxEntry txEntry = entry(entry.txKey());
 
                 if (txEntry != null) {
                     if (m == null)
@@ -505,7 +473,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
         try {
-            IgniteTxEntry existing = txMap.get(e.txKey());
+            IgniteTxEntry existing = entry(e.txKey());
 
             if (existing != null) {
                 // Must keep NOOP operation if received READ because it means that the lock was sent to a backup node.
@@ -545,7 +513,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                     existing.explicitVersion(dhtVer);
                 }
 
-                txMap.put(existing.txKey(), existing);
+                txState.addEntry(existing);
 
                 if (log.isDebugEnabled())
                     log.debug("Added entry to transaction: " + existing);
@@ -681,7 +649,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 passedKeys,
                 read,
                 needRetVal,
-                skipped,
                 accessTtl,
                 null,
                 skipStore);
@@ -699,7 +666,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param passedKeys Passed keys.
      * @param read {@code True} if read.
      * @param needRetVal Return value flag.
-     * @param skipped Skipped keys.
      * @param accessTtl TTL for read operation.
      * @param filter Entry write filter.
      * @param skipStore Skip store flag.
@@ -711,13 +677,11 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final Collection<KeyCacheObject> passedKeys,
         final boolean read,
         final boolean needRetVal,
-        final Set<KeyCacheObject> skipped,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
         boolean skipStore) {
         if (log.isDebugEnabled())
-            log.debug("Before acquiring transaction lock on keys [passedKeys=" + passedKeys + ", skipped=" +
-                skipped + ']');
+            log.debug("Before acquiring transaction lock on keys [keys=" + passedKeys + ']');
 
         if (passedKeys.isEmpty())
             return new GridFinishedFuture<>(ret);
@@ -744,7 +708,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                     postLockWrite(cacheCtx,
                         passedKeys,
-                        skipped,
                         ret,
                         /*remove*/false,
                         /*retval*/false,
