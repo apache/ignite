@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
@@ -93,6 +94,15 @@ namespace Apache.Ignite.Core
         ICache<TK, TV> GetOrCreateCache<TK, TV>(string name);
 
         /// <summary>
+        /// Gets existing cache with the given name or creates new one using provided configuration.
+        /// </summary>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        /// <param name="configuration">Cache configuration.</param>
+        /// <returns>Existing or newly created cache.</returns>
+        ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration);
+
+        /// <summary>
         /// Dynamically starts new cache using template configuration.
         /// </summary>
         /// <typeparam name="TK">Cache key type.</typeparam>
@@ -100,6 +110,15 @@ namespace Apache.Ignite.Core
         /// <param name="name">Cache name.</param>
         /// <returns>Existing or newly created cache.</returns>
         ICache<TK, TV> CreateCache<TK, TV>(string name);
+
+        /// <summary>
+        /// Dynamically starts new cache using provided configuration.
+        /// </summary>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        /// <param name="configuration">Cache configuration.</param>
+        /// <returns>Existing or newly created cache.</returns>
+        ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration);
 
         /// <summary>
         /// Gets a new instance of data streamer associated with given cache name. Data streamer
