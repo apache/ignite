@@ -1854,7 +1854,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         V prevVal = syncOp(new SyncOp<V>(true) {
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                return (V)tx.putAllAsync(ctx, F.t(key, val), true, filter).get().value();
+                return (V)tx.putAsync(ctx, key, val, true, filter).get().value();
             }
 
             @Override public String toString() {
@@ -1909,7 +1909,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         return asyncOp(new AsyncOp<V>() {
             @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx) {
-                return tx.putAllAsync(ctx, F.t(key, val), true, filter)
+                return tx.putAsync(ctx, key, val, true, filter)
                     .chain((IgniteClosure<IgniteInternalFuture<GridCacheReturn>, V>)RET2VAL);
             }
 
@@ -1948,7 +1948,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         Boolean stored = syncOp(new SyncOp<Boolean>(true) {
             @Override public Boolean op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                return tx.putAllAsync(ctx, F.t(key, val), false, filter).get().success();
+                return tx.putAsync(ctx, key, val, false, filter).get().success();
             }
 
             @Override public String toString() {
@@ -2013,10 +2013,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return syncOp(new SyncOp<EntryProcessorResult<T>>(true) {
             @Nullable @Override public EntryProcessorResult<T> op(IgniteTxLocalAdapter tx)
                 throws IgniteCheckedException {
-                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap =
-                    Collections.singletonMap(key, (EntryProcessor<K, V, Object>) entryProcessor);
-
-                IgniteInternalFuture<GridCacheReturn> fut = tx.invokeAsync(ctx, invokeMap, args);
+                IgniteInternalFuture<GridCacheReturn> fut =
+                    tx.invokeAsync(ctx, key, (EntryProcessor<K, V, Object>)entryProcessor, args);
 
                 Map<K, EntryProcessorResult<T>> resMap = fut.get().value();
 
@@ -2240,8 +2238,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         return asyncOp(new AsyncOp<Boolean>() {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
-                return tx.putAllAsync(ctx, F.t(key, val), false, filter).chain(
-                    (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>) RET2FLAG);
+                return tx.putAsync(ctx, key, val, false, filter).chain(
+                    (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>)RET2FLAG);
             }
 
             @Override public String toString() {
@@ -2275,7 +2273,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         return syncOp(new SyncOp<V>(true) {
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                return (V)tx.putAllAsync(ctx, F.t(key, val), true, ctx.noValArray()).get().value();
+                return (V)tx.putAsync(ctx, key, val, true, ctx.noValArray()).get().value();
             }
 
             @Override public String toString() {
@@ -2299,8 +2297,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         IgniteInternalFuture<V> fut = asyncOp(new AsyncOp<V>() {
             @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx) {
-                return tx.putAllAsync(ctx, F.t(key, val), true, ctx.noValArray())
-                    .chain((IgniteClosure<IgniteInternalFuture<GridCacheReturn>, V>) RET2VAL);
+                return tx.putAsync(ctx, key, val, true, ctx.noValArray())
+                    .chain((IgniteClosure<IgniteInternalFuture<GridCacheReturn>, V>)RET2VAL);
             }
 
             @Override public String toString() {
@@ -2329,7 +2327,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         Boolean stored = syncOp(new SyncOp<Boolean>(true) {
             @Override public Boolean op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                return tx.putAllAsync(ctx, F.t(key, val), false, ctx.noValArray()).get().success();
+                return tx.putAsync(ctx, key, val, false, ctx.noValArray()).get().success();
             }
 
             @Override public String toString() {
@@ -2358,7 +2356,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         IgniteInternalFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>() {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
-                return tx.putAllAsync(ctx, F.t(key, val), false, ctx.noValArray()).chain(
+                return tx.putAsync(ctx, key, val, false, ctx.noValArray()).chain(
                     (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>)RET2FLAG);
             }
 
@@ -2384,7 +2382,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         return syncOp(new SyncOp<V>(true) {
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                return (V)tx.putAllAsync(ctx, F.t(key, val), true, ctx.hasValArray()).get().value();
+                return (V)tx.putAsync(ctx, key, val, true, ctx.hasValArray()).get().value();
             }
 
             @Override public String toString() {
@@ -2408,7 +2406,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         IgniteInternalFuture<V> fut = asyncOp(new AsyncOp<V>() {
             @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx) {
-                return tx.putAllAsync(ctx, F.t(key, val), true, ctx.hasValArray()).chain(
+                return tx.putAsync(ctx, key, val, true, ctx.hasValArray()).chain(
                     (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, V>)RET2VAL);
             }
 
@@ -2434,7 +2432,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         return syncOp(new SyncOp<Boolean>(true) {
             @Override public Boolean op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                return tx.putAllAsync(ctx, F.t(key, val), false, ctx.hasValArray()).get().success();
+                return tx.putAsync(ctx, key, val, false, ctx.hasValArray()).get().success();
             }
 
             @Override public String toString() {
@@ -2454,7 +2452,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         return asyncOp(new AsyncOp<Boolean>() {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
-                return tx.putAllAsync(ctx, F.t(key, val), false, ctx.hasValArray()).chain(
+                return tx.putAsync(ctx, key, val, false, ctx.hasValArray()).chain(
                     (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>) RET2FLAG);
             }
 
@@ -2481,7 +2479,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 if (ctx.deploymentEnabled())
                     ctx.deploy().registerClass(oldVal);
 
-                return tx.putAllAsync(ctx, F.t(key, newVal), false, ctx.equalsValArray(oldVal)).get()
+                return tx.putAsync(ctx, key, newVal, false, ctx.equalsValArray(oldVal)).get()
                     .success();
             }
 
@@ -2518,7 +2516,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     }
                 }
 
-                return tx.putAllAsync(ctx, F.t(key, newVal), false, ctx.equalsValArray(oldVal)).chain(
+                return tx.putAsync(ctx, key, newVal, false, ctx.equalsValArray(oldVal)).chain(
                     (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>)RET2FLAG);
             }
 
@@ -2883,8 +2881,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 if (ctx.deploymentEnabled())
                     ctx.deploy().registerClass(oldVal);
 
-                return tx.putAllAsync(ctx,
-                        F.t(key, newVal),
+                return tx.putAsync(ctx,
+                        key,
+                        newVal,
                         true,
                         ctx.equalsValArray(oldVal)).get();
             }
@@ -2945,8 +2944,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     return new GridFinishedFuture<>(e);
                 }
 
-                return (IgniteInternalFuture)tx.putAllAsync(ctx,
-                    F.t(key, newVal),
+                return (IgniteInternalFuture)tx.putAsync(ctx,
+                    key,
+                    newVal,
                     true,
                     ctx.equalsValArray(oldVal));
             }

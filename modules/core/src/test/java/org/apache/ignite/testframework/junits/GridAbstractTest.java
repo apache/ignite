@@ -1120,16 +1120,31 @@ public abstract class GridAbstractTest extends TestCase {
         if (gridName != null && gridName.matches(".*\\d")) {
             String idStr = UUID.randomUUID().toString();
 
-            char[] chars = idStr.toCharArray();
+            if (gridName.startsWith(getTestGridName())) {
+                String idxStr = String.valueOf(getTestGridIndex(gridName));
 
-            chars[0] = gridName.charAt(gridName.length() - 1);
-            chars[1] = '0';
+                while (idxStr.length() < 5)
+                    idxStr = '0' + idxStr;
 
-            chars[chars.length - 3] = '0';
-            chars[chars.length - 2] = '0';
-            chars[chars.length - 1] = gridName.charAt(gridName.length() - 1);
+                char[] chars = idStr.toCharArray();
 
-            cfg.setNodeId(UUID.fromString(new String(chars)));
+                for (int i = 0; i < idxStr.length(); i++)
+                    chars[chars.length - idxStr.length() + i] = idxStr.charAt(i);
+
+                cfg.setNodeId(UUID.fromString(new String(chars)));
+            }
+            else {
+                char[] chars = idStr.toCharArray();
+
+                chars[0] = gridName.charAt(gridName.length() - 1);
+                chars[1] = '0';
+
+                chars[chars.length - 3] = '0';
+                chars[chars.length - 2] = '0';
+                chars[chars.length - 1] = gridName.charAt(gridName.length() - 1);
+
+                cfg.setNodeId(UUID.fromString(new String(chars)));
+            }
         }
 
         if (isMultiJvm())
