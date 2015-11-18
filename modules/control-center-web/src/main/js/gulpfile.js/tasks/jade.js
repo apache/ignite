@@ -26,7 +26,7 @@ var paths = [
 ];
 
 var pluginPaths = [
-    './ignite_modules/**/*.jade'
+    './ignite_modules/**/view/**/*.jade'
 ];
 
 var options = {
