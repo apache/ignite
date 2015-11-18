@@ -45,7 +45,7 @@ mixin pojos(side)
             .col-xs-10.col-sm-10.col-md-10
                 input(type='checkbox' ng-model='configServer.includeKeyFields')
                 | Include key fields
-        div(ui-ace='{ onLoad: aceInit, mode: "java" }' ng-model='config#{side}.pojoClassBody')
+        div(ui-ace='{onLoad: aceInit, mode: "java"}' ng-model='config#{side}.pojoClassBody')
 
 block content
     .docs-header
@@ -69,14 +69,16 @@ block content
                     .panel-collapse(id='server' role='tabpanel' bs-collapse-target)
                         .summary-tabs(bs-tabs data-bs-active-pane="tabsServer.activeTab" ng-show='selectedItem' template='summary/summary-tabs')
                             div(bs-pane title='XML')
-                                div(ui-ace='{ onLoad: aceInit, mode: "xml" }' ng-model='xmlServer')
+                                div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='xmlServer')
                             div(bs-pane title='Java')
                                 .details-row
                                     .col-xs-2.col-sm-2.col-md-1
                                         label Generate:
                                     .col-xs-4.col-sm-3.col-md-3
                                         button.select-toggle.form-control(ng-model='configServer.javaClassServer' bs-select bs-options='item.value as item.label for item in javaClassItems' data-sort='false')
-                                div(ui-ace='{ onLoad: aceInit, mode: "java" }' ng-model='javaServer')
+                                div(ui-ace='{onLoad: aceInit, mode: "java"}' ng-model='javaServer')
+                            div(bs-pane title='POM')
+                                div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='pom')
                             div(bs-pane title='Dockerfile')
                                 .details-row
                                     p
@@ -92,7 +94,7 @@ block content
                                         label(for='os') Operation System:
                                     .col-xs-5.col-sm-4
                                         input#os.form-control(type='text' ng-model='configServer.os' placeholder='debian:8' data-min-length='0' data-html='1' data-auto-select='true' bs-typeahead retain-selection bs-options='os for os in oss')
-                                div(ui-ace='{ onLoad: aceInit, mode: "dockerfile" }' ng-model='dockerServer')
+                                div(ui-ace='{onLoad: aceInit, mode: "dockerfile"}' ng-model='dockerServer')
                 .panel.panel-default
                     .panel-heading(role='tab' bs-collapse-toggle)
                         i.fa(ng-class='panelExpanded(panels, "client") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
@@ -103,12 +105,14 @@ block content
                                 +form-row-custom(['col-xs-4 col-sm-4 col-md-3'], ['col-xs-4 col-sm-4 col-md-3'], 'backupItem')
                             .summary-tabs(bs-tabs data-bs-active-pane="tabsClient.activeTab" template='summary/summary-tabs')
                                 div(bs-pane title='XML')
-                                    div(ui-ace='{ onLoad: aceInit, mode: "xml" }' ng-model='xmlClient')
+                                    div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='xmlClient')
                                 div(bs-pane title='Java')
                                     .details-row
                                         .col-xs-2.col-sm-2.col-md-1
                                             label Generate:
                                         .col-xs-4.col-sm-3.col-md-3
                                             button.select-toggle.form-control(ng-model='backupItem.javaClassClient' bs-select bs-options='item.value as item.label for item in javaClassItems' data-sort='false')
-                                    div(ui-ace='{ onLoad: aceInit, mode: "java" }' ng-model='javaClient')
+                                    div(ui-ace='{onLoad: aceInit, mode: "java"}' ng-model='javaClient')
+                                div(bs-pane title='POM')
+                                    div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='pom')
                                 +pojos('Client')

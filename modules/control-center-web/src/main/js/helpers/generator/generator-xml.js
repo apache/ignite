@@ -1467,7 +1467,7 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
         // 1. Add header.
         var xml = '<?xml version="1.0" encoding="UTF-8"?>\n\n';
 
-        xml += '<!-- ' + $generatorCommon.mainComment() + ' -->\n';
+        xml += '<!-- ' + $generatorCommon.mainComment() + ' -->\n\n';
         xml += '<beans xmlns="http://www.springframework.org/schema/beans"\n';
         xml += '       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n';
         xml += '       xmlns:util="http://www.springframework.org/schema/util"\n';
