@@ -461,21 +461,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /**
-     * @param nodeId Node ID.
-     * @param dhtVer DHT version.
-     * @param writeVer Write version.
-     */
-    void addDhtVersion(UUID nodeId, GridCacheVersion dhtVer, GridCacheVersion writeVer) {
-        // This step is very important as near and DHT versions grow separately.
-        cctx.versions().onReceived(nodeId, dhtVer);
-
-        GridDistributedTxMapping m = mappings.get(nodeId);
-
-        if (m != null)
-            m.dhtVersion(dhtVer, writeVer);
-    }
-
-    /**
      * @param nodeId Undo mapping.
      */
     @Override public boolean removeMapping(UUID nodeId) {

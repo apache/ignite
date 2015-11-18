@@ -147,6 +147,13 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasInterceptor(GridCacheSharedContext cctx) {
+        GridCacheContext ctx0 = cacheCtx;
+
+        return ctx0 != null && ctx0.config().getInterceptor() != null;
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
         if (cacheCtx == null)
             return null;
