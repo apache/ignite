@@ -25,7 +25,7 @@ System.config({
     "angular-nvd3": "github:krispo/angular-nvd3@1.0.3",
     "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.7",
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.4",
-    "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852",
+    "angular-strap": "github:mgcrea/angular-strap@2.3.6",
     "angular-tree-control": "github:wix/angular-tree-control@0.2.22",
     "angular-ui-ace": "github:angular-ui/ui-ace@0.2.3",
     "babel": "npm:babel-core@5.8.34",
@@ -43,9 +43,6 @@ System.config({
     "sass": "github:mobilexag/plugin-sass@0.0.10",
     "scss": "github:theefer/plugin-sass@master",
     "spinjs": "github:fgnass/spin.js@2.3.2",
-    "github:akuznetsov-gridgain/angular-strap@fix-1852": {
-      "angular": "github:angular/bower-angular@1.4.7"
-    },
     "github:angular/bower-angular-animate@1.4.7": {
       "angular": "github:angular/bower-angular@1.4.7"
     },
@@ -122,6 +119,9 @@ System.config({
     "github:mgcrea/angular-motion@0.4.3": {
       "angular": "github:angular/bower-angular@1.4.7",
       "css": "github:systemjs/plugin-css@0.1.19"
+    },
+    "github:mgcrea/angular-strap@2.3.6": {
+      "angular": "github:angular/bower-angular@1.4.7"
     },
     "github:mobilexag/plugin-sass@0.0.10": {
       "fs": "github:jspm/nodelibs-fs@0.1.2",

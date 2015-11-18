@@ -73,7 +73,7 @@
       "angular-nvd3": "github:krispo/angular-nvd3@^1.0.3",
       "angular-sanitize": "github:angular/bower-angular-sanitize@^1.4.7",
       "angular-smart-table": "github:lorenzofox3/Smart-Table@^2.1.4",
-      "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852",
+      "angular-strap": "github:mgcrea/angular-strap@2.3.6",
       "angular-tree-control": "github:wix/angular-tree-control@^0.2.22",
       "angular-ui-ace": "github:angular-ui/ui-ace@^0.2.3",
       "css": "github:systemjs/plugin-css@^0.1.19",
@@ -132,10 +132,10 @@
       "github:components/jquery@2.1.4": {
         "format": "global"
       },
-      "github:akuznetsov-gridgain/angular-strap@fix-1852": {
-        "main": "dist/angular-strap.tpl",
+      "github:mgcrea/angular-strap@2.3.6": {
+        "main": "angular-strap.tpl",
         "shim": {
-          "dist/angular-strap.tpl": {
+          "angular-strap.tpl": {
             "deps": [
               "./angular-strap"
             ]
