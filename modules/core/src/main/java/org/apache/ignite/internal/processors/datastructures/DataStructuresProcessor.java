@@ -182,15 +182,23 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         ctx.event().addLocalEventListener(
             new GridLocalEventListener() {
-                @Override public void onEvent(Event evt) {
-                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+                @Override public void onEvent(final Event evt) {
+                    ctx.closure().callLocalSafe(
+                        new Callable<Object>() {
+                            @Override public Object call() throws Exception {
+                                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
-                    UUID leftNodeId = discoEvt.eventNode().id();
+                                UUID leftNodeId = discoEvt.eventNode().id();
 
-                    for (GridCacheRemovable ds : dsMap.values()) {
-                        if (ds instanceof GridCacheSemaphoreEx)
-                            ((GridCacheSemaphoreEx)ds).onNodeRemoved(leftNodeId);
-                    }
+                                for (GridCacheRemovable ds : dsMap.values()) {
+                                    if (ds instanceof GridCacheSemaphoreEx)
+                                        ((GridCacheSemaphoreEx)ds).onNodeRemoved(leftNodeId);
+                                }
+
+                                return null;
+                            }
+                        },
+                        false);
                 }
             },
             EVT_NODE_LEFT,
