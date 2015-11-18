@@ -1622,6 +1622,14 @@ public abstract class GridAbstractTest extends TestCase {
             // the build is cancelled on TeamCity.
             U.dumpThreads(null);
 
+            U.log(log, "First thread dump");
+
+            U.dumpThreads(log);
+
+            U.sleep(1_000);
+
+            U.log(log, "Second thread dump (1 second later)");
+
             U.dumpThreads(log);
 
             U.interrupt(runner);

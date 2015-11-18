@@ -1047,10 +1047,10 @@ public class GridDhtPartitionDemander {
      * Dumps debug information.
      */
     public void dumpDebugInfo() {
+        U.warn(log, "Rebalancing demander unfinished partitions:");
+
         synchronized (rebalanceFut) {
             if (!rebalanceFut.remaining.isEmpty()) {
-                U.warn(log, "Rebalancing demander unfinished partitions:");
-
                 for (Map.Entry<UUID, T2<Long, Collection<Integer>>> entry : rebalanceFut.remaining.entrySet()) {
                     if (entry.getValue().get2() != null) {
                         U.warn(log, ">>> [node=" + entry.getKey() + ", parts=" + entry.getValue().get2().toString());
