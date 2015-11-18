@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.math.BigDecimal;
@@ -38,17 +37,6 @@ import java.util.UUID;
  * Contains tests for portable object fields.
  */
 public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTest {
-    /** Dummy metadata handler. */
-    protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, BinaryType meta) {
-            // No-op.
-        }
-
-        @Override public BinaryType metadata(int typeId) {
-            return null;
-        }
-    };
-
     /** Marshaller. */
     protected PortableMarshaller dfltMarsh;
 
@@ -59,7 +47,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     protected static PortableMarshaller createMarshaller() throws Exception {
-        PortableContext ctx = new PortableContext(META_HND, new IgniteConfiguration());
+        PortableContext ctx = new PortableContext(new TestCachingMetadataHandler(), new IgniteConfiguration());
 
         PortableMarshaller marsh = new PortableMarshaller();
 
@@ -485,7 +473,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
 
         BinaryObjectEx portObj = toPortable(marsh, obj);
 
-        BinaryField field = portObj.fieldDescriptor(fieldName);
+        BinaryField field = portObj.type().field(fieldName);
 
         return new TestContext(obj, portObj, field);
     }
@@ -508,7 +496,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
 
         assert portObj != null;
 
-        BinaryField field = portObj.fieldDescriptor(fieldName);
+        BinaryField field = portObj.type().field(fieldName);
 
         return new TestContext(obj, portObj, field);
     }

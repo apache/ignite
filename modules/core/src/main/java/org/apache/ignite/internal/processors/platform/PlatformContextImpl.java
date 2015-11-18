@@ -34,7 +34,7 @@ import org.apache.ignite.events.SwapSpaceEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.BinaryMetaDataImpl;
+import org.apache.ignite.internal.portable.BinaryMetadata;
 import org.apache.ignite.internal.portable.BinaryRawReaderEx;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformReaderClosur
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T4;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.binary.BinaryType;
 import org.jetbrains.annotations.Nullable;
@@ -391,12 +390,7 @@ public class PlatformContextImpl implements PlatformContext {
         else {
             writer.writeBoolean(true);
 
-            Map<String, String> metaFields = ((BinaryMetaDataImpl)meta).fields0();
-
-            Map<String, Integer> fields = U.newHashMap(metaFields.size());
-
-            for (Map.Entry<String, String> metaField : metaFields.entrySet())
-                fields.put(metaField.getKey(), CacheObjectBinaryProcessorImpl.fieldTypeId(metaField.getValue()));
+            Map<String, Integer> fields = ((BinaryMetadata)meta).fieldsMap();
 
             writer.writeInt(typeId);
             writer.writeString(meta.typeName());

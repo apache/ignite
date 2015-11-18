@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.portable;
 
-import java.util.Arrays;
 import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.Arrays;
 
 /**
  * Contains tests for compact offsets.
@@ -37,17 +37,6 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
     /** 2 pow 16. */
     private static int POW_16 = 1 << 16;
 
-    /** Dummy metadata handler. */
-    protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, BinaryType meta) {
-            // No-op.
-        }
-
-        @Override public BinaryType metadata(int typeId) {
-            return null;
-        }
-    };
-
     /** Marshaller. */
     protected PortableMarshaller marsh;
 
@@ -58,7 +47,7 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ctx = new PortableContext(META_HND, new IgniteConfiguration());
+        ctx = new PortableContext(new TestCachingMetadataHandler(), new IgniteConfiguration());
 
         marsh = new PortableMarshaller();
 
@@ -139,8 +128,8 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
         assert obj.field2 == field2;
 
         // 2. Test fields API.
-        BinaryField field1Desc = portObj.fieldDescriptor("field1");
-        BinaryField field2Desc = portObj.fieldDescriptor("field2");
+        BinaryField field1Desc = portObj.type().field("field1");
+        BinaryField field2Desc = portObj.type().field("field2");
 
         assert field1Desc.exists(portObj);
         assert field2Desc.exists(portObj);

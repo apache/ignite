@@ -134,7 +134,7 @@ public class PortableContext implements Externalizable {
     private final Map<String, BinaryIdMapper> typeMappers = new ConcurrentHashMap8<>(0);
 
     /** */
-    private PortableMetaDataHandler metaHnd;
+    private BinaryMetadataHandler metaHnd;
 
     /** */
     private MarshallerContext marshCtx;
@@ -165,8 +165,9 @@ public class PortableContext implements Externalizable {
      * @param metaHnd Meta data handler.
      * @param igniteCfg Ignite configuration.
      */
-    public PortableContext(PortableMetaDataHandler metaHnd, @Nullable IgniteConfiguration igniteCfg) {
+    public PortableContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg) {
         assert metaHnd != null;
+        assert igniteCfg != null;
 
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
@@ -202,7 +203,6 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(Date.class, GridPortableMarshaller.DATE);
         registerPredefinedType(Timestamp.class, GridPortableMarshaller.TIMESTAMP);
         registerPredefinedType(UUID.class, GridPortableMarshaller.UUID);
-        // TODO: How to handle timestamp? It has the same ID in .Net.
 
         registerPredefinedType(byte[].class, GridPortableMarshaller.BYTE_ARR);
         registerPredefinedType(short[].class, GridPortableMarshaller.SHORT_ARR);
@@ -237,9 +237,6 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(T2.class, 62);
 
         // IDs range [200..1000] is used by Ignite internal APIs.
-
-        registerPredefinedType(BinaryObjectImpl.class, 200);
-        registerPredefinedType(BinaryMetaDataImpl.class, 201);
     }
 
     /**
@@ -570,7 +567,7 @@ public class PortableContext implements Externalizable {
 
         mappers.putIfAbsent(typeId, idMapper);
 
-        metaHnd.addMeta(typeId, new BinaryMetaDataImpl(typeName, desc.fieldsMeta(), null));
+        metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null).wrap(this));
 
         return desc;
     }
@@ -752,7 +749,7 @@ public class PortableContext implements Externalizable {
 
         typeMappers.put(typeName, idMapper);
 
-        Map<String, String> fieldsMeta = null;
+        Map<String, Integer> fieldsMeta = null;
 
         if (cls != null) {
             PortableClassDescriptor desc = new PortableClassDescriptor(
@@ -777,7 +774,22 @@ public class PortableContext implements Externalizable {
             descByCls.put(cls, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetaDataImpl(typeName, fieldsMeta, affKeyFieldName));
+        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName).wrap(this));
+    }
+
+    /**
+     * Create binary field.
+     *
+     * @param typeId Type ID.
+     * @param fieldName Field name.
+     * @return Binary field.
+     */
+    public BinaryFieldImpl createField(int typeId, String fieldName) {
+        PortableSchemaRegistry schemaReg = schemaRegistry(typeId);
+
+        int fieldId = userTypeIdMapper(typeId).fieldId(typeId, fieldName);
+
+        return new BinaryFieldImpl(typeId, schemaReg, fieldName, fieldId);
     }
 
     /**
@@ -816,8 +828,8 @@ public class PortableContext implements Externalizable {
      * @param fields Fields map.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public void updateMetaData(int typeId, String typeName, Map<String, String> fields) throws BinaryObjectException {
-        updateMetaData(typeId, new BinaryMetaDataImpl(typeName, fields, null));
+    public void updateMetaData(int typeId, String typeName, Map<String, Integer> fields) throws BinaryObjectException {
+        updateMetaData(typeId, new BinaryMetadata(typeId, typeName, fields, null));
     }
 
     /**
@@ -825,8 +837,8 @@ public class PortableContext implements Externalizable {
      * @param meta Meta data.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public void updateMetaData(int typeId, BinaryMetaDataImpl meta) throws BinaryObjectException {
-        metaHnd.addMeta(typeId, meta);
+    public void updateMetaData(int typeId, BinaryMetadata meta) throws BinaryObjectException {
+        metaHnd.addMeta(typeId, meta.wrap(this));
     }
 
     /**
@@ -890,6 +902,7 @@ public class PortableContext implements Externalizable {
      * @param clsName Class name.
      * @return Type name.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public static String typeName(String clsName) {
         assert clsName != null;
 

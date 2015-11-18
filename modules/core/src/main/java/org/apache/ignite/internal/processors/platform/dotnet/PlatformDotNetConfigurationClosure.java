@@ -22,6 +22,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.portable.BinaryNoopMetadataHandler;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
@@ -32,11 +36,9 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -299,16 +301,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     @SuppressWarnings("deprecation")
     private static GridPortableMarshaller marshaller() {
         try {
-            PortableContext ctx = new PortableContext(new PortableMetaDataHandler() {
-                @Override public void addMeta(int typeId, BinaryType meta)
-                    throws BinaryObjectException {
-                    // No-op.
-                }
-
-                @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
-                    return null;
-                }
-            }, new IgniteConfiguration());
+            PortableContext ctx = new PortableContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration());
 
             PortableMarshaller marsh = new PortableMarshaller();
 

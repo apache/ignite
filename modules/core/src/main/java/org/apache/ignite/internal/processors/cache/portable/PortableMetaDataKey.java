@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Key for portable meta data.
  */
-class PortableMetaDataKey extends GridCacheUtilityKey<PortableMetaDataKey> implements Externalizable {
+class PortableMetadataKey extends GridCacheUtilityKey<PortableMetadataKey> implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -37,14 +37,14 @@ class PortableMetaDataKey extends GridCacheUtilityKey<PortableMetaDataKey> imple
     /**
      * For {@link Externalizable}.
      */
-    public PortableMetaDataKey() {
+    public PortableMetadataKey() {
         // No-op.
     }
 
     /**
      * @param typeId Type ID.
      */
-    PortableMetaDataKey(int typeId) {
+    PortableMetadataKey(int typeId) {
         this.typeId = typeId;
     }
 
@@ -66,7 +66,7 @@ class PortableMetaDataKey extends GridCacheUtilityKey<PortableMetaDataKey> imple
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean equalsx(PortableMetaDataKey key) {
+    @Override protected boolean equalsx(PortableMetadataKey key) {
         return typeId == key.typeId;
     }
 
@@ -77,6 +77,6 @@ class PortableMetaDataKey extends GridCacheUtilityKey<PortableMetaDataKey> imple
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PortableMetaDataKey.class, this);
+        return S.toString(PortableMetadataKey.class, this);
     }
 }

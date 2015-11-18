@@ -462,19 +462,6 @@ public final class BinaryObjectImpl extends BinaryObjectEx implements Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryField fieldDescriptor(String fieldName) throws BinaryObjectException {
-        A.notNull(fieldName, "fieldName");
-
-        int typeId = typeId();
-
-        PortableSchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
-
-        int fieldId = ctx.userTypeIdMapper(typeId).fieldId(typeId, fieldName);
-
-        return new BinaryFieldImpl(schemaReg, fieldName, fieldId);
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);
 

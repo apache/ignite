@@ -93,7 +93,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
             switch (meta.typeName()) {
                 case "TestObject1":
-                    fields = meta.fields();
+                    fields = meta.fieldNames();
 
                     assertEquals(7, fields.size());
 
@@ -116,7 +116,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
                     break;
 
                 case "TestObject2":
-                    fields = meta.fields();
+                    fields = meta.fieldNames();
 
                     assertEquals(7, fields.size());
 
@@ -165,7 +165,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertEquals("TestObject1", meta.typeName());
 
-        Collection<String> fields = meta.fields();
+        Collection<String> fields = meta.fieldNames();
 
         assertEquals(7, fields.size());
 
@@ -198,7 +198,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertEquals("TestObject2", meta.typeName());
 
-        Collection<String> fields = meta.fields();
+        Collection<String> fields = meta.fieldNames();
 
         assertEquals(7, fields.size());
 
@@ -235,7 +235,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertEquals("TestObject2", meta.typeName());
 
-        Collection<String> fields = meta.fields();
+        Collection<String> fields = meta.fieldNames();
 
         assertEquals(9, fields.size());
 
@@ -284,7 +284,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertEquals("TestObject1", meta.typeName());
 
-        Collection<String> fields = meta.fields();
+        Collection<String> fields = meta.fieldNames();
 
         assertEquals(7, fields.size());
 
