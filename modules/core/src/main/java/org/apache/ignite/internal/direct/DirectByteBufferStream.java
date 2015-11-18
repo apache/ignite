@@ -303,9 +303,6 @@ public class DirectByteBufferStream {
     /** */
     private boolean lastFinished;
 
-    /** */
-    private boolean lastFinished;
-
     /**
      * @param msgFactory Message factory.
      */
