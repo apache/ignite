@@ -341,7 +341,18 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
+
+                configuration.Write(writer);
+
+                // return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, name));
+
+                throw new NotImplementedException();
+            }
         }
 
         /** <inheritdoc /> */
@@ -353,6 +364,8 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration)
         {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
             throw new NotImplementedException();
         }
 
