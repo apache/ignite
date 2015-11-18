@@ -19,6 +19,7 @@ var consoleModule = angular.module('ignite-web-console',
     [
         'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'agGrid', 'nvd3', 'dndLists'
         /* ignite:modules */
+        , 'ignite-console'
         , 'ignite-web-console.navbar'
         , 'ignite-web-console.configuration.sidebar'
         /* endignite */
@@ -26,7 +27,7 @@ var consoleModule = angular.module('ignite-web-console',
         /* endignite */
     ])
     .run(function ($rootScope, $http) {
-        $http.post('/user')
+        $http.post('/api/v1/user')
             .success(function (user) {
                 $rootScope.user = user;
 

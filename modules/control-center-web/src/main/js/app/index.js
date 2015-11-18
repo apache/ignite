@@ -13,6 +13,7 @@ import 'angular-sanitize'
 import 'angular-grid'
 import 'angular-loading'
 import 'angular-nvd3'
+import 'angular-ui-router'
 
 import 'angular-grid/dist/ag-grid.css!'
 import 'angular-loading/angular-loading.css!'
@@ -32,3 +33,23 @@ window._ = _;
 window.ace = ace;
 window.require = ace.require;
 window.angular = angular;
+
+import './modules/states/login/index'
+
+angular
+.module('ignite-console', [
+	'ui.router',
+	// states
+	'ignite-console.states.login'
+])
+.config(function($stateProvider, $locationProvider) {
+	// set up the states
+	$stateProvider
+	.state('base', {
+		url: '',
+		abstract: true,
+		template: '<div ui-view=""></div>'
+	})
+
+	$locationProvider.html5Mode(true)
+});

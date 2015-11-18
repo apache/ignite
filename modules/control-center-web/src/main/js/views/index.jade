@@ -1,0 +1,46 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+doctype html
+html(ng-app='ignite-web-console')
+    head
+        base(href='/')
+        title=title
+
+        block css
+            //- Font Awesome Icons
+            link(rel='stylesheet', href='//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.css')
+
+            //- Font
+            link(rel='stylesheet', href='//fonts.googleapis.com/css?family=Roboto+Slab:700:serif|Roboto+Slab:400:serif')
+            link(rel='stylesheet', href='/stylesheets/style.css')
+
+        block scripts
+            script(src='/common-utils.js')
+            script(src='/app.min.js')
+
+            // ignite:modules
+            script(src='/modules/navbar/main.js')
+            // endignite
+
+            // ignite:plugins
+            // endignite
+            
+            script(src='/common-module.js')
+            script(src='/data-structures.js')
+
+    body.theme-line.body-overlap.greedy
+        .wrapper(ui-view='')
