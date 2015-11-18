@@ -135,6 +135,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
@@ -3160,14 +3161,60 @@ class ServerImpl extends TcpDiscoveryImpl {
                             " property value differs from remote node's value " +
                             "(to make sure all nodes in topology have identical marshaller settings, " +
                             "configure system property explicitly) " +
-                            "[locMarshUseDfltSuid=" + locMarshUseDfltSuid +
-                            ", rmtMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
+                            "[locMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
+                            ", rmtMarshUseDfltSuid=" + locMarshUseDfltSuid +
                             ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
                             ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
                             ", rmtNodeId=" + locNode.id() + ']';
 
                         trySendMessageDirectly(node,
                             new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                    }
+                    catch (IgniteSpiException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send marshaller check failed message to node " +
+                                "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                        onException("Failed to send marshaller check failed message to node " +
+                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                    }
+
+                    // Ignore join request.
+                    return;
+                }
+
+                // Validate compact footer flags.
+                Boolean locMarshCompactFooter = locNode.attribute(ATTR_MARSHALLER_COMPACT_FOOTER);
+                boolean locMarshCompactFooterBool = locMarshCompactFooter != null ? locMarshCompactFooter : false;
+
+                Boolean rmtMarshCompactFooter = node.attribute(ATTR_MARSHALLER_COMPACT_FOOTER);
+                boolean rmtMarshCompactFooterBool = rmtMarshCompactFooter != null ? rmtMarshCompactFooter : false;
+
+                if (locMarshCompactFooterBool != rmtMarshCompactFooterBool) {
+                    String errMsg = "Local node's portable marshaller \"compactFooter\" property differs from " +
+                        "the same property on remote node (make sure all nodes in topology have the same value " +
+                        "of \"compactFooter\" property) [locMarshallerCompactFooter=" + locMarshCompactFooterBool +
+                        ", rmtMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
+                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                    LT.warn(log, null, errMsg);
+
+                    // Always output in debug.
+                    if (log.isDebugEnabled())
+                        log.debug(errMsg);
+
+                    try {
+                        String sndMsg = "Local node's portable marshaller \"compactFooter\" property differs from " +
+                            "the same property on remote node (make sure all nodes in topology have the same value " +
+                            "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
+                            ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
+                            ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                            ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                            ", rmtNodeId=" + locNode.id() + ']';
+
+                        trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
                     }
                     catch (IgniteSpiException e) {
                         if (log.isDebugEnabled())

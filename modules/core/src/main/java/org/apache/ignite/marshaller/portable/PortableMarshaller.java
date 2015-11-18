@@ -74,6 +74,12 @@ import org.jetbrains.annotations.Nullable;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class PortableMarshaller extends AbstractMarshaller {
+    /** Default value of "keep deserialized" flag. */
+    public static final boolean DFLT_KEEP_DESERIALIZED = true;
+
+    /** Default value of "compact footer" flag. */
+    public static final boolean DFLT_COMPACT_FOOTER = true;
+
     // TODO ignite-1282 Move to IgniteConfiguration.
     /** Class names. */
     private Collection<String> clsNames;
@@ -88,7 +94,10 @@ public class PortableMarshaller extends AbstractMarshaller {
     private Collection<BinaryTypeConfiguration> typeCfgs;
 
     /** Keep deserialized flag. */
-    private boolean keepDeserialized = true;
+    private boolean keepDeserialized = DFLT_KEEP_DESERIALIZED;
+
+    /** Compact footer. */
+    private boolean compactFooter = DFLT_COMPACT_FOOTER;
 
     /** */
     private GridPortableMarshaller impl;
@@ -189,6 +198,33 @@ public class PortableMarshaller extends AbstractMarshaller {
      */
     public void setKeepDeserialized(boolean keepDeserialized) {
         this.keepDeserialized = keepDeserialized;
+    }
+
+    /**
+     * Get whether to write footers in compact form. When enabled, Ignite will not write fields metadata
+     * when serializing objects, because internally {@code PortableMarshaller} already distribute metadata inside
+     * cluster. This increases serialization performance.
+     * <p>
+     * <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external
+     * sources (e.g. cache store which stores data in binary form, data center replication, etc.). Otherwise binary
+     * objects without any associated metadata could appear in the cluster and Ignite will not be able to deserialize
+     * it.
+     * <p>
+     * Defaults to {@link #DFLT_COMPACT_FOOTER}.
+     *
+     * @return Whether to write footers in compact form.
+     */
+    public boolean isCompactFooter() {
+        return compactFooter;
+    }
+
+    /**
+     * Set whether to write footers in compact form. See {@link #isCompactFooter()} for more info.
+     *
+     * @param compactFooter Whether to write footers in compact form.
+     */
+    public void setCompactFooter(boolean compactFooter) {
+        this.compactFooter = compactFooter;
     }
 
     /**

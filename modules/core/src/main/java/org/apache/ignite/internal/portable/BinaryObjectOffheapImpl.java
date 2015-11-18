@@ -136,7 +136,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
             start,
             null);
 
-        return reader.createSchema();
+        return reader.getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -164,7 +164,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
         if (ctx == null)
             throw new BinaryObjectException("PortableContext is not set for the object.");
 
-        return ctx.metaData(typeId());
+        return ctx.metadata(typeId());
     }
 
     /** {@inheritDoc} */
@@ -198,15 +198,17 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
         int schemaOffset = PortablePrimitives.readInt(ptr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
         short flags = PortablePrimitives.readShort(ptr, start + GridPortableMarshaller.FLAGS_POS);
-        int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
 
-        int fieldOffsetPos = start + schemaOffset + order * (4 + fieldOffsetSize) + 4;
+        int fieldIdLen = PortableUtils.isCompactFooter(flags) ? 0 : PortableUtils.FIELD_ID_LEN;
+        int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
+
+        int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
 
         int fieldPos;
 
-        if (fieldOffsetSize == PortableUtils.OFFSET_1)
+        if (fieldOffsetLen == PortableUtils.OFFSET_1)
             fieldPos = start + ((int)PortablePrimitives.readByte(ptr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffsetSize == PortableUtils.OFFSET_2)
+        else if (fieldOffsetLen == PortableUtils.OFFSET_2)
             fieldPos = start + ((int)PortablePrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + PortablePrimitives.readInt(ptr, fieldOffsetPos);
