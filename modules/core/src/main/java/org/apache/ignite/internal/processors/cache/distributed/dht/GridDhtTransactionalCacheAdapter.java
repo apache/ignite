@@ -228,7 +228,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.futureId(),
                                     nodeId,
                                     req.nearXidVersion(),
-                                    req.threadId(),
                                     req.topologyVersion(),
                                     req.version(),
                                     /*commitVer*/null,
