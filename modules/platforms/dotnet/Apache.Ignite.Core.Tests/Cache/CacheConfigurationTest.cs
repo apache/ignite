@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
@@ -33,6 +34,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         /** */
         private const string CacheName = "cacheName";
+
+        /** */
+        private static int _factoryProp;
+
 
         [TestFixtureSetUp]
         public void FixtureSetUp()
@@ -96,6 +101,26 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var cache2 = _ignite.GetOrCreateCache<int, int>(cfg);
             AssertConfigsAreEqual(cfg, cache2.GetConfiguration());
+        }
+
+        [Test]
+        public void TestCacheStore()
+        {
+            _factoryProp = 0;
+
+            var factory = new CacheStoreFactoryTest {TestProperty = 15};
+
+            var cache = _ignite.CreateCache<int, int>(new CacheConfiguration("cacheWithStore")
+            {
+                CacheStoreFactory = factory
+            });
+
+            Assert.AreEqual(factory.TestProperty, _factoryProp);
+
+            var factory0 = cache.GetConfiguration().CacheStoreFactory as CacheStoreFactoryTest;
+
+            Assert.IsNotNull(factory0);
+            Assert.AreEqual(factory.TestProperty, factory0.TestProperty);
         }
 
         /// <summary>
@@ -223,6 +248,37 @@ namespace Apache.Ignite.Core.Tests.Cache
                 WriteBehindEnabled = false,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync
             };
+        }
+
+        [Serializable]
+        private class CacheStoreFactoryTest : ICacheStoreFactory
+        {
+            public int TestProperty { get; set; }
+
+            public ICacheStore CreateInstance()
+            {
+                _factoryProp = TestProperty;
+
+                return new CacheStoreTest();
+            }
+        }
+
+        private class CacheStoreTest : CacheStoreAdapter
+        {
+            public override object Load(object key)
+            {
+                return null;
+            }
+
+            public override void Write(object key, object val)
+            {
+                // No-op.
+            }
+
+            public override void Delete(object key)
+            {
+                // No-op.
+            }
         }
     }
 }

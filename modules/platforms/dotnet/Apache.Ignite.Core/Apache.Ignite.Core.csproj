@@ -85,6 +85,7 @@
     <Compile Include="Cache\Store\CacheStoreAdapter.cs" />
     <Compile Include="Cache\Store\CacheStoreException.cs" />
     <Compile Include="Cache\Store\ICacheStore.cs" />
+    <Compile Include="Cache\Store\ICacheStoreFactory.cs" />
     <Compile Include="Cache\Store\ICacheStoreSession.cs" />
     <Compile Include="Cluster\ClusterGroupEmptyException.cs" />
     <Compile Include="Cluster\ClusterTopologyException.cs" />

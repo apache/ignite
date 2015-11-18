@@ -219,6 +219,7 @@ namespace Apache.Ignite.Core.Configuration
             WriteBehindFlushSize = reader.ReadInt();
             WriteBehindFlushThreadCount = reader.ReadInt();
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
+            CacheStoreFactory = reader.ReadObject<ICacheStoreFactory>();
         }
 
         /// <summary>
@@ -264,6 +265,7 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt(WriteBehindFlushSize);
             writer.WriteInt(WriteBehindFlushThreadCount);
             writer.WriteInt((int) WriteSynchronizationMode);
+            writer.WriteObject(CacheStoreFactory);
         }
 
         /// <summary>
@@ -507,5 +509,10 @@ namespace Apache.Ignite.Core.Configuration
         /// This setting only makes sense when offheap is enabled for this cache.
         /// </summary>
         public int SqlOnheapRowCacheSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the factory for underlying persistent storage for read-through and write-through operations.
+        /// </summary>
+        public ICacheStoreFactory CacheStoreFactory { get; set; }
     }
 }

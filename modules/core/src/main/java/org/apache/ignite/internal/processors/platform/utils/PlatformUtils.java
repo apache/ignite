@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
@@ -815,6 +817,8 @@ public class PlatformUtils {
      * @return Cache configuration.
      */
     public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in) {
+        assert in != null;
+
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setAtomicityMode(CacheAtomicityMode.fromOrdinal(in.readInt()));
@@ -855,7 +859,66 @@ public class PlatformUtils {
         ccfg.setWriteBehindFlushThreadCount(in.readInt());
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
 
+        Object storeFactory = in.readObjectDetached();
+
+        if (storeFactory != null)
+            ccfg.setCacheStoreFactory(new PlatformDotNetCacheStoreFactoryNative(storeFactory));
+
         return ccfg;
+    }
+
+    /**
+     * Writes cache configuration.
+     *
+     * @param writer Writer.
+     * @param ccfg Configuration.
+     */
+    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg) {
+        assert writer != null;
+        assert ccfg != null;
+
+        writer.writeInt(ccfg.getAtomicityMode().ordinal());
+        writer.writeInt(ccfg.getAtomicWriteOrderMode().ordinal());
+        writer.writeInt(ccfg.getBackups());
+        writer.writeInt(ccfg.getCacheMode().ordinal());
+        writer.writeBoolean(ccfg.isCopyOnRead());
+        writer.writeBoolean(ccfg.isEagerTtl());
+        writer.writeBoolean(ccfg.isSwapEnabled());
+        writer.writeBoolean(ccfg.isEvictSynchronized());
+        writer.writeInt(ccfg.getEvictSynchronizedConcurrencyLevel());
+        writer.writeInt(ccfg.getEvictSynchronizedKeyBufferSize());
+        writer.writeLong(ccfg.getEvictSynchronizedTimeout());
+        writer.writeBoolean(ccfg.isInvalidate());
+        writer.writeBoolean(ccfg.isKeepBinaryInStore());
+        writer.writeBoolean(ccfg.isLoadPreviousValue());
+        writer.writeLong(ccfg.getDefaultLockTimeout());
+        writer.writeLong(ccfg.getLongQueryWarningTimeout());
+        writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
+        writer.writeFloat(ccfg.getEvictMaxOverflowRatio());
+        writer.writeInt(ccfg.getMemoryMode().ordinal());
+        writer.writeString(ccfg.getName());
+        writer.writeLong(ccfg.getOffHeapMaxMemory());
+        writer.writeBoolean(ccfg.isReadFromBackup());
+        writer.writeInt(ccfg.getRebalanceBatchSize());
+        writer.writeLong(ccfg.getRebalanceDelay());
+        writer.writeInt(ccfg.getRebalanceMode().ordinal());
+        writer.writeInt(ccfg.getRebalanceThreadPoolSize());
+        writer.writeLong(ccfg.getRebalanceThrottle());
+        writer.writeLong(ccfg.getRebalanceTimeout());
+        writer.writeBoolean(ccfg.isSqlEscapeAll());
+        writer.writeInt(ccfg.getSqlOnheapRowCacheSize());
+        writer.writeInt(ccfg.getStartSize());
+        writer.writeInt(ccfg.getWriteBehindBatchSize());
+        writer.writeBoolean(ccfg.isWriteBehindEnabled());
+        writer.writeLong(ccfg.getWriteBehindFlushFrequency());
+        writer.writeInt(ccfg.getWriteBehindFlushSize());
+        writer.writeInt(ccfg.getWriteBehindFlushThreadCount());
+        writer.writeInt(ccfg.getWriteSynchronizationMode().ordinal());
+
+        if (ccfg.getCacheStoreFactory() instanceof PlatformDotNetCacheStoreFactoryNative)
+            writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());
+        else
+            writer.writeObject(null);
     }
 
     /**
