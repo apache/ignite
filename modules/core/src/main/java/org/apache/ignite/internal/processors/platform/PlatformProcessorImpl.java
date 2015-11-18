@@ -244,6 +244,20 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
+    @Override public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException {
+        // TODO:
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException {
+        // TODO:
+        
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public PlatformTarget affinity(@Nullable String name) throws IgniteCheckedException {
         return new PlatformAffinity(platformCtx, ctx, name);
     }

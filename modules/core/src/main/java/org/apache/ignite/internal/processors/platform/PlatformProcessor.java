@@ -90,6 +90,24 @@ public interface PlatformProcessor extends GridProcessor {
     public PlatformTarget getOrCreateCache(@Nullable String name) throws IgniteCheckedException;
 
     /**
+     * Create cache.
+     *
+     * @param memPtr Stream with cache config.
+     * @return Cache.
+     * @throws IgniteCheckedException If failed.
+     */
+    public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException;
+
+    /**
+     * Get or create cache.
+     *
+     * @param memPtr Stream with cache config.
+     * @return Cache.
+     * @throws IgniteCheckedException If failed.
+     */
+    public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException;
+
+    /**
      * Get affinity.
      *
      * @param name Cache name.

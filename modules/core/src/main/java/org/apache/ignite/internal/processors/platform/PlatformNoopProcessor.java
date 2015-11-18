@@ -74,6 +74,16 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
+    @Override public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public PlatformTarget affinity(@Nullable String name) throws IgniteCheckedException {
         return null;
     }
