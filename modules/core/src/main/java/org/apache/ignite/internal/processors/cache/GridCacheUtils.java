@@ -1804,7 +1804,10 @@ public class GridCacheUtils {
                         if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
                             ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
 
-                            topErr.retryReadyFuture().get();
+                            if (topErr.retryReadyFuture() != null)
+                                topErr.retryReadyFuture().get();
+                            else
+                                U.sleep(1);
                         }
                         else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
                             CachePartialUpdateCheckedException.class))
