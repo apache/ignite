@@ -328,13 +328,16 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             dhtVerVals = dhtVers.values();
         }
 
-        if (txNodesMsg == null)
-            txNodesMsg = F.viewReadOnly(txNodes, COL_TO_MSG);
-
         // Marshal txNodes only if there is a node in topology with an older version.
-        if (txNodes != null && ctx.exchange().minimumNodeVersion(topologyVersion())
-            .compareTo(TX_NODES_DIRECT_MARSHALLABLE_SINCE) < 0)
-            txNodesBytes = ctx.marshaller().marshal(txNodes);
+        if (ctx.exchange().minimumNodeVersion(topologyVersion())
+            .compareTo(TX_NODES_DIRECT_MARSHALLABLE_SINCE) < 0) {
+            if (txNodes != null && txNodesBytes == null)
+                txNodesBytes = ctx.marshaller().marshal(txNodes);
+        }
+        else {
+            if (txNodesMsg == null)
+                txNodesMsg = F.viewReadOnly(txNodes, COL_TO_MSG);
+        }
     }
 
     /** {@inheritDoc} */
