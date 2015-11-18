@@ -511,32 +511,32 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /**
-     * Adds mapping to the transaction. Note that transaction must hold a copy of TX mapping because
-     * tx mapping will be sent to remote nodes.
-     *
-     * @param primary Primary node for which the mapping is being added.
-     * @param near Near mapping flag.
-     * @param explicitLock Explicit lock flag.
-     * @param txEntry Transaction entry being added.
+     * @param maps Mappings.
      */
-    void addEntryMapping(ClusterNode primary, boolean near, boolean explicitLock, IgniteTxEntry txEntry) {
-        UUID nodeId = primary.id();
-        GridDistributedTxMapping m = mappings.get(nodeId);
+    void addEntryMapping(@Nullable Collection<GridDistributedTxMapping> maps) {
+        if (!F.isEmpty(maps)) {
+            for (GridDistributedTxMapping map : maps) {
+                ClusterNode n = map.node();
 
-        if (m == null)
-            mappings.put(m = new GridDistributedTxMapping(primary));
+                GridDistributedTxMapping m = mappings.get(n.id());
 
-        if (near)
-            m.near(true);
+                if (m == null) {
+                    mappings.put(m = new GridDistributedTxMapping(n));
 
-        if (explicitLock)
-            m.markExplicitLock();
+                    m.near(map.near());
 
-        m.add(txEntry);
+                    if (map.explicitLock())
+                        m.markExplicitLock();
+                }
 
-        if (log.isDebugEnabled())
-            log.debug("Added mapping to transaction [locId=" + cctx.localNodeId() + ", primaryId=" + nodeId +
-                ", entry=" + txEntry + ']');
+                for (IgniteTxEntry entry : map.entries())
+                    m.add(entry);
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Added mappings to transaction [locId=" + cctx.localNodeId() + ", mappings=" + maps +
+                    ", tx=" + this + ']');
+        }
     }
 
     /**

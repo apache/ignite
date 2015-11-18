@@ -401,6 +401,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             return;
         }
 
+        tx.addEntryMapping(mappings);
+
         cctx.mvcc().recheckPendingLocks();
 
         tx.transactionNodes(txMapping.transactionNodes());
@@ -596,8 +598,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
             }
         }
-
-        tx.addEntryMapping(primary, cacheCtx.isNear(), entry.explicitVersion() != null, entry);
 
         return cur;
     }

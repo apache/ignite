@@ -363,6 +363,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             return;
         }
 
+        tx.addEntryMapping(mappings.values());
+
         cctx.mvcc().recheckPendingLocks();
 
         tx.transactionNodes(txMapping.transactionNodes());
@@ -601,8 +603,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 }
             }
         }
-
-        tx.addEntryMapping(primary, cacheCtx.isNear(), entry.explicitVersion() != null, entry);
     }
 
     /** {@inheritDoc} */
