@@ -42,10 +42,10 @@ import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCountDownLatch;
-import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -80,7 +80,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -95,8 +94,8 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.ATOMIC_STAMPED;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.COUNT_DOWN_LATCH;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.QUEUE;
-import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.SET;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.SEMAPHORE;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.SET;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -140,7 +139,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     private IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> cntDownLatchView;
 
     /** Cache contains only {@code GridCacheSemaphoreState}. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semaphoreView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semView;
 
     /** Cache contains only {@code GridCacheAtomicReferenceValue}. */
     private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue> atomicRefView;
@@ -198,7 +197,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
             cntDownLatchView = atomicsCache;
 
-            semaphoreView = atomicsCache;
+            semView = atomicsCache;
 
             atomicLongView = atomicsCache;
 
@@ -1259,7 +1258,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     final GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(
                         name,
                         key,
-                        semaphoreView,
+                        semView,
                         dsCacheCtx);
 
                     dsCacheCtx.gridEvents().addLocalEventListener(
@@ -1465,19 +1464,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         GridCacheInternalKey key = evt.getKey();
 
                         // Notify semaphore on changes.
-                        final GridCacheRemovable semaphore = dsMap.get(key);
+                        final GridCacheRemovable sem = dsMap.get(key);
 
                         GridCacheSemaphoreState val = (GridCacheSemaphoreState)val0;
 
-                        if (semaphore instanceof GridCacheSemaphoreEx) {
-                            final GridCacheSemaphoreEx semaphore0 = (GridCacheSemaphoreEx)semaphore;
+                        if (sem instanceof GridCacheSemaphoreEx) {
+                            final GridCacheSemaphoreEx semaphore0 = (GridCacheSemaphoreEx)sem;
 
                             semaphore0.onUpdate(val);
                         }
-                        else if (semaphore != null) {
+                        else if (sem != null) {
                             U.error(log, "Failed to cast object " +
                                     "[expected=" + IgniteSemaphore.class.getSimpleName() +
-                                    ", actual=" + semaphore.getClass() + ", value=" + semaphore + ']');
+                                    ", actual=" + sem.getClass() + ", value=" + sem + ']');
                         }
                     }
 
@@ -1569,7 +1568,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @return Removed value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryRemove(final IgniteInternalCache cache, final Object key) throws IgniteCheckedException {
+    @Nullable private <T> T retryRemove(final IgniteInternalCache cache, final Object key)
+        throws IgniteCheckedException {
         return retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
                 return (T)cache.getAndRemove(key);

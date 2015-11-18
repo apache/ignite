@@ -2937,10 +2937,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteSemaphore semaphore(String name,
-       int cnt,
-       boolean fair,
-       boolean create) {
+    @Nullable @Override public IgniteSemaphore semaphore(
+        String name,
+        int cnt,
+        boolean fair,
+        boolean create
+    ) {
         guard();
 
         try {
