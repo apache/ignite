@@ -183,6 +183,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         ctx.event().addLocalEventListener(
             new GridLocalEventListener() {
                 @Override public void onEvent(final Event evt) {
+                    // This may require cache operation to exectue,
+                    // therefore cannot use event notification thread.
                     ctx.closure().callLocalSafe(
                         new Callable<Object>() {
                             @Override public Object call() throws Exception {
