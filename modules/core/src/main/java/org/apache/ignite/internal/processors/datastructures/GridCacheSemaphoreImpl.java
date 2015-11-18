@@ -289,7 +289,8 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                                 return retVal;
                             }
                             catch (Error | Exception e) {
-                                U.error(log, "Failed to compare and set: " + this, e);
+                                if (!ctx.kernalContext().isStopping())
+                                    U.error(log, "Failed to compare and set: " + this, e);
 
                                 throw e;
                             }
@@ -299,7 +300,14 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                 );
             }
             catch (IgniteCheckedException e) {
-                throw U.convertException(e);
+                if (ctx.kernalContext().isStopping()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Ignoring failure in semaphore on node left handler (node is stopping): " + e);
+
+                    return true;
+                }
+                else
+                    throw U.convertException(e);
             }
         }
 
@@ -351,7 +359,8 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                                 return true;
                             }
                             catch (Error | Exception e) {
-                                U.error(log, "Failed to compare and set: " + this, e);
+                                if (!ctx.kernalContext().isStopping())
+                                    U.error(log, "Failed to compare and set: " + this, e);
 
                                 throw e;
                             }
@@ -361,7 +370,14 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                 );
             }
             catch (IgniteCheckedException e) {
-                throw U.convertException(e);
+                if (ctx.kernalContext().isStopping()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Ignoring failure in semaphore on node left handler (node is stopping): " + e);
+
+                    return true;
+                }
+                else
+                    throw U.convertException(e);
             }
         }
     }
@@ -478,13 +494,14 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         sync.releaseShared(0);
     }
 
-    @Override public void onNodeRemoved(UUID nodeID) {
-        int numPermits = sync.getPermitsForNode(nodeID);
+    /** {@inheritDoc} */
+    @Override public void onNodeRemoved(UUID nodeId) {
+        int numPermits = sync.getPermitsForNode(nodeId);
 
         if (numPermits > 0) {
             if (sync.failoverSafe)
                 // Release permits acquired by threads on failing node.
-                sync.releaseFailedNode(nodeID);
+                sync.releaseFailedNode(nodeId);
             else {
                 // Interrupt every waiting thread if this semaphore is not failover safe.
                 sync.broken = true;

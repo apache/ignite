@@ -177,6 +177,27 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        super.start();
+
+        ctx.event().addLocalEventListener(
+            new GridLocalEventListener() {
+                @Override public void onEvent(Event evt) {
+                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+
+                    UUID leftNodeId = discoEvt.eventNode().id();
+
+                    for (GridCacheRemovable ds : dsMap.values()) {
+                        if (ds instanceof GridCacheSemaphoreEx)
+                            ((GridCacheSemaphoreEx)ds).onNodeRemoved(leftNodeId);
+                    }
+                }
+            },
+            EVT_NODE_LEFT,
+            EVT_NODE_FAILED);
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
@@ -1255,22 +1276,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         dsView.put(key, val);
                     }
 
-                    final GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(
+                    GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(
                         name,
                         key,
                         semView,
                         dsCacheCtx);
-
-                    dsCacheCtx.gridEvents().addLocalEventListener(
-                        new GridLocalEventListener() {
-                            @Override public void onEvent(Event event) {
-                                DiscoveryEvent ev = (DiscoveryEvent)event;
-
-                                sem0.onNodeRemoved(ev.eventNode().id());
-                            }
-                        },
-                        EVT_NODE_LEFT,
-                        EVT_NODE_FAILED);
 
                     dsMap.put(key, sem0);
 
