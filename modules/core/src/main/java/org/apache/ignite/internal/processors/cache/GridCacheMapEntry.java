@@ -74,6 +74,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 
 /**
@@ -4014,7 +4015,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         IgniteInternalTx tx = cctx.tm().localTxx();
 
-        return tx == null || !tx.removed(txKey());
+        if (tx != null) {
+            IgniteTxEntry e = tx.entry(txKey());
+
+            boolean rmvd = e != null && e.op() == DELETE;
+
+            return !rmvd;
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

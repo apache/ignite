@@ -200,7 +200,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 m.near(),
                 txMapping.transactionNodes(),
                 true,
-                txMapping.transactionNodes().get(node.id()),
                 tx.onePhaseCommit(),
                 tx.needReturnValue() && tx.implicit(),
                 tx.implicitSingle(),

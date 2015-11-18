@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -196,8 +197,15 @@ public class TcpDiscoveryRestartTest extends GridCommonAbstractTest {
 
         /**
          * @param nodeId Node ID.
+         * @throws Exception If failed.
          */
-        void checkEvents(UUID nodeId) {
+        void checkEvents(final UUID nodeId) throws Exception {
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return joinIds.contains(nodeId) && leftIds.contains(nodeId);
+                }
+            }, 5000);
+
             assertTrue("No join event: " + nodeId, joinIds.contains(nodeId));
 
             assertTrue("No left event: " + nodeId, leftIds.contains(nodeId));
