@@ -97,7 +97,7 @@ $generatorPom.pom = function (cluster, igniteVersion, res) {
     res.startBlock('<repositories>');
     res.startBlock('<repository>');
     addProperty('id', 'GridGain External Repository');
-    addProperty('url', 'http://www.gridgainsystems.com/nexus/content/repositories/gridgain_staging-1549');
+    addProperty('url', 'http://www.gridgainsystems.com/nexus/content/repositories/gridgain_staging-1555');
     res.endBlock('</repository>');
     res.endBlock('</repositories>');
 

@@ -437,7 +437,8 @@ var ClusterSchema = new Schema({
         trustStoreFilePath: String,
         trustStoreType: String,
         trustManagers: [String]
-    }
+    },
+    rebalanceThreadPoolSize: Number
 });
 
 // Install deep populate plugin.

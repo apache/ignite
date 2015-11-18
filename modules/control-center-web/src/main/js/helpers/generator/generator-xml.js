@@ -603,6 +603,7 @@ $generatorXml.clusterPools = function (cluster, res) {
     $generatorXml.property(res, cluster, 'systemThreadPoolSize');
     $generatorXml.property(res, cluster, 'managementThreadPoolSize');
     $generatorXml.property(res, cluster, 'igfsThreadPoolSize');
+    $generatorXml.property(res, cluster, 'rebalanceThreadPoolSize');
 
     res.needEmptyLine = true;
 

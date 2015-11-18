@@ -97,6 +97,10 @@ $generatorJava.declareVariable = function (res, varName, varFullType, varFullAct
     res.needEmptyLine = true;
 };
 
+$generatorJava.addVariable = function (res, varName) {
+    res.vars[varName] = true;
+};
+
 /**
  * Clear list of declared variables.
  *
@@ -731,6 +735,7 @@ $generatorJava.clusterPools = function (cluster, res) {
     $generatorJava.property(res, 'cfg', cluster, 'systemThreadPoolSize');
     $generatorJava.property(res, 'cfg', cluster, 'managementThreadPoolSize');
     $generatorJava.property(res, 'cfg', cluster, 'igfsThreadPoolSize');
+    $generatorJava.property(res, 'cfg', cluster, 'rebalanceThreadPoolSize');
 
     res.needEmptyLine = true;
 
@@ -849,6 +854,8 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
         if (storeFactory) {
             var storeFactoryDesc = $generatorCommon.STORE_FACTORIES[factoryKind];
 
+            var varName = 'storeFactory' + storeFactoryDesc.suffix;
+
             var dataSourceFound = false;
 
             if (storeFactory.dialect) {
@@ -892,12 +899,12 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
 
             if (factoryKind == 'CacheJdbcPojoStoreFactory') {
                 // Generate POJO store factory.
-                $generatorJava.declareVariable(res, 'storeFactory', 'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory');
+                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory');
 
                 if (dataSourceFound)
-                    res.line('storeFactory.setDataSource(dataSource);');
+                    res.line(varName + '.setDataSource(dataSource);');
 
-                res.line('storeFactory.setDialect(new ' +
+                res.line(varName + '.setDialect(new ' +
                     res.importClass($generatorCommon.jdbcDialectClassName(storeFactory.dialect)) + '());');
 
                 res.needEmptyLine = true;
@@ -921,23 +928,23 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
                         res.needEmptyLine = true;
                     });
 
-                    res.line('storeFactory.setTypes(jdbcTypes.toArray(new JdbcType[jdbcTypes.size()]));');
+                    res.line(varName + '.setTypes(jdbcTypes.toArray(new JdbcType[jdbcTypes.size()]));');
 
                     res.needEmptyLine = true;
                 }
+
+                res.line(cacheVarName + '.setCacheStoreFactory(' + varName + ');');
             }
             else {
-                $generatorJava.beanProperty(res, cacheVarName, storeFactory, 'cacheStoreFactory', 'storeFactory',
+                $generatorJava.beanProperty(res, cacheVarName, storeFactory, 'cacheStoreFactory', varName,
                     storeFactoryDesc.className, storeFactoryDesc.fields, true);
 
                 if (dataSourceFound)
-                    res.line('storeFactory.setDataSource(dataSource);');
+                    res.line(varName + '.setDataSource(dataSource);');
             }
 
             res.needEmptyLine = true;
         }
-
-        res.line(cacheVarName + '.setCacheStoreFactory(storeFactory);');
 
         res.needEmptyLine = true;
     }
@@ -1837,14 +1844,16 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
 
         if (haveDS || cluster.sslEnabled) {
             res.line(res.importClass('java.net.URL') + ' res = IgniteConfiguration.class.getResource("/secret.properties");');
+            $generatorJava.addVariable(res, 'res');
 
             res.needEmptyLine = true;
 
             res.line(res.importClass('java.io.File') + ' propsFile = new File(res.toURI());');
+            $generatorJava.addVariable(res, 'propsFile');
 
             res.needEmptyLine = true;
 
-            res.line(res.importClass('java.util.Properties') + ' props = new Properties();');
+            $generatorJava.declareVariable(res, 'props', 'java.util.Properties');
 
             res.needEmptyLine = true;
 
@@ -1886,7 +1895,6 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
         $generatorJava.igfss(cluster.igfss, 'cfg', res);
 
         if (javaClass) {
-            res.importClass('org.apache.ignite.Ignite');
             res.importClass('org.apache.ignite.Ignition');
 
             res.line('return cfg;');

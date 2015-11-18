@@ -276,12 +276,14 @@ $generatorCommon.dataSourceClassName = function(db) {
 $generatorCommon.STORE_FACTORIES = {
     CacheJdbcPojoStoreFactory: {
         className: 'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory',
+        suffix: 'JdbcPojo',
         fields: {
             configuration: {type: 'bean'}
         }
     },
     CacheJdbcBlobStoreFactory: {
         className: 'org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory',
+        suffix: 'JdbcBlob',
         fields: {
             user: null,
             dataSourceBean: null,
@@ -295,6 +297,7 @@ $generatorCommon.STORE_FACTORIES = {
     },
     CacheHibernateBlobStoreFactory: {
         className: 'org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreFactory',
+        suffix: 'Hibernate',
         fields: {hibernateProperties: {type: 'propertiesAsList', propVarName: 'props'}}
     }
 };
