@@ -22,10 +22,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
+import org.apache.ignite.internal.portable.BinaryRawReaderEx;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -39,7 +41,9 @@ import org.apache.ignite.internal.processors.platform.compute.PlatformCompute;
 import org.apache.ignite.internal.processors.platform.datastreamer.PlatformDataStreamer;
 import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicLong;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetCacheStore;
+import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.events.PlatformEvents;
+import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.messaging.PlatformMessaging;
@@ -245,16 +249,22 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException {
-        // TODO:
+        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
+        CacheConfiguration cfg = PlatformUtils.readCacheConfiguration(reader);
 
-        return null;
+        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createCache(cfg);
+
+        return new PlatformCache(platformCtx, cache, false);
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException {
-        // TODO:
-        
-        return null;
+        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
+        CacheConfiguration cfg = PlatformUtils.readCacheConfiguration(reader);
+
+        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
+
+        return new PlatformCache(platformCtx, cache, false);
     }
 
     /** {@inheritDoc} */
