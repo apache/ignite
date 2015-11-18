@@ -19,16 +19,16 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PlatformConfiguration;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.portable.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
-import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
@@ -142,7 +142,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             try (PlatformMemory inMem = memMgr.allocate()) {
                 PlatformOutputStream out = outMem.output();
 
-                BinaryRawWriterEx writer = marshaller().writer(out);
+                GridPortableMarshaller marshaller = marshaller();
+                BinaryRawWriterEx writer = marshaller.writer(out);
 
                 PlatformUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
@@ -160,7 +161,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 gate.extensionCallbackInLongLongOutLong(
                     PlatformUtils.OP_PREPARE_DOT_NET, outMem.pointer(), inMem.pointer());
 
-                processPrepareResult(inMem.input());
+                processPrepareResult(marshaller.reader(inMem.input()));
             }
         }
     }
@@ -170,8 +171,10 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      *
      * @param in Input stream.
      */
-    private void processPrepareResult(PlatformInputStream in) {
+    private void processPrepareResult(BinaryReaderExImpl in) {
         assert cfg != null;
+
+        readCacheConfiguration(cfg, in);
 
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);
         List<PlatformLifecycleBean> newBeans = new ArrayList<>();
@@ -223,6 +226,78 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         }
 
         return res;
+    }
+
+    /**
+     * Reads cache configurations from a stream and updates provided IgniteConfiguration.
+     * @param cfg IgniteCOnfiguration to update.
+     * @param in Reader.
+     */
+    private static void readCacheConfiguration(IgniteConfiguration cfg, BinaryReaderExImpl in) {
+        int len = in.readInt();
+
+        if (len == 0)
+            return;
+
+        List<CacheConfiguration> caches = new ArrayList<>();
+
+        for (int i = 0; i < len; i++) {
+            CacheConfiguration ccfg = new CacheConfiguration();
+
+            ccfg.setAtomicityMode(CacheAtomicityMode.fromOrdinal(in.readInt()));
+            ccfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.fromOrdinal((byte) in.readInt()));
+            ccfg.setBackups(in.readInt());
+            ccfg.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
+            ccfg.setCopyOnRead(in.readBoolean());
+            ccfg.setEagerTtl(in.readBoolean());
+            ccfg.setSwapEnabled(in.readBoolean());
+            ccfg.setEvictSynchronized(in.readBoolean());
+            ccfg.setEvictSynchronizedConcurrencyLevel(in.readInt());
+            ccfg.setEvictSynchronizedKeyBufferSize(in.readInt());
+            ccfg.setEvictSynchronizedTimeout(in.readLong());
+            ccfg.setInvalidate(in.readBoolean());
+            ccfg.setKeepBinaryInStore(in.readBoolean());
+            ccfg.setLoadPreviousValue(in.readBoolean());
+            ccfg.setDefaultLockTimeout(in.readLong());
+            ccfg.setLongQueryWarningTimeout(in.readLong());
+            ccfg.setMaxConcurrentAsyncOperations(in.readInt());
+            ccfg.setEvictMaxOverflowRatio(in.readFloat());
+            ccfg.setMemoryMode(CacheMemoryMode.values()[in.readInt()]);
+            ccfg.setName(in.readString());
+            ccfg.setOffHeapMaxMemory(in.readLong());
+            ccfg.setReadFromBackup(in.readBoolean());
+            ccfg.setRebalanceBatchSize(in.readInt());
+            ccfg.setRebalanceDelay(in.readLong());
+            ccfg.setRebalanceMode(CacheRebalanceMode.fromOrdinal(in.readInt()));
+            ccfg.setRebalanceThreadPoolSize(in.readInt());
+            ccfg.setRebalanceThrottle(in.readLong());
+            ccfg.setRebalanceTimeout(in.readLong());
+            ccfg.setSqlEscapeAll(in.readBoolean());
+            ccfg.setSqlOnheapRowCacheSize(in.readInt());
+            ccfg.setStartSize(in.readInt());
+            ccfg.setWriteBehindBatchSize(in.readInt());
+            ccfg.setWriteBehindEnabled(in.readBoolean());
+            ccfg.setWriteBehindFlushFrequency(in.readLong());
+            ccfg.setWriteBehindFlushSize(in.readInt());
+            ccfg.setWriteBehindFlushThreadCount(in.readInt());
+            ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
+
+            caches.add(ccfg);
+        }
+
+        CacheConfiguration[] oldCaches = cfg.getCacheConfiguration();
+        CacheConfiguration[] caches0 = caches.toArray(new CacheConfiguration[caches.size()]);
+
+        if (oldCaches == null)
+            cfg.setCacheConfiguration(caches0);
+        else {
+            CacheConfiguration[] mergedCaches = new CacheConfiguration[oldCaches.length + caches.size()];
+
+            System.arraycopy(oldCaches, 0, mergedCaches, 0, oldCaches.length);
+            System.arraycopy(caches0, 0, mergedCaches, oldCaches.length, caches.size());
+
+            cfg.setCacheConfiguration(mergedCaches);
+        }
     }
 
     /**

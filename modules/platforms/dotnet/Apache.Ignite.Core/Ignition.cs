@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
@@ -230,7 +231,7 @@ namespace Apache.Ignite.Core
             {
                 BinaryReader reader = BinaryUtils.Marshaller.StartUnmarshal(inStream);
 
-                PrepareConfiguration(reader);
+                PrepareConfiguration(reader, outStream);
 
                 PrepareLifecycleBeans(reader, outStream, handleRegistry);
             }
@@ -246,7 +247,8 @@ namespace Apache.Ignite.Core
         /// Preapare configuration.
         /// </summary>
         /// <param name="reader">Reader.</param>
-        private static void PrepareConfiguration(BinaryReader reader)
+        /// <param name="outStream">Response stream.</param>
+        private static void PrepareConfiguration(BinaryReader reader, PlatformMemoryStream outStream)
         {
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
@@ -265,6 +267,33 @@ namespace Apache.Ignite.Core
                 cfg.BinaryConfiguration = binaryCfg;
 
             _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
+
+            // 3. Send configuration details to Java
+            WriteConfiguration(outStream, cfg);
+        }
+
+        /// <summary>
+        /// Writes the configuration.
+        /// </summary>
+        /// <param name="outStream">The out stream.</param>
+        /// <param name="cfg">The CFG.</param>
+        private static void WriteConfiguration(PlatformMemoryStream outStream, IgniteConfiguration cfg)
+        {
+            Debug.Assert(outStream != null && cfg != null);
+
+            var caches = cfg.CacheConfiguration;
+
+            if (caches == null)
+                outStream.WriteInt(0);
+            else
+            {
+                outStream.WriteInt(caches.Count);
+
+                var writer = _startup.Marshaller.StartMarshal(outStream);
+
+                foreach (var cache in caches)
+                    cache.Write(writer);
+            }
         }
 
         /// <summary>
