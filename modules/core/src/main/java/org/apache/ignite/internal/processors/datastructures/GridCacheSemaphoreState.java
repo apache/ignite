@@ -21,12 +21,12 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,11 +37,11 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     private static final long serialVersionUID = 0L;
 
     /** Permission count. */
-    private int count;
+    private int cnt;
 
     /** Map containing number of acquired permits for each node waiting on this semaphore. */
     @GridToStringInclude
-    private Map<UUID,Integer> waiters;
+    private Map<UUID, Integer> waiters;
 
     /** FailoverSafe flag. */
     private boolean failoverSafe;
@@ -49,10 +49,12 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     /**
      * Constructor.
      *
-     * @param count Number of permissions.
+     * @param cnt Number of permissions.
+     * @param waiters Waiters map.
+     * @param failoverSafe Failover safe flag.
      */
-    public GridCacheSemaphoreState(int count, @Nullable Map<UUID,Integer> waiters, boolean failoverSafe) {
-        this.count = count;
+    public GridCacheSemaphoreState(int cnt, @Nullable Map<UUID,Integer> waiters, boolean failoverSafe) {
+        this.cnt = cnt;
         this.waiters = waiters;
         this.failoverSafe = failoverSafe;
     }
@@ -65,17 +67,17 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     }
 
     /**
-     * @param count New count.
+     * @param cnt New count.
      */
-    public void setCount(int count) {
-        this.count = count;
+    public void setCount(int cnt) {
+        this.cnt = cnt;
     }
 
     /**
      * @return Current count.
      */
     public int getCount() {
-        return count;
+        return cnt;
     }
 
     /**
@@ -106,30 +108,32 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(count);
+        out.writeInt(cnt);
         out.writeBoolean(failoverSafe);
         out.writeBoolean(waiters != null);
+
         if (waiters != null) {
             out.writeInt(waiters.size());
-            for (UUID uuid : waiters.keySet()) {
-                out.writeUTF(uuid.toString());
-                out.writeInt(waiters.get(uuid));
+
+            for (Map.Entry<UUID, Integer> e : waiters.entrySet()) {
+                U.writeUuid(out, e.getKey());
+                out.writeInt(e.getValue());
             }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
-        count = in.readInt();
+        cnt = in.readInt();
         failoverSafe = in.readBoolean();
-        if(in.readBoolean()) {
+
+        if (in.readBoolean()) {
             int size = in.readInt();
-            waiters = new HashMap<>();
-            for (int i = 0; i < size; i++) {
-                UUID uuid = UUID.fromString(in.readUTF());
-                int permits = in.readInt();
-                waiters.put(uuid, permits);
-            }
+
+            waiters = U.newHashMap(size);
+
+            for (int i = 0; i < size; i++)
+                waiters.put(U.readUuid(in), in.readInt());
         }
     }
 

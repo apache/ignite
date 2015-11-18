@@ -247,7 +247,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
          * @param draining True if used for draining the permits.
          * @return True if this is the call that succeeded to change the global state.
          */
-        protected boolean compareAndSetGlobalState(final int expVal, final int newVal, boolean draining) {
+        protected boolean compareAndSetGlobalState(final int expVal, final int newVal, final boolean draining) {
             try {
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
@@ -266,16 +266,15 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                                 if (retVal) {
                                     // If this is not a call to drain permits,
                                     // Modify global permission count for the calling node.
-                                    if(!draining) {
+                                    if (!draining) {
                                         UUID nodeID = ctx.localNodeId();
 
                                         Map<UUID,Integer> map = val.getWaiters();
 
                                         int waitingCnt = expVal - newVal;
 
-                                        if(map.containsKey(nodeID)){
+                                        if(map.containsKey(nodeID))
                                             waitingCnt += map.get(nodeID);
-                                        }
 
                                         map.put(nodeID, waitingCnt);
 

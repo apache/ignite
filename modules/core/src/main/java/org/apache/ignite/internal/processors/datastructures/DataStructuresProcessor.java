@@ -58,6 +58,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheType;
@@ -86,6 +87,7 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.ATOMIC_LONG;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.ATOMIC_REF;
@@ -1237,47 +1239,45 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     GridCacheSemaphoreState val = cast(dsView.get(key), GridCacheSemaphoreState.class);
 
                     // Check that semaphore hasn't been created in other thread yet.
-                    GridCacheSemaphoreEx semaphore = cast(dsMap.get(key), GridCacheSemaphoreEx.class);
+                    GridCacheSemaphoreEx sem = cast(dsMap.get(key), GridCacheSemaphoreEx.class);
 
-                    if (semaphore != null) {
+                    if (sem != null) {
                         assert val != null;
 
-                        return semaphore;
+                        return sem;
                     }
 
                     if (val == null && !create)
                         return null;
 
                     if (val == null) {
-                        val = new GridCacheSemaphoreState(cnt, new HashMap<UUID,Integer>(), failoverSafe);
+                        val = new GridCacheSemaphoreState(cnt, new HashMap<UUID, Integer>(), failoverSafe);
 
                         dsView.put(key, val);
                     }
 
-                    final GridCacheSemaphoreEx semaphore0 = new GridCacheSemaphoreImpl(
+                    final GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(
                         name,
                         key,
                         semaphoreView,
                         dsCacheCtx);
 
-                    dsCacheCtx.grid().events().localListen(new IgnitePredicate<Event>() {
-                        @Override public boolean apply(Event event) {
-                            if (event.type() != EVT_NODE_LEFT || !(event instanceof DiscoveryEvent))
-                                return false;
+                    dsCacheCtx.gridEvents().addLocalEventListener(
+                        new GridLocalEventListener() {
+                            @Override public void onEvent(Event event) {
+                                DiscoveryEvent ev = (DiscoveryEvent)event;
 
-                            DiscoveryEvent ev = (DiscoveryEvent)event;
+                                sem0.onNodeRemoved(ev.eventNode().id());
+                            }
+                        },
+                        EVT_NODE_LEFT,
+                        EVT_NODE_FAILED);
 
-                            semaphore0.onNodeRemoved(ev.eventNode().id());
-
-                            return true;
-                        }
-                    }, new int[] {EVT_NODE_LEFT});
-
-                    dsMap.put(key, semaphore0);
+                    dsMap.put(key, sem0);
 
                     tx.commit();
 
-                    return semaphore0;
+                    return sem0;
                 }
                 catch (Error | Exception e) {
                     dsMap.remove(key);
