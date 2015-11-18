@@ -506,7 +506,7 @@ consoleModule.service('$common', [
                     if (!activePanels || activePanels.length < 1)
                         panels.activePanels = [idx];
                     else if (!_.contains(activePanels, idx)) {
-                        var newActivePanels = activePanels.slice();
+                        var newActivePanels = angular.copy(activePanels);
 
                         newActivePanels.push(idx);
 

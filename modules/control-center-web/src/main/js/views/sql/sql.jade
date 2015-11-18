@@ -102,9 +102,9 @@ block container
                                 .btn-group(style='margin-top: 2px')
                                     +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
                 .docs-body.paragraphs
-                    .panel-group(bs-collapse ng-model='expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
+                    .panel-group(bs-collapse ng-model='notebook.activePanels' data-allow-multiple='true' data-start-collapsed='false')
                         .panel.panel-default(ng-repeat='paragraph in notebook.paragraphs')
-                            .panel-heading(id='paragraph-{{paragraph.id}}' bs-collapse-toggle)
+                            .panel-heading(id='{{paragraph.id}}' bs-collapse-toggle)
                                 .row
                                     .col-sm-6(ng-hide='paragraph.edit')
                                         i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
