@@ -349,9 +349,7 @@ namespace Apache.Ignite.Core.Impl
 
                 configuration.Write(writer);
 
-                // return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, name));
-
-                throw new NotImplementedException();
+                return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, stream.MemoryPointer));
             }
         }
 
@@ -366,7 +364,16 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
+
+                configuration.Write(writer);
+
+                return Cache<TK, TV>(UU.ProcessorGetOrCreateCache(_proc, stream.MemoryPointer));
+            }
         }
 
         /// <summary>

@@ -45,6 +45,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcProcessorCache = "IgniteProcessorCache";
         private const string ProcProcessorGetOrCreateCache = "IgniteProcessorGetOrCreateCache";
         private const string ProcProcessorCreateCache = "IgniteProcessorCreateCache";
+        private const string ProcProcessorGetOrCreateCacheFromConfig = "IgniteProcessorGetOrCreateCacheFromConfig";
+        private const string ProcProcessorCreateCacheFromConfig = "IgniteProcessorCreateCacheFromConfig";
         private const string ProcProcessorAffinity = "IgniteProcessorAffinity";
         private const string ProcProcessorDataStreamer = "IgniteProcessorDataStreamer";
         private const string ProcProcessorTransactions = "IgniteProcessorTransactions";
@@ -176,6 +178,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void* ProcessorCacheDelegate(void* ctx, void* obj, sbyte* name);
         private delegate void* ProcessorCreateCacheDelegate(void* ctx, void* obj, sbyte* name);
         private delegate void* ProcessorGetOrCreateCacheDelegate(void* ctx, void* obj, sbyte* name);
+        private delegate void* ProcessorCreateCacheFromConfigDelegate(void* ctx, void* obj, long memPtr);
+        private delegate void* ProcessorGetOrCreateCacheFromConfigDelegate(void* ctx, void* obj, long memPtr);
         private delegate void* ProcessorAffinityDelegate(void* ctx, void* obj, sbyte* name);
         private delegate void* ProcessorDataStreamerDelegate(void* ctx, void* obj, sbyte* name, bool keepBinary);
         private delegate void* ProcessorTransactionsDelegate(void* ctx, void* obj);
@@ -308,6 +312,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ProcessorCacheDelegate PROCESSOR_CACHE;
         private static readonly ProcessorCreateCacheDelegate PROCESSOR_CREATE_CACHE;
         private static readonly ProcessorGetOrCreateCacheDelegate PROCESSOR_GET_OR_CREATE_CACHE;
+        private static readonly ProcessorCreateCacheFromConfigDelegate PROCESSOR_CREATE_CACHE_FROM_CONFIG;
+        private static readonly ProcessorGetOrCreateCacheFromConfigDelegate PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG;
         private static readonly ProcessorAffinityDelegate PROCESSOR_AFFINITY;
         private static readonly ProcessorDataStreamerDelegate PROCESSOR_DATA_STREAMER;
         private static readonly ProcessorTransactionsDelegate PROCESSOR_TRANSACTIONS;
@@ -456,6 +462,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             PROCESSOR_CACHE = CreateDelegate<ProcessorCacheDelegate>(ProcProcessorCache);
             PROCESSOR_CREATE_CACHE = CreateDelegate<ProcessorCreateCacheDelegate>(ProcProcessorCreateCache);
             PROCESSOR_GET_OR_CREATE_CACHE = CreateDelegate<ProcessorGetOrCreateCacheDelegate>(ProcProcessorGetOrCreateCache);
+            PROCESSOR_CREATE_CACHE_FROM_CONFIG = CreateDelegate<ProcessorCreateCacheFromConfigDelegate>(ProcProcessorCreateCacheFromConfig);
+            PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG = CreateDelegate<ProcessorGetOrCreateCacheFromConfigDelegate>(ProcProcessorGetOrCreateCacheFromConfig);
             PROCESSOR_AFFINITY = CreateDelegate<ProcessorAffinityDelegate>(ProcProcessorAffinity);
             PROCESSOR_DATA_STREAMER = CreateDelegate<ProcessorDataStreamerDelegate>(ProcProcessorDataStreamer);
             PROCESSOR_TRANSACTIONS = CreateDelegate<ProcessorTransactionsDelegate>(ProcProcessorTransactions);
@@ -676,6 +684,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 Marshal.FreeHGlobal(new IntPtr(name0));
             }
+        }
+
+        internal static IUnmanagedTarget ProcessorCreateCache(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = PROCESSOR_CREATE_CACHE_FROM_CONFIG(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
+        }
+
+        internal static IUnmanagedTarget ProcessorGetOrCreateCache(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
         }
 
         internal static IUnmanagedTarget ProcessorAffinity(IUnmanagedTarget target, string name)
