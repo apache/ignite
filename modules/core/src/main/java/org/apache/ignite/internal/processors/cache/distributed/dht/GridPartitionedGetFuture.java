@@ -24,11 +24,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -39,8 +37,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
-import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -49,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
-import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -58,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -65,18 +61,12 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
-
 /**
  * Colocated get future.
  */
-public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<Map<K, V>>
-    implements GridCacheFuture<Map<K, V>> {
+public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Default max remap count value. */
-    public static final int DFLT_MAX_REMAP_CNT = 3;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -84,64 +74,17 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** Logger. */
     private static IgniteLogger log;
 
-    /** Maximum number of attempts to remap key to the same primary node. */
-    private static final int MAX_REMAP_CNT = IgniteSystemProperties.getInteger(IGNITE_NEAR_GET_MAX_REMAPS,
-        DFLT_MAX_REMAP_CNT);
-
-    /** Context. */
-    private final GridCacheContext<K, V> cctx;
-
-    /** Keys. */
-    private Collection<KeyCacheObject> keys;
-
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
-    /** Reload flag. */
-    private boolean reload;
-
-    /** Read-through flag. */
-    private boolean readThrough;
-
-    /** Force primary flag. */
-    private boolean forcePrimary;
-
-    /** Future ID. */
-    private IgniteUuid futId;
-
     /** Version. */
     private GridCacheVersion ver;
-
-    /** Trackable flag. */
-    private volatile boolean trackable;
-
-    /** Remap count. */
-    private AtomicInteger remapCnt = new AtomicInteger();
-
-    /** Subject ID. */
-    private UUID subjId;
-
-    /** Task name. */
-    private String taskName;
-
-    /** Whether to deserialize portable objects. */
-    private boolean deserializePortable;
-
-    /** Expiry policy. */
-    private IgniteCacheExpiryPolicy expiryPlc;
-
-    /** Skip values flag. */
-    private boolean skipVals;
-
-    /** Flag indicating whether future can be remapped on a newer topology version. */
-    private final boolean canRemap;
 
     /**
      * @param cctx Context.
      * @param keys Keys.
      * @param topVer Topology version.
      * @param readThrough Read through flag.
-     * @param reload Reload flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even
      *          if called on backup node.
      * @param subjId Subject ID.
@@ -149,39 +92,39 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
+     * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
+     * @param needVer If {@code true} returns values as tuples containing value and version.
+     * @param keepCacheObjects Keep cache objects flag.
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
         Collection<KeyCacheObject> keys,
         AffinityTopologyVersion topVer,
         boolean readThrough,
-        boolean reload,
         boolean forcePrimary,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        boolean canRemap
+        boolean canRemap,
+        boolean needVer,
+        boolean keepCacheObjects
     ) {
-        super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
+        super(cctx,
+            keys,
+            readThrough,
+            forcePrimary,
+            subjId,
+            taskName,
+            deserializePortable,
+            expiryPlc,
+            skipVals,
+            canRemap,
+            needVer,
+            keepCacheObjects);
 
-        assert !F.isEmpty(keys);
-
-        this.cctx = cctx;
-        this.keys = keys;
         this.topVer = topVer;
-        this.readThrough = readThrough;
-        this.reload = reload;
-        this.forcePrimary = forcePrimary;
-        this.subjId = subjId;
-        this.deserializePortable = deserializePortable;
-        this.taskName = taskName;
-        this.expiryPlc = expiryPlc;
-        this.skipVals = skipVals;
-        this.canRemap = canRemap;
-
-        futId = IgniteUuid.randomUuid();
 
         ver = cctx.versions().next();
 
@@ -351,7 +294,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         -1,
                         mappedKeys,
                         readThrough,
-                        reload,
                         topVer,
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
@@ -404,12 +346,12 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     ver,
                     mappedKeys,
                     readThrough,
-                    reload,
                     topVer,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
-                    skipVals);
+                    skipVals,
+                    cctx.deploymentEnabled());
 
                 add(fut); // Append new future.
 
@@ -451,10 +393,10 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         boolean allowLocRead = !forcePrimary || cctx.affinity().primary(cctx.localNode(), key, topVer);
 
         while (true) {
-            GridCacheEntryEx entry = null;
+            GridCacheEntryEx entry;
 
             try {
-                if (!reload && allowLocRead) {
+                if (allowLocRead) {
                     try {
                         entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
                             colocated.peekEx(key);
@@ -463,18 +405,40 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked();
 
-                            CacheObject v = entry.innerGet(null,
-                                /*swap*/true,
-                                /*read-through*/false,
-                                /*fail-fast*/true,
-                                /*unmarshal*/true,
-                                /**update-metrics*/false,
-                                /*event*/!skipVals,
-                                /*temporary*/false,
-                                subjId,
-                                null,
-                                taskName,
-                                expiryPlc);
+                            CacheObject v = null;
+                            GridCacheVersion ver = null;
+
+                            if (needVer) {
+                                T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                                    null,
+                                    /*swap*/true,
+                                    /*unmarshal*/true,
+                                    /**update-metrics*/false,
+                                    /*event*/!skipVals,
+                                    subjId,
+                                    null,
+                                    taskName,
+                                    expiryPlc);
+
+                                if (res != null) {
+                                    v = res.get1();
+                                    ver = res.get2();
+                                }
+                            }
+                            else {
+                                v = entry.innerGet(null,
+                                    /*swap*/true,
+                                    /*read-through*/false,
+                                    /*fail-fast*/true,
+                                    /*unmarshal*/true,
+                                    /**update-metrics*/false,
+                                    /*event*/!skipVals,
+                                    /*temporary*/false,
+                                    subjId,
+                                    null,
+                                    taskName,
+                                    expiryPlc);
+                            }
 
                             colocated.context().evicts().touch(entry, topVer);
 
@@ -484,7 +448,16 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                     colocated.removeIfObsolete(key);
                             }
                             else {
-                                cctx.addResult(locVals, key, v, skipVals, false, deserializePortable, true);
+                                if (needVer)
+                                    versionedResult(locVals, key, v, ver);
+                                else
+                                    cctx.addResult(locVals,
+                                        key,
+                                        v,
+                                        skipVals,
+                                        keepCacheObjects,
+                                        deserializePortable,
+                                        true);
 
                                 return false;
                             }
@@ -535,14 +508,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             catch (GridCacheEntryRemovedException ignored) {
                 // No-op, will retry.
             }
-            catch (GridCacheFilterFailedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Filter validation failed for entry: " + e);
-
-                colocated.context().evicts().touch(entry, topVer);
-
-                break;
-            }
         }
 
         return remote;
@@ -590,7 +555,16 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             for (GridCacheEntryInfo info : infos) {
                 assert skipVals == (info.value() == null);
 
-                cctx.addResult(map, info.key(), info.value(), skipVals, false, deserializePortable, false);
+                if (needVer)
+                    versionedResult(map, info.key(), info.value(), info.version());
+                else
+                    cctx.addResult(map,
+                        info.key(),
+                        info.value(),
+                        skipVals,
+                        keepCacheObjects,
+                        deserializePortable,
+                        false);
             }
 
             return map;

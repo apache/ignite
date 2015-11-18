@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -925,11 +926,25 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If marshalling failed.
      */
     @SuppressWarnings("unchecked")
-    public static byte[] marshal(GridCacheSharedContext ctx, Object obj)
+    public static byte[] marshal(GridCacheContext ctx, Object obj)
         throws IgniteCheckedException {
         assert ctx != null;
 
-        if (ctx.gridDeploy().enabled()) {
+        return marshal(ctx.shared(), ctx.deploymentEnabled(), obj);
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @param depEnabled deployment enabled flag.
+     * @param obj Object to marshal.
+     * @return Buffer that contains obtained byte array.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    public static byte[] marshal(GridCacheSharedContext ctx, boolean depEnabled, Object obj)
+        throws IgniteCheckedException {
+        assert ctx != null;
+
+        if (depEnabled) {
             if (obj != null) {
                 if (obj instanceof Iterable)
                     ctx.deploy().registerClasses((Iterable<?>)obj);
@@ -1796,5 +1811,54 @@ public class GridCacheUtils {
                 throw err;
             }
         };
+    }
+
+    /**
+     * Builds neighborhood map for all nodes in snapshot.
+     *
+     * @param topSnapshot Topology snapshot.
+     * @return Neighbors map.
+     */
+    public static Map<UUID, Collection<ClusterNode>> neighbors(Collection<ClusterNode> topSnapshot) {
+        Map<String, Collection<ClusterNode>> macMap = new HashMap<>(topSnapshot.size(), 1.0f);
+
+        // Group by mac addresses.
+        for (ClusterNode node : topSnapshot) {
+            String macs = node.attribute(IgniteNodeAttributes.ATTR_MACS);
+
+            Collection<ClusterNode> nodes = macMap.get(macs);
+
+            if (nodes == null)
+                macMap.put(macs, nodes = new HashSet<>());
+
+            nodes.add(node);
+        }
+
+        Map<UUID, Collection<ClusterNode>> neighbors = new HashMap<>(topSnapshot.size(), 1.0f);
+
+        for (Collection<ClusterNode> group : macMap.values())
+            for (ClusterNode node : group)
+                neighbors.put(node.id(), group);
+
+        return neighbors;
+    }
+
+    /**
+     * Returns neighbors for all {@code nodes}.
+     *
+     * @param neighborhood Neighborhood cache.
+     * @param nodes Nodes.
+     * @return All neighbors for given nodes.
+     */
+    public static Collection<ClusterNode> neighborsForNodes(Map<UUID, Collection<ClusterNode>> neighborhood,
+        Iterable<ClusterNode> nodes) {
+        Collection<ClusterNode> res = new HashSet<>();
+
+        for (ClusterNode node : nodes) {
+            if (!res.contains(node))
+                res.addAll(neighborhood.get(node.id()));
+        }
+
+        return res;
     }
 }

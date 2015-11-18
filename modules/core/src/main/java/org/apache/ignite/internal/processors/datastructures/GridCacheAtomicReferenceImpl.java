@@ -204,7 +204,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     private IgnitePredicate<T> wrapperPredicate(final T val) {
         return new IgnitePredicate<T>() {
             @Override public boolean apply(T e) {
-                return val != null && val.equals(e);
+                return F.eq(val, e);
             }
         };
     }

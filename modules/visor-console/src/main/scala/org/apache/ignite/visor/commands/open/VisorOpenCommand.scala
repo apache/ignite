@@ -19,6 +19,8 @@
 
 package org.apache.ignite.visor.commands.open
 
+import java.util.logging.{ConsoleHandler, Logger}
+
 import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.IgniteComponentType._
@@ -26,7 +28,6 @@ import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-import org.apache.ignite.logger.NullLogger
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
@@ -158,6 +159,13 @@ class VisorOpenCommand extends VisorConsoleCommand {
 
                 val cfg = cfgs.iterator().next()
 
+                if (log4jTup != null)
+                    System.setProperty(IgniteSystemProperties.IGNITE_CONSOLE_APPENDER, "false")
+                else
+                    Logger.getGlobal.getHandlers.foreach({
+                        case handler: ConsoleHandler => Logger.getGlobal.removeHandler(handler)
+                    })
+
                 // Setting up 'Config URL' for properly print in console.
                 System.setProperty(IgniteSystemProperties.IGNITE_CONFIG_URL, url.getPath)
 
@@ -235,10 +243,6 @@ class VisorOpenCommand extends VisorConsoleCommand {
 
         // Make sure visor starts without shutdown hook.
         System.setProperty(IGNITE_NO_SHUTDOWN_HOOK, "true")
-
-        // Set NullLoger in quite mode.
-        if ("true".equalsIgnoreCase(sys.props.getOrElse(IGNITE_QUIET, "true")))
-            cfg.setGridLogger(new NullLogger)
 
         ignite = try {
             // We need to stop previous daemon node before to start new one.

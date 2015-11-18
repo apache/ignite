@@ -419,10 +419,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             taskNameHash,
             skipPrimaryCheck);
 
-        IgnitePredicate<ClusterNode> pred = null;
-
-        if (loc || cctx.config().getCacheMode() == CacheMode.LOCAL)
-            pred = F.nodeForNodeId(cctx.localNodeId());
+        IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL) ?
+            F.nodeForNodeId(cctx.localNodeId()) : F.<ClusterNode>alwaysTrue();
 
         UUID id = cctx.kernalContext().continuous().startRoutine(
             hnd,

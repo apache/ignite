@@ -63,6 +63,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
@@ -77,6 +79,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
 
@@ -91,7 +95,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Super class for all common tests.
  */
 public abstract class GridCommonAbstractTest extends GridAbstractTest {
-    /**Cache peek modes array that consist of only ONHEAP mode. */
+    /** Cache peek modes array that consist of only ONHEAP mode. */
     protected static final CachePeekMode[] ONHEAP_PEEK_MODES = new CachePeekMode[] {CachePeekMode.ONHEAP};
 
     /**
@@ -412,6 +416,15 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
+        awaitPartitionMapExchange(false);
+    }
+
+    /**
+     * @param waitEvicts If {@code true} will wait for evictions finished.
+     * @throws InterruptedException If interrupted.
+     */
+    @SuppressWarnings("BusyWait")
+    protected void awaitPartitionMapExchange(boolean waitEvicts) throws InterruptedException {
         for (Ignite g : G.allGrids()) {
             IgniteKernal g0 = (IgniteKernal)g;
 
@@ -449,7 +462,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                 int actual = owners.size();
 
-                                if (affNodes.size() != owners.size() || !affNodes.containsAll(owners)) {
+                                GridDhtLocalPartition loc = top.localPartition(p, readyVer, false);
+
+                                if (affNodes.size() != owners.size() || !affNodes.containsAll(owners) ||
+                                    (waitEvicts && loc != null && loc.state() == GridDhtPartitionState.RENTING)) {
                                     LT.warn(log(), null, "Waiting for topology map update [" +
                                         "grid=" + g.name() +
                                         ", cache=" + cfg.getName() +
@@ -482,7 +498,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 if (i == 0)
                                     start = System.currentTimeMillis();
 
-                                if (System.currentTimeMillis() - start > 30_000)
+                                if (System.currentTimeMillis() - start > 30_000) {
+                                    U.dumpThreads(log);
+
                                     throw new IgniteException("Timeout of waiting for topology map update [" +
                                         "grid=" + g.name() +
                                         ", cache=" + cfg.getName() +
@@ -491,6 +509,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         ", p=" + p +
                                         ", readVer=" + readyVer +
                                         ", locNode=" + g.cluster().localNode() + ']');
+                                }
 
                                 Thread.sleep(200); // Busy wait.
 
@@ -1026,8 +1045,23 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws Exception If failed.
      */
     protected <T> T doInTransaction(Ignite ignite, Callable<T> clo) throws Exception {
+        return doInTransaction(ignite, PESSIMISTIC, REPEATABLE_READ, clo);
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @param clo Closure.
+     * @return Result of closure execution.
+     * @throws Exception If failed.
+     */
+    protected <T> T doInTransaction(Ignite ignite,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        Callable<T> clo) throws Exception {
         while (true) {
-            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
                 T res = clo.call();
 
                 tx.commit();

@@ -77,7 +77,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGIS
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_ARR;
 
- /**
+/**
  * Portable writer implementation.
  */
 public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx, ObjectOutput {
@@ -187,6 +187,16 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @throws PortableException In case of error.
      */
     void marshal(Object obj, boolean detached) throws PortableException {
+        marshal(obj, detached, true);
+    }
+
+    /**
+     * @param obj Object.
+     * @param detached Detached or not.
+     * @param enableReplace Object replacing enabled flag.
+     * @throws PortableException In case of error.
+     */
+    void marshal(Object obj, boolean detached, boolean enableReplace) throws PortableException {
         assert obj != null;
 
         cls = obj.getClass();
@@ -218,11 +228,11 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             return;
         }
 
-        if (desc.getWriteReplaceMethod() != null) {
-            Object replace;
+        if (enableReplace && desc.getWriteReplaceMethod() != null) {
+            Object replacedObj;
 
             try {
-                replace = desc.getWriteReplaceMethod().invoke(obj);
+                replacedObj = desc.getWriteReplaceMethod().invoke(obj);
             }
             catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
@@ -234,21 +244,14 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
                 throw new PortableException("Failed to execute writeReplace() method on " + obj, e);
             }
 
-            if (replace == null) {
+            if (replacedObj == null) {
                 doWriteByte(NULL);
                 return;
             }
 
-            if (cls != replace.getClass()) {
-                cls = replace.getClass();
+            marshal(replacedObj, detached, false);
 
-                desc = ctx.descriptorForClass(cls);
-
-                if (desc == null)
-                    throw new PortableException("Object is not portable: [class=" + cls + ']');
-            }
-
-            obj = replace;
+            return;
         }
 
         typeId = desc.typeId();
@@ -301,7 +304,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         wCtx.out.position(pos);
     }
 
-     /**
+    /**
      * @param bytes Number of bytes to reserve.
      * @return Offset.
      */
@@ -1740,7 +1743,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         return reserve(LEN_INT);
     }
 
-     /** {@inheritDoc} */
+    /** {@inheritDoc} */
     @Override public void writeInt(int pos, int val) throws PortableException {
         wCtx.out.writeInt(pos, val);
     }
@@ -1764,27 +1767,28 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         doWriteInt(id);
     }
 
-     /**
-      * Attempts to write the object as a handle.
-      *
-      * @param obj Object to write.
-      * @return {@code true} if the object has been written as a handle.
-      */
-     boolean tryWriteAsHandle(Object obj) {
-         int handle = handle(obj);
+    /**
+     * Attempts to write the object as a handle.
+     *
+     * @param obj Object to write.
+     * @return {@code true} if the object has been written as a handle.
+     */
+    boolean tryWriteAsHandle(Object obj) {
+        int handle = handle(obj);
 
-         if (handle >= 0) {
-             doWriteByte(GridPortableMarshaller.HANDLE);
-             doWriteInt(handle);
+        if (handle >= 0) {
+            doWriteByte(GridPortableMarshaller.HANDLE);
+            doWriteInt(handle);
 
-             return true;
-         }
+            return true;
+        }
 
-         return false;
-     }
+        return false;
+    }
 
     /**
      * Create new writer with same context.
+     *
      * @param typeId type
      * @return New writer.
      */

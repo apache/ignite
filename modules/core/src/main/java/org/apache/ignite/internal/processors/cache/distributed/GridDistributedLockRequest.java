@@ -118,6 +118,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param skipStore Skip store flag.
+     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -133,9 +134,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         long timeout,
         int keyCnt,
         int txSize,
-        boolean skipStore
+        boolean skipStore,
+        boolean addDepInfo
     ) {
-        super(lockVer, keyCnt);
+        super(lockVer, keyCnt, addDepInfo);
 
         assert keyCnt > 0;
         assert futId != null;

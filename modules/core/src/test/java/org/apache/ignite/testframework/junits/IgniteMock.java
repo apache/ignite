@@ -195,6 +195,11 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<String> cacheNames() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
         return null;
     }

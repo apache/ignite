@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -178,6 +179,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 UUID.class, Person.class,
                 IgniteCacheReplicatedQuerySelfTest.CacheKey.class, IgniteCacheReplicatedQuerySelfTest.CacheValue.class
             );
+
+            if (cacheMode() != CacheMode.LOCAL)
+                cc.setAffinity(new RendezvousAffinityFunction());
 
             // Explicitly set number of backups equal to number of grids.
             if (cacheMode() == CacheMode.PARTITIONED)

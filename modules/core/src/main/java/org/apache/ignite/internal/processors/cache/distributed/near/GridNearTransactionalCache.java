@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -117,7 +118,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable final Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable final GridCacheEntryEx entry,
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializePortable,
@@ -143,7 +143,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                 @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
                     return tx.getAllAsync(ctx,
                         ctx.cacheKeysView(keys),
-                        entry,
                         deserializePortable,
                         skipVals,
                         false,
@@ -156,7 +155,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         return loadAsync(null,
             ctx.cacheKeysView(keys),
-            false,
             forcePrimary,
             subjId,
             taskName,
@@ -174,6 +172,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
+     * @param needVer If {@code true} returns values as tuples containing value and version.
      * @return Future.
      */
     IgniteInternalFuture<Map<K, V>> txLoadAsync(GridNearTxLocal tx,
@@ -181,21 +180,23 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean readThrough,
         boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean skipVals) {
+        boolean skipVals,
+        boolean needVer) {
         assert tx != null;
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
             readThrough,
-            false,
-            false,
+            /*force primary*/needVer,
             tx,
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
             deserializePortable,
             expiryPlc,
             skipVals,
-            /*can remap*/true);
+            /*can remap*/true,
+            needVer,
+            /*keepCacheObjects*/true);
 
         // init() will register future for responses if it has remote mappings.
         fut.init();
@@ -314,7 +315,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         nodeId,
                                         req.nearNodeId(),
                                         req.nearXidVersion(),
-                                        req.threadId(),
                                         req.version(),
                                         null,
                                         ctx.systemTx(),
@@ -554,7 +554,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             GridNearUnlockRequest req = map.get(primary);
 
                             if (req == null) {
-                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
+                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
+                                    ctx.deploymentEnabled()));
 
                                 req.version(ver);
                             }
@@ -676,7 +677,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     req = map.get(primary);
 
                                     if (req == null) {
-                                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
+                                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
+                                            ctx.deploymentEnabled()));
 
                                         req.version(ver);
                                     }
@@ -710,8 +712,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (map == null || map.isEmpty())
                 return;
 
-            Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
-            Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
+            IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(ver);
+
+            Collection<GridCacheVersion> committed = versPair.get1();
+            Collection<GridCacheVersion> rolledback = versPair.get2();
 
             for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();

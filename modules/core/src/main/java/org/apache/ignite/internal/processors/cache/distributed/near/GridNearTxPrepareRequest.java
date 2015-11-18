@@ -99,7 +99,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param near {@code True} if mapping is for near caches.
      * @param txNodes Transaction nodes mapping.
      * @param last {@code True} if this last prepare request for node.
-     * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
      * @param onePhaseCommit One phase commit flag.
      * @param retVal Return value flag.
      * @param implicitSingle Implicit single flag.
@@ -107,6 +106,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param firstClientReq {@code True} if first optimistic tx prepare request sent from client node.
+     * @param addDepInfo Deployment info flag.
      */
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
@@ -117,16 +117,16 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean near,
         Map<UUID, Collection<UUID>> txNodes,
         boolean last,
-        Collection<UUID> lastBackups,
         boolean onePhaseCommit,
         boolean retVal,
         boolean implicitSingle,
         boolean explicitLock,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean firstClientReq
+        boolean firstClientReq,
+        boolean addDepInfo
     ) {
-        super(tx, reads, writes, txNodes, onePhaseCommit);
+        super(tx, reads, writes, txNodes, onePhaseCommit, addDepInfo);
 
         assert futId != null;
         assert !firstClientReq || tx.optimistic() : tx;
@@ -135,7 +135,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.topVer = topVer;
         this.near = near;
         this.last = last;
-        this.lastBackups = lastBackups;
         this.retVal = retVal;
         this.implicitSingle = implicitSingle;
         this.explicitLock = explicitLock;
@@ -151,12 +150,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         return firstClientReq;
     }
 
-    /**
-     * @return IDs of backup nodes receiving last prepare request during this prepare.
-     */
-    public Collection<UUID> lastBackups() {
-        return lastBackups;
-    }
 
     /**
      * @return {@code True} if this last prepare request for node.

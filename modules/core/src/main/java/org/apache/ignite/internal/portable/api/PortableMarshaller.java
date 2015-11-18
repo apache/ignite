@@ -349,4 +349,9 @@ public class PortableMarshaller extends AbstractMarshaller {
             throw new PortableException("Failed to unmarshal the object from InputStream", e);
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public void onUndeploy(ClassLoader ldr) {
+        impl.context().onUndeploy(ldr);
+    }
 }
