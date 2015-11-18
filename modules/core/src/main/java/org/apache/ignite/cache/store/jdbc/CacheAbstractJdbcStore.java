@@ -354,22 +354,26 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         Transaction tx = ses.transaction();
 
         if (tx != null) {
-            Connection conn = ses.<String, Connection>properties().remove(ATTR_CONN_PROP);
+            Map<String, Connection> sesProps = ses.properties();
 
-            assert conn != null;
+            Connection conn = sesProps.get(ATTR_CONN_PROP);
 
-            try {
-                if (commit)
-                    conn.commit();
-                else
-                    conn.rollback();
-            }
-            catch (SQLException e) {
-                throw new CacheWriterException(
-                    "Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
-            }
-            finally {
-                U.closeQuiet(conn);
+            if (conn != null) {
+                sesProps.remove(ATTR_CONN_PROP);
+
+                try {
+                    if (commit)
+                        conn.commit();
+                    else
+                        conn.rollback();
+                }
+                catch (SQLException e) {
+                    throw new CacheWriterException(
+                            "Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
+                }
+                finally {
+                    U.closeQuiet(conn);
+                }
             }
 
             if (log.isDebugEnabled())
