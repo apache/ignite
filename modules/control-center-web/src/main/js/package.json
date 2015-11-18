@@ -4,7 +4,7 @@
   "description": "Interactive Web console for configuration, executing SQL queries and monitoring of Apache Ignite Cluster",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "jspm i && gulp build && node ./bin/www"
   },
   "author": "",
   "contributors": [
@@ -38,10 +38,9 @@
     "gulp-sass": "^2.1.0",
     "gulp-sequence": "^0.4.1",
     "jade": "~1.11.0",
-    "jspm": "^0.16.15",
     "jszip": "^2.5.0",
     "lodash": "3.10.1",
-    "mongoose": "^4.2.5",
+    "mongoose": "^4.2.6",
     "mongoose-deep-populate": "2.0.3",
     "nconf": "^0.8.2",
     "nodemailer": "1.10.0",
@@ -54,7 +53,7 @@
     "ws": "~0.8.0"
   },
   "devDependencies": {
-    "jspm": "^0.16.14",
+    "jspm": "^0.16.15",
     "mocha": "~2.3.3",
     "morgan": "~1.6.1",
     "should": "~7.1.1",
