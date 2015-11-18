@@ -758,7 +758,6 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
 
                         $generatorXml.classNameProperty(res, meta, 'keyType');
                         $generatorXml.property(res, meta, 'valueType');
-                        $generatorXml.property(res, meta, 'keepSerialized', null, null, false);
 
                         $generatorXml.metadataStore(meta, res);
 
@@ -1046,7 +1045,6 @@ $generatorXml.metadataStore = function(meta, res) {
 
     $generatorXml.property(res, meta, 'databaseSchema');
     $generatorXml.property(res, meta, 'databaseTable');
-    $generatorXml.property(res, meta, 'keepSerialized');
 
     res.needEmptyLine = true;
 
