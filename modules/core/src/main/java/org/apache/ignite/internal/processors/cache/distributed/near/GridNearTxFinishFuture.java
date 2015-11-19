@@ -79,7 +79,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
-    private IgniteUuid futId;
+    private final IgniteUuid futId;
 
     /** Transaction. */
     @GridToStringInclude
@@ -122,26 +122,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
         return futId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
-        return tx.xidVersion();
-    }
-
-    /**
-     * @return Involved nodes.
-     */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return
-            F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<?>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(IgniteInternalFuture<?> f) {
-                    if (isMini(f))
-                        return ((MiniFuture)f).node();
-
-                    return cctx.discovery().localNode();
-                }
-            });
     }
 
     /** {@inheritDoc} */
@@ -298,7 +278,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     }
 
                     // Don't forget to clean up.
-                    cctx.mvcc().removeFuture(this);
+                    cctx.mvcc().removeFuture(futId);
 
                     return true;
                 }

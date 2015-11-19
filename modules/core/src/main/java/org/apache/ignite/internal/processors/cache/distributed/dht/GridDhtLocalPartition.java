@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicStampedReference;
 import java.util.concurrent.locks.ReentrantLock;
@@ -113,6 +114,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
     /** Group reservations. */
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
+
+    /** Update counter. */
+    private final AtomicLong cntr = new AtomicLong();
 
     /**
      * @param cctx Context.
@@ -532,6 +536,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(id);
 
+            cctx.continuousQueries().onPartitionEvicted(id);
+
             cctx.dataStructures().onPartitionEvicted(id);
 
             rent.onDone();
@@ -596,6 +602,35 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     public boolean backup(AffinityTopologyVersion topVer) {
         return cctx.affinity().backup(cctx.localNode(), id, topVer);
+    }
+
+    /**
+     * @return Next update index.
+     */
+    public long nextUpdateCounter() {
+        return cntr.incrementAndGet();
+    }
+
+    /**
+     * @return Current update index.
+     */
+    public long updateCounter() {
+        return cntr.get();
+    }
+
+    /**
+     * @param val Update index value.
+     */
+    public void updateCounter(long val) {
+        while (true) {
+            long val0 = cntr.get();
+
+            if (val0 >= val)
+                break;
+
+            if (cntr.compareAndSet(val0, val))
+                break;
+        }
     }
 
     /**

@@ -226,6 +226,13 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /**
+     * @param cntrs Partition indexes.
+     */
+    @Override public void setPartitionUpdateCounters(long[] cntrs) {
+        // No-op.
+    }
+
+    /**
      * Adds owned versions to map.
      *
      * @param vers Map of owned versions.

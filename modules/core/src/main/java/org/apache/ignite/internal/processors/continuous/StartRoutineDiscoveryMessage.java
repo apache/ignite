@@ -37,6 +37,9 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     private final Map<UUID, IgniteCheckedException> errs = new HashMap<>();
 
+    /** */
+    private Map<Integer, Long> updateCntrs;
+
     /**
      * @param routineId Routine id.
      * @param startReqData Start request data.
@@ -63,6 +66,22 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     }
 
     /**
+     * @param cntrs Update counters.
+     */
+    public void addUpdateCounters(Map<Integer, Long> cntrs) {
+        if (updateCntrs == null)
+            updateCntrs = new HashMap<>();
+
+        for (Map.Entry<Integer, Long> e : cntrs.entrySet()) {
+            Long cntr0 = updateCntrs.get(e.getKey());
+            Long cntr1 = e.getValue();
+
+            if (cntr0 == null || cntr1 > cntr0)
+                updateCntrs.put(e.getKey(), cntr1);
+        }
+    }
+
+    /**
      * @return Errs.
      */
     public Map<UUID, IgniteCheckedException> errs() {
@@ -76,7 +95,7 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
 
     /** {@inheritDoc} */
     @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartRoutineAckDiscoveryMessage(routineId, errs);
+        return new StartRoutineAckDiscoveryMessage(routineId, errs, updateCntrs);
     }
 
     /** {@inheritDoc} */

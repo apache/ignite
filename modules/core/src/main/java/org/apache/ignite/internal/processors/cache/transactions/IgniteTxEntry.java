@@ -181,6 +181,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     private byte flags;
 
+    /** Partition update counter. */
+    @GridDirectTransient
+    private long partUpdateCntr;
+
     /** */
     private GridCacheVersion serReadVer;
 
@@ -370,6 +374,22 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public void markLocked() {
         locked = true;
+    }
+
+    /**
+     * Sets partition counter.
+     *
+     * @param partCntr Partition counter.
+     */
+    public void updateCounter(long partCntr) {
+        this.partUpdateCntr = partCntr;
+    }
+
+    /**
+     * @return Partition index.
+     */
+    public long updateCounter() {
+        return partUpdateCntr;
     }
 
     /**
