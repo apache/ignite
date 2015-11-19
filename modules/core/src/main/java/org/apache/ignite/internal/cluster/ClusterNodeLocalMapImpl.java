@@ -89,7 +89,7 @@ public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impl
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            return IgnitionEx.gridx(IgnitionEx.gridName(stash.get())).cluster().nodeLocalMap();
+            return IgnitionEx.gridx(stash.get()).cluster().nodeLocalMap();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
