@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.MarshallerContextImpl;
@@ -92,11 +93,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         Marshaller marsh = igniteCfg.getMarshaller();
 
         if (marsh == null) {
-            BinaryMarshaller marsh0 = new BinaryMarshaller();
-
-            marsh0.setCompactFooter(false);
-
-            igniteCfg.setMarshaller(marsh0);
+            igniteCfg.setMarshaller(new BinaryMarshaller());
 
             dotNetCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
                 BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
@@ -104,7 +101,18 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         else if (!(marsh instanceof BinaryMarshaller))
             throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
                 " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
-        else if (((BinaryMarshaller)marsh).isCompactFooter())
+
+        BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
+
+        if (bCfg == null) {
+            bCfg = new BinaryConfiguration();
+
+            bCfg.setCompactFooter(false);
+
+            igniteCfg.setBinaryConfiguration(bCfg);
+        }
+
+        if (bCfg.isCompactFooter())
             throw new IgniteException("Unsupported " + BinaryMarshaller.class.getName() +
                 " \"compactFooter\" flag: must be false when running Apache Ignite.NET.");
 

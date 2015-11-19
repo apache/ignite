@@ -27,6 +27,9 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
  *
  */
 public class BinaryConfiguration {
+    /** Default compact footer flag setting. */
+    public static final boolean DFLT_COMPACT_FOOTER = true;
+
     /** ID mapper. */
     private BinaryIdMapper idMapper;
 
@@ -35,6 +38,9 @@ public class BinaryConfiguration {
 
     /** Types. */
     private Collection<BinaryTypeConfiguration> typeCfgs;
+
+    /** Compact footer flag. */
+    private boolean compactFooter = DFLT_COMPACT_FOOTER;
 
     /**
      * Sets class names of portable objects explicitly.
@@ -101,5 +107,32 @@ public class BinaryConfiguration {
      */
     public void setTypeConfigurations(Collection<BinaryTypeConfiguration> typeCfgs) {
         this.typeCfgs = typeCfgs;
+    }
+
+    /**
+     * Get whether to write footers in compact form. When enabled, Ignite will not write fields metadata
+     * when serializing objects, because internally {@code PortableMarshaller} already distribute metadata inside
+     * cluster. This increases serialization performance.
+     * <p>
+     * <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external
+     * sources (e.g. cache store which stores data in binary form, data center replication, etc.). Otherwise binary
+     * objects without any associated metadata could appear in the cluster and Ignite will not be able to deserialize
+     * it.
+     * <p>
+     * Defaults to {@link #DFLT_COMPACT_FOOTER}.
+     *
+     * @return Whether to write footers in compact form.
+     */
+    public boolean isCompactFooter() {
+        return compactFooter;
+    }
+
+    /**
+     * Set whether to write footers in compact form. See {@link #isCompactFooter()} for more info.
+     *
+     * @param compactFooter Whether to write footers in compact form.
+     */
+    public void setCompactFooter(boolean compactFooter) {
+        this.compactFooter = compactFooter;
     }
 }

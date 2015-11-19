@@ -878,8 +878,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration(DynamicObject.class.getName())
         ));
 
-        initializePortableContext(marsh);
-
         BinaryObject po1 = marshal(new DynamicObject(0, 10, 20, 30), marsh);
 
         assertEquals(new Integer(10), po1.field("val1"));
@@ -1265,8 +1263,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
-
-        initializePortableContext(marsh);
 
         SimpleObject obj = simpleObject();
 

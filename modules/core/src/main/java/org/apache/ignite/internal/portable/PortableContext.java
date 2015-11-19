@@ -264,7 +264,7 @@ public class PortableContext implements Externalizable {
             binaryCfg.getTypeConfigurations()
         );
 
-        compactFooter = marsh.isCompactFooter();
+        compactFooter = binaryCfg.isCompactFooter();
     }
 
     /**
