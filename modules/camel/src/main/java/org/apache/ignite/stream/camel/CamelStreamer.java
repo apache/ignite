@@ -40,7 +40,7 @@ import org.apache.ignite.stream.StreamSingleTupleExtractor;
  * This streamer consumes messages from an Apache Camel consumer endpoint and feeds them into an Ignite data streamer.
  *
  * The only mandatory properties are {@link #endpointUri} and the appropriate stream tuple extractor (either {@link
- * StreamSingleTupleExtractor} or {@link StreamMultipleTupleExtractor)}.
+ * StreamSingleTupleExtractor} or {@link StreamMultipleTupleExtractor}.
  *
  * The user can also provide a custom {@link CamelContext} in case they want to attach custom components, a {@link
  * org.apache.camel.component.properties.PropertiesComponent}, set tracers, management strategies, etc.
