@@ -532,6 +532,8 @@ public class PortableContext implements Externalizable {
             false /* predefined */
         );
 
+        metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null).wrap(this));
+
         // perform put() instead of putIfAbsent() because "registered" flag might have been changed or class loader
         // might have reloaded described class.
         if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
@@ -540,8 +542,6 @@ public class PortableContext implements Externalizable {
         descByCls.put(cls, desc);
 
         mappers.putIfAbsent(typeId, idMapper);
-
-        metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null).wrap(this));
 
         return desc;
     }

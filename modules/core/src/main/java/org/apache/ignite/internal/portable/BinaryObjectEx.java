@@ -170,7 +170,7 @@ public abstract class BinaryObjectEx implements BinaryObject {
         }
 
         if (meta == null)
-            return "PortableObject [hash=" + idHash + ", typeId=" + typeId() + ']';
+            return "BinaryObject [hash=" + idHash + ", typeId=" + typeId() + ']';
 
         handles.put(this, idHash);
 

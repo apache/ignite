@@ -275,12 +275,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             }
         }
 
-        startLatch.countDown();
-
         for (Map.Entry<Integer, BinaryMetadata> e : metaBuf.entrySet())
             addMeta(e.getKey(), e.getValue().wrap(portableCtx));
 
         metaBuf.clear();
+
+        startLatch.countDown();
     }
 
     /** {@inheritDoc} */
