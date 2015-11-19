@@ -22,9 +22,12 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.direct.state.DirectMessageState;
+import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -39,7 +42,12 @@ public class DirectMessageWriter implements MessageWriter {
     private final DirectByteBufferStream stream;
 
     /** State. */
-    private final DirectMessageWriterState state = new DirectMessageWriterState();
+    private final DirectMessageState<StateItem> state = new DirectMessageState<>(StateItem.class,
+        new IgniteOutClosure<StateItem>() {
+            @Override public StateItem apply() {
+                return new StateItem();
+            }
+        });
 
     /**
      * @param protoVer Protocol version.
@@ -236,10 +244,7 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType) {
-//        if (col instanceof List && col instanceof RandomAccess)
-//            stream.writeRandomAccessList((List<T>)col, itemType, this);
-//        else
-            stream.writeCollection(col, itemType, this);
+        stream.writeCollection(col, itemType, this);
 
         return stream.lastFinished();
     }
@@ -254,36 +259,52 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public boolean isHeaderWritten() {
-        return state.isTypeWritten();
+        return state.item().hdrWritten;
     }
 
     /** {@inheritDoc} */
     @Override public void onHeaderWritten() {
-        state.onTypeWritten();
+        state.item().hdrWritten = true;
     }
 
     /** {@inheritDoc} */
     @Override public int state() {
-        return state.state();
+        return state.item().state;
     }
 
     /** {@inheritDoc} */
     @Override public void incrementState() {
-        state.incrementState();
+        state.item().state++;
     }
 
     /** {@inheritDoc} */
     @Override public void beforeInnerMessageWrite() {
-        state.beforeInnerMessageWrite();
+        state.forward();
     }
 
     /** {@inheritDoc} */
     @Override public void afterInnerMessageWrite(boolean finished) {
-        state.afterInnerMessageWrite(finished);
+        state.backward(finished);
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
         state.reset();
+    }
+
+    /**
+     */
+    private static class StateItem implements DirectMessageStateItem {
+        /** */
+        private int state;
+
+        /** */
+        private boolean hdrWritten;
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            state = 0;
+            hdrWritten = false;
+        }
     }
 }
