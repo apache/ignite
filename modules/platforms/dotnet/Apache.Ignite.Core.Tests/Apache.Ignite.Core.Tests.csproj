@@ -111,6 +111,7 @@
     <Compile Include="ExceptionsTest.cs" />
     <Compile Include="ExecutableTest.cs" />
     <Compile Include="FutureTest.cs" />
+    <Compile Include="IgniteConfigurationTest.cs" />
     <Compile Include="IgniteTestBase.cs" />
     <Compile Include="LifecycleTest.cs" />
     <Compile Include="LoadDllTest.cs" />

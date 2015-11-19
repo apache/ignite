@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             TestUtils.JvmDebug = true;
 
-            IgniteConfigurationEx cfg = new IgniteConfigurationEx();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.GridName = GridName;
             cfg.JvmClasspath = TestUtils.CreateTestClasspath();

@@ -39,7 +39,12 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -175,6 +180,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         assert cfg != null;
 
         readCacheConfiguration(cfg, in);
+        readDiscoveryConfiguration(cfg, in);
 
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);
         List<PlatformLifecycleBean> newBeans = new ArrayList<>();
@@ -230,7 +236,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
     /**
      * Reads cache configurations from a stream and updates provided IgniteConfiguration.
-     * @param cfg IgniteCOnfiguration to update.
+     *
+     * @param cfg IgniteConfiguration to update.
      * @param in Reader.
      */
     private static void readCacheConfiguration(IgniteConfiguration cfg, BinaryReaderExImpl in) {
@@ -257,6 +264,74 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
             cfg.setCacheConfiguration(mergedCaches);
         }
+    }
+
+    /**
+     * Reads discovery configuration from a stream and updates provided IgniteConfiguration.
+     *
+     * @param cfg IgniteConfiguration to update.
+     * @param in Reader.
+     */
+    private static void readDiscoveryConfiguration(IgniteConfiguration cfg, BinaryReaderExImpl in) {
+        boolean hasConfig = in.readBoolean();
+
+        if (!hasConfig)
+            return;
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+        boolean hasIpFinder = in.readBoolean();
+
+        if (hasIpFinder) {
+            byte ipFinderType = in.readByte();
+
+            int addrCount = in.readInt();
+
+            ArrayList<String> addrs = null;
+
+            if (addrCount > 0) {
+                addrs = new ArrayList<>(addrCount);
+
+                for (int i = 0; i < addrCount; i++)
+                    addrs.add(in.readString());
+            }
+
+            TcpDiscoveryVmIpFinder finder = null;
+            if (ipFinderType == 1) {
+                finder = new TcpDiscoveryVmIpFinder();
+            }
+            else if (ipFinderType == 2) {
+                TcpDiscoveryMulticastIpFinder finder0 = new TcpDiscoveryMulticastIpFinder();
+
+                finder0.setLocalAddress(in.readString());
+                finder0.setMulticastGroup(in.readString());
+                finder0.setMulticastPort(in.readInt());
+                finder0.setAddressRequestAttempts(in.readInt());
+                finder0.setResponseWaitTime(in.readInt());
+
+                boolean hasTtl = in.readBoolean();
+
+                if (hasTtl)
+                    finder0.setTimeToLive(in.readByte());
+
+                finder = finder0;
+            }
+            else {
+                assert false;
+            }
+
+            finder.setAddresses(addrs);
+
+            disco.setIpFinder(finder);
+        }
+
+        disco.setSocketTimeout(in.readLong());
+        disco.setAckTimeout(in.readLong());
+        disco.setMaxAckTimeout(in.readLong());
+        disco.setNetworkTimeout(in.readLong());
+        disco.setJoinTimeout(in.readLong());
+
+        cfg.setDiscoverySpi(disco);
     }
 
     /**

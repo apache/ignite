@@ -126,15 +126,6 @@ namespace Apache.Ignite.Core
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
 
-            // Copy configuration to avoid changes to user-provided instance.
-            IgniteConfigurationEx cfgEx = cfg as IgniteConfigurationEx;
-
-            cfg = cfgEx == null ? new IgniteConfiguration(cfg) : new IgniteConfigurationEx(cfgEx);
-
-            // Set default Spring config if needed.
-            if (cfg.SpringConfigUrl == null)
-                cfg.SpringConfigUrl = DefaultCfg;
-
             lock (SyncRoot)
             {
                 // 1. Check GC settings.
@@ -147,7 +138,7 @@ namespace Apache.Ignite.Core
 
                 IgniteManager.CreateJvmContext(cfg, cbs);
 
-                var gridName = cfgEx != null ? cfgEx.GridName : null;
+                var gridName = cfg.GridName;
 
                 var cfgPath = Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) +
                     (cfg.SpringConfigUrl ?? DefaultCfg);
@@ -281,6 +272,8 @@ namespace Apache.Ignite.Core
         {
             Debug.Assert(outStream != null && cfg != null);
 
+            var writer = _startup.Marshaller.StartMarshal(outStream);
+
             var caches = cfg.CacheConfiguration;
 
             if (caches == null)
@@ -289,11 +282,20 @@ namespace Apache.Ignite.Core
             {
                 outStream.WriteInt(caches.Count);
 
-                var writer = _startup.Marshaller.StartMarshal(outStream);
-
                 foreach (var cache in caches)
                     cache.Write(writer);
             }
+
+            var disco = cfg.DiscoveryConfiguration;
+
+            if (disco != null)
+            {
+                outStream.WriteBool(true);
+
+                disco.Write(writer);
+            }
+            else
+                outStream.WriteBool(false);
         }
 
         /// <summary>
