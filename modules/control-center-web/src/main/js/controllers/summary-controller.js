@@ -238,7 +238,7 @@ consoleModule.controller('summaryController', [
 
     $loading.start('loadingSummaryScreen');
 
-    $http.post('clusters/list')
+    $http.post('/api/v1/configuration/clusters/list')
         .success(function (data) {
             $scope.clusters = data.clusters;
 

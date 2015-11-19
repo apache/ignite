@@ -16,8 +16,16 @@
  */
 
 var gulp = require('gulp');
-var gulpSequence = require('gulp-sequence');
+var concat = require('gulp-concat');
 
-gulp.task('build', function(cb) {
-    gulpSequence('clean', ['bundle', 'copy', 'jade', 'sass', 'concat'], 'inject:plugins', cb)
-});
+paths = [
+	'!./controllers/common-module.js',
+	'./controllers/*.js',
+	'./controllers/**/*.js'
+]
+
+gulp.task('concat', function() {
+	return gulp.src(paths)
+		.pipe(concat('all.js'))
+		.pipe(gulp.dest('./build'))
+})

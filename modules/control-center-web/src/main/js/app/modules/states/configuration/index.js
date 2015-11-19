@@ -18,15 +18,34 @@
 import angular from 'angular'
 
 angular
-.module('ignite-console.states.login', [
+.module('ignite-console.states.configuration', [
 	'ui.router'
 ])
 .config(function($stateProvider) {
 	// set up the states
 	$stateProvider
-	.state('login', {
-		url: '/login',
-		templateUrl: '/login.html'
-
+	.state('base.configuration', {
+		url: '/configuration',
+		templateUrl: '/configuration/sidebar.html'
 	})
+	.state('base.configuration.clusters', {
+		url: '/clusters',
+		templateUrl: '/configuration/clusters.html'	
+	})
+	.state('base.configuration.caches', {
+		url: '/caches',
+		templateUrl: '/configuration/caches.html'	
+	})
+	.state('base.configuration.metadata', {
+		url: '/metadata',
+		templateUrl: '/configuration/metadata.html'	
+	})
+	.state('base.configuration.igfs', {
+		url: '/igfs',
+		templateUrl: '/configuration/igfs.html'	
+	})
+	.state('base.configuration.summary', {
+		url: '/summary',
+		templateUrl: '/configuration/summary.html'	
+	})	
 })

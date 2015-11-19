@@ -121,7 +121,7 @@ consoleModule.controller('igfsController', [
             $loading.start('loadingIgfsScreen');
 
             // When landing on the page, get IGFSs and show them.
-            $http.post('igfs/list')
+            $http.post('/api/v1/configuration/igfs/list')
                 .success(function (data) {
                     $scope.spaces = data.spaces;
                     $scope.igfss = data.igfss;
@@ -282,7 +282,7 @@ consoleModule.controller('igfsController', [
 
             // Save IGFS into database.
             function save(item) {
-                $http.post('igfs/save', item)
+                $http.post('/api/v1/configuration/igfs/save', item)
                     .success(function (_id) {
                         $scope.ui.markPristine();
 
@@ -341,7 +341,7 @@ consoleModule.controller('igfsController', [
                     .then(function () {
                             var _id = selectedItem._id;
 
-                            $http.post('igfs/remove', {_id: _id})
+                            $http.post('/api/v1/configuration/igfs/remove', {_id: _id})
                                 .success(function () {
                                     $common.showInfo('IGFS has been removed: ' + selectedItem.name);
 
@@ -372,7 +372,7 @@ consoleModule.controller('igfsController', [
 
                 $confirm.confirm('Are you sure you want to remove all IGFS?')
                     .then(function () {
-                            $http.post('igfs/remove/all')
+                            $http.post('/api/v1/configuration/igfs/remove/all')
                                 .success(function () {
                                     $common.showInfo('All IGFS have been removed');
 

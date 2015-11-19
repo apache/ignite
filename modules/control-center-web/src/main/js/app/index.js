@@ -35,12 +35,14 @@ window.require = ace.require;
 window.angular = angular;
 
 import './modules/states/login/index'
+import './modules/states/configuration/index'
 
 angular
 .module('ignite-console', [
 	'ui.router',
 	// states
-	'ignite-console.states.login'
+	'ignite-console.states.login',
+	'ignite-console.states.configuration'
 ])
 .config(function($stateProvider, $locationProvider) {
 	// set up the states
@@ -48,7 +50,7 @@ angular
 	.state('base', {
 		url: '',
 		abstract: true,
-		template: '<div class="wrapper"><div class="container body-container"><div class="main-content" ui-view=""></div></div></div>'
+		templateUrl: '/base.html'
 	})
 
 	$locationProvider.html5Mode(true)

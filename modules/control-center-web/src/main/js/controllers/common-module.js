@@ -1980,7 +1980,7 @@ consoleModule.controller('auth', [
 
         // Try to authorize user with provided credentials.
         $scope.auth = function (action, user_info) {
-            $http.post('/' + action, user_info)
+            $http.post('/api/v1/' + action, user_info)
                 .success(function () {
                     $window.location = '/configuration/clusters';
                 })
@@ -1994,7 +1994,7 @@ consoleModule.controller('auth', [
         };
 
         $scope.validateToken = function () {
-            $http.post('/password/validate-token', {token: $common.getQueryVariable('token')})
+            $http.post('/api/v1/password/validate-token', {token: $common.getQueryVariable('token')})
                 .success(function (res) {
                     $scope.email = res.email;
                     $scope.token = res.token;
@@ -2004,7 +2004,7 @@ consoleModule.controller('auth', [
 
         // Try to reset user password for provided token.
         $scope.resetPassword = function (reset_info) {
-            $http.post('/password/reset', reset_info)
+            $http.post('/api/v1/password/reset', reset_info)
                 .success(function (data) {
                     $common.showInfo('Password successfully changed');
 
@@ -2156,7 +2156,7 @@ consoleModule.controller('agent-download', [
         $scope.startTopologyListening = function (checkFn) {
             _agentDownloadModal.skipSingleError = false;
 
-            _agentDownloadModal.checkUrl = '/agent/topology';
+            _agentDownloadModal.checkUrl = '/api/v1/agent/topology';
 
             _agentDownloadModal.checkFn = checkFn;
 
@@ -2200,7 +2200,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$window', '$http', '
 
     $scope.$root.reloadNotebooks = function() {
         // When landing on the page, get clusters and show them.
-        $http.post('/notebooks/list')
+        $http.post('/api/v1/notebooks/list')
             .success(function (data) {
                 $scope.$root.notebooks = data;
 
@@ -2216,7 +2216,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$window', '$http', '
     };
 
     $scope.$root.createNewNotebook = function(name) {
-        $http.post('/notebooks/new', {name: name})
+        $http.post('/api/v1/notebooks/new', {name: name})
             .success(function (id) {
                 _notebookNewModal.hide();
 
