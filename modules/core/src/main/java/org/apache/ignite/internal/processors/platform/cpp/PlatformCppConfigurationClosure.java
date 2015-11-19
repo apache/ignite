@@ -71,6 +71,10 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
         Marshaller marsh = igniteCfg.getMarshaller();
 
         if (marsh == null) {
+            BinaryMarshaller marsh0 = new BinaryMarshaller();
+
+            marsh0.setCompactFooter(false);
+            
             igniteCfg.setMarshaller(new BinaryMarshaller());
 
             cppCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
@@ -79,6 +83,9 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
         else if (!(marsh instanceof BinaryMarshaller))
             throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
                 " can be used when running Apache Ignite C++): " + marsh.getClass().getName());
+        else if (((BinaryMarshaller)marsh).isCompactFooter())
+            throw new IgniteException("Unsupported " + BinaryMarshaller.class.getName() +
+                " \"compactFooter\" flag: must be false when running Apache Ignite C++.");
 
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();

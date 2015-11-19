@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Contains tests for compact offsets.
  */
-public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbstractTest {
     /** 2 pow 8. */
     private static int POW_8 = 1 << 8;
 
@@ -47,7 +47,7 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ctx = new PortableContext(new TestCachingMetadataHandler(), new IgniteConfiguration());
+        ctx = new PortableContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
 
         marsh = new BinaryMarshaller();
 
@@ -56,6 +56,8 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(TestObject.class.getName())));
+        
+        bCfg.setCompactFooter(compactFooter());
 
         iCfg.setBinaryConfiguration(bCfg);
 
@@ -64,6 +66,13 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
         IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, iCfg);
     }
 
+    /**
+     * @return Whether to use compact footers.
+     */
+    protected boolean compactFooter() {
+        return true;
+    }
+    
     /**
      * Test 1 byte.
      *

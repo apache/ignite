@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.noncompact;
 
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
+import org.apache.ignite.internal.portable.BinaryMarshallerSelfTest;
 
 /**
- * Compact offsets tests for heap portable objects.
+ * Basic marshaller test with non-compact footer.
  */
-public class PortableCompactOffsetsHeapSelfTest extends PortableCompactOffsetsAbstractSelfTest {
+public class BinaryMarshallerNonCompactSelfTest extends BinaryMarshallerSelfTest {
     /** {@inheritDoc} */
-    @Override protected BinaryObjectEx toPortable(BinaryMarshaller marsh, Object obj) throws Exception {
-        byte[] bytes = marsh.marshal(obj);
-
-        return new BinaryObjectImpl(ctx, bytes, 0);
+    @Override protected boolean compactFooter() {
+        return false;
     }
 }

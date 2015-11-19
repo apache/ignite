@@ -170,7 +170,7 @@ public abstract class BinaryObjectEx implements BinaryObject {
         }
 
         if (meta == null)
-            return "BinaryObject [hash=" + idHash + ", typeId=" + typeId() + ']';
+            return BinaryObject.class.getSimpleName() +  " [hash=" + idHash + ", typeId=" + typeId() + ']';
 
         handles.put(this, idHash);
 

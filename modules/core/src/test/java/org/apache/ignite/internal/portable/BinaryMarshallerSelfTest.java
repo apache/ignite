@@ -17,28 +17,6 @@
 
 package org.apache.ignite.internal.portable;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.InetSocketAddress;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -69,6 +47,29 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.InetSocketAddress;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+
 import static org.apache.ignite.internal.portable.PortableThreadLocalMemoryAllocator.THREAD_LOCAL_ALLOC;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -76,7 +77,7 @@ import static org.junit.Assert.assertArrayEquals;
  * Portable marshaller tests.
  */
 @SuppressWarnings({"OverlyStrongTypeCast", "ArrayHashCode", "ConstantConditions"})
-public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
+public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -538,7 +539,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration(TestBinary.class.getName())
         ));
 
-        TestBinary obj = BinaryObject();
+        TestBinary obj = binaryObject();
 
         BinaryObject po = marshal(obj, marsh);
 
@@ -877,6 +878,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration(DynamicObject.class.getName())
         ));
 
+        initializePortableContext(marsh);
+
         BinaryObject po1 = marshal(new DynamicObject(0, 10, 20, 30), marsh);
 
         assertEquals(new Integer(10), po1.field("val1"));
@@ -1030,7 +1033,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testDefaultMapping() throws Exception {
+    public void _testDefaultMapping() throws Exception {
         BinaryTypeConfiguration customMappingType =
             new BinaryTypeConfiguration(TestBinary.class.getName());
 
@@ -1062,7 +1065,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             customMappingType
         ));
 
-        TestBinary obj = BinaryObject();
+        TestBinary obj = binaryObject();
 
         BinaryObjectImpl po = marshal(obj, marsh1);
 
@@ -1263,9 +1266,13 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
+        initializePortableContext(marsh);
+
         SimpleObject obj = simpleObject();
 
         final BinaryObject po = marshal(obj, marsh);
+
+        assertEquals(obj, po.deserialize());
 
         BinaryObject copy = copy(po, null);
 
@@ -1927,7 +1934,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testThreadLocalArrayReleased() throws IgniteCheckedException {
+    public void testThreadLocalArrayReleased() throws Exception {
         // Checking the writer directly.
         assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
@@ -1978,8 +1985,10 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         try {
             marsh.marshal(job2);
-        } catch (BinaryObjectException e) {
+        }
+        catch (BinaryObjectException e) {
             assertEquals(true, e.getMessage().contains("Failed to register class"));
+
             return;
         }
 
@@ -1992,7 +2001,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testClass() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
-        Class cls = GridPortableMarshallerSelfTest.class;
+        Class cls = BinaryMarshallerSelfTest.class;
 
         Class unmarshalledCls = marshalUnmarshal(cls, marsh);
 
@@ -2006,7 +2015,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryMarshaller marsh = binaryMarshaller();
 
         ObjectWithClassFields obj = new ObjectWithClassFields();
-        obj.cls1 = GridPortableMarshallerSelfTest.class;
+        obj.cls1 = BinaryMarshallerSelfTest.class;
 
         byte[] marshal = marsh.marshal(obj);
 
@@ -2253,6 +2262,13 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Whether to use compact footers or not.
+     */
+    protected boolean compactFooter() {
+        return true;
+    }
+    
+    /**
      * @param marsh Marshaller.
      * @return Portable context.
      */
@@ -2308,12 +2324,13 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         bCfg.setIdMapper(mapper);
         bCfg.setSerializer(serializer);
+        bCfg.setCompactFooter(compactFooter());
 
         bCfg.setTypeConfigurations(cfgs);
 
         iCfg.setBinaryConfiguration(bCfg);
 
-        PortableContext ctx = new PortableContext(BinaryNoopMetadataHandler.instance(), iCfg);
+        PortableContext ctx = new PortableContext(BinaryCachingMetadataHandler.create(), iCfg);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
@@ -2439,7 +2456,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @return Portable object.
      */
-    private TestBinary BinaryObject() {
+    private TestBinary binaryObject() {
         SimpleObject innerSimple = new SimpleObject();
 
         innerSimple.b = 1;
@@ -3281,8 +3298,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
             if (idx > 1)
                 writer.writeInt("val3", val3);
-
-            idx++;
         }
 
         /** {@inheritDoc} */

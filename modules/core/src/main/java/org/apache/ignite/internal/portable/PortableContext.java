@@ -62,7 +62,6 @@ import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
@@ -108,9 +107,6 @@ public class PortableContext implements Externalizable {
     }
 
     /** */
-    private final ConcurrentMap<Integer, Collection<Integer>> metaDataCache = new ConcurrentHashMap8<>();
-
-    /** */
     private final ConcurrentMap<Class<?>, PortableClassDescriptor> descByCls = new ConcurrentHashMap8<>();
 
     /** Holds classes loaded by default class loader only. */
@@ -131,6 +127,9 @@ public class PortableContext implements Externalizable {
     /** */
     private final ConcurrentMap<Integer, BinaryIdMapper> mappers = new ConcurrentHashMap8<>(0);
 
+    /** Affinity key field names. */
+    private final ConcurrentMap<Integer, String> affKeyFieldNames = new ConcurrentHashMap8<>(0);
+
     /** */
     private final Map<String, BinaryIdMapper> typeMappers = new ConcurrentHashMap8<>(0);
 
@@ -148,6 +147,9 @@ public class PortableContext implements Externalizable {
 
     /** */
     private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller();
+
+    /** Compact footer flag. */
+    private boolean compactFooter;
 
     /** Object schemas. */
     private volatile Map<Integer, PortableSchemaRegistry> schemas;
@@ -261,6 +263,8 @@ public class PortableContext implements Externalizable {
             binaryCfg.getSerializer(),
             binaryCfg.getTypeConfigurations()
         );
+
+        compactFooter = marsh.isCompactFooter();
     }
 
     /**
@@ -480,6 +484,7 @@ public class PortableContext implements Externalizable {
                 false,
                 clsName.hashCode(),
                 clsName,
+                null,
                 BASIC_CLS_ID_MAPPER,
                 null,
                 false,
@@ -525,6 +530,7 @@ public class PortableContext implements Externalizable {
             true,
             typeId,
             typeName,
+            null,
             idMapper,
             null,
             true,
@@ -532,7 +538,8 @@ public class PortableContext implements Externalizable {
             false /* predefined */
         );
 
-        metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null).wrap(this));
+        metaHnd.addMeta(typeId,
+            new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null, desc.schemas()).wrap(this));
 
         // perform put() instead of putIfAbsent() because "registered" flag might have been changed or class loader
         // might have reloaded described class.
@@ -668,6 +675,7 @@ public class PortableContext implements Externalizable {
             false,
             id,
             typeName,
+            null,
             DFLT_ID_MAPPER,
             null,
             false,
@@ -716,11 +724,17 @@ public class PortableContext implements Externalizable {
         if (mappers.put(id, idMapper) != null)
             throw new BinaryObjectException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
 
+        if (affKeyFieldName != null) {
+            if (affKeyFieldNames.put(id, affKeyFieldName) != null)
+                throw new BinaryObjectException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
+        }
+
         String typeName = typeName(clsName);
 
         typeMappers.put(typeName, idMapper);
 
         Map<String, Integer> fieldsMeta = null;
+        Collection<PortableSchema> schemas = null;
 
         if (cls != null) {
             PortableClassDescriptor desc = new PortableClassDescriptor(
@@ -729,6 +743,7 @@ public class PortableContext implements Externalizable {
                 true,
                 id,
                 typeName,
+                affKeyFieldName,
                 idMapper,
                 serializer,
                 true,
@@ -737,6 +752,7 @@ public class PortableContext implements Externalizable {
             );
 
             fieldsMeta = desc.fieldsMeta();
+            schemas = desc.schemas();
 
             if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
                 userTypes.put(id, desc);
@@ -744,7 +760,7 @@ public class PortableContext implements Externalizable {
             descByCls.put(cls, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName).wrap(this));
+        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas).wrap(this));
     }
 
     /**
@@ -767,48 +783,32 @@ public class PortableContext implements Externalizable {
      * @return Meta data.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public BinaryType metaData(int typeId) throws BinaryObjectException {
+    @Nullable public BinaryType metadata(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata(typeId) : null;
     }
 
     /**
      * @param typeId Type ID.
-     * @param metaHashSum Meta data hash sum.
-     * @return Whether meta is changed.
+     * @return Affinity key field name.
      */
-    boolean isMetaDataChanged(int typeId, @Nullable Integer metaHashSum) {
-        if (metaHashSum == null)
-            return false;
-
-        Collection<Integer> hist = metaDataCache.get(typeId);
-
-        if (hist == null) {
-            Collection<Integer> old = metaDataCache.putIfAbsent(typeId, hist = new GridConcurrentHashSet<>());
-
-            if (old != null)
-                hist = old;
-        }
-
-        return hist.add(metaHashSum);
-    }
-
-    /**
-     * @param typeId Type ID.
-     * @param typeName Type name.
-     * @param fields Fields map.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    public void updateMetaData(int typeId, String typeName, Map<String, Integer> fields) throws BinaryObjectException {
-        updateMetaData(typeId, new BinaryMetadata(typeId, typeName, fields, null));
+    public String affinityKeyFieldName(int typeId) {
+        return affKeyFieldNames.get(typeId);
     }
 
     /**
      * @param typeId Type ID.
      * @param meta Meta data.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
-    public void updateMetaData(int typeId, BinaryMetadata meta) throws BinaryObjectException {
+    public void updateMetadata(int typeId, BinaryMetadata meta) throws BinaryObjectException {
         metaHnd.addMeta(typeId, meta.wrap(this));
+    }
+
+    /**
+     * @return Whether field IDs should be skipped in footer or not.
+     */
+    public boolean isCompactFooter() {
+        return compactFooter;
     }
 
     /**

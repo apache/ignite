@@ -19,16 +19,23 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.portable.GridPortableAffinityKeySelfTest;
-import org.apache.ignite.internal.portable.GridBinaryObjectBuilderAdditionalSelfTest;
-import org.apache.ignite.internal.portable.GridBinaryObjectBuilderSelfTest;
+import org.apache.ignite.internal.portable.BinaryObjectBuilderAdditionalSelfTest;
+import org.apache.ignite.internal.portable.BinaryObjectBuilderSelfTest;
 import org.apache.ignite.internal.portable.GridPortableMarshallerCtxDisabledSelfTest;
-import org.apache.ignite.internal.portable.GridPortableMarshallerSelfTest;
+import org.apache.ignite.internal.portable.BinaryMarshallerSelfTest;
 import org.apache.ignite.internal.portable.GridPortableMetaDataSelfTest;
 import org.apache.ignite.internal.portable.GridPortableWildcardsSelfTest;
-import org.apache.ignite.internal.portable.PortableCompactOffsetsHeapSelfTest;
-import org.apache.ignite.internal.portable.PortableCompactOffsetsOffheapSelfTest;
+import org.apache.ignite.internal.portable.BinaryFooterOffsetsHeapSelfTest;
+import org.apache.ignite.internal.portable.BinaryFooterOffsetsOffheapSelfTest;
 import org.apache.ignite.internal.portable.BinaryFieldsHeapSelfTest;
 import org.apache.ignite.internal.portable.BinaryFieldsOffheapSelfTest;
+import org.apache.ignite.internal.portable.noncompact.BinaryFieldsHeapNonCompactSelfTest;
+import org.apache.ignite.internal.portable.noncompact.BinaryFieldsOffheapNonCompactSelfTest;
+import org.apache.ignite.internal.portable.noncompact.BinaryFooterOffsetsHeapNonCompactSelfTest;
+import org.apache.ignite.internal.portable.noncompact.BinaryFooterOffsetsOffheapNonCompactSelfTest;
+import org.apache.ignite.internal.portable.noncompact.BinaryMarshallerNonCompactSelfTest;
+import org.apache.ignite.internal.portable.noncompact.BinaryObjectBuilderAdditionalNonCompactSelfTest;
+import org.apache.ignite.internal.portable.noncompact.BinaryObjectBuilderNonCompactSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
 import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodeBinaryObjectMetadataTest;
 import org.apache.ignite.internal.processors.cache.portable.GridCachePortableStoreObjectsSelfTest;
@@ -57,17 +64,26 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Binary Objects Test Suite");
 
-        suite.addTestSuite(GridPortableMarshallerSelfTest.class);
+        suite.addTestSuite(BinaryMarshallerSelfTest.class);
         suite.addTestSuite(GridPortableMarshallerCtxDisabledSelfTest.class);
-        suite.addTestSuite(GridBinaryObjectBuilderSelfTest.class);
-        suite.addTestSuite(GridBinaryObjectBuilderAdditionalSelfTest.class);
+        suite.addTestSuite(BinaryObjectBuilderSelfTest.class);
+        suite.addTestSuite(BinaryObjectBuilderAdditionalSelfTest.class);
         suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
         suite.addTestSuite(BinaryFieldsOffheapSelfTest.class);
-        suite.addTestSuite(PortableCompactOffsetsHeapSelfTest.class);
-        suite.addTestSuite(PortableCompactOffsetsOffheapSelfTest.class);
+        suite.addTestSuite(BinaryFooterOffsetsHeapSelfTest.class);
+        suite.addTestSuite(BinaryFooterOffsetsOffheapSelfTest.class);
         suite.addTestSuite(GridPortableMetaDataSelfTest.class);
         suite.addTestSuite(GridPortableAffinityKeySelfTest.class);
         suite.addTestSuite(GridPortableWildcardsSelfTest.class);
+
+        // Tests for objects with non-compact footers.
+        suite.addTestSuite(BinaryMarshallerNonCompactSelfTest.class);
+        suite.addTestSuite(BinaryObjectBuilderNonCompactSelfTest.class);
+        suite.addTestSuite(BinaryObjectBuilderAdditionalNonCompactSelfTest.class);
+        suite.addTestSuite(BinaryFieldsHeapNonCompactSelfTest.class);
+        suite.addTestSuite(BinaryFieldsOffheapNonCompactSelfTest.class);
+        suite.addTestSuite(BinaryFooterOffsetsHeapNonCompactSelfTest.class);
+        suite.addTestSuite(BinaryFooterOffsetsOffheapNonCompactSelfTest.class);
 
         suite.addTestSuite(GridCacheBinaryObjectsLocalSelfTest.class);
         suite.addTestSuite(GridCacheBinaryObjectsAtomicLocalSelfTest.class);

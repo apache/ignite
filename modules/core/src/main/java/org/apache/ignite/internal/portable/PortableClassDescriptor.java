@@ -37,6 +37,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -78,6 +79,9 @@ public class PortableClassDescriptor {
     /** */
     private final String typeName;
 
+    /** Affinity key field name. */
+    private final String affKeyFieldName;
+
     /** */
     private final Constructor<?> ctor;
 
@@ -91,7 +95,13 @@ public class PortableClassDescriptor {
     private final Method readResolveMtd;
 
     /** */
-    private final Map<String, Integer> fieldsMeta;
+    private final Map<String, Integer> stableFieldsMeta;
+
+    /** Object schemas. Initialized only for serializable classes and contains only 1 entry. */
+    private final Collection<PortableSchema> stableSchemas;
+
+    /** Schema registry. */
+    private final PortableSchemaRegistry schemaReg;
 
     /** */
     private final boolean registered;
@@ -108,12 +118,13 @@ public class PortableClassDescriptor {
      * @param userType User type flag.
      * @param typeId Type ID.
      * @param typeName Type name.
+     * @param affKeyFieldName Affinity key field name.
      * @param idMapper ID mapper.
      * @param serializer Serializer.
      * @param metaDataEnabled Metadata enabled flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
      * @param predefined Whether the class is predefined or not.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
     PortableClassDescriptor(
         PortableContext ctx,
@@ -121,6 +132,7 @@ public class PortableClassDescriptor {
         boolean userType,
         int typeId,
         String typeName,
+        @Nullable String affKeyFieldName,
         @Nullable BinaryIdMapper idMapper,
         @Nullable BinarySerializer serializer,
         boolean metaDataEnabled,
@@ -129,15 +141,19 @@ public class PortableClassDescriptor {
     ) throws BinaryObjectException {
         assert ctx != null;
         assert cls != null;
+        assert idMapper != null;
 
         this.ctx = ctx;
         this.cls = cls;
-        this.userType = userType;
         this.typeId = typeId;
+        this.userType = userType;
         this.typeName = typeName;
+        this.affKeyFieldName = affKeyFieldName;
         this.serializer = serializer;
         this.idMapper = idMapper;
         this.registered = registered;
+
+        schemaReg = ctx.schemaRegistry(typeId);
 
         excluded = MarshallerExclusions.isExcluded(cls);
 
@@ -186,7 +202,8 @@ public class PortableClassDescriptor {
             case EXCLUSION:
                 ctor = null;
                 fields = null;
-                fieldsMeta = null;
+                stableFieldsMeta = null;
+                stableSchemas = null;
 
                 break;
 
@@ -194,16 +211,17 @@ public class PortableClassDescriptor {
             case EXTERNALIZABLE:
                 ctor = constructor(cls);
                 fields = null;
-                fieldsMeta = null;
+                stableFieldsMeta = null;
+                stableSchemas = null;
 
                 break;
 
             case OBJECT:
-                assert idMapper != null;
-
                 ctor = constructor(cls);
                 fields = new ArrayList<>();
-                fieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
+                stableFieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
+
+                PortableSchema.Builder schemaBuilder = PortableSchema.Builder.newBuilder();
 
                 Collection<String> names = new HashSet<>();
                 Collection<Integer> ids = new HashSet<>();
@@ -229,11 +247,15 @@ public class PortableClassDescriptor {
 
                             fields.add(fieldInfo);
 
+                            schemaBuilder.addField(fieldId);
+
                             if (metaDataEnabled)
-                                fieldsMeta.put(name, fieldInfo.fieldMode().typeId());
+                                stableFieldsMeta.put(name, fieldInfo.fieldMode().typeId());
                         }
                     }
                 }
+
+                stableSchemas = Collections.singleton(schemaBuilder.build());
 
                 break;
 
@@ -277,7 +299,14 @@ public class PortableClassDescriptor {
      * @return Fields meta data.
      */
     Map<String, Integer> fieldsMeta() {
-        return fieldsMeta;
+        return stableFieldsMeta;
+    }
+
+    /**
+     * @return Schemas.
+     */
+    Collection<PortableSchema> schemas() {
+        return stableSchemas;
     }
 
     /**
@@ -331,7 +360,7 @@ public class PortableClassDescriptor {
     /**
      * @param obj Object.
      * @param writer Writer.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
     void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
         assert obj != null;
@@ -525,21 +554,34 @@ public class PortableClassDescriptor {
                             ((Binarylizable)obj).writeBinary(writer);
 
                         writer.postWrite(userType);
+
+                        // Check whether we need to update metadata.
+                        if (obj.getClass() != BinaryMetadata.class) {
+                            int schemaId = writer.schemaId();
+
+                            if (schemaReg.schema(schemaId) == null) {
+                                // This is new schema, let's update metadata.
+                                BinaryMetadataCollector collector =
+                                    new BinaryMetadataCollector(typeId, typeName, idMapper);
+
+                                if (serializer != null)
+                                    serializer.writeBinary(obj, collector);
+                                else
+                                    ((Binarylizable)obj).writeBinary(collector);
+
+                                PortableSchema newSchema = collector.schema();
+
+                                BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
+                                    affKeyFieldName, Collections.singleton(newSchema));
+
+                                ctx.updateMetadata(typeId, meta);
+
+                                schemaReg.addSchema(newSchema.schemaId(), newSchema);
+                            }
+                        }
                     }
                     finally {
                         writer.popSchema();
-                    }
-
-                    if (obj.getClass() != BinaryMetadata.class
-                        && ctx.isMetaDataChanged(typeId, writer.metaDataHashSum())) {
-                        BinaryMetadataCollector metaCollector = new BinaryMetadataCollector(typeName);
-
-                        if (serializer != null)
-                            serializer.writeBinary(obj, metaCollector);
-                        else
-                            ((Binarylizable)obj).writeBinary(metaCollector);
-
-                        ctx.updateMetaData(typeId, typeName, metaCollector.meta());
                     }
                 }
 
@@ -587,7 +629,7 @@ public class PortableClassDescriptor {
     /**
      * @param reader Reader.
      * @return Object.
-     * @throws org.apache.ignite.binary.BinaryObjectException If failed.
+     * @throws BinaryObjectException If failed.
      */
     Object read(BinaryReaderExImpl reader) throws BinaryObjectException {
         assert reader != null;
@@ -669,7 +711,6 @@ public class PortableClassDescriptor {
 
         PortableUtils.writeHeader(
             writer,
-            userType,
             registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID,
             obj instanceof CacheObjectImpl ? 0 : obj.hashCode(),
             registered ? null : cls.getName()
@@ -680,7 +721,7 @@ public class PortableClassDescriptor {
 
     /**
      * @return Instance.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
     private Object newInstance() throws BinaryObjectException {
         assert ctor != null;
@@ -696,7 +737,7 @@ public class PortableClassDescriptor {
     /**
      * @param cls Class.
      * @return Constructor.
-     * @throws org.apache.ignite.binary.BinaryObjectException If constructor doesn't exist.
+     * @throws BinaryObjectException If constructor doesn't exist.
      */
     @SuppressWarnings("ConstantConditions")
     @Nullable private static Constructor<?> constructor(Class<?> cls) throws BinaryObjectException {
@@ -704,6 +745,9 @@ public class PortableClassDescriptor {
 
         try {
             Constructor<?> ctor = U.forceEmptyConstructor(cls);
+
+            if (ctor == null)
+                throw new BinaryObjectException("Failed to find empty constructor for class: " + cls.getName());
 
             ctor.setAccessible(true);
 
@@ -857,7 +901,7 @@ public class PortableClassDescriptor {
         /**
          * @param obj Object.
          * @param writer Writer.
-         * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+         * @throws BinaryObjectException In case of error.
          */
         public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             assert obj != null;
@@ -1060,7 +1104,7 @@ public class PortableClassDescriptor {
         /**
          * @param obj Object.
          * @param reader Reader.
-         * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+         * @throws BinaryObjectException In case of error.
          */
         public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             Object val = null;

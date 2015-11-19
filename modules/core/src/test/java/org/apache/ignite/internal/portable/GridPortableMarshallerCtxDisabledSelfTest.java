@@ -47,7 +47,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        PortableContext context = new PortableContext(BinaryNoopMetadataHandler.instance(), cfg);
+        PortableContext context = new PortableContext(BinaryCachingMetadataHandler.create(), cfg);
 
         IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", context, cfg);
 
