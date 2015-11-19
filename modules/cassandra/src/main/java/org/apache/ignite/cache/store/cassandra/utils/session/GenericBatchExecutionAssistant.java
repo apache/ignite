@@ -27,7 +27,7 @@ import java.util.Set;
  * @param <V> Type of the value used in batch operation
  */
 public abstract class GenericBatchExecutionAssistant<R, V> implements BatchExecutionAssistant<R, V> {
-    /** TODO IGNITE-1371: add comment */
+    /** Identifiers of already processed objects */
     private Set<Integer> processed = new HashSet<>();
 
     /** {@inheritDoc} */

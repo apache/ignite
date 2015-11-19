@@ -29,13 +29,16 @@ import org.w3c.dom.NodeList;
  * Stores persistence settings for Ignite cache value
  */
 public class ValuePersistenceSettings extends PersistenceSettings {
-    /** TODO IGNITE-1371: add comment */
+    /** XML element describing value field settings */
     private static final String FIELD_ELEMENT = "field";
 
-    /** TODO IGNITE-1371: add comment */
+    /** Value fields */
     private List<PojoField> fields = new LinkedList<>();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Creates class instance from XML configuration
+     * @param el - XML element describing value persistence settings
+     */
     public ValuePersistenceSettings(Element el) {
         super(el);
 
@@ -52,7 +55,10 @@ public class ValuePersistenceSettings extends PersistenceSettings {
         checkDuplicates(fields);
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns list of value fields
+     * @return - list of value fields
+     */
     public List<PojoField> getFields() {
         return fields == null ? null : Collections.unmodifiableList(fields);
     }
@@ -62,7 +68,11 @@ public class ValuePersistenceSettings extends PersistenceSettings {
         return "value";
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Extracts POJO fields from a list of corresponding XML field nodes
+     * @param fieldNodes - field nodes
+     * @return - fields list
+     */
     private List<PojoField> detectFields(NodeList fieldNodes) {
         List<PojoField> list = new LinkedList<>();
 

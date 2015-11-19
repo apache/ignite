@@ -30,30 +30,61 @@ import org.apache.ignite.cache.store.cassandra.utils.persistence.KeyValuePersist
  * @param <V> Type of the value used in batch operation
  */
 public interface BatchExecutionAssistant<R, V> {
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Indicates if Cassandra tables existence is required for this batch operation
+     * @return - {@code true} true if table existence required
+     */
     public boolean tableExistenceRequired();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns unbind CLQ statement for to be executed inside batch operation
+     * @return - unbind CQL statement
+     */
     public String getStatement();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Binds prepared statement to current Cassandra session
+     * @param statement - statement
+     * @param obj - parameters for statement binding
+     * @return - bounded statement
+     */
     public BoundStatement bindStatement(PreparedStatement statement, V obj);
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     *  Returns Ignite cache key/value persistence sessings
+     * @return  - persistence settings
+     */
     public KeyValuePersistenceSettings getPersistenceSettings();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Display name for the batch operation
+     * @return - operation display name
+     */
     public String operationName();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Processes particular row inside batch operation
+     * @param row - row
+     * @param seqNum - sequential number of the row
+     */
     public void process(Row row, int seqNum);
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Checks if row/object with specified sequential number is already processed
+     * @param seqNum - object sequential number
+     * @return - {@code true} if object is already processed
+     */
     public boolean alreadyProcessed(int seqNum);
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns number of processed objects/rows
+     * @return - number of processed objects/rows
+     */
     public int processedCount();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns batch operation result
+     * @return - batch operation result
+     */
     public R processedData();
 }

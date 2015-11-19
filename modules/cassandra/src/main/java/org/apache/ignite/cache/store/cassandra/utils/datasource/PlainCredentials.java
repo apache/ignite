@@ -21,16 +21,16 @@ package org.apache.ignite.cache.store.cassandra.utils.datasource;
  * Simple implementation of {@link Credentials} which just uses its constructor to hold user/password values.
  */
 public class PlainCredentials implements Credentials {
-    /** TODO IGNITE-1371: add comment */
+    /** User name */
     private String user;
-    /** TODO IGNITE-1371: add comment */
+    /** User password */
     private String pwd;
 
     /**
-     * TODO IGNITE-1371: add comment.
+     * Creates credentials object
      *
-     * @param user
-     * @param pwd
+     * @param user - user name
+     * @param pwd - user password
      */
     public PlainCredentials(String user, String pwd) {
         this.user = user;

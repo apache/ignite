@@ -66,13 +66,17 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     @LoggerResource
     private IgniteLogger log;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Cassandra data source */
     private DataSource dataSrc;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Controller component responsible for serialization logic */
     private PersistenceController controller;
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     *
+     * @param dataSrc - data source
+     * @param settings - persistence settings for Ignite key and value objects
+     */
     public CassandraCacheStore(DataSource dataSrc, KeyValuePersistenceSettings settings) {
         this.dataSrc = dataSrc;
         this.controller = new PersistenceController(settings);
@@ -357,7 +361,8 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         }
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /** Returns Cassandra session wrapper or creates new if it doesn't exist. This wrapper hides all the low-level
+     * Cassandra interaction details by providing only high-level methods */
     private CassandraSession getCassandraSession() {
         if (storeSes == null || storeSes.transaction() == null)
             return dataSrc.session(log != null ? log : new NullLogger());
@@ -372,7 +377,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         return ses;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /** Releases Cassandra related resources */
     private void closeCassandraSession(CassandraSession ses) {
         if (ses != null && (storeSes == null || storeSes.transaction() == null)) {
             try {

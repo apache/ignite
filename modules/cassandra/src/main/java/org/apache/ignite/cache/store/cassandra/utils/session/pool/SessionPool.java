@@ -30,7 +30,9 @@ import org.apache.ignite.cache.store.cassandra.utils.session.CassandraSessionImp
  * Cassandra driver sessions pool
  */
 public class SessionPool {
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Monitors session pool and closes unused session
+     */
     private static class SessionMonitor extends Thread {
         /** {@inheritDoc} */
         @Override public void run() {
@@ -73,13 +75,13 @@ public class SessionPool {
         }
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /** Sessions monitor sleep timeout */
     private static final long SLEEP_TIMEOUT = 60000; // 1 minute
 
-    /** TODO IGNITE-1371: add comment */
+    /** Sessions which were returned to pool */
     private static final Map<CassandraSessionImpl, SessionWrapper> sessions = new HashMap<>();
 
-    /** TODO IGNITE-1371: add comment */
+    /** Singleton instance */
     private static SessionMonitor monitorSingleton;
 
     static {
@@ -90,7 +92,11 @@ public class SessionPool {
         });
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns Cassandra driver session to sessions pool
+     * @param cassandraSes - session wrapper
+     * @param driverSes - driver session
+     */
     public static void put(CassandraSessionImpl cassandraSes, Session driverSes) {
         if (cassandraSes == null || driverSes == null)
             return;
@@ -112,7 +118,11 @@ public class SessionPool {
             old.release();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Extracts Cassandra driver session from pool
+     * @param cassandraSes - session wrapper
+     * @return - Cassandra driver session
+     */
     public static Session get(CassandraSessionImpl cassandraSes) {
         if (cassandraSes == null)
             return null;
@@ -126,7 +136,9 @@ public class SessionPool {
         return wrapper == null ? null : wrapper.driverSession();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Releases all session from pool and closes all their connections to Cassandra database
+     */
     public static void release() {
         Collection<SessionWrapper> wrappers;
 

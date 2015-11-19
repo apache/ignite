@@ -31,24 +31,28 @@ import org.w3c.dom.Element;
  * should be written to or loaded from Cassandra
  */
 public abstract class PojoField {
-    /** TODO IGNITE-1371: add comment */
+    /** Name attribute of XML element describing Pojo field */
     private static final String NAME_ATTR = "name";
 
-    /** TODO IGNITE-1371: add comment */
+    /** Column attribute of XML element describing Pojo field */
     private static final String COLUMN_ATTR = "column";
 
-    /** TODO IGNITE-1371: add comment */
+    /** Field name */
     private String name;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Field column name in Cassandra table */
     private String col;
-    /** TODO IGNITE-1371: add comment */
+    /** Field column DDL  */
     private String colDDL;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Field property descriptor */
     private PropertyDescriptor desc;
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Creates instance of {@link PojoField} based on it's description in XML element
+     * @param el - XML element describing Pojo field
+     * @param pojoCls - Pojo java class
+     */
     public PojoField(Element el, Class pojoCls) {
         if (el == null)
             throw new IllegalArgumentException("DOM element representing POJO field object can't be null");
@@ -64,7 +68,10 @@ public abstract class PojoField {
         init(PropertyMappingHelper.getPojoPropertyDescriptor(pojoCls, name));
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Creates instance of {@link PojoField}  from its property descriptor
+     * @param desc - field property descriptor
+     */
     public PojoField(PropertyDescriptor desc) {
         this.name = desc.getName();
 
@@ -82,22 +89,37 @@ public abstract class PojoField {
             init(sqlField);
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns field name
+     * @return - field name
+     */
     public String getName() {
         return name;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns Cassandra table column
+     * @return - column name
+     */
     public String getColumn() {
         return col;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns Cassandra table column DDL
+     * @return - DDL statement
+     */
     public String getColumnDDL() {
         return colDDL;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns field value as an object having Cassandra compatible type. This it could be stored directly
+     * into Cassandra without any conversions
+     * @param obj - object instance
+     * @param serializer - ${@link org.apache.ignite.cache.store.cassandra.utils.serializer.Serializer} to use
+     * @return - object to store in Cassandra table column
+     */
     public Object getValueFromObject(Object obj, Serializer serializer) {
         try {
             Object val = desc.getReadMethod().invoke(obj);
@@ -123,7 +145,12 @@ public abstract class PojoField {
         }
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets object field value from a {@link com.datastax.driver.core.Row} returned by Cassandra CQL statement
+     * @param row - {@link com.datastax.driver.core.Row}
+     * @param obj - object which field should be populated from {@link com.datastax.driver.core.Row}
+     * @param serializer - ${@link org.apache.ignite.cache.store.cassandra.utils.serializer.Serializer} to use
+     */
     public void setValueFromRow(Row row, Object obj, Serializer serializer) {
         Object val = PropertyMappingHelper.getCassandraColumnValue(row, col, desc.getPropertyType(), serializer);
 
@@ -136,10 +163,16 @@ public abstract class PojoField {
         }
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Initializes field info from annotation
+     * @param sqlField - {@link QuerySqlField} annotation
+     */
     protected abstract void init(QuerySqlField sqlField);
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Initializes field info from property descriptor
+     * @param desc - {@link PropertyDescriptor} descriptor
+     */
     protected void init(PropertyDescriptor desc) {
         if (desc.getReadMethod() == null) {
             throw new IllegalArgumentException("Field '" + desc.getName() +

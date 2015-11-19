@@ -28,20 +28,20 @@ import java.util.regex.Pattern;
  * Helper class providing methods to work with Cassandra session and exceptions
  */
 public class CassandraHelper {
-    /** TODO IGNITE-1371: add comment */
+    /** Cassandra error message if specified keyspace doesn't exist */
     private static final Pattern KEYSPACE_EXIST_ERROR1 = Pattern.compile("Keyspace [0-9a-zA-Z_]+ does not exist");
 
-    /** TODO IGNITE-1371: add comment */
+    /** Cassandra error message if trying to create table inside nonexistent keyspace  */
     private static final Pattern KEYSPACE_EXIST_ERROR2 = Pattern.compile("Cannot add table '[0-9a-zA-Z_]+' to non existing keyspace.*");
 
-    /** TODO IGNITE-1371: add comment */
+    /** Cassandra error message if specified table doesn't exist */
     private static final Pattern TABLE_EXIST_ERROR = Pattern.compile("unconfigured table [0-9a-zA-Z_]+");
 
-    /** TODO IGNITE-1371: add comment */
+    /** Cassandra error message if trying to use prepared statement created from another session */
     private static final String PREP_STATEMENT_CLUSTER_INSTANCE_ERROR = "You may have used a PreparedStatement that " +
         "was created with another Cluster instance";
 
-    /** TODO IGNITE-1371: add comment */
+    /** Closes Cassandra driver session */
     public static void closeSession(Session driverSes) {
         if (driverSes == null)
             return;
@@ -63,7 +63,7 @@ public class CassandraHelper {
         }
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /** Checks if Cassandra keyspace absence error occur */
     public static boolean isKeyspaceAbsenceError(Throwable e) {
         while (e != null) {
             if (e instanceof InvalidQueryException &&
@@ -77,7 +77,7 @@ public class CassandraHelper {
         return false;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /** Checks if Cassandra keyspace absence error occur */
     public static boolean isTableAbsenceError(Throwable e) {
         while (e != null) {
             if (e instanceof InvalidQueryException &&
@@ -92,7 +92,7 @@ public class CassandraHelper {
         return false;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /** Checks if Cassandra host availability error occur, thus host became unavailable */
     public static boolean isHostsAvailabilityError(Throwable e) {
         while (e != null) {
             if (e instanceof NoHostAvailableException ||
@@ -105,7 +105,7 @@ public class CassandraHelper {
         return false;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /** Checks if Cassandra error occur becase of prepared statement created in one session was used in another session */
     public static boolean isPreparedStatementClusterError(Throwable e) {
         while (e != null) {
             if (e instanceof InvalidQueryException && e.getMessage().contains(PREP_STATEMENT_CLUSTER_INSTANCE_ERROR))
