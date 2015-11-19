@@ -1073,6 +1073,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
         uuidMost = 0;
         uuidLeast = 0;
+        uuidLocId = 0;
 
         return val;
     }
