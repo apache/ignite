@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,10 +60,10 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -163,9 +165,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /** {@code True} if this is last prepare operation for node. */
     private boolean last;
 
-    /** IDs of backup nodes receiving last prepare request during this prepare. */
-    private Collection<UUID> lastBackups;
-
     /** Needs return value flag. */
     private boolean retVal;
 
@@ -177,7 +176,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
     /** Keys that should be locked. */
     @GridToStringInclude
-    private GridConcurrentHashSet<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
+    private final Set<IgniteTxKey> lockKeys = new HashSet<>();
 
     /** Force keys future for correct transforms. */
     private IgniteInternalFuture<?> forceKeysFut;
@@ -195,7 +194,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @param dhtVerMap DHT versions map.
      * @param last {@code True} if this is last prepare operation for node.
      * @param retVal Return value flag.
-     * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
      */
     public GridDhtTxPrepareFuture(
         GridCacheSharedContext cctx,
@@ -203,8 +201,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         IgniteUuid nearMiniId,
         Map<IgniteTxKey, GridCacheVersion> dhtVerMap,
         boolean last,
-        boolean retVal,
-        Collection<UUID> lastBackups
+        boolean retVal
     ) {
         super(REDUCER);
 
@@ -212,7 +209,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         this.tx = tx;
         this.dhtVerMap = dhtVerMap;
         this.last = last;
-        this.lastBackups = lastBackups;
 
         futId = IgniteUuid.randomUuid();
 
@@ -267,7 +263,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
-        boolean rmv = lockKeys.remove(entry.txKey());
+        boolean rmv;
+
+        synchronized (lockKeys) {
+            rmv = lockKeys.remove(entry.txKey());
+        }
 
         return rmv && mapIfLocked();
     }
@@ -293,7 +293,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @return {@code True} if all locks are owned.
      */
     private boolean checkLocks() {
-        return locksReady && lockKeys.isEmpty();
+        if (!locksReady)
+            return false;
+
+        synchronized (lockKeys) {
+            return lockKeys.isEmpty();
+        }
     }
 
     /** {@inheritDoc} */
@@ -495,8 +500,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 txEntry.cached(entry);
             }
 
-            if (tx.optimistic() && txEntry.explicitVersion() == null)
-                lockKeys.add(txEntry.txKey());
+            if (tx.optimistic() && txEntry.explicitVersion() == null) {
+                synchronized (lockKeys) {
+                    lockKeys.add(txEntry.txKey());
+                }
+            }
 
             while (true) {
                 try {
@@ -689,7 +697,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
             GridCacheVersion min = tx.minVersion();
 
-            res.completedVersions(cctx.tm().committedVersions(min), cctx.tm().rolledbackVersions(min));
+            if (tx.needsCompletedVersions()) {
+                IgnitePair<Collection<GridCacheVersion>> versPair = cctx.tm().versions(min);
+
+                res.completedVersions(versPair.get1(), versPair.get2());
+            }
 
             res.pending(localDhtPendingVersions(tx.writeEntries(), min));
 
@@ -846,14 +858,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     }
 
     /**
-     * @param backupId Backup node ID.
-     * @return {@code True} if backup node receives last prepare request for this transaction.
-     */
-    private boolean lastBackup(UUID backupId) {
-        return lastBackups != null && lastBackups.contains(backupId);
-    }
-
-    /**
      * Checks if this transaction needs previous value for the given tx entry. Will use passed in map to store
      * required key or will create new map if passed in map is {@code null}.
      *
@@ -987,21 +991,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 if (err0 != null) {
                     err.compareAndSet(null, err0);
 
+                    tx.rollbackAsync();
+
                     final GridNearTxPrepareResponse res = createPrepareResponse(err.get());
 
-                    tx.rollbackAsync().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                            if (GridDhtTxPrepareFuture.super.onDone(res, res.error())) {
-                                try {
-                                    if (replied.compareAndSet(false, true))
-                                        sendPrepareResponse(res);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    U.error(log, "Failed to send prepare response for transaction: " + tx, e);
-                                }
-                            }
-                        }
-                    });
+                    onDone(res, res.error());
 
                     return;
                 }
@@ -1014,23 +1008,16 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
             {
-                Map<UUID, GridDistributedTxMapping> futDhtMap = new HashMap<>();
-                Map<UUID, GridDistributedTxMapping> futNearMap = new HashMap<>();
-
-                boolean hasRemoteNodes = false;
-
                 // Assign keys to primary nodes.
                 if (!F.isEmpty(writes)) {
                     for (IgniteTxEntry write : writes)
-                        hasRemoteNodes |= map(tx.entry(write.txKey()), futDhtMap, futNearMap);
+                        map(tx.entry(write.txKey()));
                 }
 
                 if (!F.isEmpty(reads)) {
                     for (IgniteTxEntry read : reads)
-                        hasRemoteNodes |= map(tx.entry(read.txKey()), futDhtMap, futNearMap);
+                        map(tx.entry(read.txKey()));
                 }
-
-                tx.needsCompletedVersions(hasRemoteNodes);
             }
 
             if (isDone())
@@ -1221,17 +1208,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
     /**
      * @param entry Transaction entry.
-     * @param futDhtMap DHT mapping.
-     * @param futNearMap Near mapping.
-     * @return {@code True} if mapped.
      */
-    private boolean map(
-        IgniteTxEntry entry,
-        Map<UUID, GridDistributedTxMapping> futDhtMap,
-        Map<UUID, GridDistributedTxMapping> futNearMap
-    ) {
+    private void map(IgniteTxEntry entry) {
         if (entry.cached().isLocal())
-            return false;
+            return;
 
         GridDhtCacheEntry cached = (GridDhtCacheEntry)entry.cached();
 
@@ -1247,8 +1227,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             entry.ttl(CU.toTtl(expiry.getExpiryForAccess()));
         }
 
-        boolean ret;
-
         while (true) {
             try {
                 Collection<ClusterNode> dhtNodes = dht.topology().nodes(cached.partition(), tx.topologyVersion());
@@ -1257,25 +1235,24 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     log.debug("Mapping entry to DHT nodes [nodes=" + U.toShortString(dhtNodes) +
                         ", entry=" + entry + ']');
 
+                // Exclude local node.
+                map(entry, F.view(dhtNodes, F.remoteNodes(cctx.localNodeId())), dhtMap);
+
                 Collection<UUID> readers = cached.readers();
 
-                Collection<ClusterNode> nearNodes = null;
-
                 if (!F.isEmpty(readers)) {
-                    nearNodes = cctx.discovery().nodes(readers, F0.not(F.idForNodeId(tx.nearNodeId())));
+                    Collection<ClusterNode> nearNodes =
+                        cctx.discovery().nodes(readers, F0.not(F.idForNodeId(tx.nearNodeId())));
 
                     if (log.isDebugEnabled())
                         log.debug("Mapping entry to near nodes [nodes=" + U.toShortString(nearNodes) +
                             ", entry=" + entry + ']');
+
+                    // Exclude DHT nodes.
+                    map(entry, F.view(nearNodes, F0.notIn(dhtNodes)), nearMap);
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Entry has no near readers: " + entry);
-
-                // Exclude local node.
-                ret = map(entry, F.view(dhtNodes, F.remoteNodes(cctx.localNodeId())), dhtMap, futDhtMap);
-
-                // Exclude DHT nodes.
-                ret |= map(entry, F.view(nearNodes, F0.notIn(dhtNodes)), nearMap, futNearMap);
 
                 break;
             }
@@ -1285,25 +1262,18 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 entry.cached(cached);
             }
         }
-
-        return ret;
     }
 
     /**
      * @param entry Entry.
      * @param nodes Nodes.
      * @param globalMap Map.
-     * @param locMap Exclude map.
-     * @return {@code True} if mapped.
      */
-    private boolean map(
+    private void map(
         IgniteTxEntry entry,
         Iterable<ClusterNode> nodes,
-        Map<UUID, GridDistributedTxMapping> globalMap,
-        Map<UUID, GridDistributedTxMapping> locMap
+        Map<UUID, GridDistributedTxMapping> globalMap
     ) {
-        boolean ret = false;
-
         if (nodes != null) {
             for (ClusterNode n : nodes) {
                 GridDistributedTxMapping global = globalMap.get(n.id());
@@ -1325,19 +1295,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     globalMap.put(n.id(), global = new GridDistributedTxMapping(n));
 
                 global.add(entry);
-
-                GridDistributedTxMapping loc = locMap.get(n.id());
-
-                if (loc == null)
-                    locMap.put(n.id(), loc = new GridDistributedTxMapping(n));
-
-                loc.add(entry);
-
-                ret = true;
             }
         }
-
-        return ret;
     }
 
     /**

@@ -62,9 +62,9 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
-import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -228,7 +228,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.futureId(),
                                     nodeId,
                                     req.nearXidVersion(),
-                                    req.threadId(),
                                     req.topologyVersion(),
                                     req.version(),
                                     /*commitVer*/null,
@@ -1090,8 +1089,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 // We have to add completed versions for cases when nearLocal and remote transactions
                 // execute concurrently.
-                res.completedVersions(ctx.tm().committedVersions(req.version()),
-                    ctx.tm().rolledbackVersions(req.version()));
+                IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(req.version());
+
+                res.completedVersions(versPair.get1(), versPair.get2());
 
                 int i = 0;
 
@@ -1510,8 +1510,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
         }
 
-        Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
-        Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
+        IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(ver);
+
+        Collection<GridCacheVersion> committed = versPair.get1();
+        Collection<GridCacheVersion> rolledback = versPair.get2();
 
         // Backups.
         for (Map.Entry<ClusterNode, List<KeyCacheObject>> entry : dhtMap.entrySet()) {

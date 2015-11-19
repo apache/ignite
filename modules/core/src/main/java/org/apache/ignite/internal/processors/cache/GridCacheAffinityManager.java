@@ -384,4 +384,14 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     public AffinityTopologyVersion affinityTopologyVersion() {
         return aff.lastVersion();
     }
+
+    /**
+     * Dumps debug information.
+     */
+    public void dumpDebugInfo() {
+        GridAffinityAssignmentCache aff0 = aff;
+
+        if (aff0 != null)
+            aff0.dumpDebugInfo();
+    }
 }

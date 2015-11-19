@@ -37,6 +37,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -99,9 +100,10 @@ abstract class TcpDiscoveryImpl {
     }
 
     /**
+     * @param discoMsg Discovery message.
      * @param msg Message.
      */
-    protected void debugLog(String msg) {
+    protected void debugLog(@Nullable TcpDiscoveryAbstractMessage discoMsg, String msg) {
         assert debugMode;
 
         String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +

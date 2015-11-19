@@ -564,10 +564,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public Collection<String> getUserAttributesFormatted() {
+    @Override public List<String> getUserAttributesFormatted() {
         assert cfg != null;
 
-        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
+        return (List<String>)F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
             @Override public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
@@ -582,10 +582,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<String> getLifecycleBeansFormatted() {
+    @Override public List<String> getLifecycleBeansFormatted() {
         LifecycleBean[] beans = cfg.getLifecycleBeans();
 
-        return F.isEmpty(beans) ? Collections.<String>emptyList() : F.transform(beans, F.<LifecycleBean>string());
+        return F.isEmpty(beans) ? Collections.<String>emptyList() :
+            (List<String>)F.transform(beans, F.<LifecycleBean>string());
     }
 
     /**
@@ -641,7 +642,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Catch generic throwable to secure against user assertions.
         catch (Throwable e) {
             U.error(log, "Failed to notify lifecycle bean (safely ignored) [evt=" + evt +
-                ", gridName=" + gridName + ']', e);
+                (gridName == null ? "" : ", gridName=" + gridName) + ']', e);
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -735,6 +736,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackEnvironmentVariables();
         ackCacheConfiguration();
         ackP2pConfiguration();
+        ackRebalanceConfiguration();
 
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(gridName, execSvc, log);
@@ -1673,7 +1675,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     ">>> CPU(s): " + locNode.metrics().getTotalCpus() + NL +
                     ">>> Heap: " + U.heapSize(locNode, 2) + "GB" + NL +
                     ">>> VM name: " + rtBean.getName() + NL +
-                    ">>> Grid name: " + gridName + NL +
+                    (gridName == null ? "" : ">>> Grid name: " + gridName + NL) +
                     ">>> Local node [" +
                     "ID=" + locNode.id().toString().toUpperCase() +
                     ", order=" + locNode.order() + ", clientMode=" + ctx.clientNode() +
@@ -1691,6 +1693,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackOsInfo() {
         assert log != null;
 
+        if (log.isQuiet())
+            U.quiet(false, "OS: " + U.osString());
+
         if (log.isInfoEnabled()) {
             log.info("OS: " + U.osString());
             log.info("OS user: " + System.getProperty("user.name"));
@@ -1702,6 +1707,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     private void ackLanguageRuntime() {
         assert log != null;
+
+        if (log.isQuiet())
+            U.quiet(false, "VM information: " + U.jdkString());
 
         if (log.isInfoEnabled()) {
             log.info("Language runtime: " + getLanguage());
@@ -1939,11 +1947,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Ack stop.
             if (log.isQuiet()) {
+                String nodeName = gridName == null ? "" : "name=" + gridName + ", ";
+
                 if (!errOnStop)
-                    U.quiet(false, "Ignite node stopped OK [uptime=" +
+                    U.quiet(false, "Ignite node stopped OK [" + nodeName + "uptime=" +
                         X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + ']');
                 else
-                    U.quiet(true, "Ignite node stopped wih ERRORS [uptime=" +
+                    U.quiet(true, "Ignite node stopped wih ERRORS [" + nodeName + "uptime=" +
                         X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + ']');
             }
 
@@ -1958,7 +1968,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         ">>> " + dash + NL +
                         ">>> " + ack + NL +
                         ">>> " + dash + NL +
-                        ">>> Grid name: " + gridName + NL +
+                        (gridName == null ? "" : ">>> Grid name: " + gridName + NL) +
                         ">>> Grid uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) +
                         NL +
                         NL);
@@ -1972,7 +1982,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     log.info(NL + NL +
                         ">>> " + ack + NL +
                         ">>> " + dash + NL +
-                        ">>> Grid name: " + gridName + NL +
+                        (gridName == null ? "" : ">>> Grid name: " + gridName + NL) +
                         ">>> Grid uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) +
                         NL +
                         ">>> See log above for detailed error message." + NL +
@@ -2133,6 +2143,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             log.debug("Grid failover SPI       : " + Arrays.toString(cfg.getFailoverSpi()));
             log.debug("Grid load balancing SPI : " + Arrays.toString(cfg.getLoadBalancingSpi()));
             log.debug("Grid swap space SPI     : " + cfg.getSwapSpaceSpi());
+        }
+    }
+
+    /**
+     *
+     */
+    private void ackRebalanceConfiguration() throws IgniteCheckedException {
+        if (cfg.getSystemThreadPoolSize() <= cfg.getRebalanceThreadPoolSize())
+            throw new IgniteCheckedException("Rebalance thread pool size exceed or equals System thread pool size. " +
+                "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");
+
+        if (cfg.getRebalanceThreadPoolSize() < 1)
+            throw new IgniteCheckedException("Rebalance thread pool size minimal allowed value is 1. " +
+                "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");
+
+        for (CacheConfiguration ccfg : cfg.getCacheConfiguration()){
+            if (ccfg.getRebalanceBatchesPrefetchCount() < 1)
+                throw new IgniteCheckedException("Rebalance batches prefetch count minimal allowed value is 1. " +
+                    "Change CacheConfiguration.rebalanceBatchesPrefetchCount property before next start. " +
+                    "[cache="+ccfg.getName()+"]");
         }
     }
 
@@ -2636,6 +2666,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             return ctx.cache().publicCaches();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<String> cacheNames() {
+        guard();
+
+        try {
+            return ctx.cache().publicCacheNames();
         }
         finally {
             unguard();
@@ -3168,6 +3210,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
             ", name=" + ctx.gridName() +
             ", order=" + locNode.order() +
+            ", topVer=" + ctx.discovery().topologyVersion() +
             ", client=" + client +
             (client && routerId != null ? ", routerId=" + routerId : "") + ']');
 

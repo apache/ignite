@@ -88,6 +88,16 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void testGetAndPut() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1525");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testInvoke() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1525");
+    }
+
     /**
      * @throws Exception If failed.
      */

@@ -58,14 +58,20 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
 
         try {
             ipFinder1 = ipFinder();
+            ipFinder1.setResponseWaitTime(1000);
+            ipFinder1.setAddressRequestAttempts(10);
 
             ipFinder2 = new TcpDiscoveryMulticastIpFinder();
 
+            ipFinder2.setResponseWaitTime(1000);
+            ipFinder2.setAddressRequestAttempts(10);
             ipFinder2.setMulticastGroup(ipFinder1.getMulticastGroup());
             ipFinder2.setMulticastPort(ipFinder1.getMulticastPort());
 
             ipFinder3 = new TcpDiscoveryMulticastIpFinder();
 
+            ipFinder3.setResponseWaitTime(1000);
+            ipFinder3.setAddressRequestAttempts(10);
             ipFinder3.setMulticastGroup(ipFinder1.getMulticastGroup());
             ipFinder3.setMulticastPort(ipFinder1.getMulticastPort());
 
@@ -81,21 +87,13 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
             ipFinder2.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host2", 1002)));
             ipFinder3.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host3", 1003)));
 
-            for (int i = 0; i < 5; i++) {
-                Collection<InetSocketAddress> addrs1 = ipFinder1.getRegisteredAddresses();
-                Collection<InetSocketAddress> addrs2 = ipFinder2.getRegisteredAddresses();
-                Collection<InetSocketAddress> addrs3 = ipFinder3.getRegisteredAddresses();
+            Collection<InetSocketAddress> addrs1 = ipFinder1.getRegisteredAddresses();
+            Collection<InetSocketAddress> addrs2 = ipFinder2.getRegisteredAddresses();
+            Collection<InetSocketAddress> addrs3 = ipFinder3.getRegisteredAddresses();
 
-                if (addrs1.size() != 1 || addrs2.size() != 2 || addrs3.size() != 3) {
-                    info("Addrs1: " + addrs1);
-                    info("Addrs2: " + addrs2);
-                    info("Addrs2: " + addrs3);
-
-                    Thread.sleep(1000);
-                }
-                else
-                    break;
-            }
+            info("Addrs1: " + addrs1);
+            info("Addrs2: " + addrs2);
+            info("Addrs2: " + addrs3);
 
             assertEquals(1, ipFinder1.getRegisteredAddresses().size());
             assertEquals(2, ipFinder2.getRegisteredAddresses().size());
