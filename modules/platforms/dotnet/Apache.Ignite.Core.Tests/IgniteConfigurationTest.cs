@@ -28,6 +28,22 @@ namespace Apache.Ignite.Core.Tests
     public class IgniteConfigurationTest
     {
         [Test]
+        public void TestClientMode()
+        {
+            using (var ignite = Ignition.Start())
+            using (var ignite2 = Ignition.Start(new IgniteConfiguration {GridName = "client", ClientMode = true}))
+            {
+                const string cacheName = "cache";
+
+                ignite.CreateCache<int, int>(cacheName);
+
+                Assert.AreEqual(2, ignite2.GetCluster().GetNodes().Count);
+                Assert.AreEqual(1, ignite.GetCluster().ForCacheNodes(cacheName).GetNodes().Count);
+
+            }
+        }
+
+        [Test]
         public void TestDefaultSpi()
         {
             var cfg = new IgniteConfiguration

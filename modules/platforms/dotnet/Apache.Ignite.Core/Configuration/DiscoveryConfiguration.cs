@@ -114,7 +114,5 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteLong((long) NetworkTimeout.TotalMilliseconds);
             writer.WriteLong((long) JoinTimeout.TotalMilliseconds);
         }
-
-        // TODO: Validate
     }
 }
