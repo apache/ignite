@@ -37,6 +37,7 @@ public class PersonId implements Serializable {
         this.personNumber = personNumber;
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("SimplifiableIfStatement")
     @Override public boolean equals(Object obj) {
         if (obj == null || !(obj instanceof PersonId))
@@ -45,18 +46,17 @@ public class PersonId implements Serializable {
         PersonId id = (PersonId)obj;
 
         if ((companyCode != null && !companyCode.equals(id.companyCode)) ||
-            (id.companyCode != null && !id.companyCode.equals(companyCode))) {
+            (id.companyCode != null && !id.companyCode.equals(companyCode)))
             return false;
-        }
 
         if ((companyCode != null && !companyCode.equals(id.companyCode)) ||
-            (id.companyCode != null && !id.companyCode.equals(companyCode))) {
+            (id.companyCode != null && !id.companyCode.equals(companyCode)))
             return false;
-        }
 
         return personNumber == id.personNumber;
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         String code = (companyCode == null ? "" : companyCode) +
             (departmentCode == null ? "" : departmentCode) +

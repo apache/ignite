@@ -28,18 +28,27 @@ import org.apache.ignite.cache.store.cassandra.utils.common.PropertyMappingHelpe
 import org.apache.ignite.cache.store.cassandra.utils.serializer.Serializer;
 
 /**
- * Intermediate layer between persistent store (Cassandra) and Ignite cache key/value classes. Handles
- * all the mappings to/from Java classes into Cassandra and responsible for all the details of how Java
- * objects should be written/loaded  to/from Cassandra
+ * Intermediate layer between persistent store (Cassandra) and Ignite cache key/value classes.
+ * Handles  all the mappings to/from Java classes into Cassandra and responsible for all the details
+ * of how Java objects should be written/loaded to/from Cassandra.
  */
 public class PersistenceController {
+    /** TODO IGNITE-1371: add comment */
     private KeyValuePersistenceSettings persistenceSettings;
 
+    /** TODO IGNITE-1371: add comment */
     private String writeStatement;
-    private String deleteStatement;
+
+    /** TODO IGNITE-1371: add comment */
+    private String delStatement;
+
+    /** TODO IGNITE-1371: add comment */
     private String loadStatement;
+
+    /** TODO IGNITE-1371: add comment */
     private String loadStatementWithKeyFields;
 
+    /** TODO IGNITE-1371: add comment */
     public PersistenceController(KeyValuePersistenceSettings settings) {
         if (settings == null)
             throw new IllegalArgumentException("Persistent settings can't be null");
@@ -47,40 +56,43 @@ public class PersistenceController {
         this.persistenceSettings = settings;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public KeyValuePersistenceSettings getPersistenceSettings() {
         return persistenceSettings;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getKeyspace() {
         return persistenceSettings.getKeyspace();
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getTable() {
         return persistenceSettings.getTable();
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getWriteStatement() {
-        if (writeStatement != null) {
+        if (writeStatement != null)
             return writeStatement;
-        }
 
-        List<String> columns = getKeyValueColumns();
+        List<String> cols = getKeyValueColumns();
 
-        StringBuilder columnsList = new StringBuilder();
+        StringBuilder colsList = new StringBuilder();
         StringBuilder questionsList = new StringBuilder();
 
-        for (String column : columns) {
-            if (columnsList.length() != 0) {
-                columnsList.append(", ");
+        for (String column : cols) {
+            if (colsList.length() != 0) {
+                colsList.append(", ");
                 questionsList.append(",");
             }
 
-            columnsList.append(column);
+            colsList.append(column);
             questionsList.append("?");
         }
 
         writeStatement = "insert into " + persistenceSettings.getKeyspace() + "." + persistenceSettings.getTable() + " (" +
-            columnsList.toString() + ") values (" + questionsList.toString() + ")";
+            colsList.toString() + ") values (" + questionsList.toString() + ")";
 
         if (persistenceSettings.getTTL() != null)
             writeStatement += " using ttl " + persistenceSettings.getTTL();
@@ -90,16 +102,16 @@ public class PersistenceController {
         return writeStatement;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getDeleteStatement() {
-        if (deleteStatement != null) {
-            return deleteStatement;
-        }
+        if (delStatement != null)
+            return delStatement;
 
-        List<String> columns = getKeyColumns();
+        List<String> cols = getKeyColumns();
 
         StringBuilder statement = new StringBuilder();
 
-        for (String column : columns) {
+        for (String column : cols) {
             if (statement.length() != 0)
                 statement.append(" and ");
 
@@ -108,40 +120,42 @@ public class PersistenceController {
 
         statement.append(";");
 
-        deleteStatement = "delete from " +
+        delStatement = "delete from " +
             persistenceSettings.getKeyspace() + "." +
             persistenceSettings.getTable() + " where " +
             statement.toString();
 
-        return deleteStatement;
+        return delStatement;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getLoadStatement(boolean includeKeyFields) {
         if (loadStatement != null && loadStatementWithKeyFields != null)
             return includeKeyFields ? loadStatementWithKeyFields : loadStatement;
 
-        List<String> valColumns = getValueColumns();
-        List<String> keyColumns = getKeyColumns();
+        List<String> valCols = getValueColumns();
 
-        StringBuilder headerWithKeyFields = new StringBuilder("select ");
+        List<String> keyCols = getKeyColumns();
 
-        for (int i = 0; i < keyColumns.size(); i++) {
+        StringBuilder hdrWithKeyFields = new StringBuilder("select ");
+
+        for (int i = 0; i < keyCols.size(); i++) {
             if (i > 0)
-                headerWithKeyFields.append(", ");
+                hdrWithKeyFields.append(", ");
 
-            headerWithKeyFields.append(keyColumns.get(i));
+            hdrWithKeyFields.append(keyCols.get(i));
         }
 
-        StringBuilder header = new StringBuilder("select ");
+        StringBuilder hdr = new StringBuilder("select ");
 
-        for (int i = 0; i < valColumns.size(); i++) {
+        for (int i = 0; i < valCols.size(); i++) {
             if (i > 0)
-                header.append(", ");
+                hdr.append(", ");
 
-            headerWithKeyFields.append(",");
+            hdrWithKeyFields.append(",");
 
-            header.append(valColumns.get(i));
-            headerWithKeyFields.append(valColumns.get(i));
+            hdr.append(valCols.get(i));
+            hdrWithKeyFields.append(valCols.get(i));
         }
 
         StringBuilder statement = new StringBuilder();
@@ -151,21 +165,22 @@ public class PersistenceController {
         statement.append(".").append(persistenceSettings.getTable());
         statement.append(" where ");
 
-        for (int i = 0; i < keyColumns.size(); i++) {
+        for (int i = 0; i < keyCols.size(); i++) {
             if (i > 0)
                 statement.append(" and ");
 
-            statement.append(keyColumns.get(i)).append("=?");
+            statement.append(keyCols.get(i)).append("=?");
         }
 
         statement.append(";");
 
-        loadStatement = header.toString() + statement.toString();
-        loadStatementWithKeyFields = headerWithKeyFields.toString() + statement.toString();
+        loadStatement = hdr.toString() + statement.toString();
+        loadStatementWithKeyFields = hdrWithKeyFields.toString() + statement.toString();
 
         return includeKeyFields ? loadStatementWithKeyFields : loadStatement;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public BoundStatement bindKey(PreparedStatement statement, Object key) {
         KeyPersistenceSettings settings = persistenceSettings.getKeyPersistenceSettings();
 
@@ -175,55 +190,62 @@ public class PersistenceController {
         return statement.bind(values);
     }
 
-    public BoundStatement bindKeyValue(PreparedStatement statement, Object key, Object value) {
+    /** TODO IGNITE-1371: add comment */
+    public BoundStatement bindKeyValue(PreparedStatement statement, Object key, Object val) {
         KeyPersistenceSettings keySettings = persistenceSettings.getKeyPersistenceSettings();
         Object[] keyValues = getBindingValues(keySettings.getStrategy(),
             keySettings.getSerializer(), keySettings.getFields(), key);
 
         ValuePersistenceSettings valSettings = persistenceSettings.getValuePersistenceSettings();
         Object[] valValues = getBindingValues(valSettings.getStrategy(),
-            valSettings.getSerializer(), valSettings.getFields(), value);
+            valSettings.getSerializer(), valSettings.getFields(), val);
 
         Object[] values = new Object[keyValues.length + valValues.length];
 
         int i = 0;
 
-        for (Object val : keyValues) {
-            values[i] = val;
+        for (Object keyVal : keyValues) {
+            values[i] = keyVal;
             i++;
         }
 
-        for (Object val : valValues) {
-            values[i] = val;
+        for (Object valVal : valValues) {
+            values[i] = valVal;
             i++;
         }
 
         return statement.bind(values);
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public Object buildKeyObject(Row row) {
         return buildObject(row, persistenceSettings.getKeyPersistenceSettings());
     }
 
+    /** TODO IGNITE-1371: add comment */
     public Object buildValueObject(Row row) {
         return buildObject(row, persistenceSettings.getValuePersistenceSettings());
     }
 
+    /** TODO IGNITE-1371: add comment */
     private Object buildObject(Row row, PersistenceSettings settings) {
         if (row == null)
             return null;
 
-        PersistenceStrategy strategy = settings.getStrategy();
+        PersistenceStrategy stgy = settings.getStrategy();
+
         Class clazz = settings.getJavaClass();
-        String column = settings.getColumn();
+
+        String col = settings.getColumn();
+
         List<PojoField> fields = settings.getFields();
 
-        if (PersistenceStrategy.PRIMITIVE.equals(strategy))
-            return PropertyMappingHelper.getCassandraColumnValue(row, column, clazz, null);
+        if (PersistenceStrategy.PRIMITIVE.equals(stgy))
+            return PropertyMappingHelper.getCassandraColumnValue(row, col, clazz, null);
 
-        if (PersistenceStrategy.BLOB.equals(strategy))
-            return settings.getSerializer().deserialize(row.getBytes(column));
+        if (PersistenceStrategy.BLOB.equals(stgy))
+            return settings.getSerializer().deserialize(row.getBytes(col));
 
         Object obj;
 
@@ -240,9 +262,9 @@ public class PersistenceController {
         return obj;
     }
 
-    private Object[] getBindingValues(PersistenceStrategy strategy, Serializer serializer,
-        List<PojoField> fields, Object obj) {
-        if (PersistenceStrategy.PRIMITIVE.equals(strategy)) {
+    /** TODO IGNITE-1371: add comment */
+    private Object[] getBindingValues(PersistenceStrategy stgy, Serializer serializer, List<PojoField> fields, Object obj) {
+        if (PersistenceStrategy.PRIMITIVE.equals(stgy)) {
             if (PropertyMappingHelper.getCassandraType(obj.getClass()) == null ||
                 obj.getClass().equals(ByteBuffer.class) || obj instanceof byte[]) {
                 throw new IllegalArgumentException("Couldn't deserialize instance of class '" +
@@ -252,7 +274,7 @@ public class PersistenceController {
             return new Object[] {obj};
         }
 
-        if (PersistenceStrategy.BLOB.equals(strategy))
+        if (PersistenceStrategy.BLOB.equals(stgy))
             return new Object[] {serializer.serialize(obj)};
 
         Object[] values = new Object[fields.size()];
@@ -260,12 +282,12 @@ public class PersistenceController {
         int i = 0;
 
         for (PojoField field : fields) {
-            Object value = field.getValueFromObject(obj, serializer);
+            Object val = field.getValueFromObject(obj, serializer);
 
-            if (value instanceof byte[])
-                value = ByteBuffer.wrap((byte[])value);
+            if (val instanceof byte[])
+                val = ByteBuffer.wrap((byte[]) val);
 
-            values[i] = value;
+            values[i] = val;
 
             i++;
         }
@@ -273,31 +295,37 @@ public class PersistenceController {
         return values;
     }
 
+    /** TODO IGNITE-1371: add comment */
     private List<String> getKeyValueColumns() {
-        List<String> columns = getKeyColumns();
-        columns.addAll(getValueColumns());
-        return columns;
+        List<String> cols = getKeyColumns();
+
+        cols.addAll(getValueColumns());
+
+        return cols;
     }
 
+    /** TODO IGNITE-1371: add comment */
     private List<String> getKeyColumns() {
         return getColumns(persistenceSettings.getKeyPersistenceSettings());
     }
 
+    /** TODO IGNITE-1371: add comment */
     private List<String> getValueColumns() {
         return getColumns(persistenceSettings.getValuePersistenceSettings());
     }
 
+    /** TODO IGNITE-1371: add comment */
     private List<String> getColumns(PersistenceSettings settings) {
-        List<String> columns = new LinkedList<>();
+        List<String> cols = new LinkedList<>();
 
         if (!PersistenceStrategy.POJO.equals(settings.getStrategy())) {
-            columns.add(settings.getColumn());
-            return columns;
+            cols.add(settings.getColumn());
+            return cols;
         }
 
         for (PojoField field : settings.getFields())
-            columns.add(field.getColumn());
+            cols.add(field.getColumn());
 
-        return columns;
+        return cols;
     }
 }

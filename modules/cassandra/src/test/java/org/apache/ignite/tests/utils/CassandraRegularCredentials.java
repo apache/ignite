@@ -20,14 +20,16 @@ package org.apache.ignite.tests.utils;
 import org.apache.ignite.cache.store.cassandra.utils.datasource.Credentials;
 
 /**
- * Implementation of ${@link org.apache.ignite.cache.store.cassandra.utils.datasource.Credentials} providing
- * regular user/password to establish Cassandra session
+ * Implementation of {@link org.apache.ignite.cache.store.cassandra.utils.datasource.Credentials}
+ * providing regular user/password to establish Cassandra session.
  */
 public class CassandraRegularCredentials implements Credentials {
+    /** {@inheritDoc} */
     @Override public String getUser() {
         return CassandraHelper.getRegularUser();
     }
 
+    /** {@inheritDoc} */
     @Override public String getPassword() {
         return CassandraHelper.getRegularPassword();
     }

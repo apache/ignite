@@ -25,18 +25,33 @@ import org.w3c.dom.Element;
  * Descriptor for Ignite value POJO class
  */
 public class PojoValueField extends PojoField {
+    /** */
     private static final String STATIC_ATTR = "static";
+
+    /** */
     private static final String INDEX_ATTR = "index";
+
+    /** */
     private static final String INDEX_CLASS_ATTR = "indexClass";
+
+    /** */
     private static final String INDEX_OPTIONS_ATTR = "indexOptions";
 
+    /** TODO IGNITE-1371: add comment */
     private Boolean isIndexed;
-    private String indexClass;
-    private String indexOptions;
+
+    /** TODO IGNITE-1371: add comment */
+    private String idxCls;
+
+    /** TODO IGNITE-1371: add comment */
+    private String idxOptions;
+
+    /** TODO IGNITE-1371: add comment */
     private Boolean isStatic;
 
-    public PojoValueField(Element el, Class pojoClass) {
-        super(el, pojoClass);
+    /** TODO IGNITE-1371: add comment */
+    public PojoValueField(Element el, Class pojoCls) {
+        super(el, pojoCls);
 
         if (el.hasAttribute(STATIC_ATTR))
             isStatic = Boolean.parseBoolean(el.getAttribute(STATIC_ATTR).trim().toLowerCase());
@@ -45,58 +60,63 @@ public class PojoValueField extends PojoField {
             isIndexed = Boolean.parseBoolean(el.getAttribute(INDEX_ATTR).trim().toLowerCase());
 
         if (el.hasAttribute(INDEX_CLASS_ATTR))
-            indexClass = el.getAttribute(INDEX_CLASS_ATTR).trim();
+            idxCls = el.getAttribute(INDEX_CLASS_ATTR).trim();
 
         if (el.hasAttribute(INDEX_OPTIONS_ATTR)) {
-            indexOptions = el.getAttribute(INDEX_OPTIONS_ATTR).trim();
+            idxOptions = el.getAttribute(INDEX_OPTIONS_ATTR).trim();
 
-            if (!indexOptions.toLowerCase().startsWith("with")) {
-                indexOptions = indexOptions.toLowerCase().startsWith("options") ?
-                    "with " + indexOptions :
-                    "with options = " + indexOptions;
+            if (!idxOptions.toLowerCase().startsWith("with")) {
+                idxOptions = idxOptions.toLowerCase().startsWith("options") ?
+                    "with " + idxOptions :
+                    "with options = " + idxOptions;
             }
         }
     }
 
-    public PojoValueField(PropertyDescriptor descriptor) {
-        super(descriptor);
+    /** TODO IGNITE-1371: add comment */
+    public PojoValueField(PropertyDescriptor desc) {
+        super(desc);
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getColumnDDL() {
-        String columnDDL = super.getColumnDDL();
+        String colDDL = super.getColumnDDL();
 
         if (isStatic != null && isStatic)
-            columnDDL = columnDDL + " static";
+            colDDL = colDDL + " static";
 
-        return columnDDL;
+        return colDDL;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public boolean isIndexed() {
         return isIndexed != null && isIndexed;
     }
 
-    public String getIndexDDL(String keyspace, String table) {
+    /** TODO IGNITE-1371: add comment */
+    public String getIndexDDL(String keyspace, String tbl) {
         if (isIndexed == null || !isIndexed)
             return null;
 
         StringBuilder builder = new StringBuilder();
 
-        if (indexClass != null)
-            builder.append("create custom index if not exists on ").append(keyspace).append(".").append(table);
+        if (idxCls != null)
+            builder.append("create custom index if not exists on ").append(keyspace).append(".").append(tbl);
         else
-            builder.append("create index if not exists on ").append(keyspace).append(".").append(table);
+            builder.append("create index if not exists on ").append(keyspace).append(".").append(tbl);
 
         builder.append(" (").append(getColumn()).append(")");
 
-        if (indexClass != null)
-            builder.append(" using '").append(indexClass).append("'");
+        if (idxCls != null)
+            builder.append(" using '").append(idxCls).append("'");
 
-        if (indexOptions != null)
-            builder.append(" ").append(indexOptions);
+        if (idxOptions != null)
+            builder.append(" ").append(idxOptions);
 
         return builder.append(";").toString();
     }
 
+    /** TODO IGNITE-1371: add comment */
     protected void init(QuerySqlField sqlField) {
         if (sqlField.index())
             isIndexed = true;

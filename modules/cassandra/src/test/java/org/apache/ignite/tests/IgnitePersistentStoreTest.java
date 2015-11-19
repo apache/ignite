@@ -46,9 +46,8 @@ public class IgnitePersistentStoreTest {
 
     @BeforeClass
     public static void setUpClass() {
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
+        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
             return;
-        }
 
         LOGGER.info("Testing admin connection to Cassandra");
         CassandraHelper.testAdminConnection();
@@ -61,9 +60,8 @@ public class IgnitePersistentStoreTest {
 
     @AfterClass
     public static void tearDownClass() {
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
+        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
             return;
-        }
 
         try {
             CassandraHelper.dropTestKeyspaces();
@@ -335,7 +333,7 @@ public class IgnitePersistentStoreTest {
 
         CacheStore store = CacheStoreHelper.createCacheStore("personTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml"),
-            CassandraHelper.getAdminDataSource());
+            CassandraHelper.getAdminDataSrc());
 
         Collection<CacheEntryImpl<PersonId, Person>> entries = TestsHelper.generatePersonIdsPersonsEntries();
 

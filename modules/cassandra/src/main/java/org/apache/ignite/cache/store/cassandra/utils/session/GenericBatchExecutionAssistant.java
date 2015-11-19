@@ -22,12 +22,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Implementation of the ${@link org.apache.ignite.cache.store.cassandra.utils.session.BatchExecutionAssistant}
+ * Implementation of the {@link org.apache.ignite.cache.store.cassandra.utils.session.BatchExecutionAssistant}.
+ *
  * @param <R> Type of the result returned from batch operation
  * @param <V> Type of the value used in batch operation
  */
 public abstract class GenericBatchExecutionAssistant<R, V> implements BatchExecutionAssistant<R, V> {
-    /** TODO IGNITE-1371: add comment */
+    /** Identifiers of already processed objects. */
     private Set<Integer> processed = new HashSet<>();
 
     /** {@inheritDoc} */

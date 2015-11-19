@@ -24,19 +24,26 @@ import org.apache.ignite.cache.store.cassandra.utils.persistence.KeyValuePersist
 
 /**
  * Provides information for single operations (load, delete, write) of Ignite cache
- * backed by ${@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}
+ * backed by {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}.
+ *
  * @param <R> Type of the result returned from operation
  */
 public interface ExecutionAssistant<R> {
+    /** TODO IGNITE-1371: add comment */
     public boolean tableExistenceRequired();
 
+    /** TODO IGNITE-1371: add comment */
     public String getStatement();
 
+    /** TODO IGNITE-1371: add comment */
     public BoundStatement bindStatement(PreparedStatement statement);
 
+    /** TODO IGNITE-1371: add comment */
     public KeyValuePersistenceSettings getPersistenceSettings();
 
+    /** TODO IGNITE-1371: add comment */
     public String operationName();
 
+    /** TODO IGNITE-1371: add comment */
     public R process(Row row);
 }

@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.cassandra.utils.common.SystemHelper;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -50,10 +49,10 @@ public abstract class Worker extends Thread {
     private volatile long finishTime = 0;
 
     private volatile int warmupMsgProcessed = 0;
-    private volatile int warmupSleepCount = 0;
+    private volatile int warmupSleepCnt = 0;
 
     private volatile int msgProcessed = 0;
-    private volatile int sleepCount = 0;
+    private volatile int sleepCnt = 0;
 
     private Throwable executionError;
 
@@ -63,20 +62,20 @@ public abstract class Worker extends Thread {
     private Ignite ignite;
     private IgniteCache igniteCache;
 
-    private Logger logger;
+    private Logger log;
     private int startPosition;
     private int endPosition;
 
     public Worker(CacheStore cacheStore, int startPosition, int endPosition) {
         this.cacheStore = cacheStore;
-        this.logger = Logger.getLogger(loggerName());
+        this.log = Logger.getLogger(loggerName());
         this.startPosition = startPosition;
         this.endPosition = endPosition;
     }
 
     public Worker(Ignite ignite, int startPosition, int endPosition) {
         this.ignite = ignite;
-        this.logger = Logger.getLogger(loggerName());
+        this.log = Logger.getLogger(loggerName());
         this.startPosition = startPosition;
         this.endPosition = endPosition;
     }
@@ -106,7 +105,7 @@ public abstract class Worker extends Thread {
             return 0;
 
         long finish = finishTime != 0 ? finishTime : System.currentTimeMillis();
-        long duration = (finish - startTime - sleepCount * TestsHelper.getLoadTestsRequestsLatency()) / 1000;
+        long duration = (finish - startTime - sleepCnt * TestsHelper.getLoadTestsRequestsLatency()) / 1000;
 
         return duration == 0 ? msgProcessed : msgProcessed / (int)duration;
     }
@@ -123,7 +122,7 @@ public abstract class Worker extends Thread {
         throw new UnsupportedOperationException("Single message processing is not supported");
     }
 
-    protected void process(IgniteCache cache, Object key, Object value) {
+    protected void process(IgniteCache cache, Object key, Object val) {
         throw new UnsupportedOperationException("Single message processing is not supported");
     }
 
@@ -139,33 +138,32 @@ public abstract class Worker extends Thread {
     private void execute() throws InterruptedException {
         testStartTime = System.currentTimeMillis();
 
-        logger.info("Test execution started");
+        log.info("Test execution started");
 
         if (warmup)
-            logger.info("Warm up period started");
+            log.info("Warm up period started");
 
         warmupStartTime = warmup ? testStartTime : 0;
         startTime = !warmup ? testStartTime : 0;
 
         statReportedTime = testStartTime;
 
-        int counter = startPosition;
-        Object key = TestsHelper.generateLoadTestsKey(counter);
-        Object val = TestsHelper.generateLoadTestsValue(counter);
+        int cntr = startPosition;
+        Object key = TestsHelper.generateLoadTestsKey(cntr);
+        Object val = TestsHelper.generateLoadTestsValue(cntr);
         List<CacheEntryImpl> batchList = new ArrayList<>(TestsHelper.getBulkOperationSize());
         Map batchMap = new HashMap(TestsHelper.getBulkOperationSize());
 
         try {
             while (true) {
-                if (System.currentTimeMillis() - testStartTime > TestsHelper.getLoadTestsExecutionTime()) {
+                if (System.currentTimeMillis() - testStartTime > TestsHelper.getLoadTestsExecutionTime())
                     break;
-                }
 
                 if (warmup && System.currentTimeMillis() - testStartTime > TestsHelper.getLoadTestsWarmupPeriod()) {
                     warmupFinishTime = System.currentTimeMillis();
                     startTime = warmupFinishTime;
                     warmup = false;
-                    logger.info("Warm up period completed");
+                    log.info("Warm up period completed");
                 }
 
                 if (!batchMode()) {
@@ -185,13 +183,13 @@ public abstract class Worker extends Thread {
                     batchList.clear();
                 }
 
-                if (counter == endPosition)
-                    counter = startPosition;
+                if (cntr == endPosition)
+                    cntr = startPosition;
                 else
-                    counter++;
+                    cntr++;
 
-                key = TestsHelper.generateLoadTestsKey(counter);
-                val = TestsHelper.generateLoadTestsValue(counter);
+                key = TestsHelper.generateLoadTestsKey(cntr);
+                val = TestsHelper.generateLoadTestsValue(cntr);
 
                 if (batchMode()) {
                     if (cacheStore != null)
@@ -215,8 +213,8 @@ public abstract class Worker extends Thread {
         updateMetrics(1);
     }
 
-    private void doWork(Object key, Object value) throws InterruptedException {
-        process(igniteCache, key, value);
+    private void doWork(Object key, Object val) throws InterruptedException {
+        process(igniteCache, key, val);
         updateMetrics(1);
     }
 
@@ -235,7 +233,7 @@ public abstract class Worker extends Thread {
             return 0;
 
         long finish = warmupFinishTime != 0 ? warmupFinishTime : System.currentTimeMillis();
-        long duration = (finish - warmupStartTime - warmupSleepCount * TestsHelper.getLoadTestsRequestsLatency()) / 1000;
+        long duration = (finish - warmupStartTime - warmupSleepCnt * TestsHelper.getLoadTestsRequestsLatency()) / 1000;
 
         return duration == 0 ? warmupMsgProcessed : warmupMsgProcessed / (int)duration;
     }
@@ -250,9 +248,9 @@ public abstract class Worker extends Thread {
             Thread.sleep(TestsHelper.getLoadTestsRequestsLatency());
 
         if (warmup)
-            warmupSleepCount++;
+            warmupSleepCnt++;
         else
-            sleepCount++;
+            sleepCnt++;
     }
 
     private void reportStatistics() {
@@ -265,11 +263,11 @@ public abstract class Worker extends Thread {
         int completed = (int)(statReportedTime - testStartTime) * 100 / TestsHelper.getLoadTestsExecutionTime();
 
         if (warmup) {
-            logger.info("Warm up messages processed " + warmupMsgProcessed + ", " +
+            log.info("Warm up messages processed " + warmupMsgProcessed + ", " +
                 "speed " + getWarmUpSpeed() + " msg/sec, " + completed + "% completed");
         }
         else {
-            logger.info("Messages processed " + msgProcessed + ", " +
+            log.info("Messages processed " + msgProcessed + ", " +
                 "speed " + getSpeed() + " msg/sec, " + completed + "% completed");
         }
     }
@@ -300,8 +298,8 @@ public abstract class Worker extends Thread {
         builder.append("Processing speed: ").append(getSpeed()).append(" msg/sec");
 
         if (executionError != null)
-            logger.error(builder.toString(), executionError);
+            log.error(builder.toString(), executionError);
         else
-            logger.info(builder.toString());
+            log.info(builder.toString());
     }
 }

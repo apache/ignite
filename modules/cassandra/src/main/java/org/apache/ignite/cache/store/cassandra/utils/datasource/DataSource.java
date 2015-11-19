@@ -43,54 +43,109 @@ import org.apache.ignite.cache.store.cassandra.utils.session.CassandraSessionImp
  * Data source abstraction to specify configuration of the Cassandra session to be used
  */
 public class DataSource {
+    /** TODO IGNITE-1371: add comment */
     private Integer fetchSize;
+
+    /** TODO IGNITE-1371: add comment */
     private ConsistencyLevel readConsistency;
+
+    /** TODO IGNITE-1371: add comment */
     private ConsistencyLevel writeConsistency;
 
+    /** TODO IGNITE-1371: add comment */
     private String user;
-    private String password;
+
+    /** TODO IGNITE-1371: add comment */
+    private String pwd;
+
+    /** TODO IGNITE-1371: add comment */
     private Integer port;
+
+    /** TODO IGNITE-1371: add comment */
     private List<InetAddress> contactPoints;
+
+    /** TODO IGNITE-1371: add comment */
     private List<InetSocketAddress> contactPointsWithPorts;
+
+    /** TODO IGNITE-1371: add comment */
     private Integer maxSchemaAgreementWaitSeconds;
-    private Integer protocolVersion;
+
+    /** TODO IGNITE-1371: add comment */
+    private Integer protoVer;
+
+    /** TODO IGNITE-1371: add comment */
     private String compression;
+
+    /** TODO IGNITE-1371: add comment */
     private Boolean useSSL;
+
+    /** TODO IGNITE-1371: add comment */
     private Boolean collectMetrix;
+
+    /** TODO IGNITE-1371: add comment */
     private Boolean jmxReporting;
 
-    private Credentials credentials;
-    private LoadBalancingPolicy loadBalancingPolicy;
-    private ReconnectionPolicy reconnectionPolicy;
-    private RetryPolicy retryPolicy;
-    private AddressTranslater addressTranslater;
-    private SpeculativeExecutionPolicy speculativeExecutionPolicy;
+    /** TODO IGNITE-1371: add comment */
+    private Credentials creds;
+
+    /** TODO IGNITE-1371: add comment */
+    private LoadBalancingPolicy loadBalancingPlc;
+
+    /** TODO IGNITE-1371: add comment */
+    private ReconnectionPolicy reconnectionPlc;
+
+    /** TODO IGNITE-1371: add comment */
+    private RetryPolicy retryPlc;
+
+    /** TODO IGNITE-1371: add comment */
+    private AddressTranslater addrTranslater;
+
+    /** TODO IGNITE-1371: add comment */
+    private SpeculativeExecutionPolicy speculativeExecutionPlc;
+
+    /** TODO IGNITE-1371: add comment */
     private AuthProvider authProvider;
+
+    /** TODO IGNITE-1371: add comment */
     private SSLOptions sslOptions;
+
+    /** TODO IGNITE-1371: add comment */
     private PoolingOptions poolingOptions;
-    private SocketOptions socketOptions;
+
+    /** TODO IGNITE-1371: add comment */
+    private SocketOptions sockOptions;
+
+    /** TODO IGNITE-1371: add comment */
     private NettyOptions nettyOptions;
 
-    private volatile CassandraSession session;
+    /** TODO IGNITE-1371: add comment */
+    private volatile CassandraSession ses;
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setUser(String user) {
         this.user = user;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
-    public void setPassword(String password) {
-        this.password = password;
+    public void setPassword(String pwd) {
+        this.pwd = pwd;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setPort(int port) {
         this.port = port;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     public void setContactPoints(String... points) {
         if (points == null || points.length == 0)
             return;
@@ -125,18 +180,23 @@ public class DataSource {
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setMaxSchemaAgreementWaitSeconds(int seconds) {
         maxSchemaAgreementWaitSeconds = seconds;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
-    public void setProtocolVersion(int version) {
-        protocolVersion = version;
+    public void setProtocolVersion(int ver) {
+        protoVer = ver;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setCompression(String compression) {
         this.compression = compression == null || compression.trim().isEmpty() ? null : compression.trim();
@@ -152,113 +212,142 @@ public class DataSource {
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setUseSSL(boolean use) {
         useSSL = use;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setCollectMetrix(boolean collect) {
         collectMetrix = collect;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setJmxReporting(boolean enableReporting) {
         jmxReporting = enableReporting;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setFetchSize(int size) {
         fetchSize = size;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     public void setReadConsistency(String level) {
         readConsistency = parseConsistencyLevel(level);
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     public void setWriteConsistency(String level) {
         writeConsistency = parseConsistencyLevel(level);
+
         invalidate();
     }
 
-    public void setCredentials(Credentials credentials) {
-        this.credentials = credentials;
+    /** TODO IGNITE-1371: add comment */
+    public void setCredentials(Credentials creds) {
+        this.creds = creds;
+
         invalidate();
     }
 
-    public void setLoadBalancingPolicy(LoadBalancingPolicy policy) {
-        this.loadBalancingPolicy = policy;
+    /** TODO IGNITE-1371: add comment */
+    public void setLoadBalancingPolicy(LoadBalancingPolicy plc) {
+        this.loadBalancingPlc = plc;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
-    public void setReconnectionPolicy(ReconnectionPolicy policy) {
-        this.reconnectionPolicy = policy;
+    public void setReconnectionPolicy(ReconnectionPolicy plc) {
+        this.reconnectionPlc = plc;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
-    public void setRetryPolicy(RetryPolicy policy) {
-        this.retryPolicy = policy;
+    public void setRetryPolicy(RetryPolicy plc) {
+        this.retryPlc = plc;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setAddressTranslater(AddressTranslater translater) {
-        this.addressTranslater = translater;
+        this.addrTranslater = translater;
+
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
-    public void setSpeculativeExecutionPolicy(SpeculativeExecutionPolicy policy) {
-        this.speculativeExecutionPolicy = policy;
+    public void setSpeculativeExecutionPolicy(SpeculativeExecutionPolicy plc) {
+        this.speculativeExecutionPlc = plc;
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setAuthProvider(AuthProvider provider) {
         this.authProvider = provider;
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setSslOptions(SSLOptions options) {
         this.sslOptions = options;
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setPoolingOptions(PoolingOptions options) {
         this.poolingOptions = options;
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setSocketOptions(SocketOptions options) {
-        this.socketOptions = options;
+        this.sockOptions = options;
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public void setNettyOptions(NettyOptions options) {
         this.nettyOptions = options;
         invalidate();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("deprecation")
-    public synchronized CassandraSession session(IgniteLogger logger) {
-        if (session != null)
-            return session;
+    public synchronized CassandraSession session(IgniteLogger log) {
+        if (ses != null)
+            return ses;
 
         Cluster.Builder builder = Cluster.builder();
 
         if (user != null)
-            builder = builder.withCredentials(user, password);
+            builder = builder.withCredentials(user, pwd);
 
         if (port != null)
             builder = builder.withPort(port);
@@ -272,8 +361,8 @@ public class DataSource {
         if (maxSchemaAgreementWaitSeconds != null)
             builder = builder.withMaxSchemaAgreementWaitSeconds(maxSchemaAgreementWaitSeconds);
 
-        if (protocolVersion != null)
-            builder = builder.withProtocolVersion(protocolVersion);
+        if (protoVer != null)
+            builder = builder.withProtocolVersion(protoVer);
 
         if (compression != null) {
             try {
@@ -296,23 +385,23 @@ public class DataSource {
         if (jmxReporting != null && !jmxReporting)
             builder = builder.withoutJMXReporting();
 
-        if (credentials != null)
-            builder = builder.withCredentials(credentials.getUser(), credentials.getPassword());
+        if (creds != null)
+            builder = builder.withCredentials(creds.getUser(), creds.getPassword());
 
-        if (loadBalancingPolicy != null)
-            builder = builder.withLoadBalancingPolicy(loadBalancingPolicy);
+        if (loadBalancingPlc != null)
+            builder = builder.withLoadBalancingPolicy(loadBalancingPlc);
 
-        if (reconnectionPolicy != null)
-            builder = builder.withReconnectionPolicy(reconnectionPolicy);
+        if (reconnectionPlc != null)
+            builder = builder.withReconnectionPolicy(reconnectionPlc);
 
-        if (retryPolicy != null)
-            builder = builder.withRetryPolicy(retryPolicy);
+        if (retryPlc != null)
+            builder = builder.withRetryPolicy(retryPlc);
 
-        if (addressTranslater != null)
-            builder = builder.withAddressTranslater(addressTranslater);
+        if (addrTranslater != null)
+            builder = builder.withAddressTranslater(addrTranslater);
 
-        if (speculativeExecutionPolicy != null)
-            builder = builder.withSpeculativeExecutionPolicy(speculativeExecutionPolicy);
+        if (speculativeExecutionPlc != null)
+            builder = builder.withSpeculativeExecutionPolicy(speculativeExecutionPlc);
 
         if (authProvider != null)
             builder = builder.withAuthProvider(authProvider);
@@ -320,15 +409,16 @@ public class DataSource {
         if (poolingOptions != null)
             builder = builder.withPoolingOptions(poolingOptions);
 
-        if (socketOptions != null)
-            builder = builder.withSocketOptions(socketOptions);
+        if (sockOptions != null)
+            builder = builder.withSocketOptions(sockOptions);
 
         if (nettyOptions != null)
             builder = builder.withNettyOptions(nettyOptions);
 
-        return session = new CassandraSessionImpl(builder, fetchSize, readConsistency, writeConsistency, logger);
+        return ses = new CassandraSessionImpl(builder, fetchSize, readConsistency, writeConsistency, log);
     }
 
+    /** TODO IGNITE-1371: add comment */
     private ConsistencyLevel parseConsistencyLevel(String level) {
         if (level == null)
             return null;
@@ -341,8 +431,8 @@ public class DataSource {
         }
     }
 
+    /** TODO IGNITE-1371: add comment */
     private synchronized void invalidate() {
-        session = null;
+        ses = null;
     }
-
 }

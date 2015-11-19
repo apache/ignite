@@ -18,10 +18,12 @@
 package org.apache.ignite.cache.store.cassandra.utils.datasource;
 
 /**
- * Provides users/password credentials for Cassandra (instead of specifying user/password directly in Spring context xml)
+ * Provides credentials for Cassandra (instead of specifying user/password directly in Spring context XML).
  */
 public interface Credentials {
+    /** TODO IGNITE-1371: add comment */
     public String getUser();
 
+    /** TODO IGNITE-1371: add comment */
     public String getPassword();
 }

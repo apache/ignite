@@ -22,10 +22,12 @@ import java.nio.ByteBuffer;
 
 /**
  * Interface which should be implemented by all serializers responsible
- * for writing/loading data to/from Cassandra in binary (BLOB) format
+ * for writing/loading data to/from Cassandra in binary (BLOB) format.
  */
 public interface Serializer extends Serializable {
+    /** TODO IGNITE-1371: add comment */
     public ByteBuffer serialize(Object obj);
 
-    public Object deserialize(ByteBuffer buffer);
+    /** TODO IGNITE-1371: add comment */
+    public Object deserialize(ByteBuffer buf);
 }
