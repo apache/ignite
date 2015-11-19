@@ -45,8 +45,6 @@ namespace ignite
              * @return Pointer to valid instance on success and NULL on failure.
              */
             Connection* CreateConnection();
-
-        private:
         };
     }
 }

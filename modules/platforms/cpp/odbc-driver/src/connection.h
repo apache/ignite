@@ -24,6 +24,7 @@
 
 #include "socket_client.h"
 #include "statement.h"
+#include "connection_info.h"
 
 namespace ignite
 {
@@ -37,6 +38,12 @@ namespace ignite
              * Destructor.
              */
             ~Connection();
+
+            /**
+             * Get connection info.
+             * @return Connection info.
+             */
+            const ConnectionInfo& GetInfo() const;
 
             /**
              * Establish connection to ODBC server.

@@ -37,6 +37,9 @@
     <ClCompile Include="..\..\src\common_types.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\connection_info.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -81,6 +84,9 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\parser.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\connection_info.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

@@ -212,7 +212,9 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
 
                 qryCurs.remove(req.queryId());
 
-                return new GridOdbcResponse(true);
+                GridOdbcQueryResult res = new GridOdbcQueryResult(req.queryId());
+
+                return new GridOdbcResponse(res);
             }
             catch (Exception e) {
                 qryCurs.remove(req.queryId());

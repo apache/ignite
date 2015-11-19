@@ -98,6 +98,29 @@ BOOL INSTAPI ConfigDSN(
     return TRUE;
 }
 
+SQLRETURN SQLGetInfo(
+    SQLHDBC         conn,
+    SQLUSMALLINT    infoType,
+    SQLPOINTER      infoValue,
+    SQLSMALLINT     infoValueMax,
+    SQLSMALLINT     *length)
+{
+    using ignite::odbc::Connection;
+    using ignite::odbc::ConnectionInfo;
+
+    LOG_MSG("SQLGetInfo called: %d (%s)\n", infoType, ConnectionInfo::InfoTypeToString(infoType));
+
+    Connection *connection = reinterpret_cast<Connection*>(conn);
+
+    if (!connection)
+        return SQL_INVALID_HANDLE;
+
+    const ConnectionInfo& info = connection->GetInfo();
+
+    bool success = info.GetInfo(infoType, infoValue, infoValueMax, length);
+
+    return success ? SQL_SUCCESS : SQL_ERROR;
+}
 
 SQLRETURN SQL_API SQLAllocHandle(SQLSMALLINT type, SQLHANDLE parent, SQLHANDLE* result)
 {
@@ -389,9 +412,6 @@ SQLRETURN SQL_API SQLBindCol(SQLHSTMT       stmt,
     if (!ignite::odbc::type_traits::IsApplicationTypeSupported(targetType))
         return SQL_ERROR;
 
-    if (!targetType)
-        return SQL_ERROR;
-
     ApplicationDataBuffer dataBuffer(targetType, targetValue, bufferLength);
 
     statement->BindResultColumn(colNum, dataBuffer);
@@ -411,6 +431,23 @@ SQLRETURN SQL_API SQLFetch(SQLHSTMT stmt)
         return SQL_INVALID_HANDLE;
 
     return statement->FetchRow();
+}
+
+SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC     conn,
+                                    SQLINTEGER  attr,
+                                    SQLPOINTER  value,
+                                    SQLINTEGER  len)
+{
+    using ignite::odbc::Connection;
+
+    LOG_MSG("SQLSetConnectAttr called\n");
+
+    Connection *connection = reinterpret_cast<Connection*>(conn);
+
+    if (!connection)
+        return SQL_INVALID_HANDLE;
+
+    return SQL_ERROR;
 }
 
 ///// SQLCancel /////
@@ -509,16 +546,6 @@ SQLRETURN SQL_API SQLNumResultCols(SQLHSTMT arg0,
     return SQL_SUCCESS;
 }
 
-///// SQLPrepare /////
-
-SQLRETURN SQL_API SQLPrepare(SQLHSTMT arg0,
-    UCHAR * arg1,
-    SDWORD arg2)
-{
-    LOG_MSG("SQLPrepare called\n");
-    return SQL_SUCCESS;
-}
-
 ///// SQLRowCount /////
 
 SQLRETURN SQL_API SQLRowCount(SQLHSTMT arg0,
@@ -609,18 +636,6 @@ SQLRETURN SQL_API SQLGetFunctions(SQLHDBC arg0,
     UWORD  * arg2)
 {
     LOG_MSG("SQLGetFunctions called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLGetInfo /////
-
-SQLRETURN SQL_API SQLGetInfo(SQLHDBC arg0,
-    UWORD arg1,
-    PTR arg2,
-    SWORD arg3,
-    UNALIGNED SWORD * arg4)
-{
-    LOG_MSG("SQLGetInfo called\n");
     return SQL_SUCCESS;
 }
 
@@ -1136,15 +1151,6 @@ SQLRETURN SQL_API SQLGetStmtAttr(SQLHSTMT arg0,
 
 ///// SQLSetConnectAttr /////
 
-SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC arg0,
-    SQLINTEGER arg1,
-    SQLPOINTER arg2,
-    SQLINTEGER arg3)
-{
-    LOG_MSG("SQLSetConnectAttr called\n");
-    return SQL_SUCCESS;
-}
-
 ///// SQLSetDescField /////
 
 SQLRETURN SQL_API SQLSetDescField(SQLHDESC arg0,
@@ -1176,10 +1182,11 @@ SQLRETURN SQL_API SQLSetDescRec(SQLHDESC arg0,
 
 ///// SQLSetEnvAttr /////
 
-SQLRETURN SQL_API SQLSetEnvAttr(SQLHENV arg0,
-    SQLINTEGER arg1,
-    SQLPOINTER arg2,
-    SQLINTEGER arg3)
+SQLRETURN SQL_API SQLSetEnvAttr(
+    SQLHENV     env,
+    SQLINTEGER  attr,
+    SQLPOINTER  val,
+    SQLINTEGER  strLen)
 {
     LOG_MSG("SQLSetEnvAttr called\n");
     return SQL_SUCCESS;

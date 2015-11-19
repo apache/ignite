@@ -47,6 +47,14 @@ namespace ignite
             // No-op.
         }
 
+        const ConnectionInfo & Connection::GetInfo() const
+        {
+            // Connection info is the same for all connections now.
+            static ConnectionInfo info;
+
+            return info;
+        }
+
         bool Connection::Establish(const std::string& host, uint16_t port, const std::string& cache)
         {
             if (connected)
@@ -113,8 +121,6 @@ namespace ignite
 
             if (received != sizeof(hdr))
                 return false;
-
-            hdr.len = ntohl(hdr.len);
 
             size_t remain = hdr.len;
             size_t receivedAtAll = 0;

@@ -21,6 +21,12 @@
 #include <string>
 #include <stdint.h>
 
+#ifdef min
+#   undef min
+#endif //min
+
+#include <algorithm>
+
 #include <ignite/common/utils.h>
 
 extern FILE* log_file;
@@ -99,6 +105,26 @@ namespace ignite
             std::copy(skipped_leading, skipped_trailing, std::back_insert_iterator<std::string>(res));
 
             return res;
+        }
+
+        /**
+         * Copy string to buffer of the specific length.
+         * @param str String to copy data from.
+         * @param buf Buffer to copy data to.
+         * @param buflen Length of the buffer.
+         * @return Length of the resulting string in buffer.
+         */
+        inline size_t CopyStringToBuffer(const std::string& str, char* buf, size_t buflen)
+        {
+            if (!buf || !buflen)
+                return 0;
+
+            size_t bytesToCopy = std::min(str.size(), static_cast<size_t>(buflen - 1));
+
+            memcpy(buf, str.data(), bytesToCopy);
+            buf[bytesToCopy] = 0;
+
+            return bytesToCopy;
         }
     }
 }

@@ -150,6 +150,7 @@
     <ClCompile Include="..\..\src\configuration.cpp" />
     <ClCompile Include="..\..\src\connection.cpp" />
     <ClCompile Include="..\..\src\environment.cpp" />
+    <ClCompile Include="..\..\src\connection_info.cpp" />
     <ClCompile Include="..\..\src\odbc.cpp" />
     <ClCompile Include="..\..\src\application_data_buffer.cpp" />
     <ClCompile Include="..\..\src\statement.cpp" />
@@ -174,6 +175,7 @@
     <ClInclude Include="..\..\src\cursor.h" />
     <ClInclude Include="..\..\src\environment.h" />
     <ClInclude Include="..\..\src\application_data_buffer.h" />
+    <ClInclude Include="..\..\src\connection_info.h" />
     <ClInclude Include="..\..\src\interop_stack_memory.h" />
     <ClInclude Include="..\..\src\message.h" />
     <ClInclude Include="..\..\src\parser.h" />
