@@ -80,7 +80,6 @@ var CacheTypeMetadataSchema = new Schema({
     valueType: String,
     keyFields: [{databaseFieldName: String, databaseFieldType: String, javaFieldName: String, javaFieldType: String}],
     valueFields: [{databaseFieldName: String, databaseFieldType: String, javaFieldName: String, javaFieldType: String}],
-    keepSerialized: Boolean,
     fields: [{name: String, className: String}],
     aliases: [{field: String, alias: String}],
     indexes: [{name: String, indexType: {type: String, enum: ['SORTED', 'FULLTEXT', 'GEOSPATIAL']}, fields: [{name: String, direction: Boolean}]}]

@@ -1205,7 +1205,6 @@ $generatorJava.metadataStore = function (meta, withTypes, res) {
 
     $generatorJava.property(res, 'jdbcType', meta, 'databaseSchema');
     $generatorJava.property(res, 'jdbcType', meta, 'databaseTable');
-    $generatorJava.property(res, 'jdbcType', meta, 'keepSerialized', null, null, false);
 
     if (withTypes) {
         $generatorJava.property(res, 'jdbcType', meta, 'keyType');

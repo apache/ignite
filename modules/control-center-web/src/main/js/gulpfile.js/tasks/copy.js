@@ -18,6 +18,8 @@
 var gulp = require('gulp');
 var gulpSequence = require('gulp-sequence');
 
+var igniteModules = process.env.IGNITE_MODULES || './ignite_modules';
+
 var paths = [
     './app/**/**/*.js',
     './controllers/*.js',
@@ -29,10 +31,10 @@ var paths = [
     './public/**/*.js'
 ];
 
-var pluginPaths = [
-    './ignite_modules/**/main.js',
-    './ignite_modules/**/controllers/*.js',
-    './ignite_modules/**/controllers/models/*.json'
+var igniteModulePaths = [
+    igniteModules + '/**/main.js',
+    igniteModules + '/**/controllers/*.js',
+    igniteModules + '/**/controllers/models/*.json'
 ];
 
 gulp.task('copy', function(cb) {
@@ -44,11 +46,11 @@ gulp.task('copy:source', function(cb) {
 });
 
 gulp.task('copy:ignite_modules', function(cb) {
-    return gulp.src(pluginPaths).pipe(gulp.dest('./build/ignite_modules'))
+    return gulp.src(igniteModulePaths).pipe(gulp.dest('./build/ignite_modules'))
 });
 
 gulp.task('copy:watch', function(cb) {
-    gulp.watch(paths, function(glob) {
+    gulp.watch([paths, igniteModulePaths], function(glob) {
         gulpSequence('copy', 'inject:plugins:js')(cb)
     })
 });
