@@ -45,6 +45,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.stream.StreamAdapter;
 
 /**
@@ -61,7 +62,7 @@ import org.apache.ignite.stream.StreamAdapter;
  *     <li>Provide all params in apiParams map. https://dev.twitter.com/streaming/overview/request-parameters</li>
  * </ul>
  */
-public abstract class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
+public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
     /** Logger. */
     protected IgniteLogger log;
 
@@ -133,7 +134,7 @@ public abstract class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> 
                             addMessage(tweet);
                         }
                         catch (InterruptedException e) {
-                            log.error("Tweets transformation was interrupted", e);
+                            U.warn(log, "Tweets transformation was interrupted", e);
 
                             return true;
                         }
@@ -214,9 +215,8 @@ public abstract class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> 
 
                 List<Long> followers = Lists.newArrayList();
 
-                for (String follower : Splitter.on(',').trimResults().omitEmptyStrings().split(follow)) {
+                for (String follower : Splitter.on(',').trimResults().omitEmptyStrings().split(follow))
                     followers.add(Long.valueOf(follower));
-                }
 
                 endpoint = new SitestreamEndpoint(followers);
 

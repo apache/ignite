@@ -23,13 +23,11 @@ import com.twitter.hbc.core.HttpHosts;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.events.CacheEvent;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Rule;
@@ -101,7 +99,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
             Map<String, String> params = new HashMap<>();
 
             params.put("track", "apache, twitter");
-            params.put("follow", "3004445758");//@ApacheIgnite id.
+            params.put("follow", "3004445758");// @ApacheIgnite id.
 
             streamer.setApiParams(params);
             streamer.setEndpointUrl(MOCK_TWEET_PATH);
@@ -118,30 +116,40 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
      * @throws TwitterException Test exception.
      */
     private void executeStreamer(TwitterStreamer streamer) throws InterruptedException, TwitterException {
-        //Checking streaming.
+        // Checking streaming.
 
         CacheListener listener = subscribeToPutEvents();
 
         streamer.start();
 
-        try{
+        try {
             streamer.start();
 
-            A.ensure(false, "Streamer concurrent start allowed instead of denied");
-        }catch (IgniteException ex){
-            //No-op
+            fail("Successful start of already started Twitter Streamer");
+        }
+        catch (IgniteException ex) {
+            // No-op.
         }
 
         CountDownLatch latch = listener.getLatch();
 
-        //Enough tweets was handled in 10 seconds.
+        // Enough tweets was handled in 10 seconds. Limited by test's timeout.
         latch.await();
 
         unsubscribeToPutEvents(listener);
 
         streamer.stop();
 
-        //Checking cache content after streaming finished.
+        try {
+            streamer.stop();
+
+            fail("Successful stop of already stopped Twitter Streamer");
+        }
+        catch (IgniteException ex) {
+            // No-op.
+        }
+
+        // Checking cache content after streaming finished.
 
         Status status = TwitterObjectFactory.createStatus(tweet);
 
@@ -149,10 +157,10 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
 
         String cachedValue = cache.get(status.getId());
 
-        //Tweet successfully put to cache.
+        // Tweet successfully put to cache.
         assertTrue(cachedValue != null && cachedValue.equals(status.getText()));
 
-        //Same tweets does not produce duplicate entries.
+        // Same tweets does not produce duplicate entries.
         assertTrue(cache.size() == 1);
     }
 
@@ -162,7 +170,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     private CacheListener subscribeToPutEvents() {
         Ignite ignite = grid();
 
-        // Listen to cache PUT events and expect as many as messages as test data items
+        // Listen to cache PUT events and expect as many as messages as test data items.
         CacheListener listener = new CacheListener();
 
         ignite.events(ignite.cluster().forCacheNodes(null)).localListen(listener, EVT_CACHE_OBJECT_PUT);
