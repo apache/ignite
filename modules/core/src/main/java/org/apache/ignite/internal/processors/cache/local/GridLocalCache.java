@@ -231,8 +231,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     /**
      * @param fut Clears future from cache.
      */
-    void onFutureDone(GridCacheFuture<?> fut) {
-        if (ctx.mvcc().removeFuture(fut)) {
+    void onFutureDone(GridLocalLockFuture fut) {
+        if (ctx.mvcc().removeMvccFuture(fut)) {
             if (log().isDebugEnabled())
                 log().debug("Explicitly removed future from map of futures: " + fut);
         }

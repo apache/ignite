@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -67,39 +65,42 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     protected static IgniteLogger log;
 
     /** Cache context. */
-    private GridCacheContext cctx;
+    private final GridCacheContext cctx;
 
     /** Future version. */
-    private GridCacheVersion futVer;
+    private final GridCacheVersion futVer;
 
     /** Write version. */
-    private GridCacheVersion writeVer;
+    private final GridCacheVersion writeVer;
 
     /** Force transform backup flag. */
     private boolean forceTransformBackups;
 
     /** Completion callback. */
     @GridToStringExclude
-    private CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb;
+    private final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb;
 
     /** Mappings. */
     @GridToStringInclude
-    private ConcurrentMap<UUID, GridDhtAtomicUpdateRequest> mappings = new ConcurrentHashMap8<>();
+    private final Map<UUID, GridDhtAtomicUpdateRequest> mappings;
 
     /** Entries with readers. */
     private Map<KeyCacheObject, GridDhtCacheEntry> nearReadersEntries;
 
     /** Update request. */
-    private GridNearAtomicUpdateRequest updateReq;
+    private final GridNearAtomicUpdateRequest updateReq;
 
     /** Update response. */
-    private GridNearAtomicUpdateResponse updateRes;
+    private final GridNearAtomicUpdateResponse updateRes;
 
     /** Future keys. */
-    private Collection<KeyCacheObject> keys;
+    private final Collection<KeyCacheObject> keys;
 
     /** */
-    private boolean waitForExchange;
+    private final boolean waitForExchange;
+
+    /** Response count. */
+    private volatile int resCnt;
 
     /**
      * @param cctx Cache context.
@@ -128,6 +129,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
             log = U.logger(cctx.kernalContext(), logRef, GridDhtAtomicUpdateFuture.class);
 
         keys = new ArrayList<>(updateReq.keys().size());
+        mappings = U.newHashMap(updateReq.keys().size());
 
         boolean topLocked = updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest());
 
@@ -145,22 +147,37 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return F.view(F.viewReadOnly(mappings.keySet(), U.id2Node(cctx.kernalContext())), F.notNull());
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
         if (log.isDebugEnabled())
             log.debug("Processing node leave event [fut=" + this + ", nodeId=" + nodeId + ']');
 
+        return registerResponse(nodeId);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @return {@code True} if request found.
+     */
+    private boolean registerResponse(UUID nodeId) {
+        int resCnt0;
+
         GridDhtAtomicUpdateRequest req = mappings.get(nodeId);
 
         if (req != null) {
-            // Remove only after added keys to failed set.
-            mappings.remove(nodeId);
+            synchronized (this) {
+                if (req.onResponse()) {
+                    resCnt0 = resCnt;
 
-            checkComplete();
+                    resCnt0 += 1;
+
+                    resCnt = resCnt0;
+                }
+                else
+                    return false;
+            }
+
+            if (resCnt0 == mappings.size())
+                onDone();
 
             return true;
         }
@@ -343,18 +360,18 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     U.warn(log, "Failed to send update request to backup node because it left grid: " +
                         req.nodeId());
 
-                    mappings.remove(req.nodeId());
+                    registerResponse(req.nodeId());
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send update request to backup node (did node leave the grid?): "
                         + req.nodeId(), e);
 
-                    mappings.remove(req.nodeId());
+                    registerResponse(req.nodeId());
                 }
             }
         }
-
-        checkComplete();
+        else
+            onDone();
 
         // Send response right away if no ACKs from backup is required.
         // Backups will send ACKs anyway, future will be completed after all backups have replied.
@@ -389,9 +406,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
             }
         }
 
-        mappings.remove(nodeId);
-
-        checkComplete();
+        registerResponse(nodeId);
     }
 
     /**
@@ -403,22 +418,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         if (log.isDebugEnabled())
             log.debug("Received deferred DHT atomic update future result [nodeId=" + nodeId + ']');
 
-        mappings.remove(nodeId);
-
-        checkComplete();
-    }
-
-    /**
-     * Checks if all required responses are received.
-     */
-    private void checkComplete() {
-        // Always wait for replies from all backups.
-        if (mappings.isEmpty()) {
-            if (log.isDebugEnabled())
-                log.debug("Completing DHT atomic update future: " + this);
-
-            onDone();
-        }
+        registerResponse(nodeId);
     }
 
     /** {@inheritDoc} */

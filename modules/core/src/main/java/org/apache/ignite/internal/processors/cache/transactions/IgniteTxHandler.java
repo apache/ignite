@@ -477,7 +477,7 @@ public class IgniteTxHandler {
      */
     private void processNearTxPrepareResponse(UUID nodeId, GridNearTxPrepareResponse res) {
         GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)ctx.mvcc()
-            .<IgniteInternalTx>future(res.version(), res.futureId());
+            .<IgniteInternalTx>mvccFuture(res.version(), res.futureId());
 
         if (fut == null) {
             U.warn(log, "Failed to find future for prepare response [sender=" + nodeId + ", res=" + res + ']');
@@ -495,8 +495,7 @@ public class IgniteTxHandler {
     private void processNearTxFinishResponse(UUID nodeId, GridNearTxFinishResponse res) {
         ctx.tm().onFinishedRemote(nodeId, res.threadId());
 
-        GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(
-            res.xid(), res.futureId());
+        GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
         if (fut == null) {
             if (log.isDebugEnabled())
@@ -513,7 +512,7 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processDhtTxPrepareResponse(UUID nodeId, GridDhtTxPrepareResponse res) {
-        GridDhtTxPrepareFuture fut = (GridDhtTxPrepareFuture)ctx.mvcc().future(res.version(), res.futureId());
+        GridDhtTxPrepareFuture fut = (GridDhtTxPrepareFuture)ctx.mvcc().mvccFuture(res.version(), res.futureId());
 
         if (fut == null) {
             if (log.isDebugEnabled())
@@ -534,8 +533,7 @@ public class IgniteTxHandler {
         assert res != null;
 
         if (res.checkCommitted()) {
-            GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(
-                res.xid(), res.futureId());
+            GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
             if (fut == null) {
                 if (log.isDebugEnabled())
@@ -547,8 +545,7 @@ public class IgniteTxHandler {
             fut.onResult(nodeId, res);
         }
         else {
-            GridDhtTxFinishFuture fut = (GridDhtTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(
-                res.xid(), res.futureId());
+            GridDhtTxFinishFuture fut = (GridDhtTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
             if (fut == null) {
                 if (log.isDebugEnabled())
@@ -566,7 +563,8 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Future.
      */
-    @Nullable public IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId, GridNearTxFinishRequest req) {
+    @Nullable public IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId,
+        GridNearTxFinishRequest req) {
         return finish(nodeId, null, req);
     }
 
@@ -1359,8 +1357,7 @@ public class IgniteTxHandler {
         if (log.isDebugEnabled())
             log.debug("Processing check prepared transaction response [nodeId=" + nodeId + ", res=" + res + ']');
 
-        GridCacheTxRecoveryFuture fut = (GridCacheTxRecoveryFuture)ctx.mvcc().
-            <Boolean>future(res.version(), res.futureId());
+        GridCacheTxRecoveryFuture fut = (GridCacheTxRecoveryFuture)ctx.mvcc().future(res.futureId());
 
         if (fut == null) {
             if (log.isDebugEnabled())
