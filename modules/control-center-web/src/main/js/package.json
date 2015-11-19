@@ -4,7 +4,7 @@
   "description": "Interactive Web console for configuration, executing SQL queries and monitoring of Apache Ignite Cluster",
   "private": true,
   "scripts": {
-    "start": "jspm i && gulp build && node ./bin/www"
+    "start": "jspm i && gulp build && node serve"
   },
   "author": "",
   "contributors": [

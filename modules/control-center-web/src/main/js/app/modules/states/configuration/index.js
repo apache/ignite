@@ -48,4 +48,4 @@ angular
 		url: '/summary',
 		templateUrl: '/configuration/summary.html'	
 	})	
-})
+});

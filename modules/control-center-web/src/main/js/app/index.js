@@ -51,7 +51,7 @@ angular
 		url: '',
 		abstract: true,
 		templateUrl: '/base.html'
-	})
+	});
 
 	$locationProvider.html5Mode(true)
 });

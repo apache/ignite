@@ -5,9 +5,9 @@
  */
 var http = require('http');
 var https = require('https');
-var config = require('../helpers/configuration-loader.js');
-var app = require('../app');
-var agentManager = require('../agents/agent-manager');
+var config = require('./helpers/configuration-loader.js');
+var app = require('./app');
+var agentManager = require('./agents/agent-manager');
 
 var fs = require('fs');
 

@@ -29,4 +29,4 @@ angular
 		templateUrl: '/login.html'
 
 	})
-})
+});
