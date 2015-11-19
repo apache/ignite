@@ -57,13 +57,13 @@
                 <property name="typeConfigurations">
                     <list>
                         <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.platform.PlatformComputeBinarizable"/>
+                            <property name="typeName" value="org.apache.ignite.platform.PlatformComputeBinarizable"/>
                         </bean>
                         <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.platform.PlatformComputeJavaBinarizable"/>
+                            <property name="typeName" value="org.apache.ignite.platform.PlatformComputeJavaBinarizable"/>
                         </bean>
                         <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.platform.PlatformComputeEnum"/>
+                            <property name="typeName" value="org.apache.ignite.platform.PlatformComputeEnum"/>
                         </bean>
                     </list>
                 </property>
