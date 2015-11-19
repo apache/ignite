@@ -18,6 +18,7 @@ doctype html
 html(ng-app='ignite-web-console')
     head
         base(href='/')
+        meta(http-equiv='content-type' content='text/html; charset=UTF8')
         title=title
 
         block css
@@ -34,6 +35,7 @@ html(ng-app='ignite-web-console')
 
             // ignite:modules
             script(src='/modules/navbar/main.js')
+            script(src='/modules/configuration-sidebar/main.js')
             // endignite
 
             // ignite:plugins

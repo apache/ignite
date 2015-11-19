@@ -124,9 +124,6 @@ System.config({
       "angular": "github:angular/bower-angular@1.4.7",
       "css": "github:systemjs/plugin-css@0.1.19"
     },
-    "github:mgcrea/angular-strap@2.3.6": {
-      "angular": "github:angular/bower-angular@1.4.7"
-    },
     "github:mobilexag/plugin-sass@0.0.10": {
       "fs": "github:jspm/nodelibs-fs@0.1.2",
       "querystring": "github:jspm/nodelibs-querystring@0.1.0",

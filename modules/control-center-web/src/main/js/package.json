@@ -24,6 +24,7 @@
     "body-parser": "~1.14.1",
     "bootstrap-sass": "^3.3.5",
     "compression": "1.6.0",
+    "connect-modrewrite": "^0.8.2",
     "connect-mongo": "^0.8.1",
     "cookie-parser": "~1.4.0",
     "debug": "~2.2.0",

@@ -48,7 +48,7 @@ angular
 	.state('base', {
 		url: '',
 		abstract: true,
-		template: '<div ui-view=""></div>'
+		template: '<div class="wrapper"><div class="container body-container"><div class="main-content" ui-view=""></div></div></div>'
 	})
 
 	$locationProvider.html5Mode(true)
