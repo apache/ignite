@@ -26,6 +26,9 @@ import javax.cache.configuration.Factory;
  */
 public class PlatformDotNetCacheStoreFactoryNative implements Factory<PlatformDotNetCacheStore> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final Object nativeFactory;
 
     /**
