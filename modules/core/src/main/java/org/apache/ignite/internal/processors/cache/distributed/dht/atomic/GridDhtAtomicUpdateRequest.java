@@ -139,6 +139,10 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /** Task name hash. */
     private int taskNameHash;
 
+    /** On response flag. Access should be synced on future. */
+    @GridDirectTransient
+    private boolean onRes;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -524,6 +528,13 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         }
 
         return CU.EXPIRE_TIME_CALCULATE;
+    }
+
+    /**
+     * @return {@code True} if on response flag changed.
+     */
+    public boolean onResponse() {
+        return !onRes && (onRes = true);
     }
 
     /**

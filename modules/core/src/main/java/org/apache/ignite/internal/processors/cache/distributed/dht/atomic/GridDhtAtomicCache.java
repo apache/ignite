@@ -65,11 +65,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -242,6 +245,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
+        ctx.io().addHandler(ctx.cacheId(), GridNearSingleGetRequest.class, new CI2<UUID, GridNearSingleGetRequest>() {
+            @Override public void apply(UUID nodeId, GridNearSingleGetRequest req) {
+                processNearSingleGetRequest(nodeId, req);
+            }
+        });
+
         ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateRequest.class, new CI2<UUID, GridNearAtomicUpdateRequest>() {
             @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest req) {
                 processNearAtomicUpdateRequest(nodeId, req);
@@ -279,6 +288,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     processNearGetResponse(nodeId, res);
                 }
             });
+
+            ctx.io().addHandler(ctx.cacheId(), GridNearSingleGetResponse.class, new CI2<UUID, GridNearSingleGetResponse>() {
+                @Override public void apply(UUID nodeId, GridNearSingleGetResponse res) {
+                    processNearSingleGetResponse(nodeId, res);
+                }
+            });
         }
     }
 
@@ -298,6 +313,45 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public GridNearCacheAdapter<K, V> near() {
         return near;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteInternalFuture<V> getAsync(final K key,
+        final boolean forcePrimary,
+        final boolean skipTx,
+        @Nullable UUID subjId,
+        final String taskName,
+        final boolean deserializePortable,
+        final boolean skipVals,
+        final boolean canRemap) {
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+
+        if (keyCheck)
+            validateCacheKey(key);
+
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        subjId = ctx.subjectIdPerCall(null, opCtx);
+
+        final UUID subjId0 = subjId;
+
+        final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
+
+        final boolean skipStore = opCtx != null && opCtx.skipStore();
+
+        return asyncOp(new CO<IgniteInternalFuture<V>>() {
+            @Override public IgniteInternalFuture<V> apply() {
+                return getAsync0(ctx.toCacheKeyObject(key),
+                    forcePrimary,
+                    subjId0,
+                    taskName,
+                    deserializePortable,
+                    expiryPlc,
+                    skipVals,
+                    skipStore,
+                    canRemap);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -914,9 +968,57 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /**
+     * Entry point to all public API single get methods.
+     *
+     * @param key Key.
+     * @param forcePrimary Force primary flag.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable flag.
+     * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
+     * @param skipStore Skip store flag.
+     * @param canRemap Can remap flag.
+     * @return Get future.
+     */
+    private IgniteInternalFuture<V> getAsync0(KeyCacheObject key,
+        boolean forcePrimary,
+        UUID subjId,
+        String taskName,
+        boolean deserializePortable,
+        @Nullable ExpiryPolicy expiryPlc,
+        boolean skipVals,
+        boolean skipStore,
+        boolean canRemap
+    ) {
+        AffinityTopologyVersion topVer = canRemap ? ctx.affinity().affinityTopologyVersion() :
+            ctx.shared().exchange().readyAffinityVersion();
+
+        IgniteCacheExpiryPolicy expiry = skipVals ? null : expiryPolicy(expiryPlc);
+
+        GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
+            key,
+            topVer,
+            !skipStore,
+            forcePrimary,
+            subjId,
+            taskName,
+            deserializePortable,
+            expiry,
+            skipVals,
+            canRemap,
+            false,
+            false);
+
+        fut.init();
+
+        return (IgniteInternalFuture<V>)fut;
+    }
+
+    /**
      * Entry point to all public API get methods.
      *
-     * @param keys Keys to remove.
+     * @param keys Keys.
      * @param forcePrimary Force primary flag.
      * @param subjId Subject ID.
      * @param taskName Task name.
@@ -942,7 +1044,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final IgniteCacheExpiryPolicy expiry = skipVals ? null : expiryPolicy(expiryPlc);
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
-        if (!forcePrimary) {
+        if (!forcePrimary && ctx.affinityNode()) {
             Map<K, V> locVals = U.newHashMap(keys.size());
 
             boolean success = true;
@@ -2405,27 +2507,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
 
         return new GridDhtAtomicUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes);
-    }
-
-    /**
-     * @param nodeId Sender node ID.
-     * @param res Near get response.
-     */
-    private void processNearGetResponse(UUID nodeId, GridNearGetResponse res) {
-        if (log.isDebugEnabled())
-            log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
-
-        GridPartitionedGetFuture<K, V> fut = (GridPartitionedGetFuture<K, V>)ctx.mvcc().<Map<K, V>>future(
-            res.version(), res.futureId());
-
-        if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
-
-            return;
-        }
-
-        fut.onResult(nodeId, res);
     }
 
     /**

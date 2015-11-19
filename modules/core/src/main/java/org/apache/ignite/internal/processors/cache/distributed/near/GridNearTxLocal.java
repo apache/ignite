@@ -332,7 +332,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         boolean readThrough,
         boolean async,
         final Collection<KeyCacheObject> keys,
-        boolean skipVals,
+        final boolean skipVals,
         final boolean needVer,
         final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
     ) {
@@ -361,35 +361,70 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             });
         }
         else if (cacheCtx.isColocated()) {
-            return cacheCtx.colocated().loadAsync(
-                keys,
-                readThrough,
-                /*force primary*/needVer,
-                topologyVersion(),
-                CU.subjectId(this, cctx),
-                resolveTaskName(),
-                /*deserializePortable*/false,
-                accessPolicy(cacheCtx, keys),
-                skipVals,
-                /*can remap*/true,
-                needVer,
-                /*keepCacheObject*/true
-            ).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Void>() {
-                @Override public Void apply(IgniteInternalFuture<Map<Object, Object>> f) {
-                    try {
-                        Map<Object, Object> map = f.get();
+            if (keys.size() == 1) {
+                final KeyCacheObject key = F.first(keys);
 
-                        processLoaded(map, keys, needVer, c);
+                return cacheCtx.colocated().loadAsync(
+                    key,
+                    readThrough,
+                    /*force primary*/needVer,
+                    topologyVersion(),
+                    CU.subjectId(this, cctx),
+                    resolveTaskName(),
+                    /*deserializePortable*/false,
+                    accessPolicy(cacheCtx, keys),
+                    skipVals,
+                    /*can remap*/true,
+                    needVer,
+                    /*keepCacheObject*/true
+                ).chain(new C1<IgniteInternalFuture<Object>, Void>() {
+                    @Override public Void apply(IgniteInternalFuture<Object> f) {
+                        try {
+                            Object val = f.get();
 
-                        return null;
+                            processLoaded(key, val, needVer, skipVals, c);
+
+                            return null;
+                        }
+                        catch (Exception e) {
+                            setRollbackOnly();
+
+                            throw new GridClosureException(e);
+                        }
                     }
-                    catch (Exception e) {
-                        setRollbackOnly();
+                });
+            }
+            else {
+                return cacheCtx.colocated().loadAsync(
+                    keys,
+                    readThrough,
+                    /*force primary*/needVer,
+                    topologyVersion(),
+                    CU.subjectId(this, cctx),
+                    resolveTaskName(),
+                    /*deserializePortable*/false,
+                    accessPolicy(cacheCtx, keys),
+                    skipVals,
+                    /*can remap*/true,
+                    needVer,
+                    /*keepCacheObject*/true
+                ).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Void>() {
+                    @Override public Void apply(IgniteInternalFuture<Map<Object, Object>> f) {
+                        try {
+                            Map<Object, Object> map = f.get();
 
-                        throw new GridClosureException(e);
+                            processLoaded(map, keys, needVer, c);
+
+                            return null;
+                        }
+                        catch (Exception e) {
+                            setRollbackOnly();
+
+                            throw new GridClosureException(e);
+                        }
                     }
-                }
-            });
+                });
+            }
         }
         else {
             assert cacheCtx.isLocal();
@@ -409,29 +444,45 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         final Collection<KeyCacheObject> keys,
         boolean needVer,
         GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c) {
-        for (KeyCacheObject key : keys) {
-            Object val = map.get(key);
+        for (KeyCacheObject key : keys)
+            processLoaded(key, map.get(key), needVer, false, c);
+    }
 
-            if (val != null) {
-                Object v;
-                GridCacheVersion ver;
+    /**
+     * @param key Key.
+     * @param val Value.
+     * @param needVer If {@code true} version is required for loaded values.
+     * @param skipVals Skip values flag.
+     * @param c Closure.
+     */
+    private void processLoaded(
+        KeyCacheObject key,
+        @Nullable Object val,
+        boolean needVer,
+        boolean skipVals,
+        GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c) {
+        if (val != null) {
+            Object v;
+            GridCacheVersion ver;
 
-                if (needVer) {
-                    T2<Object, GridCacheVersion> t = (T2)val;
+            if (needVer) {
+                T2<Object, GridCacheVersion> t = (T2)val;
 
-                    v = t.get1();
-                    ver = t.get2();
-                }
-                else {
-                    v = val;
-                    ver = null;
-                }
-
-                c.apply(key, v, ver);
+                v = t.get1();
+                ver = t.get2();
             }
-            else
+            else {
+                v = val;
+                ver = null;
+            }
+
+            if (skipVals && v == Boolean.FALSE)
                 c.apply(key, null, IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER);
+            else
+                c.apply(key, v, ver);
         }
+        else
+            c.apply(key, null, IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER);
     }
 
     /** {@inheritDoc} */
@@ -771,7 +822,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (fut == null && !commitFut.compareAndSet(null, fut = new GridNearTxFinishFuture<>(cctx, this, true)))
             return commitFut.get();
 
-        cctx.mvcc().addFuture(fut);
+        cctx.mvcc().addFuture(fut, fut.futureId());
 
         final IgniteInternalFuture<?> prepareFut = prepFut.get();
 
@@ -816,7 +867,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (!rollbackFut.compareAndSet(null, fut = new GridNearTxFinishFuture<>(cctx, this, false)))
             return rollbackFut.get();
 
-        cctx.mvcc().addFuture(fut);
+        cctx.mvcc().addFuture(fut, fut.futureId());
 
         IgniteInternalFuture<?> prepFut = this.prepFut.get();
 
@@ -957,7 +1008,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
         final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
 
-        cctx.mvcc().addFuture(fut);
+        cctx.mvcc().addFuture(fut, fut.futureId());
 
         if (prep == null || prep.isDone()) {
             assert prep != null || optimistic();
@@ -1016,7 +1067,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
         final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/false);
 
-        cctx.mvcc().addFuture(fut);
+        cctx.mvcc().addFuture(fut, fut.futureId());
 
         IgniteInternalFuture<?> prep = prepFut.get();
 

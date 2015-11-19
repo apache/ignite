@@ -1372,7 +1372,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             if (txEntry != null) {
                 CacheObject val = txEntry.value();
 
-                // Read value from locked entry in group-lock transaction as well.
                 if (txEntry.hasValue()) {
                     if (!F.isEmpty(txEntry.entryProcessors()))
                         val = txEntry.applyEntryProcessors(val);
@@ -2224,6 +2223,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     /**
      * @param cacheCtx Cache context.
      * @param keys Keys to load.
+     * @param filter Filter.
      * @param ret Return value.
      * @param needReadVer Read version flag.
      * @param singleRmv {@code True} for single remove operation.
