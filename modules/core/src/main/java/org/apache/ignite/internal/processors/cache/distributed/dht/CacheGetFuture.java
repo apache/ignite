@@ -15,23 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 
 /**
- * Distributed future aware of MVCC locking.
+ *
  */
-public interface GridCacheMvccFuture<T> extends GridCacheFuture<T> {
+public interface CacheGetFuture {
     /**
-     * @return Future version.
+     * @param nodeId Node ID.
+     * @param res Response.
      */
-    public GridCacheVersion version();
-
-    /**
-     * @param entry Entry which received new owner.
-     * @param owner Owner.
-     * @return {@code True} if future cares about this entry.
-     */
-    public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner);
+    public void onResult(UUID nodeId, GridNearGetResponse res);
 }

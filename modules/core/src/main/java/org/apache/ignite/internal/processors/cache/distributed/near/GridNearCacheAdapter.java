@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheValueCollection;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -292,8 +293,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param res Response.
      */
     protected void processGetResponse(UUID nodeId, GridNearGetResponse res) {
-        GridNearGetFuture<K, V> fut = (GridNearGetFuture<K, V>)ctx.mvcc().<Map<K, V>>future(
-            res.version(), res.futureId());
+        CacheGetFuture fut = (CacheGetFuture)ctx.mvcc().future(res.futureId());
 
         if (fut == null) {
             if (log.isDebugEnabled())

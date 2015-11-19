@@ -272,7 +272,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R1, R2> R2 call(Collection<? extends IgniteCallable<R1>> jobs, IgniteReducer<R1, R2> rdc) throws IgniteException;
+    public <R1, R2> R2 call(Collection<? extends IgniteCallable<R1>> jobs, IgniteReducer<R1, R2> rdc)
+        throws IgniteException;
 
     /**
      * Executes provided closure job on a node within the underlying cluster group. This method is different

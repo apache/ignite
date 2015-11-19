@@ -209,20 +209,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         valMap = new ConcurrentHashMap8<>(keys.size(), 1f);
     }
 
-    /**
-     * @return Participating nodes.
-     */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<?>, ClusterNode>() {
-            @Nullable @Override public ClusterNode apply(IgniteInternalFuture<?> f) {
-                if (isMini(f))
-                    return ((MiniFuture)f).node();
-
-                return cctx.discovery().localNode();
-            }
-        });
-    }
-
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return lockVer;
@@ -672,7 +658,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                 log.debug("Completing future: " + this);
 
             // Clean up.
-            cctx.mvcc().removeFuture(this);
+            cctx.mvcc().removeMvccFuture(this);
 
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);

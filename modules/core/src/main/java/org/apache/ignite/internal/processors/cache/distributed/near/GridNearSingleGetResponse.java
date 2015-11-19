@@ -17,58 +17,43 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
-import org.apache.ignite.internal.util.GridLeanSet;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Get response.
+ *
  */
-public class GridNearGetResponse extends GridCacheMessage implements GridCacheDeployable,
-    GridCacheVersionable {
+public class GridNearSingleGetResponse extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final int INVALID_PART_FLAG_MASK = 0x1;
+
+    /** */
+    public static final int CONTAINS_VAL_FLAG_MASK = 0x2;
 
     /** Future ID. */
     private IgniteUuid futId;
 
-    /** Sub ID. */
-    private IgniteUuid miniId;
+    /** */
+    private Message res;
 
-    /** Version. */
-    private GridCacheVersion ver;
-
-    /** Result. */
-    @GridToStringInclude
-    @GridDirectCollection(GridCacheEntryInfo.class)
-    private Collection<GridCacheEntryInfo> entries;
-
-    /** Keys to retry due to ownership shift. */
-    @GridToStringInclude
-    @GridDirectCollection(int.class)
-    private Collection<Integer> invalidParts = new GridLeanSet<>();
-
-    /** Topology version if invalid partitions is not empty. */
+    /** */
     private AffinityTopologyVersion topVer;
 
     /** Error. */
@@ -78,95 +63,42 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
     /** Serialized error. */
     private byte[] errBytes;
 
+    /** */
+    private byte flags;
+
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor required for {@link Message}.
      */
-    public GridNearGetResponse() {
+    public GridNearSingleGetResponse() {
         // No-op.
     }
 
     /**
      * @param cacheId Cache ID.
      * @param futId Future ID.
-     * @param miniId Sub ID.
-     * @param ver Version.
+     * @param topVer Topology version.
+     * @param res Result.
+     * @param invalidPartitions {@code True} if invalid partitions error occurred.
      * @param addDepInfo Deployment info.
      */
-    public GridNearGetResponse(
+    public GridNearSingleGetResponse(
         int cacheId,
         IgniteUuid futId,
-        IgniteUuid miniId,
-        GridCacheVersion ver,
+        AffinityTopologyVersion topVer,
+        @Nullable Message res,
+        boolean invalidPartitions,
         boolean addDepInfo
     ) {
         assert futId != null;
 
         this.cacheId = cacheId;
         this.futId = futId;
-        this.miniId = miniId;
-        this.ver = ver;
-        this.addDepInfo = addDepInfo;
-    }
-
-    /**
-     * @return Future ID.
-     */
-    public IgniteUuid futureId() {
-        return futId;
-    }
-
-    /**
-     * @return Sub ID.
-     */
-    public IgniteUuid miniId() {
-        return miniId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
-        return ver;
-    }
-
-    /**
-     * @return Entries.
-     */
-    public Collection<GridCacheEntryInfo> entries() {
-        return entries != null ? entries : Collections.<GridCacheEntryInfo>emptyList();
-    }
-
-    /**
-     * @param entries Entries.
-     */
-    public void entries(Collection<GridCacheEntryInfo> entries) {
-        this.entries = entries;
-    }
-
-    /**
-     * @return Failed filter set.
-     */
-    public Collection<Integer> invalidPartitions() {
-        return invalidParts;
-    }
-
-    /**
-     * @param invalidParts Partitions to retry due to ownership shift.
-     * @param topVer Topology version.
-     */
-    public void invalidPartitions(Collection<Integer> invalidParts, @NotNull AffinityTopologyVersion topVer) {
-        this.invalidParts = invalidParts;
         this.topVer = topVer;
-    }
+        this.res = res;
+        this.addDepInfo = addDepInfo;
 
-    /**
-     * @return Topology version if this response has invalid partitions.
-     */
-    @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer != null ? topVer : super.topologyVersion();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteCheckedException error() {
-        return err;
+        if (invalidPartitions)
+            flags = (byte)(flags | INVALID_PART_FLAG_MASK);
     }
 
     /**
@@ -176,16 +108,66 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
         this.err = err;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
+    @Override public IgniteCheckedException error() {
+        return err;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    @Override public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
+    /**
+     * @return {@code True} if invalid partitions error occurred.
+     */
+    public boolean invalidPartitions() {
+        return (flags & INVALID_PART_FLAG_MASK) != 0;
+    }
+
+    /**
+     * @return Results for request with set flag {@link GridNearSingleGetRequest#skipValues()}.
+     */
+    public boolean containsValue() {
+        return (flags & CONTAINS_VAL_FLAG_MASK) != 0;
+    }
+
+    /**
+     *
+     */
+    public void setContainsValue() {
+        flags = (byte)(flags | CONTAINS_VAL_FLAG_MASK);
+    }
+
+    /**
+     * @return Result.
+     */
+    public Message result() {
+        return res;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public IgniteUuid futureId() {
+        return futId;
+    }
+
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        if (res != null) {
+            GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (entries != null) {
-            for (GridCacheEntryInfo info : entries)
-                info.marshal(cctx);
+            if (res instanceof CacheObject)
+                prepareMarshalCacheObject((CacheObject) res, cctx);
+            else if (res instanceof CacheVersionedValue)
+                ((CacheVersionedValue)res).prepareMarshal(cctx.cacheObjectContext());
+            else if (res instanceof GridCacheEntryInfo)
+                ((GridCacheEntryInfo)res).marshal(cctx);
         }
 
         if (err != null)
@@ -196,20 +178,19 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId());
+        if (res != null) {
+            GridCacheContext cctx = ctx.cacheContext(cacheId());
 
-        if (entries != null) {
-            for (GridCacheEntryInfo info : entries)
-                info.unmarshal(cctx, ldr);
+            if (res instanceof CacheObject)
+                ((CacheObject)res).finishUnmarshal(cctx.cacheObjectContext(), ldr);
+            else if (res instanceof CacheVersionedValue)
+                ((CacheVersionedValue)res).finishUnmarshal(cctx, ldr);
+            else if (res instanceof GridCacheEntryInfo)
+                ((GridCacheEntryInfo)res).unmarshal(cctx, ldr);
         }
 
-        if (errBytes != null)
+        if (errBytes != null && err == null)
             err = ctx.marshaller().unmarshal(errBytes, ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean addDeploymentInfo() {
-        return addDepInfo;
     }
 
     /** {@inheritDoc} */
@@ -228,13 +209,13 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
@@ -246,25 +227,13 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
+                if (!writer.writeMessage("res", res))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeIgniteUuid("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
                 if (!writer.writeMessage("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeMessage("ver", ver))
                     return false;
 
                 writer.incrementState();
@@ -286,7 +255,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
 
         switch (reader.state()) {
             case 3:
-                entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -294,7 +263,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
                 reader.incrementState();
 
             case 4:
-                errBytes = reader.readByteArray("errBytes");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -310,7 +279,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
                 reader.incrementState();
 
             case 6:
-                invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
+                res = reader.readMessage("res");
 
                 if (!reader.isLastRead())
                     return false;
@@ -318,23 +287,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
                 reader.incrementState();
 
             case 7:
-                miniId = reader.readIgniteUuid("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
                 topVer = reader.readMessage("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
                     return false;
@@ -343,21 +296,26 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
 
         }
 
-        return reader.afterMessageRead(GridNearGetResponse.class);
+        return reader.afterMessageRead(GridNearSingleGetResponse.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 50;
+        return 117;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 8;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearGetResponse.class, this);
+        return S.toString(GridNearSingleGetResponse.class, this);
     }
 }
