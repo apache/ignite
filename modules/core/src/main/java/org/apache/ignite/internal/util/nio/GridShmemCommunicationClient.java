@@ -123,13 +123,15 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     @Override public synchronized boolean sendMessage(@Nullable UUID nodeId, Message msg,
         IgniteInClosure<IgniteException> closure)
         throws IgniteCheckedException {
+        assert nodeId != null;
+
         if (closed())
             throw new IgniteCheckedException("Communication client was closed: " + this);
 
         assert writeBuf.hasArray();
 
         try {
-            int cnt = U.writeMessageFully(msg, shmem.outputStream(), writeBuf, formatter.writer());
+            int cnt = U.writeMessageFully(msg, shmem.outputStream(), writeBuf, formatter.writer(nodeId));
 
             metricsLsnr.onBytesSent(cnt);
         }

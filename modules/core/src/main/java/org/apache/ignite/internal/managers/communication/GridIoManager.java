@@ -276,11 +276,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer() {
+                @Override public MessageWriter writer(UUID rmtNodeId) {
+                    assert rmtNodeId != null;
+
                     return new DirectMessageWriter();
                 }
 
-                @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
+                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory, Class<? extends Message> msgCls) {
+                    assert rmtNodeId != null;
+
                     return new DirectMessageReader(msgFactory);
                 }
             };

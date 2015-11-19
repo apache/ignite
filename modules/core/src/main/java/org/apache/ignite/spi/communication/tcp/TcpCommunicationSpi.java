@@ -76,7 +76,9 @@ import org.apache.ignite.internal.util.nio.GridConnectionBytesVerifyFilter;
 import org.apache.ignite.internal.util.nio.GridDirectParser;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
+import org.apache.ignite.internal.util.nio.GridNioMessageReaderFactory;
 import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
+import org.apache.ignite.internal.util.nio.GridNioMessageWriterFactory;
 import org.apache.ignite.internal.util.nio.GridNioMetricsListener;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -284,7 +286,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final int DFLT_SELECTORS_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
 
     /** Node ID meta for session. */
-    private static final int NODE_ID_META = GridNioSessionMetaKey.nextUniqueKey();
+    public static final int NODE_ID_META = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Message tracker meta for session. */
     private static final int TRACKER_META = GridNioSessionMetaKey.nextUniqueKey();
@@ -1575,29 +1577,38 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 };
 
-                MessageFormatter msgFormatter = new MessageFormatter() {
-                    private MessageFormatter impl;
+                GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
+                    private MessageFormatter formatter;
 
-                    @Override public MessageWriter writer() {
-                        if (impl == null)
-                            impl = getSpiContext().messageFormatter();
+                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory) {
+                        if (formatter == null)
+                            formatter = getSpiContext().messageFormatter();
 
-                        assert impl != null;
+                        assert formatter != null;
 
-                        return impl.writer();
-                    }
+                        UUID rmtNodeId = ses.meta(NODE_ID_META);
 
-                    @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
-                        if (impl == null)
-                            impl = getSpiContext().messageFormatter();
-
-                        assert impl != null;
-
-                        return impl.reader(factory, msgCls);
+                         // TODO: DIRECT - class is null
+                        return rmtNodeId != null ? formatter.reader(rmtNodeId, msgFactory, null) : null;
                     }
                 };
 
-                GridDirectParser parser = new GridDirectParser(msgFactory, msgFormatter);
+                GridNioMessageWriterFactory writerFactory = new GridNioMessageWriterFactory() {
+                    private MessageFormatter formatter;
+
+                    @Override public MessageWriter writer(GridNioSession ses) {
+                        if (formatter == null)
+                            formatter = getSpiContext().messageFormatter();
+
+                        assert formatter != null;
+
+                        UUID rmtNodeId = ses.meta(NODE_ID_META);
+
+                        return rmtNodeId != null ? formatter.writer(rmtNodeId) : null;
+                    }
+                };
+
+                GridDirectParser parser = new GridDirectParser(msgFactory, readerFactory);
 
                 IgnitePredicate<Message> skipRecoveryPred = new IgnitePredicate<Message>() {
                     @Override public boolean apply(Message msg) {
@@ -1658,7 +1669,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .metricsListener(metricsLsnr)
                         .writeTimeout(sockWriteTimeout)
                         .filters(filters)
-                        .messageFormatter(msgFormatter)
+                        .writerFactory(writerFactory)
                         .skipRecoveryPredicate(skipRecoveryPred)
                         .messageQueueSizeListener(queueSizeMonitor)
                         .build();
@@ -1918,7 +1929,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     UUID nodeId = null;
 
-                    if (!client.async() && !locNode.version().equals(node.version()))
+                    if (!client.async())
                         nodeId = node.id();
 
                     retry = client.sendMessage(nodeId, msg, ackC);
@@ -2591,7 +2602,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         buf.order(ByteOrder.nativeOrder());
 
-                        boolean written = msg.writeTo(buf, getSpiContext().messageFormatter().writer());
+                        boolean written = msg.writeTo(buf, null);
 
                         assert written;
 
@@ -2932,25 +2943,34 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 };
 
-                MessageFormatter msgFormatter = new MessageFormatter() {
-                    private MessageFormatter impl;
+                GridNioMessageWriterFactory writerFactory = new GridNioMessageWriterFactory() {
+                    private MessageFormatter formatter;
 
-                    @Override public MessageWriter writer() {
-                        if (impl == null)
-                            impl = getSpiContext().messageFormatter();
+                    @Override public MessageWriter writer(GridNioSession ses) {
+                        if (formatter == null)
+                            formatter = getSpiContext().messageFormatter();
 
-                        assert impl != null;
+                        assert formatter != null;
 
-                        return impl.writer();
+                        UUID rmtNodeId = ses.meta(NODE_ID_META);
+
+                        return rmtNodeId != null ? formatter.writer(rmtNodeId) : null;
                     }
+                };
 
-                    @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
-                        if (impl == null)
-                            impl = getSpiContext().messageFormatter();
+                GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
+                    private MessageFormatter formatter;
 
-                        assert impl != null;
+                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory) {
+                        if (formatter == null)
+                            formatter = getSpiContext().messageFormatter();
 
-                        return impl.reader(factory, msgCls);
+                        assert formatter != null;
+
+                        UUID rmtNodeId = ses.meta(NODE_ID_META);
+
+                         // TODO: DIRECT - class is null
+                        return rmtNodeId != null ? formatter.reader(rmtNodeId, msgFactory, null) : null;
                     }
                 };
 
@@ -2959,8 +2979,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     log,
                     endpoint,
                     srvLsnr,
-                    msgFormatter,
-                    new GridNioCodecFilter(new GridDirectParser(msgFactory, msgFormatter), log, true),
+                    writerFactory,
+                    new GridNioCodecFilter(new GridDirectParser(msgFactory, readerFactory), log, true),
                     new GridConnectionBytesVerifyFilter(log)
                 );
 
