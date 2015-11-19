@@ -692,7 +692,7 @@ public class PortableContext implements Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            IgniteKernal g = IgnitionEx.gridx(gridName);
+            IgniteKernal g = IgnitionEx.gridx(IgnitionEx.gridName(gridName));
 
             if (g == null)
                 throw new IllegalStateException("Failed to find grid for name: " + gridName);
