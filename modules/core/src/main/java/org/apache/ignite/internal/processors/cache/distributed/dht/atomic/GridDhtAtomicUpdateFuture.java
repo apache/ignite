@@ -215,13 +215,17 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      * @param ttl TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
+     * @param updateCntr Partition update counter.
      */
     public void addWriteEntry(GridDhtCacheEntry entry,
         @Nullable CacheObject val,
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer) {
+        @Nullable GridCacheVersion conflictVer,
+        boolean addPrevVal,
+        @Nullable CacheObject prevVal,
+        @Nullable Long updateCntr) {
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
         Collection<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
@@ -261,7 +265,22 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     entryProcessor,
                     ttl,
                     conflictExpireTime,
-                    conflictVer);
+                    conflictVer,
+                    addPrevVal,
+                    entry.partition(),
+                    prevVal,
+                    updateCntr);
+            }
+            else if (dhtNodes.size() == 1) {
+                try {
+                    cctx.continuousQueries().onEntryUpdated(entry.key(), val, prevVal,
+                        entry.key().internal() || !cctx.userCache(), entry.partition(), true, false,
+                        updateCntr, updateReq.topologyVersion());
+                }
+                catch (IgniteCheckedException e) {
+                    U.warn(log, "Failed to send continuous query message. [key=" + entry.key() + ", newVal="
+                        + val + ", err=" + e + "]");
+                }
             }
         }
     }
@@ -331,8 +350,56 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
             cctx.mvcc().removeAtomicFuture(version());
 
             if (err != null) {
-                for (KeyCacheObject key : keys)
-                    updateRes.addFailedKey(key, err);
+                if (!mappings.isEmpty()) {
+                    Collection<KeyCacheObject> hndKeys = new ArrayList<>(keys.size());
+
+                    exit: for (GridDhtAtomicUpdateRequest req : mappings.values()) {
+                        for (int i = 0; i < req.size(); i++) {
+                            KeyCacheObject key = req.key(i);
+
+                            if (!hndKeys.contains(key)) {
+                                updateRes.addFailedKey(key, err);
+
+                                cctx.continuousQueries().skipUpdateEvent(key, req.partitionId(i), req.updateCounter(i),
+                                    updateReq.topologyVersion());
+
+                                hndKeys.add(key);
+
+                                if (hndKeys.size() == keys.size())
+                                    break exit;
+                            }
+                        }
+                    }
+                }
+                else
+                    for (KeyCacheObject key : keys)
+                        updateRes.addFailedKey(key, err);
+            }
+            else {
+                Collection<KeyCacheObject> hndKeys = new ArrayList<>(keys.size());
+
+                exit: for (GridDhtAtomicUpdateRequest req : mappings.values()) {
+                    for (int i = 0; i < req.size(); i++) {
+                        KeyCacheObject key = req.key(i);
+
+                        if (!hndKeys.contains(key)) {
+                            try {
+                                cctx.continuousQueries().onEntryUpdated(key, req.value(i), req.localPreviousValue(i),
+                                    key.internal() || !cctx.userCache(), req.partitionId(i), true, false,
+                                    req.updateCounter(i), updateReq.topologyVersion());
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.warn(log, "Failed to send continuous query message. [key=" + key + ", newVal="
+                                    + req.value(i) + ", err=" + e + "]");
+                            }
+
+                            hndKeys.add(key);
+
+                            if (hndKeys.size() == keys.size())
+                                break exit;
+                        }
+                    }
+                }
             }
 
             if (updateReq.writeSynchronizationMode() == FULL_SYNC)

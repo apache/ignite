@@ -93,6 +93,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlo
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBatchAck;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -708,7 +709,12 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..114] - this
+            case 118:
+                msg = new CacheContinuousQueryBatchAck();
+
+                break;
+
+            // [-3..118] - this
             // [120..123] - DR
             // [-4..-22] - SQL
             default:

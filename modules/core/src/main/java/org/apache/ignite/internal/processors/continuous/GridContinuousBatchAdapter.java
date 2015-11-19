@@ -15,28 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.transactions;
+package org.apache.ignite.internal.processors.continuous;
 
 import java.util.Collection;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
- * Local transaction API.
+ * Continuous routine batch adapter.
  */
-public interface IgniteTxRemoteEx extends IgniteInternalTx {
-    /**
-     * @param baseVer Base version.
-     * @param committedVers Committed version.
-     * @param rolledbackVers Rolled back version.
-     * @param pendingVers Pending versions.
-     */
-    public void doneRemote(GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers);
+public class GridContinuousBatchAdapter implements GridContinuousBatch {
+    /** Buffer. */
+    private final ConcurrentLinkedDeque8<Object> buf = new ConcurrentLinkedDeque8<>();
 
-    /**
-     * @param cntrs Partition update indexes.
-     */
-    public void setPartitionUpdateCounters(long[] cntrs);
+    /** {@inheritDoc} */
+    @Override public void add(Object obj) {
+        assert obj != null;
+
+        buf.add(obj);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Object> collect() {
+        return buf;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return buf.sizex();
+    }
 }

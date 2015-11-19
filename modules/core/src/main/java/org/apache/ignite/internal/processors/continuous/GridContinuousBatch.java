@@ -15,28 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.transactions;
+package org.apache.ignite.internal.processors.continuous;
 
 import java.util.Collection;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
- * Local transaction API.
+ * Continuous routine batch.
  */
-public interface IgniteTxRemoteEx extends IgniteInternalTx {
+public interface GridContinuousBatch {
     /**
-     * @param baseVer Base version.
-     * @param committedVers Committed version.
-     * @param rolledbackVers Rolled back version.
-     * @param pendingVers Pending versions.
+     * Adds element to this batch.
+     *
+     * @param obj Element to add.
      */
-    public void doneRemote(GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers);
+    public void add(Object obj);
 
     /**
-     * @param cntrs Partition update indexes.
+     * Collects elements that are currently in this batch.
+     *
+     * @return Elements in this batch.
      */
-    public void setPartitionUpdateCounters(long[] cntrs);
+    public Collection<Object> collect();
+
+    /**
+     * @return Current batch size.
+     */
+    public int size();
 }
