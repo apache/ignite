@@ -123,16 +123,14 @@ public interface BinaryObject extends Serializable, Cloneable {
      * @param fieldName Field name.
      * @return Field value.
      * @throws BinaryObjectException In case of any other error.
-     * TODO ignite-1282 remove.
      */
     public <F> F field(String fieldName) throws BinaryObjectException;
 
     /**
-     * Checks whether field is set.
-     ** TODO ignite-1282 remove.
+     * Checks whether field exists in the object.
      *
      * @param fieldName Field name.
-     * @return {@code true} if field is set.
+     * @return {@code True} if field exists.
      */
     public boolean hasField(String fieldName);
 
