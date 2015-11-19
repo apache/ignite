@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 
@@ -30,6 +31,7 @@ public interface GridNioMessageReaderFactory {
      * @param ses Current session.
      * @param msgFactory Message factory.
      * @return Reader.
+     * @throws IgniteCheckedException In case of error.
      */
-    public MessageReader reader(GridNioSession ses, MessageFactory msgFactory);
+    public MessageReader reader(GridNioSession ses, MessageFactory msgFactory) throws IgniteCheckedException;
 }

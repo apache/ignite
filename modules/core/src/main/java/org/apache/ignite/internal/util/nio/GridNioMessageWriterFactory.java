@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
@@ -28,6 +29,7 @@ public interface GridNioMessageWriterFactory {
      *
      * @param ses Current session.
      * @return Writer.
+     * @throws IgniteCheckedException In case of error.
      */
-    public MessageWriter writer(GridNioSession ses);
+    public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException;
 }

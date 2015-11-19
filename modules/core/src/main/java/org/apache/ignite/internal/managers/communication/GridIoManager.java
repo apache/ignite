@@ -284,13 +284,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer(UUID rmtNodeId) {
+                @Override public MessageWriter writer(UUID rmtNodeId) throws IgniteCheckedException {
                     assert rmtNodeId != null;
 
                     return new DirectMessageWriter(directProtocolVersion(rmtNodeId));
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory, Class<? extends Message> msgCls) {
+                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory,
+                    Class<? extends Message> msgCls) throws IgniteCheckedException {
                     assert rmtNodeId != null;
 
                     return new DirectMessageReader(msgFactory, directProtocolVersion(rmtNodeId));
@@ -329,14 +330,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      *
      * @param nodeId Node ID.
      * @return Protocol version.
+     * @throws IgniteCheckedException If node doesn't exist.
      */
-    private byte directProtocolVersion(UUID nodeId) {
+    private byte directProtocolVersion(UUID nodeId) throws IgniteCheckedException {
         assert nodeId != null;
 
         ClusterNode node = ctx.discovery().node(nodeId);
 
-        // TODO: DIRECT - throw exception
-        assert node != null;
+        if (node == null)
+            throw new IgniteCheckedException("Failed to define communication protocol version " +
+                "(has node left topology?): " + nodeId);
 
         assert !node.isLocal();
 

@@ -933,8 +933,14 @@ public class GridNioServer<T> {
 
             MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
 
-            if (writer == null)
-                ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
+            if (writer == null) {
+                try {
+                    ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IOException("Failed to create message writer.", e);
+                }
+            }
 
             boolean handshakeFinished = sslFilter.lock(ses);
 
@@ -1128,8 +1134,14 @@ public class GridNioServer<T> {
 
             MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
 
-            if (writer == null)
-                ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
+            if (writer == null) {
+                try {
+                    ses.addMeta(MSG_WRITER.ordinal(), writer = writerFactory.writer(ses));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IOException("Failed to create message writer.", e);
+                }
+            }
 
             if (req == null) {
                 req = (NioOperationFuture<?>)ses.pollFuture();

@@ -1580,7 +1580,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
                     private MessageFormatter formatter;
 
-                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory) {
+                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
+                        throws IgniteCheckedException {
                         if (formatter == null)
                             formatter = getSpiContext().messageFormatter();
 
@@ -1596,7 +1597,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 GridNioMessageWriterFactory writerFactory = new GridNioMessageWriterFactory() {
                     private MessageFormatter formatter;
 
-                    @Override public MessageWriter writer(GridNioSession ses) {
+                    @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
                         if (formatter == null)
                             formatter = getSpiContext().messageFormatter();
 
@@ -2946,7 +2947,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 GridNioMessageWriterFactory writerFactory = new GridNioMessageWriterFactory() {
                     private MessageFormatter formatter;
 
-                    @Override public MessageWriter writer(GridNioSession ses) {
+                    @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
                         if (formatter == null)
                             formatter = getSpiContext().messageFormatter();
 
@@ -2961,7 +2962,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
                     private MessageFormatter formatter;
 
-                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory) {
+                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
+                        throws IgniteCheckedException {
                         if (formatter == null)
                             formatter = getSpiContext().messageFormatter();
 
