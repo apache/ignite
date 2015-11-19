@@ -844,7 +844,20 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             msgTypeDone = true;
         }
 
-        lastFinished = msg == null || msg.readFrom(buf, reader);
+        if (msg != null) {
+            try {
+                reader.beforeInnerMessageRead();
+
+                reader.setCurrentReadClass(msg.getClass());
+
+                lastFinished = msg.readFrom(buf, reader);
+            }
+            finally {
+                reader.afterInnerMessageRead(lastFinished);
+            }
+        }
+        else
+            lastFinished = true;
 
         if (lastFinished) {
             Message msg0 = msg;

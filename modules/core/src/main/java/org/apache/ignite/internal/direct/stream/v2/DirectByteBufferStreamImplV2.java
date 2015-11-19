@@ -1099,6 +1099,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
             try {
                 reader.beforeInnerMessageRead();
 
+                reader.setCurrentReadClass(msg.getClass());
+
                 lastFinished = msg.readFrom(buf, reader);
             }
             finally {

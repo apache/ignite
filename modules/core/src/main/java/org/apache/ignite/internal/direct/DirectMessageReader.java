@@ -54,6 +54,11 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
+    @Override public void setCurrentReadClass(Class<? extends Message> msgCls) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean beforeMessageRead() {
         return true;
     }

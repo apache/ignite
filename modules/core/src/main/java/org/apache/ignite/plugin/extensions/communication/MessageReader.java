@@ -39,6 +39,13 @@ public interface MessageReader {
     public void setBuffer(ByteBuffer buf);
 
     /**
+     * Sets type of message currently read.
+     *
+     * @param msgCls Message type.
+     */
+    public void setCurrentReadClass(Class<? extends Message> msgCls);
+
+    /**
      * Callback that must be invoked by a message implementation before message body started decoding.
      *
      * @return {@code True} if reading can proceed, {@code false} otherwise.
