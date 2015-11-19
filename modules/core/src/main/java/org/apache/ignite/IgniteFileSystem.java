@@ -268,9 +268,24 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @throws IgniteException In case format has failed.
+     *
+     * @deprecated Superseded by {@link #clear(IgfsPath)} operation.
      */
     @IgniteAsyncSupported
+    @Deprecated
     public void format() throws IgniteException;
+
+    /**
+     * Removes all the in-memory data of the specified folder,
+     * but does not anyhow touch the persistence layer.
+     * In terms of IGFS this is very similar to #remove() operation, but
+     * this method allows sync and async modes: in sync mode it will return only
+     * when all the found data purged even from TRASH folder. In async mode it will return immediately.
+     *
+     * @throws IgniteException On error.
+     */
+    @IgniteAsyncSupported
+    public void clear(IgfsPath path) throws IgniteException;
 
     /**
      * Executes IGFS task.

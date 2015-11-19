@@ -870,7 +870,8 @@ public final class IgfsImpl implements IgfsEx {
                             files.add(new IgfsFileImpl(p, e.getValue(), data.groupBlockSize()));
                         }
                     }
-                } else if (mode == PRIMARY) {
+                }
+                else if (mode == PRIMARY) {
                     checkConflictWithPrimary(path);
 
                     throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
@@ -1103,7 +1104,7 @@ public final class IgfsImpl implements IgfsEx {
                 assert t2 != null;
 
                 return new IgfsEventAwareOutputStream(path, t2.get1(), t2.get2(),
-                        bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
+                    bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
             }
         });
     }
@@ -1287,54 +1288,59 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void format() {
+    @Override public final void format() {
+        clear(new IgfsPath("/"));
+    }
+
+    /**
+     * Deletes specified path and returns future that completes when
+     * all found at the moment TRASH items get completely removed.
+     * If a TRASH entry contains a write-locked file underneath,
+     * it will be ignored. This is done oin order to avoid possibility to hang up.
+     *
+     * @param path The path to clean.
+     * @return The future that completes when clanup finished.
+     * @throws IgniteCheckedException On error.
+     */
+    IgniteInternalFuture<?> clearAsync(IgfsPath path) throws IgniteCheckedException {
+        if (path.depth() == 0)
+            // Root clearing is a special case:
+            meta.format();
+        else
+            meta.softDelete(path, true/*recursive*/);
+
+        // Compose future that will wait not only for the deleted id, but for all pending deletes
+        // found at the moment.
+        // Note that write-locked files will be skipped to avoid returning future that
+        // never completes:
+        return getDeleteCompletionFuture(
+            meta.pendingDeletes(true/*skipLocked*/));
+    }
+
+    /** {@inheritDoc} */
+    @Override public final void clear(IgfsPath path) throws IgniteException {
         try {
-            formatAsync().get();
+            clearAsync(path).get();
         }
         catch (Exception e) {
             throw IgfsUtils.toIgfsException(e);
         }
     }
 
-    /**
-     * Formats the file system removing all existing entries from it.
-     *
-     * @return Future.
-     */
-    IgniteInternalFuture<?> formatAsync() {
-        try {
-            IgniteUuid id = meta.format();
-
-            if (id == null)
-                return new GridFinishedFuture<Object>();
-            else {
-                GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
-
-                GridFutureAdapter<Object> oldFut = delFuts.putIfAbsent(id, fut);
-
-                if (oldFut != null)
-                    return oldFut;
-                else {
-                    if (!meta.exists(id)) {
-                        // Safety in case response message was received before we put future into collection.
-                        fut.onDone();
-
-                        delFuts.remove(id, fut);
-                    }
-
-                    return fut;
-                }
-            }
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<Object>(e);
-        }
+    /** {@inheritDoc} */
+    @Override public final IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
+        // Collection of immediate TRASH children:
+        return getDeleteCompletionFuture(meta.pendingDeletes(false));
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
-        Collection<IgniteUuid> ids = meta.pendingDeletes();
-
+    /**
+     * Composes future that will complete when the given ids are deleted from TRASH directory.
+     *
+     * @param ids The ids of interest.
+     * @return The future.
+     * @throws IgniteCheckedException On error.
+     */
+    private IgniteInternalFuture<?> getDeleteCompletionFuture(Collection<IgniteUuid> ids) throws IgniteCheckedException {
         if (!ids.isEmpty()) {
             if (log.isDebugEnabled())
                 log.debug("Constructing delete future for trash entries: " + ids);

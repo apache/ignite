@@ -21,6 +21,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsBlockLocation;
@@ -56,8 +57,13 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
 
     /** {@inheritDoc} */
     @Override public void format() {
+        clear(new IgfsPath("/"));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear(IgfsPath path) throws IgniteException {
         try {
-            saveOrGet(igfs.formatAsync());
+            saveOrGet(igfs.clearAsync(path));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

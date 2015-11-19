@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteSpringBean;
 import org.apache.ignite.cluster.ClusterNode;
@@ -890,6 +891,11 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         /** {@inheritDoc} */
         @Override public void format() {
             // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void clear(IgfsPath path) throws IgniteException {
+            // noop
         }
 
         /** {@inheritDoc} */

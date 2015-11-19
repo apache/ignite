@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -555,7 +556,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param modificationTime Modification time to write to file info.
      * @throws IgniteCheckedException If failed.
      */
-    public void unlock(final IgfsFileInfo info, final long modificationTime) throws IgniteCheckedException {
+    public IgfsFileInfo unlock(final IgfsFileInfo info, final long modificationTime) throws IgniteCheckedException {
         assert validTxState(false);
         assert info != null;
 
@@ -564,14 +565,14 @@ public class IgfsMetaManager extends IgfsManager {
                 final IgniteUuid lockId = info.lockId();
 
                 if (lockId == null)
-                    return;
+                    return null;
 
                 // Temporary clear interrupted state for unlocking.
                 final boolean interrupted = Thread.interrupted();
 
                 try {
-                    IgfsUtils.doInTransactionWithRetries(metaCache, new IgniteOutClosureX<Void>() {
-                        @Override public Void applyx() throws IgniteCheckedException {
+                    return IgfsUtils.doInTransactionWithRetries(metaCache, new IgniteOutClosureX<IgfsFileInfo>() {
+                        @Override public IgfsFileInfo applyx() throws IgniteCheckedException {
                             assert validTxState(true);
 
                             IgniteUuid fileId = info.id();
@@ -595,7 +596,7 @@ public class IgfsMetaManager extends IgfsManager {
                             assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo
                                     + ']';
 
-                            return null;
+                            return newInfo;
                         }
                     });
                 }
@@ -1106,8 +1107,8 @@ public class IgfsMetaManager extends IgfsManager {
     /**
      * Deletes (moves to TRASH) all elements under the root folder.
      *
-     * @return The new Id if the artificially created folder containing all former root
-     * elements moved to TRASH folder.
+     * @return The id of the artificially created folder containing all former root
+     * elements moved to TRASH folder, or null if the root directory was empty.
      * @throws IgniteCheckedException On error.
      */
     IgniteUuid format() throws IgniteCheckedException {
@@ -1166,10 +1167,9 @@ public class IgfsMetaManager extends IgfsManager {
     /**
      * Move path to the trash directory.
      *
-     * @param parentId Parent ID.
-     * @param pathName Path name.
-     * @param pathId Path ID.
-     * @return ID of an entry located directly under the trash directory.
+     * @param path Path to remove.
+     * @param recursive If the deletion is recursive.
+     * @return ID of an entry located directly under the trash directory, or null if directory structure has changed.
      * @throws IgniteCheckedException If failed.
      */
     IgniteUuid softDelete(final IgfsPath path, final boolean recursive) throws IgniteCheckedException {
@@ -1435,12 +1435,14 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Check whether there are any pending deletes and return collection of pending delete entry IDs.
+     * Gets immediate (shallow) TRASH children collection.
      *
+     * @param skipLocked if to skip files that are write-locked, or directories that have such files somewhere
+     *   underneath.
      * @return Collection of entry IDs to be deleted.
      * @throws IgniteCheckedException If operation failed.
      */
-    public Collection<IgniteUuid> pendingDeletes() throws IgniteCheckedException {
+    Collection<IgniteUuid> pendingDeletes(boolean skipLocked) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 IgfsFileInfo trashInfo = id2InfoPrj.get(TRASH_ID);
@@ -1449,11 +1451,29 @@ public class IgfsMetaManager extends IgfsManager {
                     Map<String, IgfsListingEntry> listing = trashInfo.listing();
 
                     if (listing != null && !listing.isEmpty()) {
-                        return F.viewReadOnly(listing.values(), new IgniteClosure<IgfsListingEntry, IgniteUuid>() {
+                        Collection<IgniteUuid> result = F.viewReadOnly(listing.values(),
+                            new IgniteClosure<IgfsListingEntry, IgniteUuid>() {
                             @Override public IgniteUuid apply(IgfsListingEntry e) {
                                 return e.fileId();
                             }
-                        });
+                        },
+                        // Predicate that filters out entries that are write-locked files or have such files underneath.
+                        // We need to filter them out because otherwise we may return future that never completes.
+                        // Why we traversing the tree without its locking and think the results are correct?
+                        // Because entries in TRASH can only be removed from the tree, not added (deleted entries
+                        // can be added only as immediate children of TRASH).
+                        skipLocked ? new IgnitePredicate<IgfsListingEntry>() {
+                            @Override public boolean apply(IgfsListingEntry igfsListingEntry) {
+                                try {
+                                    return !hasStaleWriteLock(igfsListingEntry);
+                                }
+                                catch(IgniteCheckedException ice) {
+                                   throw new IgniteException(ice);
+                                }
+                            }
+                        } : null);
+
+                        return result;
                     }
                 }
 
@@ -1465,6 +1485,41 @@ public class IgfsMetaManager extends IgfsManager {
         }
         else
             throw new IllegalStateException("Failed to get pending deletes because Grid is stopping.");
+    }
+
+    /**
+     * Recursively checks a subtree and finds write-local files under it.
+     *
+     * @param e The entry to start search from.
+     * @return If the subtree contains a write-locked file.
+     * @throws IgniteCheckedException On error.
+     */
+    private boolean hasStaleWriteLock(IgfsListingEntry e) throws IgniteCheckedException {
+        IgniteUuid id = e.fileId();
+
+        if (e.isDirectory()) {
+            IgfsFileInfo info = id2InfoPrj.get(id);
+
+            if (info != null) {
+                for (IgfsListingEntry e1: info.listing().values()){
+                    if (hasStaleWriteLock(e1)) // recursive call.
+                        return true;
+                }
+            }
+
+            return false;
+        }
+        else {
+            IgfsFileInfo info = id2InfoPrj.get(id);
+
+            if (info == null)
+                return false;
+
+            IgniteUuid lockId = info.lockId();
+
+            return (lockId != null
+                && !DELETE_LOCK_ID.equals(lockId));
+        }
     }
 
     /**

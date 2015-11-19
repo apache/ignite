@@ -143,7 +143,11 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEmpty(mgr.directoryListing(ROOT_ID));
 
         assertTrue(mgr.mkdirs(new IgfsPath("/dir"), IgfsImpl.DFLT_DIR_META));
-        assertNotNull(mgr.create(new IgfsPath("/file"), false, false, null, 400, null, false, null));
+
+        IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = mgr.create(new IgfsPath("/file"), false, false, null, 400, null,
+            false, null);
+        mgr.unlock(t2.get1(), System.currentTimeMillis());
+        assertNotNull(t2);
 
         IgfsListingEntry dirEntry = mgr.directoryListing(ROOT_ID).get("dir");
         assertNotNull(dirEntry);
@@ -194,8 +198,8 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             assertNull(mgr.updateProperties(ROOT_ID, fileId, "not_exists", F.<String, String>asMap(key2, null)));
         }
 
-        mgr.softDelete(new IgfsPath("/dir"), true);
-        mgr.softDelete(new IgfsPath("/file"), false);
+        assertNotNull(mgr.softDelete(new IgfsPath("/dir"), true));
+        assertNotNull(mgr.softDelete(new IgfsPath("/file"), false));
 
         assertNull(mgr.updateProperties(ROOT_ID, dir.id(), "dir", F.asMap("p", "7")));
         assertNull(mgr.updateProperties(ROOT_ID, file.id(), "file", F.asMap("q", "8")));
@@ -223,7 +227,17 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assert t2 != null;
         assert !t2.get1().isDirectory();
 
-        return t2.get1();
+        // Note that the file is created being write-locked:
+        assert t2.get1().lockId() != null
+            && !IgfsMetaManager.DELETE_LOCK_ID.equals(t2.get1().lockId());
+
+        // If we do not need the info locked, we shall unlock it:
+        IgfsFileInfo info = mgr.unlock(t2.get1(), System.currentTimeMillis());
+
+        assert info != null;
+        assert info.lockId() == null;
+
+        return info;
     }
 
     /**
