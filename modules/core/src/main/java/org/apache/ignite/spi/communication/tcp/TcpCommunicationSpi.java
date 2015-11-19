@@ -1589,8 +1589,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         UUID rmtNodeId = ses.meta(NODE_ID_META);
 
-                         // TODO: DIRECT - class is null
-                        return rmtNodeId != null ? formatter.reader(rmtNodeId, msgFactory, null) : null;
+                        return rmtNodeId != null ? formatter.reader(rmtNodeId, msgFactory) : null;
                     }
                 };
 
@@ -2971,8 +2970,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         UUID rmtNodeId = ses.meta(NODE_ID_META);
 
-                         // TODO: DIRECT - class is null
-                        return rmtNodeId != null ? formatter.reader(rmtNodeId, msgFactory, null) : null;
+                        return rmtNodeId != null ? formatter.reader(rmtNodeId, msgFactory) : null;
                     }
                 };
 

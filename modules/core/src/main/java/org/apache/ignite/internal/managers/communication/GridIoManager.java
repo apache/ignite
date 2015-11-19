@@ -290,8 +290,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     return new DirectMessageWriter(directProtocolVersion(rmtNodeId));
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory,
-                    Class<? extends Message> msgCls) throws IgniteCheckedException {
+                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory)
+                    throws IgniteCheckedException {
                     assert rmtNodeId != null;
 
                     return new DirectMessageReader(msgFactory, directProtocolVersion(rmtNodeId));

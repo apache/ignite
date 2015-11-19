@@ -46,10 +46,8 @@ public interface MessageFormatter extends Extension {
      *
      * @param rmtNodeId Remote node ID.
      * @param msgFactory Message factory.
-     * @param msgCls Message class to read.
      * @return Message reader.
      * @throws IgniteCheckedException In case of error.
      */
-    public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory, Class<? extends Message> msgCls)
-        throws IgniteCheckedException;
+    public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) throws IgniteCheckedException;
 }

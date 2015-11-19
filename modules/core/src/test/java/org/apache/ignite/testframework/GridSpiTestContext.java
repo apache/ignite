@@ -43,7 +43,6 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -497,7 +496,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
                     return new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory, Class<? extends Message> msgCls) {
+                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
                     return new DirectMessageReader(msgFactory, GridIoManager.DIRECT_PROTO_VER);
                 }
             };
