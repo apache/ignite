@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.direct;
 
+import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
+import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
@@ -29,6 +32,9 @@ public class DirectMessageReaderState {
     /** Message factory. */
     private final MessageFactory msgFactory;
 
+    /** Protocol version. */
+    private final byte protoVer;
+
     /** Stack array. */
     private StateItem[] stack;
 
@@ -37,13 +43,15 @@ public class DirectMessageReaderState {
 
     /**
      * @param msgFactory Message factory.
+     * @param protoVer Protocol version.
      */
-    public DirectMessageReaderState(MessageFactory msgFactory) {
+    public DirectMessageReaderState(MessageFactory msgFactory, byte protoVer) {
         this.msgFactory = msgFactory;
+        this.protoVer = protoVer;
 
         stack = new StateItem[INIT_SIZE];
 
-        stack[0] = new StateItem(msgFactory);
+        stack[0] = new StateItem(msgFactory, protoVer);
     }
 
     /**
@@ -84,7 +92,7 @@ public class DirectMessageReaderState {
         }
 
         if (stack[pos] == null)
-            stack[pos] = new StateItem(msgFactory);
+            stack[pos] = new StateItem(msgFactory, protoVer);
     }
 
     /**
@@ -120,9 +128,23 @@ public class DirectMessageReaderState {
 
         /**
          * @param msgFactory Message factory.
+         * @param protoVer Protocol version.
          */
-        public StateItem(MessageFactory msgFactory) {
-            stream = new DirectByteBufferStream(msgFactory);
+        public StateItem(MessageFactory msgFactory, byte protoVer) {
+            switch (protoVer) {
+                case 1:
+                    stream = new DirectByteBufferStreamImplV1(msgFactory);
+
+                    break;
+
+                case 2:
+                    stream = new DirectByteBufferStreamImplV2(msgFactory);
+
+                    break;
+
+                default:
+                    throw new IllegalStateException("Invalid protocol version: " + protoVer);
+            }
         }
     }
 }

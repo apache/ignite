@@ -22,6 +22,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -41,9 +42,10 @@ public class DirectMessageReader implements MessageReader {
 
     /**
      * @param msgFactory Message factory.
+     * @param protoVer Protocol version.
      */
-    public DirectMessageReader(MessageFactory msgFactory) {
-        state = new DirectMessageReaderState(msgFactory);
+    public DirectMessageReader(MessageFactory msgFactory, byte protoVer) {
+        state = new DirectMessageReaderState(msgFactory, protoVer);
     }
 
     /** {@inheritDoc} */

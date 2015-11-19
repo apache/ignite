@@ -20,10 +20,11 @@ package org.apache.ignite.internal.direct;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.RandomAccess;
 import java.util.UUID;
+import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
+import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -35,10 +36,30 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DirectMessageWriter implements MessageWriter {
     /** Stream. */
-    private final DirectByteBufferStream stream = new DirectByteBufferStream(null);
+    private final DirectByteBufferStream stream;
 
     /** State. */
     private final DirectMessageWriterState state = new DirectMessageWriterState();
+
+    /**
+     * @param protoVer Protocol version.
+     */
+    public DirectMessageWriter(byte protoVer) {
+        switch (protoVer) {
+            case 1:
+                stream = new DirectByteBufferStreamImplV1(null);
+
+                break;
+
+            case 2:
+                stream = new DirectByteBufferStreamImplV2(null);
+
+                break;
+
+            default:
+                throw new IllegalStateException("Invalid protocol version: " + protoVer);
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public void setBuffer(ByteBuffer buf) {
@@ -215,9 +236,9 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType) {
-        if (col instanceof List && col instanceof RandomAccess)
-            stream.writeRandomAccessList((List<T>)col, itemType, this);
-        else
+//        if (col instanceof List && col instanceof RandomAccess)
+//            stream.writeRandomAccessList((List<T>)col, itemType, this);
+//        else
             stream.writeCollection(col, itemType, this);
 
         return stream.lastFinished();

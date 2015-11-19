@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.direct;
+package org.apache.ignite.internal.direct.stream.v1;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -23,10 +23,10 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.RandomAccess;
+import java.util.NoSuchElementException;
 import java.util.UUID;
+import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -39,9 +39,9 @@ import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
 /**
- * Portable stream based on {@link ByteBuffer}.
+ * Direct marshalling I/O stream (version 1).
  */
-public class DirectByteBufferStream {
+public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -253,7 +253,7 @@ public class DirectByteBufferStream {
     private Iterator<?> it;
 
     /** */
-    private int arrPos = -1;
+    private Iterator<?> arrIt;
 
     /** */
     private Object arrCur = NULL;
@@ -283,37 +283,17 @@ public class DirectByteBufferStream {
     private Map<Object, Object> map;
 
     /** */
-    private long prim;
-
-    /** */
-    private int primShift;
-
-    /** */
-    private int uuidState;
-
-    /** */
-    private long uuidMost;
-
-    /** */
-    private long uuidLeast;
-
-    /** */
-    private long uuidLocId;
-
-    /** */
     private boolean lastFinished;
 
     /**
      * @param msgFactory Message factory.
      */
-    public DirectByteBufferStream(MessageFactory msgFactory) {
+    public DirectByteBufferStreamImplV1(MessageFactory msgFactory) {
         this.msgFactory = msgFactory;
     }
 
-    /**
-     * @param buf Buffer.
-     */
-    public void setBuffer(ByteBuffer buf) {
+    /** {@inheritDoc} */
+    @Override public void setBuffer(ByteBuffer buf) {
         assert buf != null;
 
         if (this.buf != buf) {
@@ -324,24 +304,18 @@ public class DirectByteBufferStream {
         }
     }
 
-    /**
-     * @return Number of remaining bytes.
-     */
-    public int remaining() {
+    /** {@inheritDoc} */
+    @Override public int remaining() {
         return buf.remaining();
     }
 
-    /**
-     * @return Whether last object was fully written or read.
-     */
-    public boolean lastFinished() {
+    /** {@inheritDoc} */
+    @Override public boolean lastFinished() {
         return lastFinished;
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeByte(byte val) {
+    /** {@inheritDoc} */
+    @Override public void writeByte(byte val) {
         lastFinished = buf.remaining() >= 1;
 
         if (lastFinished) {
@@ -353,10 +327,8 @@ public class DirectByteBufferStream {
         }
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeShort(short val) {
+    /** {@inheritDoc} */
+    @Override public void writeShort(short val) {
         lastFinished = buf.remaining() >= 2;
 
         if (lastFinished) {
@@ -368,68 +340,36 @@ public class DirectByteBufferStream {
         }
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeInt(int val) {
-        lastFinished = buf.remaining() >= 5;
-
-        lastFinished = buf.remaining() >= 5;
+    /** {@inheritDoc} */
+    @Override public void writeInt(int val) {
+        lastFinished = buf.remaining() >= 4;
 
         if (lastFinished) {
-            if (val == Integer.MAX_VALUE)
-                val = Integer.MIN_VALUE;
-            else
-                val++;
-
             int pos = buf.position();
 
-            while ((val & 0xFFFF_FF80) != 0) {
-                byte b = (byte)(val | 0x80);
+            UNSAFE.putInt(heapArr, baseOff + pos, val);
 
-                UNSAFE.putByte(heapArr, baseOff + pos++, b);
+            buf.position(pos + 4);
+        }
+    }
 
-                val >>>= 7;
-            }
+    /** {@inheritDoc} */
+    @Override public void writeLong(long val) {
+        lastFinished = buf.remaining() >= 8;
 
-            UNSAFE.putByte(heapArr, baseOff + pos++, (byte)val);
+        if (lastFinished) {
+            int pos = buf.position();
 
-            buf.position(pos);
+            UNSAFE.putLong(heapArr, baseOff + pos, val);
+
+            buf.position(pos + 8);
         }
     }
 
     /**
      * @param val Value.
      */
-    public void writeLong(long val) {
-        lastFinished = buf.remaining() >= 10;
-
-        if (lastFinished) {
-            if (val == Long.MAX_VALUE)
-                val = Long.MIN_VALUE;
-            else
-                val++;
-
-            int pos = buf.position();
-
-            while ((val & 0xFFFF_FFFF_FFFF_FF80L) != 0) {
-                byte b = (byte)(val | 0x80);
-
-                UNSAFE.putByte(heapArr, baseOff + pos++, b);
-
-                val >>>= 7;
-            }
-
-            UNSAFE.putByte(heapArr, baseOff + pos++, (byte)val);
-
-            buf.position(pos);
-        }
-    }
-
-    /**
-     * @param val Value.
-     */
-    public void writeFloat(float val) {
+    @Override public void writeFloat(float val) {
         lastFinished = buf.remaining() >= 4;
 
         if (lastFinished) {
@@ -441,10 +381,8 @@ public class DirectByteBufferStream {
         }
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeDouble(double val) {
+    /** {@inheritDoc} */
+    @Override public void writeDouble(double val) {
         lastFinished = buf.remaining() >= 8;
 
         if (lastFinished) {
@@ -456,10 +394,8 @@ public class DirectByteBufferStream {
         }
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeChar(char val) {
+    /** {@inheritDoc} */
+    @Override public void writeChar(char val) {
         lastFinished = buf.remaining() >= 2;
 
         if (lastFinished) {
@@ -471,10 +407,8 @@ public class DirectByteBufferStream {
         }
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeBoolean(boolean val) {
+    /** {@inheritDoc} */
+    @Override public void writeBoolean(boolean val) {
         lastFinished = buf.remaining() >= 1;
 
         if (lastFinished) {
@@ -486,186 +420,100 @@ public class DirectByteBufferStream {
         }
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeByteArray(byte[] val) {
+    /** {@inheritDoc} */
+    @Override public void writeByteArray(byte[] val) {
         if (val != null)
             lastFinished = writeArray(val, BYTE_ARR_OFF, val.length, val.length);
         else
             writeInt(-1);
     }
 
-    /**
-     * @param val Value.
-     * @param off Offset.
-     * @param len Length.
-     */
-    public void writeByteArray(byte[] val, long off, int len) {
+    /** {@inheritDoc} */
+    @Override public void writeByteArray(byte[] val, long off, int len) {
         if (val != null)
             lastFinished = writeArray(val, BYTE_ARR_OFF + off, len, len);
         else
             writeInt(-1);
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeShortArray(short[] val) {
+    /** {@inheritDoc} */
+    @Override public void writeShortArray(short[] val) {
         if (val != null)
             lastFinished = writeArray(val, SHORT_ARR_OFF, val.length, val.length << 1);
         else
             writeInt(-1);
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeIntArray(int[] val) {
+    /** {@inheritDoc} */
+    @Override public void writeIntArray(int[] val) {
         if (val != null)
             lastFinished = writeArray(val, INT_ARR_OFF, val.length, val.length << 2);
         else
             writeInt(-1);
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeLongArray(long[] val) {
+    /** {@inheritDoc} */
+    @Override public void writeLongArray(long[] val) {
         if (val != null)
             lastFinished = writeArray(val, LONG_ARR_OFF, val.length, val.length << 3);
         else
             writeInt(-1);
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeFloatArray(float[] val) {
+    /** {@inheritDoc} */
+    @Override public void writeFloatArray(float[] val) {
         if (val != null)
             lastFinished = writeArray(val, FLOAT_ARR_OFF, val.length, val.length << 2);
         else
             writeInt(-1);
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeDoubleArray(double[] val) {
+    /** {@inheritDoc} */
+    @Override public void writeDoubleArray(double[] val) {
         if (val != null)
             lastFinished = writeArray(val, DOUBLE_ARR_OFF, val.length, val.length << 3);
         else
             writeInt(-1);
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeCharArray(char[] val) {
+    /** {@inheritDoc} */
+    @Override public void writeCharArray(char[] val) {
         if (val != null)
             lastFinished = writeArray(val, CHAR_ARR_OFF, val.length, val.length << 1);
         else
             writeInt(-1);
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeBooleanArray(boolean[] val) {
+    /** {@inheritDoc} */
+    @Override public void writeBooleanArray(boolean[] val) {
         if (val != null)
             lastFinished = writeArray(val, BOOLEAN_ARR_OFF, val.length, val.length);
         else
             writeInt(-1);
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeString(String val) {
+    /** {@inheritDoc} */
+    @Override public void writeString(String val) {
         writeByteArray(val != null ? val.getBytes() : null);
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeBitSet(BitSet val) {
+    /** {@inheritDoc} */
+    @Override public void writeBitSet(BitSet val) {
         writeLongArray(val != null ? val.toLongArray() : null);
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeUuid(UUID val) {
-        switch (uuidState) {
-            case 0:
-                writeBoolean(val == null);
-
-                if (!lastFinished || val == null)
-                    return;
-
-                uuidState++;
-
-            case 1:
-                writeLong(val.getMostSignificantBits());
-
-                if (!lastFinished)
-                    return;
-
-                uuidState++;
-
-            case 2:
-                writeLong(val.getLeastSignificantBits());
-
-                if (!lastFinished)
-                    return;
-
-                uuidState = 0;
-        }
+    /** {@inheritDoc} */
+    @Override public void writeUuid(UUID val) {
+        writeByteArray(val != null ? U.uuidToBytes(val) : null);
     }
 
-    /**
-     * @param val Value.
-     */
-    public void writeIgniteUuid(IgniteUuid val) {
-        switch (uuidState) {
-            case 0:
-                writeBoolean(val == null);
-
-                if (!lastFinished || val == null)
-                    return;
-
-                uuidState++;
-
-            case 1:
-                writeLong(val.globalId().getMostSignificantBits());
-
-                if (!lastFinished)
-                    return;
-
-                uuidState++;
-
-            case 2:
-                writeLong(val.globalId().getLeastSignificantBits());
-
-                if (!lastFinished)
-                    return;
-
-                uuidState++;
-
-            case 3:
-                writeLong(val.localId());
-
-                if (!lastFinished)
-                    return;
-
-                uuidState = 0;
-        }
+    /** {@inheritDoc} */
+    @Override public void writeIgniteUuid(IgniteUuid val) {
+        writeByteArray(val != null ? U.igniteUuidToBytes(val) : null);
     }
 
-    /**
-     * @param msg Message.
-     */
-    public void writeMessage(Message msg, MessageWriter writer) {
+    /** {@inheritDoc} */
+    @Override public void writeMessage(Message msg, MessageWriter writer) {
         if (msg != null) {
             if (buf.hasRemaining()) {
                 try {
@@ -684,27 +532,21 @@ public class DirectByteBufferStream {
             writeByte(Byte.MIN_VALUE);
     }
 
-    /**
-     * @param arr Array.
-     * @param itemType Component type.
-     * @param writer Writer.
-     */
-    public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer) {
+    /** {@inheritDoc} */
+    @Override public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer) {
         if (arr != null) {
-            int len = arr.length;
-
-            if (arrPos == -1) {
-                writeInt(len);
+            if (arrIt == null) {
+                writeInt(arr.length);
 
                 if (!lastFinished)
                     return;
 
-                arrPos = 0;
+                arrIt = arrayIterator(arr);
             }
 
-            while (arrPos < len || arrCur != NULL) {
+            while (arrIt.hasNext() || arrCur != NULL) {
                 if (arrCur == NULL)
-                    arrCur = arr[arrPos++];
+                    arrCur = arrIt.next();
 
                 write(itemType, arrCur, writer);
 
@@ -714,18 +556,15 @@ public class DirectByteBufferStream {
                 arrCur = NULL;
             }
 
-            arrPos = -1;
+            arrIt = null;
         }
         else
             writeInt(-1);
     }
 
-    /**
-     * @param col Collection.
-     * @param itemType Item type.
-     * @param writer Writer.
-     */
-    public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType, MessageWriter writer) {
+    /** {@inheritDoc} */
+    @Override public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType,
+        MessageWriter writer) {
         if (col != null) {
             if (it == null) {
                 writeInt(col.size());
@@ -754,53 +593,10 @@ public class DirectByteBufferStream {
             writeInt(-1);
     }
 
-    /**
-     * @param list List.
-     * @param itemType Component type.
-     * @param writer Writer.
-     */
-    public <T> void writeRandomAccessList(List<T> list, MessageCollectionItemType itemType, MessageWriter writer) {
-        if (list != null) {
-            assert list instanceof RandomAccess;
-
-            int size = list.size();
-
-            if (arrPos == -1) {
-                writeInt(size);
-
-                if (!lastFinished)
-                    return;
-
-                arrPos = 0;
-            }
-
-            while (arrPos < size || arrCur != NULL) {
-                if (arrCur == NULL)
-                    arrCur = list.get(arrPos++);
-
-                write(itemType, arrCur, writer);
-
-                if (!lastFinished)
-                    return;
-
-                arrCur = NULL;
-            }
-
-            arrPos = -1;
-        }
-        else
-            writeInt(-1);
-    }
-
-    /**
-     * @param map Map.
-     * @param keyType Key type.
-     * @param valType Value type.
-     * @param writer Writer.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType, MessageCollectionItemType valType,
-        MessageWriter writer) {
+    @Override public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType,
+        MessageCollectionItemType valType, MessageWriter writer) {
         if (map != null) {
             if (mapIt == null) {
                 writeInt(map.size());
@@ -843,10 +639,8 @@ public class DirectByteBufferStream {
             writeInt(-1);
     }
 
-    /**
-     * @return Value.
-     */
-    public byte readByte() {
+    /** {@inheritDoc} */
+    @Override public byte readByte() {
         lastFinished = buf.remaining() >= 1;
 
         if (lastFinished) {
@@ -860,10 +654,8 @@ public class DirectByteBufferStream {
             return 0;
     }
 
-    /**
-     * @return Value.
-     */
-    public short readShort() {
+    /** {@inheritDoc} */
+    @Override public short readShort() {
         lastFinished = buf.remaining() >= 2;
 
         if (lastFinished) {
@@ -877,88 +669,38 @@ public class DirectByteBufferStream {
             return 0;
     }
 
-    /**
-     * @return Value.
-     */
-    public int readInt() {
-        lastFinished = false;
+    /** {@inheritDoc} */
+    @Override public int readInt() {
+        lastFinished = buf.remaining() >= 4;
 
-        int val = 0;
-
-        while (buf.hasRemaining()) {
+        if (lastFinished) {
             int pos = buf.position();
 
-            byte b = UNSAFE.getByte(heapArr, baseOff + pos);
+            buf.position(pos + 4);
 
-            buf.position(pos + 1);
-
-            prim |= ((long)b & 0x7F) << (7 * primShift);
-
-            if ((b & 0x80) == 0) {
-                lastFinished = true;
-
-                val = (int)prim;
-
-                if (val == Integer.MIN_VALUE)
-                    val = Integer.MAX_VALUE;
-                else
-                    val--;
-
-                prim = 0;
-                primShift = 0;
-
-                break;
-            }
-            else
-                primShift++;
+            return UNSAFE.getInt(heapArr, baseOff + pos);
         }
-
-        return val;
+        else
+            return 0;
     }
 
-    /**
-     * @return Value.
-     */
-    public long readLong() {
-        lastFinished = false;
+    /** {@inheritDoc} */
+    @Override public long readLong() {
+        lastFinished = buf.remaining() >= 8;
 
-        long val = 0;
-
-        while (buf.hasRemaining()) {
+        if (lastFinished) {
             int pos = buf.position();
 
-            byte b = UNSAFE.getByte(heapArr, baseOff + pos);
+            buf.position(pos + 8);
 
-            buf.position(pos + 1);
-
-            prim |= ((long)b & 0x7F) << (7 * primShift);
-
-            if ((b & 0x80) == 0) {
-                lastFinished = true;
-
-                val = prim;
-
-                if (val == Long.MIN_VALUE)
-                    val = Long.MAX_VALUE;
-                else
-                    val--;
-
-                prim = 0;
-                primShift = 0;
-
-                break;
-            }
-            else
-                primShift++;
+            return UNSAFE.getLong(heapArr, baseOff + pos);
         }
-
-        return val;
+        else
+            return 0;
     }
 
-    /**
-     * @return Value.
-     */
-    public float readFloat() {
+    /** {@inheritDoc} */
+    @Override public float readFloat() {
         lastFinished = buf.remaining() >= 4;
 
         if (lastFinished) {
@@ -972,10 +714,8 @@ public class DirectByteBufferStream {
             return 0;
     }
 
-    /**
-     * @return Value.
-     */
-    public double readDouble() {
+    /** {@inheritDoc} */
+    @Override public double readDouble() {
         lastFinished = buf.remaining() >= 8;
 
         if (lastFinished) {
@@ -989,10 +729,8 @@ public class DirectByteBufferStream {
             return 0;
     }
 
-    /**
-     * @return Value.
-     */
-    public char readChar() {
+    /** {@inheritDoc} */
+    @Override public char readChar() {
         lastFinished = buf.remaining() >= 2;
 
         if (lastFinished) {
@@ -1006,10 +744,8 @@ public class DirectByteBufferStream {
             return 0;
     }
 
-    /**
-     * @return Value.
-     */
-    public boolean readBoolean() {
+    /** {@inheritDoc} */
+    @Override public boolean readBoolean() {
         lastFinished = buf.hasRemaining();
 
         if (lastFinished) {
@@ -1023,170 +759,77 @@ public class DirectByteBufferStream {
             return false;
     }
 
-    /**
-     * @return Value.
-     */
-    public byte[] readByteArray() {
+    /** {@inheritDoc} */
+    @Override public byte[] readByteArray() {
         return readArray(BYTE_ARR_CREATOR, 0, BYTE_ARR_OFF);
     }
 
-    /**
-     /**
-      * @return Value.
-      */
-    public short[] readShortArray() {
+    /** {@inheritDoc} */
+    @Override public short[] readShortArray() {
         return readArray(SHORT_ARR_CREATOR, 1, SHORT_ARR_OFF);
     }
 
-    /**
-     * @return Value.
-     */
-    public int[] readIntArray() {
+    /** {@inheritDoc} */
+    @Override public int[] readIntArray() {
         return readArray(INT_ARR_CREATOR, 2, INT_ARR_OFF);
     }
 
-    /**
-     * @return Value.
-     */
-    public long[] readLongArray() {
+    /** {@inheritDoc} */
+    @Override public long[] readLongArray() {
         return readArray(LONG_ARR_CREATOR, 3, LONG_ARR_OFF);
     }
 
-    /**
-     * @return Value.
-     */
-    public float[] readFloatArray() {
+    /** {@inheritDoc} */
+    @Override public float[] readFloatArray() {
         return readArray(FLOAT_ARR_CREATOR, 2, FLOAT_ARR_OFF);
     }
 
-    /**
-     * @return Value.
-     */
-    public double[] readDoubleArray() {
+    /** {@inheritDoc} */
+    @Override public double[] readDoubleArray() {
         return readArray(DOUBLE_ARR_CREATOR, 3, DOUBLE_ARR_OFF);
     }
 
-    /**
-     * @return Value.
-     */
-    public char[] readCharArray() {
+    /** {@inheritDoc} */
+    @Override public char[] readCharArray() {
         return readArray(CHAR_ARR_CREATOR, 1, CHAR_ARR_OFF);
     }
 
-    /**
-     * @return Value.
-     */
-    public boolean[] readBooleanArray() {
+    /** {@inheritDoc} */
+    @Override public boolean[] readBooleanArray() {
         return readArray(BOOLEAN_ARR_CREATOR, 0, BOOLEAN_ARR_OFF);
     }
 
-    /**
-     * @return Value.
-     */
-    public String readString() {
+    /** {@inheritDoc} */
+    @Override public String readString() {
         byte[] arr = readByteArray();
 
         return arr != null ? new String(arr) : null;
     }
 
-    /**
-     * @return Value.
-     */
-    public BitSet readBitSet() {
+    /** {@inheritDoc} */
+    @Override public BitSet readBitSet() {
         long[] arr = readLongArray();
 
         return arr != null ? BitSet.valueOf(arr) : null;
     }
 
-    /**
-     * @return Value.
-     */
-    public UUID readUuid() {
-        switch (uuidState) {
-            case 0:
-                boolean isNull = readBoolean();
+    /** {@inheritDoc} */
+    @Override public UUID readUuid() {
+        byte[] arr = readByteArray();
 
-                if (!lastFinished || isNull)
-                    return null;
-
-                uuidState++;
-
-            case 1:
-                uuidMost = readLong();
-
-                if (!lastFinished)
-                    return null;
-
-                uuidState++;
-
-            case 2:
-                uuidLeast = readLong();
-
-                if (!lastFinished)
-                    return null;
-
-                uuidState = 0;
-        }
-
-        UUID val = new UUID(uuidMost, uuidLeast);
-
-        uuidMost = 0;
-        uuidLeast = 0;
-
-        return val;
+        return arr != null ? U.bytesToUuid(arr, 0) : null;
     }
 
-    /**
-     * @return Value.
-     */
-    public IgniteUuid readIgniteUuid() {
-        switch (uuidState) {
-            case 0:
-                boolean isNull = readBoolean();
+    /** {@inheritDoc} */
+    @Override public IgniteUuid readIgniteUuid() {
+        byte[] arr = readByteArray();
 
-                if (!lastFinished || isNull)
-                    return null;
-
-                uuidState++;
-
-            case 1:
-                uuidMost = readLong();
-
-                if (!lastFinished)
-                    return null;
-
-                uuidState++;
-
-            case 2:
-                uuidLeast = readLong();
-
-                if (!lastFinished)
-                    return null;
-
-                uuidState++;
-
-            case 3:
-                uuidLocId = readLong();
-
-                if (!lastFinished)
-                    return null;
-
-                uuidState = 0;
-        }
-
-        IgniteUuid val = new IgniteUuid(new UUID(uuidMost, uuidLeast), uuidLocId);
-
-        uuidMost = 0;
-        uuidLeast = 0;
-
-        return val;
+        return arr != null ? U.bytesToIgniteUuid(arr, 0) : null;
     }
 
-    /**
-     * @return Message.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public <T extends Message> T readMessage(MessageReader reader) {
+    @Override public <T extends Message> T readMessage(MessageReader reader) {
         if (!msgTypeDone) {
             if (!buf.hasRemaining()) {
                 lastFinished = false;
@@ -1201,18 +844,7 @@ public class DirectByteBufferStream {
             msgTypeDone = true;
         }
 
-        if (msg != null) {
-            try {
-                reader.beforeInnerMessageRead();
-
-                lastFinished = msg.readFrom(buf, reader);
-            }
-            finally {
-                reader.afterInnerMessageRead(lastFinished);
-            }
-        }
-        else
-            lastFinished = true;
+        lastFinished = msg == null || msg.readFrom(buf, reader);
 
         if (lastFinished) {
             Message msg0 = msg;
@@ -1226,14 +858,10 @@ public class DirectByteBufferStream {
             return null;
     }
 
-    /**
-     * @param itemType Component type.
-     * @param itemCls Component class.
-     * @param reader Reader.
-     * @return Array.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls, MessageReader reader) {
+    @Override public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls,
+        MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1270,13 +898,10 @@ public class DirectByteBufferStream {
         return objArr0;
     }
 
-    /**
-     * @param itemType Item type.
-     * @param reader Reader.
-     * @return Collection.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader) {
+    @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType,
+        MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1313,16 +938,10 @@ public class DirectByteBufferStream {
         return col0;
     }
 
-    /**
-     * @param keyType Key type.
-     * @param valType Value type.
-     * @param linked Whether linked map should be created.
-     * @param reader Reader.
-     * @return Map.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType,
-        boolean linked, MessageReader reader) {
+    @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
+        MessageCollectionItemType valType, boolean linked, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1376,7 +995,7 @@ public class DirectByteBufferStream {
      * @param off Offset.
      * @param len Length.
      * @param bytes Length in bytes.
-     * @return Whether array was fully written.
+     * @return Whether array was fully written
      */
     private boolean writeArray(Object arr, long off, int len, int bytes) {
         assert arr != null;
@@ -1387,10 +1006,10 @@ public class DirectByteBufferStream {
         assert bytes >= arrOff;
 
         if (arrOff == -1) {
-            writeInt(len);
-
-            if (!lastFinished)
+            if (buf.remaining() < 4)
                 return false;
+
+            writeInt(len);
 
             arrOff = 0;
         }
@@ -1400,24 +1019,24 @@ public class DirectByteBufferStream {
         int remaining = buf.remaining();
 
         if (toWrite <= remaining) {
-            if (toWrite > 0) {
-                UNSAFE.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, toWrite);
+            UNSAFE.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, toWrite);
 
-                buf.position(pos + toWrite);
-            }
+            pos += toWrite;
+
+            buf.position(pos);
 
             arrOff = -1;
 
             return true;
         }
         else {
-            if (remaining > 0) {
-                UNSAFE.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, remaining);
+            UNSAFE.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, remaining);
 
-                buf.position(pos + remaining);
+            pos += remaining;
 
-                arrOff += remaining;
-            }
+            buf.position(pos);
+
+            arrOff += remaining;
 
             return false;
         }
@@ -1434,10 +1053,13 @@ public class DirectByteBufferStream {
         assert creator != null;
 
         if (tmpArr == null) {
-            int len = readInt();
+            if (buf.remaining() < 4) {
+                lastFinished = false;
 
-            if (!lastFinished)
                 return null;
+            }
+
+            int len = readInt();
 
             switch (len) {
                 case -1:
@@ -1685,6 +1307,31 @@ public class DirectByteBufferStream {
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);
         }
+    }
+
+    /**
+     * @param arr Array.
+     * @return Array iterator.
+     */
+    private Iterator<?> arrayIterator(final Object[] arr) {
+        return new Iterator<Object>() {
+            private int idx;
+
+            @Override public boolean hasNext() {
+                return idx < arr.length;
+            }
+
+            @Override public Object next() {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+
+                return arr[idx++];
+            }
+
+            @Override public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     /**

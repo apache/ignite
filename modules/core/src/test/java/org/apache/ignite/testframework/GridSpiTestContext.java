@@ -37,6 +37,7 @@ import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -493,11 +494,11 @@ public class GridSpiTestContext implements IgniteSpiContext {
         if (formatter == null) {
             formatter = new MessageFormatter() {
                 @Override public MessageWriter writer(UUID rmtNodeId) {
-                    return new DirectMessageWriter();
+                    return new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
                 }
 
                 @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory, Class<? extends Message> msgCls) {
-                    return new DirectMessageReader(msgFactory);
+                    return new DirectMessageReader(msgFactory, GridIoManager.DIRECT_PROTO_VER);
                 }
             };
         }

@@ -112,6 +112,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
 
+    /** Direct protocol version attribute name. */
+    public static final String DIRECT_PROTO_VER_ATTR = "comm.direct.proto.ver";
+
+    /** Direct protocol version. */
+    public static final byte DIRECT_PROTO_VER = 2;
+
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap8<>();
 
@@ -265,6 +271,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         });
 
+        ctx.addNodeAttribute(DIRECT_PROTO_VER_ATTR, DIRECT_PROTO_VER);
+
         MessageFormatter[] formatterExt = ctx.plugins().extensions(MessageFormatter.class);
 
         if (formatterExt != null && formatterExt.length > 0) {
@@ -279,13 +287,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 @Override public MessageWriter writer(UUID rmtNodeId) {
                     assert rmtNodeId != null;
 
-                    return new DirectMessageWriter();
+                    return new DirectMessageWriter(directProtocolVersion(rmtNodeId));
                 }
 
                 @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory, Class<? extends Message> msgCls) {
                     assert rmtNodeId != null;
 
-                    return new DirectMessageReader(msgFactory);
+                    return new DirectMessageReader(msgFactory, directProtocolVersion(rmtNodeId));
                 }
             };
         }
@@ -313,6 +321,33 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             log.debug(startInfo());
 
         registerIoPoolExtensions();
+    }
+
+    /**
+     * Defines which protocol version to use for
+     * communication with the provided node.
+     *
+     * @param nodeId Node ID.
+     * @return Protocol version.
+     */
+    private byte directProtocolVersion(UUID nodeId) {
+        assert nodeId != null;
+
+        ClusterNode node = ctx.discovery().node(nodeId);
+
+        // TODO: DIRECT - throw exception
+        assert node != null;
+
+        assert !node.isLocal();
+
+        Byte attr = node.attribute(DIRECT_PROTO_VER_ATTR);
+
+        byte rmtProtoVer = attr != null ? attr : 1;
+
+        if (rmtProtoVer < DIRECT_PROTO_VER)
+            return rmtProtoVer;
+        else
+            return DIRECT_PROTO_VER;
     }
 
     /**
