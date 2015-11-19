@@ -28,12 +28,14 @@ import java.nio.ByteBuffer;
  * Serializer based on Kryo serialization
  */
 public class KryoSerializer implements Serializer {
+    /** TODO IGNITE-1371: add comment */
     private ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
         protected Kryo initialValue() {
             return new Kryo();
-        };
+        }
     };
 
+    /** {@inheritDoc} */
     @Override public ByteBuffer serialize(Object obj) {
         if (obj == null)
             return null;
@@ -72,12 +74,13 @@ public class KryoSerializer implements Serializer {
         }
     }
 
-    @Override public Object deserialize(ByteBuffer buffer) {
+    /** {@inheritDoc} */
+    @Override public Object deserialize(ByteBuffer buf) {
         ByteArrayInputStream stream = null;
         Input in = null;
 
         try {
-            stream = new ByteArrayInputStream(buffer.array());
+            stream = new ByteArrayInputStream(buf.array());
             in = new Input(stream);
             return kryos.get().readClassAndObject(in);
         }

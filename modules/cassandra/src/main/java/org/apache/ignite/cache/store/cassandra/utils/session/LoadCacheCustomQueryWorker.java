@@ -19,13 +19,13 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
     private final CassandraSession ses;
 
     /** User query. */
-    private final String query;
+    private final String qry;
 
     /** Persistence controller */
     private final PersistenceController ctrl;
 
     /** Logger */
-    private final IgniteLogger logger;
+    private final IgniteLogger log;
 
     /** Closure for loaded values. */
     private final IgniteBiInClosure<K, V> clo;
@@ -33,26 +33,30 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
     /**
      * @param clo Closure for loaded values.
      */
-    public LoadCacheCustomQueryWorker(CassandraSession ses, String query, PersistenceController ctrl,
-        IgniteLogger logger, IgniteBiInClosure<K, V> clo) {
+    public LoadCacheCustomQueryWorker(CassandraSession ses, String qry, PersistenceController ctrl,
+        IgniteLogger log, IgniteBiInClosure<K, V> clo) {
         this.ses = ses;
-        this.query = query.trim().endsWith(";") ? query : query + ";";
+        this.qry = qry.trim().endsWith(";") ? qry : qry + ";";
         this.ctrl = ctrl;
-        this.logger = logger;
+        this.log = log;
         this.clo = clo;
     }
 
+    /** {@inheritDoc} */
     @Override public Void call() throws Exception {
         ses.execute(new BatchLoaderAssistant() {
 
+            /** {@inheritDoc} */
             @Override public String operationName() {
                 return "loadCache";
             }
 
+            /** {@inheritDoc} */
             @Override public Statement getStatement() {
-                return new SimpleStatement(query);
+                return new SimpleStatement(qry);
             }
 
+            /** {@inheritDoc} */
             @Override public void process(Row row) {
                 K key;
                 V val;
@@ -61,8 +65,8 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
                     key = (K)ctrl.buildKeyObject(row);
                 }
                 catch (Throwable e) {
-                    if (logger != null)
-                        logger.error("Failed to build Ignite key object from provided Cassandra row", e);
+                    if (log != null)
+                        log.error("Failed to build Ignite key object from provided Cassandra row", e);
 
                     throw new RuntimeException("Failed to build Ignite key object from provided Cassandra row", e);
                 }
@@ -71,8 +75,8 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
                     val = (V)ctrl.buildValueObject(row);
                 }
                 catch (Throwable e) {
-                    if (logger != null)
-                        logger.error("Failed to build Ignite value object from provided Cassandra row", e);
+                    if (log != null)
+                        log.error("Failed to build Ignite value object from provided Cassandra row", e);
 
                     throw new RuntimeException("Failed to build Ignite value object from provided Cassandra row", e);
                 }

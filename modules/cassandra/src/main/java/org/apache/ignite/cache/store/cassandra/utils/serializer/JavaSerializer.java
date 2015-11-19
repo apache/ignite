@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
  * Serializer based on standard Java serialization
  */
 public class JavaSerializer implements Serializer {
+    /** {@inheritDoc} */
     @Override public ByteBuffer serialize(Object obj) {
         if (obj == null)
             return null;
@@ -66,12 +67,13 @@ public class JavaSerializer implements Serializer {
         }
     }
 
-    @Override public Object deserialize(ByteBuffer buffer) {
+    /** {@inheritDoc} */
+    @Override public Object deserialize(ByteBuffer buf) {
         ByteArrayInputStream stream = null;
         ObjectInputStream in = null;
 
         try {
-            stream = new ByteArrayInputStream(buffer.array());
+            stream = new ByteArrayInputStream(buf.array());
             in = new ObjectInputStream(stream);
             return in.readObject();
         }

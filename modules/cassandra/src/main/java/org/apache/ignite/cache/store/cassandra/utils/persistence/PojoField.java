@@ -31,15 +31,25 @@ import org.w3c.dom.Element;
  * should be written to or loaded from Cassandra
  */
 public abstract class PojoField {
+    /** TODO IGNITE-1371: add comment */
     private static final String NAME_ATTR = "name";
+
+    /** TODO IGNITE-1371: add comment */
     private static final String COLUMN_ATTR = "column";
 
+    /** TODO IGNITE-1371: add comment */
     private String name;
-    private String column;
-    private String columnDDL;
-    private PropertyDescriptor descriptor;
 
-    public PojoField(Element el, Class pojoClass) {
+    /** TODO IGNITE-1371: add comment */
+    private String col;
+    /** TODO IGNITE-1371: add comment */
+    private String colDDL;
+
+    /** TODO IGNITE-1371: add comment */
+    private PropertyDescriptor desc;
+
+    /** TODO IGNITE-1371: add comment */
+    public PojoField(Element el, Class pojoCls) {
         if (el == null)
             throw new IllegalArgumentException("DOM element representing POJO field object can't be null");
 
@@ -49,103 +59,110 @@ public abstract class PojoField {
         }
 
         this.name = el.getAttribute(NAME_ATTR).trim();
-        this.column = el.hasAttribute(COLUMN_ATTR) ? el.getAttribute(COLUMN_ATTR).trim() : name.toLowerCase();
+        this.col = el.hasAttribute(COLUMN_ATTR) ? el.getAttribute(COLUMN_ATTR).trim() : name.toLowerCase();
 
-        init(PropertyMappingHelper.getPojoPropertyDescriptor(pojoClass, name));
+        init(PropertyMappingHelper.getPojoPropertyDescriptor(pojoCls, name));
     }
 
-    public PojoField(PropertyDescriptor descriptor) {
-        this.name = descriptor.getName();
+    /** TODO IGNITE-1371: add comment */
+    public PojoField(PropertyDescriptor desc) {
+        this.name = desc.getName();
 
-        QuerySqlField sqlField = descriptor.getReadMethod() != null ?
-            descriptor.getReadMethod().getAnnotation(QuerySqlField.class) :
-            descriptor.getWriteMethod() == null ?
+        QuerySqlField sqlField = desc.getReadMethod() != null ?
+            desc.getReadMethod().getAnnotation(QuerySqlField.class) :
+            desc.getWriteMethod() == null ?
                 null :
-                descriptor.getWriteMethod().getAnnotation(QuerySqlField.class);
+                desc.getWriteMethod().getAnnotation(QuerySqlField.class);
 
-        this.column = sqlField != null && sqlField.name() != null ? sqlField.name() : name.toLowerCase();
+        this.col = sqlField != null && sqlField.name() != null ? sqlField.name() : name.toLowerCase();
 
-        init(descriptor);
+        init(desc);
 
         if (sqlField != null)
             init(sqlField);
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getName() {
         return name;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getColumn() {
-        return column;
+        return col;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getColumnDDL() {
-        return columnDDL;
+        return colDDL;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public Object getValueFromObject(Object obj, Serializer serializer) {
         try {
-            Object value = descriptor.getReadMethod().invoke(obj);
+            Object val = desc.getReadMethod().invoke(obj);
 
-            if (value == null)
+            if (val == null)
                 return null;
 
-            DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(value.getClass());
+            DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(val.getClass());
 
             if (cassandraType != null)
-                return value;
+                return val;
 
             if (serializer == null) {
                 throw new IllegalStateException("Can't serialize value from object '" +
-                    value.getClass().getName() + "' field '" + name + "', cause there is no BLOB serializer specified");
+                    val.getClass().getName() + "' field '" + name + "', cause there is no BLOB serializer specified");
             }
 
-            return serializer.serialize(value);
+            return serializer.serialize(val);
         }
         catch (Throwable e) {
-            throw new IgniteException("Failed to get value of the field '" + descriptor.getName() + "' from the instance " +
+            throw new IgniteException("Failed to get value of the field '" + desc.getName() + "' from the instance " +
                 " of '" + obj.getClass().toString() + "' class", e);
         }
     }
 
+    /** TODO IGNITE-1371: add comment */
     public void setValueFromRow(Row row, Object obj, Serializer serializer) {
-        Object value = PropertyMappingHelper.getCassandraColumnValue(row, column, descriptor.getPropertyType(), serializer);
+        Object val = PropertyMappingHelper.getCassandraColumnValue(row, col, desc.getPropertyType(), serializer);
 
         try {
-            descriptor.getWriteMethod().invoke(obj, value);
+            desc.getWriteMethod().invoke(obj, val);
         }
         catch (Throwable e) {
-            throw new IgniteException("Failed to set value of the field '" + descriptor.getName() + "' of the instance " +
+            throw new IgniteException("Failed to set value of the field '" + desc.getName() + "' of the instance " +
                 " of '" + obj.getClass().toString() + "' class", e);
         }
     }
 
-    protected void init(QuerySqlField sqlField) {
-    }
+    /** TODO IGNITE-1371: add comment */
+    protected abstract void init(QuerySqlField sqlField);
 
-    protected void init(PropertyDescriptor descriptor) {
-        if (descriptor.getReadMethod() == null) {
-            throw new IllegalArgumentException("Field '" + descriptor.getName() +
-                "' of the class instance '" + descriptor.getPropertyType().getName() +
+    /** TODO IGNITE-1371: add comment */
+    protected void init(PropertyDescriptor desc) {
+        if (desc.getReadMethod() == null) {
+            throw new IllegalArgumentException("Field '" + desc.getName() +
+                "' of the class instance '" + desc.getPropertyType().getName() +
                 "' doesn't provide getter method");
         }
 
-        if (descriptor.getWriteMethod() == null) {
-            throw new IllegalArgumentException("Field '" + descriptor.getName() +
-                "' of POJO object instance of the class '" + descriptor.getPropertyType().getName() +
+        if (desc.getWriteMethod() == null) {
+            throw new IllegalArgumentException("Field '" + desc.getName() +
+                "' of POJO object instance of the class '" + desc.getPropertyType().getName() +
                 "' doesn't provide write method");
         }
 
-        if (!descriptor.getReadMethod().isAccessible())
-            descriptor.getReadMethod().setAccessible(true);
+        if (!desc.getReadMethod().isAccessible())
+            desc.getReadMethod().setAccessible(true);
 
-        if (!descriptor.getWriteMethod().isAccessible())
-            descriptor.getWriteMethod().setAccessible(true);
+        if (!desc.getWriteMethod().isAccessible())
+            desc.getWriteMethod().setAccessible(true);
 
-        DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(descriptor.getPropertyType());
+        DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(desc.getPropertyType());
         cassandraType = cassandraType == null ? DataType.Name.BLOB : cassandraType;
 
-        this.descriptor = descriptor;
-        this.columnDDL = column + " " + cassandraType.toString();
+        this.desc = desc;
+        this.colDDL = col + " " + cassandraType.toString();
     }
 }

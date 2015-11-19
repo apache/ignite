@@ -29,10 +29,13 @@ import org.w3c.dom.NodeList;
  * Stores persistence settings for Ignite cache value
  */
 public class ValuePersistenceSettings extends PersistenceSettings {
+    /** TODO IGNITE-1371: add comment */
     private static final String FIELD_ELEMENT = "field";
 
+    /** TODO IGNITE-1371: add comment */
     private List<PojoField> fields = new LinkedList<>();
 
+    /** TODO IGNITE-1371: add comment */
     public ValuePersistenceSettings(Element el) {
         super(el);
 
@@ -49,36 +52,38 @@ public class ValuePersistenceSettings extends PersistenceSettings {
         checkDuplicates(fields);
     }
 
+    /** TODO IGNITE-1371: add comment */
     public List<PojoField> getFields() {
         return fields == null ? null : Collections.unmodifiableList(fields);
     }
 
+    /** {@inheritDoc} */
     @Override protected String defaultColumnName() {
         return "value";
     }
 
+    /** TODO IGNITE-1371: add comment */
     private List<PojoField> detectFields(NodeList fieldNodes) {
         List<PojoField> list = new LinkedList<>();
 
         if (fieldNodes == null || fieldNodes.getLength() == 0) {
             List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
-            for (PropertyDescriptor descriptor : primitivePropDescriptors) {
+            for (PropertyDescriptor descriptor : primitivePropDescriptors)
                 list.add(new PojoValueField(descriptor));
-            }
 
             return list;
         }
 
         List<PropertyDescriptor> allPropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), false);
 
-        int count = fieldNodes.getLength();
+        int cnt = fieldNodes.getLength();
 
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < cnt; i++) {
             PojoValueField field = new PojoValueField((Element)fieldNodes.item(i), getJavaClass());
 
-            PropertyDescriptor descriptor = findPropertyDescriptor(allPropDescriptors, field.getName());
+            PropertyDescriptor desc = findPropertyDescriptor(allPropDescriptors, field.getName());
 
-            if (descriptor == null) {
+            if (desc == null) {
                 throw new IllegalArgumentException("Specified POJO field '" + field.getName() +
                     "' doesn't exist in '" + getJavaClass().getName() + "' class");
             }

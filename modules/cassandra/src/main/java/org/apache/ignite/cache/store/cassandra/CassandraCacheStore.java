@@ -49,29 +49,36 @@ import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.LoggerResource;
 
 /**
- * ${@link org.apache.ignite.cache.store.CacheStore} implementation to store Ignite cache key/value into Cassandra database
+ * Implementation of {@link CacheStore} backed by Cassandra database.
+ *
  * @param <K> Ignite cache key type
  * @param <V> Ignite cache value type
  */
 public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
+    /** Connection attribute property name. */
     private static final String ATTR_CONN_PROP = "CASSANDRA_STORE_CONNECTION";
 
     /** Auto-injected store session. */
     @CacheStoreSessionResource
-    private CacheStoreSession storeSession;
+    private CacheStoreSession storeSes;
 
     /** Auto-injected logger instance. */
     @LoggerResource
-    private IgniteLogger logger;
+    private IgniteLogger log;
 
-    private DataSource dataSource;
+    /** TODO IGNITE-1371: add comment */
+    private DataSource dataSrc;
+
+    /** TODO IGNITE-1371: add comment */
     private PersistenceController controller;
 
-    public CassandraCacheStore(DataSource dataSource, KeyValuePersistenceSettings settings) {
-        this.dataSource = dataSource;
+    /** TODO IGNITE-1371: add comment */
+    public CassandraCacheStore(DataSource dataSrc, KeyValuePersistenceSettings settings) {
+        this.dataSrc = dataSrc;
         this.controller = new PersistenceController(settings);
     }
 
+    /** {@inheritDoc} */
     @Override public void loadCache(IgniteBiInClosure<K, V> clo, Object... args) throws CacheLoaderException {
         if (clo == null || args == null || args.length == 0)
             return;
@@ -86,41 +93,43 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
                 if (obj == null || !(obj instanceof String) || !((String)obj).trim().toLowerCase().startsWith("select"))
                     continue;
 
-                futs.add(pool.submit(new LoadCacheCustomQueryWorker<K, V>(getCassandraSession(), (String)obj,
-                    controller, logger, clo)));
+                futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(getCassandraSession(), (String) obj,
+                        controller, log, clo)));
             }
 
             for (Future<?> fut : futs)
                 U.get(fut);
 
-            if (logger != null && logger.isDebugEnabled() && storeSession != null)
-                logger.debug("Cache loaded from db: " + storeSession.cacheName());
+            if (log != null && log.isDebugEnabled() && storeSes != null)
+                log.debug("Cache loaded from db: " + storeSes.cacheName());
         }
         catch (IgniteCheckedException e) {
-            if (storeSession != null)
-                throw new CacheLoaderException("Failed to load Ignite cache: " + storeSession.cacheName(), e.getCause());
+            if (storeSes != null)
+                throw new CacheLoaderException("Failed to load Ignite cache: " + storeSes.cacheName(), e.getCause());
             else
                 throw new CacheLoaderException("Failed to load cache", e.getCause());
         }
         finally {
-            U.shutdownNow(getClass(), pool, logger);
+            U.shutdownNow(getClass(), pool, log);
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void sessionEnd(boolean commit) throws CacheWriterException {
-        if (storeSession == null || storeSession.transaction() == null)
+        if (storeSes == null || storeSes.transaction() == null)
             return;
 
-        CassandraSession cassandraSession = (CassandraSession)storeSession.properties().remove(ATTR_CONN_PROP);
-        if (cassandraSession != null) {
+        CassandraSession cassandraSes = (CassandraSession) storeSes.properties().remove(ATTR_CONN_PROP);
+        if (cassandraSes != null) {
             try {
-                cassandraSession.close();
+                cassandraSes.close();
             }
             catch (Throwable ignored) {
             }
         }
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public V load(final K key) throws CacheLoaderException {
         if (key == null)
@@ -160,6 +169,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         }
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public Map<K, V> loadAll(Iterable<? extends K> keys) throws CacheLoaderException {
         if (keys == null || !keys.iterator().hasNext())
@@ -201,6 +211,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void write(final Cache.Entry<? extends K, ? extends V> entry) throws CacheWriterException {
         if (entry == null || entry.getKey() == null)
             return;
@@ -239,6 +250,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void writeAll(Collection<Cache.Entry<? extends K, ? extends V>> entries) throws CacheWriterException {
         if (entries == null || entries.isEmpty())
             return;
@@ -274,6 +286,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void delete(final Object key) throws CacheWriterException {
         if (key == null)
             return;
@@ -313,6 +326,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
         if (keys == null || keys.isEmpty())
             return;
@@ -343,22 +357,24 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         }
     }
 
+    /** TODO IGNITE-1371: add comment */
     private CassandraSession getCassandraSession() {
-        if (storeSession == null || storeSession.transaction() == null)
-            return dataSource.session(logger != null ? logger : new NullLogger());
+        if (storeSes == null || storeSes.transaction() == null)
+            return dataSrc.session(log != null ? log : new NullLogger());
 
-        CassandraSession ses = (CassandraSession)storeSession.properties().get(ATTR_CONN_PROP);
+        CassandraSession ses = (CassandraSession) storeSes.properties().get(ATTR_CONN_PROP);
 
         if (ses == null) {
-            ses = dataSource.session(logger != null ? logger : new NullLogger());
-            storeSession.properties().put(ATTR_CONN_PROP, ses);
+            ses = dataSrc.session(log != null ? log : new NullLogger());
+            storeSes.properties().put(ATTR_CONN_PROP, ses);
         }
 
         return ses;
     }
 
+    /** TODO IGNITE-1371: add comment */
     private void closeCassandraSession(CassandraSession ses) {
-        if (ses != null && (storeSession == null || storeSession.transaction() == null)) {
+        if (ses != null && (storeSes == null || storeSes.transaction() == null)) {
             try {
                 ses.close();
             }

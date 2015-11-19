@@ -28,22 +28,29 @@ import java.util.regex.Pattern;
  * Helper class providing methods to work with Cassandra session and exceptions
  */
 public class CassandraHelper {
+    /** TODO IGNITE-1371: add comment */
     private static final Pattern KEYSPACE_EXIST_ERROR1 = Pattern.compile("Keyspace [0-9a-zA-Z_]+ does not exist");
+
+    /** TODO IGNITE-1371: add comment */
     private static final Pattern KEYSPACE_EXIST_ERROR2 = Pattern.compile("Cannot add table '[0-9a-zA-Z_]+' to non existing keyspace.*");
+
+    /** TODO IGNITE-1371: add comment */
     private static final Pattern TABLE_EXIST_ERROR = Pattern.compile("unconfigured table [0-9a-zA-Z_]+");
 
+    /** TODO IGNITE-1371: add comment */
     private static final String PREP_STATEMENT_CLUSTER_INSTANCE_ERROR = "You may have used a PreparedStatement that " +
         "was created with another Cluster instance";
 
-    public static void closeSession(Session driverSession) {
-        if (driverSession == null)
+    /** TODO IGNITE-1371: add comment */
+    public static void closeSession(Session driverSes) {
+        if (driverSes == null)
             return;
 
-        Cluster cluster = driverSession.getCluster();
+        Cluster cluster = driverSes.getCluster();
 
         try {
-            if (!driverSession.isClosed())
-                driverSession.close();
+            if (!driverSes.isClosed())
+                driverSes.close();
         }
         catch (Throwable ignored) {
         }
@@ -56,13 +63,13 @@ public class CassandraHelper {
         }
     }
 
+    /** TODO IGNITE-1371: add comment */
     public static boolean isKeyspaceAbsenceError(Throwable e) {
         while (e != null) {
             if (e instanceof InvalidQueryException &&
                 (KEYSPACE_EXIST_ERROR1.matcher(e.getMessage()).matches() ||
-                    KEYSPACE_EXIST_ERROR2.matcher(e.getMessage()).matches())) {
+                    KEYSPACE_EXIST_ERROR2.matcher(e.getMessage()).matches()))
                 return true;
-            }
 
             e = e.getCause();
         }
@@ -70,14 +77,14 @@ public class CassandraHelper {
         return false;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public static boolean isTableAbsenceError(Throwable e) {
         while (e != null) {
             if (e instanceof InvalidQueryException &&
                 (TABLE_EXIST_ERROR.matcher(e.getMessage()).matches() ||
                     KEYSPACE_EXIST_ERROR1.matcher(e.getMessage()).matches() ||
-                    KEYSPACE_EXIST_ERROR2.matcher(e.getMessage()).matches())) {
+                    KEYSPACE_EXIST_ERROR2.matcher(e.getMessage()).matches()))
                 return true;
-            }
 
             e = e.getCause();
         }
@@ -85,6 +92,7 @@ public class CassandraHelper {
         return false;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public static boolean isHostsAvailabilityError(Throwable e) {
         while (e != null) {
             if (e instanceof NoHostAvailableException ||
@@ -97,6 +105,7 @@ public class CassandraHelper {
         return false;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public static boolean isPreparedStatementClusterError(Throwable e) {
         while (e != null) {
             if (e instanceof InvalidQueryException && e.getMessage().contains(PREP_STATEMENT_CLUSTER_INSTANCE_ERROR))
