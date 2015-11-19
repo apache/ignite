@@ -41,6 +41,17 @@
         <log4j.version>1.2.17</log4j.version>
         <cassandra.version>2.1.7.1</cassandra.version>
         <kryo.version>3.0.3</kryo.version>
+        <reflectasm.version>1.10.1</reflectasm.version>
+        <minlog.version>1.3.0</minlog.version>
+        <asm.version>5.0.3</asm.version>
+        <objenesis.version>2.1</objenesis.version>
+        <netty-handler.version>4.0.27.Final</netty-handler.version>
+        <netty-buffer.version>4.0.27.Final</netty-buffer.version>
+        <netty-common.version>4.0.27.Final</netty-common.version>
+        <netty-transport.version>4.0.27.Final</netty-transport.version>
+        <netty-codec.version>4.0.27.Final</netty-codec.version>
+        <guava.version>14.0.1</guava.version>
+        <metrics-core.version>3.0.2</metrics-core.version>
     </properties>
 
     <dependencies>
@@ -51,11 +62,35 @@
             <version>${commons-beanutils.version}</version>
         </dependency>
 
-        <!-- Kryo serialization -->
+        <!-- Kryo and required dependencies -->
         <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
             <version>${kryo.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>reflectasm</artifactId>
+            <version>${reflectasm.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>minlog</artifactId>
+            <version>${minlog.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>${asm.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.objenesis</groupId>
+            <artifactId>objenesis</artifactId>
+            <version>${objenesis.version}</version>
         </dependency>
 
         <!-- Ignite -->
@@ -78,11 +113,53 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Cassandra -->
+        <!-- Cassandra and required dependencies -->
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
             <version>${cassandra.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-handler</artifactId>
+            <version>${netty-handler.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-buffer</artifactId>
+            <version>${netty-buffer.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-common</artifactId>
+            <version>${netty-common.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport</artifactId>
+            <version>${netty-transport.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec</artifactId>
+            <version>${netty-codec.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.codahale.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>${metrics-core.version}</version>
         </dependency>
 
         <!-- JUnit -->
@@ -139,6 +216,7 @@
                             <overWriteIfNewer>true</overWriteIfNewer>
                         </configuration>
                     </execution>
+<!--
                     <execution>
                         <id>copy-main-dependencies</id>
                         <phase>package</phase>
@@ -150,7 +228,7 @@
                             <overWriteReleases>false</overWriteReleases>
                             <overWriteSnapshots>false</overWriteSnapshots>
                             <overWriteIfNewer>true</overWriteIfNewer>
-                            <!--<excludeTransitive>true</excludeTransitive>-->
+                            <excludeTransitive>true</excludeTransitive>
                             <excludeGroupIds>
                                 org.apache.ignite,org.springframework,org.gridgain
                             </excludeGroupIds>
@@ -160,6 +238,7 @@
                             <includeScope>runtime</includeScope>
                         </configuration>
                     </execution>
+-->
                 </executions>
             </plugin>
 
