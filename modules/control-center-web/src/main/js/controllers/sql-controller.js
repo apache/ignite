@@ -242,7 +242,7 @@ consoleModule.controller('sqlController',
     var loadNotebook = function () {
         $loading.start('loadingNotebookScreen');
 
-        $http.post('/notebooks/get', {noteId: $common.getQueryVariable('id')})
+        $http.post('/api/v1/notebooks/get', {noteId: $common.getQueryVariable('id')})
             .success(function (notebook) {
                 $scope.notebook = notebook;
 
@@ -274,7 +274,7 @@ consoleModule.controller('sqlController',
     loadNotebook();
 
     var _saveNotebook = function (f) {
-        $http.post('/notebooks/save', $scope.notebook)
+        $http.post('/api/v1/notebooks/save', $scope.notebook)
             .success(f || function() {})
             .error(function (errMsg) {
                 $common.showError(errMsg);
@@ -309,7 +309,7 @@ consoleModule.controller('sqlController',
     $scope.removeNotebook = function () {
         $confirm.confirm('Are you sure you want to remove: "' + $scope.notebook.name + '"?')
             .then(function () {
-                $http.post('/notebooks/remove', {_id: $scope.notebook._id})
+                $http.post('/api/v1/notebooks/remove', {_id: $scope.notebook._id})
                     .success(function () {
                         var idx = _.findIndex($scope.$root.notebooks, function (item) {
                             return item._id == $scope.notebook._id;
@@ -563,7 +563,7 @@ consoleModule.controller('sqlController',
 
     var _tryCloseQueryResult = function (queryId) {
         if (queryId)
-            $http.post('/agent/query/close', { queryId: queryId });
+            $http.post('/api/v1/agent/query/close', { queryId: queryId });
     };
 
     var _processQueryResult = function (paragraph, refreshMode) {
@@ -671,7 +671,7 @@ consoleModule.controller('sqlController',
     var _executeRefresh = function (paragraph) {
         _tryCloseQueryResult(paragraph.queryId);
 
-        $http.post('/agent/query', paragraph.queryArgs)
+        $http.post('/api/v1/agent/query', paragraph.queryArgs)
             .success(_processQueryResult(paragraph, true))
             .error(function (errMsg) {
                 paragraph.errMsg = errMsg;
@@ -701,7 +701,7 @@ consoleModule.controller('sqlController',
             cacheName: paragraph.cacheName || undefined
         };
 
-        $http.post('/agent/query', paragraph.queryArgs)
+        $http.post('/api/v1/agent/query', paragraph.queryArgs)
             .success(function (res) {
                 _processQueryResult(paragraph)(res);
 
@@ -738,7 +738,7 @@ consoleModule.controller('sqlController',
             cacheName: paragraph.cacheName || undefined
         };
 
-        $http.post('/agent/query', paragraph.queryArgs)
+        $http.post('/api/v1/agent/query', paragraph.queryArgs)
             .success(_processQueryResult(paragraph))
             .error(function (errMsg) {
                 paragraph.errMsg = errMsg;
@@ -764,7 +764,7 @@ consoleModule.controller('sqlController',
             cacheName: paragraph.cacheName || undefined
         };
 
-        $http.post('/agent/scan', paragraph.queryArgs)
+        $http.post('/api/v1/agent/scan', paragraph.queryArgs)
             .success(_processQueryResult(paragraph))
             .error(function (errMsg) {
                 paragraph.errMsg = errMsg;
@@ -778,7 +778,7 @@ consoleModule.controller('sqlController',
     $scope.nextPage = function(paragraph) {
         _showLoading(paragraph, true);
 
-        $http.post('/agent/query/fetch', {queryId: paragraph.queryId, pageSize: paragraph.pageSize, cacheName: paragraph.queryArgs.cacheName})
+        $http.post('/api/v1/agent/query/fetch', {queryId: paragraph.queryId, pageSize: paragraph.pageSize, cacheName: paragraph.queryArgs.cacheName})
             .success(function (res) {
                 paragraph.page++;
 
@@ -859,7 +859,7 @@ consoleModule.controller('sqlController',
     };
 
     $scope.exportAll = function(paragraph) {
-        $http.post('/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
+        $http.post('/api/v1/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
             .success(function (item) {
                 _export(paragraph.name + '-all.csv', item.meta, item.rows);
             })
@@ -1449,7 +1449,7 @@ consoleModule.controller('sqlController',
 
         $scope.metadata = [];
 
-        $http.post('/agent/cache/metadata')
+        $http.post('/api/v1/agent/cache/metadata')
             .success(function (metadata) {
                 $scope.metadata = _.sortBy(metadata, 'name');
             })

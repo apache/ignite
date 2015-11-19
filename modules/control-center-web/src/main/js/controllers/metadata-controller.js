@@ -29,9 +29,7 @@ consoleModule.controller('metadataController', [
 
             $scope.ui = $common.formUI();
 
-            $scope.$on('user', function($rootScope, user) {
-                $scope.ui.packageName = user.email.replace('@', '.').split('.').reverse().join('.') + '.model';
-            });
+            $scope.ui.packageName = $scope.$root.user.email.replace('@', '.').split('.').reverse().join('.') + '.model';
 
             $scope.showMoreInfo = $message.message;
 
@@ -241,7 +239,7 @@ consoleModule.controller('metadataController', [
             $scope.$watch('loadMeta.displayedTables', $scope.selectTable);
 
             // Pre-fetch modal dialogs.
-            var loadMetaModal = $modal({scope: $scope, templateUrl: 'metadata/metadata-load', show: false});
+            var loadMetaModal = $modal({scope: $scope, templateUrl: '/configuration/metadata-load.html', show: false});
 
             var hideLoadMetadata = loadMetaModal.hide;
 

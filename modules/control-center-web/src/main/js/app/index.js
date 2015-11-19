@@ -36,13 +36,19 @@ window.angular = angular;
 
 import './modules/states/login/index'
 import './modules/states/configuration/index'
+import './modules/states/sql/index'
+import './modules/states/profile/index'
+import './modules/states/admin/index'
 
 angular
 .module('ignite-console', [
 	'ui.router',
 	// states
 	'ignite-console.states.login',
-	'ignite-console.states.configuration'
+	'ignite-console.states.configuration',
+	'ignite-console.states.sql',
+	'ignite-console.states.profile',
+	'ignite-console.states.admin'
 ])
 .config(function($stateProvider, $locationProvider) {
 	// set up the states

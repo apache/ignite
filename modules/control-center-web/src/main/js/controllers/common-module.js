@@ -48,7 +48,7 @@ consoleModule.config(function ($popoverProvider) {
         trigger: 'manual',
         placement: 'right',
         container: 'body',
-        templateUrl: '/validation-error'
+        templateUrl: '/templates/validation-error.html'
     });
 });
 
@@ -70,7 +70,7 @@ consoleModule.config(function ($selectProvider) {
         maxLength: '5',
         allText: 'Select All',
         noneText: 'Clear All',
-        templateUrl: '/select',
+        templateUrl: '/templates/select.html',
         iconCheckmark: 'fa fa-check',
         caretHtml: ''
     });
@@ -919,7 +919,7 @@ consoleModule.service('$confirm', function ($modal, $rootScope, $q) {
 
     var deferred;
 
-    var confirmModal = $modal({templateUrl: '/confirm', scope: scope, placement: 'center', show: false});
+    var confirmModal = $modal({templateUrl: '/templates/confirm.html', scope: scope, placement: 'center', show: false});
 
     scope.confirmOk = function () {
         deferred.resolve(true);
@@ -950,7 +950,7 @@ consoleModule.service('$confirm', function ($modal, $rootScope, $q) {
 consoleModule.service('$message', function ($modal, $rootScope) {
     var scope = $rootScope.$new();
 
-    var messageModal = $modal({templateUrl: '/message', scope: scope, placement: 'center', show: false});
+    var messageModal = $modal({templateUrl: '/templates/message.html', scope: scope, placement: 'center', show: false});
 
     messageModal.message = function (title, content) {
         scope.title = title || 'Message';
@@ -990,7 +990,7 @@ consoleModule.service('$confirmBatch', function ($rootScope, $modal,  $q) {
 
     var deferred;
 
-    var stepConfirmModal = $modal({templateUrl: '/confirm/batch', scope: scope, placement: 'center', show: false});
+    var stepConfirmModal = $modal({templateUrl: '/template/batch-confirm.html', scope: scope, placement: 'center', show: false});
 
     function _done(cancel) {
         if (cancel)
@@ -1077,7 +1077,7 @@ consoleModule.service('$clone', function ($modal, $rootScope, $q) {
         copyModal.hide();
     };
 
-    var copyModal = $modal({templateUrl: '/clone', scope: scope, placement: 'center', show: false});
+    var copyModal = $modal({templateUrl: '/templates/clone.html', scope: scope, placement: 'center', show: false});
 
     copyModal.confirm = function (oldName) {
         scope.newName = oldName + '(1)';
@@ -1964,14 +1964,14 @@ consoleModule.controller('auth', [
 
         $scope.userDropdown = [{text: 'Profile', href: '/profile'}];
 
-        $scope.$on('user', function($rootScope, user) {
-            if (user && !user.becomeUsed) {
-                if (user && user.admin)
-                    $scope.userDropdown.push({text: 'Admin Panel', href: '/admin'});
+        var user = $scope.$root.user;
 
-                $scope.userDropdown.push({text: 'Log Out', href: '/logout'});
-            }
-        });
+        if (user && !user.becomeUsed) {
+            if (user && user.admin)
+                $scope.userDropdown.push({text: 'Admin Panel', href: '/admin'});
+
+            $scope.userDropdown.push({text: 'Log Out', href: '/logout'});
+        }
 
         $focus('user_email');
 
@@ -2026,7 +2026,7 @@ consoleModule.controller('auth', [
 consoleModule.controller('agent-download', [
     '$http', '$common', '$scope', '$interval', '$modal', '$window', function ($http, $common, $scope, $interval, $modal, $window) {
         // Pre-fetch modal dialogs.
-        var _agentDownloadModal = $modal({scope: $scope, templateUrl: '/agent/download', show: false, backdrop: 'static'});
+        var _agentDownloadModal = $modal({scope: $scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
 
         var _agentDownloadHide = _agentDownloadModal.hide;
 
@@ -2181,7 +2181,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$window', '$http', '
     $scope.$root.notebooks = [];
 
     // Pre-fetch modal dialogs.
-    var _notebookNewModal = $modal({scope: $scope, templateUrl: '/notebooks/new', show: false});
+    var _notebookNewModal = $modal({scope: $scope, templateUrl: '/sql/notebook-new.html', show: false});
 
     $scope.$root.rebuildDropdown = function() {
         $scope.notebookDropdown = [
@@ -2192,8 +2192,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$window', '$http', '
         _.forEach($scope.$root.notebooks, function (notebook) {
             $scope.notebookDropdown.push({
                 text: notebook.name,
-                href: '/sql?id=' + notebook._id,
-                target: '_self'
+                href: '/sql?id=' + notebook._id
             });
         });
     };

@@ -12,11 +12,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-extends ../templates/layout
-
-append scripts
-    script(src='/sql-controller.js')
-
 mixin btn-toolbar(btn, click, tip, focusId)
     i.btn.btn-default.fa(class=btn ng-click=click bs-tooltip='' data-title=tip on-click-focus=focusId data-trigger='hover' data-placement='bottom')
 

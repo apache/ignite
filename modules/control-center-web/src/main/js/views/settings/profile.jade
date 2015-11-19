@@ -14,13 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-extends ../templates/layout
-
 mixin lbl(txt)
     label.col-sm-2.required.labelFormField #{txt}
-
-append scripts
-    script(src='/profile-controller.js')
 
 block container
     .row(ng-controller='profileController')
