@@ -19,3 +19,6 @@ ACLOCAL_AMFLAGS = "-Im4"
 
 nobase_include_HEADERS = ignite/common/common.h \
                          ignite/common/concurrent_os.h
+
+uninstall-hook:
+	find ${includedir}/ignite -type d -empty -delete
