@@ -17,37 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.replicated;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.datastructures.GridCacheAbstractDataStructuresFailoverSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteSemaphoreAbstractSelfTest;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- * Failover tests for cache data structures.
+ *
  */
-public class GridCacheReplicatedDataStructuresFailoverSelfTest
-    extends GridCacheAbstractDataStructuresFailoverSelfTest {
+public class IgniteReplicatedSemaphoreSelfTest extends IgniteSemaphoreAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-801");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode collectionCacheMode() {
+    @Override protected CacheMode atomicsCacheMode() {
         return REPLICATED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return ONHEAP_TIERED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
-        return TRANSACTIONAL;
     }
 }
