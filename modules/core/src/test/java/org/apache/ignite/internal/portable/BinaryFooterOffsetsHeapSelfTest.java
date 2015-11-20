@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 
 /**
  * Compact offsets tests for heap portable objects.
  */
 public class BinaryFooterOffsetsHeapSelfTest extends BinaryFooterOffsetsAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected BinaryObjectEx toPortable(PortableMarshaller marsh, Object obj) throws Exception {
+    @Override protected BinaryObjectEx toPortable(BinaryMarshaller marsh, Object obj) throws Exception {
         byte[] bytes = marsh.marshal(obj);
 
         return new BinaryObjectImpl(ctx, bytes, 0);

@@ -17,11 +17,7 @@
 
 package org.apache.ignite.internal.portable.noncompact;
 
-import org.apache.ignite.internal.portable.BinaryFieldsAbstractSelfTest;
 import org.apache.ignite.internal.portable.BinaryFieldsHeapSelfTest;
-import org.apache.ignite.internal.portable.BinaryObjectEx;
-import org.apache.ignite.internal.portable.BinaryObjectImpl;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
  * Field tests for heap-based portables with non-compact footer.

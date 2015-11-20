@@ -26,11 +26,12 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.binary.BinaryReader;
@@ -61,12 +62,13 @@ public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        marsh.setTypeConfigurations(Arrays.asList(
+        bCfg.setTypeConfigurations(Arrays.asList(
             new BinaryTypeConfiguration(TestObject.class.getName())));
 
-        cfg.setMarshaller(marsh);
+        cfg.setBinaryConfiguration(bCfg);
+        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

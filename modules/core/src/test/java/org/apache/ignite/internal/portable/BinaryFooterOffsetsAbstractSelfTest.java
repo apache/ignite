@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.portable;
 
+import java.util.Arrays;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Arrays;
 
 /**
  * Contains tests for compact offsets.
@@ -38,7 +38,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     private static int POW_16 = 1 << 16;
 
     /** Marshaller. */
-    protected PortableMarshaller marsh;
+    protected BinaryMarshaller marsh;
 
     /** Portable context. */
     protected PortableContext ctx;
@@ -49,14 +49,21 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
 
         ctx = new PortableContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
 
-        marsh = new PortableMarshaller();
+        marsh = new BinaryMarshaller();
 
-        marsh.setCompactFooter(compactFooter());
+        IgniteConfiguration iCfg = new IgniteConfiguration();
 
-        marsh.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(TestObject.class.getName())));
+        BinaryConfiguration bCfg = new BinaryConfiguration();
+
+        bCfg.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(TestObject.class.getName())));
+        
+        bCfg.setCompactFooter(compactFooter());
+
+        iCfg.setBinaryConfiguration(bCfg);
+
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", ctx);
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, iCfg);
     }
 
     /**
@@ -65,7 +72,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     protected boolean compactFooter() {
         return true;
     }
-
+    
     /**
      * Test 1 byte.
      *
@@ -163,7 +170,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      * @return Portable object.
      * @throws Exception If failed.
      */
-    protected abstract BinaryObjectEx toPortable(PortableMarshaller marsh, Object obj) throws Exception;
+    protected abstract BinaryObjectEx toPortable(BinaryMarshaller marsh, Object obj) throws Exception;
 
     /**
      * Test object.

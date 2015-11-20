@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.TreeMap;
 import java.util.UUID;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
@@ -69,7 +68,7 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
  * typed objects at all times. In this case we do incur the deserialization cost. However, if
- * {@link PortableMarshaller#isKeepDeserialized()} is {@code true} then Ignite will only deserialize on the first access
+ * {@link org.apache.ignite.marshaller.portable.BinaryMarshaller#isKeepDeserialized()} is {@code true} then Ignite will only deserialize on the first access
  * and will cache the deserialized object, so it does not have to be deserialized again:
  * <pre name=code class=java>
  * IgniteCache&lt;MyKey.class, MyValue.class&gt; cache = grid.cache(null);
@@ -152,7 +151,7 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Configuration</h1>
  * By default all your objects are considered as binary and no specific configuration is needed.
  * However, in some cases, like when an object is used by both Java and .Net, you may need to specify portable objects
- * explicitly by calling {@link PortableMarshaller#setClassNames(Collection)}.
+ * explicitly by calling {@link org.apache.ignite.marshaller.portable.BinaryMarshaller#setClassNames(Collection)}.
  * The only requirement Ignite imposes is that your object has an empty
  * constructor. Note, that since server side does not have to know the class definition,
  * you only need to list portable objects in configuration on the client side. However, if you
@@ -236,7 +235,7 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  * Alternatively, if you cannot change class definitions, you can provide custom serialization
- * logic in {@link org.apache.ignite.binary.BinarySerializer} either globally in {@link PortableMarshaller} or
+ * logic in {@link org.apache.ignite.binary.BinarySerializer} either globally in {@link org.apache.ignite.marshaller.portable.BinaryMarshaller} or
  * for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <p>
  * Similar to java serialization you can use {@code writeReplace()} and {@code readResolve()} methods.
@@ -256,7 +255,7 @@ import org.jetbrains.annotations.Nullable;
  * internally. However, in cases when you want to provide your own ID mapping schema,
  * you can provide your own {@link org.apache.ignite.binary.BinaryIdMapper} implementation.
  * <p>
- * ID-mapper may be provided either globally in {@link PortableMarshaller},
+ * ID-mapper may be provided either globally in {@link org.apache.ignite.marshaller.portable.BinaryMarshaller},
  * or for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
  * Portable objects can be indexed for querying by specifying index fields in

@@ -69,7 +69,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
@@ -157,7 +157,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (marsh instanceof PortableMarshaller) {
+        if (marsh instanceof BinaryMarshaller) {
             BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
                 @Override public void addMeta(int typeId, BinaryType newMeta) throws BinaryObjectException {
                     assert newMeta != null;
@@ -201,11 +201,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             };
 
-            PortableMarshaller pMarh0 = (PortableMarshaller)marsh;
+            BinaryMarshaller pMarh0 = (BinaryMarshaller)marsh;
 
             portableCtx = new PortableContext(metaHnd, ctx.config());
 
-            IgniteUtils.invoke(PortableMarshaller.class, pMarh0, "setPortableContext", portableCtx);
+            IgniteUtils.invoke(BinaryMarshaller.class, pMarh0, "setPortableContext", portableCtx,
+                ctx.config());
 
             portableMarsh = new GridPortableMarshaller(portableCtx);
 
@@ -272,12 +273,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             }
         }
 
-        startLatch.countDown();
-
         for (Map.Entry<Integer, BinaryMetadata> e : metaBuf.entrySet())
             addMeta(e.getKey(), e.getValue().wrap(portableCtx));
 
         metaBuf.clear();
+
+        startLatch.countDown();
     }
 
     /** {@inheritDoc} */
@@ -544,7 +545,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public boolean isPortableEnabled(CacheConfiguration<?, ?> ccfg) {
-        return marsh instanceof PortableMarshaller;
+        return marsh instanceof BinaryMarshaller;
     }
 
     /**
@@ -601,7 +602,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public CacheObjectContext contextForCache(CacheConfiguration cfg) throws IgniteCheckedException {
         assert cfg != null;
 
-        boolean portableEnabled = marsh instanceof PortableMarshaller && !GridCacheUtils.isSystemCache(cfg.getName()) &&
+        boolean portableEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(cfg.getName()) &&
             !GridCacheUtils.isIgfsCache(ctx.config(), cfg.getName());
 
         CacheObjectContext ctx0 = super.contextForCache(cfg);

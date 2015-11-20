@@ -22,7 +22,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
@@ -105,9 +104,6 @@ public class PortableClassDescriptor {
     private final PortableSchemaRegistry schemaReg;
 
     /** */
-    private final boolean keepDeserialized;
-
-    /** */
     private final boolean registered;
 
     /** */
@@ -126,7 +122,6 @@ public class PortableClassDescriptor {
      * @param idMapper ID mapper.
      * @param serializer Serializer.
      * @param metaDataEnabled Metadata enabled flag.
-     * @param keepDeserialized Keep deserialized flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
      * @param predefined Whether the class is predefined or not.
      * @throws BinaryObjectException In case of error.
@@ -141,7 +136,6 @@ public class PortableClassDescriptor {
         @Nullable BinaryIdMapper idMapper,
         @Nullable BinarySerializer serializer,
         boolean metaDataEnabled,
-        boolean keepDeserialized,
         boolean registered,
         boolean predefined
     ) throws BinaryObjectException {
@@ -157,7 +151,6 @@ public class PortableClassDescriptor {
         this.affKeyFieldName = affKeyFieldName;
         this.serializer = serializer;
         this.idMapper = idMapper;
-        this.keepDeserialized = keepDeserialized;
         this.registered = registered;
 
         schemaReg = ctx.schemaRegistry(typeId);
@@ -320,13 +313,6 @@ public class PortableClassDescriptor {
     }
 
     /**
-     * @return Keep deserialized flag.
-     */
-    boolean keepDeserialized() {
-        return keepDeserialized;
-    }
-
-    /**
      * @return Whether typeId has been successfully registered by MarshallerContext or not.
      */
     public boolean registered() {
@@ -334,7 +320,7 @@ public class PortableClassDescriptor {
     }
 
     /**
-     * @return {@code true} if {@link OptimizedMarshaller} must be used instead of {@link PortableMarshaller}
+     * @return {@code true} if {@link OptimizedMarshaller} must be used instead of {@link org.apache.ignite.marshaller.portable.BinaryMarshaller}
      * for object serialization and deserialization.
      */
     public boolean useOptimizedMarshaller() {

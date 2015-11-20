@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 
 /**
  * Checks behavior on exception while unmarshalling key.
@@ -90,8 +91,9 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
      * @return {@code True} if portable marshaller is configured.
      */
     private boolean portableMarshaller() {
-        IgniteEx kernal = (IgniteKernal)ignite(0);
+        IgniteEx kernal = (IgniteEx)ignite(0);
 
-        return "PortableMarshaller".equals(kernal.context().config().getMarshaller().getClass().getSimpleName());
+        return BinaryMarshaller.class.getSimpleName().equals(kernal.context().config().getMarshaller().getClass()
+            .getSimpleName());
     }
 }
