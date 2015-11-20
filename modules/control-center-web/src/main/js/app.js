@@ -142,32 +142,9 @@ app.use('/sql', mustAuthenticated, sqlRouter);
 
 app.use('/agent', mustAuthenticated, agentRouter);
 
-function find(root, filter, files, prefix) {
-    prefix = prefix || '';
-    files = files || [];
-
-    var dir = path.join(root, prefix);
-
-    if (!fs.existsSync(dir))
-        return files;
-
-    if (fs.statSync(dir).isDirectory())
-        fs.readdirSync(dir)
-            .filter(function (name) { return name[0] !== '.' })
-            .forEach(function (name) {
-                find(root, filter, files, path.join(prefix, name))
-            });
-    else
-        files.push(prefix);
-
-    return files;
-}
-
-var igniteModules = process.env.IGNITE_MODULES || path.resolve(__dirname, 'ignite_modules');
-
-find(igniteModules)
+config.findIgniteModules()
     .filter(function(path) { return path.match(/\/routes\/.+\.js$/); })
-    .forEach(function(route) { require(path.join(igniteModules, route))(app); });
+    .forEach(function(route) { require(route)(app); });
 
 // Catch 404 and forward to error handler.
 app.use(function (req, res, next) {

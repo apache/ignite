@@ -38,4 +38,34 @@ config.normalizePort = function (val) {
     return false;
 };
 
+config.findIgniteModules = function () {
+    var fs = require('fs');
+    var path = require('path');
+
+    var igniteModules = process.env.IGNITE_MODULES || path.resolve(__dirname, 'ignite_modules');
+
+    function _find (root, filter, files, prefix) {
+        prefix = prefix || '';
+        files = files || [];
+
+        var dir = path.join(root, prefix);
+
+        if (!fs.existsSync(dir))
+            return files;
+
+        if (fs.statSync(dir).isDirectory())
+            fs.readdirSync(dir)
+                .filter(function (name) { return name[0] !== '.' })
+                .forEach(function (name) {
+                    _find(root, filter, files, path.join(prefix, name))
+                });
+        else
+            files.push(path.join(igniteModules, prefix));
+
+        return files;
+    }
+
+    return _find(igniteModules);
+};
+
 module.exports = config;
