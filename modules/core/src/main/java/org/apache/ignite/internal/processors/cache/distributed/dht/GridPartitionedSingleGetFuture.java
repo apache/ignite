@@ -347,7 +347,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                                 subjId,
                                 null,
                                 taskName,
-                                expiryPlc);
+                                expiryPlc,
+                                true);
 
                             if (res != null) {
                                 v = res.get1();
@@ -366,7 +367,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                                 subjId,
                                 null,
                                 taskName,
-                                expiryPlc);
+                                expiryPlc,
+                                true);
                         }
 
                         colocated.context().evicts().touch(entry, topVer);

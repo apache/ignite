@@ -239,7 +239,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         }
                     });
                 }
-            });
+            }, opCtx);
         }
 
         AffinityTopologyVersion topVer = tx == null ?

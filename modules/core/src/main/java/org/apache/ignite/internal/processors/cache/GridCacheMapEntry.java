@@ -1986,7 +1986,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                     (EntryProcessor<Object, Object, ?>)writeObj;
 
                                 CacheInvokeEntry<Object, Object> entry =
-                                    new CacheInvokeEntry<>(cctx, key, prevVal, version());
+                                    new CacheInvokeEntry<>(cctx, key, prevVal, version(), keepPortable);
 
                                 try {
                                     entryProcessor.process(entry, invokeArgs);
@@ -1994,7 +1994,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                     evtVal = entry.modified() ?
                                         cctx.toCacheObject(cctx.unwrapTemporary(entry.getValue())) : prevVal;
                                 }
-                                catch (Exception e) {
+                                catch (Exception ignore) {
                                     evtVal = prevVal;
                                 }
                             }
