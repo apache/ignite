@@ -17,13 +17,17 @@
 
 package org.apache.ignite.platform;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -88,6 +92,9 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
     /** Type: enum array. */
     private static final int TYPE_ENUM_ARRAY = 17;
 
+    /** Type: enum array. */
+    private static final int TYPE_ENUM_FIELD = 18;
+
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Integer arg) {
@@ -105,6 +112,10 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
     private static class EchoJob extends ComputeJobAdapter {
         /** Type. */
         private Integer type;
+
+        /** Ignite. */
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /**
          * Constructor.
@@ -179,6 +190,13 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                         PlatformComputeEnum.BAZ,
                         PlatformComputeEnum.FOO
                     };
+
+                case TYPE_ENUM_FIELD:
+                    IgniteCache<Integer, BinaryObject> cache = ignite.cache(null).withKeepBinary();
+                    BinaryObject obj = cache.get(TYPE_ENUM_FIELD);
+                    PlatformComputeEnum val = obj.field("enumField");
+
+                    return val;
 
                 default:
                     throw new IgniteException("Unknown type: " + type);
