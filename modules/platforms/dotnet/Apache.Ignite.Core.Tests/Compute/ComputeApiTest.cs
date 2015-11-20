@@ -887,12 +887,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         /// <summary>
         /// Tests the echo task reading enum from a binary object field.
+        /// Ensures that Java can understand enums written by .NET.
         /// </summary>
         [Test]
         public void TestEchoTaskEnumField()
         {
-            // TODO test successful and failing scenario
-
             var enumVal = PlatformComputeEnum.Baz;
 
             _grid1.GetCache<int, InteropComputeEnumFieldTest>(null)
