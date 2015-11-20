@@ -45,6 +45,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -1808,6 +1809,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** Binary field to speed-up deserialization. */
         private volatile BinaryField field;
 
+        /** Flag indicating that we already tried to take a field. */
+        private volatile boolean fieldTaken;
+
         /**
          * Constructor.
          *
@@ -1861,7 +1865,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             BinaryObject obj0 = (BinaryObject)obj;
 
-            return binaryField(obj0).value(obj0);
+            return fieldValue(obj0);
         }
 
         /**
@@ -1873,16 +1877,37 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private BinaryField binaryField(BinaryObject obj) {
             BinaryField field0 = field;
 
-            if (field0 == null)
-            {
-                field0 = obj.type().field(propName);
+            if (field0 == null && !fieldTaken) {
+                BinaryType type = obj.type();
 
-                assert field0 != null;
+                if (type != null) {
+                    field0 = type.field(propName);
 
-                field = field0;
+                    assert field0 != null;
+
+                    field = field0;
+                }
+
+                fieldTaken = true;
             }
 
             return field0;
+        }
+
+        /**
+         * Gets field value for the given binary object.
+         *
+         * @param obj Binary object.
+         * @return Field value.
+         */
+        @SuppressWarnings("IfMayBeConditional")
+        private Object fieldValue(BinaryObject obj) {
+            BinaryField field = binaryField(obj);
+
+            if (field != null)
+                return field.value(obj);
+            else
+                return obj.field(propName);
         }
 
         /** {@inheritDoc} */
