@@ -165,6 +165,14 @@ public class PortableClassDescriptor {
             mode = serializer != null ? BinaryWriteMode.PORTABLE : PortableUtils.mode(cls);
 
         switch (mode) {
+            case P_BYTE:
+            case P_BOOLEAN:
+            case P_SHORT:
+            case P_CHAR:
+            case P_INT:
+            case P_LONG:
+            case P_FLOAT:
+            case P_DOUBLE:
             case BYTE:
             case SHORT:
             case INT:
@@ -363,41 +371,49 @@ public class PortableClassDescriptor {
         writer.typeId(typeId);
 
         switch (mode) {
+            case P_BYTE:
             case BYTE:
                 writer.writeByteFieldPrimitive((byte) obj);
 
                 break;
 
+            case P_SHORT:
             case SHORT:
                 writer.writeShortFieldPrimitive((short)obj);
 
                 break;
 
+            case P_INT:
             case INT:
                 writer.writeIntFieldPrimitive((int) obj);
 
                 break;
 
+            case P_LONG:
             case LONG:
                 writer.writeLongFieldPrimitive((long) obj);
 
                 break;
 
+            case P_FLOAT:
             case FLOAT:
                 writer.writeFloatFieldPrimitive((float) obj);
 
                 break;
 
+            case P_DOUBLE:
             case DOUBLE:
                 writer.writeDoubleFieldPrimitive((double) obj);
 
                 break;
 
+            case P_CHAR:
             case CHAR:
                 writer.writeCharFieldPrimitive((char) obj);
 
                 break;
 
+            case P_BOOLEAN:
             case BOOLEAN:
                 writer.writeBooleanFieldPrimitive((boolean) obj);
 
