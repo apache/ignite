@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 
 /**
@@ -93,7 +94,7 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
     private boolean portableMarshaller() {
         IgniteEx kernal = (IgniteEx)ignite(0);
 
-        return BinaryMarshaller.class.getSimpleName().equals(kernal.context().config().getMarshaller().getClass()
+        return !OptimizedMarshaller.class.getSimpleName().equals(kernal.context().config().getMarshaller().getClass()
             .getSimpleName());
     }
 }
