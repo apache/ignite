@@ -28,7 +28,6 @@ import org.apache.ignite.internal.portable.streams.PortableInputStream;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -186,47 +185,59 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
 
         start = in.position();
 
-        // Parse header if possible.
-        byte hdr = in.readBytePositioned(start);
+        byte hdr = in.readByte();
 
+        // Perform full header parsing in case of portable object.
         if (hdr == GridPortableMarshaller.OBJ) {
-            // Skip header.
-            in.readByte();
-
             // Ensure protocol is fine.
             PortableUtils.checkProtocolVersion(in.readByte());
 
-            // Read and parse flags.
+            // Read header content.
             short flags = in.readShort();
+            int typeId0 = in.readInt();
 
+            in.readInt(); // Skip hash code.
+
+            int len = in.readInt();
+            schemaId = in.readInt();
+            int offset = in.readInt();
+
+            // Get trivial flag values.
             userType = PortableUtils.isUserType(flags);
-
             fieldIdLen = PortableUtils.fieldIdLength(flags);
             fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
 
-            int typeId0 = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
+            // Calculate footer borders and raw offset.
+            if (PortableUtils.hasSchema(flags)) {
+                // Schema exists.
+                footerStart = start + offset;
 
-            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start);
+                if (PortableUtils.hasRaw(flags)) {
+                    footerLen = len - offset - 4;
+                    rawOff = start + in.readIntPositioned(start + len - 4);
+                }
+                else {
+                    footerLen = len - offset;
+                    rawOff = start + len;
+                }
+            }
+            else {
+                // No schema.
+                footerStart = start + len;
+                footerLen = 0;
 
-            footerStart = footer.get1();
-            footerLen = footer.get2() - footerStart;
+                if (PortableUtils.hasRaw(flags))
+                    rawOff = start + offset;
+                else
+                    rawOff = start + len;
+            }
 
-            schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
-
-            rawOff = PortableUtils.rawOffsetAbsolute(in, start);
-
+            // Finally, we have to resolve real type ID.
             if (typeId0 == UNREGISTERED_TYPE_ID) {
-                // Skip to the class name position.
-                in.position(start + GridPortableMarshaller.DFLT_HDR_LEN);
-
                 int off = in.position();
 
-                Class cls = doReadClass(typeId0);
-
-                // registers class by typeId, at least locally if the cache is not ready yet.
-                PortableClassDescriptor desc = ctx.descriptorForClass(cls);
-
-                typeId = desc.typeId();
+                // Registers class by type ID, at least locally if the cache is not ready yet.
+                typeId = ctx.descriptorForClass(doReadClass(typeId0)).typeId();
 
                 int clsNameLen = in.position() - off;
 
@@ -240,8 +251,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
 
             idMapper = userType ? ctx.userTypeIdMapper(typeId) : null;
             schema = PortableUtils.hasSchema(flags) ? getOrCreateSchema() : null;
-
-            in.position(start);
         }
         else {
             typeId = 0;
@@ -256,6 +265,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
             fieldOffsetLen = 0;
             schema = null;
         }
+
+        in.position(start);
     }
 
     /**

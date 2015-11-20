@@ -313,7 +313,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long CacheEntryFilterCreate(void* target, long memPtr)
         {
-            return SafeCall(() => CacheEntryFilterHolder.CreateInstance(memPtr, _ignite).Handle);
+            return SafeCall(() => _handleRegistry.Allocate(CacheEntryFilterHolder.CreateInstance(memPtr, _ignite)));
         }
 
         private int CacheEntryFilterApply(void* target, long objPtr, long memPtr)
