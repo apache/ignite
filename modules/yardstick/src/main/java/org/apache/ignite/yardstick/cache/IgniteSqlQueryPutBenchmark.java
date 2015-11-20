@@ -20,16 +20,25 @@ package org.apache.ignite.yardstick.cache;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.yardstick.cache.model.Person;
 import org.yardstickframework.BenchmarkConfiguration;
 
+import static org.yardstickframework.BenchmarkUtils.println;
+
 /**
  * Ignite benchmark that performs put and query operations.
  */
 public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+    /** */
+    private AtomicInteger putCnt = new AtomicInteger();
+
+    /** */
+    private AtomicInteger qryCnt = new AtomicInteger();
+
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
@@ -53,11 +62,15 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark<Int
                     throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary +
                             ", person=" + p + ']');
             }
+
+            qryCnt.getAndIncrement();
         }
         else {
             int i = rnd.nextInt(args.range());
 
             cache.put(i, new Person(i, "firstName" + i, "lastName" + i, i * 1000));
+
+            putCnt.getAndIncrement();
         }
 
         return true;
@@ -80,5 +93,12 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark<Int
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
         return ignite().cache("query");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tearDown() throws Exception {
+        println(cfg, "Finished sql query put benchmark [putCnt=" + putCnt.get() + ", qryCnt=" + qryCnt.get() + ']');
+
+        super.tearDown();
     }
 }
