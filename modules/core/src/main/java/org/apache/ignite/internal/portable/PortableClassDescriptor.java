@@ -534,14 +534,14 @@ public class PortableClassDescriptor {
                 break;
 
             case PORTABLE:
-                if (writeHeader(obj, writer)) {
+                if (preWrite(writer, obj)) {
                     try {
                         if (serializer != null)
                             serializer.writeBinary(obj, writer);
                         else
                             ((Binarylizable)obj).writeBinary(writer);
 
-                        writer.postWrite(userType);
+                        postWrite(writer, obj);
 
                         // Check whether we need to update metadata.
                         if (obj.getClass() != BinaryMetadata.class) {
@@ -576,13 +576,13 @@ public class PortableClassDescriptor {
                 break;
 
             case EXTERNALIZABLE:
-                if (writeHeader(obj, writer)) {
+                if (preWrite(writer, obj)) {
                     writer.rawWriter();
 
                     try {
                         ((Externalizable)obj).writeExternal(writer);
 
-                        writer.postWrite(userType);
+                        postWrite(writer, obj);
                     }
                     catch (IOException e) {
                         throw new BinaryObjectException("Failed to write Externalizable object: " + obj, e);
@@ -595,14 +595,14 @@ public class PortableClassDescriptor {
                 break;
 
             case OBJECT:
-                if (writeHeader(obj, writer)) {
+                if (preWrite(writer, obj)) {
                     try {
                         for (BinaryFieldAccessor info : fields)
                             info.write(obj, writer);
 
                         writer.schemaId(stableSchema.schemaId());
 
-                        writer.postWrite(userType);
+                        postWrite(writer, obj);
                     }
                     finally {
                         writer.popSchema();
@@ -691,32 +691,29 @@ public class PortableClassDescriptor {
     }
 
     /**
-     * @param obj Object.
+     * Pre-write phase.
+     *
      * @param writer Writer.
+     * @param obj Object.
      * @return Whether further write is needed.
      */
-    private boolean writeHeader(Object obj, BinaryWriterExImpl writer) {
+    private boolean preWrite(BinaryWriterExImpl writer, Object obj) {
         if (writer.tryWriteAsHandle(obj))
             return false;
 
-        if (registered) {
-            PortableUtils.writeHeader(
-                writer,
-                typeId,
-                obj instanceof CacheObjectImpl ? 0 : obj.hashCode(),
-                null
-            );
-        }
-        else {
-            PortableUtils.writeHeader(
-                writer,
-                GridPortableMarshaller.UNREGISTERED_TYPE_ID,
-                obj instanceof CacheObjectImpl ? 0 : obj.hashCode(),
-                cls.getName()
-            );
-        }
+        writer.preWrite(registered ? null : cls.getName());
 
         return true;
+    }
+
+    /**
+     * Post-write phase.
+     *
+     * @param writer Writer.
+     * @param obj Object.
+     */
+    private void postWrite(BinaryWriterExImpl writer, Object obj) {
+        writer.postWrite(userType, registered, obj instanceof CacheObjectImpl ? 0 : obj.hashCode());
     }
 
     /**
