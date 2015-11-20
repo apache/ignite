@@ -66,8 +66,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public TF GetField<TF>(string fieldName)
         {
-            // TODO: What does GetBinaryType().GetFields() return?
-            throw new NotSupportedException("Enum in binary form has no fields.");
+            if (fieldName != null)
+                throw new NotSupportedException("Enum in binary form has no fields. " +
+                                                "Use null field name to retrieve integer enum value.");
+
+            return TypeCaster<TF>.Cast(_value);
         }
 
         /** <inheritdoc /> */

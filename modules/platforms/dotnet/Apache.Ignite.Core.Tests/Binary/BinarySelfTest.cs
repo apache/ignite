@@ -846,8 +846,11 @@ namespace Apache.Ignite.Core.Tests.Binary
             Marshaller marsh =
                 new Marshaller(new BinaryConfiguration
                 {
-                    TypeConfigurations =
-                        new List<BinaryTypeConfiguration> {new BinaryTypeConfiguration(typeof (EnumType))}
+                    TypeConfigurations = new[]
+                    {
+                        new BinaryTypeConfiguration(typeof (EnumType)),
+                        new BinaryTypeConfiguration(typeof (TestEnum))
+                    }
                 });
 
             EnumType obj = new EnumType
