@@ -820,10 +820,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (val == null)
                 WriteNullField();
             else
-            {
-                _stream.WriteByte(BinaryUtils.TypeArrayEnum);
-                BinaryUtils.WriteArray(val, this);
-            }
+                WriteEnumArray0(val);
         }
 
         /// <summary>
@@ -836,10 +833,21 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (val == null)
                 WriteNullRawField();
             else
-            {
-                _stream.WriteByte(BinaryUtils.TypeArrayEnum);
-                BinaryUtils.WriteArray(val, this);
-            }
+                WriteEnumArray0(val);
+        }
+
+        /// <summary>
+        /// Writes the enum array.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        private void WriteEnumArray0<T>(T[] val)
+        {
+            _stream.WriteByte(BinaryUtils.TypeArrayEnum);
+
+            // typeof(T) can yield wrong results (string[] is object[], for example)
+            var elementType = val.GetType().GetElementType();  
+
+            BinaryUtils.WriteArray(val, this, BinaryUtils.GetEnumTypeId(elementType, Marshaller));
         }
 
         /// <summary>
@@ -1048,7 +1056,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
 
             // Suppose that we faced normal object and perform descriptor lookup.
-            IBinaryTypeDescriptor desc = _marsh.GetDescriptor(type);
+            IBinaryTypeDescriptor desc = type.IsEnum ? null : _marsh.GetDescriptor(type);
 
             if (desc != null)
             {
