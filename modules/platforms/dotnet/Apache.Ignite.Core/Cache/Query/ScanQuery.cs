@@ -64,18 +64,7 @@ namespace Apache.Ignite.Core.Cache.Query
                 var holder = new CacheEntryFilterHolder(Filter, (key, val) => Filter.Invoke(
                     new CacheEntry<TK, TV>((TK) key, (TV) val)), writer.Marshaller, keepBinary);
 
-                try
-                {
-                    writer.WriteObject(holder);
-                }
-                catch (Exception)
-                {
-                    writer.Marshaller.Ignite.HandleRegistry.Release(holder.Handle);
-
-                    throw;
-                }
-
-                writer.WriteLong(holder.Handle);
+                writer.WriteObject(holder);
             }
         }
 
