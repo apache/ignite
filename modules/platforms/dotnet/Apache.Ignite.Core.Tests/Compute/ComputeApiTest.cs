@@ -105,6 +105,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Type: enum array. */
         private const int EchoTypeEnumArray = 17;
 
+        /** Type: enum field. */
+        private const int EchoTypeEnumField = 18;
+
         /** First node. */
         private IIgnite _grid1;
 
@@ -888,7 +891,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnumField()
         {
-            // TODO
+            // TODO test successful and failing scenario
+
+            var enumVal = InteropComputeEnum.Baz;
+
+            _grid1.GetCache<int, InteropComputeEnumFieldTest>(null)
+                .Put(EchoTypeEnumField, new InteropComputeEnumFieldTest {InteropEnum = enumVal});
+
+            var res = _grid1.GetCompute().ExecuteJavaTask<InteropComputeEnum>(EchoTask, EchoTypeEnumField);
+
+            Assert.AreEqual(enumVal, res);
         }
 
         /// <summary>
@@ -1121,7 +1133,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                 new BinaryTypeConfiguration(typeof (PlatformComputeBinarizable)),
                 new BinaryTypeConfiguration(typeof (PlatformComputeNetBinarizable)),
                 new BinaryTypeConfiguration(JavaBinaryCls),
-                new BinaryTypeConfiguration(typeof(InteropComputeEnum))
+                new BinaryTypeConfiguration(typeof(InteropComputeEnum)),
+                new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
             };
 
 
@@ -1311,5 +1324,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         Foo,
         Bar,
         Baz
+    }
+
+    public class InteropComputeEnumFieldTest
+    {
+        public InteropComputeEnum InteropEnum { get; set; }
     }
 }

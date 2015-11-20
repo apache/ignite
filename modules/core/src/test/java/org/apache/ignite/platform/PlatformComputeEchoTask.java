@@ -194,7 +194,7 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                 case TYPE_ENUM_FIELD:
                     IgniteCache<Integer, BinaryObject> cache = ignite.cache(null).withKeepBinary();
                     BinaryObject obj = cache.get(TYPE_ENUM_FIELD);
-                    PlatformComputeEnum val = obj.field("enumField");
+                    PlatformComputeEnum val = obj.field("interopEnum");
 
                     return val;
 
