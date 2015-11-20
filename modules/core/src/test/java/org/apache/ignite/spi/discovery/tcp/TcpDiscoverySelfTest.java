@@ -373,6 +373,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private void testFailureDetectionOnNodePing(Ignite pingingNode, Ignite failedNode) throws Exception {
         final CountDownLatch cnt = new CountDownLatch(1);
 
+        final UUID failedNodeId = failedNode.cluster().localNode().id();
+
         pingingNode.events().localListen(
             new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
@@ -390,9 +392,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi spi = discoMap.get(pingingNode.name());
 
-        boolean res = spi.pingNode(failedNode.cluster().localNode().id());
+        boolean res = spi.pingNode(failedNodeId);
 
-        assertFalse("Ping is ok for node " + failedNode.cluster().localNode().id() + ", but had to fail.", res);
+        assertFalse("Ping is ok for node " + failedNodeId + ", but had to fail.", res);
 
         // Heartbeat interval is 40 seconds, but we should detect node failure faster.
         assert cnt.await(7, SECONDS);
@@ -409,6 +411,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             ((TestTcpDiscoverySpi)failedNode.configuration().getDiscoverySpi()).ignorePingResponse = true;
 
+            final UUID failedNodeId = failedNode.cluster().localNode().id();
+
             final CountDownLatch pingLatch = new CountDownLatch(1);
 
             final CountDownLatch eventLatch = new CountDownLatch(1);
@@ -422,7 +426,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             pingingNode.events().localListen(
                 new IgnitePredicate<Event>() {
                     @Override public boolean apply(Event event) {
-                        if (((DiscoveryEvent)event).eventNode().id().equals(failedNode.cluster().localNode().id())) {
+                        if (((DiscoveryEvent)event).eventNode().id().equals(failedNodeId)) {
                             failRes.set(true);
                             eventLatch.countDown();
                         }
@@ -438,7 +442,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                         pingLatch.countDown();
 
                         pingRes.set(pingingNode.configuration().getDiscoverySpi().pingNode(
-                            failedNode.cluster().localNode().id()));
+                            failedNodeId));
 
                         return null;
                     }
@@ -1166,7 +1170,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             for (IgniteKernal grid : grids)
                 assertEquals(startTime, (Long)grid.context().discovery().gridStartTime());
 
-            grids.add((IgniteKernal) startGrid(5));
+            grids.add((IgniteKernal)startGrid(5));
 
             for (IgniteKernal grid : grids)
                 assertEquals(startTime, (Long)grid.context().discovery().gridStartTime());
@@ -1324,6 +1328,51 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
     }
+
+    /**
+     * @throws Exception If failed
+     */
+    public void testNodeShutdownOnRingMessageWorkerFailure() throws Exception {
+        try {
+            TestMessageWorkerFailureSpi spi0 = new TestMessageWorkerFailureSpi();
+
+            nodeSpi = spi0;
+
+            final Ignite ignite0 = startGrid(0);
+
+            nodeSpi = new TcpDiscoverySpi();
+
+            Ignite ignite1 = startGrid(1);
+
+            final AtomicBoolean disconnected = new AtomicBoolean();
+
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            final UUID failedNodeId = ignite0.cluster().localNode().id();
+
+            ignite1.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event event) {
+                    if (event.type() == EventType.EVT_NODE_FAILED &&
+                        failedNodeId.equals(((DiscoveryEvent)event).eventNode().id()))
+                        disconnected.set(true);
+
+                    latch.countDown();
+
+                    return false;
+                }
+            }, EventType.EVT_NODE_FAILED);
+
+            spi0.stop = true;
+
+            latch.await(15, TimeUnit.SECONDS);
+
+            assertTrue(disconnected.get());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
 
     /**
      * @param twoNodes If {@code true} starts two nodes, otherwise three.
@@ -1885,6 +1934,25 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             if (debug && msg instanceof TcpDiscoveryCustomEventMessage)
                 log.info("--- Send custom event: " + msg);
+
+            super.writeToSocket(sock, msg, bout, timeout);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestMessageWorkerFailureSpi extends TcpDiscoverySpi {
+        /** */
+        private volatile boolean stop;
+
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
+            GridByteArrayOutputStream bout, long timeout) throws IOException, IgniteCheckedException {
+
+            if (stop)
+                throw new RuntimeException("Failing ring message worker explicitly");
 
             super.writeToSocket(sock, msg, bout, timeout);
         }
