@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +33,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -219,7 +217,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                     if (!deleteDirectoryContents(TRASH_ID, id))
                         return false;
 
-                    if (meta.delete(TRASH_ID, Collections.singletonMap(name, id)).get1() == 1)
+                    if (meta.delete(TRASH_ID, name, id))
                         return true;
                 }
                 else {
@@ -237,7 +235,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                     // In case this node crashes, other node will re-delete the file.
                     data.delete(lockedInfo).get();
 
-                    boolean ret = meta.delete(TRASH_ID, Collections.singletonMap(name, id)).get1() == 1;
+                    boolean ret = meta.delete(TRASH_ID, name, id);
 
                     if (info.path() != null)
                         IgfsUtils.sendEvents(igfsCtx.kernalContext(), info.path(), EVT_IGFS_FILE_PURGED);
@@ -273,7 +271,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                 if (listing.isEmpty())
                     return true; // Directory is empty.
 
-                final Map<String, IgniteUuid> delListing = new HashMap<>(MAX_DELETE_BATCH, 1.0f);
+                final Map<String, IgfsListingEntry> delListing = new HashMap<>(MAX_DELETE_BATCH, 1.0f);
 
                 final GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<>();
 
@@ -285,7 +283,7 @@ public class IgfsDeleteWorker extends IgfsThread {
 
                     if (entry.getValue().isDirectory()) {
                         if (deleteDirectoryContents(id, entry.getValue().fileId())) // *** Recursive call.
-                            delListing.put(entry.getKey(), entry.getValue().fileId());
+                            delListing.put(entry.getKey(), entry.getValue());
                         else
                             failedFiles++;
                     }
@@ -305,7 +303,7 @@ public class IgfsDeleteWorker extends IgfsThread {
 
                                 fut.add(data.delete(lockedInfo));
 
-                                delListing.put(entry.getKey(), entry.getValue().fileId());
+                                delListing.put(entry.getKey(), entry.getValue());
                             }
                         }
                     }
@@ -328,11 +326,9 @@ public class IgfsDeleteWorker extends IgfsThread {
                 }
 
                 // Actual delete of folder content.
-                T2<Integer, Integer> delIds = meta.delete(id, delListing);
+                Collection<IgniteUuid> delIds = meta.delete(id, delListing);
 
-                int rmCnt = delIds.get1() + delIds.get2();
-
-                if (listing.size() == rmCnt)
+                if (listing.size() == delIds.size())
                     return true; // All entries were deleted.
 
                 if (listing.size() == delListing.size() + failedFiles)
