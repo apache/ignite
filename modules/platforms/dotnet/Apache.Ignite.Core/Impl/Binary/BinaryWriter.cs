@@ -1048,7 +1048,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
 
             // Suppose that we faced normal object and perform descriptor lookup.
-            IBinaryTypeDescriptor desc = _marsh.GetDescriptor(type);
+            IBinaryTypeDescriptor desc = type.IsEnum ? null : _marsh.GetDescriptor(type);
 
             if (desc != null)
             {
