@@ -85,28 +85,6 @@ public class PortableContext implements Externalizable {
     private static final ClassLoader dfltLdr = U.gridClassLoader();
 
     /** */
-    static final BinaryIdMapper DFLT_ID_MAPPER = new IdMapperWrapper(null);
-
-    /** */
-    static final BinaryIdMapper BASIC_CLS_ID_MAPPER = new BasicClassIdMapper();
-
-    /** */
-    static final char[] LOWER_CASE_CHARS;
-
-    /** */
-    static final char MAX_LOWER_CASE_CHAR = 0x7e;
-
-    /**
-     *
-     */
-    static {
-        LOWER_CASE_CHARS = new char[MAX_LOWER_CASE_CHAR + 1];
-
-        for (char c = 0; c <= MAX_LOWER_CASE_CHAR; c++)
-            LOWER_CASE_CHARS[c] = Character.toLowerCase(c);
-    }
-
-    /** */
     private final ConcurrentMap<Class<?>, PortableClassDescriptor> descByCls = new ConcurrentHashMap8<>();
 
     /** Holds classes loaded by default class loader only. */
@@ -287,7 +265,7 @@ public class PortableContext implements Externalizable {
         TypeDescriptors descs = new TypeDescriptors();
 
         if (clsNames != null) {
-            BinaryIdMapper idMapper = new IdMapperWrapper(globalIdMapper);
+            BinaryIdMapper idMapper = BinaryInternalIdMapper.create(globalIdMapper);
 
             for (String clsName : clsNames) {
                 if (clsName.endsWith(".*")) { // Package wildcard
@@ -320,7 +298,7 @@ public class PortableContext implements Externalizable {
                 if (typeCfg.getIdMapper() != null)
                     idMapper = typeCfg.getIdMapper();
 
-                idMapper = new IdMapperWrapper(idMapper);
+                idMapper = BinaryInternalIdMapper.create(idMapper);
 
                 BinarySerializer serializer = globalSerializer;
 
@@ -510,7 +488,7 @@ public class PortableContext implements Externalizable {
                 clsName.hashCode(),
                 clsName,
                 null,
-                BASIC_CLS_ID_MAPPER,
+                BinaryInternalIdMapper.defaultInstance(),
                 null,
                 false,
                 keepDeserialized,
@@ -613,9 +591,9 @@ public class PortableContext implements Externalizable {
      * @return Type ID.
      */
     public int typeId(String typeName) {
-        String shortTypeName = typeName(typeName);
+        String typeName0 = typeName(typeName);
 
-        Integer id = predefinedTypeNames.get(shortTypeName);
+        Integer id = predefinedTypeNames.get(typeName0);
 
         if (id != null)
             return id;
@@ -623,7 +601,7 @@ public class PortableContext implements Externalizable {
         if (marshCtx.isSystemType(typeName))
             return typeName.hashCode();
 
-        return userTypeIdMapper(shortTypeName).typeId(shortTypeName);
+        return userTypeIdMapper(typeName0).typeId(typeName0);
     }
 
     /**
@@ -642,13 +620,7 @@ public class PortableContext implements Externalizable {
     public BinaryIdMapper userTypeIdMapper(int typeId) {
         BinaryIdMapper idMapper = mappers.get(typeId);
 
-        if (idMapper != null)
-            return idMapper;
-
-        if (predefinedTypes.containsKey(typeId))
-            return DFLT_ID_MAPPER;
-
-        return BASIC_CLS_ID_MAPPER;
+        return idMapper != null ? idMapper : BinaryInternalIdMapper.defaultInstance();
     }
 
     /**
@@ -658,7 +630,7 @@ public class PortableContext implements Externalizable {
     private BinaryIdMapper userTypeIdMapper(String typeName) {
         BinaryIdMapper idMapper = typeMappers.get(typeName);
 
-        return idMapper != null ? idMapper : DFLT_ID_MAPPER;
+        return idMapper != null ? idMapper : BinaryInternalIdMapper.defaultInstance();
     }
 
     /** {@inheritDoc} */
@@ -704,7 +676,7 @@ public class PortableContext implements Externalizable {
             id,
             typeName,
             null,
-            DFLT_ID_MAPPER,
+            BinaryInternalIdMapper.defaultInstance(),
             null,
             false,
             false,
@@ -746,7 +718,9 @@ public class PortableContext implements Externalizable {
             // No-op.
         }
 
-        int id = idMapper.typeId(clsName);
+        String typeName = typeName(clsName);
+
+        int id = idMapper.typeId(typeName);
 
         //Workaround for IGNITE-1358
         if (predefinedTypes.get(id) != null)
@@ -759,8 +733,6 @@ public class PortableContext implements Externalizable {
             if (affKeyFieldNames.put(id, affKeyFieldName) != null)
                 throw new BinaryObjectException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
         }
-
-        String typeName = typeName(clsName);
 
         typeMappers.put(typeName, idMapper);
 
@@ -934,26 +906,6 @@ public class PortableContext implements Externalizable {
     }
 
     /**
-     * @param str String.
-     * @return Hash code for given string converted to lower case.
-     */
-    private static int lowerCaseHashCode(String str) {
-        int len = str.length();
-
-        int h = 0;
-
-        for (int i = 0; i < len; i++) {
-            int c = str.charAt(i);
-
-            c = c <= MAX_LOWER_CASE_CHAR ? LOWER_CASE_CHARS[c] : Character.toLowerCase(c);
-
-            h = 31 * h + c;
-        }
-
-        return h;
-    }
-
-    /**
      * Undeployment callback invoked when class loader is being undeployed.
      *
      * Some marshallers may want to clean their internal state that uses the undeployed class loader somehow.
@@ -967,55 +919,6 @@ public class PortableContext implements Externalizable {
         }
 
         U.clearClassCache(ldr);
-    }
-
-    /**
-     */
-    private static class IdMapperWrapper implements BinaryIdMapper {
-        /** */
-        private final BinaryIdMapper mapper;
-
-        /**
-         * @param mapper Custom ID mapper.
-         */
-        private IdMapperWrapper(@Nullable BinaryIdMapper mapper) {
-            this.mapper = mapper;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int typeId(String clsName) {
-            int id = 0;
-
-            if (mapper != null)
-                id = mapper.typeId(clsName);
-
-            return id != 0 ? id : lowerCaseHashCode(typeName(clsName));
-        }
-
-        /** {@inheritDoc} */
-        @Override public int fieldId(int typeId, String fieldName) {
-            int id = 0;
-
-            if (mapper != null)
-                id = mapper.fieldId(typeId, fieldName);
-
-            return id != 0 ? id : lowerCaseHashCode(fieldName);
-        }
-    }
-
-    /**
-     * Basic class ID mapper.
-     */
-    private static class BasicClassIdMapper implements BinaryIdMapper {
-        /** {@inheritDoc} */
-        @Override public int typeId(String clsName) {
-            return clsName.hashCode();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int fieldId(int typeId, String fieldName) {
-            return lowerCaseHashCode(fieldName);
-        }
     }
 
     /**

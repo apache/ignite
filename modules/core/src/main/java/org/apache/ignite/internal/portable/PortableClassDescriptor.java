@@ -351,15 +351,6 @@ public class PortableClassDescriptor {
     }
 
     /**
-     * Get ID mapper.
-     *
-     * @return ID mapper.
-     */
-    public BinaryIdMapper idMapper() {
-        return idMapper;
-    }
-
-    /**
      * @return portableWriteReplace() method
      */
     @Nullable Method getWriteReplaceMethod() {

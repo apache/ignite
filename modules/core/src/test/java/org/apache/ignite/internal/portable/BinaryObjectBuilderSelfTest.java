@@ -75,11 +75,11 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         customIdMapper.setClassName(CustomIdMapper.class.getName());
         customIdMapper.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
-                return ~PortableContext.DFLT_ID_MAPPER.typeId(clsName);
+                return ~BinaryInternalIdMapper.defaultInstance().typeId(clsName);
             }
 
             @Override public int fieldId(int typeId, String fieldName) {
-                return typeId + ~PortableContext.DFLT_ID_MAPPER.fieldId(typeId, fieldName);
+                return typeId + ~BinaryInternalIdMapper.defaultInstance().fieldId(typeId, fieldName);
             }
         });
 
