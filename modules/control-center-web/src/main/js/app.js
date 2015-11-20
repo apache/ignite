@@ -163,7 +163,7 @@ function find(root, filter, files, prefix) {
     return files;
 }
 
-var igniteModules = path.resolve(__dirname, 'ignite_modules');
+var igniteModules = process.env.IGNITE_MODULES || path.resolve(__dirname, 'ignite_modules');
 
 find(igniteModules)
     .filter(function(path) { return path.match(/\/routes\/.+\.js$/); })
