@@ -32,6 +32,7 @@
     "express": "~4.13.3",
     "express-force-ssl": "^0.3.0",
     "express-session": "^1.12.0",
+    "font-awesome": "^4.4.0",
     "gulp": "^3.9.0",
     "gulp-concat": "^2.6.0",
     "gulp-connect": "^2.2.0",
@@ -63,13 +64,11 @@
   },
   "jspm": {
     "dependencies": {
-      "Blob": "github:eligrey/Blob.js@master",
-      "FileSaver": "github:eligrey/FileSaver.js@master",
       "ace": "github:ajaxorg/ace-builds@^1.2.2",
       "angular": "github:angular/bower-angular@^1.4.7",
+      "angular-ag-grid": "github:ceolter/ag-grid@^2.3.5",
       "angular-animate": "github:angular/bower-angular-animate@^1.4.7",
       "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@^1.3.0",
-      "angular-grid": "github:ceolter/ag-grid@^2.3.5",
       "angular-loading": "github:darthwade/angular-loading@^0.1.4",
       "angular-motion": "github:mgcrea/angular-motion@^0.4.3",
       "angular-nvd3": "github:krispo/angular-nvd3@^1.0.3",
@@ -79,16 +78,17 @@
       "angular-tree-control": "github:wix/angular-tree-control@^0.2.22",
       "angular-ui-ace": "github:angular-ui/ui-ace@^0.2.3",
       "angular-ui-router": "github:angular-ui/ui-router@^0.2.15",
+      "blob": "github:eligrey/Blob.js@master",
+      "bootstrap-carousel": "github:twbs/bootstrap@^3.3.5",
       "css": "github:systemjs/plugin-css@^0.1.19",
+      "file-saver": "github:eligrey/FileSaver.js@master",
       "font-awesome": "npm:font-awesome@^4.4.0",
       "jquery": "github:components/jquery@^2.1.4",
       "jszip": "github:Stuk/jszip@^2.5.0",
       "lodash": "npm:lodash@^3.10.1",
-      "nvd3": "npm:nvd3@^1.8.1",
       "query-command-supported": "github:zenorocha/document.queryCommandSupported@^1.0.0",
       "sass": "github:mobilexag/plugin-sass@^0.0.10",
-      "scss": "github:theefer/plugin-sass@master",
-      "spinjs": "github:fgnass/spin.js@^2.3.2"
+      "scss": "github:theefer/plugin-sass@master"
     },
     "devDependencies": {
       "babel": "npm:babel-core@^5.8.24",
@@ -97,44 +97,6 @@
       "core-js": "npm:core-js@^1.1.4"
     },
     "overrides": {
-      "github:Stuk/jszip@2.5.0": {
-        "format": "global",
-        "main": "./dist/jszip"
-      },
-      "github:zenorocha/document.queryCommandSupported@1.0.0": {
-        "format": "global"
-      },
-      "github:angular/bower-angular@1.4.7": {
-        "dependencies": {
-          "jquery": "github:components/jquery@^2.1.4"
-        },
-        "shim": {
-          "angular": {
-            "deps": [
-              "jquery"
-            ]
-          }
-        }
-      },
-      "github:krispo/angular-nvd3@1.0.3": {
-        "dependencies": {
-          "angular": "^1",
-          "nvd3": "npm:nvd3@1.8.1",
-          "d3": "npm:d3@3.5.8"
-        },
-        "shim": {
-          "dist/angular-nvd3": {
-            "deps": [
-              "angular",
-              "d3",
-              "nvd3"
-            ]
-          }
-        }
-      },
-      "github:components/jquery@2.1.4": {
-        "format": "global"
-      },
       "github:ajaxorg/ace-builds@1.2.2": {
         "format": "global",
         "main": "theme-chrome",
@@ -185,14 +147,46 @@
           }
         }
       },
-      "github:eligrey/FileSaver.js@master": {
-        "format": "global"
+      "github:angular/bower-angular@1.4.7": {
+        "dependencies": {
+          "jquery": "github:components/jquery@^2.1.4"
+        },
+        "shim": {
+          "angular": {
+            "deps": [
+              "jquery"
+            ]
+          }
+        }
       },
-      "github:eligrey/Blob.js@master": {
-        "format": "global"
+      "github:darthwade/angular-loading@0.1.4": {
+        "dependencies": {
+          "spinjs": "github:fgnass/spin.js@^2.3.2"
+        }
+      },
+      "github:krispo/angular-nvd3@1.0.3": {
+        "dependencies": {
+          "angular": "^1",
+          "nvd3": "npm:nvd3@1.8.1",
+          "d3": "npm:d3@3.5.9"
+        },
+        "shim": {
+          "dist/angular-nvd3": {
+            "deps": [
+              "angular",
+              "d3",
+              "nvd3"
+            ]
+          }
+        }
       },
       "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
         "main": "dist/angular-strap.tpl",
+        "dependencies": {
+          "angular-animate": "github:angular/bower-angular-animate@^1.4.7",
+          "angular-motion": "github:mgcrea/angular-motion@^0.4.3",
+          "angular-sanitize": "github:angular/bower-angular-sanitize@^1.4.7"
+        },
         "shim": {
           "dist/angular-strap.tpl": {
             "deps": [
@@ -200,6 +194,39 @@
             ]
           }
         }
+      },
+      "github:angular-ui/ui-ace@0.2.3": {
+        "dependencies": {
+          "ace": "github:ajaxorg/ace-builds@^1.2.2"
+        }
+      },
+      "github:eligrey/FileSaver.js@master": {
+        "format": "global",
+        "dependencies": {
+          "blob": "github:eligrey/Blob.js@master"
+        }
+      },
+      "github:twbs/bootstrap@3.3.5": {
+        "shim": {
+          "js/carousel.js": {
+            "deps": [
+              "jquery"
+            ]
+          }
+        }
+      },
+      "github:eligrey/Blob.js@master": {
+        "format": "global"
+      },
+      "github:components/jquery@2.1.4": {
+        "format": "global"
+      },
+      "github:Stuk/jszip@2.5.0": {
+        "format": "global",
+        "main": "./dist/jszip"
+      },
+      "github:zenorocha/document.queryCommandSupported@1.0.0": {
+        "format": "global"
       }
     }
   }

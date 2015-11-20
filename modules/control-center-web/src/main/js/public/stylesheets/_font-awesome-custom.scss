@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-var gulp = require('gulp');
-var jspm = require('jspm');
+@import "../../node_modules/font-awesome/scss/variables";
+$fa-font-path: "/fonts";
 
-var paths = [
-    './app/**/*.js'
-];
-
-gulp.task('bundle', function() {
-	return jspm.bundleSFX('app/index', 'build/app.min.js', {})
-});
-
-gulp.task('bundle:watch', function() {
-	gulp.watch(paths, ['bundle'])
-});
+@import "../../node_modules/font-awesome/scss/mixins";
+@import "../../node_modules/font-awesome/scss/path";
+@import "../../node_modules/font-awesome/scss/core";
+@import "../../node_modules/font-awesome/scss/larger";
+@import "../../node_modules/font-awesome/scss/fixed-width";
+@import "../../node_modules/font-awesome/scss/list";
+@import "../../node_modules/font-awesome/scss/bordered-pulled";
+@import "../../node_modules/font-awesome/scss/animated";
+@import "../../node_modules/font-awesome/scss/rotated-flipped";
+@import "../../node_modules/font-awesome/scss/stacked";
+@import "../../node_modules/font-awesome/scss/icons";

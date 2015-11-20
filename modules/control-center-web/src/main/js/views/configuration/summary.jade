@@ -64,7 +64,7 @@ block content
                         i.fa(ng-class='panelExpanded(panels, "server") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
                         label Server
                     .panel-collapse(id='server' role='tabpanel' bs-collapse-target)
-                        .summary-tabs(bs-tabs data-bs-active-pane="tabsServer.activeTab" ng-show='selectedItem' template='summary/summary-tabs')
+                        .summary-tabs(bs-tabs data-bs-active-pane="tabsServer.activeTab" ng-show='selectedItem' template='configuration/summary-tabs.html')
                             div(bs-pane title='XML')
                                 div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='xmlServer')
                             div(bs-pane title='Java')
@@ -100,7 +100,7 @@ block content
                         div(ng-show='selectedItem')
                             .details-row(ng-repeat='field in clientFields')
                                 +form-row-custom(['col-xs-4 col-sm-4 col-md-3'], ['col-xs-4 col-sm-4 col-md-3'], 'backupItem')
-                            .summary-tabs(bs-tabs data-bs-active-pane="tabsClient.activeTab" template='summary/summary-tabs')
+                            .summary-tabs(bs-tabs data-bs-active-pane="tabsClient.activeTab" template='configuration/summary-tabs.html')
                                 div(bs-pane title='XML')
                                     div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='xmlClient')
                                 div(bs-pane title='Java')

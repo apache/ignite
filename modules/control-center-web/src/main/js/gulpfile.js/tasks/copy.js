@@ -31,6 +31,10 @@ var paths = [
     './public/**/*.js'
 ];
 
+var fontPaths = [
+    './node_modules/font-awesome/fonts/*'
+];
+
 var igniteModulePaths = [
     igniteModules + '/**/main.js',
     igniteModules + '/**/controllers/*.js',
@@ -38,11 +42,15 @@ var igniteModulePaths = [
 ];
 
 gulp.task('copy', function(cb) {
-    return gulpSequence('copy:source', 'copy:ignite_modules')(cb)
+    return gulpSequence('copy:source', 'copy:fonts', 'copy:ignite_modules')(cb)
 });
 
 gulp.task('copy:source', function(cb) {
     return gulp.src(paths).pipe(gulp.dest('./build'))
+});
+
+gulp.task('copy:fonts', function(cb) {
+    return gulp.src(fontPaths).pipe(gulp.dest('./build/fonts'))
 });
 
 gulp.task('copy:ignite_modules', function(cb) {
@@ -51,6 +59,6 @@ gulp.task('copy:ignite_modules', function(cb) {
 
 gulp.task('copy:watch', function(cb) {
     gulp.watch([paths, igniteModulePaths], function(glob) {
-        gulpSequence('copy', 'inject:plugins:js')(cb)
+        gulpSequence(['copy:source', 'copy:ignite_modules'], 'inject:plugins:js')(cb)
     })
 });

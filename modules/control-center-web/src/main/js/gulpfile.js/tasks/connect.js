@@ -27,8 +27,8 @@ var options = {
 		])]
     },
     fallback: './build/index.html'
-}
+};
 
 gulp.task('connect', function() {
 	connect.server(options);
-})
+});

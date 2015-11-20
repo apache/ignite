@@ -22,10 +22,10 @@ paths = [
 	'!./controllers/common-module.js',
 	'./controllers/*.js',
 	'./controllers/**/*.js'
-]
+];
 
 gulp.task('concat', function() {
 	return gulp.src(paths)
 		.pipe(concat('all.js'))
 		.pipe(gulp.dest('./build'))
-})
+});
