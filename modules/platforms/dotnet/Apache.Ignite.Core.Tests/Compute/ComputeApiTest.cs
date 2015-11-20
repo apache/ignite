@@ -883,6 +883,15 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Tests the echo task reading enum from a binary object field.
+        /// </summary>
+        [Test]
+        public void TestEchoTaskEnumField()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Test for binary argument in Java.
         /// </summary>
         [Test]
@@ -1107,11 +1116,14 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             BinaryConfiguration portCfg = new BinaryConfiguration();
 
-            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
+            var portTypeCfgs = new List<BinaryTypeConfiguration>
+            {
+                new BinaryTypeConfiguration(typeof (PlatformComputeBinarizable)),
+                new BinaryTypeConfiguration(typeof (PlatformComputeNetBinarizable)),
+                new BinaryTypeConfiguration(JavaBinaryCls),
+                new BinaryTypeConfiguration(typeof(InteropComputeEnum))
+            };
 
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputeBinarizable)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputeNetBinarizable)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(JavaBinaryCls));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
