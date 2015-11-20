@@ -1298,7 +1298,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Value.</param>
         public static void WriteEnum<T>(BinaryWriter writer, T val)
         {
-            writer.WriteInt(GetEnumTypeId(val.GetType(), Marshaller));
+            writer.WriteInt(GetEnumTypeId(val.GetType(), writer.Marshaller));
             writer.WriteInt(TypeCaster<int>.Cast(val));
         }
 
