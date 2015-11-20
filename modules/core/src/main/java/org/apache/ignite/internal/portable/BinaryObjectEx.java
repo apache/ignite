@@ -79,7 +79,7 @@ public abstract class BinaryObjectEx implements BinaryObject {
      * @param fieldName Field name.
      * @return Field value.
      */
-    @Nullable protected abstract <F> F field(PortableReaderContext ctx, String fieldName);
+    @Nullable protected abstract <F> F field(BinaryReaderHandles ctx, String fieldName);
 
     /**
      * Get schema ID.
@@ -157,7 +157,7 @@ public abstract class BinaryObjectEx implements BinaryObject {
      * @param handles Handles for already traversed objects.
      * @return String representation.
      */
-    private String toString(PortableReaderContext ctx, IdentityHashMap<BinaryObject, Integer> handles) {
+    private String toString(BinaryReaderHandles ctx, IdentityHashMap<BinaryObject, Integer> handles) {
         int idHash = System.identityHashCode(this);
 
         BinaryType meta;
@@ -232,9 +232,9 @@ public abstract class BinaryObjectEx implements BinaryObject {
     /** {@inheritDoc} */
     @Override public String toString() {
         try {
-            PortableReaderContext ctx = new PortableReaderContext();
+            BinaryReaderHandles ctx = new BinaryReaderHandles();
 
-            ctx.setPortableHandler(start(), this);
+            ctx.put(start(), this);
 
             return toString(ctx, new IdentityHashMap<BinaryObject, Integer>());
         }

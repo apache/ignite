@@ -68,7 +68,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import static org.apache.ignite.internal.portable.PortableThreadLocalMemoryAllocator.THREAD_LOCAL_ALLOC;
+import static org.apache.ignite.internal.portable.streams.PortableMemoryAllocator.INSTANCE;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -93,7 +93,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testByte() throws Exception {
-        assertEquals((byte)100, marshalUnmarshal((byte)100).byteValue());
+        assertEquals((byte) 100, marshalUnmarshal((byte) 100).byteValue());
     }
 
     /**
@@ -1492,11 +1492,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("bArr", new byte[]{1, 2, 3}));
 
-        assertArrayEquals(new byte[] {1, 2, 3}, copy.<byte[]>field("bArr"));
+        assertArrayEquals(new byte[]{1, 2, 3}, copy.<byte[]>field("bArr"));
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertArrayEquals(new byte[] {1, 2, 3}, obj0.bArr);
+        assertArrayEquals(new byte[]{1, 2, 3}, obj0.bArr);
     }
 
     /**
@@ -1741,7 +1741,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals("str555", obj0.str);
         assertEquals(newObj, obj0.inner);
-        assertArrayEquals(new byte[] {6, 7, 9}, obj0.bArr);
+        assertArrayEquals(new byte[]{6, 7, 9}, obj0.bArr);
     }
 
     /**
@@ -1769,7 +1769,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         map.put("inner", newObj);
         map.put("s", (short)2323);
         map.put("bArr", new byte[]{6, 7, 9});
-        map.put("b", (byte)111);
+        map.put("b", (byte) 111);
 
         BinaryObject copy = copy(po, map);
 
@@ -1786,8 +1786,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals("str555", obj0.str);
         assertEquals(newObj, obj0.inner);
         assertEquals((short)2323, obj0.s);
-        assertArrayEquals(new byte[] {6, 7, 9}, obj0.bArr);
-        assertEquals((byte)111, obj0.b);
+        assertArrayEquals(new byte[]{6, 7, 9}, obj0.bArr);
+        assertEquals((byte) 111, obj0.b);
     }
 
     /**
@@ -2069,28 +2069,28 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public void testThreadLocalArrayReleased() throws Exception {
         // Checking the writer directly.
-        assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
+        assertEquals(false, INSTANCE.isAcquired());
 
         PortableMarshaller marsh0 = createMarshaller();
-
+        
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(portableContext(marsh0))) {
-            assertEquals(true, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
+            assertEquals(true, INSTANCE.isAcquired());
 
             writer.writeString("Thread local test");
 
             writer.array();
 
-            assertEquals(true, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
+            assertEquals(true, INSTANCE.isAcquired());
         }
 
         // Checking the portable marshaller.
-        assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
+        assertEquals(false, INSTANCE.isAcquired());
 
         PortableMarshaller marsh = createMarshaller();
 
         marsh.marshal(new SimpleObject());
 
-        assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
+        assertEquals(false, INSTANCE.isAcquired());
 
         // Checking the builder.
         PortableMarshaller marsh2 = createMarshaller();
@@ -2102,7 +2102,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject portableObj = builder.build();
 
-        assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
+        assertEquals(false, INSTANCE.isAcquired());
     }
 
     /**

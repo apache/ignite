@@ -15,36 +15,49 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.portable;
+
+import org.apache.ignite.binary.BinaryObjectException;
+import org.jsr166.ConcurrentHashMap8;
 
 import java.util.concurrent.ConcurrentMap;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Cache for enum constants.
  */
-public class GridEnumCache {
+public class BinaryEnumCache {
     /** Cache for enum constants. */
     private static final ConcurrentMap<Class<?>, Object[]> ENUM_CACHE = new ConcurrentHashMap8<>();
 
     /**
-     * Gets enum constants for provided class.
+     * Get value for the given class and ordinal.
      *
      * @param cls Class.
-     * @return Enum constants.
+     * @param ord Ordinal.
+     * @return Value.
+     * @throws BinaryObjectException In case of invalid ordinal.
      */
-    public static Object[] get(Class<?> cls) {
+    @SuppressWarnings("unchecked")
+    public static <T> T get(Class<?> cls, int ord) throws BinaryObjectException {
         assert cls != null;
 
-        Object[] vals = ENUM_CACHE.get(cls);
+        if (ord >= 0) {
+            Object[] vals = ENUM_CACHE.get(cls);
 
-        if (vals == null) {
-            vals = cls.getEnumConstants();
+            if (vals == null) {
+                vals = cls.getEnumConstants();
 
-            ENUM_CACHE.putIfAbsent(cls, vals);
+                ENUM_CACHE.putIfAbsent(cls, vals);
+            }
+
+            if (ord < vals.length)
+                return (T) vals[ord];
+            else
+                throw new BinaryObjectException("Failed to get enum value for ordinal (do you have correct class " +
+                    "version?) [cls=" + cls.getName() + ", ordinal=" + ord + ", totalValues=" + vals.length + ']');
         }
-
-        return vals;
+        else
+            return null;
     }
 
     /**

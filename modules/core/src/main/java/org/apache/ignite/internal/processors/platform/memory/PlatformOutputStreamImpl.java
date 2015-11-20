@@ -223,6 +223,69 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     }
 
     /** {@inheritDoc} */
+    @Override public void unsafeEnsure(int cap) {
+        ensureCapacity(pos + cap);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteByte(byte val) {
+        UNSAFE.putByte(data + pos++, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteBoolean(boolean val) {
+        unsafeWriteByte(val ? (byte) 1 : (byte) 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteShort(short val) {
+        UNSAFE.putShort(data + pos, val);
+
+        shift(2);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteShort(int pos, short val) {
+        UNSAFE.putShort(data + pos, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteChar(char val) {
+        UNSAFE.putChar(data + pos, val);
+
+        shift(2);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteInt(int val) {
+        UNSAFE.putInt(data + pos, val);
+
+        shift(4);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteInt(int pos, int val) {
+        UNSAFE.putInt(data + pos, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteLong(long val) {
+        UNSAFE.putLong(data + pos, val);
+
+        shift(8);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteFloat(float val) {
+        unsafeWriteInt(Float.floatToIntBits(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteDouble(double val) {
+        unsafeWriteLong(Double.doubleToLongBits(val));
+    }
+
+    /** {@inheritDoc} */
     @Override public void synchronize() {
         PlatformMemoryUtils.length(mem.pointer(), pos);
     }

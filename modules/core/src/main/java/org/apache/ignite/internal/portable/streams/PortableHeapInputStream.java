@@ -23,6 +23,23 @@ import java.util.Arrays;
  * Portable off-heap input stream.
  */
 public final class PortableHeapInputStream extends PortableAbstractInputStream {
+    /**
+     * Create stream with pointer set at the given position.
+     *
+     * @param data Data.
+     * @param pos Position.
+     * @return Stream.
+     */
+    public static PortableHeapInputStream create(byte[] data, int pos) {
+        assert pos < data.length;
+
+        PortableHeapInputStream stream = new PortableHeapInputStream(data);
+
+        stream.pos = pos;
+
+        return stream;
+    }
+
     /** Data. */
     private byte[] data;
 

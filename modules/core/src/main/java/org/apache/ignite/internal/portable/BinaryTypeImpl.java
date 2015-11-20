@@ -71,6 +71,7 @@ public class BinaryTypeImpl implements BinaryType {
     public PortableContext context() {
         return ctx;
     }
+
     /**
      * @return Metadata.
      */

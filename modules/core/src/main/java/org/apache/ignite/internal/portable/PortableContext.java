@@ -31,6 +31,7 @@ import java.net.URLClassLoader;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -573,8 +574,9 @@ public class PortableContext implements Externalizable {
 
         mappers.putIfAbsent(typeId, idMapper);
 
-        metaHnd.addMeta(typeId,
-            new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null, desc.schemas()).wrap(this));
+        Collection<PortableSchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
+
+        metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null, schemas).wrap(this));
 
         return desc;
     }
@@ -782,7 +784,7 @@ public class PortableContext implements Externalizable {
             );
 
             fieldsMeta = desc.fieldsMeta();
-            schemas = desc.schemas();
+            schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
             if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
                 userTypes.put(id, desc);

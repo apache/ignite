@@ -17,6 +17,22 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.portable.streams.PortableOffheapInputStream;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
+import sun.misc.Unsafe;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -27,22 +43,6 @@ import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
-
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.portable.streams.PortableOffheapInputStream;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryField;
-import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
@@ -131,12 +131,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
 
     /** {@inheritDoc} */
     @Override protected PortableSchema createSchema() {
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx,
-            new PortableOffheapInputStream(ptr, size, false),
-            start,
-            null);
-
-        return reader.getOrCreateSchema();
+        return newReader().getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -170,23 +165,13 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx,
-            new PortableOffheapInputStream(ptr, size, false),
-            start,
-            null);
-
-        return (F)reader.unmarshalField(fieldName);
+        return (F)newReader().unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx,
-            new PortableOffheapInputStream(ptr, size, false),
-            start,
-            null);
-
-        return (F)reader.unmarshalField(fieldId);
+        return (F)newReader().unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -320,14 +305,16 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
 
                 break;
 
-            default: {
-                BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx,
-                    new PortableOffheapInputStream(ptr, size, false),
-                    start,
-                    null);
+            default:
+                PortableOffheapInputStream stream = new PortableOffheapInputStream(ptr, size, false);
 
-                val = reader.unmarshalFieldByAbsolutePosition(fieldPos);
-            }
+                stream.position(fieldPos);
+
+                BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, stream, null, new BinaryReaderHandles());
+
+                val = reader.unmarshal();
+
+                break;
         }
 
         return (F)val;
@@ -335,24 +322,19 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override protected <F> F field(PortableReaderContext rCtx, String fieldName) {
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx,
-            new PortableOffheapInputStream(ptr, size, false),
-            start,
-            null,
-            rCtx);
+    @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
+        PortableOffheapInputStream stream = new PortableOffheapInputStream(ptr, size, false);
+
+        stream.position(start);
+
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, stream, null, rCtx);
 
         return (F)reader.unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx,
-            new PortableOffheapInputStream(ptr, size, false),
-            start,
-            null);
-
-        return reader.hasField(fieldName);
+        return newReader().hasField(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -438,12 +420,19 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
      */
     private Object deserializeValue() {
         // TODO: IGNITE-1272 - Deserialize with proper class loader.
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(
-            ctx,
-            new PortableOffheapInputStream(ptr, size, false),
-            start,
-            null);
+        return newReader().deserialize();
+    }
 
-        return reader.deserialize();
+    /**
+     * Create new reader for this object.
+     *
+     * @return Reader.
+     */
+    private BinaryReaderExImpl newReader() {
+        PortableOffheapInputStream stream = new PortableOffheapInputStream(ptr, size, false);
+
+        stream.position(start);
+
+        return new BinaryReaderExImpl(ctx, stream, null, new BinaryReaderHandles());
     }
 }
