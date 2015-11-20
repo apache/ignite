@@ -565,6 +565,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check scan query with partitions.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-1012")]
         public void TestScanQueryPartitions([Values(true, false)]  bool loc)
         {
             CheckScanQueryPartitions<QueryPerson>(MaxItemCnt, loc, false);
@@ -574,6 +575,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check scan query with partitions in binary mode.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-1012")]
         public void TestScanQueryPartitionsBinary([Values(true, false)]  bool loc)
         {
             CheckScanQueryPartitions<BinaryObject>(MaxItemCnt, loc, true);
