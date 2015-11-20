@@ -195,11 +195,11 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
             try (PlatformMemory inMem = platformCtx.memory().allocate()) {
                 PlatformInputStream in = inMem.input();
 
-                BinaryRawReaderEx reader = platformCtx.reader(in);
-
                 platformCtx.gateway().serviceInvokeMethod(ptr, outMem.pointer(), inMem.pointer());
 
                 in.synchronize();
+
+                BinaryRawReaderEx reader = platformCtx.reader(in);
 
                 return PlatformUtils.readInvocationResult(platformCtx, reader);
             }
