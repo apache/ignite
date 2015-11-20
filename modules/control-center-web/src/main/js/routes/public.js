@@ -100,7 +100,7 @@ router.post('/register', function (req, res) {
                 if (err)
                     return res.status(401).send(err.message);
 
-                return res.redirect('/configuration/clusters');
+                return res.sendStatus(200)
             });
         });
     });
@@ -121,7 +121,7 @@ router.post('/login', function (req, res, next) {
             if (err)
                 return res.status(401).send(err.message);
 
-            res.redirect('/configuration/clusters');
+            return res.sendStatus(200)
         });
     })(req, res, next);
 });

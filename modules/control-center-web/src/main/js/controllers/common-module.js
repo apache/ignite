@@ -1958,8 +1958,8 @@ consoleModule.controller('activeLink', [
 
 // Login popup controller.
 consoleModule.controller('auth', [
-    '$scope', '$modal', '$http', '$window', '$common', '$focus',
-    function ($scope, $modal, $http, $window, $common, $focus) {
+    '$scope', '$modal', '$http', '$window', '$common', '$focus', 'Auth', '$state',
+    function ($scope, $modal, $http, $window, $common, $focus, Auth, $state) {
         $scope.action = 'login';
 
         $scope.userDropdown = [{text: 'Profile', href: '/profile'}];
@@ -1981,8 +1981,9 @@ consoleModule.controller('auth', [
         // Try to authorize user with provided credentials.
         $scope.auth = function (action, user_info) {
             $http.post('/api/v1/' + action, user_info)
-                .success(function () {
-                    $window.location = '/configuration/clusters';
+                .success(function (res) {
+                    Auth.isAuthorized = true;
+                    $state.go('base.configuration.clusters');
                 })
                 .error(function (err, status) {
                     if (status == 403) {

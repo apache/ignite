@@ -50,7 +50,10 @@ window.ace = ace;
 window.require = ace.require;
 window.angular = angular;
 
+import './modules/Auth/index'
+
 import './modules/states/login/index'
+import './modules/states/logout/index'
 import './modules/states/configuration/index'
 import './modules/states/sql/index'
 import './modules/states/profile/index'
@@ -59,14 +62,17 @@ import './modules/states/admin/index'
 angular
 .module('ignite-console', [
 	'ui.router',
+	// services
+	'ignite-console.Auth',
 	// states
 	'ignite-console.states.login',
+	'ignite-console.states.logout',
 	'ignite-console.states.configuration',
 	'ignite-console.states.sql',
 	'ignite-console.states.profile',
 	'ignite-console.states.admin'
 ])
-.config(function($stateProvider, $locationProvider) {
+.config(function($stateProvider, $locationProvider, $urlRouterProvider) {
 	// set up the states
 	$stateProvider
 	.state('base', {
@@ -75,5 +81,7 @@ angular
 		templateUrl: '/base.html'
 	});
 
+	$urlRouterProvider.when('/', '/configuration/clusters');
+
 	$locationProvider.html5Mode(true)
-});
+})

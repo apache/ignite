@@ -22,8 +22,12 @@ var paths = [
     './app/**/*.js'
 ];
 
+var options = {
+	sourceMaps: true
+}
+
 gulp.task('bundle', function() {
-	return jspm.bundleSFX('app/index', 'build/app.min.js', {})
+	return jspm.bundleSFX('app/index', 'build/app.min.js', options)
 });
 
 gulp.task('bundle:watch', function() {

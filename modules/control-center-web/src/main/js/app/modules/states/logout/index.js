@@ -18,25 +18,18 @@
 import angular from 'angular'
 
 angular
-.module('ignite-console.states.login', [
-	'ui.router',
-	// services
-	'ignite-console.Auth'
+.module('ignite-console.states.logout', [
+	'ui.router'
 ])
 .config(function($stateProvider) {
 	// set up the states
 	$stateProvider
-	.state('login', {
-		url: '/login',
-		templateUrl: '/login.html'
-	})
-})
-.run(function($rootScope, $state, Auth) {
-	$rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-		if (!Auth.isAuthorized && toState.name !== 'login') {
-			event.preventDefault();
+	.state('logout', {
+		url: '/logout',
+		controller: function(Auth, $state) {
+			Auth.isAuthorized = false;
 
-			$state.go('login');
+			$state.go('login')
 		}
 	})
-})
+});
