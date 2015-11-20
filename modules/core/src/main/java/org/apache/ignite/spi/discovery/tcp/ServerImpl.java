@@ -56,6 +56,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -2158,11 +2159,28 @@ class ServerImpl extends TcpDiscoveryImpl {
                 super.body();
             }
             catch (Throwable e) {
-                if (!spi.isNodeStopping0() && spi.ignite() != null) {
-                    log.error("TcpDiscoverSpi's message worker thread failed abnormally. Stopping the grid in order " +
-                        "to prevent cluster wide instability.", e);
+                if (!spi.isNodeStopping0()) {
+                    final Ignite ignite = spi.ignite();
 
-                    spi.ignite().close();
+                    if (ignite != null) {
+                        U.error(log, "TcpDiscoverSpi's message worker thread failed abnormally." +
+                            "Stopping the grid in order to prevent cluster wide instability.", e);
+
+                        new Thread(new Runnable() {
+                            @Override public void run() {
+                                try {
+                                    spi.ignite().close();
+
+                                    U.log(log, "Stopped the grid successfully in response to TcpDiscoverySpi's " +
+                                        "message worker thread abnormal termination.");
+                                }
+                                catch (Throwable e) {
+                                    U.error(log, "Failed to stop the grid in response to TcpDiscoverySpi's " +
+                                        "message worker thread abnormal termination.", e);
+                                }
+                            }
+                        }).start();
+                    }
                 }
 
                 // Must be processed by IgniteSpiThread as well.

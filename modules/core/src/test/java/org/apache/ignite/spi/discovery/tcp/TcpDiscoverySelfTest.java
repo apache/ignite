@@ -1336,11 +1336,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             TestMessageWorkerFailureSpi spi0 = new TestMessageWorkerFailureSpi();
 
-            nodeSpi = spi0;
+            nodeSpi.set(spi0);
 
             final Ignite ignite0 = startGrid(0);
 
-            nodeSpi = new TcpDiscoverySpi();
+            nodeSpi.set(new TcpDiscoverySpi());
 
             Ignite ignite1 = startGrid(1);
 
@@ -1367,6 +1367,16 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             latch.await(15, TimeUnit.SECONDS);
 
             assertTrue(disconnected.get());
+
+            try {
+                ignite0.cluster().localNode().id();
+            }
+            catch (IllegalStateException e) {
+                if (e.getMessage().contains("Grid is in invalid state to perform this operation"))
+                    return;
+            }
+
+            fail();
         }
         finally {
             stopAllGrids();
