@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.portable.builder.PortableLazyValue;
-import org.apache.ignite.internal.portable.streams.PortableOutputStream;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -660,33 +659,6 @@ public class PortableUtils {
     public static void checkProtocolVersion(byte protoVer) {
         if (PROTO_VER != protoVer)
             throw new BinaryObjectException("Unsupported protocol version: " + protoVer);
-    }
-
-    /**
-     * Write portable header.
-     *
-     * @param writer Writer.
-     * @param typeId Type ID.
-     * @param hashCode Hash code.
-     * @param clsName Class name (optional).
-     * @return Position where length should be written.
-     */
-    public static int writeHeader(BinaryWriterExImpl writer, int typeId, int hashCode, @Nullable String clsName) {
-        PortableOutputStream out = writer.out();
-
-        out.unsafeEnsure(12);
-        out.unsafeWriteByte(GridPortableMarshaller.OBJ);
-        out.unsafeWriteByte(GridPortableMarshaller.PROTO_VER);
-        out.unsafeWriteShort((short) 0);
-        out.unsafeWriteInt(typeId);
-        out.unsafeWriteInt(hashCode);
-
-        int reserved = writer.reserve(12);
-
-        if (clsName != null)
-            writer.doWriteString(clsName);
-
-        return reserved;
     }
 
     /**

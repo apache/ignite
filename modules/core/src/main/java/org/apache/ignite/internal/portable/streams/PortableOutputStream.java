@@ -172,6 +172,13 @@ public interface PortableOutputStream extends PortableStream, AutoCloseable {
     @Override public void close();
 
     /**
+     * Set position in unsafe mode.
+     *
+     * @param pos Position.
+     */
+    public void unsafePosition(int pos);
+
+    /**
      * Ensure capacity for unsafe writes.
      *
      * @param cap Capacity.

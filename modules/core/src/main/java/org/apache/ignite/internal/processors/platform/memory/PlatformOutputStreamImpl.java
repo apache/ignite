@@ -186,7 +186,7 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     @Override public void position(int pos) {
         ensureCapacity(pos);
 
-        this.pos = pos;
+        unsafePosition(pos);
     }
 
     /** {@inheritDoc} */
@@ -225,6 +225,11 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     /** {@inheritDoc} */
     @Override public void unsafeEnsure(int cap) {
         ensureCapacity(pos + cap);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafePosition(int pos) {
+        this.pos = pos;
     }
 
     /** {@inheritDoc} */

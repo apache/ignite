@@ -51,11 +51,11 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLAGS_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT;
@@ -65,18 +65,17 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_AR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.SCHEMA_ID_POS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TOTAL_LEN_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_ARR;
@@ -265,44 +264,53 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @param bytes Number of bytes to reserve.
-     * @return Offset.
+     * Perform pre-write. Reserves space for header and writes class name if needed.
+     *
+     * @param clsName Class name (optional).
      */
-    public int reserve(int bytes) {
-        int pos = out.position();
+    public void preWrite(@Nullable String clsName) {
+        out.position(out.position() + DFLT_HDR_LEN);
 
-        out.position(pos + bytes);
-
-        return pos;
+        if (clsName != null)
+            doWriteString(clsName);
     }
 
     /**
-     * Perform post-write activity. This includes:
-     * - writing flags;
-     * - writing object length;
-     * - writing schema offset;
-     * - writing schema to the tail.
+     * Perform post-write. Fills object header.
      *
      * @param userType User type flag.
+     * @param registered Whether type is registered.
+     * @param hashCode Hash code.
      */
-    public void postWrite(boolean userType) {
-        short flags = userType ? PortableUtils.FLAG_USR_TYP : 0;
+    public void postWrite(boolean userType, boolean registered, int hashCode) {
+        short flags;
+        boolean useCompactFooter;
 
-        boolean useCompactFooter = ctx.isCompactFooter() && userType;
+        if (userType) {
+            if (ctx.isCompactFooter()) {
+                flags = PortableUtils.FLAG_USR_TYP | PortableUtils.FLAG_COMPACT_FOOTER;
+                useCompactFooter = true;
+            }
+            else {
+                flags = PortableUtils.FLAG_USR_TYP;
+                useCompactFooter = false;
+            }
+        }
+        else {
+            flags = 0;
+            useCompactFooter = false;
+        }
 
-        if (useCompactFooter)
-            flags |= PortableUtils.FLAG_COMPACT_FOOTER;
+        int finalSchemaId;
+        int offset;
 
         if (fieldCnt != 0) {
-            flags |= PortableUtils.FLAG_HAS_SCHEMA;
-
-            // Write schema ID.
-            out.unsafeWriteInt(start + SCHEMA_ID_POS, schemaId);
-
-            // Write schema offset.
-            out.unsafeWriteInt(start + SCHEMA_OR_RAW_OFF_POS, out.position() - start);
+            finalSchemaId = schemaId;
+            offset = out.position() - start;
 
             // Write the schema.
+            flags |= PortableUtils.FLAG_HAS_SCHEMA;
+
             int offsetByteCnt = schema.write(out, fieldCnt, useCompactFooter);
 
             if (offsetByteCnt == PortableUtils.OFFSET_1)
@@ -319,20 +327,33 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         }
         else {
             if (rawOffPos != 0) {
-                // If there are no schema, we are free to write raw offset to schema offset.
-                flags |= PortableUtils.FLAG_HAS_RAW;
+                finalSchemaId = 0;
+                offset = rawOffPos - start;
 
-                out.unsafeWriteInt(start + SCHEMA_OR_RAW_OFF_POS, rawOffPos - start);
+                // If there is no schema, we are free to write raw offset to schema offset.
+                flags |= PortableUtils.FLAG_HAS_RAW;
             }
-            else
-                out.unsafeWriteInt(start + SCHEMA_OR_RAW_OFF_POS, 0);
+            else {
+                finalSchemaId = 0;
+                offset = 0;
+            }
         }
 
-        // Write flags.
-        out.unsafeWriteShort(start + FLAGS_POS, flags);
+        // Actual write.
+        int retPos = out.position();
 
-        // Write length.
-        out.unsafeWriteInt(start + TOTAL_LEN_POS, out.position() - start);
+        out.unsafePosition(start);
+
+        out.unsafeWriteByte(OBJ);
+        out.unsafeWriteByte(PROTO_VER);
+        out.unsafeWriteShort(flags);
+        out.unsafeWriteInt(registered ? typeId : UNREGISTERED_TYPE_ID);
+        out.unsafeWriteInt(hashCode);
+        out.unsafeWriteInt(retPos - start);
+        out.unsafeWriteInt(finalSchemaId);
+        out.unsafeWriteInt(offset);
+
+        out.unsafePosition(retPos);
     }
 
     /**
@@ -1645,7 +1666,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public int reserveInt() {
-        return reserve(LEN_INT);
+        int pos = out.position();
+
+        out.position(pos + LEN_INT);
+
+        return pos;
     }
 
     /** {@inheritDoc} */

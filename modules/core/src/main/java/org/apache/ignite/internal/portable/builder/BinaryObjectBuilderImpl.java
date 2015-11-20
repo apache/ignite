@@ -199,11 +199,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      */
     void serializeTo(BinaryWriterExImpl writer, PortableBuilderSerializer serializer) {
         try {
-            PortableUtils.writeHeader(writer,
-                registeredType ? typeId : UNREGISTERED_TYPE_ID,
-                hashCode,
-                registeredType ? null : clsNameToWrite
-            );
+            writer.preWrite(registeredType ? null : clsNameToWrite);
 
             Set<Integer> remainsFlds = null;
 
@@ -363,7 +359,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 reader.position(start + PortableUtils.length(reader, start));
             }
 
-            writer.postWrite(true);
+            writer.postWrite(true, registeredType, hashCode);
 
             // Update metadata if needed.
             int schemaId = writer.schemaId();

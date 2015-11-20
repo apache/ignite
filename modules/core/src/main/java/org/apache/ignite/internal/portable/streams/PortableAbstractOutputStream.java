@@ -239,7 +239,7 @@ public abstract class PortableAbstractOutputStream extends PortableAbstractStrea
     @Override public void position(int pos) {
         ensureCapacity(pos);
 
-        this.pos = pos;
+        unsafePosition(pos);
     }
 
     /** {@inheritDoc} */
@@ -250,6 +250,11 @@ public abstract class PortableAbstractOutputStream extends PortableAbstractStrea
     /** {@inheritDoc} */
     @Override public void unsafeEnsure(int cap) {
         ensureCapacity(pos + cap);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafePosition(int pos) {
+        this.pos = pos;
     }
 
     /** {@inheritDoc} */
