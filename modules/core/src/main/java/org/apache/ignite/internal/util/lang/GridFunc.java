@@ -1866,6 +1866,8 @@ public class GridFunc {
 
         assert m != null;
 
+        final boolean hasPred = p != null && p.length > 0;
+
         return new GridSerializableMap<K, V1>() {
             /** Entry predicate. */
             private IgnitePredicate<Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
@@ -1911,7 +1913,7 @@ public class GridFunc {
                     }
 
                     @Override public int size() {
-                        return F.size(m.keySet(), p);
+                        return hasPred ? F.size(m.keySet(), p) : m.size();
                     }
 
                     @SuppressWarnings({"unchecked"})
@@ -1925,13 +1927,13 @@ public class GridFunc {
                     }
 
                     @Override public boolean isEmpty() {
-                        return !iterator().hasNext();
+                        return hasPred ? !iterator().hasNext() : m.isEmpty();
                     }
                 };
             }
 
             @Override public boolean isEmpty() {
-                return entrySet().isEmpty();
+                return hasPred ? entrySet().isEmpty() : m.isEmpty();
             }
 
             @SuppressWarnings({"unchecked"})
