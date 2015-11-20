@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Represents a typed enum in binary form.
     /// </summary>
-    internal class BinaryEnum : IBinaryObject
+    internal class BinaryEnum : IBinaryObject, IEquatable<BinaryEnum>
     {
         /** Type id. */
         private readonly int _typeId;
@@ -75,6 +75,51 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             // TODO: Type validation
             return TypeCaster<T>.Cast(_value);
+        }
+
+        /** <inheritdoc /> */
+        public bool Equals(BinaryEnum other)
+        {
+            if (ReferenceEquals(null, other))
+                return false;
+
+            if (ReferenceEquals(this, other))
+                return true;
+
+            return _typeId == other._typeId && _value == other._value;
+        }
+
+        /** <inheritdoc /> */
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+                return false;
+
+            if (ReferenceEquals(this, obj))
+                return true;
+
+            if (obj.GetType() != GetType())
+                return false;
+
+            return Equals((BinaryEnum) obj);
+        }
+
+        /** <inheritdoc /> */
+        public override int GetHashCode()
+        {
+            return _value.GetHashCode();
+        }
+
+        /** <inheritdoc /> */
+        public static bool operator ==(BinaryEnum left, BinaryEnum right)
+        {
+            return Equals(left, right);
+        }
+
+        /** <inheritdoc /> */
+        public static bool operator !=(BinaryEnum left, BinaryEnum right)
+        {
+            return !Equals(left, right);
         }
     }
 }
