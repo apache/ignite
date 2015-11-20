@@ -1792,13 +1792,13 @@ public class GridCacheUtils {
                         throw e;
                     }
                     catch (TransactionRollbackException e) {
-                        if (i == GridCacheAdapter.MAX_RETRIES)
+                        if (i + 1 == GridCacheAdapter.MAX_RETRIES)
                             throw e;
 
                         U.sleep(1);
                     }
                     catch (IgniteCheckedException e) {
-                        if (i == GridCacheAdapter.MAX_RETRIES)
+                        if (i + 1 == GridCacheAdapter.MAX_RETRIES)
                             throw e;
 
                         if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
