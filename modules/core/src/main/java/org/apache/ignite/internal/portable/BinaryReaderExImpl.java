@@ -300,7 +300,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
      * @throws BinaryObjectException In case of error.
      */
     @Nullable Object unmarshalField(String fieldName) throws BinaryObjectException {
-        return hasField(fieldName) ? unmarshal() : null;
+        return findFieldByName(fieldName) ? unmarshal() : null;
     }
 
     /**
@@ -1372,14 +1372,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
 
         throw new BinaryObjectException("Unexpected flag value [pos=" + pos + ", expected=" + expFlag +
             ", actual=" + flag + ']');
-    }
-
-    /**
-     * @param fieldName Field name.
-     * @return {@code True} if field is set.
-     */
-    public boolean hasField(String fieldName) {
-        return findFieldById(fieldId(fieldName));
     }
 
     /** {@inheritDoc} */
@@ -2475,7 +2467,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
      * @param name Field name.
      * @return Offset.
      */
-    private boolean findFieldByName(String name) {
+    public boolean findFieldByName(String name) {
         assert hdrLen != 0;
 
         if (footerLen == 0)

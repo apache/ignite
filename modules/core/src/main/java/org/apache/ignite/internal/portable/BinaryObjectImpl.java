@@ -416,7 +416,7 @@ public final class BinaryObjectImpl extends BinaryObjectEx implements Externaliz
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        return newReader().hasField(fieldName);
+        return newReader().findFieldByName(fieldName);
     }
 
     /** {@inheritDoc} */
