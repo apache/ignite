@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -1351,7 +1352,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Collection of really deleted entries.
      * @throws IgniteCheckedException If failed.
      */
-    T2<Integer, Integer> delete(IgniteUuid parentId, Map<String, IgniteUuid> listing)
+    Collection<IgniteUuid> delete(IgniteUuid parentId, Map<String, IgfsListingEntry> listing)
         throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
@@ -1362,8 +1363,7 @@ public class IgfsMetaManager extends IgfsManager {
                 IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
-                    int resDeleted = 0;
-                    int resDisappeared = 0;
+                    Collection<IgniteUuid> res = new HashSet<>();
 
                     // Obtain all necessary locks in one hop.
                     IgniteUuid[] allIds = new IgniteUuid[listing.size() + 1];
@@ -1372,8 +1372,8 @@ public class IgfsMetaManager extends IgfsManager {
 
                     int i = 1;
 
-                    for (IgniteUuid id : listing.values())
-                        allIds[i++] = id;
+                    for (IgfsListingEntry entry : listing.values())
+                        allIds[i++] = entry.fileId();
 
                     Map<IgniteUuid, IgfsFileInfo> locks = lockIds(allIds);
 
@@ -1387,8 +1387,8 @@ public class IgfsMetaManager extends IgfsManager {
                         newListing.putAll(parentInfo.listing());
 
                         // Remove child entries if possible.
-                        for (Map.Entry<String, IgniteUuid> entry : listing.entrySet()) {
-                            IgniteUuid entryId = entry.getValue();
+                        for (Map.Entry<String, IgfsListingEntry> entry : listing.entrySet()) {
+                            IgniteUuid entryId = entry.getValue().fileId();
 
                             IgfsFileInfo entryInfo = locks.get(entryId);
 
@@ -1402,14 +1402,14 @@ public class IgfsMetaManager extends IgfsManager {
 
                                     newListing.remove(entry.getKey());
 
-                                    resDeleted++;
+                                    res.add(entryId);
                                 }
                             }
                             else {
                                 // Entry was deleted concurrently.
                                 newListing.remove(entry.getKey());
 
-                                resDisappeared++;
+                                res.add(entryId);
                             }
                         }
 
@@ -1419,7 +1419,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     tx.commit();
 
-                    return new T2(resDeleted, resDisappeared);
+                    return res;
                 }
                 finally {
                     tx.close();
@@ -1432,6 +1432,71 @@ public class IgfsMetaManager extends IgfsManager {
         else
             throw new IllegalStateException("Failed to perform delete because Grid is stopping [parentId=" +
                 parentId + ", listing=" + listing + ']');
+    }
+
+    /**
+     * Remove entry from the metadata listing.
+     * Used solely by IgfsDeleteWorker.
+     *
+     * @param parentId Parent ID.
+     * @param name Name.
+     * @param id ID.
+     * @return {@code True} in case the entry really was removed from the cache by this call.
+     * @throws IgniteCheckedException If failed.
+     */
+    boolean delete(IgniteUuid parentId, String name, IgniteUuid id) throws IgniteCheckedException {
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
+
+                IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+
+                try {
+                    boolean res = false;
+
+                    Map<IgniteUuid, IgfsFileInfo> infos = lockIds(parentId, id);
+
+                    IgfsFileInfo victim = infos.get(id);
+
+                    if (victim == null)
+                        return res;
+
+                    assert victim.isDirectory() || DELETE_LOCK_ID.equals(victim.lockId()) :
+                            " isDir: " + victim.isDirectory() + ", lockId: " + victim.lockId();
+
+                    // Proceed only in case both parent and child exist.
+                    if (infos.containsKey(parentId) && infos.containsKey(id)) {
+                        IgfsFileInfo parentInfo = infos.get(parentId);
+
+                        assert parentInfo != null;
+
+                        IgfsListingEntry listingEntry = parentInfo.listing().get(name);
+
+                        if (listingEntry != null)
+                            id2InfoPrj.invoke(parentId, new UpdateListing(name, listingEntry, true));
+
+                        IgfsFileInfo deleted = id2InfoPrj.getAndRemove(id);
+
+                        assert victim.id().equals(deleted.id());
+
+                        res = true;
+                    }
+
+                    tx.commit();
+
+                    return res;
+                }
+                finally {
+                    tx.close();
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to perform delete because Grid is stopping [parentId=" +
+                parentId + ", name=" + name + ", id=" + id + ']');
     }
 
     /**
