@@ -329,13 +329,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads an object of predefined type.
         /// </summary>
-        public static T ReadSystemType<T>(byte typeId, BinaryReader ctx)
+        public static bool TryReadSystemType<T>(byte typeId, BinaryReader ctx, out T res)
         {
             var handler = ReadHandlers[typeId];
 
-            Debug.Assert(handler != null, "Cannot find predefined read handler: " + typeId);
-            
-            return handler.Read<T>(ctx);
+            if (handler == null)
+            {
+                res = default(T);
+                return false;
+            }
+
+            res = handler.Read<T>(ctx);
+            return true;
         }
         
         /// <summary>

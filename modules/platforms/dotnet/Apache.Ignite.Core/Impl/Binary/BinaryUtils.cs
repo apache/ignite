@@ -1375,52 +1375,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /**
-         * <summary>Check whether this is predefined type.</summary>
-         * <param name="hdr">Header.</param>
-         * <returns>True is this is one of predefined types with special semantics.</returns>
-         */
-        public static bool IsPredefinedType(byte hdr)
-        {
-            switch (hdr)
-            {
-                case TypeByte:
-                case TypeShort:
-                case TypeInt:
-                case TypeLong:
-                case TypeFloat:
-                case TypeDouble:
-                case TypeChar:
-                case TypeBool:
-                case TypeDecimal:
-                case TypeString:
-                case TypeGuid:
-                case TypeTimestamp:
-                case TypeEnum:
-                case TypeArrayByte:
-                case TypeArrayShort:
-                case TypeArrayInt:
-                case TypeArrayLong:
-                case TypeArrayFloat:
-                case TypeArrayDouble:
-                case TypeArrayChar:
-                case TypeArrayBool:
-                case TypeArrayDecimal:
-                case TypeArrayString:
-                case TypeArrayGuid:
-                case TypeArrayTimestamp:
-                case TypeArrayEnum:
-                case TypeArray:
-                case TypeCollection:
-                case TypeDictionary:
-                case TypeMapEntry:
-                case TypeBinary:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        /**
          * <summary>Convert type name.</summary>
          * <param name="typeName">Type name.</param>
          * <param name="converter">Converter.</param>

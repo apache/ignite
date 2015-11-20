@@ -562,14 +562,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return true;
             }
 
-            if (BinaryUtils.IsPredefinedType(hdr))
-            {
-                // TODO: Read enums as BinaryEnum in binary mode.
-
-                res = BinarySystemHandlers.ReadSystemType<T>(hdr, this);
-
+            if (BinarySystemHandlers.TryReadSystemType(hdr, this, out res))
                 return true;
-            }
 
             throw new BinaryObjectException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']');
         }
