@@ -42,9 +42,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Grid. */
         private readonly Marshaller _marsh;
         
-        /** Handle. */
-        private readonly long _handle;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryFilterHolder" /> class.
         /// </summary>
@@ -63,16 +60,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             _invoker = invoker;
             _marsh = marsh;
             _keepBinary = keepBinary;
-
-            _handle = marsh.Ignite.HandleRegistry.Allocate(this);
-        }
-
-        /// <summary>
-        /// Gets the handle.
-        /// </summary>
-        public long Handle
-        {
-            get { return _handle; }
         }
 
         /// <summary>
@@ -112,8 +99,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             _marsh = reader0.Marshaller;
 
             _invoker = GetInvoker(_pred);
-
-            _handle = _marsh.Ignite.HandleRegistry.Allocate(this);
         }
 
         /// <summary>
