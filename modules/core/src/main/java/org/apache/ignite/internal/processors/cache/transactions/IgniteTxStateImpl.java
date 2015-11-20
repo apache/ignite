@@ -24,11 +24,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -45,7 +47,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** Active cache IDs. */
-    private Set<Integer> activeCacheIds = new HashSet<>();
+    private GridLongList activeCacheIds = new GridLongList();
     /** Per-transaction read map. */
 
     @GridToStringInclude
@@ -66,13 +68,13 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public Integer firstCacheId() {
-        return F.first(activeCacheIds);
+        return activeCacheIds.isEmpty() ? null : (int)activeCacheIds.get(0);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheContext singleCacheContext(GridCacheSharedContext cctx) {
         if (activeCacheIds.size() == 1) {
-            int cacheId = F.first(activeCacheIds);
+            int cacheId = (int)activeCacheIds.get(0);
 
             return cctx.cacheContext(cacheId);
         }
@@ -82,8 +84,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public void awaitLastFut(GridCacheSharedContext cctx) {
-        for (Integer cacheId : activeCacheIds)
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int)activeCacheIds.get(i);
+
             cctx.cacheContext(cacheId).cache().awaitLastFut();
+        }
     }
 
     /** {@inheritDoc} */
@@ -91,7 +96,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         GridDhtTopologyFuture topFut) {
         StringBuilder invalidCaches = null;
 
-        for (Integer cacheId : activeCacheIds) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int)activeCacheIds.get(i);
+
             GridCacheContext ctx = cctx.cacheContext(cacheId);
 
             assert ctx != null : cacheId;
@@ -113,7 +120,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
                 invalidCaches.toString());
         }
 
-        for (int cacheId : activeCacheIds) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int)activeCacheIds.get(i);
+
             GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
             if (CU.affinityNodes(cacheCtx, topFut.topologyVersion()).isEmpty()) {
@@ -127,7 +136,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean sync(GridCacheSharedContext cctx) {
-        for (int cacheId : activeCacheIds) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int)activeCacheIds.get(i);
+
             if (cctx.cacheContext(cacheId).config().getWriteSynchronizationMode() == FULL_SYNC)
                 return true;
         }
@@ -137,7 +148,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean hasNearCache(GridCacheSharedContext cctx) {
-        for (Integer cacheId : activeCacheIds) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int)activeCacheIds.get(i);
+
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
             if (cacheCtx.isNear())
@@ -163,7 +176,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
                 int idx = 0;
 
-                for (Integer activeCacheId : activeCacheIds) {
+                for (int i = 0; i < activeCacheIds.size(); i++) {
+                    int activeCacheId = (int)activeCacheIds.get(i);
+
                     cacheNames.append(cctx.cacheContext(activeCacheId).name());
 
                     if (idx++ < activeCacheIds.size() - 1)
@@ -192,7 +207,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
         GridCacheContext<?, ?> nonLocCtx = null;
 
-        for (int cacheId : activeCacheIds) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int)activeCacheIds.get(i);
+
             GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
             if (!cacheCtx.isLocal()) {
@@ -222,7 +239,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         if (!activeCacheIds.isEmpty()) {
             GridCacheContext<?, ?> nonLocCtx = null;
 
-            for (int cacheId : activeCacheIds) {
+            for (int i = 0; i < activeCacheIds.size(); i++) {
+                int cacheId = (int)activeCacheIds.get(i);
+
                 GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
                 if (!cacheCtx.isLocal()) {
@@ -240,7 +259,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public boolean storeUsed(GridCacheSharedContext cctx) {
         if (!activeCacheIds.isEmpty()) {
-            for (int cacheId : activeCacheIds) {
+            for (int i = 0; i < activeCacheIds.size(); i++) {
+                int cacheId = (int)activeCacheIds.get(i);
+
                 CacheStoreManager store = cctx.cacheContext(cacheId).store();
 
                 if (store.configured())
@@ -252,13 +273,29 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasInterceptor(GridCacheSharedContext cctx) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int)activeCacheIds.get(i);
+
+            CacheInterceptor interceptor = cctx.cacheContext(cacheId).config().getInterceptor();
+
+            if (interceptor != null)
+                return true;
+        }
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
-        Collection<Integer> cacheIds = activeCacheIds;
+        GridLongList cacheIds = activeCacheIds;
 
         if (!cacheIds.isEmpty()) {
             Collection<CacheStoreManager> stores = new ArrayList<>(cacheIds.size());
 
-            for (int cacheId : cacheIds) {
+            for (int i = 0; i < cacheIds.size(); i++) {
+                int cacheId = (int)cacheIds.get(i);
+
                 CacheStoreManager store = cctx.cacheContext(cacheId).store();
 
                 if (store.configured())
@@ -273,7 +310,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public void onTxEnd(GridCacheSharedContext cctx, IgniteInternalTx tx, boolean commit) {
-        for (int cacheId : activeCacheIds) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int)activeCacheIds.get(i);
+
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
             onTxEnd(cacheCtx, tx, commit);

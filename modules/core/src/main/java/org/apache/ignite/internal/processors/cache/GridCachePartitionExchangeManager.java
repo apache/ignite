@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -77,6 +79,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -132,6 +135,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
+
+    /** */
+    private final ConcurrentSkipListMap<AffinityTopologyVersion, IgnitePair<IgniteProductVersion>> nodeVers =
+        new ConcurrentSkipListMap<>();
 
     /** */
     private final AtomicReference<AffinityTopologyVersion> readyTopVer =
@@ -572,6 +579,30 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * Gets minimum node version for the given topology version.
+     *
+     * @param topVer Topology version to get minimum node version for.
+     * @return Minimum node version.
+     */
+    public IgniteProductVersion minimumNodeVersion(AffinityTopologyVersion topVer) {
+        IgnitePair<IgniteProductVersion> vers = nodeVers.get(topVer);
+
+        return vers == null ? cctx.localNode().version() : vers.get1();
+    }
+
+    /**
+     * Gets maximum node version for the given topology version.
+     *
+     * @param topVer Topology version to get maximum node version for.
+     * @return Maximum node version.
+     */
+    public IgniteProductVersion maximumNodeVersion(AffinityTopologyVersion topVer) {
+        IgnitePair<IgniteProductVersion> vers = nodeVers.get(topVer);
+
+        return vers == null ? cctx.localNode().version() : vers.get2();
+    }
+
+    /**
      * @return {@code true} if entered to busy state.
      */
     private boolean enterBusy() {
@@ -832,6 +863,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isDebugEnabled())
             log.debug("Exchange done [topVer=" + topVer + ", fut=" + exchFut + ", err=" + err + ']');
 
+        IgniteProductVersion minVer = cctx.localNode().version();
+        IgniteProductVersion maxVer = cctx.localNode().version();
+
+        if (err == null) {
+            if (!F.isEmpty(exchFut.discoveryEvent().topologyNodes())) {
+                for (ClusterNode node : exchFut.discoveryEvent().topologyNodes()) {
+                    IgniteProductVersion ver = node.version();
+
+                    if (ver.compareTo(minVer) < 0)
+                        minVer = ver;
+
+                    if (ver.compareTo(maxVer) > 0)
+                        maxVer = ver;
+                }
+            }
+        }
+
+        nodeVers.put(topVer, new IgnitePair<>(minVer, maxVer));
+
+        for (AffinityTopologyVersion oldVer : nodeVers.headMap(new AffinityTopologyVersion(topVer.topologyVersion() - 10, 0)).keySet())
+            nodeVers.remove(oldVer);
+
         if (err == null) {
             while (true) {
                 AffinityTopologyVersion readyVer = readyTopVer.get();
@@ -936,7 +989,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         top = cacheCtx.topology();
 
                     if (top != null)
-                        updated |= top.update(null, entry.getValue()) != null;
+                        updated |= top.update(null, entry.getValue(), null) != null;
                 }
 
                 if (!cctx.kernalContext().clientNode() && updated)
@@ -979,7 +1032,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         top = cacheCtx.topology();
 
                     if (top != null)
-                        updated |= top.update(null, entry.getValue()) != null;
+                        updated |= top.update(null, entry.getValue(), null) != null;
                 }
 
                 if (updated)
@@ -1050,7 +1103,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             int cnt = 0;
 
-            for (GridDhtPartitionsExchangeFuture fut : exchFuts) {
+            for (GridDhtPartitionsExchangeFuture fut : exchFuts.values()) {
                 U.warn(log, ">>> " + fut);
 
                 if (++cnt == 10)

@@ -613,21 +613,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                                 X.println("Near entry [grid="+ g.name() + ", key=" + k + ", entry=" + nearEntry);
                                 X.println("DHT entry [grid=" + g.name() + ", key=" + k + ", entry=" + dhtEntry);
-
-                                GridCacheMvccCandidate nearCand =
-                                    nearEntry == null ? null : F.first(nearEntry.localCandidates());
-
-                                if (nearCand != null)
-                                    X.println("Near futures: " +
-                                        nearEntry.context().mvcc().futures(nearCand.version()));
-
-                                GridCacheMvccCandidate dhtCand =
-                                    dhtEntry == null ? null : F.first(dhtEntry.localCandidates());
-
-                                if (dhtCand != null)
-                                    X.println("Dht futures: " +
-                                        dhtEntry.context().mvcc().futures(dhtCand.version()));
-
                             }
                         }
                     }

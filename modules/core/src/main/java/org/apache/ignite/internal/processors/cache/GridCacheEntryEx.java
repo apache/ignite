@@ -360,6 +360,7 @@ public interface GridCacheEntryEx {
      * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
      * @param dhtVer Dht version for near cache entry.
+     * @param updateCntr Update counter.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws IgniteCheckedException If storing value failed.
@@ -382,7 +383,8 @@ public interface GridCacheEntryEx {
         @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
         String taskName,
-        @Nullable GridCacheVersion dhtVer
+        @Nullable GridCacheVersion dhtVer,
+        @Nullable Long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -417,7 +419,8 @@ public interface GridCacheEntryEx {
         @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
         String taskName,
-        @Nullable GridCacheVersion dhtVer
+        @Nullable GridCacheVersion dhtVer,
+        @Nullable Long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -446,6 +449,7 @@ public interface GridCacheEntryEx {
      * @param intercept If {@code true} then calls cache interceptor.
      * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
+     * @param updateCntr Update counter.
      * @return Tuple where first value is flag showing whether operation succeeded,
      *      second value is old entry value if return value is requested, third is updated entry value,
      *      fourth is the version to enqueue for deferred delete the fifth is DR conflict context
@@ -478,7 +482,9 @@ public interface GridCacheEntryEx {
         boolean conflictResolve,
         boolean intercept,
         @Nullable UUID subjId,
-        String taskName
+        String taskName,
+        @Nullable CacheObject prevVal,
+        @Nullable Long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

@@ -67,6 +67,7 @@ import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLeanMap;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -74,7 +75,6 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
@@ -355,6 +355,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      */
     public boolean needReturnValue() {
         return needRetVal;
+    }
+
+    /**
+     * @return {@code True} if transaction participates in a cache that has an interceptor configured.
+     */
+    public boolean hasInterceptor() {
+        return txState().hasInterceptor(cctx);
     }
 
     /**
@@ -1005,7 +1012,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             cached.isNear() ? null : explicitVer,
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
-                                            dhtVer);
+                                            dhtVer,
+                                            null);
+
+                                        if (updRes.success())
+                                            txEntry.updateCounter(updRes.updatePartitionCounter());
 
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerSet(
@@ -1025,7 +1036,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 null,
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
-                                                dhtVer);
+                                                dhtVer,
+                                                null);
                                         }
                                     }
                                     else if (op == DELETE) {
@@ -1042,7 +1054,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             cached.isNear() ? null : explicitVer,
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
-                                            dhtVer);
+                                            dhtVer,
+                                            null);
+
+                                        if (updRes.success())
+                                            txEntry.updateCounter(updRes.updatePartitionCounter());
 
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerRemove(
@@ -1058,7 +1074,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 null,
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
-                                                dhtVer);
+                                                dhtVer,
+                                                null);
                                         }
                                     }
                                     else if (op == RELOAD) {
@@ -1365,7 +1382,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             if (txEntry != null) {
                 CacheObject val = txEntry.value();
 
-                // Read value from locked entry in group-lock transaction as well.
                 if (txEntry.hasValue()) {
                     if (!F.isEmpty(txEntry.entryProcessors()))
                         val = txEntry.applyEntryProcessors(val);
@@ -2217,6 +2233,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     /**
      * @param cacheCtx Cache context.
      * @param keys Keys to load.
+     * @param filter Filter.
      * @param ret Return value.
      * @param needReadVer Read version flag.
      * @param singleRmv {@code True} for single remove operation.
@@ -3045,7 +3062,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         try {
             Set<?> keySet = map0 != null ? map0.keySet() : invokeMap0.keySet();
 
-            final Collection<KeyCacheObject> enlisted = new ArrayList<>();
+            final Collection<KeyCacheObject> enlisted = new ArrayList<>(keySet.size());
 
             CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
@@ -3434,7 +3451,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      */
     public boolean init() {
         return !txState.init(txSize) || cctx.tm().onStarted(this);
-
     }
 
     /**
