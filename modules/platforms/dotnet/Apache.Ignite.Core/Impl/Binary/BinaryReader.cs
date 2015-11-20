@@ -564,6 +564,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (BinaryUtils.IsPredefinedType(hdr))
             {
+                // TODO: Read enums as BinaryEnum in binary mode.
+
                 res = BinarySystemHandlers.ReadSystemType<T>(hdr, this);
 
                 return true;
