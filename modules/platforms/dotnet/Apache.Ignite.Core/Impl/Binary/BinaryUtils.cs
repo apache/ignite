@@ -1291,18 +1291,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Write enum.
         /// </summary>
-        /// <param name="stream">Stream.</param>
+        /// <param name="writer">Writer.</param>
         /// <param name="val">Value.</param>
-        public static void WriteEnum(IBinaryStream stream, Enum val)
+        public static void WriteEnum<T>(BinaryWriter writer, T val)
         {
-            if (Enum.GetUnderlyingType(val.GetType()) == TypInt)
+            var enumType = val.GetType();
+
+            if (Enum.GetUnderlyingType(enumType) == TypInt)
             {
-                stream.WriteInt(ObjTypeId);
-                stream.WriteInt((int) (object) val);
+                var desc = writer.Marshaller.GetDescriptor(enumType);
+
+                writer.WriteInt(desc == null ? ObjTypeId : desc.TypeId);
+                writer.WriteInt(TypeCaster<int>.Cast(val));
             }
             else
                 throw new BinaryObjectException("Only Int32 underlying type is supported for enums: " +
-                    val.GetType().Name);
+                    enumType.Name);
         }
 
         /// <summary>

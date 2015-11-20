@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Binary.Structure;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary writer implementation.
@@ -792,8 +793,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeEnum);
 
-            _stream.WriteByte(BinaryUtils.TypeEnum);
-            BinaryUtils.WriteEnum(_stream, (Enum)(object)val);
+            WriteEnum(val);
         }
 
         /// <summary>
@@ -804,7 +804,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteEnum<T>(T val)
         {
             _stream.WriteByte(BinaryUtils.TypeEnum);
-            BinaryUtils.WriteEnum(_stream, (Enum)(object)val);
+            BinaryUtils.WriteEnum(this, val);
         }
 
         /// <summary>
