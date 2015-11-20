@@ -23,8 +23,6 @@ import java.util.Map;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,26 +55,9 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             checkRemoved(idx);
 
-            int cnt = 0;
-
             GridCacheQueueItemKey key = itemKey(idx);
 
-            while (true) {
-                try {
-                    cache.getAndPut(key, item);
-
-                    break;
-                }
-                catch (CachePartialUpdateCheckedException e) {
-                    if (cnt++ == GridCacheAdapter.MAX_RETRIES)
-                        throw e;
-                    else {
-                        U.warn(log, "Failed to put queue item, will retry [err=" + e + ", idx=" + idx + ']');
-
-                        U.sleep(RETRY_DELAY);
-                    }
-                }
-            }
+            cache.getAndPut(key, item);
 
             return true;
         }
@@ -99,38 +80,18 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
                 GridCacheQueueItemKey key = itemKey(idx);
 
-                int cnt = 0;
+                T data = (T)cache.getAndRemove(key);
 
-                long stop = 0;
+                if (data != null)
+                    return data;
 
-                while (true) {
-                    try {
-                        T data = (T)cache.getAndRemove(key);
+                long stop = U.currentTimeMillis() + RETRY_TIMEOUT;
 
-                        if (data != null)
-                            return data;
+                while (U.currentTimeMillis() < stop) {
+                    data = (T)cache.getAndRemove(key);
 
-                        if (stop == 0)
-                            stop = U.currentTimeMillis() + RETRY_TIMEOUT;
-
-                        while (U.currentTimeMillis() < stop ) {
-                            data = (T)cache.getAndRemove(key);
-
-                            if (data != null)
-                                return data;
-                        }
-
-                        break;
-                    }
-                    catch (CachePartialUpdateCheckedException e) {
-                        if (cnt++ == GridCacheAdapter.MAX_RETRIES)
-                            throw e;
-                        else {
-                            U.warn(log, "Failed to remove queue item, will retry [err=" + e + ']');
-
-                            U.sleep(RETRY_DELAY);
-                        }
-                    }
+                    if (data != null)
+                        return data;
                 }
 
                 U.warn(log, "Failed to get item, will retry poll [queue=" + queueName + ", idx=" + idx + ']');
@@ -162,24 +123,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                 idx++;
             }
 
-            int cnt = 0;
-
-            while (true) {
-                try {
-                    cache.putAll(putMap);
-
-                    break;
-                }
-                catch (CachePartialUpdateCheckedException e) {
-                    if (cnt++ == GridCacheAdapter.MAX_RETRIES)
-                        throw e;
-                    else {
-                        U.warn(log, "Failed to add items, will retry [err=" + e + ']');
-
-                        U.sleep(RETRY_DELAY);
-                    }
-                }
-            }
+            cache.putAll(putMap);
 
             return true;
         }
@@ -198,34 +142,14 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             GridCacheQueueItemKey key = itemKey(idx);
 
-            int cnt = 0;
+            if (cache.remove(key))
+                return;
 
-            long stop = 0;
+            long stop = U.currentTimeMillis() + RETRY_TIMEOUT;
 
-            while (true) {
-                try {
-                    if (cache.remove(key))
-                        return;
-
-                    if (stop == 0)
-                        stop = U.currentTimeMillis() + RETRY_TIMEOUT;
-
-                    while (U.currentTimeMillis() < stop ) {
-                        if (cache.remove(key))
-                            return;
-                    }
-
-                    break;
-                }
-                catch (CachePartialUpdateCheckedException e) {
-                    if (cnt++ == GridCacheAdapter.MAX_RETRIES)
-                        throw e;
-                    else {
-                        U.warn(log, "Failed to add items, will retry [err=" + e + ']');
-
-                        U.sleep(RETRY_DELAY);
-                    }
-                }
+            while (U.currentTimeMillis() < stop) {
+                if (cache.remove(key))
+                    return;
             }
 
             U.warn(log, "Failed to remove item, [queue=" + queueName + ", idx=" + idx + ']');
@@ -240,21 +164,6 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     @SuppressWarnings("unchecked")
     @Nullable private Long transformHeader(EntryProcessor<GridCacheQueueHeaderKey, GridCacheQueueHeader, Long> c)
         throws IgniteCheckedException {
-        int cnt = 0;
-
-        while (true) {
-            try {
-                return (Long)cache.invoke(queueKey, c).get();
-            }
-            catch (CachePartialUpdateCheckedException e) {
-                if (cnt++ == GridCacheAdapter.MAX_RETRIES)
-                    throw e;
-                else {
-                    U.warn(log, "Failed to update queue header, will retry [err=" + e + ']');
-
-                    U.sleep(RETRY_DELAY);
-                }
-            }
-        }
+        return (Long)cache.invoke(queueKey, c).get();
     }
 }

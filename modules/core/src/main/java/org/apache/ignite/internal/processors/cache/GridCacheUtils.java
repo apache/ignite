@@ -1788,7 +1788,7 @@ public class GridCacheUtils {
                     try {
                         return c.call();
                     }
-                    catch (ClusterGroupEmptyCheckedException e) {
+                    catch (ClusterGroupEmptyCheckedException | ClusterTopologyServerNotFoundException e) {
                         throw e;
                     }
                     catch (TransactionRollbackException e) {
@@ -1804,6 +1804,11 @@ public class GridCacheUtils {
                         if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
                             ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
 
+                            if (topErr instanceof ClusterGroupEmptyCheckedException || topErr instanceof
+                                ClusterTopologyServerNotFoundException)
+                                throw e;
+
+                            // IGNITE-1948: remove this check when the issue is fixed
                             if (topErr.retryReadyFuture() != null)
                                 topErr.retryReadyFuture().get();
                             else

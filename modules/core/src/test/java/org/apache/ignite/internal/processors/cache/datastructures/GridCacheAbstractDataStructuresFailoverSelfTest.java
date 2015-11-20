@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.Collection;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
@@ -32,22 +34,25 @@ import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -73,6 +78,9 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
     /** */
     private static final int TOP_CHANGE_THREAD_CNT = 3;
+
+    /** */
+    private boolean client;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -126,7 +134,45 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         cfg.setCacheConfiguration(ccfg);
 
+        if (client) {
+            cfg.setClientMode(client);
+            ((TcpDiscoverySpi)(cfg.getDiscoverySpi())).setForceServerMode(true);
+        }
+
         return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicLongFailsWhenServersLeft() throws Exception {
+        client = true;
+
+        Ignite ignite = startGrid(gridCount());
+
+        new Timer().schedule(new TimerTask() {
+            @Override public void run() {
+                for (int i = 0; i < gridCount(); i++)
+                    stopGrid(i);
+            }
+        }, 10_000);
+
+        long stopTime = U.currentTimeMillis() + TEST_TIMEOUT / 2;
+
+        IgniteAtomicLong atomic = ignite.atomicLong(STRUCTURE_NAME, 10, true);
+
+        try {
+            while (U.currentTimeMillis() < stopTime)
+                assertEquals(10, atomic.get());
+        }
+        catch (IgniteException e) {
+            if (X.hasCause(e, ClusterTopologyServerNotFoundException.class))
+                return;
+
+            throw e;
+        }
+
+        fail();
     }
 
     /**
