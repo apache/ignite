@@ -20,10 +20,13 @@ package org.apache.ignite.internal;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.IllegalCharsetNameException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1068,8 +1071,16 @@ public class IgnitionEx {
      * @return The name of the current grid. This method could return {@code null}.
      */
     public static String gridName(String defaultName) {
-        return Thread.currentThread() instanceof IgniteSpiThread ?
+        String result = Thread.currentThread() instanceof IgniteSpiThread ?
             ((IgniteSpiThread)Thread.currentThread()).getGridName() : defaultName;
+        try {
+            throw new IllegalCharsetNameException(Thread.currentThread().getClass().getName() + " result:" + result + " was:" + defaultName);
+        } catch (IllegalCharsetNameException icne) {
+            StringWriter sw = new StringWriter();
+            icne.printStackTrace(new PrintWriter(sw));
+            System.out.println(sw.toString());
+        }
+        return result;
     }
 
     /**
