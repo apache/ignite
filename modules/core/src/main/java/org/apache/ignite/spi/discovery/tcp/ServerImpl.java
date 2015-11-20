@@ -2169,7 +2169,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         new Thread(new Runnable() {
                             @Override public void run() {
                                 try {
-                                    spi.ignite().close();
+                                    ignite.close();
 
                                     U.log(log, "Stopped the grid successfully in response to TcpDiscoverySpi's " +
                                         "message worker thread abnormal termination.");
