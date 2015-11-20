@@ -17,10 +17,9 @@
 
 package org.apache.ignite.thread;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.worker.GridWorker;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class adds some necessary plumbing on top of the {@link Thread} class.
@@ -29,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
  *      <li>Consistent naming of threads</li>
  *      <li>Dedicated parent thread group</li>
  *      <li>Backing interrupted flag</li>
- *      <li>Name of the grid this thread belongs to</li>
  * </ul>
  * <b>Note</b>: this class is intended for internal use only.
  */
@@ -77,6 +75,18 @@ public class IgniteThread extends Thread {
     }
 
     /**
+     * Creates new thread name.
+     *
+     * @param num Thread number.
+     * @param threadName Thread name.
+     * @param gridName Grid name.
+     * @return New thread name.
+     */
+    private static String createName(long num, String threadName, String gridName) {
+        return threadName + "-#" + num + '%' + gridName + '%';
+    }
+
+    /**
      * @param procMsg Flag indicating whether thread is currently processing message.
      */
     public void processingMessage(boolean procMsg) {
@@ -93,17 +103,5 @@ public class IgniteThread extends Thread {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteThread.class, this, "name", getName());
-    }
-
-    /**
-     * Creates new thread name.
-     *
-     * @param num Thread number.
-     * @param threadName Thread name.
-     * @param gridName Grid name.
-     * @return New thread name.
-     */
-    private static String createName(long num, String threadName, String gridName) {
-        return threadName + "-#" + num + '%' + gridName + '%';
     }
 }
