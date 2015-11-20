@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -79,7 +80,7 @@ public class BinaryInternalIdMapper implements BinaryIdMapper {
     public int typeId(String typeName) {
         assert typeName != null;
 
-        return lowerCaseHashCode(typeName);
+        return lowerCaseHashCode(typeName, true);
     }
 
     /**
@@ -92,16 +93,17 @@ public class BinaryInternalIdMapper implements BinaryIdMapper {
     public int fieldId(int typeId, String fieldName) {
         assert fieldName != null;
 
-        return lowerCaseHashCode(fieldName);
+        return lowerCaseHashCode(fieldName, false);
     }
 
     /**
      * Routine to calculate string hash code an
      *
      * @param str String.
+     * @param type {@code True} if this is type name, false otherwise.
      * @return Hash code for given string converted to lower case.
      */
-    private static int lowerCaseHashCode(String str) {
+    private static int lowerCaseHashCode(String str, boolean type) {
         int len = str.length();
 
         int h = 0;
@@ -114,7 +116,14 @@ public class BinaryInternalIdMapper implements BinaryIdMapper {
             h = 31 * h + c;
         }
 
-        return h;
+        if (h != 0)
+            return h;
+        else {
+            String what = type ? "type" : "field";
+
+            throw new BinaryObjectException("Default binary ID mapper resolved " + what + " ID to zero " +
+                "(either change " + what + "'s name or use custom ID mapper) [name=" + str + ']');
+        }
     }
 
     /**
