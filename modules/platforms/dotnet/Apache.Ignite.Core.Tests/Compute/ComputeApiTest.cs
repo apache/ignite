@@ -864,9 +864,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnum()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<InteropComputeEnum>(EchoTask, EchoTypeEnum);
+            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnum);
 
-            Assert.AreEqual(InteropComputeEnum.Bar, res);
+            Assert.AreEqual(PlatformComputeEnum.Bar, res);
         }
 
         /// <summary>
@@ -875,13 +875,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnumArray()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<InteropComputeEnum[]>(EchoTask, EchoTypeEnumArray);
+            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum[]>(EchoTask, EchoTypeEnumArray);
 
             Assert.AreEqual(new[]
             {
-                InteropComputeEnum.Bar,
-                InteropComputeEnum.Baz,
-                InteropComputeEnum.Foo
+                PlatformComputeEnum.Bar,
+                PlatformComputeEnum.Baz,
+                PlatformComputeEnum.Foo
             }, res);
         }
 
@@ -893,12 +893,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             // TODO test successful and failing scenario
 
-            var enumVal = InteropComputeEnum.Baz;
+            var enumVal = PlatformComputeEnum.Baz;
 
             _grid1.GetCache<int, InteropComputeEnumFieldTest>(null)
                 .Put(EchoTypeEnumField, new InteropComputeEnumFieldTest {InteropEnum = enumVal});
 
-            var res = _grid1.GetCompute().ExecuteJavaTask<InteropComputeEnum>(EchoTask, EchoTypeEnumField);
+            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnumField);
 
             Assert.AreEqual(enumVal, res);
         }
@@ -1133,7 +1133,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 new BinaryTypeConfiguration(typeof (PlatformComputeBinarizable)),
                 new BinaryTypeConfiguration(typeof (PlatformComputeNetBinarizable)),
                 new BinaryTypeConfiguration(JavaBinaryCls),
-                new BinaryTypeConfiguration(typeof(InteropComputeEnum)),
+                new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
                 new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
             };
 
@@ -1319,7 +1319,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    public enum InteropComputeEnum
+    public enum PlatformComputeEnum
     {
         Foo,
         Bar,
@@ -1328,6 +1328,6 @@ namespace Apache.Ignite.Core.Tests.Compute
 
     public class InteropComputeEnumFieldTest
     {
-        public InteropComputeEnum InteropEnum { get; set; }
+        public PlatformComputeEnum InteropEnum { get; set; }
     }
 }
