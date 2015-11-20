@@ -2258,19 +2258,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(obj, res);
 
-        assertTrue(res.bArr == res.inner.bArr);
-        assertTrue(res.cArr == res.inner.cArr);
-        assertTrue(res.boolArr == res.inner.boolArr);
-        assertTrue(res.sArr == res.inner.sArr);
-        assertTrue(res.strArr == res.inner.strArr);
-        assertTrue(res.iArr == res.inner.iArr);
-        assertTrue(res.lArr == res.inner.lArr);
-        assertTrue(res.fArr == res.inner.fArr);
-        assertTrue(res.dArr == res.inner.dArr);
-        assertTrue(res.dateArr == res.inner.dateArr);
-        assertTrue(res.uuidArr == res.inner.uuidArr);
         assertTrue(res.objArr == res.inner.objArr);
-        assertTrue(res.bdArr == res.inner.bdArr);
         assertTrue(res.map == res.inner.map);
         assertTrue(res.col == res.inner.col);
         assertTrue(res.mEntry == res.inner.mEntry);

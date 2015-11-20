@@ -366,7 +366,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
      * @param obj Object.
      */
     void setHandler(Object obj) {
-        rCtx.put(start, obj);
+        setHandler(obj, start);
     }
 
     /**
@@ -1886,120 +1886,72 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
      * @return Value.
      */
     private byte[] doReadByteArray() {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
-        byte[] arr = in.readByteArray(len);
-
-        setHandler(arr, hPos);
-
-        return arr;
+        return in.readByteArray(len);
     }
 
     /**
      * @return Value.
      */
     private short[] doReadShortArray() {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
-        short[] arr = in.readShortArray(len);
-
-        setHandler(arr, hPos);
-
-        return arr;
+        return in.readShortArray(len);
     }
 
     /**
      * @return Value.
      */
     private int[] doReadIntArray() {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
-        int[] arr = in.readIntArray(len);
-
-        setHandler(arr, hPos);
-
-        return arr;
+        return in.readIntArray(len);
     }
 
     /**
      * @return Value.
      */
     private long[] doReadLongArray() {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
-        long[] arr = in.readLongArray(len);
-
-        setHandler(arr, hPos);
-
-        return arr;
+        return in.readLongArray(len);
     }
 
     /**
      * @return Value.
      */
     private float[] doReadFloatArray() {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
-        float[] arr = in.readFloatArray(len);
-
-        setHandler(arr, hPos);
-
-        return arr;
+        return in.readFloatArray(len);
     }
 
     /**
      * @return Value.
      */
     private double[] doReadDoubleArray() {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
-        double[] arr = in.readDoubleArray(len);
-
-        setHandler(arr, hPos);
-
-        return arr;
+        return in.readDoubleArray(len);
     }
 
     /**
      * @return Value.
      */
     private char[] doReadCharArray() {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
-        char[] arr = in.readCharArray(len);
-
-        setHandler(arr, hPos);
-
-        return arr;
+        return in.readCharArray(len);
     }
 
     /**
      * @return Value.
      */
     private boolean[] doReadBooleanArray() {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
-        boolean[] arr = in.readBooleanArray(len);
-
-        setHandler(arr, hPos);
-
-        return arr;
+        return in.readBooleanArray(len);
     }
 
     /**
@@ -2007,13 +1959,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
      * @throws BinaryObjectException In case of error.
      */
     private BigDecimal[] doReadDecimalArray() throws BinaryObjectException {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
         BigDecimal[] arr = new BigDecimal[len];
-
-        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -2036,13 +1984,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
      * @throws BinaryObjectException In case of error.
      */
     private String[] doReadStringArray() throws BinaryObjectException {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
         String[] arr = new String[len];
-
-        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -2065,13 +2009,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
      * @throws BinaryObjectException In case of error.
      */
     private UUID[] doReadUuidArray() throws BinaryObjectException {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
         UUID[] arr = new UUID[len];
-
-        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -2094,13 +2034,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
      * @throws BinaryObjectException In case of error.
      */
     private Date[] doReadDateArray() throws BinaryObjectException {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
         Date[] arr = new Date[len];
-
-        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -2123,13 +2059,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
      * @throws BinaryObjectException In case of error.
      */
     private Timestamp[] doReadTimestampArray() throws BinaryObjectException {
-        int hPos = positionForHandle();
-
         int len = in.readInt();
 
         Timestamp[] arr = new Timestamp[len];
-
-        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();

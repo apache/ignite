@@ -472,9 +472,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            if (tryWriteAsHandle(val))
-                return;
-
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(BYTE_ARR);
             out.unsafeWriteInt(val.length);
@@ -490,9 +487,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            if (tryWriteAsHandle(val))
-                return;
-
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(SHORT_ARR);
             out.unsafeWriteInt(val.length);
@@ -508,9 +502,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            if (tryWriteAsHandle(val))
-                return;
-
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(INT_ARR);
             out.unsafeWriteInt(val.length);
@@ -526,9 +517,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            if (tryWriteAsHandle(val))
-                return;
-
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(LONG_ARR);
             out.unsafeWriteInt(val.length);
@@ -544,9 +532,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            if (tryWriteAsHandle(val))
-                return;
-
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(FLOAT_ARR);
             out.unsafeWriteInt(val.length);
@@ -562,9 +547,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            if (tryWriteAsHandle(val))
-                return;
-
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(DOUBLE_ARR);
             out.unsafeWriteInt(val.length);
@@ -580,9 +562,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            if (tryWriteAsHandle(val))
-                return;
-
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(CHAR_ARR);
             out.unsafeWriteInt(val.length);
@@ -598,9 +577,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            if (tryWriteAsHandle(val))
-                return;
-
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(BOOLEAN_ARR);
             out.unsafeWriteInt(val.length);
@@ -616,9 +592,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            if (tryWriteAsHandle(val))
-                return;
-
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(DECIMAL_ARR);
             out.unsafeWriteInt(val.length);
@@ -635,9 +608,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            if (tryWriteAsHandle(val))
-                return;
-
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(STRING_ARR);
             out.unsafeWriteInt(val.length);
@@ -654,9 +624,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            if (tryWriteAsHandle(val))
-                return;
-
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(UUID_ARR);
             out.unsafeWriteInt(val.length);
@@ -673,9 +640,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            if (tryWriteAsHandle(val))
-                return;
-
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(DATE_ARR);
             out.unsafeWriteInt(val.length);
@@ -692,9 +656,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
          if (val == null)
              out.writeByte(NULL);
          else {
-             if (tryWriteAsHandle(val))
-                 return;
-
              out.unsafeEnsure(1 + 4);
              out.unsafeWriteByte(TIMESTAMP_ARR);
              out.unsafeWriteInt(val.length);
@@ -1800,6 +1761,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             out.unsafeWriteByte(GridPortableMarshaller.HANDLE);
             out.unsafeWriteInt(pos - old);
+
+            if (obj.getClass().isArray())
+                System.out.println("CASE!");
 
             return true;
         }
