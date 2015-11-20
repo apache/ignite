@@ -560,6 +560,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                     res = ReadBinaryObject<T>(doDetach);
 
                     return true;
+
+                case BinaryUtils.TypeEnum:
+                    res = ReadEnum0<T>(this);
+
+                    return true;
             }
 
             if (BinarySystemHandlers.TryReadSystemType(hdr, this, out res))
