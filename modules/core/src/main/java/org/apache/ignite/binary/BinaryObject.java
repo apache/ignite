@@ -45,9 +45,7 @@ import java.util.TreeMap;
  * String field = val.field("myFieldName");
  * </pre>
  * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
- * typed objects at all times. In this case we do incur the deserialization cost. However, if
- * {@link org.apache.ignite.marshaller.portable.BinaryMarshaller#isKeepDeserialized()} is {@code true} then Ignite will only deserialize on the first access
- * and will cache the deserialized object, so it does not have to be deserialized again:
+ * typed objects at all times. In this case we do incur the deserialization cost.
  * <pre name=code class=java>
  * IgniteCache&lt;MyKey.class, MyValue.class&gt; cache = grid.cache(null);
  *

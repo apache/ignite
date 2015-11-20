@@ -24,7 +24,8 @@ import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 
 /**
- *
+ * Configuration object for Ignite Binary Objects.
+ * @see org.apache.ignite.IgniteBinary
  */
 public class BinaryConfiguration {
     /** Default compact footer flag setting. */
