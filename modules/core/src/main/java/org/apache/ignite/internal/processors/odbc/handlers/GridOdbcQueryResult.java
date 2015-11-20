@@ -1,5 +1,6 @@
 package org.apache.ignite.internal.processors.odbc.handlers;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -10,7 +11,10 @@ public class GridOdbcQueryResult {
     private long queryId;
 
     /** Query result rows. */
-    private List<Object> items = null;
+    private Collection<?> items = null;
+
+    /** Fields metadata. */
+    private Collection<?> fieldsMeta;
 
     /** Flag indicating the query has no unfetched results. */
     private boolean last = false;
@@ -37,9 +41,23 @@ public class GridOdbcQueryResult {
     }
 
     /**
+     * @param fieldsMeta Fields metadata.
+     */
+    public void setFieldsMetadata(Collection<?> fieldsMeta) {
+        this.fieldsMeta = fieldsMeta;
+    }
+
+    /**
+     * @return Fields metadata.
+     */
+    public Collection<?> getFieldsMetadata() {
+        return fieldsMeta;
+    }
+
+    /**
      * @return Query result rows.
      */
-    public List<Object> getItems() {
+    public Collection<?> getItems() {
         return items;
     }
 

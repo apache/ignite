@@ -22,6 +22,10 @@
 #include <string>
 
 #include "ignite/impl/binary/binary_writer_impl.h"
+#include "ignite/impl/binary/binary_reader_impl.h"
+
+#include "utility.h"
+#include "column_meta.h"
 
 namespace ignite
 {
@@ -117,7 +121,32 @@ namespace ignite
                 status = reader.ReadInt8();
 
                 if (status == RESPONSE_STATUS_SUCCESS)
+                {
                     queryId = reader.ReadInt64();
+
+                    //LOG_MSG("Query id: %lld\n", queryId);
+
+                    int32_t metaNum = reader.ReadInt32();
+
+                    //LOG_MSG("metaNum: %d\n", metaNum);
+
+                    meta.clear();
+                    meta.reserve(static_cast<size_t>(metaNum));
+
+                    for (int32_t i = 0; i < metaNum; ++i)
+                    {
+                        meta.push_back(ColumnMeta());
+
+                        meta.back().Read(reader);
+                    }
+                }
+                else
+                {
+                    int32_t errorLen = reader.ReadString(0, 0);
+                    error.resize(errorLen);
+
+                    reader.ReadString(&error[0], static_cast<int32_t>(error.size()));
+                }
             }
 
             /**
@@ -138,12 +167,36 @@ namespace ignite
                 return status;
             }
 
+            /**
+             * Get resulting error.
+             * @return Error.
+             */
+            const std::string& GetError() const
+            {
+                return error;
+            }
+
+            /**
+             * Get column metadata.
+             * @return Column metadata.
+             */
+            const std::vector<ColumnMeta>& GetMeta() const
+            {
+                return meta;
+            }
+
         private:
             /** Request processing status. */
             int8_t status;
 
             /** Query ID. */
             int64_t queryId;
+
+            /** Error message. */
+            std::string error;
+
+            /** Columns metadata. */
+            std::vector<ColumnMeta> meta;
         };
     }
 }

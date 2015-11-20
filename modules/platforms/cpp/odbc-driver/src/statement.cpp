@@ -29,7 +29,7 @@ namespace ignite
     namespace odbc
     {
         Statement::Statement(Connection& parent) :
-            connection(parent), columnBindings(), resultQueryId(0), parser()
+            connection(parent), columnBindings(), resultQueryId(0), parser(), resultMeta()
         {
             // No-op.
         }
@@ -44,12 +44,26 @@ namespace ignite
             columnBindings[columnIdx] = buffer;
         }
 
+        void Statement::PrepareSqlQuery(const char* query, size_t len)
+        {
+            sql.assign(query, len);
+        }
+
         bool Statement::ExecuteSqlQuery(const char* query, size_t len)
         {
             using namespace ignite::impl::interop;
 
-            std::string sql(query, len);
+            PrepareSqlQuery(query, len);
+
+            return ExecuteSqlQuery();
+        }
+
+        bool Statement::ExecuteSqlQuery()
+        {
             const std::string& cacheName = connection.GetCache();
+
+            if (sql.empty())
+                return false;
 
             QueryExecuteRequest req(cacheName, sql);
             QueryExecuteResponse rsp;
@@ -59,9 +73,26 @@ namespace ignite
             if (!success)
                 return false;
 
+            if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
+            {
+                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+
+                return false;
+            }
+
             resultQueryId = rsp.GetQueryId();
 
+            resultMeta.assign(rsp.GetMeta().begin(), rsp.GetMeta().end());
+
             LOG_MSG("Query id: %lld\n", resultQueryId);
+
+            for (int i = 0; i < rsp.GetMeta().size(); ++i)
+            {
+                LOG_MSG("[%d] SchemaName:    %s\n", i, rsp.GetMeta()[i].GetSchemaName().c_str());
+                LOG_MSG("[%d] TypeName:      %s\n", i, rsp.GetMeta()[i].GetTypeName().c_str());
+                LOG_MSG("[%d] FieldName:     %s\n", i, rsp.GetMeta()[i].GetFieldName().c_str());
+                LOG_MSG("[%d] FieldTypeName: %s\n", i, rsp.GetMeta()[i].GetFieldTypeName().c_str());
+            }
 
             return true;
         }

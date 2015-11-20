@@ -37,7 +37,7 @@ namespace ignite
              *
              * @param cap Capacity.
              */
-            explicit InteropStackMemory(int32_t cap)
+            explicit InteropStackMemory(int32_t cap) : owning(true)
             {
                 memPtr = mem;
 
@@ -48,11 +48,27 @@ namespace ignite
             }
 
             /**
+             * Constructor creating stack memory object from existing memory pointer.
+             *
+             * @param memPtr Memory pointer.
+             */
+            explicit InteropStackMemory(int8_t* ptr, int32_t len) : owning(false)
+            {
+                memPtr = mem;
+
+                Data(memPtr, ptr);
+                Capacity(memPtr, len);
+                Length(memPtr, len);
+                Flags(memPtr, ignite::impl::interop::IGNITE_MEM_FLAG_EXT);
+            }
+
+            /**
              * Destructor.
              */
             ~InteropStackMemory()
             {
-                free(Data());
+                if (owning)
+                    free(Data());
             }
 
             /**
@@ -61,19 +77,26 @@ namespace ignite
              */
             virtual void Reallocate(int32_t cap)
             {
-                int doubledCap = Capacity() << 1;
+                if (owning)
+                {
+                    int doubledCap = Capacity() << 1;
 
-                if (doubledCap > cap)
-                    cap = doubledCap;
+                    if (doubledCap > cap)
+                        cap = doubledCap;
 
-                Data(memPtr, realloc(Data(memPtr), cap));
-                Capacity(memPtr, cap);
+                    Data(memPtr, realloc(Data(memPtr), cap));
+                    Capacity(memPtr, cap);
+                }
             }
 
         private:
             IGNITE_NO_COPY_ASSIGNMENT(InteropStackMemory)
 
+            /** Internal state memory. */
             int8_t mem[ignite::impl::interop::IGNITE_MEM_HDR_LEN];
+
+            /** Whether this instance is owner of memory chunk. */
+            bool owning;
         };
     }
 }

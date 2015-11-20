@@ -27,6 +27,8 @@
 #include <ignite/impl/binary/binary_writer_impl.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
 
+#include "utility.h"
+
 namespace ignite
 {
     namespace odbc
@@ -43,7 +45,7 @@ namespace ignite
             /**
              * Constructor.
              */
-            Parser(int32_t cap = DEFAULT_MEM_ALLOCATION) : mem(cap), outStream(&mem), inStream(&mem)
+            Parser(int32_t cap = DEFAULT_MEM_ALLOCATION) : inMem(cap), outMem(cap), outStream(&outMem)
             {
                 //No-op.
             }
@@ -79,7 +81,7 @@ namespace ignite
 
                 buf.resize(outStream.Position());
 
-                memcpy(&buf[0], mem.Data(), outStream.Position());
+                memcpy(&buf[0], outMem.Data(), outStream.Position());
             }
 
             /**
@@ -87,31 +89,28 @@ namespace ignite
              *
              * @param msg Message to decode.
              * @param buf Data buffer.
+             * @note Can be optimized after InteropMemory refactoring.
              */
             template<typename MsgT>
             void Decode(MsgT& msg, const std::vector<int8_t>& buf)
             {
                 using namespace ignite::impl::binary;
 
-                ResetState();
+                //for (int i = 0; i < buf.size(); ++i)
+                //    LOG_MSG("[%0.3i] : %c %u\n", i, buf[i], buf[i]);
 
-                // Saving memory internal state.
-                int8_t* memDataMemo = mem.Data();
-                int32_t memCapasityMemo = mem.Capacity();
+                if (inMem.Capacity() < buf.size())
+                    inMem.Reallocate(static_cast<int32_t>(buf.size()));
 
-                // Setting new state.
-                mem.Data(&buf[0]);
-                mem.Length(static_cast<int32_t>(buf.size()));
-                mem.Capacity(static_cast<int32_t>(buf.capacity()));
+                memcpy(inMem.Data(), buf.data(), buf.size());
+
+                inMem.Length(static_cast<int32_t>(buf.size()));
+
+                ignite::impl::interop::InteropInputStream inStream(&inMem);
 
                 BinaryReaderImpl reader(&inStream);
 
                 msg.Read(reader);
-
-                // Restoring state.
-                mem.Data(memDataMemo);
-                mem.Length(0);
-                mem.Capacity(memCapasityMemo);
             }
 
         private:
@@ -120,21 +119,19 @@ namespace ignite
              */
             void ResetState()
             {
-                mem.Length(0);
+                outMem.Length(0);
 
                 outStream.Position(0);
-
-                inStream.Position(0);
             }
 
-            /** Operational memory. */
-            ignite::impl::interop::InteropUnpooledMemory mem;
+            /** Input operational memory. */
+            ignite::impl::interop::InteropUnpooledMemory inMem;
+
+            /** Output operational memory. */
+            ignite::impl::interop::InteropUnpooledMemory outMem;
 
             /** Output stream. */
             ignite::impl::interop::InteropOutputStream outStream;
-
-            /** Input stream. */
-            ignite::impl::interop::InteropInputStream inStream;
         };
     }
 }

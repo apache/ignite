@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcQueryResult;
 import org.apache.ignite.internal.processors.odbc.request.QueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.request.QueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.request.QueryFetchRequest;
+import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryFieldsMetaResult;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -208,8 +209,9 @@ public class GridOdbcParser implements GridNioParser {
         writer.writeByte(rsp.getSuccessStatus());
 
         if (rsp.getSuccessStatus() != GridOdbcResponse.STATUS_SUCCESS) {
-            //TODO: implement error encoding.
-            throw new IOException(rsp.getError());
+            writer.writeString(rsp.getError());
+
+            return;
         }
 
         Object res0 = rsp.getResponse();
@@ -221,7 +223,21 @@ public class GridOdbcParser implements GridNioParser {
 
             writer.writeLong(res.getQueryId());
 
-            Collection<Object> items = res.getItems();
+            Collection<?> metadata = res.getFieldsMetadata();
+            if (metadata != null) {
+                Collection<CacheQueryFieldsMetaResult> metas = (Collection<CacheQueryFieldsMetaResult>)metadata;
+
+                writer.writeInt(metas.size());
+
+                for (CacheQueryFieldsMetaResult meta : metas) {
+                    writer.writeString(meta.getSchemaName());
+                    writer.writeString(meta.getTypeName());
+                    writer.writeString(meta.getFieldName());
+                    writer.writeString(meta.getFieldTypeName());
+                }
+            }
+
+            Collection<?> items = res.getItems();
             if (items != null) {
                 writer.writeBoolean(res.getLast());
 

@@ -21,11 +21,14 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
 import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
 import org.apache.ignite.internal.processors.odbc.request.QueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.request.QueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.request.QueryFetchRequest;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryFieldsMetaResult;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -135,6 +138,21 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
         private ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs;
 
         /**
+         * @param meta Internal query field metadata.
+         * @return Rest query field metadata.
+         */
+        private Collection<CacheQueryFieldsMetaResult> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
+            List<CacheQueryFieldsMetaResult> res = new ArrayList<>();
+
+            if (meta != null) {
+                for (GridQueryFieldMetadata info : meta)
+                    res.add(new CacheQueryFieldsMetaResult(info));
+            }
+
+            return res;
+        }
+
+        /**
          * @param ctx Kernal context.
          * @param req Execute query request.
          * @param qryCurs Queries cursors.
@@ -168,6 +186,12 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
                 qryCurs.put(qryId, new IgniteBiTuple<>(qryCur, cur));
 
                 GridOdbcQueryResult res = new GridOdbcQueryResult(qryId);
+
+                List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
+
+                System.out.println("Field meta: " + fieldsMeta);
+
+                res.setFieldsMetadata(convertMetadata(fieldsMeta));
 
                 return new GridOdbcResponse(res);
             }

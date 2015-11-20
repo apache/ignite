@@ -40,6 +40,9 @@
     <ClCompile Include="..\..\src\connection_info.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\utility.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -77,9 +80,6 @@
     <ClInclude Include="..\..\src\cursor.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\interop_stack_memory.h">
-      <Filter>Code</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\message.h">
       <Filter>Code</Filter>
     </ClInclude>
@@ -87,6 +87,9 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\connection_info.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\column_meta.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

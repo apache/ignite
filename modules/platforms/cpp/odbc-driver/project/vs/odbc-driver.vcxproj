@@ -155,6 +155,7 @@
     <ClCompile Include="..\..\src\application_data_buffer.cpp" />
     <ClCompile Include="..\..\src\statement.cpp" />
     <ClCompile Include="..\..\src\type_traits.cpp" />
+    <ClCompile Include="..\..\src\utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def" />
@@ -176,7 +177,7 @@
     <ClInclude Include="..\..\src\environment.h" />
     <ClInclude Include="..\..\src\application_data_buffer.h" />
     <ClInclude Include="..\..\src\connection_info.h" />
-    <ClInclude Include="..\..\src\interop_stack_memory.h" />
+    <ClInclude Include="..\..\src\column_meta.h" />
     <ClInclude Include="..\..\src\message.h" />
     <ClInclude Include="..\..\src\parser.h" />
     <ClInclude Include="..\..\src\statement.h" />

@@ -131,7 +131,7 @@ namespace ignite
             // Identifiers passed as arguments to ODBC functions do not have to
             // be quoted. If the data source does not support quoted
             // identifiers, a blank is returned.
-            strParams[SQL_IDENTIFIER_QUOTE_CHAR] = "\"";
+            strParams[SQL_IDENTIFIER_QUOTE_CHAR] = "";
 
             // A character string: the character or characters that the data
             // source defines as the separator between a catalog name and the

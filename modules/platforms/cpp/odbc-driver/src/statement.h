@@ -29,7 +29,9 @@
 #include "application_data_buffer.h"
 #include "parser.h"
 #include "common_types.h"
+#include "column_meta.h"
 
+#include "utility.h"
 
 namespace ignite
 {
@@ -82,13 +84,21 @@ namespace ignite
                     return false;
 
                 parser.Decode(rsp, tempBuffer);
-
+                
                 return true;
             }
 
             /**
+             * Prepare SQL query.
+             * @note Only SELECT queries are supported currently.
+             * @param query SQL query.
+             * @param len Query length.
+             * @return True on success.
+             */
+            void PrepareSqlQuery(const char* query, size_t len);
+
+            /**
              * Execute SQL query.
-             *
              * @note Only SELECT queries are supported currently.
              * @param query SQL query.
              * @param len Query length.
@@ -97,11 +107,27 @@ namespace ignite
             bool ExecuteSqlQuery(const char* query, size_t len);
 
             /**
+             * Execute SQL query.
+             * @note Only SELECT queries are supported currently.
+             * @return True on success.
+             */
+            bool ExecuteSqlQuery();
+
+            /**
              * Fetch query result row.
              *
              * @return True on success.
              */
             SqlResult FetchRow();
+
+            /**
+             * Get column metadata.
+             * @return Column metadata.
+             */
+            const std::vector<ColumnMeta>& GetMeta() const
+            {
+                return resultMeta;
+            }
 
         private:
             /**
@@ -120,12 +146,18 @@ namespace ignite
             /** Column bindings. */
             ColumnBindingMap columnBindings;
 
+            /** SQL Query. */
+            std::string sql;
+
             //TODO: Move to separate Cursor class.
             /** Cursor id. */
             int64_t resultQueryId;
 
             /** Message parser. */
             Parser parser;
+
+            /** Column metadata. */
+            std::vector<ColumnMeta> resultMeta;
         };
     }
 }

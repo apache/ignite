@@ -47,33 +47,32 @@ void logInit(const char* path)
 }
 
 
-BOOL INSTAPI ConfigDSN(
-    HWND    hwndParent,
-    WORD    fRequest,
-    LPCSTR  lpszDriver,
-    LPCSTR  lpszAttributes)
+BOOL INSTAPI ConfigDSN(HWND     hwndParent,
+                       WORD     req,
+                       LPCSTR   driver,
+                       LPCSTR   attributes)
 {
     LOG_MSG("ConfigDSN called\n");
 
     ignite::odbc::Configuration config;
 
-    config.FillFromConfigAttributes(lpszAttributes);
+    config.FillFromConfigAttributes(attributes);
 
     if (!SQLValidDSN(config.GetDsn().c_str()))
         return FALSE;
 
-    LOG_MSG("Driver: %s\n", lpszDriver);
-    LOG_MSG("Attributes: %s\n", lpszAttributes);
+    LOG_MSG("Driver: %s\n", driver);
+    LOG_MSG("Attributes: %s\n", attributes);
 
     LOG_MSG("DSN: %s\n", config.GetDsn().c_str());
 
-    switch (fRequest)
+    switch (req)
     {
         case ODBC_ADD_DSN:
         {
             LOG_MSG("ODBC_ADD_DSN\n");
 
-            return SQLWriteDSNToIni(config.GetDsn().c_str(), lpszDriver);
+            return SQLWriteDSNToIni(config.GetDsn().c_str(), driver);
         }
 
         case ODBC_CONFIG_DSN:
@@ -98,12 +97,11 @@ BOOL INSTAPI ConfigDSN(
     return TRUE;
 }
 
-SQLRETURN SQLGetInfo(
-    SQLHDBC         conn,
-    SQLUSMALLINT    infoType,
-    SQLPOINTER      infoValue,
-    SQLSMALLINT     infoValueMax,
-    SQLSMALLINT     *length)
+SQLRETURN SQLGetInfo(SQLHDBC        conn,
+                     SQLUSMALLINT   infoType,
+                     SQLPOINTER     infoValue,
+                     SQLSMALLINT    infoValueMax,
+                     SQLSMALLINT*   length)
 {
     using ignite::odbc::Connection;
     using ignite::odbc::ConnectionInfo;
@@ -124,7 +122,7 @@ SQLRETURN SQLGetInfo(
 
 SQLRETURN SQL_API SQLAllocHandle(SQLSMALLINT type, SQLHANDLE parent, SQLHANDLE* result)
 {
-    LOG_MSG("SQLAllocHandle called\n");
+    //LOG_MSG("SQLAllocHandle called\n");
     switch (type)
     {
         case SQL_HANDLE_ENV:
@@ -145,7 +143,7 @@ SQLRETURN SQL_API SQLAllocHandle(SQLSMALLINT type, SQLHANDLE parent, SQLHANDLE* 
     return SQL_ERROR;
 }
 
-SQLRETURN SQL_API SQLAllocEnv(SQLHENV *env)
+SQLRETURN SQL_API SQLAllocEnv(SQLHENV* env)
 {
     using ignite::odbc::Environment;
 
@@ -156,7 +154,7 @@ SQLRETURN SQL_API SQLAllocEnv(SQLHENV *env)
     return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLAllocConnect(SQLHENV env, SQLHDBC *conn)
+SQLRETURN SQL_API SQLAllocConnect(SQLHENV env, SQLHDBC* conn)
 {
     using ignite::odbc::Environment;
     using ignite::odbc::Connection;
@@ -180,7 +178,7 @@ SQLRETURN SQL_API SQLAllocConnect(SQLHENV env, SQLHDBC *conn)
     return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLAllocStmt(SQLHDBC conn, SQLHSTMT *stmt)
+SQLRETURN SQL_API SQLAllocStmt(SQLHDBC conn, SQLHSTMT* stmt)
 {
     using ignite::odbc::Connection;
     using ignite::odbc::Statement;
@@ -206,7 +204,7 @@ SQLRETURN SQL_API SQLAllocStmt(SQLHDBC conn, SQLHSTMT *stmt)
 
 SQLRETURN SQL_API SQLFreeHandle(SQLSMALLINT type, SQLHANDLE handle)
 {
-    LOG_MSG("SQLFreeHandle called\n");
+    //LOG_MSG("SQLFreeHandle called\n");
 
     switch (type)
     {
@@ -303,15 +301,14 @@ SQLRETURN SQL_API SQLFreeStmt(SQLHSTMT stmt, SQLUSMALLINT option)
     return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLDriverConnect(
-    SQLHDBC         ConnectionHandle,
-    SQLHWND         WindowHandle,
-    SQLCHAR*        InConnectionString,
-    SQLSMALLINT     StringLength1,
-    SQLCHAR*        OutConnectionString,
-    SQLSMALLINT     BufferLength,
-    SQLSMALLINT*    StringLength2Ptr,
-    SQLUSMALLINT    DriverCompletion)
+SQLRETURN SQL_API SQLDriverConnect(SQLHDBC      ConnectionHandle,
+                                   SQLHWND      WindowHandle,
+                                   SQLCHAR*     InConnectionString,
+                                   SQLSMALLINT  StringLength1,
+                                   SQLCHAR*     OutConnectionString,
+                                   SQLSMALLINT  BufferLength,
+                                   SQLSMALLINT* StringLength2Ptr,
+                                   SQLUSMALLINT DriverCompletion)
 {
     using ignite::odbc::Connection;
 
@@ -368,6 +365,44 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC conn)
     bool success = connection->Release();
 
     return success ? SQL_SUCCESS : SQL_ERROR;
+}
+
+SQLRETURN SQL_API SQLPrepare(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryLen)
+{
+    using ignite::odbc::Statement;
+
+    LOG_MSG("SQLPrepare called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    const char* sql = reinterpret_cast<char*>(query);
+    size_t len = queryLen == SQL_NTS ? strlen(sql) : static_cast<size_t>(queryLen);
+
+    LOG_MSG("SQL: %s\n", sql);
+    LOG_MSG("Length: %u\n", len);
+
+    statement->PrepareSqlQuery(sql, len);
+
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLExecute(SQLHSTMT stmt)
+{
+    using ignite::odbc::Statement;
+
+    LOG_MSG("SQLExecute called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    statement->ExecuteSqlQuery();
+
+    return SQL_SUCCESS;
 }
 
 SQLRETURN SQL_API SQLExecDirect(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryLen)
@@ -429,8 +464,9 @@ SQLRETURN SQL_API SQLFetch(SQLHSTMT stmt)
 
     if (!statement)
         return SQL_INVALID_HANDLE;
+    LOG_MSG("1 2\n");
 
-    return statement->FetchRow();
+    return SqlResultToReturnCode(statement->FetchRow());
 }
 
 SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC     conn,
@@ -448,6 +484,49 @@ SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC     conn,
         return SQL_INVALID_HANDLE;
 
     return SQL_ERROR;
+}
+
+SQLRETURN SQL_API SQLNumResultCols(SQLHSTMT stmt, SQLSMALLINT *columnNum)
+{
+    using ignite::odbc::Statement;
+
+    LOG_MSG("SQLNumResultCols called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    *columnNum = static_cast<SQLSMALLINT>(statement->GetMeta().size());
+
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLTables(SQLHSTMT    stmt,
+                            SQLCHAR*    catalogName,
+                            SQLSMALLINT catalogNameLen,
+                            SQLCHAR*    schemaName,
+                            SQLSMALLINT schemaNameLen,
+                            SQLCHAR*    tableName,
+                            SQLSMALLINT tableNameLen,
+                            SQLCHAR*    tableType,
+                            SQLSMALLINT tableTypeLen)
+{
+    using ignite::odbc::Statement;
+
+    LOG_MSG("SQLTables called\n");
+
+    LOG_MSG("catalogName: %s\n", catalogName);
+    LOG_MSG("schemaName: %s\n", schemaName);
+    LOG_MSG("tableName: %s\n", tableName);
+    LOG_MSG("tableType: %s\n", tableType);
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    return SQL_SUCCESS;
 }
 
 ///// SQLCancel /////
@@ -517,15 +596,6 @@ SQLRETURN SQL_API SQLError(HENV arg0,
     return(SQL_NO_DATA_FOUND);
 }
 
-
-///// SQLExecute /////
-
-SQLRETURN SQL_API SQLExecute(SQLHSTMT arg0)
-{
-    LOG_MSG("SQLExecute called\n");
-    return SQL_SUCCESS;
-}
-
 ///// SQLGetCursorName /////
 
 SQLRETURN SQL_API SQLGetCursorName(SQLHSTMT arg0,
@@ -534,15 +604,6 @@ SQLRETURN SQL_API SQLGetCursorName(SQLHSTMT arg0,
     UNALIGNED SWORD * arg3)
 {
     LOG_MSG("SQLGetCursorName called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLNumResultCols /////
-
-SQLRETURN SQL_API SQLNumResultCols(SQLHSTMT arg0,
-    UNALIGNED SWORD * arg1)
-{
-    LOG_MSG("SQLNumResultCols called\n");
     return SQL_SUCCESS;
 }
 
@@ -727,22 +788,6 @@ SQLRETURN SQL_API SQLStatistics(SQLHSTMT arg0,
     UWORD arg8)
 {
     LOG_MSG("SQLStatistics called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLTables /////
-
-SQLRETURN SQL_API SQLTables(SQLHSTMT arg0,
-    UCHAR * arg1,
-    SWORD arg2,
-    UCHAR * arg3,
-    SWORD arg4,
-    UCHAR * arg5,
-    SWORD arg6,
-    UCHAR * arg7,
-    SWORD arg8)
-{
-    LOG_MSG("SQLTables called\n");
     return SQL_SUCCESS;
 }
 

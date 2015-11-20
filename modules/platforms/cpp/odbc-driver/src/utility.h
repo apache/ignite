@@ -29,6 +29,8 @@
 
 #include <ignite/common/utils.h>
 
+#include "ignite/impl/binary/binary_reader_impl.h"
+
 extern FILE* log_file;
 void logInit(const char*);
 
@@ -114,18 +116,15 @@ namespace ignite
          * @param buflen Length of the buffer.
          * @return Length of the resulting string in buffer.
          */
-        inline size_t CopyStringToBuffer(const std::string& str, char* buf, size_t buflen)
-        {
-            if (!buf || !buflen)
-                return 0;
+        size_t CopyStringToBuffer(const std::string& str, char* buf, size_t buflen);
 
-            size_t bytesToCopy = std::min(str.size(), static_cast<size_t>(buflen - 1));
+        /**
+         * Read string from reader.
+         * @param reader Reader.
+         * @param str String.
+         */
+        void ReadString(ignite::impl::binary::BinaryReaderImpl& reader, std::string& str);
 
-            memcpy(buf, str.data(), bytesToCopy);
-            buf[bytesToCopy] = 0;
-
-            return bytesToCopy;
-        }
     }
 }
 
