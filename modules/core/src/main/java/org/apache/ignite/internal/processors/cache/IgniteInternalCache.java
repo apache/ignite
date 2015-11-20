@@ -1342,11 +1342,29 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public int size();
 
     /**
+     * Gets the number of all entries cached on this node as a long. This method will return the count of
+     * all cache entries and has O(1) complexity on base {@link IgniteInternalCache}. It is essentially the
+     * size of cache key set and is semantically identical to {{@code Cache.keySet().size()}.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the number of entries cached on this node.
+     *
+     * @return Size of cache on this node.
+     */
+    public long sizeLong();
+
+    /**
      * @param peekModes Peek modes.
      * @return Local cache size.
      * @throws IgniteCheckedException If failed.
      */
     public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Local cache size as a long.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
      * @param peekModes Peek modes.
@@ -1357,9 +1375,22 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * @param peekModes Peek modes.
+     * @return Global cache size as a long.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long sizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param peekModes Peek modes.
      * @return Future.
      */
     public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes);
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Long> sizeLongAsync(CachePeekMode[] peekModes);
 
     /**
      * Gets size of near cache key set. This method will return count of all entries in near
@@ -1384,6 +1415,20 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Number of primary entries in cache.
      */
     public int primarySize();
+
+    /**
+     * Gets the number of all primary entries cached on this node as a long. For {@link CacheMode#LOCAL}
+     * non-distributed cache mode, this method is identical to {@link #size()}.
+     * <p>
+     * For {@link CacheMode#PARTITIONED} and {@link CacheMode#REPLICATED} modes, this method will
+     * return number of primary entries cached on this node (excluding any backups). The complexity of
+     * this method is O(P), where P is the total number of partitions.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the number of primary entries cached on this node.
+     *
+     * @return Number of primary entries in cache.
+     */
+    public long primarySizeLong();
 
     /**
      * This method unswaps cache entries by given keys, if any, from swap storage
@@ -1491,7 +1536,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param subjId Client ID.
      * @return Internal projection.
      */
-    IgniteInternalCache<K, V> forSubjectId(UUID subjId);
+    public IgniteInternalCache<K, V> forSubjectId(UUID subjId);
 
     /**
      * Store DR data.
