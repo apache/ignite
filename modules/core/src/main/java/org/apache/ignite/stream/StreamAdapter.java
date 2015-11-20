@@ -18,7 +18,6 @@
 package org.apache.ignite.stream;
 
 import java.util.Map;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 

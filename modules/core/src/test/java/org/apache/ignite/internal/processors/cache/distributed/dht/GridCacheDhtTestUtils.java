@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -114,7 +114,7 @@ public class GridCacheDhtTestUtils {
 
         List<Integer> affParts = new LinkedList<>();
 
-        GridDhtPartitionMap map = dht.topology().partitions(locNode.id());
+        GridDhtPartitionMap2 map = dht.topology().partitions(locNode.id());
 
         if (map != null)
             for (int p : map.keySet())
@@ -146,7 +146,7 @@ public class GridCacheDhtTestUtils {
 
         System.out.println("\nNode map:");
 
-        for (Map.Entry<UUID, GridDhtPartitionMap> e : top.partitionMap(false).entrySet()) {
+        for (Map.Entry<UUID, GridDhtPartitionMap2> e : top.partitionMap(false).entrySet()) {
             List<Integer> list = new ArrayList<>(e.getValue().keySet());
 
             Collections.sort(list);
@@ -184,7 +184,7 @@ public class GridCacheDhtTestUtils {
         // They should be in topology in OWNING state.
         Collection<Integer> affParts = new HashSet<>();
 
-        GridDhtPartitionMap map = dht.topology().partitions(locNode.id());
+        GridDhtPartitionMap2 map = dht.topology().partitions(locNode.id());
 
         if (map != null)
             for (int p : map.keySet())

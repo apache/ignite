@@ -21,56 +21,27 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
-
 /**
  * Partition map.
  */
-public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Externalizable {
+@Deprecated // Backward compatibility, use GridDhtPartitionMap2 instead.
+public class GridDhtPartitionMap extends GridDhtPartitionMap2 {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Node ID. */
-    private UUID nodeId;
-
-    /** Update sequence number. */
-    private long updateSeq;
-
-    /** */
-    private Map<Integer, GridDhtPartitionState> map;
-
-    /** */
-    private volatile int moving;
-
-    /**
-     * @param nodeId Node ID.
-     * @param updateSeq Update sequence number.
-     */
-    public GridDhtPartitionMap(UUID nodeId, long updateSeq) {
-        assert nodeId != null;
-        assert updateSeq > 0;
-
-        this.nodeId = nodeId;
-        this.updateSeq = updateSeq;
-
-        map = new HashMap<>();
-    }
 
     /**
      * @param nodeId Node ID.
      * @param updateSeq Update sequence number.
      * @param m Map to copy.
-     * @param onlyActive If {@code true}, then only active states will be included.
      */
-    public GridDhtPartitionMap(UUID nodeId, long updateSeq, Map<Integer, GridDhtPartitionState> m, boolean onlyActive) {
+    public GridDhtPartitionMap(UUID nodeId, long updateSeq,
+        Map<Integer, GridDhtPartitionState> m) {
         assert nodeId != null;
         assert updateSeq > 0;
 
@@ -82,8 +53,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
         for (Map.Entry<Integer, GridDhtPartitionState> e : m.entrySet()) {
             GridDhtPartitionState state = e.getValue();
 
-            if (!onlyActive || state.active())
-                put(e.getKey(), state);
+            put(e.getKey(), state);
         }
     }
 
@@ -92,108 +62,6 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
      */
     public GridDhtPartitionMap() {
         // No-op.
-    }
-
-    /**
-     * @param part Partition.
-     * @param state Partition state.
-     */
-    public void put(Integer part, GridDhtPartitionState state) {
-        GridDhtPartitionState old = map.put(part, state);
-
-        if (old == MOVING)
-            moving--;
-
-        if (state == MOVING)
-            moving++;
-    }
-
-    /**
-     * @return {@code true} If partition map contains moving partitions.
-     */
-    public boolean hasMovingPartitions() {
-        assert moving >= 0 : moving;
-
-        return moving != 0;
-    }
-
-    /**
-     * @param part Partition.
-     * @return Partition state.
-     */
-    public GridDhtPartitionState get(Integer part) {
-        return map.get(part);
-    }
-
-    /**
-     * @param part Partition.
-     * @return {@code True} if contains given partition.
-     */
-    public boolean containsKey(Integer part) {
-        return map.containsKey(part);
-    }
-
-    /**
-     * @return Entries.
-     */
-    public Set<Map.Entry<Integer, GridDhtPartitionState>> entrySet() {
-        return map.entrySet();
-    }
-
-    /**
-     * @return Map size.
-     */
-    public int size() {
-        return map.size();
-    }
-
-    /**
-     * @return Partitions.
-     */
-    public Set<Integer> keySet() {
-        return map.keySet();
-    }
-
-    /**
-     * @return Underlying map.
-     */
-    public Map<Integer, GridDhtPartitionState> map() {
-        return map;
-    }
-
-    /**
-     * @return Node ID.
-     */
-    public UUID nodeId() {
-        return nodeId;
-    }
-
-    /**
-     * @return Update sequence.
-     */
-    public long updateSequence() {
-        return updateSeq;
-    }
-
-    /**
-     * @param updateSeq New update sequence value.
-     * @return Old update sequence value.
-     */
-    public long updateSequence(long updateSeq) {
-        long old = this.updateSeq;
-
-        assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq + ']';
-
-        this.updateSeq = updateSeq;
-
-        return old;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compareTo(GridDhtPartitionMap o) {
-        assert nodeId.equals(o.nodeId);
-
-        return Long.compare(updateSeq, o.updateSeq);
     }
 
     /** {@inheritDoc} */
@@ -249,7 +117,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
         if (this == o)
             return true;
 
-        GridDhtPartitionMap other = (GridDhtPartitionMap)o;
+        GridDhtPartitionMap2 other = (GridDhtPartitionMap2)o;
 
         return other.nodeId.equals(nodeId) && other.updateSeq == updateSeq;
     }
@@ -263,11 +131,11 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
      * @return Full string representation.
      */
     public String toFullString() {
-        return S.toString(GridDhtPartitionMap.class, this, "size", size(), "map", map.toString());
+        return S.toString(GridDhtPartitionMap2.class, this, "size", size(), "map", map.toString());
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtPartitionMap.class, this, "size", size());
+        return S.toString(GridDhtPartitionMap2.class, this, "size", size());
     }
 }
