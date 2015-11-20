@@ -2163,7 +2163,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     final Ignite ignite = spi.ignite();
 
                     if (ignite != null) {
-                        U.error(log, "TcpDiscoverSpi's message worker thread failed abnormally." +
+                        U.error(log, "TcpDiscoverSpi's message worker thread failed abnormally. " +
                             "Stopping the grid in order to prevent cluster wide instability.", e);
 
                         new Thread(new Runnable() {
