@@ -499,15 +499,21 @@ public abstract class GridCacheMessage implements Message {
 
         int size = col.size();
 
-        for (int i = 0 ; i < size; i++) {
-            CacheObject obj = col.get(i);
+        for (int i = 0 ; i < size; i++)
+            prepareMarshalCacheObject(col.get(i), ctx);
+    }
 
-            if (obj != null) {
-                obj.prepareMarshal(ctx.cacheObjectContext());
+    /**
+     * @param obj Object.
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final void prepareMarshalCacheObject(CacheObject obj, GridCacheContext ctx) throws IgniteCheckedException {
+        if (obj != null) {
+            obj.prepareMarshal(ctx.cacheObjectContext());
 
-                if (addDepInfo)
-                    prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx);
-            }
+            if (addDepInfo)
+                prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx);
         }
     }
 

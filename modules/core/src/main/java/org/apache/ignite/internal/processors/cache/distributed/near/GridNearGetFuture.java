@@ -170,24 +170,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
-        return ver;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return
-            F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<Map<K, V>>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(IgniteInternalFuture<Map<K, V>> f) {
-                    if (isMini(f))
-                        return ((MiniFuture)f).node();
-
-                    return cctx.discovery().localNode();
-                }
-            });
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
@@ -227,7 +209,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         if (super.onDone(res, err)) {
             // Don't forget to clean up.
             if (trackable)
-                cctx.mvcc().removeFuture(this);
+                cctx.mvcc().removeFuture(futId);
 
             cache().dht().sendTtlUpdateRequest(expiryPlc);
 
@@ -364,7 +346,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 if (!trackable) {
                     trackable = true;
 
-                    cctx.mvcc().addFuture(this);
+                    cctx.mvcc().addFuture(this, futId);
                 }
 
                 MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer);
@@ -407,6 +389,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param saved Reserved near cache entries.
      * @return Map.
      */
+    @SuppressWarnings("unchecked")
     private Map<KeyCacheObject, GridNearCacheEntry> map(
         KeyCacheObject key,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings,
@@ -563,7 +546,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         }
                         else {
                             K key0 = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
-                            V val0 = (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable);
+                            V val0 = !skipVals ? 
+                                (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable) : 
+                                (V)Boolean.TRUE;
 
                             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
                         }
@@ -637,28 +622,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         }
 
         return saved;
-    }
-
-    /**
-     * Affinity node to send get request to.
-     *
-     * @param key Key to get.
-     * @param topVer Topology version.
-     * @return Affinity node to get key from.
-     */
-    private ClusterNode affinityNode(KeyCacheObject key, AffinityTopologyVersion topVer) {
-        if (!canRemap) {
-            List<ClusterNode> affNodes = cctx.affinity().nodes(key, topVer);
-
-            for (ClusterNode node : affNodes) {
-                if (cctx.discovery().alive(node))
-                    return node;
-            }
-
-            return null;
-        }
-        else
-            return cctx.affinity().primary(key, topVer);
     }
 
     /**

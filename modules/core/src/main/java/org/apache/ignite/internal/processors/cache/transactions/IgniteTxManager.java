@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -1092,13 +1093,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxCommit();
 
-                for (int cacheId : tx.activeCacheIds()) {
-                    GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-
-                    if (cacheCtx.cache().configuration().isStatisticsEnabled())
-                        // Convert start time from ms to ns.
-                        cacheCtx.cache().metrics0().onTxCommit((U.currentTimeMillis() - tx.startTime()) * 1000);
-                }
+                tx.txState().onTxEnd(cctx, tx, true);
             }
 
             if (slowTxWarnTimeout > 0 && tx.local() &&
@@ -1163,13 +1158,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (!tx.system())
                     cctx.txMetrics().onTxRollback();
 
-                for (int cacheId : tx.activeCacheIds()) {
-                    GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-
-                    if (cacheCtx.cache().configuration().isStatisticsEnabled())
-                        // Convert start time from ms to ns.
-                        cacheCtx.cache().metrics0().onTxRollback((U.currentTimeMillis() - tx.startTime()) * 1000);
-                }
+                tx.txState().onTxEnd(cctx, tx, false);
             }
 
             if (log.isDebugEnabled())
@@ -1233,7 +1222,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (!tx.system())
                 threadMap.remove(tx.threadId(), tx);
             else {
-                Integer cacheId = F.first(tx.activeCacheIds());
+                Integer cacheId = tx.txState().firstCacheId();
 
                 if (cacheId != null)
                     sysThreadMap.remove(new TxThreadKey(tx.threadId(), cacheId), tx);
@@ -1775,7 +1764,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             tx.originatingNodeId(),
             tx.transactionNodes());
 
-        cctx.mvcc().addFuture(fut);
+        cctx.mvcc().addFuture(fut, fut.futureId());
 
         if (log.isDebugEnabled())
             log.debug("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');

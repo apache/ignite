@@ -239,7 +239,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     ) throws IgniteCheckedException {
         invalidateEntries.set(idx, invalidateEntry);
 
-        addKeyBytes(key, false, null, ctx);
+        addKeyBytes(key, false, ctx);
     }
 
     /**

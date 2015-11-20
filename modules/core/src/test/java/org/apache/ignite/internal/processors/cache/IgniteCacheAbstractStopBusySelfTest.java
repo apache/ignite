@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +38,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -218,7 +221,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testGet() throws Exception {
-        bannedMsg.set(GridNearGetRequest.class);
+        bannedMsg.set(GridNearSingleGetRequest.class);
 
         executeTest(new Callable<Integer>() {
             /** {@inheritDoc} */
@@ -230,6 +233,28 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
                 info("Stop operation.");
 
                 return put;
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAll() throws Exception {
+        bannedMsg.set(GridNearGetRequest.class);
+
+        executeTest(new Callable<Integer>() {
+            /** {@inheritDoc} */
+            @Override public Integer call() throws Exception {
+                info("Start operation.");
+
+                Set<Integer> keys = F.asSet(1, 2, 3);
+
+                clientCache().getAll(keys);
+
+                info("Stop operation.");
+
+                return null;
             }
         });
     }

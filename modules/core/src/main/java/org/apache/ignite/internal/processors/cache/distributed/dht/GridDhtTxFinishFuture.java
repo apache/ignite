@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
@@ -42,9 +42,7 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 
@@ -66,7 +64,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
-    private IgniteUuid futId;
+    private final IgniteUuid futId;
 
     /** Transaction. */
     @GridToStringExclude
@@ -112,26 +110,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
         return futId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
-        return tx.xidVersion();
-    }
-
-    /**
-     * @return Involved nodes.
-     */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return
-            F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<?>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(IgniteInternalFuture<?> f) {
-                    if (isMini(f))
-                        return ((MiniFuture)f).node();
-
-                    return cctx.discovery().localNode();
-                }
-            });
     }
 
     /** {@inheritDoc} */
@@ -228,7 +206,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 this.tx.sendFinishReply(commit, error());
 
                 // Don't forget to clean up.
-                cctx.mvcc().removeFuture(this);
+                cctx.mvcc().removeFuture(futId);
 
                 return true;
             }
@@ -376,6 +354,11 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
             add(fut); // Append new future.
 
+            Collection<Long> updCntrs = new ArrayList<>(dhtMapping.entries().size());
+
+            for (IgniteTxEntry e : dhtMapping.entries())
+                updCntrs.add(e.updateCounter());
+
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
                 futId,
@@ -399,7 +382,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.size(),
                 tx.subjectId(),
                 tx.taskNameHash(),
-                tx.activeCachesDeploymentEnabled());
+                tx.activeCachesDeploymentEnabled(),
+                updCntrs);
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 

@@ -154,11 +154,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return Collections.emptyList();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
         return false;
     }

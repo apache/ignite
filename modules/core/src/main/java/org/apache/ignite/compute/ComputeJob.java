@@ -142,7 +142,7 @@ public interface ComputeJob extends Serializable {
      * {@link ComputeTaskFuture#cancel()} is called.
      * <p>
      * Note that job cancellation is only a hint, and just like with
-     * {@link Thread#interrupt()}  method, it is really up to the actual job
+     * {@link Thread#interrupt()} method, it is really up to the actual job
      * instance to gracefully finish execution and exit.
      */
     public void cancel();
