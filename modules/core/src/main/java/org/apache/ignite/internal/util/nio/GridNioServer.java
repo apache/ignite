@@ -1301,6 +1301,8 @@ public class GridNioServer<T> {
         @SuppressWarnings("unchecked")
         private void bodyInternal() throws IgniteCheckedException {
             try {
+                long lastIdleCheck = U.currentTimeMillis();
+
                 while (!closed && selector.isOpen()) {
                     NioOperationFuture req;
 
@@ -1374,11 +1376,18 @@ public class GridNioServer<T> {
                     }
 
                     // Wake up every 2 seconds to check if closed.
-                    if (selector.select(2000) > 0)
+                    if (selector.select(2000) > 0) {
                         // Walk through the ready keys collection and process network events.
                         processSelectedKeys(selector.selectedKeys());
+                    }
 
-                    checkIdle(selector.keys());
+                    long now = U.currentTimeMillis();
+
+                    if (now - lastIdleCheck > 2000) {
+                        lastIdleCheck = now;
+
+                        checkIdle(selector.keys());
+                    }
                 }
             }
             // Ignore this exception as thread interruption is equal to 'close' call.

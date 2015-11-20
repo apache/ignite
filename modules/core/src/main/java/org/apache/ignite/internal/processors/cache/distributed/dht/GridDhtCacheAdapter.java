@@ -57,9 +57,12 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCa
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -76,6 +79,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -107,6 +111,46 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     protected GridDhtCacheAdapter() {
         // No-op.
+    }
+
+    /**
+     * @param nodeId Sender node ID.
+     * @param res Near get response.
+     */
+    protected final void processNearGetResponse(UUID nodeId, GridNearGetResponse res) {
+        if (log.isDebugEnabled())
+            log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
+
+        CacheGetFuture fut = (CacheGetFuture)ctx.mvcc().future(res.futureId());
+
+        if (fut == null) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+
+            return;
+        }
+
+        fut.onResult(nodeId, res);
+    }
+
+    /**
+     * @param nodeId Sender node ID.
+     * @param res Near get response.
+     */
+    protected void processNearSingleGetResponse(UUID nodeId, GridNearSingleGetResponse res) {
+        if (log.isDebugEnabled())
+            log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
+
+        GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc().future(res.futureId());
+
+        if (fut == null) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+
+            return;
+        }
+
+        fut.onResult(nodeId, res);
     }
 
     /**
@@ -663,6 +707,103 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         fut.init();
 
         return fut;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Get request.
+     */
+    protected void processNearSingleGetRequest(final UUID nodeId, final GridNearSingleGetRequest req) {
+        assert ctx.affinityNode();
+
+        long ttl = req.accessTtl();
+
+        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(ttl);
+
+        LinkedHashMap<KeyCacheObject, Boolean> map = U.newLinkedHashMap(1);
+
+        map.put(req.key(), req.addReader());
+
+        IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut =
+            getDhtAsync(nodeId,
+                req.messageId(),
+                map,
+                req.readThrough(),
+                req.topologyVersion(),
+                req.subjectId(),
+                req.taskNameHash(),
+                expiryPlc,
+                req.skipValues());
+
+        fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
+            @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {
+                GridNearSingleGetResponse res;
+
+                GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
+                    (GridDhtFuture<Collection<GridCacheEntryInfo>>)f;
+
+                try {
+                    Collection<GridCacheEntryInfo> entries = fut.get();
+
+                    if (F.isEmpty(fut.invalidPartitions())) {
+                        GridCacheEntryInfo info = F.first(entries);
+
+                        Message res0 = null;
+
+                        if (info != null) {
+                            if (req.needEntryInfo()) {
+                                info.key(null);
+
+                                res0 = info;
+                            } else if (req.needVersion())
+                                res0 = new CacheVersionedValue(info.value(), info.version());
+                            else
+                                res0 = info.value();
+                        }
+
+                        res = new GridNearSingleGetResponse(ctx.cacheId(),
+                            req.futureId(),
+                            req.topologyVersion(),
+                            res0,
+                            false,
+                            req.addDeploymentInfo());
+
+                        if (info != null && req.skipValues())
+                            res.setContainsValue();
+                    }
+                    else {
+                        res = new GridNearSingleGetResponse(ctx.cacheId(),
+                            req.futureId(),
+                            ctx.shared().exchange().readyAffinityVersion(),
+                            null,
+                            true,
+                            req.addDeploymentInfo());
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed processing get request: " + req, e);
+
+                    res = new GridNearSingleGetResponse(ctx.cacheId(),
+                        req.futureId(),
+                        req.topologyVersion(),
+                        null,
+                        false,
+                        req.addDeploymentInfo());
+
+                    res.error(e);
+                }
+
+                try {
+                    ctx.io().send(nodeId, res, ctx.ioPolicy());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
+                        ",req=" + req + ", res=" + res + ']', e);
+                }
+
+                sendTtlUpdateRequest(expiryPlc);
+            }
+        });
     }
 
     /**

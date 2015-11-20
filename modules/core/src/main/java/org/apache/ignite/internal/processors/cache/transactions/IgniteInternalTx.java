@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteUuid;
@@ -275,9 +276,9 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public boolean implicitSingle();
 
     /**
-     * @return Collection of cache IDs involved in this transaction.
+     * @return Transaction state.
      */
-    public Collection<Integer> activeCacheIds();
+    public IgniteTxState txState();
 
     /**
      * @return {@code true} or {@code false} if the deployment is enabled or disabled for all active caches involved
@@ -667,14 +668,6 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @return {@code True} if serializable.
      */
     public boolean serializable();
-
-    /**
-     * Checks whether given key has been removed within transaction.
-     *
-     * @param key Key to check.
-     * @return {@code True} if key has been removed.
-     */
-    public boolean removed(IgniteTxKey key);
 
     /**
      * Gets allowed remaining time for this transaction.

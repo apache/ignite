@@ -25,22 +25,18 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public interface IgniteTxRemoteEx extends IgniteInternalTx {
     /**
-     * @return Remote thread ID.
-     */
-    public long remoteThreadId();
-
-    /**
      * @param baseVer Base version.
      * @param committedVers Committed version.
      * @param rolledbackVers Rolled back version.
      * @param pendingVers Pending versions.
      */
-    public void doneRemote(GridCacheVersion baseVer, Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers, Collection<GridCacheVersion> pendingVers);
+    public void doneRemote(GridCacheVersion baseVer,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers,
+        Collection<GridCacheVersion> pendingVers);
 
     /**
-     * @param e Sets write value for pessimistic transactions.
-     * @return {@code True} if entry was found.
+     * @param cntrs Partition update indexes.
      */
-    public boolean setWriteValue(IgniteTxEntry e);
+    public void setPartitionUpdateCounters(long[] cntrs);
 }
