@@ -16,8 +16,10 @@
  */
 
 var gulp = require('gulp');
-var jade = require('gulp-jade');
-var sequence = require('gulp-sequence');
+var gulpJade = require('gulp-jade');
+var gulpSequence = require('gulp-sequence');
+
+var igniteModules = process.env.IGNITE_MODULES || './ignite_modules';
 
 var paths = [
     '!./views/error.jade',
@@ -25,22 +27,28 @@ var paths = [
     './views/**/*.jade'
 ];
 
-var pluginPaths = [
-    './ignite_modules/**/*.jade'
+var igniteModulePaths = [
+    igniteModules + '/**/view/**/*.jade'
 ];
 
-var options = {
+var jadeOptions = {
+    basedir: './'
 };
 
-gulp.task('jade', function() {
-    return sequence(
-        gulp.src(paths).pipe(jade(options)).pipe(gulp.dest('./build')),
-        gulp.src(pluginPaths).pipe(jade(options)).pipe(gulp.dest('./build/ignite_modules'))
-    );
+gulp.task('jade', function(cb) {
+    return gulpSequence('jade:source', 'jade:ignite_modules')(cb)
 });
 
-gulp.task('jade:watch', function () {
-    return gulp.watch(paths, function(e) {
-        sequence('jade', 'inject:plugins:html')()
+gulp.task('jade:source', function (cb) {
+    return gulp.src(paths).pipe(gulpJade(jadeOptions)).pipe(gulp.dest('./build'));
+});
+
+gulp.task('jade:ignite_modules', function (cb) {
+    return gulp.src(igniteModulePaths).pipe(gulpJade(jadeOptions)).pipe(gulp.dest('./build/ignite_modules'));
+});
+
+gulp.task('jade:watch', function (cb) {
+    return gulp.watch([igniteModulePaths, paths], function(glob) {
+        gulpSequence('jade', 'inject:plugins:html')(cb)
     });
 });

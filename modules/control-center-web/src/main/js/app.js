@@ -27,7 +27,6 @@ var session = require('express-session');
 var mongoStore = require('connect-mongo')(session);
 var forceSSL = require('express-force-ssl');
 var config = require('./helpers/configuration-loader.js');
-var shell = require('shelljs');
 
 var publicRoutes = require('./routes/public');
 var notebooksRoutes = require('./routes/notebooks');
@@ -143,10 +142,32 @@ app.use('/sql', mustAuthenticated, sqlRouter);
 
 app.use('/agent', mustAuthenticated, agentRouter);
 
-var modulesRoutes = shell.find(path.resolve(__dirname, 'ignite_modules'))
-    .filter(function(file) { return file.match(/\/routes\/.+\.js$/); });
+function find(root, filter, files, prefix) {
+    prefix = prefix || '';
+    files = files || [];
 
-modulesRoutes.forEach(function(route) { require(route)(app); });
+    var dir = path.join(root, prefix);
+
+    if (!fs.existsSync(dir))
+        return files;
+
+    if (fs.statSync(dir).isDirectory())
+        fs.readdirSync(dir)
+            .filter(function (name) { return name[0] !== '.' })
+            .forEach(function (name) {
+                find(root, filter, files, path.join(prefix, name))
+            });
+    else
+        files.push(prefix);
+
+    return files;
+}
+
+var igniteModules = path.resolve(__dirname, 'ignite_modules');
+
+find(igniteModules)
+    .filter(function(path) { return path.match(/\/routes\/.+\.js$/); })
+    .forEach(function(route) { require(path.join(igniteModules, route))(app); });
 
 // Catch 404 and forward to error handler.
 app.use(function (req, res, next) {
