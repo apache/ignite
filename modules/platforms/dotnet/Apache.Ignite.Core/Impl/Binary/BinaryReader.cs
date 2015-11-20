@@ -399,13 +399,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T ReadEnum<T>(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadEnum<T>, BinaryUtils.TypeEnum);
+            return ReadField(fieldName, ReadEnum0<T>, BinaryUtils.TypeEnum);
         }
 
         /** <inheritdoc /> */
         public T ReadEnum<T>()
         {
-            return Read(BinaryUtils.ReadEnum<T>, BinaryUtils.TypeEnum);
+            return Read(ReadEnum0<T>, BinaryUtils.TypeEnum);
         }
 
         /** <inheritdoc /> */
@@ -956,6 +956,24 @@ namespace Apache.Ignite.Core.Impl.Binary
         private T Read<T>(Func<IBinaryStream, T> readFunc, byte expHdr)
         {
             return IsNotNullHeader(expHdr) ? readFunc(Stream) : default(T);
+        }
+
+        /// <summary>
+        /// Reads the enum.
+        /// </summary>
+        private static T ReadEnum0<T>(BinaryReader reader)
+        {
+            var enumType = reader.ReadInt();
+
+            var enumValue = reader.ReadInt();
+
+            if (reader._mode == BinaryMode.Deserialize)
+            {
+                // TODO: Check type compatibility
+                return TypeCaster<T>.Cast(enumValue);
+            }
+
+            return TypeCaster<T>.Cast(new BinaryEnum(enumType, enumValue, reader.Marshaller));
         }
     }
 }

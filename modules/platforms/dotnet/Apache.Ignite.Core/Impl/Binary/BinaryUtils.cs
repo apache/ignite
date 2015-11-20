@@ -1309,24 +1309,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     enumType.Name);
         }
 
-        /// <summary>
-        /// Read enum.
-        /// </summary>
-        /// <param name="stream">Stream.</param>
-        /// <returns>Enumeration.</returns>
-        public static T ReadEnum<T>(IBinaryStream stream)
-        {
-            if (!typeof(T).IsEnum || Enum.GetUnderlyingType(typeof(T)) == TypInt)
-            {
-                stream.ReadInt();
-
-                return TypeCaster<T>.Cast(stream.ReadInt());
-            }
-
-            throw new BinaryObjectException("Only Int32 underlying type is supported for enums: " +
-                                        typeof (T).Name);
-        }
-
         /**
          * <summary>Gets type key.</summary>
          * <param name="userType">User type flag.</param>

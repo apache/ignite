@@ -166,7 +166,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             ReadHandlers[BinaryUtils.TypeMapEntry] = new BinarySystemReader(ReadMapEntry);
             
             // 16. Enum.
-            ReadHandlers[BinaryUtils.TypeEnum] = new BinarySystemReader<int>(BinaryUtils.ReadEnum<int>);
             ReadHandlers[BinaryUtils.TypeArrayEnum] = new BinarySystemReader(ReadEnumArray);
         }
 
