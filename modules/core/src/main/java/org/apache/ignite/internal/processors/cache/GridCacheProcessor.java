@@ -112,7 +112,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -1019,7 +1019,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
         if (cfg.isKeepBinaryInStore() && cfg.isKeepBinaryInStore() != CacheConfiguration.DFLT_KEEP_BINARY_IN_STORE
-            && !(ctx.config().getMarshaller() instanceof PortableMarshaller))
+            && !(ctx.config().getMarshaller() instanceof BinaryMarshaller))
             U.warn(log, "CacheConfiguration.isKeepBinaryInStore() configuration property will be ignored because " +
                 "PortableMarshaller is not used");
 

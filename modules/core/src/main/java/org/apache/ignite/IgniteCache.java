@@ -55,7 +55,6 @@ import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -163,7 +162,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * BinaryObject po = prj.get(1);
      * </pre>
      * <p>
-     * Note that this method makes sense only if cache is working in binary mode ({@link PortableMarshaller} is used).
+     * Note that this method makes sense only if cache is working in binary mode ({@link org.apache.ignite.marshaller.portable.BinaryMarshaller} is used).
      * If not, this method is no-op and will return current cache.
      *
      * @return New cache instance for portable objects.
