@@ -28,6 +28,7 @@ import org.apache.ignite.p2p.GridP2PUserVersionChangeSelfTest;
 import org.apache.ignite.spring.GridSpringCacheManagerSelfTest;
 import org.apache.ignite.spring.IgniteExcludeInConfigurationTest;
 import org.apache.ignite.spring.IgniteStartFromStreamConfigurationTest;
+import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSelfTest;
 
 /**
  * Spring tests.
@@ -61,6 +62,8 @@ public class IgniteSpringTestSuite extends TestSuite {
         suite.addTestSuite(CacheJdbcBlobStoreFactorySelfTest.class);
 
         suite.addTestSuite(CacheJdbcPojoStoreFactorySelfTest.class);
+
+        suite.addTest(new TestSuite(GridSpringTransactionManagerSelfTest.class));
 
         return suite;
     }
