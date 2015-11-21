@@ -27,7 +27,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.Nullable;
@@ -135,7 +135,7 @@ public interface GridDhtPartitionTopology {
     /**
      * @return Local IDs.
      */
-    public GridDhtPartitionMap localPartitionMap();
+    public GridDhtPartitionMap2 localPartitionMap();
 
     /**
      * @param nodeId Node ID.
@@ -199,7 +199,7 @@ public interface GridDhtPartitionTopology {
      * @param cntrMap Partition update counters.
      * @return Local partition map if there were evictions or {@code null} otherwise.
      */
-    public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId,
+    public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionFullMap partMap,
         @Nullable Map<Integer, Long> cntrMap);
 
@@ -209,8 +209,8 @@ public interface GridDhtPartitionTopology {
      * @param cntrMap Partition update counters.
      * @return Local partition map if there were evictions or {@code null} otherwise.
      */
-    @Nullable public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionMap parts,
+    @Nullable public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionMap2 parts,
         @Nullable Map<Integer, Long> cntrMap);
 
     /**
@@ -234,7 +234,7 @@ public interface GridDhtPartitionTopology {
      * @param nodeId Node to get partitions for.
      * @return Partitions for node.
      */
-    @Nullable public GridDhtPartitionMap partitions(UUID nodeId);
+    @Nullable public GridDhtPartitionMap2 partitions(UUID nodeId);
 
     /**
      * Prints memory stats.
