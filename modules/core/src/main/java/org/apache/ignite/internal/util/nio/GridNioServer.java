@@ -997,7 +997,7 @@ public class GridNioServer<T> {
 
                         finished = msg.writeTo(buf, writer);
 
-                        if (finished)
+                        if (finished && writer != null)
                             writer.reset();
                     }
 
@@ -1019,7 +1019,7 @@ public class GridNioServer<T> {
 
                         finished = msg.writeTo(buf, writer);
 
-                        if (finished)
+                        if (finished && writer != null)
                             writer.reset();
                     }
 
