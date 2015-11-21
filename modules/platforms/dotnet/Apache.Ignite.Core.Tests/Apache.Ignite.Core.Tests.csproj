@@ -59,6 +59,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Cache\CacheDynamicStartTest.cs" />
+    <Compile Include="Cache\CacheExtensionsTest.cs" />
     <Compile Include="Cache\CacheTestAsyncWrapper.cs" />
     <Compile Include="Cache\CacheAbstractTest.cs" />
     <Compile Include="Cache\CacheAffinityTest.cs" />
@@ -85,6 +86,8 @@
     <Compile Include="Cache\Store\CacheTestParallelLoadStore.cs" />
     <Compile Include="Cache\Store\CacheTestStore.cs" />
     <Compile Include="Compute\Forked\ForkedBinarizableClosureTaskTest.cs" />
+    <Compile Include="Common\SerializableWrapperTest.cs" />
+    <Compile Include="Compute\ComputeExtensionsTest.cs" />
     <Compile Include="Compute\Forked\ForkedResourceTaskTest.cs" />
     <Compile Include="Compute\Forked\ForkedSerializableClosureTaskTest.cs" />
     <Compile Include="Compute\Forked\ForkedTaskAdapterTest.cs" />
@@ -102,6 +105,7 @@
     <Compile Include="Compute\TaskResultTest.cs" />
     <Compile Include="Dataload\DataStreamerTest.cs" />
     <Compile Include="DataStructures\AtomicLongTest.cs" />
+    <Compile Include="EventsExtensionsTest.cs" />
     <Compile Include="EventsTest.cs" />
     <Compile Include="Examples\Example.cs" />
     <Compile Include="Examples\ExamplesTest.cs" />
@@ -115,6 +119,7 @@
     <Compile Include="LoadDllTest.cs" />
     <Compile Include="IgniteManagerTest.cs" />
     <Compile Include="MarshallerTest.cs" />
+    <Compile Include="MessagingExtensionsTest.cs" />
     <Compile Include="MessagingTest.cs" />
     <Compile Include="BinaryConfigurationTest.cs" />
     <Compile Include="Binary\BinaryStructureTest.cs" />

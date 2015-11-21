@@ -17,22 +17,26 @@
     <OutputPath>bin\x64\Debug\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>DEBUG;CODE_ANALYSIS</DefineConstants>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <PlatformTarget>x64</PlatformTarget>
     <OutputPath>bin\x64\Release\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>bin\x86\Debug\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>DEBUG;CODE_ANALYSIS</DefineConstants>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>bin\x86\Release\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -51,6 +55,7 @@
     <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
     <Compile Include="Cache\CacheException.cs" />
+    <Compile Include="Cache\CacheExtensions.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
     <Compile Include="Cache\Event\CacheEntryEventType.cs" />
@@ -92,6 +97,7 @@
     <Compile Include="Common\IgniteException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
+    <Compile Include="Compute\ComputeExtensions.cs" />
     <Compile Include="Compute\ComputeJobAdapter.cs" />
     <Compile Include="Compute\ComputeJobFailoverException.cs" />
     <Compile Include="Compute\ComputeJobResultPolicy.cs" />
@@ -120,6 +126,7 @@
     <Compile Include="Events\DiscoveryEvent.cs" />
     <Compile Include="Events\EventBase.cs" />
     <Compile Include="Events\EventReader.cs" />
+    <Compile Include="Events\EventsExtensions.cs" />
     <Compile Include="Events\EventType.cs" />
     <Compile Include="Events\IEvent.cs" />
     <Compile Include="Events\IEventFilter.cs" />
@@ -148,6 +155,10 @@
     <Compile Include="Impl\Cache\Event\CacheEntryCreateEvent.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryRemoveEvent.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryUpdateEvent.cs" />
+    <Compile Include="Impl\Cache\Extensions\CacheEntryDelegateEventFilter.cs" />
+    <Compile Include="Impl\Cache\Extensions\CacheEntryDelegateEventListener.cs" />
+    <Compile Include="Impl\Cache\Extensions\CacheEntryDelegateFilter.cs" />
+    <Compile Include="Impl\Cache\Extensions\CacheEntryDelegateProcessor.cs" />
     <Compile Include="Impl\Cache\MutableCacheEntry.cs" />
     <Compile Include="Impl\Cache\Query\AbstractQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryFilter.cs" />
@@ -181,6 +192,7 @@
     <Compile Include="Impl\Common\IgniteHome.cs" />
     <Compile Include="Impl\Common\LoadedAssembliesResolver.cs" />
     <Compile Include="Impl\Common\ResizeableArray.cs" />
+    <Compile Include="Impl\Common\SerializableWrapper.cs" />
     <Compile Include="Impl\Common\TypeCaster.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeAbstractClosureTask.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeActionJob.cs" />
@@ -199,12 +211,17 @@
     <Compile Include="Impl\Compute\ComputeJobResultImpl.cs" />
     <Compile Include="Impl\Compute\ComputeOutFunc.cs" />
     <Compile Include="Impl\Compute\ComputeTaskHolder.cs" />
+    <Compile Include="Impl\Compute\Extensions\ComputeDelegateAction.cs" />
+    <Compile Include="Impl\Compute\Extensions\ComputeDelegateFunc.cs" />
+    <Compile Include="Impl\Compute\Extensions\ComputeDelegateJob.cs" />
+    <Compile Include="Impl\Compute\Extensions\ComputeDelegateReducer.cs" />
     <Compile Include="Impl\Datastream\DataStreamerBatch.cs" />
     <Compile Include="Impl\Datastream\DataStreamerEntry.cs" />
     <Compile Include="Impl\Datastream\DataStreamerImpl.cs" />
     <Compile Include="Impl\Datastream\DataStreamerRemoveEntry.cs" />
     <Compile Include="Impl\Datastream\StreamReceiverHolder.cs" />
     <Compile Include="Impl\DataStructures\AtomicLong.cs" />
+    <Compile Include="Impl\Events\EventDelegateFilter.cs" />
     <Compile Include="Impl\Events\Events.cs" />
     <Compile Include="Impl\Events\RemoteListenEventFilter.cs" />
     <Compile Include="Impl\ExceptionUtils.cs" />
@@ -212,6 +229,7 @@
     <Compile Include="Impl\Ignite.cs" />
     <Compile Include="Impl\IgniteManager.cs" />
     <Compile Include="Impl\IgniteProxy.cs" />
+    <Compile Include="Impl\Messaging\MessageDelegateFilter.cs" />
     <Compile Include="Impl\PlatformTarget.cs" />
     <Compile Include="Impl\IgniteUtils.cs" />
     <Compile Include="Impl\Handle\Handle.cs" />
@@ -321,6 +339,7 @@
     <Compile Include="Binary\BinaryObjectException.cs" />
     <Compile Include="Binary\BinaryTypeConfiguration.cs" />
     <Compile Include="Binary\BinaryTypeNames.cs" />
+    <Compile Include="Messaging\MessagingExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resource\InstanceResourceAttribute.cs" />
     <Compile Include="Resource\StoreSessionResourceAttribute.cs" />
@@ -368,6 +387,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
