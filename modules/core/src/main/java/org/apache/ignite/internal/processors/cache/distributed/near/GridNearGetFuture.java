@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.GridFutureRemapTimeoutObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
@@ -60,7 +58,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -851,34 +848,23 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 final AffinityTopologyVersion updTopVer =
                     new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
-                final GridFutureRemapTimeoutObject timeout = new GridFutureRemapTimeoutObject(this,
-                    cctx.kernalContext().config().getNetworkTimeout(),
-                    updTopVer,
-                    e);
-
                 cctx.affinity().affinityReadyFuture(updTopVer).listen(
                     new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                            if (timeout.finish()) {
-                                cctx.kernalContext().timeout().removeTimeoutObject(timeout);
+                            try {
+                                fut.get();
 
-                                try {
-                                    fut.get();
+                                // Remap.
+                                map(keys.keySet(), F.t(node, keys), updTopVer);
 
-                                    // Remap.
-                                    map(keys.keySet(), F.t(node, keys), updTopVer);
-
-                                    onDone(Collections.<K, V>emptyMap());
-                                }
-                                catch (IgniteCheckedException e) {
-                                    GridNearGetFuture.this.onDone(e);
-                                }
+                                onDone(Collections.<K, V>emptyMap());
+                            }
+                            catch (IgniteCheckedException e) {
+                                GridNearGetFuture.this.onDone(e);
                             }
                         }
                     }
                 );
-
-                cctx.kernalContext().timeout().addTimeoutObject(timeout);
             }
         }
 

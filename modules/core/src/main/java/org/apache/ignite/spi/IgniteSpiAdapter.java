@@ -696,11 +696,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
             if (msgFormatter0 == null) {
                 msgFormatter0 = new MessageFormatter() {
-                    @Override public MessageWriter writer() {
+                    @Override public MessageWriter writer(UUID rmtNodeId) {
                         throw new IgniteException("Failed to write message, node is not started.");
                     }
 
-                    @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
+                    @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
                 };

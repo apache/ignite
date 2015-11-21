@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,12 +65,20 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Set<IgniteTxKey> writeSet() {
-        return entry != null ? Collections.singleton(entry.txKey()) : Collections.<IgniteTxKey>emptySet();
+        if (entry != null) {
+            HashSet<IgniteTxKey> set = new HashSet<>(3, 0.75f);
+
+            set.add(entry.txKey());
+
+            return set;
+        }
+        else
+            return Collections.<IgniteTxKey>emptySet();
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> writeEntries() {
-        return entry != null ? Collections.singletonList(entry) : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? Arrays.asList(entry) : Collections.<IgniteTxEntry>emptyList();
     }
 
     /** {@inheritDoc} */
@@ -77,7 +88,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Map<IgniteTxKey, IgniteTxEntry> writeMap() {
-        return entry != null ? Collections.singletonMap(entry.txKey(), entry) :
+        return entry != null ? F.asMap(entry.txKey(), entry) :
             Collections.<IgniteTxKey, IgniteTxEntry>emptyMap();
     }
 
@@ -93,7 +104,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> allEntries() {
-        return entry != null ? Collections.singletonList(entry) : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? Arrays.asList(entry) : Collections.<IgniteTxEntry>emptyList();
     }
 
     /** {@inheritDoc} */

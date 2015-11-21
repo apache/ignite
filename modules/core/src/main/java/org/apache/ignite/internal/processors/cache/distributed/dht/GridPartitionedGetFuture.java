@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.GridFutureRemapTimeoutObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -59,7 +58,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture.*;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture.SINGLE_GET_MSG_SINCE;
 
 /**
  * Colocated get future.
@@ -644,34 +643,23 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 final AffinityTopologyVersion updTopVer =
                     new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
-                final GridFutureRemapTimeoutObject timeout = new GridFutureRemapTimeoutObject(this,
-                    cctx.kernalContext().config().getNetworkTimeout(),
-                    updTopVer,
-                    e);
-
                 cctx.affinity().affinityReadyFuture(updTopVer).listen(
                     new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                            if (timeout.finish()) {
-                                cctx.kernalContext().timeout().removeTimeoutObject(timeout);
+                            try {
+                                fut.get();
 
-                                try {
-                                    fut.get();
+                                // Remap.
+                                map(keys.keySet(), F.t(node, keys), updTopVer);
 
-                                    // Remap.
-                                    map(keys.keySet(), F.t(node, keys), updTopVer);
-
-                                    onDone(Collections.<K, V>emptyMap());
-                                }
-                                catch (IgniteCheckedException e) {
-                                    GridPartitionedGetFuture.this.onDone(e);
-                                }
+                                onDone(Collections.<K, V>emptyMap());
+                            }
+                            catch (IgniteCheckedException e) {
+                                GridPartitionedGetFuture.this.onDone(e);
                             }
                         }
                     }
                 );
-
-                cctx.kernalContext().timeout().addTimeoutObject(timeout);
             }
         }
 

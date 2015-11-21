@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -262,6 +263,62 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
         assertNull(creator.countDownLatch("latch1", 1, true, false));
         assertNull(other.countDownLatch("latch1", 1, true, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSemaphore() throws Exception {
+        Ignite clientNode = clientIgnite();
+        Ignite srvNode = serverNode();
+
+        testSemaphore(clientNode, srvNode);
+        testSemaphore(srvNode, clientNode);
+    }
+
+    /**
+     * @param creator Creator node.
+     * @param other Other node.
+     * @throws Exception If failed.
+     */
+    private void testSemaphore(Ignite creator, final Ignite other) throws Exception {
+        assertNull(creator.semaphore("semaphore1", 1, true, false));
+        assertNull(other.semaphore("semaphore1", 1, true, false));
+
+        try (IgniteSemaphore semaphore = creator.semaphore("semaphore1", -1, true, true)) {
+            assertNotNull(semaphore);
+
+            assertEquals(-1, semaphore.availablePermits());
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    U.sleep(1000);
+
+                    IgniteSemaphore semaphore0 = other.semaphore("semaphore1", -1, true, false);
+
+                    assertEquals(-1, semaphore0.availablePermits());
+
+                    log.info("Release semaphore.");
+
+                    semaphore0.release(2);
+
+                    return null;
+                }
+            });
+
+            log.info("Acquire semaphore.");
+
+            assertTrue(semaphore.tryAcquire(1, 5000, TimeUnit.MILLISECONDS));
+
+            log.info("Finished wait.");
+
+            fut.get();
+
+            assertEquals(0, semaphore.availablePermits());
+        }
+
+        assertNull(creator.semaphore("semaphore1", 1, true, false));
+        assertNull(other.semaphore("semaphore1", 1, true, false));
     }
 
     /**
