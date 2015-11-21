@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -347,7 +346,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                                 subjId,
                                 null,
                                 taskName,
-                                expiryPlc);
+                                expiryPlc,
+                                true);
 
                             if (res != null) {
                                 v = res.get1();
@@ -366,7 +366,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                                 subjId,
                                 null,
                                 taskName,
-                                expiryPlc);
+                                expiryPlc,
+                                true);
                         }
 
                         colocated.context().evicts().touch(entry, topVer);
@@ -446,7 +447,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param nodeId Node ID.
      * @param res Result.
      */
-    public void onResult(UUID nodeId, GridNearGetResponse res) {
+    @Override public void onResult(UUID nodeId, GridNearGetResponse res) {
         if (!processResponse(nodeId) ||
             !checkError(res.error(), !F.isEmpty(res.invalidPartitions()), res.topologyVersion()))
             return;
@@ -579,10 +580,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 }
                 else {
                     if (!keepCacheObjects) {
-                        Object res = CU.value(val, cctx, true);
-
-                        if (deserializePortable && !skipVals)
-                            res = cctx.unwrapPortableIfNeeded(res, false);
+                        Object res = cctx.unwrapPortableIfNeeded(val, !deserializePortable && !skipVals);
 
                         onDone(res);
                     }

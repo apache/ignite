@@ -312,8 +312,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param key Key.
      * @param rmv {@code True} if entry was removed.
      */
-    public void onEntryUpdated(KeyCacheObject key, boolean rmv) {
-        Object key0 = key.value(cctx.cacheObjectContext(), false);
+    public void onEntryUpdated(KeyCacheObject key, boolean rmv, boolean keepPortable) {
+        Object key0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepPortable, false);
 
         if (key0 instanceof GridCacheSetItemKey)
             onSetItemUpdated((GridCacheSetItemKey)key0, rmv);

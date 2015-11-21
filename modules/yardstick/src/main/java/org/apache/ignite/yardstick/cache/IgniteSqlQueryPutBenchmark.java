@@ -76,6 +76,11 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark<Int
         return true;
     }
 
+    /** {@inheritDoc} */
+    @Override public void onWarmupFinished() {
+        super.onWarmupFinished();
+    }
+
     /**
      * @param minSalary Min salary.
      * @param maxSalary Max salary.

@@ -227,6 +227,39 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testFunctionNpe() {
+        // TODO IGNITE-1886
+        IgniteCache<Integer, User> userCache = ignite(0).createCache(
+            cacheConfig("UserCache", true, Integer.class, User.class));
+        IgniteCache<Integer, UserOrder> userOrderCache = ignite(0).createCache(
+            cacheConfig("UserOrderCache", true, Integer.class, UserOrder.class));
+        IgniteCache<Integer, OrderGood> orderGoodCache = ignite(0).createCache(
+            cacheConfig("OrderGoodCache", true, Integer.class, OrderGood.class));
+
+        try {
+            String sql =
+                "SELECT a.* FROM (" +
+                    "SELECT CASE WHEN u.id < 100 THEN u.id ELSE ug.id END id " +
+                    "FROM \"UserCache\".User u, UserOrder ug " +
+                    "WHERE u.id = ug.userId" +
+                    ") a, (" +
+                    "SELECT CASE WHEN og.goodId < 5 THEN 100 ELSE og.goodId END id " +
+                    "FROM UserOrder ug, \"OrderGoodCache\".OrderGood og " +
+                    "WHERE ug.id = og.orderId) b " +
+                    "WHERE a.id = b.id";
+
+            userOrderCache.query(new SqlFieldsQuery(sql)).getAll();
+        }
+        finally {
+            userCache.destroy();
+            userOrderCache.destroy();
+            orderGoodCache.destroy();
+        }
+    }
+
+    /**
      * Test value.
      */
     private static class GroupIndexTestValue implements Serializable {
@@ -244,5 +277,26 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             this.a = a;
             this.b = b;
         }
+    }
+
+    private static class User implements Serializable {
+        @QuerySqlField
+        private int id;
+    }
+
+    private static class UserOrder implements Serializable {
+        @QuerySqlField
+        private int id;
+
+        @QuerySqlField
+        private int userId;
+    }
+
+    private static class OrderGood implements Serializable {
+        @QuerySqlField
+        private int orderId;
+
+        @QuerySqlField
+        private int goodId;
     }
 }

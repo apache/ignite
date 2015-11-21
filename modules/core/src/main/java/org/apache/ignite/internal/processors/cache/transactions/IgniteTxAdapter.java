@@ -1247,7 +1247,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                     /*subjId*/subjId,
                     /**closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
-                    null);
+                    null,
+                    txEntry.keepBinary());
 
             boolean modified = false;
 
@@ -1271,7 +1272,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(txEntry.context(),
-                    txEntry.key(), key, cacheVal, val, ver);
+                    txEntry.key(), key, cacheVal, val, ver, txEntry.keepBinary());
 
                 try {
                     EntryProcessor<Object, Object, Object> processor = t.get1();

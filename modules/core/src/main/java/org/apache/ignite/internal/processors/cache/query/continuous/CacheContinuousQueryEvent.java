@@ -21,7 +21,6 @@ import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -58,19 +57,20 @@ class CacheContinuousQueryEvent<K, V> extends CacheEntryEvent<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public K getKey() {
-        return e.key().value(cctx.cacheObjectContext(), false);
+    @Override
+    public K getKey() {
+        return (K)cctx.cacheObjectContext().unwrapPortableIfNeeded(e.key(), true, false);
     }
 
     /** {@inheritDoc} */
     @Override public V getValue() {
-        return CU.value(e.value(), cctx, false);
+        return (V)cctx.cacheObjectContext().unwrapPortableIfNeeded(e.value(), true, false);
     }
 
     /** {@inheritDoc} */
     @Override
     public V getOldValue() {
-        return CU.value(e.oldValue(), cctx, false);
+        return (V)cctx.cacheObjectContext().unwrapPortableIfNeeded(e.oldValue(), true, false);
     }
 
     /** {@inheritDoc} */

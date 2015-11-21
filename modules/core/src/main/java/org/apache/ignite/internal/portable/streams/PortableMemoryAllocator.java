@@ -18,59 +18,40 @@
 package org.apache.ignite.internal.portable.streams;
 
 /**
- * Portable memory allocator.
+ * Thread-local memory allocator.
  */
-public interface PortableMemoryAllocator {
-    /** Default memory allocator. */
-    public static final PortableMemoryAllocator DFLT_ALLOC = new PortableSimpleMemoryAllocator();
+public final class PortableMemoryAllocator {
+    /** Memory allocator instance. */
+    public static final PortableMemoryAllocator INSTANCE = new PortableMemoryAllocator();
+
+    /** Holders. */
+    private static final ThreadLocal<PortableMemoryAllocatorChunk> holders = new ThreadLocal<>();
 
     /**
-     * Allocate memory.
-     *
-     * @param size Size.
-     * @return Data.
+     * Ensures singleton.
      */
-    public byte[] allocate(int size);
+    private PortableMemoryAllocator() {
+        // No-op.
+    }
+
+    public PortableMemoryAllocatorChunk chunk() {
+        PortableMemoryAllocatorChunk holder = holders.get();
+
+        if (holder == null)
+            holders.set(holder = new PortableMemoryAllocatorChunk());
+
+        return holder;
+    }
 
     /**
-     * Reallocates memory.
+     * Checks whether a thread-local array is acquired or not.
+     * The function is used by Unit tests.
      *
-     * @param data Current data chunk.
-     * @param size New size required.
-     *
-     * @return Data.
+     * @return {@code true} if acquired {@code false} otherwise.
      */
-    public byte[] reallocate(byte[] data, int size);
+    public boolean isAcquired() {
+        PortableMemoryAllocatorChunk holder = holders.get();
 
-    /**
-     * Release memory.
-     *
-     * @param data Data.
-     * @param maxMsgSize Max message size sent during the time the allocator is used.
-     */
-    public void release(byte[] data, int maxMsgSize);
-
-    /**
-     * Allocate memory.
-     *
-     * @param size Size.
-     * @return Address.
-     */
-    public long allocateDirect(int size);
-
-    /**
-     * Reallocate memory.
-     *
-     * @param addr Address.
-     * @param size Size.
-     * @return Address.
-     */
-    public long reallocateDirect(long addr, int size);
-
-    /**
-     * Release memory.
-     *
-     * @param addr Address.
-     */
-    public void releaseDirect(long addr);
+        return holder != null && holder.isAcquired();
+    }
 }

@@ -150,6 +150,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     /** Skip store flag. */
     private final boolean skipStore;
 
+    /** Keep binary context flag. */
+    private final boolean keepBinary;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -170,7 +173,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         long timeout,
         long accessTtl,
         CacheEntryPredicate[] filter,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;
@@ -184,6 +188,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         this.accessTtl = accessTtl;
         this.filter = filter;
         this.skipStore = skipStore;
+        this.keepBinary = keepBinary;
 
         ignoreInterrupts(true);
 
@@ -980,6 +985,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                             inTx() ? tx.taskNameHash() : 0,
                                             read ? accessTtl : -1L,
                                             skipStore,
+                                            keepBinary,
                                             clientFirst,
                                             cctx.deploymentEnabled());
 
@@ -1162,7 +1168,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                                     hasBytes,
                                                     CU.subjectId(tx, cctx.shared()),
                                                     null,
-                                                    inTx() ? tx.resolveTaskName() : null);
+                                                    inTx() ? tx.resolveTaskName() : null,
+                                                    keepBinary);
 
                                             if (cctx.cache().configuration().isStatisticsEnabled())
                                                 cctx.cache().metrics0().onRead(oldVal != null);
@@ -1552,7 +1559,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                             hasOldVal,
                                             CU.subjectId(tx, cctx.shared()),
                                             null,
-                                            inTx() ? tx.resolveTaskName() : null);
+                                            inTx() ? tx.resolveTaskName() : null,
+                                            keepBinary);
 
                                     if (cctx.cache().configuration().isStatisticsEnabled())
                                         cctx.cache().metrics0().onRead(false);
