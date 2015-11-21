@@ -15,19 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
-
-import org.apache.ignite.cache.CacheMemoryMode;
-
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+package org.apache.ignite.internal.direct.state;
 
 /**
- * Failover tests for cache data structures.
+ * Message state item.
  */
-public class GridCachePartitionedOffheapDataStructuresFailoverSelfTest
-    extends GridCachePartitionedDataStructuresFailoverSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return OFFHEAP_TIERED;
-    }
+public interface DirectMessageStateItem {
+    /**
+     * Resets state.
+     */
+    public void reset();
 }

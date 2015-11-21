@@ -32,11 +32,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 public class GridCachePartitionedDataStructuresFailoverSelfTest
     extends GridCacheAbstractDataStructuresFailoverSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-803");
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheMode collectionCacheMode() {
         return PARTITIONED;
     }

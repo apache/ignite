@@ -15,19 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.cache.CacheMemoryMode;
-
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 
 /**
- * Failover tests for cache data structures.
+ * Message reader factory.
  */
-public class GridCachePartitionedOffheapDataStructuresFailoverSelfTest
-    extends GridCachePartitionedDataStructuresFailoverSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return OFFHEAP_TIERED;
-    }
+public interface GridNioMessageReaderFactory {
+    /**
+     * Creates new reader.
+     *
+     * @param ses Current session.
+     * @param msgFactory Message factory.
+     * @return Reader.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public MessageReader reader(GridNioSession ses, MessageFactory msgFactory) throws IgniteCheckedException;
 }

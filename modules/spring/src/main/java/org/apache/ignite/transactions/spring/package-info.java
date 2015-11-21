@@ -15,19 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
-
-import org.apache.ignite.cache.CacheMemoryMode;
-
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-
 /**
- * Failover tests for cache data structures.
+ * <!-- Package description. -->
+ * Contains implementation of Spring transaction manager.
  */
-public class GridCachePartitionedOffheapDataStructuresFailoverSelfTest
-    extends GridCachePartitionedDataStructuresFailoverSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return OFFHEAP_TIERED;
-    }
-}
+package org.apache.ignite.transactions.spring;
