@@ -3296,7 +3296,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (!cctx.isLocal() && !isNear()) {
             GridDhtLocalPartition locPart = cctx.topology().localPartition(partition(), topVer, false);
 
-            assert locPart != null;
+            if (locPart == null)
+                return 0;
 
             updateCntr = locPart.nextUpdateCounter();
         }
