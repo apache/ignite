@@ -77,6 +77,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
+     * @param addDepInfo Deployment info flag.
      */
     public GridNearTxFinishRequest(
         IgniteUuid futId,
@@ -96,7 +97,8 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         Collection<GridCacheVersion> rolledbackVers,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash) {
+        int taskNameHash,
+        boolean addDepInfo) {
         super(
             xidVer,
             futId,
@@ -111,7 +113,8 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             baseVer,
             committedVers,
             rolledbackVers,
-            txSize
+            txSize,
+            addDepInfo
         );
 
         this.explicitLock = explicitLock;

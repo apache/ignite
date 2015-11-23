@@ -236,6 +236,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Updates allowed flag. */
     private boolean updatesAllowed;
 
+    /** Deployment enabled flag for this specific cache */
+    private boolean depEnabled;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -283,12 +286,12 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheEvictionManager evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
         CacheContinuousQueryManager contQryMgr,
-        GridCacheAffinityManager affMgr,
         CacheDataStructuresManager dataStructuresMgr,
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
         CacheConflictResolutionManager<K, V> rslvrMgr,
-        CachePluginManager pluginMgr
+        CachePluginManager pluginMgr,
+        GridCacheAffinityManager affMgr
     ) {
         assert ctx != null;
         assert sharedCtx != null;
@@ -312,6 +315,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.cacheType = cacheType;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
+        this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isPortableEnabled(cacheCfg);
 
         /*
          * Managers in starting order!
@@ -323,12 +327,12 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.evictMgr = add(evictMgr);
         this.qryMgr = add(qryMgr);
         this.contQryMgr = add(contQryMgr);
-        this.affMgr = add(affMgr);
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
         this.rslvrMgr = add(rslvrMgr);
         this.pluginMgr = add(pluginMgr);
+        this.affMgr = add(affMgr);
 
         log = ctx.log(getClass());
 
@@ -965,7 +969,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache transaction manager.
      */
     public IgniteTxManager tm() {
-         return sharedCtx.tm();
+        return sharedCtx.tm();
     }
 
     /**
@@ -1408,10 +1412,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if deployment enabled.
+     * @return {@code True} if deployment is enabled.
      */
     public boolean deploymentEnabled() {
-        return ctx.deploy().enabled();
+        return depEnabled;
     }
 
     /**
@@ -1484,10 +1488,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param log Log.
      * @param dhtMap Dht mappings.
      * @param nearMap Near mappings.
-     * @return {@code True} if mapped.
      * @throws GridCacheEntryRemovedException If reader for entry is removed.
      */
-    public boolean dhtMap(
+    public void dhtMap(
         UUID nearNodeId,
         AffinityTopologyVersion topVer,
         GridDhtCacheEntry entry,
@@ -1505,7 +1508,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         Collection<ClusterNode> dhtRemoteNodes = F.view(dhtNodes, F.remoteNodes(nodeId())); // Exclude local node.
 
-        boolean ret = map(entry, dhtRemoteNodes, dhtMap);
+        map(entry, dhtRemoteNodes, dhtMap);
 
         Collection<ClusterNode> nearRemoteNodes = null;
 
@@ -1526,7 +1529,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             if (nearNodes != null && !nearNodes.isEmpty()) {
                 nearRemoteNodes = F.view(nearNodes, F.notIn(dhtNodes));
 
-                ret |= map(entry, nearRemoteNodes, nearMap);
+                map(entry, nearRemoteNodes, nearMap);
             }
         }
 
@@ -1536,8 +1539,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             entry.mappings(explicitLockVer, dhtNodeIds, nearNodeIds);
         }
-
-        return ret;
     }
 
     /**
@@ -1545,10 +1546,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param log Log.
      * @param dhtMap Dht mappings.
      * @param nearMap Near mappings.
-     * @return {@code True} if mapped.
      * @throws GridCacheEntryRemovedException If reader for entry is removed.
      */
-    public boolean dhtMap(
+    public void dhtMap(
         GridDhtCacheEntry entry,
         GridCacheVersion explicitLockVer,
         IgniteLogger log,
@@ -1567,27 +1567,20 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             Collection<ClusterNode> nearNodes = cand.mappedNearNodes();
 
-            boolean ret = map(entry, dhtNodes, dhtMap);
+            map(entry, dhtNodes, dhtMap);
 
             if (nearNodes != null && !nearNodes.isEmpty())
-                ret |= map(entry, nearNodes, nearMap);
-
-            return ret;
+                map(entry, nearNodes, nearMap);
         }
-
-        return false;
     }
 
     /**
      * @param entry Entry.
      * @param nodes Nodes.
      * @param map Map.
-     * @return {@code True} if mapped.
      */
-    private boolean map(GridDhtCacheEntry entry, Iterable<ClusterNode> nodes,
+    private void map(GridDhtCacheEntry entry, Iterable<ClusterNode> nodes,
         Map<ClusterNode, List<GridDhtCacheEntry>> map) {
-        boolean ret = false;
-
         if (nodes != null) {
             for (ClusterNode n : nodes) {
                 List<GridDhtCacheEntry> entries = map.get(n);
@@ -1596,12 +1589,8 @@ public class GridCacheContext<K, V> implements Externalizable {
                     map.put(n, entries = new LinkedList<>());
 
                 entries.add(entry);
-
-                ret = true;
             }
         }
-
-        return ret;
     }
 
     /**
@@ -1706,7 +1695,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean keepPortable() {
         CacheOperationContext opCtx = operationContextPerCall();
 
-        return opCtx != null && opCtx.isKeepPortable();
+        return opCtx != null && opCtx.isKeepBinary();
     }
 
     /**
@@ -1748,7 +1737,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Unwraps object for portables.
+     * Unwraps object for binary.
      *
      * @param o Object to unwrap.
      * @param keepPortable Keep portable flag.
@@ -1848,18 +1837,12 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean deserializePortable,
         boolean cpy) {
         assert key != null;
-        assert val != null;
+        assert val != null || skipVals;
 
         if (!keepCacheObjects) {
-            Object key0 = key.value(cacheObjCtx, false);
-            Object val0 = skipVals ? true : val.value(cacheObjCtx, cpy);
+            Object key0 = unwrapPortableIfNeeded(key, !deserializePortable);
 
-            if (deserializePortable) {
-                key0 = unwrapPortableIfNeeded(key0, false);
-
-                if (!skipVals)
-                    val0 = unwrapPortableIfNeeded(val0, false);
-            }
+            Object val0 = skipVals ? true : unwrapPortableIfNeeded(val, !deserializePortable);
 
             assert key0 != null : key;
             assert val0 != null : val;

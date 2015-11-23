@@ -71,7 +71,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -1080,7 +1079,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Found duplicated properties with the same name [keyType=" +
                 type.keyClass().getName() + ", valueType=" + type.valueClass().getName() + "]");
 
-        String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [class=" + type + "]";
+        String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [type=" + type.name() + "]";
 
         for (String name : names) {
             if (name.equals(KEY_FIELD_NAME) || name.equals(VAL_FIELD_NAME))
@@ -1475,7 +1474,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) {
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
 
-                if (cache.context().isReplicated() || (cache.configuration().getBackups() == 0 && parts == null))
+                if (cache.context().isReplicated())
                     return null;
 
                 final GridCacheAffinityManager aff = cache.context().affinity();
@@ -1586,23 +1585,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isSqlType(Class<?> cls) {
-        switch (DBTypeEnum.fromClass(cls)) {
-            case OTHER:
-            case ARRAY:
-                return false;
-
-            default:
-                return true;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isGeometryClass(Class<?> cls) {
-        return DataType.isGeometryClass(cls);
-    }
-
     /**
      * Enum that helps to map java types to database types.
      */
@@ -1687,8 +1669,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             map.put(Timestamp.class, TIMESTAMP);
             map.put(java.util.Date.class, TIMESTAMP);
             map.put(java.sql.Date.class, DATE);
-            map.put(char.class, CHAR);
-            map.put(Character.class, CHAR);
             map.put(String.class, VARCHAR);
             map.put(UUID.class, UUID);
             map.put(byte[].class, BINARY);
@@ -2108,6 +2088,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** */
         private final GridUnsafeGuard guard;
 
+        /** */
+        private final boolean preferSwapVal;
+
         /**
          * @param type Type descriptor.
          * @param schema Schema.
@@ -2136,6 +2119,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             keyType = DataType.getTypeFromClass(type.keyClass());
             valType = DataType.getTypeFromClass(type.valueClass());
+
+            preferSwapVal = schema.ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED;
         }
 
         /** {@inheritDoc} */
@@ -2263,16 +2248,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (cctx.isNear())
                 cctx = cctx.near().dht().context();
 
-            GridCacheSwapEntry e = cctx.swap().read(cctx.toCacheKeyObject(key), true, true);
+            CacheObject v = cctx.swap().readValue(cctx.toCacheKeyObject(key), true, true);
 
-            if (e == null)
+            if (v == null)
                 return null;
 
-            CacheObject v = e.value();
-
-            assert v != null : "swap must unmarshall it for us";
-
-            return v.value(cctx.cacheObjectContext(), false);
+            return v;
         }
 
         /** {@inheritDoc} */
@@ -2311,6 +2292,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             return new GridH2KeyValueRowOffheap(this, ptr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean preferSwapValue() {
+            return preferSwapVal;
         }
     }
 }

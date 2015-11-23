@@ -101,7 +101,8 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
             true,
             false,
             false,
-            false
+            false,
+            null
         );
 
         Marshaller marshaller = getTestResources().getMarshaller();

@@ -1129,7 +1129,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
 
-        createFile(igfsSecondary, FILE, true, chunk);
+        createFile(igfsSecondary, FILE, chunk);
 
         checkFileContent(igfs, FILE, chunk);
     }
@@ -1139,6 +1139,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"ResultOfMethodCallIgnored", "ThrowableResultOfMethodCallIgnored"})
     public void testOpenNoPrefetch() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
 
@@ -1216,6 +1217,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void testOpenPrefetch() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
 
@@ -1250,6 +1252,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         IgfsMetaManager meta = igfs.context().meta();
 
         IgfsFileInfo info = meta.info(meta.fileId(FILE));
+
+        assert info != null;
 
         IgfsBlockKey key = new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
 
@@ -1344,7 +1348,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         igfsSecondaryFileSystem.update(SUBDIR, props);
 
-        createFile(igfsSecondary, FILE, true, /*BLOCK_SIZE,*/ chunk);
+        createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ chunk);
 
         appendFile(igfs, FILE, chunk);
 
@@ -1371,7 +1375,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         igfsSecondaryFileSystem.update(DIR, propsDir);
         igfsSecondaryFileSystem.update(SUBDIR, propsSubDir);
 
-        createFile(igfsSecondary, FILE, true, /*BLOCK_SIZE,*/ chunk);
+        createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ chunk);
 
         appendFile(igfs, FILE, chunk);
 

@@ -20,6 +20,7 @@ package org.apache.ignite.examples.streaming.wordcount.socket;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.util.Map;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -31,7 +32,7 @@ import org.apache.ignite.examples.ExamplesUtils;
 import org.apache.ignite.examples.streaming.wordcount.CacheConfig;
 import org.apache.ignite.examples.streaming.wordcount.QueryWords;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.stream.StreamTupleExtractor;
+import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.stream.socket.SocketMessageConverter;
 import org.apache.ignite.stream.socket.SocketStreamer;
 
@@ -108,7 +109,7 @@ public class WordsSocketStreamerServer {
             }
         });
 
-        sockStmr.setTupleExtractor(new StreamTupleExtractor<String, AffinityUuid, String>() {
+        sockStmr.setSingleTupleExtractor(new StreamSingleTupleExtractor<String, AffinityUuid, String>() {
             @Override public Map.Entry<AffinityUuid, String> extract(String word) {
                 // By using AffinityUuid we ensure that identical
                 // words are processed on the same cluster node.

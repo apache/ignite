@@ -180,7 +180,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
      * @return Timeout.
      */
     protected long awaitForSocketWriteTimeout() {
-        return 5000;
+        return 8000;
     }
 
     /**

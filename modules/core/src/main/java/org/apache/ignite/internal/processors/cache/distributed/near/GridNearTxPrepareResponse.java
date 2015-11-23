@@ -115,6 +115,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param retVal Return value.
      * @param err Error.
      * @param clientRemapVer Not {@code null} if client node should remap transaction.
+     * @param addDepInfo Deployment info flag.
      */
     public GridNearTxPrepareResponse(
         GridCacheVersion xid,
@@ -124,9 +125,10 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         GridCacheVersion writeVer,
         GridCacheReturn retVal,
         Throwable err,
-        AffinityTopologyVersion clientRemapVer
+        AffinityTopologyVersion clientRemapVer,
+        boolean addDepInfo
     ) {
-        super(xid, err);
+        super(xid, err, addDepInfo);
 
         assert futId != null;
         assert miniId != null;

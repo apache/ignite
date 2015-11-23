@@ -115,6 +115,11 @@ public class JdkMarshaller extends AbstractMarshaller {
     }
 
     /** {@inheritDoc} */
+    @Override public void onUndeploy(ClassLoader ldr) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(JdkMarshaller.class, this);
     }

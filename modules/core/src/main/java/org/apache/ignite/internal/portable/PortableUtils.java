@@ -17,6 +17,17 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.portable.builder.PortableLazyValue;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
+
+import java.io.Externalizable;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Collection;
@@ -33,11 +44,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import org.apache.ignite.internal.portable.builder.PortableLazyValue;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.portable.api.PortableObject;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN_ARR;
@@ -45,6 +51,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
@@ -61,18 +68,23 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT_ARR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_ARR;
 
 /**
- *
+ * Portable utils.
  */
 public class PortableUtils {
     /** */
@@ -87,10 +99,99 @@ public class PortableUtils {
     /** Portable classes. */
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
+    /** Flag: user type. */
+    public static final short FLAG_USR_TYP = 0x0001;
+
+    /** Flag: only raw data exists. */
+    public static final short FLAG_HAS_SCHEMA = 0x0002;
+
+    /** Flag indicating that object has raw data. */
+    public static final short FLAG_HAS_RAW = 0x0004;
+
+    /** Flag: offsets take 1 byte. */
+    public static final short FLAG_OFFSET_ONE_BYTE = 0x0008;
+
+    /** Flag: offsets take 2 bytes. */
+    public static final short FLAG_OFFSET_TWO_BYTES = 0x0010;
+
+    /** Flag: compact footer, no field IDs. */
+    public static final short FLAG_COMPACT_FOOTER = 0x0020;
+
+    /** Offset which fits into 1 byte. */
+    public static final int OFFSET_1 = 1;
+
+    /** Offset which fits into 2 bytes. */
+    public static final int OFFSET_2 = 2;
+
+    /** Offset which fits into 4 bytes. */
+    public static final int OFFSET_4 = 4;
+
+    /** Field ID length. */
+    public static final int FIELD_ID_LEN = 4;
+
+    /** Field type names. */
+    private static final String[] FIELD_TYPE_NAMES;
+
+    /** FNV1 hash offset basis. */
+    private static final int FNV1_OFFSET_BASIS = 0x811C9DC5;
+
+    /** FNV1 hash prime. */
+    private static final int FNV1_PRIME = 0x01000193;
+
     /**
-     *
+     * Static class initializer.
      */
     static {
+        PLAIN_CLASS_TO_FLAG.put(Byte.class, GridPortableMarshaller.BYTE);
+        PLAIN_CLASS_TO_FLAG.put(Short.class, GridPortableMarshaller.SHORT);
+        PLAIN_CLASS_TO_FLAG.put(Integer.class, GridPortableMarshaller.INT);
+        PLAIN_CLASS_TO_FLAG.put(Long.class, GridPortableMarshaller.LONG);
+        PLAIN_CLASS_TO_FLAG.put(Float.class, GridPortableMarshaller.FLOAT);
+        PLAIN_CLASS_TO_FLAG.put(Double.class, GridPortableMarshaller.DOUBLE);
+        PLAIN_CLASS_TO_FLAG.put(Character.class, GridPortableMarshaller.CHAR);
+        PLAIN_CLASS_TO_FLAG.put(Boolean.class, GridPortableMarshaller.BOOLEAN);
+        PLAIN_CLASS_TO_FLAG.put(BigDecimal.class, GridPortableMarshaller.DECIMAL);
+        PLAIN_CLASS_TO_FLAG.put(String.class, GridPortableMarshaller.STRING);
+        PLAIN_CLASS_TO_FLAG.put(UUID.class, GridPortableMarshaller.UUID);
+        PLAIN_CLASS_TO_FLAG.put(Date.class, GridPortableMarshaller.DATE);
+        PLAIN_CLASS_TO_FLAG.put(Timestamp.class, GridPortableMarshaller.TIMESTAMP);
+
+        PLAIN_CLASS_TO_FLAG.put(byte[].class, GridPortableMarshaller.BYTE_ARR);
+        PLAIN_CLASS_TO_FLAG.put(short[].class, GridPortableMarshaller.SHORT_ARR);
+        PLAIN_CLASS_TO_FLAG.put(int[].class, GridPortableMarshaller.INT_ARR);
+        PLAIN_CLASS_TO_FLAG.put(long[].class, GridPortableMarshaller.LONG_ARR);
+        PLAIN_CLASS_TO_FLAG.put(float[].class, GridPortableMarshaller.FLOAT_ARR);
+        PLAIN_CLASS_TO_FLAG.put(double[].class, GridPortableMarshaller.DOUBLE_ARR);
+        PLAIN_CLASS_TO_FLAG.put(char[].class, GridPortableMarshaller.CHAR_ARR);
+        PLAIN_CLASS_TO_FLAG.put(boolean[].class, GridPortableMarshaller.BOOLEAN_ARR);
+        PLAIN_CLASS_TO_FLAG.put(BigDecimal[].class, GridPortableMarshaller.DECIMAL_ARR);
+        PLAIN_CLASS_TO_FLAG.put(String[].class, GridPortableMarshaller.STRING_ARR);
+        PLAIN_CLASS_TO_FLAG.put(UUID[].class, GridPortableMarshaller.UUID_ARR);
+        PLAIN_CLASS_TO_FLAG.put(Date[].class, GridPortableMarshaller.DATE_ARR);
+        PLAIN_CLASS_TO_FLAG.put(Timestamp[].class, GridPortableMarshaller.TIMESTAMP_ARR);
+
+        for (Map.Entry<Class<?>, Byte> entry : PLAIN_CLASS_TO_FLAG.entrySet())
+            FLAG_TO_CLASS.put(entry.getValue(), entry.getKey());
+
+        PLAIN_CLASS_TO_FLAG.put(byte.class, GridPortableMarshaller.BYTE);
+        PLAIN_CLASS_TO_FLAG.put(short.class, GridPortableMarshaller.SHORT);
+        PLAIN_CLASS_TO_FLAG.put(int.class, GridPortableMarshaller.INT);
+        PLAIN_CLASS_TO_FLAG.put(long.class, GridPortableMarshaller.LONG);
+        PLAIN_CLASS_TO_FLAG.put(float.class, GridPortableMarshaller.FLOAT);
+        PLAIN_CLASS_TO_FLAG.put(double.class, GridPortableMarshaller.DOUBLE);
+        PLAIN_CLASS_TO_FLAG.put(char.class, GridPortableMarshaller.CHAR);
+        PLAIN_CLASS_TO_FLAG.put(boolean.class, GridPortableMarshaller.BOOLEAN);
+
+        for (byte b : new byte[] {
+            BYTE, SHORT, INT, LONG, FLOAT, DOUBLE,
+            CHAR, BOOLEAN, DECIMAL, STRING, UUID, DATE, TIMESTAMP,
+            BYTE_ARR, SHORT_ARR, INT_ARR, LONG_ARR, FLOAT_ARR, DOUBLE_ARR,
+            CHAR_ARR, BOOLEAN_ARR, DECIMAL_ARR, STRING_ARR, UUID_ARR, DATE_ARR, TIMESTAMP_ARR,
+            ENUM, ENUM_ARR, NULL}) {
+
+            PLAIN_TYPE_FLAG[b] = true;
+        }
+
         PORTABLE_CLS.add(Byte.class);
         PORTABLE_CLS.add(Short.class);
         PORTABLE_CLS.add(Integer.class);
@@ -117,59 +218,154 @@ public class PortableUtils {
         PORTABLE_CLS.add(Date[].class);
         PORTABLE_CLS.add(Timestamp[].class);
         PORTABLE_CLS.add(BigDecimal[].class);
+
+        FIELD_TYPE_NAMES = new String[104];
+
+        FIELD_TYPE_NAMES[BYTE] = "byte";
+        FIELD_TYPE_NAMES[SHORT] = "short";
+        FIELD_TYPE_NAMES[INT] = "int";
+        FIELD_TYPE_NAMES[LONG] = "long";
+        FIELD_TYPE_NAMES[BOOLEAN] = "boolean";
+        FIELD_TYPE_NAMES[FLOAT] = "float";
+        FIELD_TYPE_NAMES[DOUBLE] = "double";
+        FIELD_TYPE_NAMES[CHAR] = "char";
+        FIELD_TYPE_NAMES[UUID] = "UUID";
+        FIELD_TYPE_NAMES[DECIMAL] = "decimal";
+        FIELD_TYPE_NAMES[STRING] = "String";
+        FIELD_TYPE_NAMES[DATE] = "Date";
+        FIELD_TYPE_NAMES[TIMESTAMP] = "Timestamp";
+        FIELD_TYPE_NAMES[ENUM] = "Enum";
+        FIELD_TYPE_NAMES[OBJ] = "Object";
+        FIELD_TYPE_NAMES[PORTABLE_OBJ] = "Object";
+        FIELD_TYPE_NAMES[COL] = "Collection";
+        FIELD_TYPE_NAMES[MAP] = "Map";
+        FIELD_TYPE_NAMES[MAP_ENTRY] = "Entry";
+        FIELD_TYPE_NAMES[CLASS] = "Class";
+        FIELD_TYPE_NAMES[BYTE_ARR] = "byte[]";
+        FIELD_TYPE_NAMES[SHORT_ARR] = "short[]";
+        FIELD_TYPE_NAMES[INT_ARR] = "int[]";
+        FIELD_TYPE_NAMES[LONG_ARR] = "long[]";
+        FIELD_TYPE_NAMES[BOOLEAN_ARR] = "boolean[]";
+        FIELD_TYPE_NAMES[FLOAT_ARR] = "float[]";
+        FIELD_TYPE_NAMES[DOUBLE_ARR] = "double[]";
+        FIELD_TYPE_NAMES[CHAR_ARR] = "char[]";
+        FIELD_TYPE_NAMES[UUID_ARR] = "UUID[]";
+        FIELD_TYPE_NAMES[DECIMAL_ARR] = "decimal[]";
+        FIELD_TYPE_NAMES[STRING_ARR] = "String[]";
+        FIELD_TYPE_NAMES[DATE_ARR] = "Date[]";
+        FIELD_TYPE_NAMES[TIMESTAMP_ARR] = "Timestamp[]";
+        FIELD_TYPE_NAMES[OBJ_ARR] = "Object[]";
+        FIELD_TYPE_NAMES[ENUM_ARR] = "Enum[]";
     }
 
     /**
+     * Check if user type flag is set.
      *
+     * @param flags Flags.
+     * @return {@code True} if set.
      */
-    static {
-        PLAIN_CLASS_TO_FLAG.put(Byte.class, GridPortableMarshaller.BYTE);
-        PLAIN_CLASS_TO_FLAG.put(Short.class, GridPortableMarshaller.SHORT);
-        PLAIN_CLASS_TO_FLAG.put(Integer.class, GridPortableMarshaller.INT);
-        PLAIN_CLASS_TO_FLAG.put(Long.class, GridPortableMarshaller.LONG);
-        PLAIN_CLASS_TO_FLAG.put(Float.class, GridPortableMarshaller.FLOAT);
-        PLAIN_CLASS_TO_FLAG.put(Double.class, GridPortableMarshaller.DOUBLE);
-        PLAIN_CLASS_TO_FLAG.put(Character.class, GridPortableMarshaller.CHAR);
-        PLAIN_CLASS_TO_FLAG.put(Boolean.class, GridPortableMarshaller.BOOLEAN);
-        PLAIN_CLASS_TO_FLAG.put(BigDecimal.class, GridPortableMarshaller.DECIMAL);
-        PLAIN_CLASS_TO_FLAG.put(String.class, GridPortableMarshaller.STRING);
-        PLAIN_CLASS_TO_FLAG.put(UUID.class, GridPortableMarshaller.UUID);
-        PLAIN_CLASS_TO_FLAG.put(Date.class, GridPortableMarshaller.DATE);
+    public static boolean isUserType(short flags) {
+        return isFlagSet(flags, FLAG_USR_TYP);
+    }
 
-        PLAIN_CLASS_TO_FLAG.put(byte[].class, GridPortableMarshaller.BYTE_ARR);
-        PLAIN_CLASS_TO_FLAG.put(short[].class, GridPortableMarshaller.SHORT_ARR);
-        PLAIN_CLASS_TO_FLAG.put(int[].class, GridPortableMarshaller.INT_ARR);
-        PLAIN_CLASS_TO_FLAG.put(long[].class, GridPortableMarshaller.LONG_ARR);
-        PLAIN_CLASS_TO_FLAG.put(float[].class, GridPortableMarshaller.FLOAT_ARR);
-        PLAIN_CLASS_TO_FLAG.put(double[].class, GridPortableMarshaller.DOUBLE_ARR);
-        PLAIN_CLASS_TO_FLAG.put(char[].class, GridPortableMarshaller.CHAR_ARR);
-        PLAIN_CLASS_TO_FLAG.put(boolean[].class, GridPortableMarshaller.BOOLEAN_ARR);
-        PLAIN_CLASS_TO_FLAG.put(BigDecimal[].class, GridPortableMarshaller.DECIMAL_ARR);
-        PLAIN_CLASS_TO_FLAG.put(String[].class, GridPortableMarshaller.STRING_ARR);
-        PLAIN_CLASS_TO_FLAG.put(UUID[].class, GridPortableMarshaller.UUID_ARR);
-        PLAIN_CLASS_TO_FLAG.put(Date[].class, GridPortableMarshaller.DATE_ARR);
+    /**
+     * Check if raw-only flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean hasSchema(short flags) {
+        return isFlagSet(flags, FLAG_HAS_SCHEMA);
+    }
 
-        for (Map.Entry<Class<?>, Byte> entry : PLAIN_CLASS_TO_FLAG.entrySet())
-            FLAG_TO_CLASS.put(entry.getValue(), entry.getKey());
+    /**
+     * Check if raw-only flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean hasRaw(short flags) {
+        return isFlagSet(flags, FLAG_HAS_RAW);
+    }
 
-        PLAIN_CLASS_TO_FLAG.put(byte.class, GridPortableMarshaller.BYTE);
-        PLAIN_CLASS_TO_FLAG.put(short.class, GridPortableMarshaller.SHORT);
-        PLAIN_CLASS_TO_FLAG.put(int.class, GridPortableMarshaller.INT);
-        PLAIN_CLASS_TO_FLAG.put(long.class, GridPortableMarshaller.LONG);
-        PLAIN_CLASS_TO_FLAG.put(float.class, GridPortableMarshaller.FLOAT);
-        PLAIN_CLASS_TO_FLAG.put(double.class, GridPortableMarshaller.DOUBLE);
-        PLAIN_CLASS_TO_FLAG.put(char.class, GridPortableMarshaller.CHAR);
-        PLAIN_CLASS_TO_FLAG.put(boolean.class, GridPortableMarshaller.BOOLEAN);
+    /**
+     * Check if "no-field-ids" flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isCompactFooter(short flags) {
+        return isFlagSet(flags, FLAG_COMPACT_FOOTER);
+    }
 
-        for (byte b : new byte[] {
-            BYTE, SHORT, INT, LONG, FLOAT, DOUBLE,
-            CHAR, BOOLEAN, DECIMAL, STRING, UUID, DATE,
-            BYTE_ARR, SHORT_ARR, INT_ARR, LONG_ARR, FLOAT_ARR, DOUBLE_ARR,
-            CHAR_ARR, BOOLEAN_ARR, DECIMAL_ARR, STRING_ARR, UUID_ARR, DATE_ARR,
-            ENUM, ENUM_ARR, NULL}) {
+    /**
+     * Check whether particular flag is set.
+     *
+     * @param flags Flags.
+     * @param flag Flag.
+     * @return {@code True} if flag is set in flags.
+     */
+    private static boolean isFlagSet(short flags, short flag) {
+        return (flags & flag) == flag;
+    }
+    
+    /**
+     * Schema initial ID.
+     *
+     * @return ID.
+     */
+    public static int schemaInitialId() {
+        return FNV1_OFFSET_BASIS;
+    }
 
-            PLAIN_TYPE_FLAG[b] = true;
+    /**
+     * Update schema ID when new field is added.
+     *
+     * @param schemaId Current schema ID.
+     * @param fieldId Field ID.
+     * @return New schema ID.
+     */
+    public static int updateSchemaId(int schemaId, int fieldId) {
+        schemaId = schemaId ^ (fieldId & 0xFF);
+        schemaId = schemaId * FNV1_PRIME;
+        schemaId = schemaId ^ ((fieldId >> 8) & 0xFF);
+        schemaId = schemaId * FNV1_PRIME;
+        schemaId = schemaId ^ ((fieldId >> 16) & 0xFF);
+        schemaId = schemaId * FNV1_PRIME;
+        schemaId = schemaId ^ ((fieldId >> 24) & 0xFF);
+        schemaId = schemaId * FNV1_PRIME;
+
+        return schemaId;
+    }
+
+    /**
+     * @param typeName Field type name.
+     * @return Field type ID;
+     */
+    @SuppressWarnings("StringEquality")
+    public static int fieldTypeId(String typeName) {
+        for (int i = 0; i < FIELD_TYPE_NAMES.length; i++) {
+            String typeName0 = FIELD_TYPE_NAMES[i];
+
+            if (typeName.equals(typeName0))
+                return i;
         }
+
+        throw new IllegalArgumentException("Invalid metadata type name: " + typeName);
+    }
+
+    /**
+     * @param typeId Field type ID.
+     * @return Field type name.
+     */
+    public static String fieldTypeName(int typeId) {
+        assert typeId >= 0 && typeId < FIELD_TYPE_NAMES.length : typeId;
+
+        String typeName = FIELD_TYPE_NAMES[typeId];
+
+        assert typeName != null : typeId;
+
+        return typeName;
     }
 
     /**
@@ -178,7 +374,7 @@ public class PortableUtils {
      * @param writer W
      * @param val Value.
      */
-    public static void writePlainObject(PortableWriterExImpl writer, Object val) {
+    public static void writePlainObject(BinaryWriterExImpl writer, Object val) {
         Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
 
         if (flag == null)
@@ -249,10 +445,12 @@ public class PortableUtils {
                 break;
 
             case DATE:
-                if (val instanceof Timestamp)
-                    writer.doWriteTimestamp((Timestamp)val);
-                else
-                    writer.doWriteDate((Date)val);
+                writer.doWriteDate((Date)val);
+
+                break;
+
+            case TIMESTAMP:
+                writer.doWriteTimestamp((Timestamp) val);
 
                 break;
 
@@ -316,6 +514,11 @@ public class PortableUtils {
 
                 break;
 
+            case TIMESTAMP_ARR:
+                writer.doWriteTimestampArray((Timestamp[])val);
+
+                break;
+
             default:
                 throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
         }
@@ -366,7 +569,7 @@ public class PortableUtils {
      * @return {@code true} if content of serialized array value cannot contain references to other object.
      */
     public static boolean isPlainArrayType(int type) {
-        return type >= BYTE_ARR && type <= DATE_ARR;
+        return (type >= BYTE_ARR && type <= DATE_ARR) || type == TIMESTAMP_ARR;
     }
 
     /**
@@ -374,9 +577,6 @@ public class PortableUtils {
      * @return Portable field type.
      */
     public static byte typeByClass(Class<?> cls) {
-        if (Date.class.isAssignableFrom(cls))
-            return DATE;
-
         Byte type = PLAIN_CLASS_TO_FLAG.get(cls);
 
         if (type != null)
@@ -395,25 +595,9 @@ public class PortableUtils {
             return MAP;
 
         if (Map.Entry.class.isAssignableFrom(cls))
-            return MAP;
+            return MAP_ENTRY;
 
         return OBJ;
-    }
-
-    /**
-     * Tells whether provided type is portable or a collection.
-     *
-     * @param cls Class to check.
-     * @return Whether type is portable or a collection.
-     */
-    public static boolean isPortableOrCollectionType(Class<?> cls) {
-        assert cls != null;
-
-        return isPortableType(cls) ||
-            cls == Object[].class ||
-            Collection.class.isAssignableFrom(cls) ||
-            Map.class.isAssignableFrom(cls) ||
-            Map.Entry.class.isAssignableFrom(cls);
     }
 
     /**
@@ -425,7 +609,7 @@ public class PortableUtils {
     public static boolean isPortableType(Class<?> cls) {
         assert cls != null;
 
-        return PortableObject.class.isAssignableFrom(cls) ||
+        return BinaryObject.class.isAssignableFrom(cls) ||
             PORTABLE_CLS.contains(cls) ||
             cls.isEnum() ||
             (cls.isArray() && cls.getComponentType().isEnum());
@@ -465,5 +649,338 @@ public class PortableUtils {
             return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)set).comparator());
 
         return U.newHashSet(set.size());
+    }
+
+    /**
+     * Check protocol version.
+     *
+     * @param protoVer Protocol version.
+     */
+    public static void checkProtocolVersion(byte protoVer) {
+        if (PROTO_VER != protoVer)
+            throw new BinaryObjectException("Unsupported protocol version: " + protoVer);
+    }
+
+    /**
+     * Get portable object length.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @return Length.
+     */
+    public static int length(PortablePositionReadable in, int start) {
+        return in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
+    }
+
+    /**
+     * Get footer start of the object.
+     *
+     * @param in Input stream.
+     * @param start Object start position inside the stream.
+     * @return Footer start.
+     */
+    public static int footerStartRelative(PortablePositionReadable in, int start) {
+        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
+
+        if (hasSchema(flags))
+            // Schema exists, use offset.
+            return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        else
+            // No schema, footer start equals to object end.
+            return length(in, start);
+    }
+
+    /**
+     * Get object's footer.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @return Footer start.
+     */
+    public static int footerStartAbsolute(PortablePositionReadable in, int start) {
+        return footerStartRelative(in, start) + start;
+    }
+
+    /**
+     * Get object's footer.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @return Footer.
+     */
+    public static IgniteBiTuple<Integer, Integer> footerAbsolute(PortablePositionReadable in, int start) {
+        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
+
+        int footerEnd = length(in, start);
+
+        if (hasSchema(flags)) {
+            // Schema exists.
+            int footerStart = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+            if (hasRaw(flags))
+                footerEnd -= 4;
+
+            assert footerStart <= footerEnd;
+
+            return F.t(start + footerStart, start + footerEnd);
+        }
+        else
+            // No schema.
+            return F.t(start + footerEnd, start + footerEnd);
+    }
+
+    /**
+     * Get relative raw offset of the object.
+     *
+     * @param in Input stream.
+     * @param start Object start position inside the stream.
+     * @return Raw offset.
+     */
+    public static int rawOffsetRelative(PortablePositionReadable in, int start) {
+        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
+
+        int len = length(in, start);
+
+        if (hasSchema(flags)){
+            // Schema exists.
+            if (hasRaw(flags))
+                // Raw offset is set, it is at the very end of the object.
+                return in.readIntPositioned(start + len - 4);
+            else
+                // Raw offset is not set, so just return schema offset.
+                return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        }
+        else
+            // No schema, raw offset is located on schema offset position.
+            return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+    }
+
+    /**
+     * Get absolute raw offset of the object.
+     *
+     * @param in Input stream.
+     * @param start Object start position inside the stream.
+     * @return Raw offset.
+     */
+    public static int rawOffsetAbsolute(PortablePositionReadable in, int start) {
+        return start + rawOffsetRelative(in, start);
+    }
+
+    /**
+     * Get offset length for the given flags.
+     *
+     * @param flags Flags.
+     * @return Offset size.
+     */
+    public static int fieldOffsetLength(short flags) {
+        if ((flags & FLAG_OFFSET_ONE_BYTE) == FLAG_OFFSET_ONE_BYTE)
+            return OFFSET_1;
+        else if ((flags & FLAG_OFFSET_TWO_BYTES) == FLAG_OFFSET_TWO_BYTES)
+            return OFFSET_2;
+        else
+            return OFFSET_4;
+    }
+
+    /**
+     * Get field ID length.
+     *
+     * @param flags Flags.
+     * @return Field ID length.
+     */
+    public static int fieldIdLength(short flags) {
+        return isCompactFooter(flags) ? 0 : FIELD_ID_LEN;
+    }
+
+    /**
+     * Get relative field offset.
+     *
+     * @param stream Stream.
+     * @param pos Position.
+     * @param fieldOffsetSize Field offset size.
+     * @return Relative field offset.
+     */
+    public static int fieldOffsetRelative(PortablePositionReadable stream, int pos, int fieldOffsetSize) {
+        int res;
+
+        if (fieldOffsetSize == PortableUtils.OFFSET_1)
+            res = (int)stream.readBytePositioned(pos) & 0xFF;
+        else if (fieldOffsetSize == PortableUtils.OFFSET_2)
+            res = (int)stream.readShortPositioned(pos) & 0xFFFF;
+        else
+            res = stream.readIntPositioned(pos);
+
+        return res;
+    }
+
+    /**
+     * Merge old and new metas.
+     *
+     * @param oldMeta Old meta.
+     * @param newMeta New meta.
+     * @return New meta if old meta was null, old meta if no changes detected, merged meta otherwise.
+     * @throws BinaryObjectException If merge failed due to metadata conflict.
+     */
+    public static BinaryMetadata mergeMetadata(@Nullable BinaryMetadata oldMeta, BinaryMetadata newMeta) {
+        assert newMeta != null;
+
+        if (oldMeta == null)
+            return newMeta;
+        else {
+            assert oldMeta.typeId() == newMeta.typeId();
+
+            // Check type name.
+            if (!F.eq(oldMeta.typeName(), newMeta.typeName())) {
+                throw new BinaryObjectException(
+                    "Two portable types have duplicate type ID [" + "typeId=" + oldMeta.typeId() +
+                        ", typeName1=" + oldMeta.typeName() + ", typeName2=" + newMeta.typeName() + ']'
+                );
+            }
+
+            // Check affinity field names.
+            if (!F.eq(oldMeta.affinityKeyFieldName(), newMeta.affinityKeyFieldName())) {
+                throw new BinaryObjectException(
+                    "Binary type has different affinity key fields [" + "typeName=" + newMeta.typeName() +
+                        ", affKeyFieldName1=" + oldMeta.affinityKeyFieldName() +
+                        ", affKeyFieldName2=" + newMeta.affinityKeyFieldName() + ']'
+                );
+            }
+
+            // Check and merge fields.
+            boolean changed = false;
+
+            Map<String, Integer> mergedFields = new HashMap<>(oldMeta.fieldsMap());
+            Map<String, Integer> newFields = newMeta.fieldsMap();
+
+            for (Map.Entry<String, Integer> newField : newFields.entrySet()) {
+                Integer oldFieldType = mergedFields.put(newField.getKey(), newField.getValue());
+
+                if (oldFieldType == null)
+                    changed = true;
+                else if (!F.eq(oldFieldType, newField.getValue())) {
+                    throw new BinaryObjectException(
+                        "Binary type has different field types [" + "typeName=" + oldMeta.typeName() +
+                            ", fieldName=" + newField.getKey() +
+                            ", fieldTypeName1=" + PortableUtils.fieldTypeName(oldFieldType) +
+                            ", fieldTypeName2=" + PortableUtils.fieldTypeName(newField.getValue()) + ']'
+                    );
+                }
+            }
+
+            // Check and merge schemas.
+            Collection<PortableSchema> mergedSchemas = new HashSet<>(oldMeta.schemas());
+
+            for (PortableSchema newSchema : newMeta.schemas()) {
+                if (mergedSchemas.add(newSchema))
+                    changed = true;
+            }
+
+            // Return either old meta if no changes detected, or new merged meta.
+            return changed ? new BinaryMetadata(oldMeta.typeId(), oldMeta.typeName(), mergedFields,
+                oldMeta.affinityKeyFieldName(), mergedSchemas) : oldMeta;
+        }
+    }
+
+    /**
+     * @param cls Class.
+     * @return Mode.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public static BinaryWriteMode mode(Class<?> cls) {
+        assert cls != null;
+
+        /** Primitives. */
+        if (cls == byte.class)
+            return BinaryWriteMode.P_BYTE;
+        else if (cls == boolean.class)
+            return BinaryWriteMode.P_BOOLEAN;
+        else if (cls == short.class)
+            return BinaryWriteMode.P_SHORT;
+        else if (cls == char.class)
+            return BinaryWriteMode.P_CHAR;
+        else if (cls == int.class)
+            return BinaryWriteMode.P_INT;
+        else if (cls == long.class)
+            return BinaryWriteMode.P_LONG;
+        else if (cls == float.class)
+            return BinaryWriteMode.P_FLOAT;
+        else if (cls == double.class)
+            return BinaryWriteMode.P_DOUBLE;
+
+        /** Boxed primitives. */
+        else if (cls == Byte.class)
+            return BinaryWriteMode.BYTE;
+        else if (cls == Boolean.class)
+            return BinaryWriteMode.BOOLEAN;
+        else if (cls == Short.class)
+            return BinaryWriteMode.SHORT;
+        else if (cls == Character.class)
+            return BinaryWriteMode.CHAR;
+        else if (cls == Integer.class)
+            return BinaryWriteMode.INT;
+        else if (cls == Long.class)
+            return BinaryWriteMode.LONG;
+        else if (cls == Float.class)
+            return BinaryWriteMode.FLOAT;
+        else if (cls == Double.class)
+            return BinaryWriteMode.DOUBLE;
+
+        /** The rest types. */
+        else if (cls == BigDecimal.class)
+            return BinaryWriteMode.DECIMAL;
+        else if (cls == String.class)
+            return BinaryWriteMode.STRING;
+        else if (cls == UUID.class)
+            return BinaryWriteMode.UUID;
+        else if (cls == Date.class)
+            return BinaryWriteMode.DATE;
+        else if (cls == Timestamp.class)
+            return BinaryWriteMode.TIMESTAMP;
+        else if (cls == byte[].class)
+            return BinaryWriteMode.BYTE_ARR;
+        else if (cls == short[].class)
+            return BinaryWriteMode.SHORT_ARR;
+        else if (cls == int[].class)
+            return BinaryWriteMode.INT_ARR;
+        else if (cls == long[].class)
+            return BinaryWriteMode.LONG_ARR;
+        else if (cls == float[].class)
+            return BinaryWriteMode.FLOAT_ARR;
+        else if (cls == double[].class)
+            return BinaryWriteMode.DOUBLE_ARR;
+        else if (cls == char[].class)
+            return BinaryWriteMode.CHAR_ARR;
+        else if (cls == boolean[].class)
+            return BinaryWriteMode.BOOLEAN_ARR;
+        else if (cls == BigDecimal[].class)
+            return BinaryWriteMode.DECIMAL_ARR;
+        else if (cls == String[].class)
+            return BinaryWriteMode.STRING_ARR;
+        else if (cls == UUID[].class)
+            return BinaryWriteMode.UUID_ARR;
+        else if (cls == Date[].class)
+            return BinaryWriteMode.DATE_ARR;
+        else if (cls == Timestamp[].class)
+            return BinaryWriteMode.TIMESTAMP_ARR;
+        else if (cls.isArray())
+            return cls.getComponentType().isEnum() ?
+                BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
+        else if (cls == BinaryObjectImpl.class)
+            return BinaryWriteMode.PORTABLE_OBJ;
+        else if (Binarylizable.class.isAssignableFrom(cls))
+            return BinaryWriteMode.PORTABLE;
+        else if (Externalizable.class.isAssignableFrom(cls))
+            return BinaryWriteMode.EXTERNALIZABLE;
+        else if (Map.Entry.class.isAssignableFrom(cls))
+            return BinaryWriteMode.MAP_ENTRY;
+        else if (Collection.class.isAssignableFrom(cls))
+            return BinaryWriteMode.COL;
+        else if (Map.class.isAssignableFrom(cls))
+            return BinaryWriteMode.MAP;
+        else if (cls.isEnum())
+            return BinaryWriteMode.ENUM;
+        else if (cls == Class.class)
+            return BinaryWriteMode.CLASS;
+        else
+            return BinaryWriteMode.OBJECT;
     }
 }

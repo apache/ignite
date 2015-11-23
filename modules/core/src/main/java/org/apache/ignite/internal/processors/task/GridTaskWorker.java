@@ -696,7 +696,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         if (log.isDebugEnabled())
                             U.warn(log, "Received response for unknown child job (was job presumed failed?): " + res);
 
-                        return;
+                        selfOccupied = true;
+
+                        continue;
                     }
 
                     // Only process 1st response and ignore following ones. This scenario

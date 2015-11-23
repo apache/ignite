@@ -216,12 +216,19 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
 
     /** {@inheritDoc} */
     @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
-    @Override protected synchronized Value updateWeakValue(Value upd) {
+    @Override protected synchronized Value updateWeakValue(Object valObj) throws IgniteCheckedException {
+        Value val = peekValue(VAL_COL);
+
+        if (val != null)
+            return val;
+
+        Value upd = desc.wrap(valObj, desc.valueType());
+
         setValue(VAL_COL, upd);
 
         notifyAll();
 
-        return null;
+        return upd;
     }
 
     /** {@inheritDoc} */

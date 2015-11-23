@@ -30,6 +30,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -57,6 +58,8 @@ public class IgniteCachePutAllRestartTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setPeerClassLoadingEnabled(false);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -163,11 +166,11 @@ public class IgniteCachePutAllRestartTest extends GridCommonAbstractTest {
 
             info("Running iteration on the node [idx=" + node + ", nodeId=" + ignite.cluster().localNode().id() + ']');
 
+            final IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+
             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     Thread.currentThread().setName("put-thread");
-
-                    IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
                     Random rnd = new Random();
 

@@ -351,7 +351,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getTxCommitQueueSize() {
-        return cctx.tm().commitQueueSize();
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -366,12 +366,12 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getTxPrepareQueueSize() {
-        return cctx.tm().prepareQueueSize();
+        return 0;
     }
 
     /** {@inheritDoc} */
     @Override public int getTxStartVersionCountsSize() {
-        return cctx.tm().startVersionCountsSize();
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -396,17 +396,17 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getTxDhtCommitQueueSize() {
-        return cctx.isNear() && dhtCtx != null ? dhtCtx.tm().commitQueueSize() : -1;
+        return 0;
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtPrepareQueueSize() {
-        return cctx.isNear() && dhtCtx != null ? dhtCtx.tm().prepareQueueSize() : -1;
+        return 0;
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtStartVersionCountsSize() {
-        return cctx.isNear() && dhtCtx != null ? dhtCtx.tm().startVersionCountsSize() : -1;
+        return 0;
     }
 
     /** {@inheritDoc} */

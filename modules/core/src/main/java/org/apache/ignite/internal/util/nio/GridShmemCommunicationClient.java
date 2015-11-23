@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -120,16 +119,17 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean sendMessage(@Nullable UUID nodeId, Message msg,
-        IgniteInClosure<IgniteException> closure)
-        throws IgniteCheckedException {
+    @Override public synchronized boolean sendMessage(UUID nodeId, Message msg,
+        IgniteInClosure<IgniteException> closure) throws IgniteCheckedException {
+        assert nodeId != null;
+
         if (closed())
             throw new IgniteCheckedException("Communication client was closed: " + this);
 
         assert writeBuf.hasArray();
 
         try {
-            int cnt = U.writeMessageFully(msg, shmem.outputStream(), writeBuf, formatter.writer());
+            int cnt = U.writeMessageFully(msg, shmem.outputStream(), writeBuf, formatter.writer(nodeId));
 
             metricsLsnr.onBytesSent(cnt);
         }

@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -72,12 +71,14 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param lockVer Lock version.
      * @param futId Future ID.
      * @param cnt Key count.
+     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
-        int cnt) {
-        super(lockVer, cnt);
+        int cnt,
+        boolean addDepInfo) {
+        super(lockVer, cnt, addDepInfo);
 
         assert futId != null;
 
@@ -92,12 +93,14 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param lockVer Lock ID.
      * @param futId Future ID.
      * @param err Error.
+     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
-        Throwable err) {
-        super(lockVer, 0);
+        Throwable err,
+        boolean addDepInfo) {
+        super(lockVer, 0, addDepInfo);
 
         assert futId != null;
 
@@ -112,13 +115,15 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param futId Future ID.
      * @param cnt Count.
      * @param err Error.
+     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
         int cnt,
-        Throwable err) {
-        super(lockVer, cnt);
+        Throwable err,
+        boolean addDepInfo) {
+        super(lockVer, cnt, addDepInfo);
 
         assert futId != null;
 
@@ -137,10 +142,8 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         return futId;
     }
 
-    /**
-     * @return Error.
-     */
-    public Throwable error() {
+    /** {@inheritDoc} */
+    @Override public Throwable error() {
         return err;
     }
 
@@ -152,34 +155,11 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param idx Index of locked flag.
-     * @return Value of locked flag at given index.
-     */
-    public boolean isCurrentlyLocked(int idx) {
-        assert idx >= 0;
-
-        Collection<GridCacheMvccCandidate> cands = candidatesByIndex(idx);
-
-        for (GridCacheMvccCandidate cand : cands)
-            if (cand.owner())
-                return true;
-
-        return false;
-    }
-
-    /**
-     * @param idx Candidates index.
-     * @param cands Collection of candidates.
      * @param committedVers Committed versions relative to lock version.
      * @param rolledbackVers Rolled back versions relative to lock version.
      */
-    public void setCandidates(int idx, Collection<GridCacheMvccCandidate> cands,
-        Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
-        assert idx >= 0;
-
+    public void setCandidates(Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
         completedVersions(committedVers, rolledbackVers);
-
-        candidatesByIndex(idx, cands);
     }
 
     /**
@@ -214,9 +194,6 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
         prepareMarshalCacheObjects(vals, ctx.cacheContext(cacheId));
 
-//        if (F.isEmpty(valBytes) && !F.isEmpty(vals))
-//            valBytes = marshalValuesCollection(vals, ctx);
-
         if (err != null)
             errBytes = ctx.marshaller().marshal(err);
     }
@@ -226,9 +203,6 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(vals, ctx.cacheContext(cacheId), ldr);
-
-//        if (F.isEmpty(vals) && !F.isEmpty(valBytes))
-//            vals = unmarshalValueBytesCollection(valBytes, ctx, ldr);
 
         if (errBytes != null)
             err = ctx.marshaller().unmarshal(errBytes, ldr);

@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -45,12 +50,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionRollbackException;
-
-import javax.cache.CacheException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -137,6 +136,8 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPrimaryNodeFailureBackupRollbackOptimistic() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1731");
+
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, false, false);
     }
 
@@ -190,13 +191,13 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         boolean backup,
         final boolean commit
     ) throws Exception {
-        startGrids(gridCount());
-        awaitPartitionMapExchange();
-
-        for (int i = 0; i < gridCount(); i++)
-            info("Grid " + i + ": " + ignite(i).cluster().localNode().id());
-
         try {
+            startGrids(gridCount());
+            awaitPartitionMapExchange();
+
+            for (int i = 0; i < gridCount(); i++)
+                info("Grid " + i + ": " + ignite(i).cluster().localNode().id());
+
             final Ignite ignite = ignite(0);
 
             final IgniteCache<Object, Object> cache = ignite.cache(null).withNoRetries();

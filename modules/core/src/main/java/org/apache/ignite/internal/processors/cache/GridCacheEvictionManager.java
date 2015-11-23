@@ -723,7 +723,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
             if (recordable)
                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
-                    EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal, null, null, null);
+                    EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal, null, null, null, false);
 
             if (log.isDebugEnabled())
                 log.debug("Entry was evicted [entry=" + entry + ", localNode=" + cctx.nodeId() + ']');
@@ -1043,7 +1043,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
                     if (recordable)
                         cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
-                            EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null, null, null);
+                            EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null, null, null,
+                            false);
                 }
             }
         }
@@ -1742,7 +1743,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                         // There are remote participants.
                         for (ClusterNode node : nodes) {
                             GridCacheEvictionRequest req = F.addIfAbsent(reqMap, node.id(),
-                                new GridCacheEvictionRequest(cctx.cacheId(), id, evictInfos.size(), topVer));
+                                new GridCacheEvictionRequest(cctx.cacheId(), id, evictInfos.size(), topVer,
+                                    cctx.deploymentEnabled()));
 
                             assert req != null;
 
@@ -1943,7 +1945,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                     lock.readLock().unlock();
                 }
 
-                if (res.error())
+                if (res.evictError())
                     // Complete future, since there was a class loading error on at least one node.
                     complete(false);
                 else
@@ -1985,14 +1987,14 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
                 boolean err = F.forAny(resMap.values(), new P1<GridCacheEvictionResponse>() {
                     @Override public boolean apply(GridCacheEvictionResponse res) {
-                        return res.error();
+                        return res.evictError();
                     }
                 });
 
                 if (err) {
                     Collection<UUID> ids = F.view(resMap.keySet(), new P1<UUID>() {
                         @Override public boolean apply(UUID e) {
-                            return resMap.get(e).error();
+                            return resMap.get(e).evictError();
                         }
                     });
 

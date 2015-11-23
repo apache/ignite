@@ -42,6 +42,9 @@ import org.jetbrains.annotations.Nullable;
  * Test resources for injection.
  */
 public class IgniteTestResources {
+    /** Marshaller class name. */
+    public static final String MARSH_CLASS_NAME = "test.marshaller.class";
+
     /** */
     private static final IgniteLogger rootLog = new GridTestLog4jLogger(false);
 
@@ -230,8 +233,9 @@ public class IgniteTestResources {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public synchronized Marshaller getMarshaller() throws IgniteCheckedException {
-        String marshallerName = GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME);
+    public static synchronized Marshaller getMarshaller() throws IgniteCheckedException {
+        String marshallerName =
+            System.getProperty(MARSH_CLASS_NAME, GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME));
 
         Marshaller marsh;
 

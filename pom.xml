@@ -73,10 +73,12 @@
         <module>modules/cloud</module>
         <module>modules/mesos</module>
         <module>modules/kafka</module>
+        <module>modules/flume</module>
         <module>modules/yarn</module>
         <module>modules/jms11</module>
+        <module>modules/twitter</module>
+        <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
-        <module>modules/platform</module>
         <module>modules/storm</module>
     </modules>
 
@@ -144,6 +146,15 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>lgpl</id>
+            <modules>
+                <module>modules/hibernate</module>
+                <module>modules/geospatial</module>
+                <module>modules/schedule</module>
+            </modules>
         </profile>
 
         <profile>
@@ -300,12 +311,12 @@
                                             <substitution expression="${project.version}" />
                                         </replaceregexp>
 
-                                        <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh" />
+                                        <replaceregexp file="${basedir}/target/release-package/examples/schema-import/pom.xml" byline="true">
+                                            <regexp pattern="to_be_replaced_by_ignite_version" />
+                                            <substitution expression="${project.version}" />
+                                        </replaceregexp>
 
-                                        <!-- hotfix according to https://issues.apache.org/jira/browse/IGNITE-1399. Remove at 1.5 -->
-                                        <move todir="${basedir}/target/temp/release-package/libs/optional/ignite-platform" failonerror="false">
-                                            <fileset dir="${basedir}/target/release-package/libs/optional/ignite-platform"/>
-                                        </move>
+                                        <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh" />
 
                                         <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
                                             <zipfileset dir="${basedir}/target/release-package" prefix="${ignite.zip.pattern}" filemode="755">
@@ -323,11 +334,6 @@
                                                 <exclude name="**/missing" />
                                             </zipfileset>
                                         </zip>
-
-                                        <!-- hotfix according to https://issues.apache.org/jira/browse/IGNITE-1399. Remove at 1.5 -->
-                                        <move todir="${basedir}/target/release-package/libs/optional/ignite-platform" failonerror="false">
-                                            <fileset dir="${basedir}/target/temp/release-package/libs/optional/ignite-platform"/>
-                                        </move>
                                     </target>
                                 </configuration>
                             </execution>
@@ -453,20 +459,11 @@
             </modules>
         </profile>
 
-
-        <profile>
-            <id>lgpl</id>
-            <modules>
-                <module>modules/hibernate</module>
-                <module>modules/geospatial</module>
-                <module>modules/schedule</module>
-            </modules>
-        </profile>
-
         <profile>
             <id>examples</id>
             <modules>
                 <module>examples</module>
+                <module>examples/schema-import</module>
             </modules>
         </profile>
 
@@ -621,7 +618,15 @@
                                             </fileset>
                                         </copy>
 
-                                        <!-- appending filename to md5 and sha1 files. to be improved. -->
+                                        <!-- appending filename to md5 and sha1 files. to be improved!! -->
+                                        <!-- update versions task will replace "  " to " ", so additional echo added. -->
+                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true" message=" " />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha1" append="true" message=" " />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true" message=" " />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha1" append="true" message=" " />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true" message=" " />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" append="true" message=" " />
+
                                         <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true" message=" ${project.artifactId}-fabric-${project.version}-bin.zip" />
                                         <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha1" append="true" message=" ${project.artifactId}-fabric-${project.version}-bin.zip" />
                                         <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true" message=" ${project.artifactId}-hadoop-${project.version}-bin.zip" />
@@ -884,6 +889,22 @@
                                     <directory>libs</directory>
                                 </fileset>
                             </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin><!-- skipping generates dependencies licenses -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-remote-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ignite-dependencies</id>
+                        <goals>
+                            <goal>process</goal>
+                        </goals>
+                        <configuration>
+                           <skip>true</skip>
                         </configuration>
                     </execution>
                 </executions>

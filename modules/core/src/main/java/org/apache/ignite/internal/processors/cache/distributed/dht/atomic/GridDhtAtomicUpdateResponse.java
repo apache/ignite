@@ -77,10 +77,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     /**
      * @param cacheId Cache ID.
      * @param futVer Future version.
+     * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicUpdateResponse(int cacheId, GridCacheVersion futVer) {
+    public GridDhtAtomicUpdateResponse(int cacheId, GridCacheVersion futVer, boolean addDepInfo) {
         this.cacheId = cacheId;
         this.futVer = futVer;
+        this.addDepInfo = addDepInfo;
     }
 
     /** {@inheritDoc} */
@@ -97,16 +99,15 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
     /**
      * Sets update error.
-     * @param err
+     *
+     * @param err Error.
      */
     public void onError(IgniteCheckedException err){
         this.err = err;
     }
 
-    /**
-     * @return Gets update error.
-     */
-    public IgniteCheckedException error() {
+    /** {@inheritDoc} */
+    @Override public IgniteCheckedException error() {
         return err;
     }
 
@@ -154,8 +155,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
         nearEvicted.add(key);
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -179,6 +179,11 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
         finishUnmarshalCacheObjects(nearEvicted, cctx, ldr);
 
         err = ctx.marshaller().unmarshal(errBytes, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */

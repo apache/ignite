@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.expression.Expression;
+import org.h2.table.Column;
 import org.h2.value.Value;
 import org.h2.value.ValueDouble;
 import org.h2.value.ValueLong;
@@ -62,12 +65,36 @@ public final class GridSqlType {
      * @param displaySize Display size.
      * @param sql SQL definition of the type.
      */
-    public GridSqlType(int type, int scale, long precision, int displaySize, String sql) {
+    private GridSqlType(int type, int scale, long precision, int displaySize, String sql) {
+        assert !F.isEmpty(sql) || type == Value.UNKNOWN;
+
         this.type = type;
         this.scale = scale;
         this.precision = precision;
         this.displaySize = displaySize;
         this.sql = sql;
+    }
+
+    /**
+     * @param c Column to take type definition from.
+     * @return Type.
+     */
+    public static GridSqlType fromColumn(Column c) {
+        if (c.getName() != null)
+            c = new Column(null, c.getType(), c.getPrecision(), c.getScale(), c.getDisplaySize());
+
+        return new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(), c.getCreateSQL());
+    }
+
+    /**
+     * @param e Expression to take type from.
+     * @return Type.
+     */
+    public static GridSqlType fromExpression(Expression e) {
+        if (e.getType() == Value.UNKNOWN)
+            return UNKNOWN;
+
+        return fromColumn(new Column(null, e.getType(), e.getPrecision(), e.getScale(), e.getDisplaySize()));
     }
 
     /**

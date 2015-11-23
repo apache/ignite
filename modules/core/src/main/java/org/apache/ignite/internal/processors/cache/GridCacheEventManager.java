@@ -26,7 +26,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -40,14 +39,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
  * Cache event manager.
  */
 public class GridCacheEventManager extends GridCacheManagerAdapter {
-    /** Local node ID. */
-    private UUID locNodeId;
-
-    /** {@inheritDoc} */
-    @Override public void start0() {
-        locNodeId = cctx.localNodeId();
-    }
-
     /**
      * Adds local event listener.
      *
@@ -92,11 +83,12 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         UUID subjId,
         String cloClsName,
-        String taskName)
+        String taskName,
+        boolean keepBinary)
     {
         addEvent(part,
             key,
-            locNodeId,
+            cctx.localNodeId(),
             tx,
             owner,
             type,
@@ -106,7 +98,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             hasOldVal,
             subjId,
             cloClsName,
-            taskName);
+            taskName,
+            keepBinary);
     }
 
     /**
@@ -116,7 +109,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         addEvent(
             0,
             null,
-            locNodeId,
+            cctx.localNodeId(),
             (IgniteUuid)null,
             null,
             type,
@@ -126,7 +119,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             false,
             null,
             null,
-            null);
+            null,
+            false);
     }
 
     /**
@@ -156,7 +150,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         UUID subjId,
         String cloClsName,
-        String taskName)
+        String taskName,
+        boolean keepPortable)
     {
         addEvent(part,
             key,
@@ -169,7 +164,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             hasOldVal,
             subjId,
             cloClsName,
-            taskName);
+            taskName,
+            keepPortable);
     }
 
     /**
@@ -197,7 +193,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         UUID subjId,
         String cloClsName,
-        String taskName)
+        String taskName,
+        boolean keepBinary)
     {
         IgniteInternalTx tx = owner == null ? null : cctx.tm().tx(owner.version());
 
@@ -213,7 +210,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             hasOldVal,
             subjId,
             cloClsName,
-            taskName);
+            taskName,
+            keepBinary);
     }
 
     /**
@@ -244,7 +242,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         UUID subjId,
         @Nullable String cloClsName,
-        @Nullable String taskName
+        @Nullable String taskName,
+        boolean keepPortable
     ) {
         assert key != null || type == EVT_CACHE_STARTED || type == EVT_CACHE_STOPPED;
 
@@ -270,12 +269,12 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 type,
                 part,
                 cctx.isNear(),
-                key == null ? null : key.value(cctx.cacheObjectContext(), false),
+                cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepPortable, false),
                 xid,
                 lockId,
-                CU.value(newVal, cctx, false),
+                cctx.cacheObjectContext().unwrapPortableIfNeeded(newVal, keepPortable, false),
                 hasNewVal,
-                CU.value(oldVal, cctx, false),
+                cctx.cacheObjectContext().unwrapPortableIfNeeded(oldVal, keepPortable, false),
                 hasOldVal,
                 subjId,
                 cloClsName,

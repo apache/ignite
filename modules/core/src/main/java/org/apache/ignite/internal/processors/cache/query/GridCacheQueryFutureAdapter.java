@@ -183,6 +183,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
+     * Waits for the first page to be received from remote node(s), if any.
+     *
+     * @throws IgniteCheckedException If query execution failed with an error.
+     */
+    public abstract void awaitFirstPage() throws IgniteCheckedException;
+
+    /**
      * Returns next page for the query.
      *
      * @return Next page or {@code null} if no more pages available.
@@ -380,12 +387,12 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 synchronized (mux) {
                     enqueue(Collections.emptyList());
 
-                    onPage(nodeId, true);
-
                     onDone(nodeId != null ?
                         new IgniteCheckedException("Failed to execute query on node [query=" + qry +
                             ", nodeId=" + nodeId + "]", err) :
                         new IgniteCheckedException("Failed to execute query locally: " + qry, err));
+
+                    onPage(nodeId, true);
 
                     mux.notifyAll();
                 }

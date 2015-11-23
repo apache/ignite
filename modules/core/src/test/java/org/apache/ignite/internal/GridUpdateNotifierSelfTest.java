@@ -32,6 +32,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
+    /** */
     private String updateStatusParams;
 
     /** {@inheritDoc} */

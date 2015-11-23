@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -333,38 +334,6 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Compound preloaders start future.
-     */
-    public IgniteInternalFuture<Object> preloadersStartFuture(AffinityTopologyVersion topVer) {
-        if (preloadersStartFut == null) {
-            GridCompoundFuture<Object, Object> compound = null;
-
-            for (GridCacheContext<?, ?> cacheCtx : cacheContexts()) {
-                if (cacheCtx.startTopologyVersion() != null && cacheCtx.startTopologyVersion().compareTo(topVer) <= 0) {
-                    IgniteInternalFuture<Object> startFut = cacheCtx.preloader().startFuture();
-
-                    if (!startFut.isDone()) {
-                        if (compound == null)
-                            compound = new GridCompoundFuture<>();
-
-                        compound.add(startFut);
-                    }
-                }
-            }
-
-            if (compound != null) {
-                compound.markInitialized();
-
-                return preloadersStartFut = compound;
-            }
-            else
-                return preloadersStartFut = new GridFinishedFuture<>();
-        }
-        else
-            return preloadersStartFut;
-    }
-
-    /**
      * @return Transactional metrics adapter.
      */
     public TransactionMetricsAdapter txMetrics() {
@@ -565,7 +534,7 @@ public class GridCacheSharedContext<K, V> {
      * @param cacheCtx Cache context.
      * @return Error message if transactions are incompatible.
      */
-    @Nullable public String verifyTxCompatibility(IgniteInternalTx tx, Iterable<Integer> activeCacheIds,
+    @Nullable public String verifyTxCompatibility(IgniteInternalTx tx, GridLongList activeCacheIds,
         GridCacheContext<K, V> cacheCtx) {
         if (cacheCtx.systemTx() && !tx.system())
             return "system cache can be enlisted only in system transaction";
@@ -573,7 +542,9 @@ public class GridCacheSharedContext<K, V> {
         if (!cacheCtx.systemTx() && tx.system())
             return "non-system cache can't be enlisted in system transaction";
 
-        for (Integer cacheId : activeCacheIds) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int)activeCacheIds.get(i);
+
             GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
 
             if (cacheCtx.systemTx()) {
@@ -589,6 +560,9 @@ public class GridCacheSharedContext<K, V> {
 
             if (store.isWriteBehind() != activeStore.isWriteBehind())
                 return "caches with different write-behind setting can't be enlisted in one transaction";
+
+            if (activeCacheCtx.deploymentEnabled() != cacheCtx.deploymentEnabled())
+                return "caches with enabled and disabled deployment modes can't be enlisted in one transaction";
 
             // If local and write-behind validations passed, this must be true.
             assert store.isWriteToStoreFromDht() == activeStore.isWriteToStoreFromDht();
@@ -611,12 +585,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void endTx(IgniteInternalTx tx) throws IgniteCheckedException {
-        Collection<Integer> cacheIds = tx.activeCacheIds();
-
-        if (!cacheIds.isEmpty()) {
-            for (Integer cacheId : cacheIds)
-                cacheContext(cacheId).cache().awaitLastFut();
-        }
+        tx.txState().awaitLastFut(this);
 
         tx.close();
     }
@@ -625,22 +594,17 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to commit.
      * @return Commit future.
      */
+    @SuppressWarnings("unchecked")
     public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(IgniteInternalTx tx) {
-        Collection<Integer> cacheIds = tx.activeCacheIds();
+        GridCacheContext ctx = tx.txState().singleCacheContext(this);
 
-        if (cacheIds.isEmpty())
-            return tx.commitAsync();
-        else if (cacheIds.size() == 1) {
-            int cacheId = F.first(cacheIds);
-
-            return cacheContext(cacheId).cache().commitTxAsync(tx);
-        }
-        else {
-            for (Integer cacheId : cacheIds)
-                cacheContext(cacheId).cache().awaitLastFut();
+        if (ctx == null) {
+            tx.txState().awaitLastFut(this);
 
             return tx.commitAsync();
         }
+        else
+            return ctx.cache().commitTxAsync(tx);
     }
 
     /**
@@ -649,12 +613,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Rollback future.
      */
     public IgniteInternalFuture rollbackTxAsync(IgniteInternalTx tx) throws IgniteCheckedException {
-        Collection<Integer> cacheIds = tx.activeCacheIds();
-
-        if (!cacheIds.isEmpty()) {
-            for (Integer cacheId : cacheIds)
-                cacheContext(cacheId).cache().awaitLastFut();
-        }
+        tx.txState().awaitLastFut(this);
 
         return tx.rollbackAsync();
     }

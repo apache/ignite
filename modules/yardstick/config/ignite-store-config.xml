@@ -30,14 +30,9 @@
     <!--
         Store data source.
     -->
-    <bean id="storeDataSource" class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
-        <property name="dataSource">
-            <bean class="org.h2.jdbcx.JdbcConnectionPool" factory-method="create">
-                <constructor-arg value="jdbc:h2:tcp://localhost/store-benchmark/h2-benchmark"/>
-                <constructor-arg value="sa"/>
-                <constructor-arg value=""/>
-            </bean>
-        </property>
+    <bean id="storeDataSource" class="org.h2.jdbcx.JdbcDataSource">
+        <property name="url" value="jdbc:h2:tcp://localhost/store-benchmark/h2-benchmark"/>
+        <property name="user" value="sa"/>
     </bean>
 
     <bean id="sampleTypeMetadata" class="org.apache.ignite.cache.CacheTypeMetadata">
@@ -70,7 +65,7 @@
         </property>
     </bean>
 
-    <bean class="org.apache.ignite.configuration.IgniteConfiguration" >
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="peerClassLoadingEnabled" value="false"/>
 
         <property name="cacheConfiguration">
@@ -91,8 +86,11 @@
                     </property>
 
                     <property name="cacheStoreFactory">
-                        <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
-                            <constructor-arg ref="storeDataSource"/>
+                        <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">
+                            <property name="dataSourceBean" value="storeDataSource"/>
+                            <property name="dialect">
+                                <bean class="org.apache.ignite.cache.store.jdbc.dialect.H2Dialect"/>
+                            </property>
                         </bean>
                     </property>
                 </bean>
@@ -113,15 +111,20 @@
                     </property>
 
                     <property name="cacheStoreFactory">
-                        <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
-                            <constructor-arg ref="storeDataSource"/>
+                        <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">
+                            <property name="dataSourceBean" value="storeDataSource"/>
+                            <property name="dialect">
+                                <bean class="org.apache.ignite.cache.store.jdbc.dialect.H2Dialect"/>
+                            </property>
                         </bean>
                     </property>
                 </bean>
             </list>
         </property>
 
-        <property name="connectorConfiguration"><null/></property>
+        <property name="connectorConfiguration">
+            <null/>
+        </property>
 
         <property name="includeEventTypes">
             <list/>

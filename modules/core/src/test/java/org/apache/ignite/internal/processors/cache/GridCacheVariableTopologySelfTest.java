@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -146,7 +147,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
                     catch (TransactionRollbackException | ClusterTopologyException e) {
                         info("Caught exception: " + e);
                     }
-                    catch (IgniteException e) {
+                    catch (CacheException | IgniteException e) {
                         if (X.hasCause(e, ClusterTopologyCheckedException.class))
                             info("Caught cache exception: " + e);
                         else

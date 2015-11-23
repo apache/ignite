@@ -54,7 +54,7 @@ import org.apache.ignite.lang.IgniteUuid;
  *  Read access with this level happens the same way as with {@link TransactionIsolation#REPEATABLE_READ} level.
  *  However, in {@link TransactionConcurrency#OPTIMISTIC} mode, if some transactions cannot be serially isolated
  *  from each other, then one winner will be picked and the other transactions in conflict will result in
- * {@link org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException} being thrown.
+ * {@link TransactionOptimisticException} being thrown.
  * </li>
  * </ul>
  * <p>

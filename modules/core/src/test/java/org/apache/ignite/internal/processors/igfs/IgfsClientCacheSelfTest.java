@@ -47,9 +47,6 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
     /** Data cache name. */
     private static final String DATA_CACHE_NAME = null;
 
-    /** Regular cache name. */
-    private static final String CACHE_NAME = "cache";
-
     /**
      * Constructor.
      */
@@ -61,9 +58,9 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         igfsSecondaryFileSystem = createSecondaryFileSystemStack();
 
-        Ignite ignite1 = G.start(getConfiguration(getTestGridName(1)));
+        Ignite ignitePrimary = G.start(getConfiguration(getTestGridName(1)));
 
-        igfs = (IgfsImpl) ignite1.fileSystem("igfs");
+        igfs = (IgfsImpl) ignitePrimary.fileSystem("igfs");
     }
 
     /**{@inheritDoc} */
@@ -86,8 +83,10 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
     protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME),
-            cacheConfiguration(CACHE_NAME));
+        cfg.setCacheConfiguration(
+            cacheConfiguration(META_CACHE_NAME),
+            cacheConfiguration(DATA_CACHE_NAME)
+        );
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -117,7 +116,7 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(String cacheName) {
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);
 

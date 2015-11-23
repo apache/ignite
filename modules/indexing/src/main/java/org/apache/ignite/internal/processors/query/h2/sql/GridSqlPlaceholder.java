@@ -44,12 +44,7 @@ public class GridSqlPlaceholder extends GridSqlElement {
     }
 
     /** {@inheritDoc} */
-    @Override public GridSqlElement addChild(GridSqlElement expr) {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridSqlElement child(int idx) {
+    @Override public GridSqlElement resultType(GridSqlType type) {
         throw new IllegalStateException();
     }
 }

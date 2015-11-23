@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util;
 
 import java.util.Comparator;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +45,7 @@ public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap
     private static final long serialVersionUID = 0L;
 
     /** Element count. */
-    private final AtomicInteger cnt = new AtomicInteger(0);
+    private final AtomicInteger cnt = new AtomicInteger();
 
     /** Maximum size. */
     private int max;
@@ -168,35 +167,21 @@ public class GridBoundedConcurrentOrderedMap<K, V> extends ConcurrentSkipListMap
     private void onPut() {
         cnt.incrementAndGet();
 
-        int c;
+        IgniteBiInClosure<K, V> lsnr = this.lsnr;
 
-        while ((c = cnt.get()) > max) {
-            // Decrement count.
-            if (cnt.compareAndSet(c, c - 1)) {
-                try {
-                    K key = firstEntry().getKey();
+        int delta = cnt.get() - max;
 
-                    V val;
+        for (int i = 0; i < delta && cnt.get() > max; i++) {
+            Entry<K, V> e = pollFirstEntry();
 
-                    // Make sure that an element is removed.
-                    while ((val = super.remove(firstEntry().getKey())) == null) {
-                        // No-op.
-                    }
+            if (e == null)
+                return;
 
-                    assert val != null;
+            cnt.decrementAndGet();
 
-                    IgniteBiInClosure<K, V> lsnr = this.lsnr;
-
-                    // Listener notification.
-                    if (lsnr != null)
-                        lsnr.apply(key, val);
-                }
-                catch (NoSuchElementException ignored) {
-                    cnt.incrementAndGet();
-
-                    return;
-                }
-            }
+            // Listener notification.
+            if (lsnr != null)
+                lsnr.apply(e.getKey(), e.getValue());
         }
     }
 

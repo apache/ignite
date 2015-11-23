@@ -25,13 +25,12 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -39,8 +38,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfT
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.junits.IgniteTestResources;
 import sun.jvmstat.monitor.HostIdentifier;
 import sun.jvmstat.monitor.MonitoredHost;
 import sun.jvmstat.monitor.MonitoredVm;
@@ -99,30 +99,6 @@ public class IgniteNodeRunner {
     public static String storeToFile(IgniteConfiguration cfg) throws IOException {
         String fileName = IGNITE_CONFIGURATION_FILE + cfg.getNodeId();
 
-        // Check marshaller configuration, because read configuration method expect specific marshaller.
-        if (cfg.getMarshaller() instanceof OptimizedMarshaller){
-            OptimizedMarshaller marsh = (OptimizedMarshaller)cfg.getMarshaller();
-
-            try {
-                Field isRequireFiled = marsh.getClass().getDeclaredField("requireSer");
-
-                isRequireFiled.setAccessible(true);
-
-                boolean isRequireSer = isRequireFiled.getBoolean(marsh);
-
-                if (isRequireSer)
-                    throw new UnsupportedOperationException("Unsupported marshaller configuration. " +
-                        "readCfgFromFileAndDeleteFile method expect " + OptimizedMarshaller.class.getSimpleName() +
-                        "with requireSerializeble flag in 'false'.");
-            }
-            catch (NoSuchFieldException|IllegalAccessException e) {
-                throw new IgniteException("Failed to check filed of " + OptimizedMarshaller.class.getSimpleName(), e);
-            }
-        }
-        else
-            throw new UnsupportedOperationException("Unsupported marshaller. " +
-                "readCfgFromFileAndDeleteFile method expect " + OptimizedMarshaller.class.getSimpleName());
-
         try(OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
             cfg.setMBeanServer(null);
             cfg.setMarshaller(null);
@@ -143,11 +119,16 @@ public class IgniteNodeRunner {
      * @throws IOException If failed.
      * @see #storeToFile(IgniteConfiguration)
      */
-    private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName) throws IOException {
+    private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName)
+        throws IOException, IgniteCheckedException {
         try(BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
             IgniteConfiguration cfg = (IgniteConfiguration)new XStream().fromXML(cfgReader);
 
-            cfg.setMarshaller(new OptimizedMarshaller(false));
+            Marshaller marsh = IgniteTestResources.getMarshaller();
+
+            cfg.setMarshaller(marsh);
+
+            X.println("Configured marshaller class: " + marsh.getClass().getName());
 
             TcpDiscoverySpi disco = new TcpDiscoverySpi();
             disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);

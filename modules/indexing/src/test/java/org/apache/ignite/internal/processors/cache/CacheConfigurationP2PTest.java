@@ -103,6 +103,7 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
                         }
                     },
                     null,
+                    null,
                     jvmArgs,
                     null
                 );
@@ -118,6 +119,7 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
                                 srvsReadyLatch.countDown();
                         }
                     },
+                    null,
                     null,
                     jvmArgs,
                     null
@@ -138,6 +140,7 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
                                 clientReadyLatch.countDown();
                         }
                     },
+                    null,
                     null,
                     jvmArgs,
                     cp

@@ -52,6 +52,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  *
@@ -124,7 +125,9 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testCrossCacheTxOperationsFairAffinity() throws Exception {
+    public void testCrossCacheTxOperationsFairAffinity() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-647");
+
         txOperations(PARTITIONED, FULL_SYNC, true, true);
     }
 
@@ -190,6 +193,11 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
 
             txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, false);
             txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, true);
+
+            if (writeSync == FULL_SYNC) {
+                txOperations(OPTIMISTIC, SERIALIZABLE, crossCacheTx, false);
+                txOperations(OPTIMISTIC, SERIALIZABLE, crossCacheTx, true);
+            }
         }
         finally {
             ignite.destroyCache(CACHE1);

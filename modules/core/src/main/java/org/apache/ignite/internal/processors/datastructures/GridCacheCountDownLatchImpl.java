@@ -342,20 +342,9 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     private class GetCountCallable implements Callable<Integer> {
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
-            Integer val;
+            GridCacheCountDownLatchValue latchVal = latchView.get(key);
 
-            try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
-                GridCacheCountDownLatchValue latchVal = latchView.get(key);
-
-                if (latchVal == null)
-                    return 0;
-
-                val = latchVal.get();
-
-                tx.rollback();
-            }
-
-            return val;
+            return latchVal == null ? 0 : latchVal.get();
         }
     }
 

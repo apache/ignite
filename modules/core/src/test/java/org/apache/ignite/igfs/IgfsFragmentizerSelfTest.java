@@ -237,7 +237,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
             U.sleep(200);
         }
 
-        igfs.delete(new IgfsPath("/"), true);
+        igfs.format();
 
         igfs.awaitDeletesAsync().get();
 

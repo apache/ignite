@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 
 /**
@@ -73,6 +74,15 @@ public class GridSpinBusyLock {
      */
     public void block() {
         lock.writeLock();
+    }
+
+    /**
+     * @param millis Timeout.
+     * @return {@code True} if lock was acquired.
+     * @throws InterruptedException If interrupted.
+     */
+    public boolean tryBlock(long millis) throws InterruptedException {
+        return lock.tryWriteLock(millis, TimeUnit.MILLISECONDS);
     }
 
     /**

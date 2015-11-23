@@ -92,15 +92,17 @@ public class TransactionConfiguration implements Serializable {
      *
      * @return {@code True} if serializable transactions are enabled, {@code false} otherwise.
      */
+    @Deprecated
     public boolean isTxSerializableEnabled() {
         return txSerEnabled;
     }
 
     /**
-     * Enables/disables serializable cache transactions. See {@link #isTxSerializableEnabled()} for more information.
-     *
      * @param txSerEnabled Flag to enable/disable serializable cache transactions.
+
+     * @deprecated This method has no effect, {@link TransactionIsolation#SERIALIZABLE} isolation is always enabled.
      */
+    @Deprecated
     public void setTxSerializableEnabled(boolean txSerEnabled) {
         this.txSerEnabled = txSerEnabled;
     }

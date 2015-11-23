@@ -48,4 +48,9 @@ public class IgniteCacheTxPeekModesTest extends IgniteCachePeekModesAbstractTest
     @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
         return PRIMARY;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testLocalPeek() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1839");
+    }
 }

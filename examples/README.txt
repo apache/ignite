@@ -15,8 +15,9 @@ The examples folder contains he following subfolders:
   README.txt file for more information on how to build and run the demo.
 - `src/main/java` - contains Java examples for different Ignite modules and features.
 - `src/main/java8` - contains additional set of Java examples utilizing Java 8 lambdas. These examples
-  are excluded by default, enable `java8-examples` Maven profile to include them (JDK8 is required).
+  are excluded by default, enable `java8` Maven profile to include them (JDK8 is required).
 - `src/main/scala` - contains examples demonstrating usage of API provided by Scalar.
+- `src/main/java-lgpl` - contains lgpl-based examples for different Ignite modules and features.
 
 
 Starting Remote Nodes
@@ -30,3 +31,21 @@ Java7 vs Java8
 ===============
 Some examples (not all) which can benefit from Java8 Lambda support were re-written with Java8 lambdas.
 For full set of examples, look at both Java7 and Java8 packages.
+
+
+LGPL
+=====
+LGPL examples can be activated by turning lgpl profile on.
+
+lgpl profile required some lgpl-based libs, for example: ignite-hibernate & ignite-schedule.
+In case these libs can not be found by this maven project please download Apache Ignite sources
+at https://ignite.apache.org/download.cgi#sources.
+
+There are some ways to gain required libs from sources:
+
+1) Run "mvn clean install -DskipTests -P lgpl" at Apache Ignite sources.
+This case will install lgpl-based libs to local maven repository.
+
+2) Run "mvn clean package -DskipTests -Prelease,lgpl -Dignite.edition=fabric-lgpl" at Apache Ignite sources.
+Required libs will appear at /target/release-package/libs/optional subfolders.
+Found libs should be copied to global or project's classpath.

@@ -28,4 +28,9 @@ public class GridCacheAtomicNearEnabledFairAffinityMultiJvmFullApiSelfTest exten
     protected boolean isMultiJvm() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testPutAllPutAll() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1112");
+    }
 }

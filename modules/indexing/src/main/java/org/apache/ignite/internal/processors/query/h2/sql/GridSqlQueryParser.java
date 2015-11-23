@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.h2.command.Command;
 import org.h2.command.Prepared;
@@ -42,11 +40,13 @@ import org.h2.expression.ConditionInSelect;
 import org.h2.expression.ConditionNot;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionColumn;
+import org.h2.expression.ExpressionList;
 import org.h2.expression.Function;
 import org.h2.expression.JavaFunction;
 import org.h2.expression.Operation;
 import org.h2.expression.Parameter;
 import org.h2.expression.Subquery;
+import org.h2.expression.TableFunction;
 import org.h2.expression.ValueExpression;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.result.SortOrder;
@@ -57,7 +57,6 @@ import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
@@ -83,6 +82,8 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperatio
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.SMALLER;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.SMALLER_EQUAL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.SPATIAL_INTERSECTS;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlType.fromColumn;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlType.fromExpression;
 
 /**
  * H2 Query parser.
@@ -155,6 +156,9 @@ public class GridSqlQueryParser {
         getter(ConditionInConstantSet.class, "valueList");
 
     /** */
+    private static final Getter<ExpressionList, Expression[]> EXPR_LIST = getter(ExpressionList.class, "list");
+
+    /** */
     private static final Getter<ConditionInSelect, Expression> LEFT_CIS = getter(ConditionInSelect.class, "left");
 
     /** */
@@ -196,6 +200,9 @@ public class GridSqlQueryParser {
 
     /** */
     private static final Getter<FunctionTable, Expression> FUNC_EXPR = getter(FunctionTable.class, "functionExpr");
+
+    /** */
+    private static final Getter<TableFunction, Column[]> FUNC_TBL_COLS = getter(TableFunction.class, "columnList");
 
     /** */
     private static final Getter<JavaFunction, FunctionAlias> FUNC_ALIAS = getter(JavaFunction.class, "functionAlias");
@@ -293,8 +300,6 @@ public class GridSqlQueryParser {
         Expression where = CONDITION.get(select);
         res.where(parseExpression(where, false));
 
-        Set<TableFilter> allFilters = new HashSet<>(select.getTopFilters());
-
         GridSqlElement from = null;
 
         TableFilter filter = select.getTopTableFilter();
@@ -308,15 +313,11 @@ public class GridSqlQueryParser {
             from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter, filter.isJoinOuter(),
                 parseExpression(filter.getJoinCondition(), false));
 
-            allFilters.remove(filter);
-
             filter = filter.getJoin();
         }
         while (filter != null);
 
         res.from(from);
-
-        assert allFilters.isEmpty();
 
         ArrayList<Expression> expressions = select.getExpressions();
 
@@ -419,18 +420,8 @@ public class GridSqlQueryParser {
         if (res == null) {
             res = parseExpression0(expression, calcTypes);
 
-            if (calcTypes) {
-                GridSqlType type = GridSqlType.UNKNOWN;
-
-                if (expression.getType() != Value.UNKNOWN) {
-                    Column c = new Column(null, expression.getType(), expression.getPrecision(), expression.getScale(),
-                        expression.getDisplaySize());
-
-                    type = new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(), c.getCreateSQL());
-                }
-
-                res.resultType(type);
-            }
+            if (calcTypes)
+                res.resultType(fromExpression(expression));
 
             h2ObjToGridObj.put(expression, res);
         }
@@ -577,24 +568,38 @@ public class GridSqlQueryParser {
             GridSqlFunction res = new GridSqlFunction(null, f.getName());
 
             if (f.getArgs() != null) {
-                for (Expression arg : f.getArgs()) {
-                    if (arg == null) {
-                        if (f.getFunctionType() != Function.CASE)
-                            throw new IllegalStateException("Function type with null arg: " + f.getFunctionType());
+                if (f.getFunctionType() == Function.TABLE || f.getFunctionType() == Function.TABLE_DISTINCT) {
+                    Column[] cols = FUNC_TBL_COLS.get((TableFunction)f);
+                    Expression[] args = f.getArgs();
 
-                        res.addChild(GridSqlPlaceholder.EMPTY);
+                    assert cols.length == args.length;
+
+                    for (int i = 0; i < cols.length; i++) {
+                        GridSqlElement arg = parseExpression(args[i], calcTypes);
+
+                        GridSqlAlias alias = new GridSqlAlias(cols[i].getName(), arg, false);
+
+                        alias.resultType(fromColumn(cols[i]));
+
+                        res.addChild(alias);
                     }
-                    else
-                        res.addChild(parseExpression(arg, calcTypes));
+                }
+                else {
+                    for (Expression arg : f.getArgs()) {
+                        if (arg == null) {
+                            if (f.getFunctionType() != Function.CASE)
+                                throw new IllegalStateException("Function type with null arg: " + f.getFunctionType());
+
+                            res.addChild(GridSqlPlaceholder.EMPTY);
+                        }
+                        else
+                            res.addChild(parseExpression(arg, calcTypes));
+                    }
                 }
             }
 
-            if (f.getFunctionType() == Function.CAST || f.getFunctionType() == Function.CONVERT) {
-                Column c = new Column(null, f.getType(), f.getPrecision(), f.getScale(), f.getDisplaySize());
-
-                res.resultType(new GridSqlType(c.getType(), c.getScale(), c.getPrecision(),
-                    c.getDisplaySize(), c.getCreateSQL()));
-            }
+            if (f.getFunctionType() == Function.CAST || f.getFunctionType() == Function.CONVERT)
+                res.resultType(fromExpression(f));
 
             return res;
         }
@@ -625,6 +630,17 @@ public class GridSqlQueryParser {
 
             if (on != null)
                 res.addChild(parseExpression(on, calcTypes));
+
+            return res;
+        }
+
+        if (expression instanceof ExpressionList) {
+            Expression[] exprs = EXPR_LIST.get((ExpressionList)expression);
+
+            GridSqlArray res = new GridSqlArray(exprs.length);
+
+            for (Expression expr : exprs)
+                res.addChild(parseExpression(expr, calcTypes));
 
             return res;
         }

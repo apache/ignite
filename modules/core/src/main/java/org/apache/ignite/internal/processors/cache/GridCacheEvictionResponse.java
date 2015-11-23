@@ -88,6 +88,11 @@ public class GridCacheEvictionResponse extends GridCacheMessage {
         finishUnmarshalCacheObjects(rejectedKeys, ctx.cacheContext(cacheId), ldr);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
+    }
+
     /**
      * @return Future ID.
      */
@@ -116,7 +121,7 @@ public class GridCacheEvictionResponse extends GridCacheMessage {
     /**
      * @return {@code True} if request processing has finished with error.
      */
-    boolean error() {
+    boolean evictError() {
         return err;
     }
 

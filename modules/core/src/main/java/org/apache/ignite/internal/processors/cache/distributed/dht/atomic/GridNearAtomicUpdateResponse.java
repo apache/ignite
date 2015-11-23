@@ -114,11 +114,15 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param cacheId Cache ID.
      * @param nodeId Node ID this reply should be sent to.
      * @param futVer Future version.
+     * @param addDepInfo Deployment info flag.
      */
-    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer) {
+    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer, boolean addDepInfo) {
+        assert futVer != null;
+
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futVer = futVer;
+        this.addDepInfo = addDepInfo;
     }
 
     /** {@inheritDoc} */
@@ -149,16 +153,15 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
     /**
      * Sets update error.
-     * @param err
+     *
+     * @param err Error.
      */
     public void error(IgniteCheckedException err){
         this.err = err;
     }
 
-    /**
-     * @return Update error, if any.
-     */
-    public IgniteCheckedException error() {
+    /** {@inheritDoc} */
+    @Override public IgniteCheckedException error() {
         return err;
     }
 
@@ -374,12 +377,11 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param e Error cause.
      * @param ctx Context.
      */
-    public synchronized void addFailedKeys(Collection<Object> keys, Throwable e, GridCacheContext ctx) {
+    public synchronized void addFailedKeys(Collection<KeyCacheObject> keys, Throwable e, GridCacheContext ctx) {
         if (failedKeys == null)
             failedKeys = new ArrayList<>(keys.size());
 
-        for (Object key : keys)
-            failedKeys.add(ctx.toCacheKeyObject(key));
+        failedKeys.addAll(keys);
 
         if (err == null)
             err = new IgniteCheckedException("Failed to update keys on primary node.");
@@ -424,6 +426,11 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
         if (ret != null)
             ret.finishUnmarshal(cctx, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */

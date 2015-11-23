@@ -134,6 +134,8 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinityCallNoServerNode() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1741");
+
         startGridsMultiThreaded(SERVERS_COUNT + 1);
 
         final Integer key = 1;

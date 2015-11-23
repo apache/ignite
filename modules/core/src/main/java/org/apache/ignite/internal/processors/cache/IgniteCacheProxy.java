@@ -61,6 +61,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.AsyncSupportAdapter;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
@@ -96,6 +97,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** */
     private static final IgniteBiPredicate ACCEPT_ALL = new IgniteBiPredicate() {
+        /** */
+        private static final long serialVersionUID = -1640538788290240617L;
+
         @Override public boolean apply(Object k, Object v) {
             return true;
         }
@@ -276,6 +280,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Nullable @Override public Cache.Entry<K, V> randomEntry() {
+        GridKernalContext kctx = ctx.kernalContext();
+
+        if (kctx.isDaemon() || kctx.clientNode())
+            throw new UnsupportedOperationException("Not applicable for daemon or client node.");
+
         GridCacheGateway<K, V> gate = this.gate;
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -308,6 +317,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withSkipStore() {
         return skipStore();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K1, V1> IgniteCache<K1, V1> withKeepBinary() {
+        return keepPortable();
     }
 
     /** {@inheritDoc} */
@@ -440,7 +454,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         final CacheQuery<Map.Entry<K,V>> qry;
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
-        boolean isKeepPortable = opCtx != null && opCtx.isKeepPortable();
+        boolean isKeepPortable = opCtx != null && opCtx.isKeepBinary();
 
         if (filter instanceof ScanQuery) {
             IgniteBiPredicate<K, V> p = ((ScanQuery)filter).getFilter();
@@ -556,7 +570,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 qry.getPageSize(),
                 qry.getTimeInterval(),
                 qry.isAutoUnsubscribe(),
-                loc ? ctx.grid().cluster().forLocal() : null);
+                loc);
 
             final QueryCursor<Cache.Entry<K, V>> cur =
                 qry.getInitialQuery() != null ? query(qry.getInitialQuery()) : null;
@@ -1311,7 +1325,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             if (isAsync())
-                setFuture(delegate.clearAsync(keys));
+                setFuture(delegate.clearAllAsync(keys));
             else
                 delegate.clearAll(keys);
         }
@@ -1667,7 +1681,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * </ul> <p> For example, if you use {@link Integer} as a key and {@code Value} class as a value (which will be
      * stored in portable format), you should acquire following projection to avoid deserialization:
      * <pre>
-     * IgniteInternalCache<Integer, GridPortableObject> prj = cache.keepPortable();
+     * IgniteInternalCache<Integer, GridPortableObject> prj = cache.keepBinary();
      *
      * // Value is not deserialized and returned in portable format.
      * GridPortableObject po = prj.get(1);
@@ -1721,7 +1735,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             CacheOperationContext opCtx0 =
                 new CacheOperationContext(true,
                     opCtx != null ? opCtx.subjectId() : null,
-                    opCtx != null && opCtx.isKeepPortable(),
+                    opCtx != null && opCtx.isKeepBinary(),
                     opCtx != null ? opCtx.expiry() : null,
                     opCtx != null && opCtx.noRetries());
 

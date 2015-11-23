@@ -94,8 +94,6 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
         long expireTime,
         @Nullable IgniteUuid keyClsLdrId,
         @Nullable IgniteUuid valClsLdrId) {
-        assert ver != null;
-
         this.valBytes = valBytes;
         this.type = type;
         this.ver = ver;
@@ -268,9 +266,36 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
 
     /**
      * @param arr Entry bytes.
+     * @param valOnly If {@code true} unmarshalls only entry value.
      * @return Entry.
      */
-    public static GridCacheSwapEntryImpl unmarshal(byte[] arr) {
+    public static GridCacheSwapEntryImpl unmarshal(byte[] arr, boolean valOnly) {
+        if (valOnly) {
+            long off = BYTE_ARR_OFF + VERSION_OFFSET; // Skip ttl, expire time.
+
+            boolean verEx = UNSAFE.getByte(arr, off++) != 0;
+
+            off += verEx ? VERSION_EX_SIZE : VERSION_SIZE;
+
+            int arrLen = UNSAFE.getInt(arr, off);
+
+            off += 4;
+
+            byte type = UNSAFE.getByte(arr, off++);
+
+            byte[] valBytes = new byte[arrLen];
+
+            UNSAFE.copyMemory(arr, off, valBytes, BYTE_ARR_OFF, arrLen);
+
+            return new GridCacheSwapEntryImpl(ByteBuffer.wrap(valBytes),
+                type,
+                null,
+                0L,
+                0L,
+                null,
+                null);
+        }
+
         long off = BYTE_ARR_OFF;
 
         long ttl = UNSAFE.getLong(arr, off);

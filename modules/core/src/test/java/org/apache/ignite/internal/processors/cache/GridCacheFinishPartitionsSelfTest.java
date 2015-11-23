@@ -206,10 +206,13 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
             KeyCacheObject cacheKey = internal.context().toCacheKeyObject(key);
 
             IgniteInternalFuture<?> nearFut = internal.context().mvcc().finishKeys(Collections.singletonList(cacheKey),
+                internal.context().cacheId(),
                 new AffinityTopologyVersion(2));
 
             IgniteInternalFuture<?> dhtFut = internal.context().near().dht().context().mvcc().finishKeys(
-                Collections.singletonList(cacheKey), new AffinityTopologyVersion(2));
+                Collections.singletonList(cacheKey),
+                internal.context().cacheId(),
+                new AffinityTopologyVersion(2));
 
             assert !nearFut.isDone();
             assert !dhtFut.isDone();

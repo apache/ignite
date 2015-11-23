@@ -389,15 +389,6 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         assert paths.size() == 3 : "Unexpected paths: " + paths;
 
-        // Delete.
-        GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                igfs.delete(path("/"), false);
-
-                return null;
-            }
-        }, IgfsException.class, null);
-
         igfs.delete(path("/A1/B1/C1"), false);
         assertNull(igfs.info(path("/A1/B1/C1")));
 
@@ -416,19 +407,19 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(igfs.listPaths(path("/"))));
 
-        GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                igfs.delete(path("/"), false);
-
-                return null;
-            }
-        }, IgfsException.class, null);
-        assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(igfs.listPaths(path("/"))));
-
+        // Delete root when it is not empty:
         igfs.delete(path("/"), true);
+        igfs.delete(path("/"), false);
+
+        igfs.delete(path("/A"), true);
+        igfs.delete(path("/A1"), true);
+        igfs.delete(path("/A2"), true);
         assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(path("/")));
 
+        // Delete root when it is empty:
         igfs.delete(path("/"), false);
+        igfs.delete(path("/"), true);
+
         assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(path("/")));
 
         for (Cache.Entry<Object, Object> e : metaCache)
@@ -608,7 +599,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assertEquals(text, read("/b"));
 
         // Cleanup.
-        igfs.delete(root, true);
+        igfs.format();
 
         assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(root));
     }
@@ -635,17 +626,17 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testCreateOpenAppend() throws Exception {
         // Error - path points to root directory.
-        assertCreateFails("/", false, "Failed to resolve parent directory");
+        assertCreateFails("/", false, "Failed to create file (path points to an existing directory)");
 
         // Create directories.
         igfs.mkdirs(path("/A/B1/C1"));
 
         // Error - path points to directory.
         for (String path : Arrays.asList("/A", "/A/B1", "/A/B1/C1")) {
-            assertCreateFails(path, false, "Failed to create file (file already exists)");
-            assertCreateFails(path, true, "Failed to create file (path points to a directory)");
-            assertAppendFails(path, false, "Failed to open file (not a file)");
-            assertAppendFails(path, true, "Failed to open file (not a file)");
+            assertCreateFails(path, false, "Failed to create file (path points to an existing directory)");
+            assertCreateFails(path, true, "Failed to create file (path points to an existing directory)");
+            assertAppendFails(path, false, "Failed to open file (path points to an existing directory)");
+            assertAppendFails(path, true, "Failed to open file (path points to an existing directory)");
             assertOpenFails(path, "Failed to open file (not a file)");
         }
 
@@ -662,7 +653,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             assertEquals(text1, create(path, false, text1));
 
             // Error - file already exists.
-            assertCreateFails(path, false, "Failed to create file (file already exists)");
+            assertCreateFails(path, false, "Failed to create file (file already exists and overwrite flag is false)");
 
             // Overwrite existent.
             assertEquals(text2, create(path, true, text2));

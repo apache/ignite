@@ -96,6 +96,9 @@ public enum GridRestCommand {
     /** Cache size. */
     CACHE_SIZE("size"),
 
+    /** Cache metadata. */
+    CACHE_METADATA("metadata"),
+
     /** Increment. */
     ATOMIC_INCREMENT("incr"),
 
@@ -140,6 +143,9 @@ public enum GridRestCommand {
 
     /** Execute sql fields query. */
     EXECUTE_SQL_FIELDS_QUERY("qryfldexe"),
+
+    /** Execute scan query. */
+    EXECUTE_SCAN_QUERY("qryscanexe"),
 
     /** Fetch query results. */
     FETCH_SQL_QUERY("qryfetch"),

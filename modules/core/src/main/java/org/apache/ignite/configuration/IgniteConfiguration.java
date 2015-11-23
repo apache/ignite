@@ -31,6 +31,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -148,6 +149,9 @@ public class IgniteConfiguration {
 
     /** Default keep alive time for public thread pool. */
     public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
+
+    /** Default limit of threads used for rebalance. */
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 1;
 
     /** Default max queue capacity of public thread pool. */
     public static final int DFLT_PUBLIC_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
@@ -354,6 +358,9 @@ public class IgniteConfiguration {
     /** Client mode flag. */
     private Boolean clientMode;
 
+    /** Rebalance thread pool size. */
+    private int rebalanceThreadPoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
+
     /** Transactions configuration. */
     private TransactionConfiguration txCfg = new TransactionConfiguration();
 
@@ -424,6 +431,15 @@ public class IgniteConfiguration {
     /** SSL connection factory. */
     private Factory<SSLContext> sslCtxFactory;
 
+    /** Platform configuration. */
+    private PlatformConfiguration platformCfg;
+
+    /** Cache key configuration. */
+    private CacheKeyConfiguration[] cacheKeyCfg;
+
+    /** */
+    private BinaryConfiguration binaryCfg;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -458,8 +474,10 @@ public class IgniteConfiguration {
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
+        binaryCfg = cfg.getBinaryConfiguration();
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
+        cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         connectorCfg = cfg.getConnectorConfiguration();
         classLdr = cfg.getClassLoader();
@@ -498,8 +516,10 @@ public class IgniteConfiguration {
         p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
+        platformCfg = cfg.getPlatformConfiguration();
         pluginCfgs = cfg.getPluginConfigurations();
         pubPoolSize = cfg.getPublicThreadPoolSize();
+        rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -1331,6 +1351,30 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Gets Max count of threads can be used at rebalancing.
+     * Minimum is 1.
+     * @return count.
+     */
+    public int getRebalanceThreadPoolSize() {
+        return rebalanceThreadPoolSize;
+    }
+
+    /**
+     * Sets Max count of threads can be used at rebalancing.
+     *
+     * Default is {@code 1} which has minimal impact on the operation of the grid.
+     *
+     * @param rebalanceThreadPoolSize Number of system threads that will be assigned for partition transfer during
+     *      rebalancing.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setRebalanceThreadPoolSize(int rebalanceThreadPoolSize) {
+        this.rebalanceThreadPoolSize = rebalanceThreadPoolSize;
+
+        return this;
+    }
+
+    /**
      * Returns a collection of life-cycle beans. These beans will be automatically
      * notified of grid life-cycle events. Use life-cycle beans whenever you
      * want to perform certain logic before and after grid startup and stopping
@@ -1946,6 +1990,43 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Gets cache key configuration.
+     *
+     * @return Cache key configuration.
+     */
+    public CacheKeyConfiguration[] getCacheKeyConfiguration() {
+        return cacheKeyCfg;
+    }
+
+    /**
+     * Sets cache key configuration.
+     * Cache key configuration defines
+     *
+     * @param cacheKeyCfg Cache key configuration.
+     */
+    public void setCacheKeyCfg(CacheKeyConfiguration... cacheKeyCfg) {
+        this.cacheKeyCfg = cacheKeyCfg;
+    }
+
+    /**
+     * Gets configuration for Ignite Binary objects.
+     *
+     * @return Binary configuration object.
+     */
+    public BinaryConfiguration getBinaryConfiguration() {
+        return binaryCfg;
+    }
+
+    /**
+     * Sets configuration for Ignite Binary objects.
+     *
+     * @param binaryCfg Binary configuration object.
+     */
+    public void setBinaryConfiguration(BinaryConfiguration binaryCfg) {
+        this.binaryCfg = binaryCfg;
+    }
+
+    /**
      * Gets flag indicating whether cache sanity check is enabled. If enabled, then Ignite
      * will perform the following checks and throw an exception if check fails:
      * <ul>
@@ -2377,6 +2458,24 @@ public class IgniteConfiguration {
         this.storeSesLsnrs = storeSesLsnrs;
 
         return this;
+    }
+
+    /**
+     * Gets platform configuration.
+     *
+     * @return Platform configuration.
+     */
+    public PlatformConfiguration getPlatformConfiguration() {
+        return platformCfg;
+    }
+
+    /**
+     * Sets platform configuration.
+     *
+     * @param platformCfg Platform configuration.
+     */
+    public void setPlatformConfiguration(PlatformConfiguration platformCfg) {
+        this.platformCfg = platformCfg;
     }
 
     /** {@inheritDoc} */

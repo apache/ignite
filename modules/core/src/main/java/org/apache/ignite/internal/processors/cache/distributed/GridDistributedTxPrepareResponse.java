@@ -52,25 +52,25 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
     /**
      * @param xid Transaction ID.
+     * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedTxPrepareResponse(GridCacheVersion xid) {
-        super(xid, 0);
+    public GridDistributedTxPrepareResponse(GridCacheVersion xid, boolean addDepInfo) {
+        super(xid, 0, addDepInfo);
     }
 
     /**
      * @param xid Lock ID.
      * @param err Error.
+     * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedTxPrepareResponse(GridCacheVersion xid, Throwable err) {
-        super(xid, 0);
+    public GridDistributedTxPrepareResponse(GridCacheVersion xid, Throwable err, boolean addDepInfo) {
+        super(xid, 0, addDepInfo);
 
         this.err = err;
     }
 
-    /**
-     * @return Error.
-     */
-    public Throwable error() {
+    /** {@inheritDoc} */
+    @Override public Throwable error() {
         return err;
     }
 

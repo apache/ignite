@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
@@ -54,19 +53,25 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvali
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -136,7 +141,13 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse>() {
             @Override public void apply(UUID nodeId, GridNearGetResponse res) {
-                processGetResponse(nodeId, res);
+                processNearGetResponse(nodeId, res);
+            }
+        });
+
+        ctx.io().addHandler(ctx.cacheId(), GridNearSingleGetResponse.class, new CI2<UUID, GridNearSingleGetResponse>() {
+            @Override public void apply(UUID nodeId, GridNearSingleGetResponse res) {
+                processNearSingleGetResponse(nodeId, res);
             }
         });
 
@@ -172,14 +183,88 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     @Override public boolean isLocked(K key) {
         KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-        return ctx.mvcc().isLockedByThread(cacheKey, -1);
+        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), -1);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isLockedByThread(K key) {
         KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-        return ctx.mvcc().isLockedByThread(cacheKey, Thread.currentThread().getId());
+        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), Thread.currentThread().getId());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteInternalFuture<V> getAsync(final K key,
+        boolean forcePrimary,
+        boolean skipTx,
+        @Nullable UUID subjId,
+        String taskName,
+        final boolean deserializePortable,
+        final boolean skipVals,
+        boolean canRemap) {
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+
+        if (keyCheck)
+            validateCacheKey(key);
+
+        IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
+
+        final CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        if (tx != null && !tx.implicit() && !skipTx) {
+            return asyncOp(tx, new AsyncOp<V>() {
+                @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx) {
+                    IgniteInternalFuture<Map<Object, Object>>  fut = tx.getAllAsync(ctx,
+                        Collections.singleton(ctx.toCacheKeyObject(key)),
+                        deserializePortable,
+                        skipVals,
+                        false,
+                        opCtx != null && opCtx.skipStore());
+
+                    return fut.chain(new CX1<IgniteInternalFuture<Map<Object, Object>>, V>() {
+                        @SuppressWarnings("unchecked")
+                        @Override public V applyx(IgniteInternalFuture<Map<Object, Object>> e)
+                            throws IgniteCheckedException {
+                            Map<Object, Object> map = e.get();
+
+                            assert map.isEmpty() || map.size() == 1 : map.size();
+
+                            if (skipVals) {
+                                Boolean val = map.isEmpty() ? false : (Boolean)F.firstValue(map);
+
+                                return (V)(val);
+                            }
+
+                            return (V)map.get(key);
+                        }
+                    });
+                }
+            }, opCtx);
+        }
+
+        AffinityTopologyVersion topVer = tx == null ?
+                (canRemap ? ctx.affinity().affinityTopologyVersion() : ctx.shared().exchange().readyAffinityVersion()) :
+                tx.topologyVersion();
+
+        subjId = ctx.subjectIdPerCall(subjId, opCtx);
+
+        GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
+            ctx.toCacheKeyObject(key),
+            topVer,
+            opCtx == null || !opCtx.skipStore(),
+            forcePrimary,
+            subjId,
+            taskName,
+            deserializePortable,
+            skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
+            skipVals,
+            canRemap,
+            /*needVer*/false,
+            /*keepCacheObjects*/false);
+
+        fut.init();
+
+        return (IgniteInternalFuture<V>)fut;
     }
 
     /** {@inheritDoc} */
@@ -187,7 +272,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable final Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable final GridCacheEntryEx entry,
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializePortable,
@@ -211,13 +295,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
                     return tx.getAllAsync(ctx,
                         ctx.cacheKeysView(keys),
-                        entry,
                         deserializePortable,
                         skipVals,
                         false,
                         opCtx != null && opCtx.skipStore());
                 }
-            });
+            }, opCtx);
         }
 
         AffinityTopologyVersion topVer = tx == null ?
@@ -229,7 +312,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         return loadAsync(
             ctx.cacheKeysView(keys),
             opCtx == null || !opCtx.skipStore(),
-            false,
             forcePrimary,
             topVer,
             subjId,
@@ -256,7 +338,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     /**
      * @param keys Keys to load.
      * @param readThrough Read through flag.
-     * @param reload Reload flag.
      * @param forcePrimary Force get from primary node flag.
      * @param topVer Topology version.
      * @param subjId Subject ID.
@@ -264,12 +345,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
+     * @param canRemap Can remap flag.
      * @return Loaded values.
      */
     public IgniteInternalFuture<Map<K, V>> loadAsync(
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
-        boolean reload,
         boolean forcePrimary,
         AffinityTopologyVersion topVer,
         @Nullable UUID subjId,
@@ -277,7 +358,96 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        boolean canRemap
+        boolean canRemap) {
+        return loadAsync(keys,
+            readThrough,
+            forcePrimary,
+            topVer, subjId,
+            taskName,
+            deserializePortable,
+            expiryPlc,
+            skipVals,
+            canRemap,
+            false,
+            false);
+    }
+
+    /**
+     * @param key Key to load.
+     * @param readThrough Read through flag.
+     * @param forcePrimary Force get from primary node flag.
+     * @param topVer Topology version.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable flag.
+     * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
+     * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
+     * @param needVer If {@code true} returns values as tuples containing value and version.
+     * @param keepCacheObj Keep cache objects flag.
+     * @return Load future.
+     */
+    public final IgniteInternalFuture<Object> loadAsync(
+        KeyCacheObject key,
+        boolean readThrough,
+        boolean forcePrimary,
+        AffinityTopologyVersion topVer,
+        @Nullable UUID subjId,
+        String taskName,
+        boolean deserializePortable,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean skipVals,
+        boolean canRemap,
+        boolean needVer,
+        boolean keepCacheObj
+    ) {
+        GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
+            ctx.toCacheKeyObject(key),
+            topVer,
+            readThrough,
+            forcePrimary,
+            subjId,
+            taskName,
+            deserializePortable,
+            expiryPlc,
+            skipVals,
+            canRemap,
+            needVer,
+            keepCacheObj);
+
+        fut.init();
+
+        return fut;
+    }
+
+    /**
+     * @param keys Keys to load.
+     * @param readThrough Read through flag.
+     * @param forcePrimary Force get from primary node flag.
+     * @param topVer Topology version.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable flag.
+     * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
+     * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
+     * @param needVer If {@code true} returns values as tuples containing value and version.
+     * @param keepCacheObj Keep cache objects flag.
+     * @return Load future.
+     */
+    public final IgniteInternalFuture<Map<K, V>> loadAsync(
+        @Nullable Collection<KeyCacheObject> keys,
+        boolean readThrough,
+        boolean forcePrimary,
+        AffinityTopologyVersion topVer,
+        @Nullable UUID subjId,
+        String taskName,
+        boolean deserializePortable,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean skipVals,
+        boolean canRemap,
+        boolean needVer,
+        boolean keepCacheObj
     ) {
         if (keys == null || keys.isEmpty())
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -286,8 +456,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc = expiryPolicy(null);
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
-        if (!reload && !forcePrimary) {
-            Map<K, V> locVals = U.newHashMap(keys.size());
+        if (!forcePrimary) {
+            Map<K, V> locVals = null;
 
             boolean success = true;
 
@@ -303,18 +473,42 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked();
 
-                            CacheObject v = entry.innerGet(null,
-                                /*swap*/true,
-                                /*read-through*/false,
-                                /*fail-fast*/true,
-                                /*unmarshal*/true,
-                                /**update-metrics*/false,
-                                /*event*/!skipVals,
-                                /*temporary*/false,
-                                subjId,
-                                null,
-                                taskName,
-                                expiryPlc);
+                            CacheObject v = null;
+                            GridCacheVersion ver = null;
+
+                            if (needVer) {
+                                T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                                    null,
+                                    /*swap*/true,
+                                    /*unmarshal*/true,
+                                    /**update-metrics*/false,
+                                    /*event*/!skipVals,
+                                    subjId,
+                                    null,
+                                    taskName,
+                                    expiryPlc,
+                                    !deserializePortable);
+
+                                if (res != null) {
+                                    v = res.get1();
+                                    ver = res.get2();
+                                }
+                            }
+                            else {
+                                v = entry.innerGet(null,
+                                    /*swap*/true,
+                                    /*read-through*/false,
+                                    /*fail-fast*/true,
+                                    /*unmarshal*/true,
+                                    /**update-metrics*/false,
+                                    /*event*/!skipVals,
+                                    /*temporary*/false,
+                                    subjId,
+                                    null,
+                                    taskName,
+                                    expiryPlc,
+                                    !deserializePortable);
+                            }
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
@@ -325,8 +519,22 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                                 success = false;
                             }
-                            else
-                                ctx.addResult(locVals, key, v, skipVals, false, deserializePortable, true);
+                            else {
+                                if (locVals == null)
+                                    locVals = U.newHashMap(keys.size());
+
+                                if (needVer)
+                                    locVals.put((K)key, (V)new T2<>((Object)(skipVals ? true : v), ver));
+                                else {
+                                    ctx.addResult(locVals,
+                                        key,
+                                        v,
+                                        skipVals,
+                                        keepCacheObj,
+                                        deserializePortable,
+                                        true);
+                                }
+                            }
                         }
                         else
                             success = false;
@@ -335,10 +543,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     }
                     catch (GridCacheEntryRemovedException ignored) {
                         // No-op, retry.
-                    }
-                    catch (GridCacheFilterFailedException ignored) {
-                        // No-op, skip the key.
-                        break;
                     }
                     catch (GridDhtInvalidPartitionException ignored) {
                         success = false;
@@ -376,14 +580,15 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             keys,
             topVer,
             readThrough,
-            reload,
             forcePrimary,
             subjId,
             taskName,
             deserializePortable,
             expiryPlc,
             skipVals,
-            canRemap);
+            canRemap,
+            needVer,
+            keepCacheObj);
 
         fut.init();
 
@@ -419,7 +624,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             timeout,
             accessTtl,
             CU.empty0(),
-            opCtx != null && opCtx.skipStore());
+            opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.isKeepBinary());
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
@@ -450,11 +656,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             for (K key : keys) {
                 KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
+                IgniteTxKey txKey = ctx.txKey(cacheKey);
 
                 GridDistributedCacheEntry entry = peekExx(cacheKey);
 
                 GridCacheMvccCandidate lock =
-                    ctx.mvcc().removeExplicitLock(Thread.currentThread().getId(), cacheKey, null);
+                    ctx.mvcc().removeExplicitLock(Thread.currentThread().getId(), txKey, null);
 
                 if (lock != null) {
                     final AffinityTopologyVersion topVer = lock.topologyVersion();
@@ -491,7 +698,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             GridNearUnlockRequest req = map.get(primary);
 
                             if (req == null) {
-                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
+                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
+                                    ctx.deploymentEnabled()));
 
                                 req.version(ver);
                             }
@@ -566,7 +774,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             Collection<KeyCacheObject> locKeys = new LinkedList<>();
 
             for (KeyCacheObject key : keys) {
-                GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(threadId, key, ver);
+                IgniteTxKey txKey = ctx.txKey(key);
+
+                GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(threadId, txKey, ver);
 
                 if (lock != null) {
                     AffinityTopologyVersion topVer = lock.topologyVersion();
@@ -593,7 +803,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         GridNearUnlockRequest req = map.get(primary);
 
                         if (req == null) {
-                            map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
+                            map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
+                                ctx.deploymentEnabled()));
 
                             req.version(ver);
                         }
@@ -615,8 +826,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             if (map == null || map.isEmpty())
                 return;
 
-            Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
-            Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
+            IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(ver);
+
+            Collection<GridCacheVersion> committed = versPair.get1();
+            Collection<GridCacheVersion> rolledback = versPair.get2();
 
             for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
@@ -673,7 +886,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long timeout,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
-        final boolean skipStore
+        final boolean skipStore,
+        final boolean keepBinary
     ) {
         assert keys != null;
 
@@ -696,7 +910,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     timeout,
                     accessTtl,
                     filter,
-                    skipStore);
+                    skipStore,
+                    keepBinary);
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);
@@ -720,7 +935,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             timeout,
                             accessTtl,
                             filter,
-                            skipStore);
+                            skipStore,
+                            keepBinary);
                     }
                 }
             );
@@ -754,7 +970,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long timeout,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary) {
         int cnt = keys.size();
 
         if (tx == null) {
@@ -770,7 +987,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 threadId,
                 accessTtl,
                 filter,
-                skipStore);
+                skipStore,
+                keepBinary);
 
             // Add before mapping.
             if (!ctx.mvcc().addFuture(fut))
@@ -799,8 +1017,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     }
                     catch (GridDistributedLockCancelledException e) {
                         if (log.isDebugEnabled())
-                            log.debug("Got lock request for cancelled lock (will ignore): " +
-                                entry);
+                            log.debug("Failed to add entry [err=" + e + ", entry=" + entry + ']');
 
                         fut.onError(e);
 
@@ -837,7 +1054,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 tx.implicit(),
                 txRead,
                 accessTtl,
-                skipStore);
+                skipStore,
+                keepBinary);
 
             return new GridDhtEmbeddedFuture<>(
                 new C2<GridCacheReturn, Exception, Exception>() {
@@ -856,24 +1074,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /**
-     * @param nodeId Sender ID.
-     * @param res Response.
-     */
-    private void processGetResponse(UUID nodeId, GridNearGetResponse res) {
-        GridPartitionedGetFuture<K, V> fut = (GridPartitionedGetFuture<K, V>)ctx.mvcc().<Map<K, V>>future(
-            res.version(), res.futureId());
-
-        if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
-
-            return;
-        }
-
-        fut.onResult(nodeId, res);
-    }
-
-    /**
      * @param nodeId Node ID.
      * @param res Response.
      */
@@ -882,7 +1082,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         assert res != null;
 
         GridDhtColocatedLockFuture fut = (GridDhtColocatedLockFuture)ctx.mvcc().
-            <Boolean>future(res.version(), res.futureId());
+            <Boolean>mvccFuture(res.version(), res.futureId());
 
         if (fut != null)
             fut.onResult(nodeId, res);

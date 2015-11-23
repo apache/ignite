@@ -26,17 +26,14 @@ import java.io.Closeable;
  * Distributed atomic reference includes the following main functionality:
  * <ul>
  * <li>
- * Method {@link #get()} synchronously gets current value of an atomic reference.
+ * Method {@link #get()} gets current value of an atomic reference.
  * </li>
  * <li>
- * Method {@link #set(Object)} synchronously and unconditionally sets the value in the an atomic reference.
+ * Method {@link #set(Object)} unconditionally sets the value in the an atomic reference.
  * </li>
  * <li>
- * Methods {@code compareAndSet(...)} synchronously and conditionally set the value in the an atomic reference.
+ * Methods {@code compareAndSet(...)} conditionally set the value in the an atomic reference.
  * </li>
- * </ul>
- * All previously described methods have asynchronous analogs.
- * <ul>
  * <li>
  * Method {@link #name()} gets name of atomic reference.
  * </li>

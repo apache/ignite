@@ -164,7 +164,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * Callback on method enter.
      */
     public void onEnter() {
-        if (!locDepOwner && depEnabled && !ignoreOwnership.get()
+        if (depEnabled && !locDepOwner && !ignoreOwnership.get()
             && !cctx.kernalContext().job().internal()) {
             ClassLoader ldr = Thread.currentThread().getContextClassLoader();
 
