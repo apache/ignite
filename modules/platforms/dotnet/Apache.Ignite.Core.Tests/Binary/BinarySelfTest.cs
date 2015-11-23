@@ -486,6 +486,23 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(_marsh.Unmarshal<TestEnum>(_marsh.Marshal(val)), val);
         }
 
+        /// <summary>
+        /// Tests the write of registered enum.
+        /// </summary>
+        [Test]
+        public void TestWriteEnumRegistered()
+        {
+            var marsh =
+                new Marshaller(new BinaryConfiguration
+                {
+                    TypeConfigurations = new[] { new BinaryTypeConfiguration(typeof(TestEnum)) }
+                });
+
+            TestEnum val = TestEnum.Val1;
+
+            Assert.AreEqual(marsh.Unmarshal<TestEnum>(marsh.Marshal(val)), val);
+        }
+
         /**
         * <summary>Check write of enum.</summary>
         */
@@ -494,6 +511,24 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             TestEnum[] vals = { TestEnum.Val2, TestEnum.Val3 };
             TestEnum[] newVals = _marsh.Unmarshal<TestEnum[]>(_marsh.Marshal(vals));
+
+            Assert.AreEqual(vals, newVals);
+        }
+
+        /// <summary>
+        /// Tests the write of registered enum array.
+        /// </summary>
+        [Test]
+        public void TestWriteEnumArrayRegistered()
+        {
+            var marsh =
+                new Marshaller(new BinaryConfiguration
+                {
+                    TypeConfigurations = new[] { new BinaryTypeConfiguration(typeof(TestEnum)) }
+                });
+
+            TestEnum[] vals = { TestEnum.Val2, TestEnum.Val3 };
+            TestEnum[] newVals = marsh.Unmarshal<TestEnum[]>(marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
