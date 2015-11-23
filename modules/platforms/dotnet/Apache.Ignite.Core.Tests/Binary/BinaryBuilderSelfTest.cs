@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("a", api.ToBinary<string>("a"));
             Assert.AreEqual(date, api.ToBinary<DateTime>(date));
             Assert.AreEqual(guid, api.ToBinary<Guid>(guid));
-            Assert.AreEqual(TestEnum.One, api.ToBinary<TestEnum>(TestEnum.One));
+            Assert.AreEqual(TestEnum.One, api.ToBinary<IBinaryEnum>(TestEnum.One).Deserialize<TestEnum>());
 
             // 3. Arrays.
             Assert.AreEqual(new byte[] { 1 }, api.ToBinary<byte[]>(new byte[] { 1 }));
@@ -233,7 +233,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new[] { "a" }, api.ToBinary<string[]>(new[] { "a" }));
             Assert.AreEqual(new[] { date }, api.ToBinary<DateTime[]>(new[] { date }));
             Assert.AreEqual(new[] { guid }, api.ToBinary<Guid[]>(new[] { guid }));
-            Assert.AreEqual(new[] { TestEnum.One }, api.ToBinary<TestEnum[]>(new[] { TestEnum.One }));
+            Assert.AreEqual(new[] {TestEnum.One},
+                api.ToBinary<IBinaryObject[]>(new[] {TestEnum.One}).Select(x => x.Deserialize<TestEnum>()).ToArray());
 
             // 4. Objects.
             IBinaryObject binObj = api.ToBinary<IBinaryObject>(new ToBinary(1));
