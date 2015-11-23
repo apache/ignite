@@ -53,7 +53,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
         AtomicIntegerFieldUpdater.newUpdater(GridCompoundFuture.class, "lsnrCalls");
 
     /** Futures. */
-    private final Collection<IgniteInternalFuture<T>> futs = new ArrayList<>();
+    protected final ArrayList<IgniteInternalFuture<T>> futs = new ArrayList<>();
 
     /** Reducer. */
     @GridToStringInclude
@@ -166,8 +166,19 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *
      * @return {@code True} if there are pending futures.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public boolean hasPending() {
-        return !pending().isEmpty();
+        synchronized (futs) {
+            // Avoid iterator creation and collection copy.
+            for (int i = 0; i < futs.size(); i++) {
+                IgniteInternalFuture<T> fut = futs.get(i);
+
+                if (!fut.isDone())
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**

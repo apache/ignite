@@ -57,12 +57,10 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -207,20 +205,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         }
 
         valMap = new ConcurrentHashMap8<>(keys.size(), 1f);
-    }
-
-    /**
-     * @return Participating nodes.
-     */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<?>, ClusterNode>() {
-            @Nullable @Override public ClusterNode apply(IgniteInternalFuture<?> f) {
-                if (isMini(f))
-                    return ((MiniFuture)f).node();
-
-                return cctx.discovery().localNode();
-            }
-        });
     }
 
     /** {@inheritDoc} */
@@ -478,25 +462,21 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             if (log.isDebugEnabled())
                 log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
 
-            for (IgniteInternalFuture<Boolean> fut : pending()) {
-                if (isMini(fut)) {
-                    MiniFuture mini = (MiniFuture)fut;
+            MiniFuture mini = miniFuture(res.miniId());
 
-                    if (mini.futureId().equals(res.miniId())) {
-                        assert mini.node().id().equals(nodeId);
+            if (mini != null) {
+                assert mini.node().id().equals(nodeId);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
 
-                        mini.onResult(res);
+                mini.onResult(res);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
-                                ", res=" + res + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
+                        ", res=" + res + ']');
 
-                        return;
-                    }
-                }
+                return;
             }
 
             U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
@@ -506,6 +486,38 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             log.debug("Ignoring lock response from node (future is done) [nodeId=" + nodeId + ", res=" + res +
                 ", fut=" + this + ']');
     }
+
+    /**
+     * Finds pending mini future by the given mini ID.
+     *
+     * @param miniId Mini ID to find.
+     * @return Mini future.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private MiniFuture miniFuture(IgniteUuid miniId) {
+        // We iterate directly over the futs collection here to avoid copy.
+        synchronized (futs) {
+            // Avoid iterator creation.
+            for (int i = 0; i < futs.size(); i++) {
+                IgniteInternalFuture<Boolean> fut = futs.get(i);
+
+                if (!isMini(fut))
+                    continue;
+
+                MiniFuture mini = (MiniFuture)fut;
+
+                if (mini.futureId().equals(miniId)) {
+                    if (!mini.isDone())
+                        return mini;
+                    else
+                        return null;
+                }
+            }
+        }
+
+        return null;
+    }
+
 
     /**
      * @param t Error.
@@ -644,7 +656,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                 log.debug("Completing future: " + this);
 
             // Clean up.
-            cctx.mvcc().removeFuture(this);
+            cctx.mvcc().removeMvccFuture(this);
 
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);

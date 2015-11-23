@@ -856,7 +856,7 @@ public abstract class GridAbstractTest extends TestCase {
         List<Ignite> ignites = G.allGrids();
 
         for (Ignite g : ignites) {
-            if (g.cluster().localNode().isClient())
+            if (g.configuration().getDiscoverySpi().isClientMode())
                 stopGrid(g.name(), cancel);
         }
     }
@@ -868,7 +868,7 @@ public abstract class GridAbstractTest extends TestCase {
         List<Ignite> ignites = G.allGrids();
 
         for (Ignite g : ignites) {
-            if (!g.cluster().localNode().isClient())
+            if (!g.configuration().getDiscoverySpi().isClientMode())
                 stopGrid(g.name(), cancel);
         }
     }
@@ -1248,7 +1248,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (isDebug()) {
             discoSpi.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-            cfg.setNetworkTimeout(Long.MAX_VALUE);
+            cfg.setNetworkTimeout(Long.MAX_VALUE / 3);
         }
         else {
             // Set network timeout to 10 sec to avoid unexpected p2p class loading errors.

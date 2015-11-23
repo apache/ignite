@@ -58,9 +58,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected static final long QUEUE_REMOVED_IDX = Long.MIN_VALUE;
 
     /** */
-    protected static final int MAX_UPDATE_RETRIES = 100;
-
-    /** */
     protected static final long RETRY_DELAY = 1;
 
     /** */
@@ -169,14 +166,22 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     @SuppressWarnings("unchecked")
     @Nullable @Override public T peek() throws IgniteException {
         try {
-            GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
+            while (true) {
+                GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
 
-            checkRemoved(hdr);
+                checkRemoved(hdr);
 
-            if (hdr.empty())
-                return null;
+                if (hdr.empty())
+                    return null;
 
-            return (T)cache.get(itemKey(hdr.head()));
+                T val = (T)cache.get(itemKey(hdr.head()));
+
+                if (val == null)
+                    // Header might have been polled. Retry.
+                    continue;
+
+                return val;
+            }
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -416,8 +421,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         long startIdx,
         long endIdx,
         int batchSize)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         Set<GridCacheQueueItemKey> keys = new HashSet<>(batchSize > 0 ? batchSize : 10);
 
         for (long idx = startIdx; idx < endIdx; idx++) {
@@ -435,8 +439,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * Checks result of closure modifying queue header, throws {@link IllegalStateException}
-     * if queue was removed.
+     * Checks result of closure modifying queue header, throws {@link IllegalStateException} if queue was removed.
      *
      * @param idx Result of closure execution.
      */
@@ -528,7 +531,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @throws IgniteCheckedException If failed.
      */
     protected abstract void removeItem(long rmvIdx) throws IgniteCheckedException;
-
 
     /**
      * @param idx Item index.
@@ -1036,7 +1038,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridCacheQueueAdapter that = (GridCacheQueueAdapter) o;
+        GridCacheQueueAdapter that = (GridCacheQueueAdapter)o;
 
         return id.equals(that.id);
 

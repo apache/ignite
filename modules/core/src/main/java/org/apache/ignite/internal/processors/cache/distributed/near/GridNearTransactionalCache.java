@@ -273,7 +273,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @throws IgniteCheckedException If failed.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
-    @SuppressWarnings({"RedundantTypeArguments"})
+    @SuppressWarnings({"RedundantTypeArguments", "ForLoopReplaceableByForEach"})
     @Nullable public GridNearTxRemote startRemoteTx(UUID nodeId, GridDhtLockRequest req)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
         List<KeyCacheObject> nearKeys = req.nearKeys();
@@ -285,6 +285,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (ldr != null) {
             Collection<IgniteTxKey> evicted = null;
 
+            // Avoid iterator creation.
             for (int i = 0; i < nearKeys.size(); i++) {
                 KeyCacheObject key = nearKeys.get(i);
 
@@ -292,8 +293,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                     continue;
 
                 IgniteTxKey txKey = ctx.txKey(key);
-
-                Collection<GridCacheMvccCandidate> cands = req.candidatesByIndex(i);
 
                 if (log.isDebugEnabled())
                     log.debug("Unmarshalled key: " + key);
@@ -355,8 +354,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 tx != null && tx.implicitSingle(),
                                 req.owned(entry.key())
                             );
-
-                            assert cands.isEmpty() : "Received non-empty candidates in dht lock request: " + cands;
 
                             if (!req.inTx())
                                 ctx.evicts().touch(entry, req.topologyVersion());
@@ -426,7 +423,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         assert nodeId != null;
         assert res != null;
 
-        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>future(res.version(),
+        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>mvccFuture(res.version(),
             res.futureId());
 
         if (fut != null)

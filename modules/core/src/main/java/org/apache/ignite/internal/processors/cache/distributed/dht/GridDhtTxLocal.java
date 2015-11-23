@@ -490,7 +490,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
 
-        cctx.mvcc().addFuture(fut);
+        cctx.mvcc().addFuture(fut, fut.futureId());
 
         GridDhtTxPrepareFuture prep = prepFut.get();
 
@@ -580,7 +580,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*rollback*/false);
 
-        cctx.mvcc().addFuture(fut);
+        cctx.mvcc().addFuture(fut, fut.futureId());
 
         if (prepFut == null) {
             try {

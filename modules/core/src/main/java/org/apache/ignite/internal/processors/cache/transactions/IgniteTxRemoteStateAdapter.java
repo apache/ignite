@@ -92,6 +92,11 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasInterceptor(GridCacheSharedContext cctx) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
         assert false;
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.continuous;
 
 import java.io.Externalizable;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -98,6 +99,22 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
+     * Creates new batch.
+     *
+     * @return New batch.
+     */
+    public GridContinuousBatch createBatch();
+
+    /**
+     * Called when ack for a batch is received from client.
+     *
+     * @param routineId Routine ID.
+     * @param batch Acknowledged batch.
+     * @param ctx Kernal context.
+     */
+    public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx);
+
+    /**
      * @return Topic for ordered notifications. If {@code null}, notifications
      * will be sent in non-ordered messages.
      */
@@ -129,4 +146,9 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
      * @return Cache name if this is a continuous query handler.
      */
     public String cacheName();
+
+    /**
+     * @param cntrs Init state for partition counters.
+     */
+    public void updateCounters(Map<Integer, Long> cntrs);
 }

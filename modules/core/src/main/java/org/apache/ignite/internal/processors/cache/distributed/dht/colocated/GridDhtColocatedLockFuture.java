@@ -35,10 +35,11 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -65,7 +66,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -78,7 +78,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
  * Colocated cache lock future.
  */
 public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture<Boolean>
-    implements GridCacheFuture<Boolean> {
+    implements GridCacheMvccFuture<Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -198,23 +198,14 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         valMap = new ConcurrentHashMap8<>(keys.size(), 1f);
     }
 
-    /**
-     * @return Participating nodes.
-     */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<?>, ClusterNode>() {
-            @Nullable @Override public ClusterNode apply(IgniteInternalFuture<?> f) {
-                if (isMini(f))
-                    return ((MiniFuture)f).node();
-
-                return cctx.discovery().localNode();
-            }
-        });
-    }
-
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return lockVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
+        return false;
     }
 
     /**
@@ -428,25 +419,21 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" +
                     this + ']');
 
-            for (IgniteInternalFuture<Boolean> fut : pending()) {
-                if (isMini(fut)) {
-                    MiniFuture mini = (MiniFuture)fut;
+            MiniFuture mini = miniFuture(res.miniId());
 
-                    if (mini.futureId().equals(res.miniId())) {
-                        assert mini.node().id().equals(nodeId);
+            if (mini != null) {
+                assert mini.node().id().equals(nodeId);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
 
-                        mini.onResult(res);
+                mini.onResult(res);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
-                                ", res=" + res + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
+                        ", res=" + res + ']');
 
-                        return;
-                    }
-                }
+                return;
             }
 
             U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
@@ -455,6 +442,37 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         else if (log.isDebugEnabled())
             log.debug("Ignoring lock response from node (future is done) [nodeId=" + nodeId + ", res=" + res +
                 ", fut=" + this + ']');
+    }
+
+    /**
+     * Finds pending mini future by the given mini ID.
+     *
+     * @param miniId Mini ID to find.
+     * @return Mini future.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private MiniFuture miniFuture(IgniteUuid miniId) {
+        // We iterate directly over the futs collection here to avoid copy.
+        synchronized (futs) {
+            // Avoid iterator creation.
+            for (int i = 0; i < futs.size(); i++) {
+                IgniteInternalFuture<Boolean> fut = futs.get(i);
+
+                if (!isMini(fut))
+                    continue;
+
+                MiniFuture mini = (MiniFuture)fut;
+
+                if (mini.futureId().equals(miniId)) {
+                    if (!mini.isDone())
+                        return mini;
+                    else
+                        return null;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -511,7 +529,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 log.debug("Completing future: " + this);
 
             // Clean up.
-            cctx.mvcc().removeFuture(this);
+            cctx.mvcc().removeMvccFuture(this);
 
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);

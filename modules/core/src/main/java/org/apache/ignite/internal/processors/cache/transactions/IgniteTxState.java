@@ -101,6 +101,12 @@ public interface IgniteTxState {
 
     /**
      * @param cctx Context.
+     * @return {@code True} if transaction spans one or more caches with configured interceptor.
+     */
+    public boolean hasInterceptor(GridCacheSharedContext cctx);
+
+    /**
+     * @param cctx Context.
      * @return Configured stores for active caches.
      */
     public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx);

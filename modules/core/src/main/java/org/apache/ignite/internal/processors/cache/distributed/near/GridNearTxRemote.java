@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
@@ -223,6 +222,13 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      */
     @Override public GridCacheVersion nearXidVersion() {
         return nearXidVer;
+    }
+
+    /**
+     * @param cntrs Partition indexes.
+     */
+    @Override public void setPartitionUpdateCounters(long[] cntrs) {
+        // No-op.
     }
 
     /**

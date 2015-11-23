@@ -1763,7 +1763,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             tx.originatingNodeId(),
             tx.transactionNodes());
 
-        cctx.mvcc().addFuture(fut);
+        cctx.mvcc().addFuture(fut, fut.futureId());
 
         if (log.isDebugEnabled())
             log.debug("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
