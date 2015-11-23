@@ -98,6 +98,11 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean keepBinary() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public String cacheName() {
         throw new IllegalStateException();
     }
