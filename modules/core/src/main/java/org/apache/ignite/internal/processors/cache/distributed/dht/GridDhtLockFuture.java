@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -51,8 +52,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -122,7 +121,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     private boolean read;
 
     /** Error. */
-    private AtomicReference<Throwable> err = new AtomicReference<>(null);
+    private Throwable err;
 
     /** Timed out flag. */
     private volatile boolean timedOut;
@@ -141,19 +140,16 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     private GridDhtTxLocalAdapter tx;
 
     /** All replies flag. */
-    private AtomicBoolean mapped = new AtomicBoolean(false);
+    private boolean mapped;
 
     /** */
-    private Collection<Integer> invalidParts = new GridLeanSet<>();
+    private Collection<Integer> invalidParts;
 
     /** Trackable flag. */
     private boolean trackable = true;
 
-    /** Mutex. */
-    private final Object mux = new Object();
-
     /** Pending locks. */
-    private final Collection<KeyCacheObject> pendingLocks = new GridConcurrentHashSet<>();
+    private final Collection<KeyCacheObject> pendingLocks;
 
     /** TTL for read operation. */
     private long accessTtl;
@@ -235,6 +231,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         futId = IgniteUuid.randomUuid();
 
         entries = new ArrayList<>(cnt);
+        pendingLocks = U.newHashSet(cnt);
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridDhtLockFuture.class);
@@ -248,7 +245,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> invalidPartitions() {
-        return invalidParts;
+        return invalidParts == null ? Collections.<Integer>emptyList() : invalidParts;
     }
 
     /**
@@ -256,6 +253,9 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * @param invalidPart Partition to retry.
      */
     void addInvalidPartition(GridCacheContext<?, ?> cacheCtx, int invalidPart) {
+        if (invalidParts == null)
+            invalidParts = new HashSet<>();
+
         invalidParts.add(invalidPart);
 
         // Register invalid partitions with transaction.
@@ -291,10 +291,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     /**
      * @return Entries.
      */
-    public Collection<GridDhtCacheEntry> entriesCopy() {
-        synchronized (mux) {
-            return new ArrayList<>(entries());
-        }
+    public synchronized Collection<GridDhtCacheEntry> entriesCopy() {
+        return new ArrayList<>(entries());
     }
 
     /**
@@ -407,12 +405,12 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             return null;
         }
 
-        synchronized (mux) {
+        synchronized (this) {
             entries.add(c == null || c.reentry() ? null : entry);
-        }
 
-        if (c != null && !c.reentry())
-            pendingLocks.add(entry.key());
+            if (c != null && !c.reentry())
+                pendingLocks.add(entry.key());
+        }
 
         // Double check if the future has already timed out.
         if (timedOut) {
@@ -619,19 +617,17 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     }
 
     /**
-     * @param e Error.
-     */
-    public void onError(GridDistributedLockCancelledException e) {
-        if (err.compareAndSet(null, e))
-            onComplete(false);
-    }
-
-    /**
      * @param t Error.
      */
     public void onError(Throwable t) {
-        if (err.compareAndSet(null, t))
-            onComplete(false);
+        synchronized (this) {
+            if (err != null)
+                return;
+
+            err = t;
+        }
+
+        onComplete(false);
     }
 
     /**
@@ -671,7 +667,9 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             log.debug("Received onOwnerChanged() callback [entry=" + entry + ", owner=" + owner + "]");
 
         if (owner != null && owner.version().equals(lockVer)) {
-            pendingLocks.remove(entry.key());
+            synchronized (this) {
+                pendingLocks.remove(entry.key());
+            }
 
             if (checkLocks())
                 map(entries());
@@ -685,7 +683,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     /**
      * @return {@code True} if locks have been acquired.
      */
-    private boolean checkLocks() {
+    private synchronized boolean checkLocks() {
         return pendingLocks.isEmpty();
     }
 
@@ -717,7 +715,10 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         if (isDone() || (err == null && success && !checkLocks()))
             return false;
 
-        this.err.compareAndSet(null, err);
+        synchronized (this) {
+            if (this.err == null)
+                this.err = err;
+        }
 
         return onComplete(success);
     }
@@ -738,10 +739,10 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         if (tx != null)
             cctx.tm().txContext(tx);
 
-        if (err.get() == null)
+        if (err == null)
             loadMissingFromStore();
 
-        if (super.onDone(success, err.get())) {
+        if (super.onDone(success, err)) {
             if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
 
@@ -782,11 +783,11 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * @param entries Entries.
      */
     private void map(Iterable<GridDhtCacheEntry> entries) {
-        if (!mapped.compareAndSet(false, true)) {
-            if (log.isDebugEnabled())
-                log.debug("Will not map DHT lock future (other thread is mapping): " + this);
+        synchronized (this) {
+            if (mapped)
+                return;
 
-            return;
+            mapped = true;
         }
 
         try {
