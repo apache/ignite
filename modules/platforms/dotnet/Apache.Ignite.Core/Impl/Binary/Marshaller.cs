@@ -396,7 +396,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type != null)
             {
                 // Type is found.
-                var typeName = GetTypeName(type);
+                var typeName = BinaryUtils.GetTypeName(type);
 
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
@@ -492,7 +492,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var serializer = new BinarySystemTypeSerializer<T>(ctor);
 
-            AddType(type, typeId, GetTypeName(type), false, false, null, null, serializer, null);
+            AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, null);
         }
 
         /// <summary>
@@ -515,23 +515,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(BinaryUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
             AddSystemType(BinaryUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
             AddSystemType(BinaryUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
-        }
-
-        /// <summary>
-        /// Gets the name of the type.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns>
-        /// Simple type name for non-generic types; simple type name with appended generic arguments for generic types.
-        /// </returns>
-        private static string GetTypeName(Type type)
-        {
-            if (!type.IsGenericType)
-                return type.Name;
-
-            var args = type.GetGenericArguments().Select(GetTypeName).Aggregate((x, y) => x + "," + y);
-
-            return string.Format(CultureInfo.InvariantCulture, "{0}[{1}]", type.Name, args);
         }
     }
 }

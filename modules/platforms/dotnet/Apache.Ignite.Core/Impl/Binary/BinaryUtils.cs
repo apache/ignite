@@ -23,7 +23,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -1469,6 +1471,24 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return id;
         }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>
+        /// Simple type name for non-generic types; simple type name with appended generic arguments for generic types.
+        /// </returns>
+        public static string GetTypeName(Type type)
+        {
+            if (!type.IsGenericType)
+                return type.Name;
+
+            var args = type.GetGenericArguments().Select(GetTypeName).Aggregate((x, y) => x + "," + y);
+
+            return string.Format(CultureInfo.InvariantCulture, "{0}[{1}]", type.Name, args);
+        }
+
 
         /**
          * <summary>Resolve field ID.</summary>

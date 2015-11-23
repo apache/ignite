@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Represents a typed enum in binary form.
     /// </summary>
-    internal class BinaryEnum : IBinaryObject, IEquatable<BinaryEnum>
+    internal class BinaryEnum : IBinaryEnum, IEquatable<BinaryEnum>
     {
         /** Type id. */
         private readonly int _typeId;
@@ -60,22 +60,49 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public IBinaryType GetBinaryType()
         {
-            // TODO: Throw?
-            return _marsh.GetBinaryType(_typeId);
+            throw new BinaryObjectException("Enum in binary form does not have binary type information.");
         }
 
         /** <inheritdoc /> */
         public TF GetField<TF>(string fieldName)
         {
-            throw new NotSupportedException("Enum in binary form has no fields. " +
+            throw new BinaryObjectException("Enum in binary form has no fields. " +
                                             "Use IBinaryEnum.Value to retrieve enum value as int.");
         }
 
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
-            // TODO: Type validation
+            var desc = _marsh.GetDescriptor(false, TypeId);
+
+            if (desc == null)
+                throw new BinaryObjectException("Unknown enum type id: " + TypeId);
+
+            return (T) Enum.ToObject(desc.Type, _value);
+        }
+
+        /** <inheritdoc /> */
+        public T Deserialize<T>(Type type)
+        {
+            IgniteArgumentCheck.NotNull(type, "type");
+
+            if (TypeId != BinaryUtils.ObjTypeId)
+            {
+                var typeId = BinaryUtils.TypeId(BinaryUtils.GetTypeName(type), null, null);
+
+                if (TypeId != typeId)
+                    throw new BinaryObjectException(string.Format(
+                        "Specified type '{0}' does not represent actual enum type. " +
+                        "Expected type id: {1}, actual: {2}", type, TypeId, typeId));
+            }
+
             return TypeCaster<T>.Cast(_value);
+        }
+
+        /** <inheritdoc /> */
+        public int Value
+        {
+            get { return _value; }
         }
 
         /** <inheritdoc /> */
