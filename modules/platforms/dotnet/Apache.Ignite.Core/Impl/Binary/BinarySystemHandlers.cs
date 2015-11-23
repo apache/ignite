@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -256,11 +257,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (elemType == typeof(Guid?))
                     return WriteGuidArray;
                 // Enums.
-                if (elemType.IsEnum)
+                if (elemType.IsEnum || elemType == typeof(IBinaryEnum) || elemType == typeof(BinaryEnum))
                     return WriteEnumArray;
                 
                 // Object array.
-                if (elemType == typeof (object))
+                if (elemType == typeof (object) || elemType == typeof(IBinaryObject) || elemType == typeof(BinaryObject))
                     return WriteArray;
             }
 
