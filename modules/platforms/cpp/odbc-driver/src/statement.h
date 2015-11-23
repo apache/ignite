@@ -58,7 +58,18 @@ namespace ignite
              * @param columnIdx Column index.
              * @param buffer Buffer to put column data to.
              */
-            void BindResultColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer);
+            void BindColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer);
+
+            /**
+             * Unbind specified column buffer.
+             * @param columnIdx Column index.
+             */
+            void UnbindColumn(uint16_t columnIdx);
+
+            /**
+             * Unbind all column buffers.
+             */
+            void UnbindAllColumns();
 
             /**
              * Synchronously send request message and receive response.
@@ -118,11 +129,6 @@ namespace ignite
              * @return True on success.
              */
             bool Close();
-
-            /**
-             * Unbind all column buffers.
-             */
-            void Unbind();
 
             /**
              * Fetch query result row.

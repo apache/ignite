@@ -22,19 +22,19 @@ namespace ignite
     namespace odbc
     {
         ApplicationDataBuffer::ApplicationDataBuffer() :
-            type(0), buffer(0), len(0)
+            type(0), buffer(0), buflen(0), reslen(0)
         {
             // No-op.
         }
 
-        ApplicationDataBuffer::ApplicationDataBuffer(uint16_t type, void* bufferPtr, uint64_t len) :
-            type(type), buffer(bufferPtr), len(len)
+        ApplicationDataBuffer::ApplicationDataBuffer(uint16_t type, void* bufferPtr, int64_t buflen, int64_t* reslen) :
+            type(type), buffer(bufferPtr), buflen(buflen), reslen(reslen)
         {
             // No-op.
         }
 
         ApplicationDataBuffer::ApplicationDataBuffer(const ApplicationDataBuffer & other) :
-            type(other.type), buffer(other.buffer), len(other.len)
+            type(other.type), buffer(other.buffer), buflen(other.buflen), reslen(other.reslen)
         {
             // No-op.
         }
@@ -48,7 +48,8 @@ namespace ignite
         {
             type = other.type;
             buffer = other.buffer;
-            len = other.len;
+            buflen = other.buflen;
+            reslen = other.reslen;
 
             return *this;
         }

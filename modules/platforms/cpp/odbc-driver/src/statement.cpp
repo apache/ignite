@@ -39,9 +39,19 @@ namespace ignite
             // No-op.
         }
 
-        void Statement::BindResultColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer)
+        void Statement::BindColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer)
         {
             columnBindings[columnIdx] = buffer;
+        }
+
+        void Statement::UnbindColumn(uint16_t columnIdx)
+        {
+            columnBindings.erase(columnIdx);
+        }
+
+        void Statement::UnbindAllColumns()
+        {
+            columnBindings.clear();
         }
 
         void Statement::PrepareSqlQuery(const char* query, size_t len)
@@ -118,11 +128,6 @@ namespace ignite
             opened = false;
 
             return true;
-        }
-
-        void Statement::Unbind()
-        {
-            columnBindings.clear();
         }
 
         SqlResult Statement::FetchRow()

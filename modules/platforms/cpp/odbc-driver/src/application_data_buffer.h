@@ -40,9 +40,10 @@ namespace ignite
              *
              * @param type Underlying data type.
              * @param bufferPtr Data buffer pointer.
-             * @param len Data buffer length.
+             * @param buflen Data buffer length.
+             * @param reslen Resulting data length.
              */
-            ApplicationDataBuffer(uint16_t type, void* bufferPtr, uint64_t len);
+            ApplicationDataBuffer(uint16_t type, void* bufferPtr, int64_t buflen, int64_t* reslen);
 
             /**
              * Copy constructor.
@@ -72,7 +73,10 @@ namespace ignite
             void*       buffer;
 
             /** Buffer length. */
-            uint64_t    len;
+            int64_t    buflen;
+
+            /** Result length. */
+            int64_t*   reslen;
         };
     }
 }
