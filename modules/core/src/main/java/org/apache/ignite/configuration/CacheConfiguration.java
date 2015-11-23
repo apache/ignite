@@ -389,9 +389,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Query entities. */
     private Collection<QueryEntity> qryEntities;
 
-    /** Cache  */
-    private Collection<CacheKeyConfiguration> cacheKeyCfgs;
-
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -426,7 +423,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         atomicityMode = cc.getAtomicityMode();
         atomicWriteOrderMode = cc.getAtomicWriteOrderMode();
         backups = cc.getBackups();
-        cacheKeyCfgs = cc.getCacheKeyConfiguration();
         cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
         cacheWriterFactory = cc.getCacheWriterFactory();
@@ -994,28 +990,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.cacheMode = cacheMode;
 
         return this;
-    }
-
-    /**
-     * Gets cache key configuration. Cache key configuration allows to override default cache key affinity
-     * by specifying affinity field name.
-     *
-     * @return Cache key configuration.
-     */
-    public Collection<CacheKeyConfiguration> getCacheKeyConfiguration() {
-        return cacheKeyCfgs;
-    }
-
-    /**
-     * Sets cache key configuration.
-     *
-     * @param cacheKeyCfgs Collection of cache key configurations.
-     */
-    public void setCacheKeyConfiguration(Collection<CacheKeyConfiguration> cacheKeyCfgs) {
-        if (this.cacheKeyCfgs != null)
-            this.cacheKeyCfgs.addAll(cacheKeyCfgs);
-        else
-            this.cacheKeyCfgs = cacheKeyCfgs;
     }
 
     /**

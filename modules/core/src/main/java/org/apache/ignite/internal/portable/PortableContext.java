@@ -24,6 +24,7 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -52,6 +53,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
@@ -503,12 +505,14 @@ public class PortableContext implements Externalizable {
             throw new BinaryObjectException("Failed to register class.", e);
         }
 
+        String affFieldName = affinityFieldName(cls);
+
         PortableClassDescriptor desc = new PortableClassDescriptor(this,
             cls,
             true,
             typeId,
             typeName,
-            null,
+            affFieldName,
             idMapper,
             null,
             true,
@@ -518,7 +522,7 @@ public class PortableContext implements Externalizable {
 
         Collection<PortableSchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
-        metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null, schemas).wrap(this));
+        metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas).wrap(this));
 
         // perform put() instead of putIfAbsent() because "registered" flag might have been changed or class loader
         // might have reloaded described class.
@@ -604,6 +608,21 @@ public class PortableContext implements Externalizable {
         BinaryIdMapper idMapper = typeMappers.get(typeName);
 
         return idMapper != null ? idMapper : BinaryInternalIdMapper.defaultInstance();
+    }
+
+    /**
+     * @param cls Class to get affinity field for.
+     * @return Affinity field name or {@code null} if field name was not found.
+     */
+    private String affinityFieldName(Class cls) {
+        for (; cls != Object.class; cls = cls.getSuperclass()) {
+            for (Field f : cls.getDeclaredFields()) {
+                if (f.getAnnotation(AffinityKeyMapped.class) != null)
+                    return f.getName();
+            }
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
