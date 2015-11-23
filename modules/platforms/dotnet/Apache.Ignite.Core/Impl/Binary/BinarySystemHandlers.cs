@@ -212,6 +212,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteGuid;
             if (type == typeof (BinaryObject))
                 return WriteBinary;
+            if (type == typeof (BinaryEnum))
+                return WriteBinaryEnum;
             if (type == typeof (ArrayList))
                 return WriteArrayList;
             if (type == typeof(Hashtable))
@@ -637,6 +639,19 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.Stream.WriteByte(BinaryUtils.TypeEnum);
 
             BinaryUtils.WriteEnum(ctx, obj);
+        }
+
+        /// <summary>
+        /// Write enum.
+        /// </summary>
+        private static void WriteBinaryEnum(BinaryWriter ctx, object obj)
+        {
+            var binEnum = (BinaryEnum) obj;
+
+            ctx.Stream.WriteByte(BinaryUtils.TypeEnum);
+
+            ctx.WriteInt(binEnum.TypeId);
+            ctx.WriteInt(binEnum.Value);
         }
 
         /// <summary>
