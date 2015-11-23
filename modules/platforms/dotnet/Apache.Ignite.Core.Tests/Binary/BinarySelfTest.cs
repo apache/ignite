@@ -907,6 +907,11 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(obj.PEnum, binEnum.Deserialize<TestEnum>());
             Assert.AreEqual(obj.PEnum, binEnum.Deserialize<TestEnum>(typeof(TestEnum)));
 
+            var binEnumArr = portObj.GetField<IBinaryObject[]>("PEnumArray");
+            Assert.IsTrue(binEnumArr.Select(x => x.Deserialize<TestEnum>()).SequenceEqual(obj.PEnumArray));
+
+            Assert.Throws<BinaryObjectException>(() => binEnum.Deserialize<TestEnum2>(typeof (TestEnum2)));
+
             EnumType newObj = portObj.Deserialize<EnumType>();
 
             Assert.AreEqual(obj.PEnum, newObj.PEnum);
@@ -2063,6 +2068,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         public enum TestEnum
+        {
+            Val1, Val2, Val3 = 10
+        }
+
+        public enum TestEnum2
         {
             Val1, Val2, Val3 = 10
         }
