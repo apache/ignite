@@ -483,7 +483,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
     }
 
     /**
-     * @return Get thread local used to enable keep portables mode.
+     * @return Get thread local used to enable keep binary mode.
      */
     protected ThreadLocal<Boolean> keepPortablesThreadLocal() {
         return null;

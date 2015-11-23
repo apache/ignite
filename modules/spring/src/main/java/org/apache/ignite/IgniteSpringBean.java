@@ -355,6 +355,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteBinary binary() {
+        assert g != null;
+
+        return g.binary();
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         g.close();
     }

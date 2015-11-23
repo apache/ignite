@@ -115,7 +115,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             concurrency, 
             isolation, 
             invalidate, 
-            timeout, 
+            timeout,
             txSize,
             subjId, 
             taskNameHash
@@ -182,9 +182,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             concurrency, 
             isolation, 
             invalidate, 
-            timeout, 
+            timeout,
             txSize,
-            subjId, 
+            subjId,
             taskNameHash
         );
 
@@ -358,7 +358,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         GridCacheOperation op,
         CacheObject val,
         @Nullable GridCacheVersion drVer,
-        boolean skipStore
+        boolean skipStore,
+        boolean keepBinary
     ) throws IgniteCheckedException {
         checkInternal(key);
 
@@ -391,7 +392,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                         -1L,
                         cached,
                         drVer,
-                        skipStore);
+                        skipStore,
+                        keepBinary);
 
                     txState.addWriteEntry(key, txEntry);
 

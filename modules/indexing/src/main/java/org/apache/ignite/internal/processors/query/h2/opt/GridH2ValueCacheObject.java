@@ -104,7 +104,7 @@ public class GridH2ValueCacheObject extends Value {
 
     /** {@inheritDoc} */
     @Override public byte[] getBytesNoCopy() {
-        if (obj.type() == CacheObject.TYPE_REGULAR) {
+        if (obj.cacheObjectType() == CacheObject.TYPE_REGULAR) {
             // Result must be the same as `marshaller.marshall(obj.value(coctx, false));`
             try {
                 return obj.valueBytes(objectContext());
@@ -114,13 +114,13 @@ public class GridH2ValueCacheObject extends Value {
             }
         }
 
-        // For portables and byte array cache object types.
-        return Utils.serialize(obj.value(objectContext(), false), null);
+        // For user-provided and array types.
+        return Utils.serialize(obj, null);
     }
 
     /** {@inheritDoc} */
     @Override public Object getObject() {
-        return obj.value(objectContext(), false);
+        return obj.isPlatformType() ? obj.value(objectContext(), false) : obj;
     }
 
     /** {@inheritDoc} */

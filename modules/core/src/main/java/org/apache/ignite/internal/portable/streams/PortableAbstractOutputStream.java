@@ -120,10 +120,17 @@ public abstract class PortableAbstractOutputStream extends PortableAbstractStrea
     }
 
     /** {@inheritDoc} */
+    @Override public void writeShort(int pos, short val) {
+        ensureCapacity(pos + 2);
+
+        unsafeWriteShort(pos, val);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeInt(int pos, int val) {
         ensureCapacity(pos + 4);
 
-        writeIntPositioned(pos, val);
+        unsafeWriteInt(pos, val);
     }
 
     /** {@inheritDoc} */
@@ -232,12 +239,37 @@ public abstract class PortableAbstractOutputStream extends PortableAbstractStrea
     @Override public void position(int pos) {
         ensureCapacity(pos);
 
-        this.pos = pos;
+        unsafePosition(pos);
     }
 
     /** {@inheritDoc} */
     @Override public long offheapPointer() {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeEnsure(int cap) {
+        ensureCapacity(pos + cap);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafePosition(int pos) {
+        this.pos = pos;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteBoolean(boolean val) {
+        unsafeWriteByte(val ? BYTE_ONE : BYTE_ZERO);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteFloat(float val) {
+        unsafeWriteInt(Float.floatToIntBits(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteDouble(double val) {
+        unsafeWriteLong(Double.doubleToLongBits(val));
     }
 
     /**
@@ -305,14 +337,6 @@ public abstract class PortableAbstractOutputStream extends PortableAbstractStrea
      * @param val Long value.
      */
     protected abstract void writeLongFast(long val);
-
-    /**
-     * Write int value to the given position.
-     *
-     * @param pos Position.
-     * @param val Value.
-     */
-    protected abstract void writeIntPositioned(int pos, int val);
 
     /**
      * Ensure capacity.

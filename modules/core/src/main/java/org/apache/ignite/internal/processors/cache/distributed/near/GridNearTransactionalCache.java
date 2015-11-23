@@ -148,7 +148,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         false,
                         skipStore);
                 }
-            });
+            }, opCtx);
         }
 
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
@@ -339,7 +339,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     GridCacheOperation.NOOP,
                                     null /*Value.*/,
                                     null /*dr version*/,
-                                    req.skipStore());
+                                    req.skipStore(),
+                                    req.keepBinary());
                             }
 
                             // Add remote candidate before reordering.
@@ -451,7 +452,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             timeout,
             accessTtl,
             CU.empty0(),
-            opCtx != null && opCtx.skipStore());
+            opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.isKeepBinary());
 
         if (!ctx.mvcc().addFuture(fut))
             throw new IllegalStateException("Duplicate future ID: " + fut);

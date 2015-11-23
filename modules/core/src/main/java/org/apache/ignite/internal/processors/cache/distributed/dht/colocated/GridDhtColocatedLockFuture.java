@@ -145,6 +145,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     /** */
     private Deque<GridNearLockMapping> mappings;
 
+    /** Keep binary. */
+    private final boolean keepBinary;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -165,7 +168,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         long timeout,
         long accessTtl,
         CacheEntryPredicate[] filter,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;
@@ -179,6 +183,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         this.accessTtl = accessTtl;
         this.filter = filter;
         this.skipStore = skipStore;
+        this.keepBinary = keepBinary;
 
         ignoreInterrupts(true);
 
@@ -871,7 +876,36 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         !topLocked &&
                                         (tx == null || !tx.hasRemoteLocks());
 
-                                    first = false;
+                                        first = false;
+                                    }
+
+                                    req = new GridNearLockRequest(
+                                        cctx.cacheId(),
+                                        topVer,
+                                        cctx.nodeId(),
+                                        threadId,
+                                        futId,
+                                        lockVer,
+                                        inTx(),
+                                        implicitTx(),
+                                        implicitSingleTx(),
+                                        read,
+                                        retval,
+                                        isolation(),
+                                        isInvalidate(),
+                                        timeout,
+                                        mappedKeys.size(),
+                                        inTx() ? tx.size() : mappedKeys.size(),
+                                        inTx() && tx.syncCommit(),
+                                        inTx() ? tx.subjectId() : null,
+                                        inTx() ? tx.taskNameHash() : 0,
+                                        read ? accessTtl : -1L,
+                                        skipStore,
+                                        keepBinary,
+                                        clientFirst,
+                                        cctx.deploymentEnabled());
+
+                                    mapping.request(req);
                                 }
 
                                 req = new GridNearLockRequest(
@@ -1062,7 +1096,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             timeout,
             accessTtl,
             filter,
-            skipStore);
+            skipStore,
+            keepBinary);
 
         // Add new future.
         add(new GridEmbeddedFuture<>(

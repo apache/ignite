@@ -249,9 +249,30 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
         Map<KeyCacheObject, GridNearCacheEntry> savedEntries = null;
 
-        // Assign keys to primary nodes.
-        for (KeyCacheObject key : keys)
-            savedEntries = map(key, mappings, topVer, mapped, savedEntries);
+        {
+            boolean success = false;
+
+            try {
+                // Assign keys to primary nodes.
+                for (KeyCacheObject key : keys)
+                    savedEntries = map(key, mappings, topVer, mapped, savedEntries);
+
+                success = true;
+            }
+            finally {
+                // Exception has been thrown, must release reserved near entries.
+                if (!success) {
+                    GridCacheVersion obsolete = cctx.versions().next(topVer);
+
+                    for (GridNearCacheEntry reserved : savedEntries.values()) {
+                        reserved.releaseEviction();
+
+                        if (reserved.markObsolete(obsolete))
+                            reserved.context().cache().removeEntry(reserved);
+                    }
+                }
+            }
+        }
 
         if (isDone())
             return;
@@ -399,7 +420,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             subjId,
                             null,
                             taskName,
-                            expiryPlc);
+                            expiryPlc,
+                            !deserializePortable);
 
                         if (res != null) {
                             v = res.get1();
@@ -418,7 +440,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             subjId,
                             null,
                             taskName,
-                            expiryPlc);
+                            expiryPlc,
+                            !deserializePortable);
                     }
                 }
 
@@ -446,7 +469,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                                     subjId,
                                     null,
                                     taskName,
-                                    expiryPlc);
+                                    expiryPlc,
+                                    !deserializePortable);
 
                                 if (res != null) {
                                     v = res.get1();
@@ -465,7 +489,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                                     subjId,
                                     null,
                                     taskName,
-                                    expiryPlc);
+                                    expiryPlc,
+                                    !deserializePortable);
                             }
 
                             // Entry was not in memory or in swap, so we remove it from cache.
@@ -517,17 +542,10 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
                         }
                         else {
-                            K key0 = key.value(cctx.cacheObjectContext(), true);
-                            key0 = (K)cctx.unwrapPortableIfNeeded(key0, !deserializePortable);
-
-                            V val0;
-
-                            if (!skipVals) {
-                                val0 = v.value(cctx.cacheObjectContext(), true);
-                                val0 = (V)cctx.unwrapPortableIfNeeded(val0, !deserializePortable);
-                            }
-                            else
-                                val0 = (V)Boolean.TRUE;
+                            K key0 = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
+                            V val0 = !skipVals ? 
+                                (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable) : 
+                                (V)Boolean.TRUE;
 
                             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
                         }
@@ -661,6 +679,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             info.ttl(),
                             info.expireTime(),
                             true,
+                            !deserializePortable,
                             topVer,
                             subjId);
                     }

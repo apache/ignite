@@ -142,8 +142,13 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @return Transaction.
      */
     @SuppressWarnings("unchecked")
-    private IgniteInternalTx txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation,
-        long timeout, int txSize, @Nullable GridCacheContext sysCacheCtx) {
+    private IgniteInternalTx txStart0(
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        long timeout,
+        int txSize,
+        @Nullable GridCacheContext sysCacheCtx
+    ) {
         cctx.kernalContext().gateway().readLock();
 
         try {
@@ -152,7 +157,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             if (tx != null)
                 throw new IllegalStateException("Failed to start new transaction " +
                     "(current thread already has a transaction): " + tx);
-
             tx = cctx.tm().newTx(
                 false,
                 false,
