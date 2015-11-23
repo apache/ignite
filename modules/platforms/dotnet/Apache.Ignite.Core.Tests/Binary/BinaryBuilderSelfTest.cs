@@ -941,7 +941,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // 2. Test addition to array.
             binObj = _grid.GetBinary().GetBuilder(binObj).SetHashCode(200)
-                .SetField("inArr", new object[] { binInArr[0], null }).Build();
+                .SetField("inArr", new IBinaryObject[] { binInArr[0], null }).Build();
 
             Assert.AreEqual(200, binObj.GetHashCode());
 
