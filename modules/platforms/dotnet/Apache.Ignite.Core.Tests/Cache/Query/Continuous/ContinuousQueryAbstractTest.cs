@@ -621,6 +621,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     .Deserialize<BinarizableEntry>());
 
                 // 2. Remote put.
+                ClearEvents();
                 cache1.GetAndPut(PrimaryKey(cache2), Entry(2));
 
                 Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
@@ -889,6 +890,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             Assert.AreEqual(expKey, evt.entry.Key);
             Assert.AreEqual(expOldVal, evt.entry.OldValue);
             Assert.AreEqual(expVal, evt.entry.Value);
+
+            ClearEvents();
+        }
+
+        /// <summary>
+        /// Clears the events collection.
+        /// </summary>
+        private static void ClearEvents()
+        {
+            while (FILTER_EVTS.Count > 0)
+                FILTER_EVTS.Take();
         }
 
         /// <summary>
