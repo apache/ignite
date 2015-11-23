@@ -73,6 +73,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
+            if (TypeId == BinaryUtils.ObjTypeId)
+                return TypeCaster<T>.Cast(_value);
+
             var desc = _marsh.GetDescriptor(false, TypeId);
 
             if (desc == null)
