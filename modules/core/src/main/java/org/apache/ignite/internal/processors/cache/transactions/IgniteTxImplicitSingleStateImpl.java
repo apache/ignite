@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -28,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -160,8 +163,13 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
         CacheStoreManager store = cacheCtx.store();
 
-        if (store.configured())
-            return Collections.singleton(store);
+        if (store.configured()) {
+            HashSet<CacheStoreManager> set = new HashSet<>(3, 0.75f);
+
+            set.add(store);
+
+            return set;
+        }
 
         return null;
     }
@@ -192,12 +200,20 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Set<IgniteTxKey> writeSet() {
-        return entry != null ? Collections.singleton(entry.txKey()) : Collections.<IgniteTxKey>emptySet();
+        if (entry != null) {
+            HashSet<IgniteTxKey> set = new HashSet<>(3, 0.75f);
+
+            set.add(entry.txKey());
+
+            return set;
+        }
+        else
+            return Collections.<IgniteTxKey>emptySet();
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> writeEntries() {
-        return entry != null ? Collections.singletonList(entry) : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? Arrays.asList(entry) : Collections.<IgniteTxEntry>emptyList();
     }
 
     /** {@inheritDoc} */
@@ -207,8 +223,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Map<IgniteTxKey, IgniteTxEntry> writeMap() {
-        return entry != null ? Collections.singletonMap(entry.txKey(), entry) :
-            Collections.<IgniteTxKey, IgniteTxEntry>emptyMap();
+        return entry != null ? F.asMap(entry.txKey(), entry) : Collections.<IgniteTxKey, IgniteTxEntry>emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -223,7 +238,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> allEntries() {
-        return entry != null ? Collections.singletonList(entry) : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? Arrays.asList(entry) : Collections.<IgniteTxEntry>emptyList();
     }
 
     /** {@inheritDoc} */

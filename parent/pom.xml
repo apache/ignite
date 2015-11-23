@@ -328,8 +328,8 @@
                                 <packages>org.apache.ignite.visor.plugin</packages>
                             </group>
                             <group>
-                                <title>Spring Caching</title>
-                                <packages>org.apache.ignite.cache.spring</packages>
+                                <title>Spring Integration</title>
+                                <packages>org.apache.ignite.cache.spring:org.apache.ignite.transactions.spring</packages>
                             </group>
                             <group>
                                 <title>Mesos Framework</title>
