@@ -928,7 +928,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(100, binObj.GetHashCode());
 
-            var binInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
+            var binInArr = binObj.GetField<IBinaryObject[]>("inArr").ToArray();
 
             Assert.AreEqual(1, binInArr.Length);
             Assert.AreEqual(1, binInArr[0].GetField<int>("val"));
@@ -945,7 +945,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(200, binObj.GetHashCode());
 
-            binInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
+            binInArr = binObj.GetField<IBinaryObject[]>("inArr").ToArray();
 
             Assert.AreEqual(2, binInArr.Length);
             Assert.AreEqual(1, binInArr[0].GetField<int>("val"));
@@ -965,7 +965,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(300, binObj.GetHashCode());
 
-            binInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
+            binInArr = binObj.GetField<IBinaryObject[]>("inArr").ToArray();
 
             Assert.AreEqual(2, binInArr.Length);
             Assert.AreEqual(1, binInArr[0].GetField<int>("val"));
@@ -988,7 +988,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(100, binObj.GetHashCode());
 
-            binInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
+            binInArr = binObj.GetField<IBinaryObject[]>("inArr").ToArray();
 
             Assert.AreEqual(2, binInArr.Length);
             Assert.AreEqual(1, binInArr[0].GetField<int>("val"));
@@ -1008,7 +1008,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(200, binObj.GetHashCode());
 
-            binInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
+            binInArr = binObj.GetField<IBinaryObject[]>("inArr").ToArray();
 
             Assert.AreEqual(2, binInArr.Length);
             Assert.AreEqual(2, binInArr[0].GetField<int>("val"));
@@ -1036,7 +1036,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(100, binObj.GetHashCode());
 
-            var binOutArr = binObj.GetField<object[]>("outArr").Cast<IBinaryObject>().ToArray();
+            var binOutArr = binObj.GetField<IBinaryObject[]>("outArr").ToArray();
 
             Assert.AreEqual(2, binOutArr.Length);
             Assert.AreEqual(1, binOutArr[0].GetField<IBinaryObject>("inner").GetField<int>("val"));
@@ -1057,7 +1057,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(200, binObj.GetHashCode());
 
-            binInArr = binObj.GetField<object[]>("outArr").Cast<IBinaryObject>().ToArray();
+            binInArr = binObj.GetField<IBinaryObject[]>("outArr").ToArray();
 
             Assert.AreEqual(2, binInArr.Length);
             Assert.AreEqual(2, binOutArr[0].GetField<IBinaryObject>("inner").GetField<int>("val"));
