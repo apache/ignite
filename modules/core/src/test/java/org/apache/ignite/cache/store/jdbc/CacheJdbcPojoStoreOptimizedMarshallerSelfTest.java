@@ -15,36 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.ui;
+package org.apache.ignite.cache.store.jdbc;
 
-import javafx.stage.Stage;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 
 /**
- * Abstract base modal dialog.
+ * Class for {@code PojoCacheStore} tests.
  */
-public abstract class ModalDialog extends Stage {
-    /** Owner window. */
-    protected final Stage owner;
-
-    /**
-     * @param owner Owner window.
-     * @param width Window width.
-     * @param height Window height.
-     */
-    protected ModalDialog(Stage owner, int width, int height) {
-        this.owner = owner;
-
-        setWidth(width);
-        setHeight(height);
-    }
-
-    /**
-     * Show modal dialog.
-     */
-    protected void showModal() {
-        setX(owner.getX() + owner.getWidth() / 2 - getWidth() / 2);
-        setY(owner.getY() + owner.getHeight() / 2 - getHeight() / 2);
-
-        showAndWait();
+public class CacheJdbcPojoStoreOptimizedMarshallerSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected Marshaller marshaller(){
+        return new OptimizedMarshaller();
     }
 }

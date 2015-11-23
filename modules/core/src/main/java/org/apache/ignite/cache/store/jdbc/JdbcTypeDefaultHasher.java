@@ -15,40 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.model;
+package org.apache.ignite.cache.store.jdbc;
+
+import java.util.Collection;
 
 /**
- * Index item descriptor.
+ * Default implementation of {@link JdbcTypeHasher}.
+ *
+ * This implementation ignores type and field names.
  */
-public class IndexItem {
-    /** Column type. */
-    private final String type;
+public class JdbcTypeDefaultHasher implements JdbcTypeHasher {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /** Sort direction. */
-    private final Boolean desc;
+    /** Singleton instance to use. */
+    public static final JdbcTypeHasher INSTANCE = new JdbcTypeDefaultHasher();
 
-    /**
-     * Constructor.
-     *
-     * @param type Column type.
-     * @param desc Sort direction.
-     */
-    public IndexItem(String type, Boolean desc) {
-        this.type = type;
-        this.desc = desc;
-    }
+    /** {@inheritDoc} */
+    @Override public int hashCode(Collection<?> values) {
+        int hash = 0;
 
-    /**
-     * @return Column type.
-     */
-    public String type() {
-        return type;
-    }
+        for (Object val : values)
+            hash = 31 * hash + (val != null ? val.hashCode() : 0);
 
-    /**
-     * @return Sort direction.
-     */
-    public Boolean descending() {
-        return desc;
+        return hash;
     }
 }

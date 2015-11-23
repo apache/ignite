@@ -260,6 +260,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (F.isEmpty(meta.getValueType()))
                         throw new IgniteCheckedException("Value type is not set: " + meta);
 
+                    if (meta.getQueryFields().isEmpty() && meta.getAscendingFields().isEmpty() &&
+                        meta.getDescendingFields().isEmpty() && meta.getGroups().isEmpty())
+                        continue;
+
                     TypeDescriptor desc = new TypeDescriptor();
 
                     // Key and value classes still can be available if they are primitive or JDK part.
