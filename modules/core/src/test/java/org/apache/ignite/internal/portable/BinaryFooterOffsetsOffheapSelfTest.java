@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import sun.misc.Unsafe;
 

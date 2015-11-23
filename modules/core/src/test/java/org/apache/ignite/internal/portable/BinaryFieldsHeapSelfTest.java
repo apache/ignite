@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
-
 /**
  * Field tests for heap-based portables.
  */
