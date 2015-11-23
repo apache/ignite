@@ -1613,11 +1613,6 @@ public abstract class GridAbstractTest extends TestCase {
                 "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
                 "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
 
-            List<Ignite> nodes = IgnitionEx.allGridsx();
-
-            for (Ignite node : nodes)
-                ((IgniteKernal)node).dumpDebugInfo();
-
             // We dump threads to stdout, because we can loose logs in case
             // the build is cancelled on TeamCity.
             U.dumpThreads(null);
@@ -1631,6 +1626,11 @@ public abstract class GridAbstractTest extends TestCase {
             U.log(log, "Second thread dump (1 second later)");
 
             U.dumpThreads(log);
+
+            List<Ignite> nodes = IgnitionEx.allGridsx();
+
+            for (Ignite node : nodes)
+                ((IgniteKernal)node).dumpDebugInfo();
 
             U.interrupt(runner);
 
