@@ -1327,7 +1327,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         for (Object info : infos.values()) {
             GridContinuousHandler hnd = GridTestUtils.getFieldValue(info, "hnd");
 
-            if (hnd.isForQuery() && hnd.cacheName() == null) {
+            if (hnd.isQuery() && hnd.cacheName() == null) {
                 backupQueue = GridTestUtils.getFieldValue(hnd, "backupQueue");
 
                 break;

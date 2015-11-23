@@ -646,7 +646,7 @@ public class PortableClassDescriptor {
             case PORTABLE:
                 res = newInstance();
 
-                reader.setHandler(res);
+                reader.setHandle(res);
 
                 if (serializer != null)
                     serializer.readBinary(res, reader);
@@ -658,7 +658,7 @@ public class PortableClassDescriptor {
             case EXTERNALIZABLE:
                 res = newInstance();
 
-                reader.setHandler(res);
+                reader.setHandle(res);
 
                 try {
                     ((Externalizable)res).readExternal(reader);
@@ -673,7 +673,7 @@ public class PortableClassDescriptor {
             case OBJECT:
                 res = newInstance();
 
-                reader.setHandler(res);
+                reader.setHandle(res);
 
                 for (BinaryFieldAccessor info : fields)
                     info.read(res, reader);
@@ -690,7 +690,7 @@ public class PortableClassDescriptor {
             try {
                 res = readResolveMtd.invoke(res);
 
-                reader.setHandler(res);
+                reader.setHandle(res);
             }
             catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
