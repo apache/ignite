@@ -817,8 +817,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new[] { "str" }, binObj.GetField<string[]>("fStrArr"));
             Assert.AreEqual(new[] { nDate }, binObj.GetField<DateTime?[]>("fDateArr"));
             Assert.AreEqual(new[] { nGuid }, binObj.GetField<Guid?[]>("fGuidArr"));
-            Assert.AreEqual(new[] {TestEnum.One},
-                binObj.GetField<IBinaryObject[]>("fEnumArr").Select(x => x.Deserialize<TestEnum>()).ToArray());
+            Assert.AreEqual(new[] {TestEnum.One}, binObj.GetField<object[]>("fEnumArr").Cast<IBinaryEnum>()
+                .Select(x => x.Deserialize<TestEnum>()).ToArray());
 
             StringDateGuidEnum obj = binObj.Deserialize<StringDateGuidEnum>();
 
