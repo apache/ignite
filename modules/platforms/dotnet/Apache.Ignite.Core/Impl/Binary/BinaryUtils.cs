@@ -1489,7 +1489,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             return string.Format(CultureInfo.InvariantCulture, "{0}[{1}]", type.Name, args);
         }
 
-
         /**
          * <summary>Resolve field ID.</summary>
          * <param name="typeId">Type ID.</param>
