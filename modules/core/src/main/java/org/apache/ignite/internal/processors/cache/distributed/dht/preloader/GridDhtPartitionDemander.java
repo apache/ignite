@@ -420,8 +420,8 @@ public class GridDhtPartitionDemander {
                                     rebalanceTopics.get(cnt), initD, cctx.ioPolicy(), initD.timeout());
                         }
 
-                       // if (log.isDebugEnabled())
-                            U.log(log, "Requested rebalancing [from node=" + node.id() + ", listener index=" +
+                        if (log.isDebugEnabled())
+                            log.debug("Requested rebalancing [from node=" + node.id() + ", listener index=" +
                                 cnt + ", partitions count=" + sParts.get(cnt).size() +
                                 " (" + partitionsList(sParts.get(cnt)) + ")]");
                     }
@@ -951,8 +951,6 @@ public class GridDhtPartitionDemander {
             synchronized (this) {
                 if (isDone())
                     return;
-
-                U.log(log, "Loaded partition: [cache=" + cctx.name() + ", part=" + p + ", fromNode=" + nodeId + "]");
 
                 if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_LOADED))
                     preloadEvent(p, EVT_CACHE_REBALANCE_PART_LOADED,

@@ -562,8 +562,6 @@ class GridDhtPartitionSupplier {
                     // Mark as last supply message.
                     s.last(part);
 
-                    U.log(log, "Prepared partition [cache=" + cctx.name() + ", part=" + part + "]");
-
                     phase = SupplyContextPhase.NEW;
 
                     sctx = null;
