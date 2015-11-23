@@ -89,26 +89,26 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
     /** Cache registry. */
     @GridToStringExclude
-    private GridCacheContext<?, ?> cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** Lock owner thread. */
     @GridToStringInclude
-    private long threadId;
+    private final long threadId;
 
     /** Keys to lock. */
     private Collection<KeyCacheObject> keys;
 
     /** Future ID. */
-    private IgniteUuid futId;
+    private final IgniteUuid futId;
 
     /** Lock version. */
-    private GridCacheVersion lockVer;
+    private final GridCacheVersion lockVer;
 
     /** Read flag. */
-    private boolean read;
+    private final boolean read;
 
     /** Flag to return value. */
-    private boolean retval;
+    private final boolean retval;
 
     /** Error. */
     private volatile Throwable err;
@@ -118,26 +118,26 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     private LockTimeoutObject timeoutObj;
 
     /** Lock timeout. */
-    private long timeout;
+    private final long timeout;
 
     /** Filter. */
-    private CacheEntryPredicate[] filter;
+    private final CacheEntryPredicate[] filter;
 
     /** Transaction. */
     @GridToStringExclude
-    private GridNearTxLocal tx;
+    private final GridNearTxLocal tx;
 
     /** Topology snapshot to operate on. */
     private volatile AffinityTopologyVersion topVer;
 
     /** Map of current values. */
-    private Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
+    private final Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
 
     /** Trackable flag (here may be non-volatile). */
     private boolean trackable;
 
     /** TTL for read operation. */
-    private long accessTtl;
+    private final long accessTtl;
 
     /** Skip store flag. */
     private final boolean skipStore;
@@ -457,7 +457,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (futs) {
@@ -742,6 +742,12 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         }
     }
 
+    /**
+     * @param keys Keys to map.
+     * @param remap Remap flag.
+     * @param topLocked Topology locked flag.
+     * @throws IgniteCheckedException If mapping failed.
+     */
     private synchronized void map0(
         Collection<KeyCacheObject> keys,
         boolean remap,
@@ -907,34 +913,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
                                     mapping.request(req);
                                 }
-
-                                req = new GridNearLockRequest(
-                                    cctx.cacheId(),
-                                    topVer,
-                                    cctx.nodeId(),
-                                    threadId,
-                                    futId,
-                                    lockVer,
-                                    inTx(),
-                                    implicitTx(),
-                                    implicitSingleTx(),
-                                    read,
-                                    retval,
-                                    isolation(),
-                                    isInvalidate(),
-                                    timeout,
-                                    mappedKeys.size(),
-                                    inTx() ? tx.size() : mappedKeys.size(),
-                                    inTx() && tx.syncCommit(),
-                                    inTx() ? tx.subjectId() : null,
-                                    inTx() ? tx.taskNameHash() : 0,
-                                    read ? accessTtl : -1L,
-                                    skipStore,
-                                    clientFirst,
-                                    cctx.deploymentEnabled());
-
-                                mapping.request(req);
-                            }
 
                             distributedKeys.add(key);
 
@@ -1502,7 +1480,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                             false,
                             CU.subjectId(tx, cctx.shared()),
                             null,
-                            tx == null ? null : tx.resolveTaskName());
+                            tx == null ? null : tx.resolveTaskName(),
+                            keepBinary);
                     }
 
                     i++;
