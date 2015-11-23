@@ -168,6 +168,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
     /** Order of a field whose match is expected. */
     private int matchingOrder;
 
+    /** Whether stream is in raw mode. */
+    private boolean raw;
+
     /**
      * Constructor.
      *
@@ -1384,9 +1387,15 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
 
     /** {@inheritDoc} */
     @Override public BinaryRawReader rawReader() {
-        streamPositionRandom(rawOff);
+        if (!raw) {
+            streamPositionRandom(rawOff);
 
-        return this;
+            raw = true;
+
+            return this;
+        }
+        else
+            throw new BinaryObjectException("Method \"rawReader\" can be called only once.");
     }
 
     /**
@@ -2483,6 +2492,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
      * @return Offset.
      */
     public boolean findFieldByName(String name) {
+        if (raw)
+            throw new BinaryObjectException("Failed to read named field because reader is in raw mode.");
+
         assert dataStart != start;
 
         if (footerLen == 0)
@@ -2556,6 +2568,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
      * @return {@code True} if field was found and stream was positioned accordingly.
      */
     private boolean findFieldById(int id) {
+        assert !raw; // Assert, not exception, because this is called only from internals for Serializable types.
         assert dataStart != start;
 
         if (footerLen == 0)
