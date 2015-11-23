@@ -1001,11 +1001,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="val">Array.</param>
         /// <param name="ctx">Write context.</param>
-        public static void WriteArray(Array val, BinaryWriter ctx)
+        /// <param name="elementType">Type of the array element.</param>
+        public static void WriteArray(Array val, BinaryWriter ctx, int elementType = ObjTypeId)
         {
+            Debug.Assert(val != null && ctx != null);
+
             IBinaryStream stream = ctx.Stream;
 
-            stream.WriteInt(ObjTypeId);
+            stream.WriteInt(elementType);
 
             stream.WriteInt(val.Length);
 
@@ -1291,18 +1294,31 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Write enum.
         /// </summary>
-        /// <param name="stream">Stream.</param>
+        /// <param name="writer">Writer.</param>
         /// <param name="val">Value.</param>
-        public static void WriteEnum(IBinaryStream stream, Enum val)
+        public static void WriteEnum<T>(BinaryWriter writer, T val)
         {
-            if (Enum.GetUnderlyingType(val.GetType()) == TypInt)
+            writer.WriteInt(GetEnumTypeId(val.GetType(), writer.Marshaller));
+            writer.WriteInt(TypeCaster<int>.Cast(val));
+        }
+
+        /// <summary>
+        /// Gets the enum type identifier.
+        /// </summary>
+        /// <param name="enumType">The enum type.</param>
+        /// <param name="marshaller">The marshaller.</param>
+        /// <returns>Enum type id.</returns>
+        public static int GetEnumTypeId(Type enumType, Marshaller marshaller)
+        {
+            if (Enum.GetUnderlyingType(enumType) == TypInt)
             {
-                stream.WriteInt(ObjTypeId);
-                stream.WriteInt((int) (object) val);
+                var desc = marshaller.GetDescriptor(enumType);
+
+                return desc == null ? ObjTypeId : desc.TypeId;
             }
-            else
-                throw new BinaryObjectException("Only Int32 underlying type is supported for enums: " +
-                    val.GetType().Name);
+
+            throw new BinaryObjectException("Only Int32 underlying type is supported for enums: " +
+                enumType.Name);
         }
 
         /// <summary>

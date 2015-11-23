@@ -105,6 +105,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Type: enum array. */
         private const int EchoTypeEnumArray = 17;
 
+        /** Type: enum field. */
+        private const int EchoTypeEnumField = 18;
+
         /** First node. */
         private IIgnite _grid1;
 
@@ -861,9 +864,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnum()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<InteropComputeEnum>(EchoTask, EchoTypeEnum);
+            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnum);
 
-            Assert.AreEqual(InteropComputeEnum.Bar, res);
+            Assert.AreEqual(PlatformComputeEnum.Bar, res);
         }
 
         /// <summary>
@@ -872,14 +875,31 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnumArray()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<InteropComputeEnum[]>(EchoTask, EchoTypeEnumArray);
+            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum[]>(EchoTask, EchoTypeEnumArray);
 
             Assert.AreEqual(new[]
             {
-                InteropComputeEnum.Bar,
-                InteropComputeEnum.Baz,
-                InteropComputeEnum.Foo
+                PlatformComputeEnum.Bar,
+                PlatformComputeEnum.Baz,
+                PlatformComputeEnum.Foo
             }, res);
+        }
+
+        /// <summary>
+        /// Tests the echo task reading enum from a binary object field.
+        /// Ensures that Java can understand enums written by .NET.
+        /// </summary>
+        [Test]
+        public void TestEchoTaskEnumField()
+        {
+            var enumVal = PlatformComputeEnum.Baz;
+
+            _grid1.GetCache<int, InteropComputeEnumFieldTest>(null)
+                .Put(EchoTypeEnumField, new InteropComputeEnumFieldTest {InteropEnum = enumVal});
+
+            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnumField);
+
+            Assert.AreEqual(enumVal, res);
         }
 
         /// <summary>
@@ -1107,11 +1127,15 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             BinaryConfiguration portCfg = new BinaryConfiguration();
 
-            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
+            var portTypeCfgs = new List<BinaryTypeConfiguration>
+            {
+                new BinaryTypeConfiguration(typeof (PlatformComputeBinarizable)),
+                new BinaryTypeConfiguration(typeof (PlatformComputeNetBinarizable)),
+                new BinaryTypeConfiguration(JavaBinaryCls),
+                new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
+                new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
+            };
 
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputeBinarizable)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputeNetBinarizable)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(JavaBinaryCls));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
@@ -1294,10 +1318,15 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    public enum InteropComputeEnum
+    public enum PlatformComputeEnum
     {
         Foo,
         Bar,
         Baz
+    }
+
+    public class InteropComputeEnumFieldTest
+    {
+        public PlatformComputeEnum InteropEnum { get; set; }
     }
 }
