@@ -114,6 +114,17 @@ namespace ignite
             bool ExecuteSqlQuery();
 
             /**
+             * Close statement.
+             * @return True on success.
+             */
+            bool Close();
+
+            /**
+             * Unbind all column buffers.
+             */
+            void Unbind();
+
+            /**
              * Fetch query result row.
              *
              * @return True on success.
@@ -148,6 +159,9 @@ namespace ignite
 
             /** SQL Query. */
             std::string sql;
+
+            /** Statement is in opened state. */
+            bool opened;
 
             //TODO: Move to separate Cursor class.
             /** Cursor id. */

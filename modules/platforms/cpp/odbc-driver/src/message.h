@@ -91,6 +91,167 @@ namespace ignite
         };
 
         /**
+         * Query close request.
+         */
+        class QueryCloseRequest
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            QueryCloseRequest(int64_t queryId) : queryId(queryId)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryCloseRequest()
+            {
+                // No-op.
+            }
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+            {
+                writer.WriteInt8(REQUEST_TYPE_CLOSE_SQL_QUERY);
+                writer.WriteInt64(queryId);
+            }
+
+        private:
+            /** Query ID. */
+            int64_t queryId;
+        };
+
+        /**
+         * Query fetch request.
+         */
+        class QueryFetchRequest
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            QueryFetchRequest(int64_t queryId, int32_t pageSize) :
+                queryId(queryId), pageSize(pageSize)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryFetchRequest()
+            {
+                // No-op.
+            }
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+            {
+                writer.WriteInt8(REQUEST_TYPE_FETCH_SQL_QUERY);
+                writer.WriteInt64(queryId);
+                writer.WriteInt32(pageSize);
+            }
+
+        private:
+            /** Query ID. */
+            int64_t queryId;
+
+            /** SQL query. */
+            int32_t pageSize;
+        };
+
+        /**
+         * Query close response.
+         */
+        class QueryCloseResponse
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            QueryCloseResponse() : status(RESPONSE_STATUS_FAILED),
+                queryId(0), error()
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryCloseResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            void Read(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                status = reader.ReadInt8();
+
+                if (status == RESPONSE_STATUS_SUCCESS)
+                {
+                    queryId = reader.ReadInt64();
+                }
+                else
+                {
+                    int32_t errorLen = reader.ReadString(0, 0);
+                    error.resize(errorLen);
+
+                    reader.ReadString(&error[0], static_cast<int32_t>(error.size()));
+                }
+            }
+
+            /**
+             * Get query ID.
+             * @return Query ID.
+             */
+            int64_t GetQueryId() const
+            {
+                return queryId;
+            }
+
+            /**
+             * Get request processing status.
+             * @return Status.
+             */
+            int8_t GetStatus() const
+            {
+                return status;
+            }
+
+            /**
+             * Get resulting error.
+             * @return Error.
+             */
+            const std::string& GetError() const
+            {
+                return error;
+            }
+
+        private:
+            /** Request processing status. */
+            int8_t status;
+
+            /** Query ID. */
+            int64_t queryId;
+
+            /** Error message. */
+            std::string error;
+        };
+
+        /**
          * Query execute response.
          */
         class QueryExecuteResponse
@@ -99,7 +260,8 @@ namespace ignite
             /**
              * Constructor.
              */
-            QueryExecuteResponse() : queryId(0)
+            QueryExecuteResponse() : status(RESPONSE_STATUS_FAILED), 
+                queryId(0), error(), meta()
             {
                 // No-op.
             }
@@ -197,6 +359,100 @@ namespace ignite
 
             /** Columns metadata. */
             std::vector<ColumnMeta> meta;
+        };
+
+        /**
+         * Query fetch response.
+         */
+        class QueryFetchResponse
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            QueryFetchResponse() : status(RESPONSE_STATUS_FAILED),
+                queryId(0), error(), last(false), rowsNum(0)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryFetchResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            void Read(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                status = reader.ReadInt8();
+
+                if (status == RESPONSE_STATUS_SUCCESS)
+                {
+                    queryId = reader.ReadInt64();
+
+                    last = reader.ReadBool();
+
+                    int32_t rowsNum = reader.ReadInt32();
+
+                    //TODO: implement me.
+                }
+                else
+                {
+                    int32_t errorLen = reader.ReadString(0, 0);
+                    error.resize(errorLen);
+
+                    reader.ReadString(&error[0], static_cast<int32_t>(error.size()));
+                }
+            }
+
+            /**
+             * Get query ID.
+             * @return Query ID.
+             */
+            int64_t GetQueryId() const
+            {
+                return queryId;
+            }
+
+            /**
+             * Get request processing status.
+             * @return Status.
+             */
+            int8_t GetStatus() const
+            {
+                return status;
+            }
+
+            /**
+             * Get resulting error.
+             * @return Error.
+             */
+            const std::string& GetError() const
+            {
+                return error;
+            }
+
+        private:
+            /** Request processing status. */
+            int8_t status;
+
+            /** Query ID. */
+            int64_t queryId;
+
+            /** Error message. */
+            std::string error;
+
+            /** Contains last row. */
+            bool last;
+
+            /** Rows number. */
+            int32_t rowsNum;
         };
     }
 }

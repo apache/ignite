@@ -92,15 +92,53 @@ namespace ignite
                 LOG_MSG("[%d] TypeName:      %s\n", i, rsp.GetMeta()[i].GetTypeName().c_str());
                 LOG_MSG("[%d] FieldName:     %s\n", i, rsp.GetMeta()[i].GetFieldName().c_str());
                 LOG_MSG("[%d] FieldTypeName: %s\n", i, rsp.GetMeta()[i].GetFieldTypeName().c_str());
+                LOG_MSG("\n");
             }
+
+            opened = true;
 
             return true;
         }
 
+        bool Statement::Close()
+        {
+            if (!opened)
+                return false;
+
+            QueryCloseRequest req(resultQueryId);
+            QueryCloseResponse rsp;
+
+            bool success = SyncMessage(req, rsp);
+
+            if (!success)
+                return false;
+
+            LOG_MSG("Query id: %lld\n", rsp.GetQueryId());
+
+            opened = false;
+
+            return true;
+        }
+
+        void Statement::Unbind()
+        {
+            columnBindings.clear();
+        }
+
         SqlResult Statement::FetchRow()
         {
-            //
-            return SQL_RESULT_NO_DATA;
+            if (!opened)
+                return SQL_RESULT_ERROR;
+
+            QueryFetchRequest req(resultQueryId, DEFAULT_PAGE_SIZE);
+            QueryFetchResponse rsp;
+
+            bool success = SyncMessage(req, rsp);
+
+            if (!success)
+                return SQL_RESULT_ERROR;
+
+            return SQL_RESULT_SUCCESS;
         }
     }
 }

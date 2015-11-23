@@ -273,19 +273,25 @@ SQLRETURN SQL_API SQLFreeStmt(SQLHSTMT stmt, SQLUSMALLINT option)
         case SQL_DROP:
         {
             delete statement;
+
             break;
         }
 
         case SQL_CLOSE:
         {
-            // Not supported yet.
-            // Falling through.
+            bool success = statement->Close();
+
+            if (!success)
+                return SQL_ERROR;
+
+            break;
         }
 
         case SQL_UNBIND:
         {
-            // Not supported yet.
-            // Falling through.
+            statement->Unbind();
+
+            break;
         }
 
         case SQL_RESET_PARAMS:
@@ -301,51 +307,51 @@ SQLRETURN SQL_API SQLFreeStmt(SQLHSTMT stmt, SQLUSMALLINT option)
     return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLDriverConnect(SQLHDBC      ConnectionHandle,
-                                   SQLHWND      WindowHandle,
-                                   SQLCHAR*     InConnectionString,
-                                   SQLSMALLINT  StringLength1,
-                                   SQLCHAR*     OutConnectionString,
-                                   SQLSMALLINT  BufferLength,
-                                   SQLSMALLINT* StringLength2Ptr,
-                                   SQLUSMALLINT DriverCompletion)
+SQLRETURN SQL_API SQLDriverConnect(SQLHDBC      conn,
+                                   SQLHWND      windowHandle,
+                                   SQLCHAR*     inConnectionString,
+                                   SQLSMALLINT  inConnectionStringLen,
+                                   SQLCHAR*     outConnectionString,
+                                   SQLSMALLINT  outConnectionStringBufferLen,
+                                   SQLSMALLINT* outConnectionStringLen,
+                                   SQLUSMALLINT driverCompletion)
 {
     using ignite::odbc::Connection;
 
-    UNREFERENCED_PARAMETER(WindowHandle);
+    UNREFERENCED_PARAMETER(windowHandle);
 
     LOG_MSG("SQLDriverConnect called\n");
-    LOG_MSG("Connection String: [%s]\n", InConnectionString);
+    LOG_MSG("Connection String: [%s]\n", inConnectionString);
 
-    Connection *connection = reinterpret_cast<Connection*>(ConnectionHandle);
+    Connection *connection = reinterpret_cast<Connection*>(conn);
 
     if (!connection)
         return SQL_INVALID_HANDLE;
 
-    if (StringLength1 == SQL_NTS && InConnectionString)
-        StringLength1 = static_cast<SQLSMALLINT>(strlen((char*)InConnectionString));
+    if (inConnectionStringLen == SQL_NTS && inConnectionString)
+        inConnectionStringLen = static_cast<SQLSMALLINT>(strlen((char*)inConnectionString));
 
     ignite::odbc::Configuration config;
 
-    config.FillFromConnectString(reinterpret_cast<const char*>(InConnectionString), StringLength1);
+    config.FillFromConnectString(reinterpret_cast<const char*>(inConnectionString), inConnectionStringLen);
 
     bool connected = connection->Establish(config.GetHost(), config.GetPort(), config.GetCache());
 
     if (!connected)
         return SQL_ERROR;
 
-    if (OutConnectionString && BufferLength > 0)
+    if (outConnectionString && outConnectionStringBufferLen > 0)
     {
         std::string out_connection_str = config.ToConnectString();
 
         LOG_MSG("%s\n", out_connection_str.c_str());
 
-        strncpy((char*)OutConnectionString, out_connection_str.c_str(), BufferLength - 1);
+        strncpy((char*)outConnectionString, out_connection_str.c_str(), outConnectionStringBufferLen - 1);
 
-        OutConnectionString[BufferLength - 1] = '\0';
+        outConnectionString[outConnectionStringBufferLen - 1] = '\0';
 
-        if (StringLength2Ptr)
-            *StringLength2Ptr = static_cast<SQLSMALLINT>(strlen(reinterpret_cast<char*>(OutConnectionString)));
+        if (outConnectionStringLen)
+            *outConnectionStringLen = static_cast<SQLSMALLINT>(strlen(reinterpret_cast<char*>(outConnectionString)));
     }
 
     return SQL_SUCCESS;
@@ -400,9 +406,9 @@ SQLRETURN SQL_API SQLExecute(SQLHSTMT stmt)
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-    statement->ExecuteSqlQuery();
+    bool success = statement->ExecuteSqlQuery();
 
-    return SQL_SUCCESS;
+    return success ? SQL_SUCCESS : SQL_ERROR;
 }
 
 SQLRETURN SQL_API SQLExecDirect(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryLen)
