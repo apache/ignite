@@ -1836,7 +1836,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setIndexedTypes(Class<?>... indexedTypes) {
-        A.notNull(indexedTypes, "indexedTypes");
+        if (F.isEmpty(indexedTypes))
+            return this;
 
         int len = indexedTypes.length;
 
