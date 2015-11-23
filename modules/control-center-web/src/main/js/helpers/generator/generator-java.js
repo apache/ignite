@@ -1108,30 +1108,41 @@ $generatorJava.metadataQueryIndexes = function (res, meta) {
         $generatorJava.declareVariable(res, 'indexes', 'java.util.List', 'java.util.ArrayList', 'org.apache.ignite.cache.QueryIndex');
 
         _.forEach(indexes, function (index) {
-            res.needEmptyLine = true;
-
-            $generatorJava.declareVariable(res, 'index', 'org.apache.ignite.cache.QueryIndex');
-
-            $generatorJava.property(res, 'index', index, 'name');
-            $generatorJava.property(res, 'index', index, 'indexType', 'org.apache.ignite.cache.QueryIndexType');
-
             var fields = index.fields;
 
-            if (fields && fields.length > 0) {
-                $generatorJava.declareVariable(res, 'indFlds', 'java.util.LinkedHashMap', 'java.util.LinkedHashMap', 'String', 'Boolean');
+            // One row generation for 1 field index.
+            if (fields && fields.length == 1) {
+                var field = index.fields[0];
 
-                _.forEach(fields, function(field) {
-                    res.line('indFlds.put("' + field.name + '", ' + field.direction + ');');
-                });
-
-                res.needEmptyLine = true;
-
-                res.line('index.setFields(indFlds);');
-
-                res.needEmptyLine = true;
+                res.line('indexes.add(new ' + res.importClass('org.apache.ignite.cache.QueryIndex') +
+                    '("' + field.name + '", ' +
+                    res.importClass('org.apache.ignite.cache.QueryIndexType') + '.' + index.indexType + ', ' +
+                    field.direction + ', "' + index.name + '"));');
             }
+            else {
+                res.needEmptyLine = true;
 
-            res.line('indexes.add(index);');
+                $generatorJava.declareVariable(res, 'index', 'org.apache.ignite.cache.QueryIndex');
+
+                $generatorJava.property(res, 'index', index, 'name');
+                $generatorJava.property(res, 'index', index, 'indexType', 'org.apache.ignite.cache.QueryIndexType');
+
+                if (fields && fields.length > 0) {
+                    $generatorJava.declareVariable(res, 'indFlds', 'java.util.LinkedHashMap', 'java.util.LinkedHashMap', 'String', 'Boolean');
+
+                    _.forEach(fields, function(field) {
+                        res.line('indFlds.put("' + field.name + '", ' + field.direction + ');');
+                    });
+
+                    res.needEmptyLine = true;
+
+                    res.line('index.setFields(indFlds);');
+
+                    res.needEmptyLine = true;
+                }
+
+                res.line('indexes.add(index);');
+            }
         });
 
         res.needEmptyLine = true;
