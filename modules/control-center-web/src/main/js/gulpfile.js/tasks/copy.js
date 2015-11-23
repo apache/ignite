@@ -21,18 +21,25 @@ var gulpSequence = require('gulp-sequence');
 var igniteModules = process.env.IGNITE_MODULES || './ignite_modules';
 
 var paths = [
-    './app/**/**/*.js',
+    './app/**/**/*.js'
+];
+
+var cssPaths = [
+    'public/stylesheets/style.css',
+    'jspm_packages/**/nvd3@*/build/nv.d3.css',
+    'jspm_packages/**/angular-tree-control@*/css/*.css',
+    'jspm_packages/**/ag-grid@*/dist/ag-grid.css',
+    'jspm_packages/**/angular-loading@*/angular-loading.css',
+    'jspm_packages/**/angular-motion@*/dist/angular-motion.css'
+];
+
+var legacyPaths = [
     './controllers/*.js',
     './controllers/**/*.js',
     './controllers/**/*.json',
     './helpers/*.js',
     './helpers/**/*.js',
-    './public/**/*.png',
-    './public/**/*.js'
-];
-
-var fontPaths = [
-    './node_modules/font-awesome/fonts/*'
+    './public/**/*.png'
 ];
 
 var igniteModulePaths = [
@@ -42,15 +49,23 @@ var igniteModulePaths = [
 ];
 
 gulp.task('copy', function(cb) {
-    return gulpSequence('copy:source', 'copy:fonts', 'copy:ignite_modules')(cb)
+    return gulpSequence('copy:base', 'copy:legacy', 'copy:css', 'copy:fonts', 'copy:ignite_modules')(cb)
 });
 
-gulp.task('copy:source', function(cb) {
-    return gulp.src(paths).pipe(gulp.dest('./build'))
+gulp.task('copy:base', function(cb) {
+    return gulp.src(paths, {base: './'}).pipe(gulp.dest('./build'))
+});
+
+gulp.task('copy:legacy', function(cb) {
+    return gulp.src(legacyPaths).pipe(gulp.dest('./build'))
+});
+
+gulp.task('copy:css', function(cb) {
+    return gulp.src(cssPaths, {base: './'}).pipe(gulp.dest('./build'))
 });
 
 gulp.task('copy:fonts', function(cb) {
-    return gulp.src(fontPaths).pipe(gulp.dest('./build/fonts'))
+    return gulp.src('./node_modules/font-awesome/fonts/*', {base: './node_modules/font-awesome'}).pipe(gulp.dest('./build'))
 });
 
 gulp.task('copy:ignite_modules', function(cb) {
@@ -58,7 +73,7 @@ gulp.task('copy:ignite_modules', function(cb) {
 });
 
 gulp.task('copy:watch', function(cb) {
-    gulp.watch([paths, igniteModulePaths], function(glob) {
-        gulpSequence(['copy:source', 'copy:ignite_modules'], 'inject:plugins:js')(cb)
-    })
+    gulp.watch([paths, legacyPaths, igniteModulePaths], function(glob) {
+        gulpSequence(['copy:base', 'copy:legacy', 'copy:ignite_modules'], 'inject:plugins:js')(cb)
+    });
 });

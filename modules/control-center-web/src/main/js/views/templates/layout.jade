@@ -20,15 +20,15 @@ html(ng-app='ignite-web-console')
         title=title
 
         block css
-            link(rel='stylesheet', href='/stylesheets/style.css')
+            link(rel='stylesheet', href='/app.min.css')
 
         block scripts
             script(src='/common-utils.js')
             script(src='/app.min.js')
 
             // ignite:modules
-            script(src='/modules/navbar/main.js')
-            script(src='/modules/configuration-sidebar/main.js')
+            script(src='app/modules/navbar/main.js')
+            script(src='app/modules/configuration-sidebar/main.js')
             // endignite
 
             // ignite:plugins

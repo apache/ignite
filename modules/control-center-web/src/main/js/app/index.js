@@ -37,13 +37,14 @@ import 'file-saver'
 import 'jszip'
 import 'query-command-supported'
 
-import 'angular-grid/dist/ag-grid.css!'
-import 'angular-loading/angular-loading.css!'
-import 'angular-tree-control/css/tree-control.css!'
-import 'angular-tree-control/css/tree-control-attribute.css!'
-import 'angular-motion/dist/angular-motion.css!'
+import 'public/stylesheets/style.css!'
 
 import 'nvd3/build/nv.d3.css!'
+import 'angular-tree-control/css/tree-control-attribute.css!'
+import 'angular-tree-control/css/tree-control.css!'
+import 'angular-ag-grid/dist/ag-grid.css!'
+import 'angular-loading/angular-loading.css!'
+import 'angular-motion/dist/angular-motion.css!'
 
 window._ = _;
 window.ace = ace;
@@ -84,4 +85,4 @@ angular
 	$urlRouterProvider.when('/', '/configuration/clusters');
 
 	$locationProvider.html5Mode(true)
-})
+});

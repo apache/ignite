@@ -24,7 +24,7 @@ var paths = [
 
 var options = {
 	sourceMaps: true
-}
+};
 
 gulp.task('bundle', function() {
 	return jspm.bundleSFX('app/index', 'build/app.min.js', options)

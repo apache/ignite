@@ -15,10 +15,8 @@
  * limitations under the License.
  */
 
-@import url("http://fonts.googleapis.com/css?family=Roboto+Slab:700:serif|Roboto+Slab:400:serif");
-
-@import "bootstrap-custom";
 @import "font-awesome-custom";
+@import "bootstrap-custom";
 
 $logo-path: "/images/logo.png";
 $input-height: 28px;
@@ -32,6 +30,20 @@ $ignite-border-bottom-color: $brand-primary;
 $ignite-background-color: #fff;
 $ignite-header-color: #555;
 $ignite-invalid-color: $brand-primary;
+
+@font-face {
+    font-family: 'Roboto Slab';
+    font-style: normal;
+    font-weight: 400;
+    src: local('Roboto Slab Regular'), local('RobotoSlab-Regular'), url(http://fonts.gstatic.com/s/robotoslab/v6/y7lebkjgREBJK96VQi37ZiwlidHJgAgmTjOEEzwu1L8.ttf) format('truetype');
+}
+
+@font-face {
+    font-family: 'Roboto Slab';
+    font-style: normal;
+    font-weight: 700;
+    src: local('Roboto Slab Bold'), local('RobotoSlab-Bold'), url(http://fonts.gstatic.com/s/robotoslab/v6/dazS1PrQQuCxC3iOAJFEJTdGNerWpg2Hn6A-BxWgZ_I.ttf) format('truetype');
+}
 
 hr {
     margin: 20px 0;
@@ -162,6 +174,7 @@ ul.navbar-nav, .sidebar-nav {
     max-height: 20em;
     overflow: auto;
     overflow-x: hidden;
+    outline-style: none;
 
     li > a {
         display: block;

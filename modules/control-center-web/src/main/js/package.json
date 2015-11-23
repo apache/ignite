@@ -86,9 +86,7 @@
       "jquery": "github:components/jquery@^2.1.4",
       "jszip": "github:Stuk/jszip@^2.5.0",
       "lodash": "npm:lodash@^3.10.1",
-      "query-command-supported": "github:zenorocha/document.queryCommandSupported@^1.0.0",
-      "sass": "github:mobilexag/plugin-sass@^0.0.10",
-      "scss": "github:theefer/plugin-sass@master"
+      "query-command-supported": "github:zenorocha/document.queryCommandSupported@^1.0.0"
     },
     "devDependencies": {
       "babel": "npm:babel-core@^5.8.24",

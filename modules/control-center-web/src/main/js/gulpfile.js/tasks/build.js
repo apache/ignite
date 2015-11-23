@@ -19,5 +19,5 @@ var gulp = require('gulp');
 var gulpSequence = require('gulp-sequence');
 
 gulp.task('build', function(cb) {
-    gulpSequence('clean', ['bundle', 'copy', 'jade', 'sass', 'concat'], 'inject:plugins', cb)
+    gulpSequence('clean', ['copy', 'jade', 'sass'], 'bundle', 'concat',  'inject:plugins', cb)
 });
