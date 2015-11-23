@@ -21,12 +21,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -35,6 +31,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.schema.parser.DbColumn;
 import org.apache.ignite.schema.parser.DbTable;
 
@@ -99,9 +96,6 @@ public class PojoDescriptor {
     /** Java class fields. */
     private final ObservableList<PojoField> fields;
 
-    /** Fields map for quick access. */
-    private final Map<String, PojoField> fieldsMap;
-
     /**
      * Constructor of POJO descriptor.
      *
@@ -125,8 +119,6 @@ public class PojoDescriptor {
 
         List<PojoField> flds = new ArrayList<>(cols.size());
 
-        fieldsMap = new HashMap<>(cols.size());
-
         for (DbColumn col : cols) {
             String colName = col.name();
 
@@ -137,8 +129,6 @@ public class PojoDescriptor {
             fld.owner(this);
 
             flds.add(fld);
-
-            fieldsMap.put(colName, fld);
         }
 
         fields = FXCollections.observableList(flds);
@@ -308,64 +298,12 @@ public class PojoDescriptor {
     }
 
     /**
-     * @return Ascending fields.
-     */
-    public Collection<PojoField> ascendingFields() {
-        Collection<PojoField> res = new ArrayList<>();
-
-        Set<String> asc = tbl.ascendingColumns();
-
-        for (PojoField field : fields)
-            if (field.use() && asc.contains(field.dbName()))
-                res.add(field);
-
-        return res;
-    }
-
-    /**
-     * @return Descending fields.
-     */
-    public Collection<PojoField> descendingFields() {
-        Collection<PojoField> res = new ArrayList<>();
-
-        Set<String> desc = tbl.descendingColumns();
-
-        for (PojoField field : fields)
-            if (field.use() && desc.contains(field.dbName()))
-                res.add(field);
-
-        return res;
-    }
-
-    /**
-     * Gets indexes groups.
+     * Gets indexes indexes.
      *
-     * @return Map with indexes.
+     * @return Collection with indexes.
      */
-    public Map<String, Map<String, IndexItem>> groups() {
-        Map<String, Map<String, Boolean>> idxs = tbl.indexes();
-
-        Map<String, Map<String, IndexItem>> groups = new LinkedHashMap<>(idxs.size());
-
-        for (Map.Entry<String, Map<String, Boolean>> idx : idxs.entrySet()) {
-            Map<String, Boolean> idxCols = idx.getValue();
-
-            if (idxCols.size() > 1) {
-                String idxName = idx.getKey();
-
-                Map<String, IndexItem> grp = new LinkedHashMap<>();
-
-                groups.put(idxName, grp);
-
-                for (Map.Entry<String, Boolean> idxCol : idxCols.entrySet()) {
-                    PojoField fld = fieldsMap.get(idxCol.getKey());
-
-                    grp.put(fld.javaName(), new IndexItem(fld.javaTypeName(), idxCol.getValue()));
-                }
-            }
-        }
-
-        return groups;
+    public Collection<QueryIndex> indexes() {
+        return tbl.indexes();
     }
 
     /**
