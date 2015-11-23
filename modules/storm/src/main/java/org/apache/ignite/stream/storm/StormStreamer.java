@@ -23,15 +23,14 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.stream.StreamAdapter;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.stream.StreamAdapter;
 
 /**
  * Server for managing stream Apache Storm. This is a Bolt storm the interact with  Apache Ignite. For a description of
@@ -58,10 +57,10 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     private OutputCollector collector;
 
     /** define a configuration file */
-    private String configurationfile = "config/default-config.xml";
+    private String configurationfile = "modules/storm/src/test/resources/example-ignite.xml"; // TODO: should be set at cfg.
 
     /** define the cache name */
-    private String cacheName = "igniteCache";
+    private String cacheName = "testCache";  // TODO: should be set at cfg.
 
     /**
      * Gets the cache name.
@@ -152,13 +151,10 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
         if (stopped) {
-            try (Ignite ignite = Ignition.start(getConfigurationFile())) {
-                setIgnite(ignite);
 
-                ignite.getOrCreateCache(getCacheName());
+            setIgnite(Ignition.start(getConfigurationFile()));
 
-                setStreamer(ignite.<K,V>dataStreamer(getCacheName()));
-            }
+            setStreamer(getIgnite().<K, V>dataStreamer(getCacheName()));
 
             start();
             stopped = false;
@@ -188,6 +184,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
                         }
 
                         getStreamer().addData(k, igniteGrid.get(k));
+                        getStreamer().flush(); //TODO: replace with autoflush.
                     }
                     catch (Exception e) {
                         if (log.isDebugEnabled())

@@ -32,6 +32,7 @@ import backtype.storm.utils.Utils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.io.IOException;
 import java.util.HashMap;
@@ -50,22 +51,29 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     private static final int CNT = 100;
 
     /** Cache Name */
-    private static final String cacheName = "igniteCache";
+    private static final String cacheName = "testCache";
 
     private Ignite ignite;
-
-    public StormIgniteStreamerSelfTest(){super(true);}
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
-        ignite = Ignition.start("config/default-config.xml");
-        ignite.<Integer, String>getOrCreateCache(cacheName);
+        IgniteConfiguration cfg = loadConfiguration("modules/storm/src/test/resources/example-ignite.xml");
+
+        cfg.setClientMode(false);
+
+        ignite = startGrid("igniteServerNode", cfg);
+//
+//        IgniteConfiguration cfg2 = loadConfiguration("modules/storm/src/test/resources/example-ignite.xml");
+//
+//        cfg2.setClientMode(false);
+//
+//        ignite = startGrid("igniteServerNode2", cfg2);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ignite.cache(cacheName).clear();
+        stopAllGrids();
     }
 
     /**
