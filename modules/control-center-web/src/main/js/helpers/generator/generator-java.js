@@ -778,11 +778,8 @@ $generatorJava.cacheGeneral = function (cache, varName, res) {
 
     $generatorJava.property(res, varName, cache, 'name');
 
-    res.importClass('org.apache.ignite.cache.CacheAtomicityMode');
-    res.importClass('org.apache.ignite.cache.CacheMode');
-
-    $generatorJava.property(res, varName, cache, 'cacheMode', 'CacheMode');
-    $generatorJava.property(res, varName, cache, 'atomicityMode', 'CacheAtomicityMode');
+    $generatorJava.property(res, varName, cache, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
+    $generatorJava.property(res, varName, cache, 'atomicityMode', 'org.apache.ignite.cache.CacheAtomicityMode');
 
     if (cache.cacheMode == 'PARTITIONED')
         $generatorJava.property(res, varName, cache, 'backups');
@@ -1004,7 +1001,7 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (cache.cacheMode != 'LOCAL') {
-        $generatorJava.property(res, varName, cache, 'rebalanceMode', 'CacheRebalanceMode');
+        $generatorJava.property(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode');
         $generatorJava.property(res, varName, cache, 'rebalanceThreadPoolSize');
         $generatorJava.property(res, varName, cache, 'rebalanceBatchSize');
         $generatorJava.property(res, varName, cache, 'rebalanceOrder');
