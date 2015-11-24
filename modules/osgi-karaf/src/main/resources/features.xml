@@ -44,6 +44,7 @@
         <feature>ignite-rest-http</feature>
         <feature>ignite-scalar-2.11</feature>
         <feature>ignite-schedule</feature>
+        <feature>ignite-slf4j</feature>
         <feature>ignite-spring</feature>
         <feature>ignite-ssh</feature>
         <feature>ignite-twitter</feature>
@@ -163,17 +164,6 @@
         <bundle start="true">mvn:org.apache.ignite/ignite-kafka/${project.version}</bundle>
     </feature>
 
-    <feature name="ignite-mqtt" version="${project.version}" description="Apache Ignite :: MQTT">
-        <details>
-            <![CDATA[The Apache Ignite MQTT module + dependencies.]]>
-        </details>
-        <feature prerequisite="true">wrap</feature>
-        <bundle start="true" dependency="true">mvn:com.google.guava/guava/${guava.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.eclipse.paho/org.eclipse.paho.client.mqttv3/${paho.version}</bundle>
-        <bundle start="true" dependency="true">wrap:mvn:com.github.rholder/guava-retrying/${guava.retrying.version}$Bundle-SymbolicName=guava-retrying&amp;Bundle-SymbolicName=guava-retrying&amp;Bundle-Version=${guava.retrying.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-mqtt/${project.version}</bundle>
-    </feature>
-
     <feature name="ignite-log4j" version="${project.version}" description="Apache Ignite :: log4j">
         <details>
             <![CDATA[The Apache Ignite log4j module + dependencies. 
@@ -185,6 +175,17 @@
         <bundle dependency="true" start-level="8">mvn:org.apache.ignite/ignite-osgi-paxlogging/${project.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-log4j/${project.version}</bundle>
     </feature>
+
+    <feature name="ignite-mqtt" version="${project.version}" description="Apache Ignite :: MQTT">
+        <details>
+            <![CDATA[The Apache Ignite MQTT module + dependencies.]]>
+        </details>
+        <feature prerequisite="true">wrap</feature>
+        <bundle start="true" dependency="true">mvn:com.google.guava/guava/${guava.version}</bundle>
+        <bundle start="true" dependency="true">mvn:org.eclipse.paho/org.eclipse.paho.client.mqttv3/${paho.version}</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:com.github.rholder/guava-retrying/${guava.retrying.version}$Bundle-SymbolicName=guava-retrying&amp;Bundle-SymbolicName=guava-retrying&amp;Bundle-Version=${guava.retrying.version}</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-mqtt/${project.version}</bundle>
+    </feature>   
 
     <feature name="ignite-rest-http" version="${project.version}" description="Apache Ignite :: REST HTTP">
          <!-- NOTICE: XOM cannot be included by default due to an incompatible license; 
@@ -207,20 +208,20 @@
         <bundle start="true">mvn:org.apache.ignite/ignite-rest-http/${project.version}</bundle>
     </feature>
 
-    <feature name="ignite-scalar-2.11" version="${project.version}" description="Apache Ignite :: Scala 2.11">
-        <details>
-            <![CDATA[The Apache Ignite Scala 2.11 integration module + dependencies. This module installs the Scala 2.11 library bundle.]]>
-        </details>
-        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala211.library.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-scalar/${project.version}</bundle>
-    </feature>
-
     <feature name="ignite-scalar-2.10" version="${project.version}" description="Apache Ignite :: Scala 2.10">
         <details>
             <![CDATA[The Apache Ignite Scala 2.11 integration module + dependencies. This module installs the Scala 2.10 library bundle.]]>
         </details>
         <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala210.library.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-scalar_2.10/${project.version}</bundle>
+    </feature>
+
+    <feature name="ignite-scalar-2.11" version="${project.version}" description="Apache Ignite :: Scala 2.11">
+        <details>
+            <![CDATA[The Apache Ignite Scala 2.11 integration module + dependencies. This module installs the Scala 2.11 library bundle.]]>
+        </details>
+        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala211.library.version}</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-scalar/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-schedule" version="${project.version}" description="Apache Ignite :: Schedule">
@@ -230,6 +231,13 @@
         <feature prerequisite="true">wrap</feature>
         <bundle start="true" dependency="true">wrap:mvn:it.sauronsoftware.cron4j/cron4j/${cron4j.version}$Bundle-SymbolicName=cron4j&amp;Bundle-Version=${cron4j.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-schedule/${project.version}</bundle>
+    </feature>
+
+    <feature name="ignite-slf4j" version="${project.version}" description="Apache Ignite :: slf4j">
+        <details>
+            <![CDATA[The Apache Ignite slf4j module.]]>
+        </details>
+        <bundle start="true">mvn:org.apache.ignite/ignite-slf4j/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-spring" version="${project.version}" description="Apache Ignite :: Spring Support">

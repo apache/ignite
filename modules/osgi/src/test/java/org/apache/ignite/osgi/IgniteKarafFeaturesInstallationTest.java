@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest {
 
     /** Number of features expected to exist. */
-    private static final int EXPECTED_FEATURES = 24;
+    private static final int EXPECTED_FEATURES = 25;
 
     private static final String CAMEL_REPO_URI = "mvn:org.apache.camel.karaf/apache-camel/" +
         System.getProperty("camelVersion") + "/xml/features";
@@ -78,7 +78,7 @@ public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest
         Feature[] features = featuresSvc.getFeatures(IGNITE_FEATURES_NAME_REGEX);
 
         assertNotNull(features);
-        assertEquals(24, features.length);
+        assertEquals(EXPECTED_FEATURES, features.length);
 
         for (Feature f : features) {
             if (IGNORED_FEATURES.contains(f.getName()))
