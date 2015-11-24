@@ -429,9 +429,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         Object obj0 = portableMarsh.unmarshal(arr, null);
 
-        assert obj0 instanceof BinaryObject;
-
-        ((BinaryObjectImpl)obj0).detachAllowed(true);
+        // Possible if a class has writeObject method.
+        if (obj0 instanceof BinaryObject)
+            ((BinaryObjectImpl)obj0).detachAllowed(true);
 
         return obj0;
     }

@@ -34,6 +34,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -369,7 +370,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Node stop exception.
      */
     private IgniteCheckedException stopError() {
-        return new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+        return new NodeStoppingException("Operation has been cancelled (node is stopping).");
     }
 
     /**
