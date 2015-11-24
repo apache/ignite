@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
@@ -40,6 +41,7 @@ import java.nio.ByteBuffer;
  */
 public class BinaryEnumObjectImpl implements BinaryObject, Externalizable, CacheObject {
     /** Context. */
+    @GridDirectTransient
     private PortableContext ctx;
 
     /** Type ID. */
@@ -224,25 +226,83 @@ public class BinaryEnumObjectImpl implements BinaryObject, Externalizable, Cache
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        // TODO
-        return 0;
+        return 119;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        // TODO
-        return 0;
+        return 3;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        // TODO
-        return false;
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeString("clsName", clsName))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeInt("ord", ord))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeInt("typeId", typeId))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        // TODO
-        return false;
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                clsName = reader.readString("clsName");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                ord = reader.readInt("ord");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                typeId = reader.readInt("typeId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return reader.afterMessageRead(BinaryEnumObjectImpl.class);
     }
 }

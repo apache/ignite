@@ -120,16 +120,18 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     public void testSimpleRegistered() throws Exception{
         startUp(true);
 
-        cache1.put(0, new EnumHolder(EnumType.ONE));
-
-        Object res = cache1.get(0);
-
         cache1.put(1, EnumType.ONE);
 
         assertEquals(EnumType.ONE, cache1.get(1));
         assertEquals(EnumType.ONE, cache2.get(1));
 
         BinaryObject obj = cacheBinary1.get(1);
+
+        assertTrue(obj.type().isEnum());
+        assertEquals(node1.binary().typeId(EnumType.class.getName()), obj.typeId());
+        assertEquals(EnumType.ONE.ordinal(), obj.enumOrdinal());
+
+        obj = cacheBinary2.get(1);
 
         assertTrue(obj.type().isEnum());
         assertEquals(node1.binary().typeId(EnumType.class.getName()), obj.typeId());
