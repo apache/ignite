@@ -801,7 +801,7 @@ $generatorJava.cacheMemory = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, varName, cache, 'memoryMode', 'CacheMemoryMode');
+    $generatorJava.property(res, varName, cache, 'memoryMode', 'org.apache.ignite.cache.CacheMemoryMode');
     $generatorJava.property(res, varName, cache, 'offHeapMaxMemory');
 
     res.needEmptyLine = true;

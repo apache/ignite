@@ -533,7 +533,7 @@ consoleModule.service('$common', [
 
             popover = newPopover;
 
-            $timeout(function () { newPopover.$promise.then(newPopover.show); });
+            $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
 
             $timeout(function () { newPopover.hide(); }, 5000);
 
@@ -1896,7 +1896,7 @@ consoleModule.factory('$focus', function ($timeout) {
 
                 elem[0].focus();
             }
-        });
+        }, 100);
     };
 });
 

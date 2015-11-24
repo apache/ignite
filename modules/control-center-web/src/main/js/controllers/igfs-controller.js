@@ -264,16 +264,29 @@ consoleModule.controller('igfsController', [
                     return showPopoverMessage($scope.panels, 'general', 'igfsName', 'Name should not be empty');
 
                 if (!$common.isEmptyString(item.dualModePutExecutorService) &&
-                    !$common.isValidJavaClass('Put executor service', item.dualModePutExecutorService, false, 'dualModePutExecutorService', false, $scope.panels, 'dualMode'))
-                    return false;
+                    !$common.isValidJavaClass('Put executor service', item.dualModePutExecutorService, false, 'dualModePutExecutorService', false, $scope.panels, 'dualMode')) {
+                    $scope.ui.expanded = true;
 
-                if (!item.secondaryFileSystemEnabled && (!item.defaultMode || item.defaultMode != 'PRIMARY'))
-                    return showPopoverMessage($scope.panels, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for not "PRIMARY" IGFS mode');
+                    return false;
+                }
+
+                if (!item.secondaryFileSystemEnabled && (!item.defaultMode || item.defaultMode != 'PRIMARY')) {
+                    $scope.ui.expanded = true;
+
+                    showPopoverMessage($scope.panels, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for not "PRIMARY" IGFS mode');
+
+                    return false;
+                }
 
                 if (item.pathModes) {
                     for (var pathIx = 0; pathIx < item.pathModes.length; pathIx ++) {
-                        if (!item.secondaryFileSystemEnabled && item.pathModes[pathIx].mode != 'PRIMARY')
-                            return showPopoverMessage($scope.panels, 'misc', 'secondaryFileSystem-title', 'Secondary file system should be configured for not "PRIMARY" path mode');
+                        if (!item.secondaryFileSystemEnabled && item.pathModes[pathIx].mode != 'PRIMARY') {
+                            $scope.ui.expanded = true;
+
+                            showPopoverMessage($scope.panels, 'misc', 'secondaryFileSystem-title', 'Secondary file system should be configured for not "PRIMARY" path mode');
+
+                            return false;
+                        }
                     }
                 }
 
@@ -339,30 +352,30 @@ consoleModule.controller('igfsController', [
 
                 $confirm.confirm('Are you sure you want to remove IGFS: "' + selectedItem.name + '"?')
                     .then(function () {
-                            var _id = selectedItem._id;
+                        var _id = selectedItem._id;
 
-                            $http.post('igfs/remove', {_id: _id})
-                                .success(function () {
-                                    $common.showInfo('IGFS has been removed: ' + selectedItem.name);
+                        $http.post('igfs/remove', {_id: _id})
+                            .success(function () {
+                                $common.showInfo('IGFS has been removed: ' + selectedItem.name);
 
-                                    var igfss = $scope.igfss;
+                                var igfss = $scope.igfss;
 
-                                    var idx = _.findIndex(igfss, function (igfs) {
-                                        return igfs._id == _id;
-                                    });
-
-                                    if (idx >= 0) {
-                                        igfss.splice(idx, 1);
-
-                                        if (igfss.length > 0)
-                                            $scope.selectItem(igfss[0]);
-                                        else
-                                            $scope.selectItem(undefined, undefined);
-                                    }
-                                })
-                                .error(function (errMsg) {
-                                    $common.showError(errMsg);
+                                var idx = _.findIndex(igfss, function (igfs) {
+                                    return igfs._id == _id;
                                 });
+
+                                if (idx >= 0) {
+                                    igfss.splice(idx, 1);
+
+                                    if (igfss.length > 0)
+                                        $scope.selectItem(igfss[0]);
+                                    else
+                                        $scope.selectItem(undefined, undefined);
+                                }
+                            })
+                            .error(function (errMsg) {
+                                $common.showError(errMsg);
+                            });
                     });
             };
 
@@ -372,17 +385,17 @@ consoleModule.controller('igfsController', [
 
                 $confirm.confirm('Are you sure you want to remove all IGFS?')
                     .then(function () {
-                            $http.post('igfs/remove/all')
-                                .success(function () {
-                                    $common.showInfo('All IGFS have been removed');
+                        $http.post('igfs/remove/all')
+                            .success(function () {
+                                $common.showInfo('All IGFS have been removed');
 
-                                    $scope.igfss = [];
+                                $scope.igfss = [];
 
-                                    $scope.selectItem(undefined, undefined);
-                                })
-                                .error(function (errMsg) {
-                                    $common.showError(errMsg);
-                                });
+                                $scope.selectItem(undefined, undefined);
+                            })
+                            .error(function (errMsg) {
+                                $common.showError(errMsg);
+                            });
                     });
             };
 
