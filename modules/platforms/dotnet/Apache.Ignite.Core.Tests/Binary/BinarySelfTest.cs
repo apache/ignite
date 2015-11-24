@@ -906,6 +906,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(binEnum.IsEnum);
             Assert.AreEqual((int) obj.PEnum, binEnum.Value);
             Assert.AreEqual(obj.PEnum, binEnum.Deserialize<TestEnum>());
+            Assert.AreEqual(obj.PEnum, binEnum.Deserialize<object>());
+            Assert.AreEqual(typeof(TestEnum), binEnum.Deserialize<object>().GetType());
 
             var binEnumArr = portObj.GetField<IBinaryObject[]>("PEnumArray");
             Assert.IsTrue(binEnumArr.Select(x => x.Deserialize<TestEnum>()).SequenceEqual(obj.PEnumArray));
