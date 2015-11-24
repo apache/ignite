@@ -1323,6 +1323,27 @@ namespace Apache.Ignite.Core.Impl.Binary
                                             enumType.Name);
         }
 
+        /// <summary>
+        /// Gets the enum value by type id and int representation.
+        /// </summary>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="value">The value.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="marsh">The marshaller.</param>
+        /// <returns>value in form of enum, if typeId is known; value in for of int, if typeId is -1.</returns>
+        public static T GetEnumValue<T>(int value, int typeId, Marshaller marsh)
+        {
+            if (typeId == ObjTypeId)
+                return TypeCaster<T>.Cast(value);
+
+            var desc = marsh.GetDescriptor(false, typeId);
+
+            if (desc == null)
+                throw new BinaryObjectException("Unknown enum type id: " + typeId);
+
+            return (T)Enum.ToObject(desc.Type, value);
+        }
+
         /**
          * <summary>Gets type key.</summary>
          * <param name="userType">User type flag.</param>

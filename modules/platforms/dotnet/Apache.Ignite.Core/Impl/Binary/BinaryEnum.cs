@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Represents a typed enum in binary form.
@@ -61,6 +60,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryType GetBinaryType()
         {
             // TODO: Return meta. Make sure we write it!
+            // TODO: Branch from 1956
+            // TODO: Test deserialize as object
+            // TODO: Test meta
             throw new BinaryObjectException("Enum in binary form does not have binary type information.");
         }
 
@@ -74,39 +76,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
-            if (TypeId == BinaryUtils.ObjTypeId)
-                return TypeCaster<T>.Cast(_value);
-
-            var desc = _marsh.GetDescriptor(false, TypeId);
-
-            if (desc == null)
-                throw new BinaryObjectException("Unknown enum type id: " + TypeId);
-
-            return (T) Enum.ToObject(desc.Type, _value);
+            return BinaryUtils.GetEnumValue<T>(_value, _typeId, _marsh);
         }
 
         /** <inheritdoc /> */
         public bool IsEnum
         {
             get { return true; }
-        }
-
-        /** <inheritdoc /> */
-        public T Deserialize<T>(Type type)
-        {
-            IgniteArgumentCheck.NotNull(type, "type");
-
-            if (TypeId != BinaryUtils.ObjTypeId)
-            {
-                var typeId = BinaryUtils.TypeId(BinaryUtils.GetTypeName(type), null, null);
-
-                if (TypeId != typeId)
-                    throw new BinaryObjectException(string.Format(
-                        "Specified type '{0}' does not represent actual enum type. " +
-                        "Expected type id: {1}, actual: {2}", type, TypeId, typeId));
-            }
-
-            return TypeCaster<T>.Cast(_value);
         }
 
         /** <inheritdoc /> */

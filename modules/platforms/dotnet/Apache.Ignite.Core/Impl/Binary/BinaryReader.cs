@@ -973,10 +973,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var enumValue = reader.ReadInt();
 
             if (reader._mode == BinaryMode.Deserialize)
-            {
-                // TODO: Check type compatibility
-                return TypeCaster<T>.Cast(enumValue);
-            }
+                return BinaryUtils.GetEnumValue<T>(enumValue, enumType, reader.Marshaller);
 
             return TypeCaster<T>.Cast(new BinaryEnum(enumType, enumValue, reader.Marshaller));
         }
