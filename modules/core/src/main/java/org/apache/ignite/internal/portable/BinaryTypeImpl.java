@@ -67,7 +67,9 @@ public class BinaryTypeImpl implements BinaryType {
         return meta.affinityKeyFieldName();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Portable context.
+     */
     public PortableContext context() {
         return ctx;
     }
