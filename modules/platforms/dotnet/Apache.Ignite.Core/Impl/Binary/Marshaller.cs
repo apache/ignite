@@ -297,7 +297,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (holder != null)
             {
-                ICollection<int> ids = holder.FieldIds();
+                ICollection<int> ids = holder.GetFieldIds();
 
                 bool newType = ids.Count == 0 && !holder.Saved();
 
