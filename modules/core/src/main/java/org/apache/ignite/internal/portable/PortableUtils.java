@@ -1325,15 +1325,15 @@ public class PortableUtils {
      * @param in Input stream.
      * @return Plain type.
      */
-    private static PlainType doReadPlainType(PortableInputStream in) {
+    private static EnumType doReadEnumType(PortableInputStream in) {
         int typeId = in.readInt();
 
         if (typeId != UNREGISTERED_TYPE_ID)
-            return new PlainType(typeId, null);
+            return new EnumType(typeId, null);
         else {
             String clsName = doReadClassName(in);
 
-            return new PlainType(UNREGISTERED_TYPE_ID, clsName);
+            return new EnumType(UNREGISTERED_TYPE_ID, clsName);
         }
     }
 
@@ -1422,7 +1422,7 @@ public class PortableUtils {
      * @return Enum.
      */
     private static BinaryEnumObjectImpl doReadPortableEnum(PortableInputStream in, PortableContext ctx,
-        PlainType type) {
+        EnumType type) {
         return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
     }
 
@@ -1434,7 +1434,7 @@ public class PortableUtils {
      * @param type Plain type.
      * @return Enum array.
      */
-    private static Object[] doReadPortableEnumArray(PortableInputStream in, PortableContext ctx, PlainType type) {
+    private static Object[] doReadPortableEnumArray(PortableInputStream in, PortableContext ctx, EnumType type) {
         int len = in.readInt();
 
         Object[] arr = (Object[]) Array.newInstance(BinaryObject.class, len);
@@ -1692,10 +1692,10 @@ public class PortableUtils {
                 return doReadPortableObject(in, ctx);
 
             case ENUM:
-                return doReadPortableEnum(in, ctx, doReadPlainType(in));
+                return doReadPortableEnum(in, ctx, doReadEnumType(in));
 
             case ENUM_ARR:
-                return doReadPortableEnumArray(in, ctx, doReadPlainType(in));
+                return doReadPortableEnumArray(in, ctx, doReadEnumType(in));
 
             case CLASS:
                 return doReadClass(in, ctx, ldr);
@@ -1943,9 +1943,9 @@ public class PortableUtils {
     }
 
     /**
-     * Plain type.
+     * Enum type.
      */
-    private static class PlainType {
+    private static class EnumType {
         /** Type ID. */
         private final int typeId;
 
@@ -1958,7 +1958,7 @@ public class PortableUtils {
          * @param typeId Type ID.
          * @param clsName Class name.
          */
-        public PlainType(int typeId, @Nullable String clsName) {
+        public EnumType(int typeId, @Nullable String clsName) {
             assert typeId != UNREGISTERED_TYPE_ID && clsName == null ||
                 typeId == UNREGISTERED_TYPE_ID && clsName != null;
 
