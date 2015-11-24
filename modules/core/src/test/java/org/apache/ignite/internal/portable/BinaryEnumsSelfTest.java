@@ -135,8 +135,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testBuilderSimpleRegistered() throws Exception {
-        checkBuilderSimple(true);
+    public void testSimpleBuilderRegistered() throws Exception {
+        checkSimpleBuilder(true);
     }
 
     /**
@@ -144,8 +144,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testBuilderSimpleNotRegistered() throws Exception {
-        checkBuilderSimple(false);
+    public void testSimpleBuilderNotRegistered() throws Exception {
+        checkSimpleBuilder(false);
     }
 
     /**
@@ -168,7 +168,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      * @param registered If type should be registered in advance.
      * @throws Exception If failed.
      */
-    public void checkBuilderSimple(boolean registered) throws Exception {
+    public void checkSimpleBuilder(boolean registered) throws Exception {
         startUp(registered);
 
         BinaryObject binary = node1.binary().buildEnum(EnumType.class.getSimpleName(), EnumType.ONE.ordinal());
@@ -178,14 +178,31 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         validateSimple();
     }
 
+    /**
+     * Test enum array (registered).
+     *
+     * @throws Exception If failed.
+     */
+    public void testSimpleArrayRegistered() throws Exception {
+        checkSimpleArray(true);
+    }
+
+    /**
+     * Test enum array (not registered).
+     *
+     * @throws Exception If failed.
+     */
+    public void testSimpleArrayNotRegistered() throws Exception {
+        checkSimpleArray(false);
+    }
 
     /**
      * Test enum array created using builder (registered).
      *
      * @throws Exception If failed.
      */
-    public void testBuilderArrayRegistered() throws Exception {
-        checkBuilderArray(true);
+    public void testSimpleBuilderArrayRegistered() throws Exception {
+        checkSimpleBuilderArray(true);
     }
 
     /**
@@ -193,8 +210,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testBuilderArrayNotRegistered() throws Exception {
-        checkBuilderArray(false);
+    public void testSimpleBuilderArrayNotRegistered() throws Exception {
+        checkSimpleBuilderArray(false);
     }
 
     /**
@@ -203,7 +220,21 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      * @param registered Registered flag.
      * @throws Exception If failed.
      */
-    public void checkBuilderArray(boolean registered) throws Exception {
+    public void checkSimpleArray(boolean registered) throws Exception {
+        startUp(registered);
+
+        cache1.put(1, new EnumType[] { EnumType.ONE, EnumType.TWO });
+
+        validateSimpleArray();
+    }
+
+    /**
+     * Check arrays with builder.
+     *
+     * @param registered Registered flag.
+     * @throws Exception If failed.
+     */
+    public void checkSimpleBuilderArray(boolean registered) throws Exception {
         startUp(registered);
 
         BinaryObject binaryOne = node1.binary().buildEnum(EnumType.class.getSimpleName(), EnumType.ONE.ordinal());
@@ -211,6 +242,13 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
 
         cacheBinary1.put(1, new BinaryObject[] { binaryOne, binaryTwo });
 
+        validateSimpleArray();
+    }
+
+    /**
+     * Validate simple array.
+     */
+    private void validateSimpleArray() {
         Object[] arr1 = (Object[])cache1.get(1);
         Object[] arr2 = (Object[])cache2.get(1);
 
