@@ -15,26 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Binary
+namespace Apache.Ignite.Core.Tests.Binary
 {
-    using System;
-
     /// <summary>
-    /// Wrapper for serialized enums.
+    /// Tests enum serialization and interop.
     /// </summary>
-    public interface IBinaryEnum : IBinaryObject
+    public class EnumTest
     {
-        /// <summary>
-        /// Gets the enum value as int.
-        /// </summary>
-        int Value { get; }
-
-        /// <summary>
-        /// Deserializes the enum as a specified type.
-        /// Throws an exception if provided type does not correspond to <see cref="IBinaryObject.TypeId"/>.
-        /// </summary>
-        /// <param name="type">The type to use for deserialization.</param>
-        /// <returns>Enum value in typed form.</returns>
-        T Deserialize<T>(Type type);
     }
 }

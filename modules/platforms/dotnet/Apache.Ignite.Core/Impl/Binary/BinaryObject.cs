@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
@@ -102,6 +103,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         public T Deserialize<T>()
         {
             return Deserialize<T>(BinaryMode.Deserialize);
+        }
+
+        /** <inheritdoc /> */
+        public bool IsEnum
+        {
+            get { return false; }
+        }
+
+        /** <inheritdoc /> */
+        public int Value
+        {
+            get
+            {
+                throw new NotSupportedException("IBinaryObject.Value is only supported for enums. " +
+                                                "Check IBinaryObject.IsEnum property before accessing Value.");
+            }
         }
 
         /// <summary>

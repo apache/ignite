@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Represents a typed enum in binary form.
     /// </summary>
-    internal class BinaryEnum : IBinaryEnum, IEquatable<BinaryEnum>
+    internal class BinaryEnum : IBinaryObject, IEquatable<BinaryEnum>
     {
         /** Type id. */
         private readonly int _typeId;
@@ -60,6 +60,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public IBinaryType GetBinaryType()
         {
+            // TODO: Return meta. Make sure we write it!
             throw new BinaryObjectException("Enum in binary form does not have binary type information.");
         }
 
@@ -82,6 +83,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                 throw new BinaryObjectException("Unknown enum type id: " + TypeId);
 
             return (T) Enum.ToObject(desc.Type, _value);
+        }
+
+        /** <inheritdoc /> */
+        public bool IsEnum
+        {
+            get { return true; }
         }
 
         /** <inheritdoc /> */

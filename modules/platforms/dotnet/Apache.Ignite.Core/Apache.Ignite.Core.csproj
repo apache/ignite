@@ -50,7 +50,6 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Binary\IBinaryEnum.cs" />
     <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
     <Compile Include="Cache\CacheException.cs" />
