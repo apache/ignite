@@ -101,6 +101,11 @@ public abstract class BinaryObjectEx implements BinaryObject {
     }
 
     /** {@inheritDoc} */
+    @Override public int enumOrdinal() throws BinaryObjectException {
+        throw new BinaryObjectException("Object is not enum.");
+    }
+
+    /** {@inheritDoc} */
     public boolean equals(Object other) {
         if (other == this)
             return true;

@@ -67,9 +67,12 @@ public class BinaryTypeImpl implements BinaryType {
         return meta.affinityKeyFieldName();
     }
 
-    /**
-     * @return Portable context.
-     */
+    /** {@inheritDoc} */
+    @Override public boolean isEnum() {
+        return meta.isEnum();
+    }
+
+    /** {@inheritDoc} */
     public PortableContext context() {
         return ctx;
     }

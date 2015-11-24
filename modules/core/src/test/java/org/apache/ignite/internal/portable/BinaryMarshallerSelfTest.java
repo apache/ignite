@@ -488,8 +488,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.objArr, (Object[])po.field("objArr"));
         assertEquals(obj.col, po.field("col"));
         assertEquals(obj.map, po.field("map"));
-        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((Enum<?>)po.field("enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((Enum<?>[])po.field("enumArr")));
+        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
+        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("enumArr")));
         assertNull(po.field("unknown"));
 
         BinaryObject innerPo = po.field("inner");
@@ -524,8 +524,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.inner.col, innerPo.field("col"));
         assertEquals(obj.inner.map, innerPo.field("map"));
         assertEquals(new Integer(obj.inner.enumVal.ordinal()),
-            new Integer(((Enum<?>)innerPo.field("enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.inner.enumArr), ordinals((Enum<?>[])innerPo.field("enumArr")));
+            new Integer(((BinaryObject)innerPo.field("enumVal")).enumOrdinal()));
+        assertArrayEquals(ordinals(obj.inner.enumArr), ordinals((BinaryObject[])innerPo.field("enumArr")));
         assertNull(innerPo.field("inner"));
         assertNull(innerPo.field("unknown"));
     }
@@ -573,8 +573,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.objArr, (Object[])po.field("_objArr"));
         assertEquals(obj.col, po.field("_col"));
         assertEquals(obj.map, po.field("_map"));
-        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((Enum<?>)po.field("_enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((Enum<?>[])po.field("_enumArr")));
+        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("_enumVal")).enumOrdinal()));
+        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("_enumArr")));
         assertNull(po.field("unknown"));
 
         BinaryObject simplePo = po.field("_simple");
@@ -609,8 +609,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.simple.col, simplePo.field("col"));
         assertEquals(obj.simple.map, simplePo.field("map"));
         assertEquals(new Integer(obj.simple.enumVal.ordinal()),
-            new Integer(((Enum<?>)simplePo.field("enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.simple.enumArr), ordinals((Enum<?>[])simplePo.field("enumArr")));
+            new Integer(((BinaryObject)simplePo.field("enumVal")).enumOrdinal()));
+        assertArrayEquals(ordinals(obj.simple.enumArr), ordinals((BinaryObject[])simplePo.field("enumArr")));
         assertNull(simplePo.field("simple"));
         assertNull(simplePo.field("portable"));
         assertNull(simplePo.field("unknown"));
@@ -646,8 +646,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.portable.col, portablePo.field("_col"));
         assertEquals(obj.portable.map, portablePo.field("_map"));
         assertEquals(new Integer(obj.portable.enumVal.ordinal()),
-            new Integer(((Enum<?>)portablePo.field("_enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.portable.enumArr), ordinals((Enum<?>[])portablePo.field("_enumArr")));
+            new Integer(((BinaryObject)portablePo.field("_enumVal")).enumOrdinal()));
+        assertArrayEquals(ordinals(obj.portable.enumArr), ordinals((BinaryObject[])portablePo.field("_enumArr")));
         assertNull(portablePo.field("_simple"));
         assertNull(portablePo.field("_portable"));
         assertNull(portablePo.field("unknown"));
@@ -685,8 +685,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.objArr, (Object[])po.field("objArr"));
         assertEquals(obj.col, po.field("col"));
         assertEquals(obj.map, po.field("map"));
-        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((Enum<?>)po.field("enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((Enum<?>[])po.field("enumArr")));
+        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
+        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("enumArr")));
         assertNull(po.field("unknown"));
 
         assertEquals(obj, po.deserialize());
@@ -2199,6 +2199,19 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < enumArr.length; i++)
             ords[i] = enumArr[i].ordinal();
+
+        return ords;
+    }
+
+    /**
+     * @param enumArr Enum array.
+     * @return Ordinals.
+     */
+    private <T extends Enum<?>> Integer[] ordinals(BinaryObject[] enumArr) {
+        Integer[] ords = new Integer[enumArr.length];
+
+        for (int i = 0; i < enumArr.length; i++)
+            ords[i] = enumArr[i].enumOrdinal();
 
         return ords;
     }
