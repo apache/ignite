@@ -39,6 +39,11 @@ public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstract
 
         cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setAckTimeout(Integer.MAX_VALUE);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setNetworkTimeout(Integer.MAX_VALUE);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setSocketTimeout(Integer.MAX_VALUE);
+
+
         return cfg;
     }
 
