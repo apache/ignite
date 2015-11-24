@@ -169,6 +169,12 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// </summary>
         public string AffinityKeyFieldName { get; private set; }
 
+        /** <inheritdoc /> */
+        public bool IsEnum
+        {
+            get { return false; }  // TODO
+        }
+
         /// <summary>
         /// Gets fields map.
         /// </summary>
