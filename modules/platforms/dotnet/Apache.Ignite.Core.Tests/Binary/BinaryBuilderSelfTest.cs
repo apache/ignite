@@ -915,7 +915,16 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(0, meta.Fields.Count);
 
             // Registered enum
-            // TODO
+            binEnum = bin.ToBinary<IBinaryObject>(TestEnumRegistered.One);
+
+            Assert.IsTrue(binEnum.IsEnum);
+            Assert.AreEqual(_marsh.GetDescriptor(typeof (TestEnumRegistered)).TypeId, binEnum.TypeId);
+            Assert.AreEqual(0, binEnum.Value);
+
+            meta = binEnum.GetBinaryType();
+
+            Assert.AreEqual(BinaryTypeNames.TypeNameObject, meta.TypeName);
+            Assert.AreEqual(0, meta.Fields.Count);
         }
 
         /// <summary>
