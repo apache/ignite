@@ -157,6 +157,10 @@
                             <name>projectVersion</name>
                             <value>${project.version}</value>
                         </property>
+                        <property>
+                            <name>camelVersion</name>
+                            <value>${camel.version}</value>
+                        </property>
                     </systemProperties>
                 </configuration>
             </plugin>

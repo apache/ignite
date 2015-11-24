@@ -35,10 +35,6 @@
     <version>1.5.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
-    <properties>
-        <flume-ng.version>1.6.0</flume-ng.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
@@ -49,7 +45,7 @@
         <dependency>
             <groupId>org.apache.flume</groupId>
             <artifactId>flume-ng-core</artifactId>
-            <version>${flume-ng.version}</version>
+            <version>${flume.ng.version}</version>
         </dependency>
 
         <dependency>
@@ -74,4 +70,14 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

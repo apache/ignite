@@ -17,6 +17,7 @@
 
 package org.apache.ignite.osgi;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -24,7 +25,9 @@ import org.apache.karaf.features.Feature;
 
 import org.junit.Test;
 import org.ops4j.pax.exam.Configuration;
+import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.karaf.options.KarafDistributionOption;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
@@ -37,6 +40,12 @@ import static org.junit.Assert.assertTrue;
  */
 public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest {
 
+    /** Number of features expected to exist. */
+    private static final int EXPECTED_FEATURES = 24;
+
+    private static final String CAMEL_REPO_URI = "mvn:org.apache.camel.karaf/apache-camel/" +
+        System.getProperty("camelVersion") + "/xml/features";
+
     /**
      * Container configuration.
      *
@@ -44,7 +53,11 @@ public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest
      */
     @Configuration
     public Option[] config() {
-        return baseConfig();
+        List<Option> options = new ArrayList<>(Arrays.asList(baseConfig()));
+
+        options.add(KarafDistributionOption.features(CAMEL_REPO_URI));
+
+        return CoreOptions.options(options.toArray(new Option[0]));
     }
 
     /**
@@ -65,7 +78,7 @@ public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest
         Feature[] features = featuresSvc.getFeatures(IGNITE_FEATURES_NAME_REGEX);
 
         assertNotNull(features);
-        assertEquals(20, features.length);
+        assertEquals(24, features.length);
 
         for (Feature f : features) {
             if (IGNORED_FEATURES.contains(f.getName()))
