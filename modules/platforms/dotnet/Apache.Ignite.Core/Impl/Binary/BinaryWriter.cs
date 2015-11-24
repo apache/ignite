@@ -1430,7 +1430,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (_metas.TryGetValue(typeId, out meta))
                 {
-                    IDictionary<string, int> existingFields = ((BinaryType)meta).GetFieldsMap();
+                    IDictionary<string, int> existingFields = meta.GetFieldsMap();
 
                     foreach (KeyValuePair<string, int> field in fields)
                     {
