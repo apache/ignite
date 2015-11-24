@@ -26,12 +26,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -848,13 +845,18 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
                 return marsh.<T>unmarshal(buf, Thread.currentThread().getContextClassLoader());
             }
         });
+
+        // Any deserialization has to be executed under a thread, that contains the grid name.
         new GridRelatedThread(f).start();
+
         try {
-            return f.get(1, TimeUnit.MINUTES);
+            return f.get();
         }
-        catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new RuntimeException("Fail to unmarshal obj in separated thread", e);
+        catch (Exception e) {
+            fail(e.getCause().getMessage());
         }
+
+        return null;
     }
 
     /**
@@ -950,12 +952,18 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         }
     }
 
+    /**
+     * We need this class for deserialization, since any deserialization has to be executed under a thread,
+     * that contains the grid name.
+     */
     private static class GridRelatedThread extends Thread implements GridByNameRelation {
 
+        /** {@inheritDoc} */
         GridRelatedThread(RunnableFuture f) {
             super(f);
         }
 
+        /** {@inheritDoc} */
         @Nullable @Override public String getGridName() {
             return GridMarshallerAbstractTest.gridName;
         }

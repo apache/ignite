@@ -1068,6 +1068,7 @@ public class IgnitionEx {
      */
     public static String gridName() {
         assert Thread.currentThread() instanceof GridByNameRelation;
+
         return ((GridByNameRelation)Thread.currentThread()).getGridName();
     }
 
