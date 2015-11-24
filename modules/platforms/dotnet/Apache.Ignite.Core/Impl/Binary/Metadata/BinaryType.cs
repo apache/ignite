@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         /// <param name="isEnum">Enum flag.</param>
         public BinaryType(int typeId, string typeName, IDictionary<string, int> fields,
-            string affKeyFieldName, bool isEnum = false)
+            string affKeyFieldName, bool isEnum)
         {
             _typeId = typeId;
             _typeName = typeName;

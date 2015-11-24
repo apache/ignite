@@ -1410,26 +1410,24 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Saves metadata for this session.
         /// </summary>
-        /// <param name="typeId">Type ID.</param>
-        /// <param name="typeName">Type name.</param>
-        /// <param name="affKeyFieldName">Affinity key field name.</param>
+        /// <param name="desc">The descriptor.</param>
         /// <param name="fields">Fields metadata.</param>
-        internal void SaveMetadata(int typeId, string typeName, string affKeyFieldName, IDictionary<string, int> fields)
+        internal void SaveMetadata(IBinaryTypeDescriptor desc, IDictionary<string, int> fields)
         {
             if (_metas == null)
             {
                 BinaryType meta =
-                    new BinaryType(typeId, typeName, fields, affKeyFieldName);
+                    new BinaryType(desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum);
 
                 _metas = new Dictionary<int, BinaryType>(1);
 
-                _metas[typeId] = meta;
+                _metas[desc.TypeId] = meta;
             }
             else
             {
                 BinaryType meta;
 
-                if (_metas.TryGetValue(typeId, out meta))
+                if (_metas.TryGetValue(desc.TypeId, out meta))
                 {
                     IDictionary<string, int> existingFields = meta.GetFieldsMap();
 
@@ -1440,7 +1438,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     }
                 }
                 else
-                    _metas[typeId] = new BinaryType(typeId, typeName, fields, affKeyFieldName);
+                    _metas[desc.TypeId] = 
+                        new BinaryType(desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum);
             }
         }
     }

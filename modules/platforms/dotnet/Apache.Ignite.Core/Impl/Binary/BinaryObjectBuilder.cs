@@ -558,7 +558,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     IDictionary<string, int> meta = metaHnd.OnObjectWriteFinished();
 
                     if (meta != null)
-                        _parent._ctx.Writer.SaveMetadata(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName, meta);
+                        _parent._ctx.Writer.SaveMetadata(desc, meta);
                 }
             }
             finally
