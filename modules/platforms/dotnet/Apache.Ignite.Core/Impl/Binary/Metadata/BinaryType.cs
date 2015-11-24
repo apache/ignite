@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <returns>Type name.</returns>
         private static string GetTypeName(int typeId)
         {
-            var typeName = typeId < TypeNames.Length ? TypeNames[typeId] : null;
+            var typeName = (typeId >= 0 && typeId < TypeNames.Length) ? TypeNames[typeId] : null;
 
             if (typeName != null)
                 return typeName;
