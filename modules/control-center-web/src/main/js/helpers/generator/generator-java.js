@@ -1778,6 +1778,7 @@ $generatorJava.igfsGeneral = function(igfs, varName, res) {
         $generatorJava.property(res, varName, igfs, 'name');
         $generatorJava.property(res, varName, igfs, 'dataCacheName');
         $generatorJava.property(res, varName, igfs, 'metaCacheName');
+        $generatorJava.property(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', undefined, "DUAL_ASYNC");
 
         res.needEmptyLine = true;
     }
@@ -1799,7 +1800,6 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
 
     $generatorJava.property(res, varName, igfs, 'blockSize', null, null, 65536);
     $generatorJava.property(res, varName, igfs, 'streamBufferSize', null, null, 65536);
-    $generatorJava.property(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', undefined, "DUAL_ASYNC");
     $generatorJava.property(res, varName, igfs, 'maxSpaceSize', null, null, 0);
     $generatorJava.property(res, varName, igfs, 'maximumTaskRangeLength', null, null, 0);
     $generatorJava.property(res, varName, igfs, 'managementPort', null, null, 11400);
