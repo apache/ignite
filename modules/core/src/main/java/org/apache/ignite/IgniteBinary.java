@@ -67,7 +67,7 @@ import org.jetbrains.annotations.Nullable;
  * String field = val.field("myFieldName");
  * </pre>
  * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
- * typed objects at all times. In this case we do incur the deserialization cost.
+ * typed objects at all times.
  * <pre name=code class=java>
  * IgniteCache&lt;MyKey.class, MyValue.class&gt; cache = grid.cache(null);
  *
