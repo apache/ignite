@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             // TODO: Return meta. Make sure we write it!
             // TODO: Branch from 1956
             // TODO: Test meta
-            throw new BinaryObjectException("Enum in binary form does not have binary type information.");
+            return _marsh.GetBinaryType(_typeId);
         }
 
         /** <inheritdoc /> */
