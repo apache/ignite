@@ -209,6 +209,7 @@ public class PortableClassDescriptor {
             case MAP_ENTRY:
             case PORTABLE_OBJ:
             case ENUM:
+            case PORTABLE_ENUM:
             case ENUM_ARR:
             case CLASS:
             case EXCLUSION:

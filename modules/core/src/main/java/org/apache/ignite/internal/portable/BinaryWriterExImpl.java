@@ -817,6 +817,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         if (typeId == UNREGISTERED_TYPE_ID)
             doWriteString(val.className());
+
+        out.writeInt(val.enumOrdinal());
     }
 
     /**

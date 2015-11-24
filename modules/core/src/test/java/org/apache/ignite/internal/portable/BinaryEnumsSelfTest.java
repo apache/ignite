@@ -54,10 +54,10 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     private IgniteCache cache2;
 
     /** Binary cache 1. */
-    private IgniteCache<Integer, BinaryObject> cacheBinary1;
+    private IgniteCache cacheBinary1;
 
     /** Binary cache 2. */
-    private IgniteCache<Integer, BinaryObject> cacheBinary2;
+    private IgniteCache cacheBinary2;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -178,6 +178,64 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         validateSimple();
     }
 
+
+    /**
+     * Test enum array created using builder (registered).
+     *
+     * @throws Exception If failed.
+     */
+    public void testBuilderArrayRegistered() throws Exception {
+        checkBuilderArray(true);
+    }
+
+    /**
+     * Test enum array created using builder (not registered).
+     *
+     * @throws Exception If failed.
+     */
+    public void testBuilderArrayNotRegistered() throws Exception {
+        checkBuilderArray(false);
+    }
+
+    /**
+     * Check arrays with builder.
+     *
+     * @param registered Registered flag.
+     * @throws Exception If failed.
+     */
+    public void checkBuilderArray(boolean registered) throws Exception {
+        startUp(registered);
+
+        BinaryObject binaryOne = node1.binary().buildEnum(EnumType.class.getSimpleName(), EnumType.ONE.ordinal());
+        BinaryObject binaryTwo = node1.binary().buildEnum(EnumType.class.getSimpleName(), EnumType.TWO.ordinal());
+
+        cacheBinary1.put(1, new BinaryObject[] { binaryOne, binaryTwo });
+
+        Object[] arr1 = (Object[])cache1.get(1);
+        Object[] arr2 = (Object[])cache2.get(1);
+
+        assertEquals(2, arr1.length);
+        assertEquals(2, arr2.length);
+
+        assertEquals(EnumType.ONE, arr1[0]);
+        assertEquals(EnumType.TWO, arr1[1]);
+
+        assertEquals(EnumType.ONE, arr2[0]);
+        assertEquals(EnumType.TWO, arr2[1]);
+
+        Object[] arrBinary1 = (Object[])cacheBinary1.get(1);
+        Object[] arrBinary2 = (Object[])cacheBinary2.get(1);
+
+        assertEquals(2, arr1.length);
+        assertEquals(2, arr2.length);
+
+        validateValue((BinaryObject)arrBinary1[0], EnumType.ONE);
+        validateValue((BinaryObject)arrBinary1[1], EnumType.TWO);
+
+        validateValue((BinaryObject)arrBinary2[0], EnumType.ONE);
+        validateValue((BinaryObject)arrBinary2[1], EnumType.TWO);
+    }
+
     /**
      * Internal check routine for simple scenario.
      *
@@ -187,17 +245,23 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         assertEquals(EnumType.ONE, cache1.get(1));
         assertEquals(EnumType.ONE, cache2.get(1));
 
-        BinaryObject obj = cacheBinary1.get(1);
+        validateValue((BinaryObject)cacheBinary1.get(1), EnumType.ONE);
+        validateValue((BinaryObject)cacheBinary2.get(1), EnumType.ONE);
+    }
 
+    /**
+     * Validate single value.
+     *
+     * @param obj Binary value.
+     * @param val Expected value.
+     */
+    private void validateValue(BinaryObject obj, EnumType val) {
         assertTrue(obj.type().isEnum());
-        assertEquals(node1.binary().typeId(EnumType.class.getName()), obj.typeId());
-        assertEquals(EnumType.ONE.ordinal(), obj.enumOrdinal());
 
-        obj = cacheBinary2.get(1);
-
-        assertTrue(obj.type().isEnum());
         assertEquals(node1.binary().typeId(EnumType.class.getName()), obj.typeId());
-        assertEquals(EnumType.ONE.ordinal(), obj.enumOrdinal());
+        assertEquals(node2.binary().typeId(EnumType.class.getName()), obj.typeId());
+
+        assertEquals(val.ordinal(), obj.enumOrdinal());
     }
 
     /**
