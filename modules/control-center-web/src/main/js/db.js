@@ -16,6 +16,7 @@
  */
 
 var config = require('./helpers/configuration-loader.js');
+var path = require('path');
 
 // Mongoose for mongodb.
 var mongoose = require('mongoose'),
@@ -489,6 +490,15 @@ var DatabasePresetSchema = new Schema({
 
 // Define Database preset model.
 exports.DatabasePreset = mongoose.model('DatabasePreset', DatabasePresetSchema);
+
+config.findIgniteModules()
+    .filter(function(path) { return path.match(/.+\/db\.js$/); })
+    .forEach(function(db) {
+        var moduleExports = require(db)(mongoose);
+
+        for (var name in moduleExports)
+            exports[name] = moduleExports[name];
+    });
 
 exports.upsert = function (model, data, cb) {
     if (data._id) {
