@@ -1431,10 +1431,9 @@ public class PortableUtils {
      *
      * @param in Input stream.
      * @param ctx Portable context.
-     * @param type Plain type.
      * @return Enum array.
      */
-    private static Object[] doReadPortableEnumArray(PortableInputStream in, PortableContext ctx, EnumType type) {
+    private static Object[] doReadPortableEnumArray(PortableInputStream in, PortableContext ctx) {
         int len = in.readInt();
 
         Object[] arr = (Object[]) Array.newInstance(BinaryObject.class, len);
@@ -1445,7 +1444,7 @@ public class PortableUtils {
             if (flag == NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadPortableEnum(in, ctx, type);
+                arr[i] = doReadPortableEnum(in, ctx, doReadEnumType(in));
         }
 
         return arr;
@@ -1695,7 +1694,9 @@ public class PortableUtils {
                 return doReadPortableEnum(in, ctx, doReadEnumType(in));
 
             case ENUM_ARR:
-                return doReadPortableEnumArray(in, ctx, doReadEnumType(in));
+                doReadEnumType(in); // Simply skip this part as we do not need it.
+
+                return doReadPortableEnumArray(in, ctx);
 
             case CLASS:
                 return doReadClass(in, ctx, ldr);
