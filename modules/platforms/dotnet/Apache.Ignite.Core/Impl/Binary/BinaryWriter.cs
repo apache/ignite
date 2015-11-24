@@ -804,6 +804,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteEnum<T>(T val)
         {
             _stream.WriteByte(BinaryUtils.TypeEnum);
+
             BinaryUtils.WriteEnum(this, val);
         }
 

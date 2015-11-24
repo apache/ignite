@@ -636,9 +636,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static void WriteEnum(BinaryWriter ctx, object obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeEnum);
-
-            BinaryUtils.WriteEnum(ctx, obj);
+            ctx.WriteEnum(obj);
         }
 
         /// <summary>

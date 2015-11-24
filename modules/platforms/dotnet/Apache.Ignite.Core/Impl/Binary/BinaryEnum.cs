@@ -62,6 +62,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             // TODO: Return meta. Make sure we write it!
             // TODO: Branch from 1956
             // TODO: Test meta
+            // TODO: Should we be able to build an Enum with builder?
+            // TODO: Wrap unknown enums in Serializable
             return _marsh.GetBinaryType(_typeId);
         }
 

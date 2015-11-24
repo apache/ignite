@@ -286,7 +286,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         IDictionary<int, BinaryTypeHolder> metas0 =
                             new Dictionary<int, BinaryTypeHolder>(_metas);
 
-                        holder = new BinaryTypeHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName);
+                        holder = new BinaryTypeHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName, desc.IsEnum);
 
                         metas0[desc.TypeId] = holder;
 
@@ -407,7 +407,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     refSerializer.Register(type, typeId, nameMapper, idMapper);
 
                 AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
-                    typeCfg.AffinityKeyFieldName);
+                    typeCfg.AffinityKeyFieldName, type.IsEnum);
             }
             else
             {
@@ -417,7 +417,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
-                    typeCfg.AffinityKeyFieldName);
+                    typeCfg.AffinityKeyFieldName, false);
             }
         }
 
@@ -432,7 +432,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ? BinarizableSerializer.Instance 
                 : null;
         }
-        
+
         /// <summary>
         /// Add type.
         /// </summary>
@@ -445,9 +445,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="idMapper">ID mapper.</param>
         /// <param name="serializer">Serializer.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
+        /// <param name="isEnum">Enum flag.</param>
         private void AddType(Type type, int typeId, string typeName, bool userType, 
             bool keepDeserialized, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper,
-            IBinarySerializer serializer, string affKeyFieldName)
+            IBinarySerializer serializer, string affKeyFieldName, bool isEnum)
         {
             long typeKey = BinaryUtils.TypeKey(userType, typeId);
 
@@ -468,9 +469,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (userType && _typeNameToDesc.ContainsKey(typeName))
                 throw new BinaryObjectException("Conflicting type name: " + typeName);
 
-            IBinaryTypeDescriptor descriptor =
-                new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, serializer,
-                    keepDeserialized, affKeyFieldName);
+            var descriptor = new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, 
+                serializer, keepDeserialized, affKeyFieldName, isEnum);
 
             if (type != null)
                 _typeToDesc[type] = descriptor;
@@ -490,7 +490,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var serializer = new BinarySystemTypeSerializer<T>(ctor);
 
-            AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, null);
+            AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, null, false);
         }
 
         /// <summary>
