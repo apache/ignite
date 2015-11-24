@@ -15,40 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.model;
+package org.apache.ignite.internal.portable;
 
 /**
- * Index item descriptor.
+ * Holder for handles.
  */
-public class IndexItem {
-    /** Column type. */
-    private final String type;
-
-    /** Sort direction. */
-    private final Boolean desc;
-
+public interface BinaryReaderHandlesHolder {
     /**
-     * Constructor.
+     * Set handle.
      *
-     * @param type Column type.
-     * @param desc Sort direction.
+     * @param obj Object.
+     * @param pos Position.
      */
-    public IndexItem(String type, Boolean desc) {
-        this.type = type;
-        this.desc = desc;
-    }
+    public void setHandle(Object obj, int pos);
 
     /**
-     * @return Column type.
+     * Get handle.
+     *
+     * @param pos Position.
+     * @return Handle.
      */
-    public String type() {
-        return type;
-    }
+    public Object getHandle(int pos);
 
     /**
-     * @return Sort direction.
+     * Get all handles.
+     *
+     * @return Handles.
      */
-    public Boolean descending() {
-        return desc;
-    }
+    public BinaryReaderHandles handles();
 }

@@ -15,36 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.ui;
+package org.apache.ignite.cache.store.jdbc;
 
-import javafx.stage.Stage;
+import java.io.Serializable;
+import java.util.Collection;
 
 /**
- * Abstract base modal dialog.
+ * API for implementing custom hashing logic for binary objects on server side.
  */
-public abstract class ModalDialog extends Stage {
-    /** Owner window. */
-    protected final Stage owner;
-
+public interface JdbcTypeHasher extends Serializable {
     /**
-     * @param owner Owner window.
-     * @param width Window width.
-     * @param height Window height.
+     * Calculate hash code for specified object and fields.
+     *
+     * @param values Collection of values that should participate in hash code calculation.
+     * @return Hash code.
      */
-    protected ModalDialog(Stage owner, int width, int height) {
-        this.owner = owner;
-
-        setWidth(width);
-        setHeight(height);
-    }
-
-    /**
-     * Show modal dialog.
-     */
-    protected void showModal() {
-        setX(owner.getX() + owner.getWidth() / 2 - getWidth() / 2);
-        setY(owner.getY() + owner.getHeight() / 2 - getHeight() / 2);
-
-        showAndWait();
-    }
+    public int hashCode(Collection<?> values);
 }

@@ -163,7 +163,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         return F.view(U.<Map<UUID, LocalRoutineInfo>>field(proc, "locInfos").values(),
             new IgnitePredicate<LocalRoutineInfo>() {
                 @Override public boolean apply(LocalRoutineInfo info) {
-                    return info.handler().isForEvents();
+                    return info.handler().isEvents();
                 }
             });
     }

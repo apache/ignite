@@ -15,36 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.ui;
+package org.apache.ignite.cache.store.jdbc;
 
-import javafx.stage.Stage;
+import java.util.Collection;
 
 /**
- * Abstract base modal dialog.
+ * Default implementation of {@link JdbcTypeHasher}.
+ *
+ * This implementation ignores type and field names.
  */
-public abstract class ModalDialog extends Stage {
-    /** Owner window. */
-    protected final Stage owner;
+public class JdbcTypeDefaultHasher implements JdbcTypeHasher {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /**
-     * @param owner Owner window.
-     * @param width Window width.
-     * @param height Window height.
-     */
-    protected ModalDialog(Stage owner, int width, int height) {
-        this.owner = owner;
+    /** Singleton instance to use. */
+    public static final JdbcTypeHasher INSTANCE = new JdbcTypeDefaultHasher();
 
-        setWidth(width);
-        setHeight(height);
-    }
+    /** {@inheritDoc} */
+    @Override public int hashCode(Collection<?> values) {
+        int hash = 0;
 
-    /**
-     * Show modal dialog.
-     */
-    protected void showModal() {
-        setX(owner.getX() + owner.getWidth() / 2 - getWidth() / 2);
-        setY(owner.getY() + owner.getHeight() / 2 - getHeight() / 2);
+        for (Object val : values)
+            hash = 31 * hash + (val != null ? val.hashCode() : 0);
 
-        showAndWait();
+        return hash;
     }
 }
