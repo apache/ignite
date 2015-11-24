@@ -115,6 +115,9 @@ public class PortableContext implements Externalizable {
     /** */
     private BinaryMetadataHandler metaHnd;
 
+    /** Actual marshaller. */
+    private BinaryMarshaller marsh;
+
     /** */
     private MarshallerContext marshCtx;
 
@@ -219,12 +222,21 @@ public class PortableContext implements Externalizable {
     }
 
     /**
+     * @return Marshaller.
+     */
+    public BinaryMarshaller marshaller() {
+        return marsh;
+    }
+
+    /**
      * @param marsh Portable marshaller.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public void configure(BinaryMarshaller marsh, IgniteConfiguration cfg) throws BinaryObjectException {
         if (marsh == null)
             return;
+
+        this.marsh = marsh;
 
         marshCtx = marsh.getContext();
 

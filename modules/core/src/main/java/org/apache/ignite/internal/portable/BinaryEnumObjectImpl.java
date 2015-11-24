@@ -17,21 +17,28 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
 
 /**
  * Binary enum object.
  */
-public class BinaryEnumObjectImpl implements BinaryObject, Externalizable {
+public class BinaryEnumObjectImpl implements BinaryObject, Externalizable, CacheObject {
     /** Context. */
     private PortableContext ctx;
 
@@ -178,5 +185,64 @@ public class BinaryEnumObjectImpl implements BinaryObject, Externalizable {
         typeId = in.readInt();
         clsName = (String)in.readObject();
         ord = in.readInt();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+        return deserialize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] valueBytes(CacheObjectContext cacheCtx) throws IgniteCheckedException {
+        return ctx.marshaller().marshal(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte cacheObjectType() {
+        return TYPE_BINARY;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPlatformType() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.processor()).portableContext();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        // TODO
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        // TODO
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        // TODO
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        // TODO
+        return false;
     }
 }
