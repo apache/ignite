@@ -614,6 +614,8 @@ class GridDhtPartitionSupplier {
 
             cctx.io().sendOrderedMessage(n, d.topic(), s, cctx.ioPolicy(), d.timeout());
 
+            U.log(log, "S>> "+cctx.name() + " "+s.last().toString());
+
             // Throttle preloading.
             if (cctx.config().getRebalanceThrottle() > 0)
                 U.sleep(cctx.config().getRebalanceThrottle());
@@ -621,8 +623,7 @@ class GridDhtPartitionSupplier {
             return true;
         }
         catch (ClusterTopologyCheckedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send partition supply message because node left grid: " + n.id());
+            U.log(log,"Failed to send partition supply message because node left grid: " + n.id());
 
             synchronized (scMap) {
                 clearContext(scMap.remove(scId), log);

@@ -509,6 +509,8 @@ public class GridDhtPartitionDemander {
 
         ClusterNode node = cctx.node(id);
 
+        U.log(log, "D>> "+cctx.name() + " "+supply.last().toString());
+
         if (node == null)
             return;
 
