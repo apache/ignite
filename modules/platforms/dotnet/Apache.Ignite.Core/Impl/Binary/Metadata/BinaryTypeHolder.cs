@@ -34,6 +34,9 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Affinity key field name. */
         private readonly string _affKeyFieldName;
 
+        /** Enum flag. */
+        private readonly bool _isEnum;
+
         /** Collection of know field IDs. */
         private volatile HashSet<int> _ids;
 
@@ -43,17 +46,19 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Saved flag (set if type metadata was saved at least once). */
         private volatile bool _saved;
 
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <param name="typeName">Type name.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
-        public BinaryTypeHolder(int typeId, string typeName, string affKeyFieldName)
+        public BinaryTypeHolder(int typeId, string typeName, string affKeyFieldName, bool isEnum)
         {
             _typeId = typeId;
             _typeName = typeName;
             _affKeyFieldName = affKeyFieldName;
+            _isEnum = isEnum;
         }
 
         /// <summary>
@@ -124,7 +129,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
                 }
 
                 // 3. Assign new meta. Order is important here: meta must be assigned before field IDs.
-                _meta = new BinaryType(_typeId, _typeName, newFields, _affKeyFieldName);
+                _meta = new BinaryType(_typeId, _typeName, newFields, _affKeyFieldName, _isEnum);
                 _ids = newIds;
             }
         }
