@@ -189,9 +189,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             commitVer,
             sys,
             plc,
-            concurrency,
-            isolation,
-            invalidate,
+            concurrency, 
+            isolation, 
+            invalidate, 
             timeout,
             txSize,
             subjId,
@@ -337,7 +337,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable CacheObject val,
         @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors,
         long ttl,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary) {
         checkInternal(key);
 
         if (isSystemInvalidate())
@@ -353,7 +354,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             -1L,
             cached,
             null,
-            skipStore);
+            skipStore,
+            keepBinary);
 
         txEntry.entryProcessors(entryProcessors);
 

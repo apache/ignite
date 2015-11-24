@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
@@ -121,5 +122,10 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     @Override public void registerStore(PlatformCacheStore store, boolean convertPortable)
         throws IgniteCheckedException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException {
+        return null;
     }
 }

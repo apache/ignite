@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
@@ -116,7 +115,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             concurrency, 
             isolation, 
             invalidate, 
-            timeout, 
+            timeout,
             txSize,
             subjId, 
             taskNameHash
@@ -183,9 +182,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             concurrency, 
             isolation, 
             invalidate, 
-            timeout, 
+            timeout,
             txSize,
-            subjId, 
+            subjId,
             taskNameHash
         );
 
@@ -359,7 +358,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         GridCacheOperation op,
         CacheObject val,
         @Nullable GridCacheVersion drVer,
-        boolean skipStore
+        boolean skipStore,
+        boolean keepBinary
     ) throws IgniteCheckedException {
         checkInternal(key);
 
@@ -392,7 +392,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                         -1L,
                         cached,
                         drVer,
-                        skipStore);
+                        skipStore,
+                        keepBinary);
 
                     txState.addWriteEntry(key, txEntry);
 

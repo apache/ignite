@@ -17,6 +17,26 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -64,27 +84,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -112,6 +111,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
+
+    /** Direct protocol version attribute name. */
+    public static final String DIRECT_PROTO_VER_ATTR = "comm.direct.proto.ver";
+
+    /** Direct protocol version. */
+    public static final byte DIRECT_PROTO_VER = 2;
 
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap8<>();
@@ -266,6 +271,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         });
 
+        ctx.addNodeAttribute(DIRECT_PROTO_VER_ATTR, DIRECT_PROTO_VER);
+
         MessageFormatter[] formatterExt = ctx.plugins().extensions(MessageFormatter.class);
 
         if (formatterExt != null && formatterExt.length > 0) {
@@ -277,12 +284,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer() {
-                    return new DirectMessageWriter();
+                @Override public MessageWriter writer(UUID rmtNodeId) throws IgniteCheckedException {
+                    assert rmtNodeId != null;
+
+                    return new DirectMessageWriter(U.directProtocolVersion(ctx, rmtNodeId));
                 }
 
-                @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
-                    return new DirectMessageReader(msgFactory, this);
+                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory)
+                    throws IgniteCheckedException {
+                    assert rmtNodeId != null;
+
+                    return new DirectMessageReader(msgFactory, U.directProtocolVersion(ctx, rmtNodeId));
                 }
             };
         }

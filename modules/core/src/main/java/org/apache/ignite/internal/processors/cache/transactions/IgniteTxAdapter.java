@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -1248,7 +1247,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                     /*subjId*/subjId,
                     /**closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
-                    null);
+                    null,
+                    txEntry.keepBinary());
 
             boolean modified = false;
 
@@ -1272,7 +1272,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(txEntry.context(),
-                    txEntry.key(), key, cacheVal, val, ver);
+                    txEntry.key(), key, cacheVal, val, ver, txEntry.keepBinary());
 
                 try {
                     EntryProcessor<Object, Object, Object> processor = t.get1();

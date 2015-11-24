@@ -18,7 +18,6 @@
 package org.apache.ignite.stream.camel;
 
 import java.util.Set;
-
 import junit.framework.TestSuite;
 
 /**

@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -746,9 +747,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private boolean sendAllPartitions(Collection<? extends ClusterNode> nodes) {
         GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(null, null, AffinityTopologyVersion.NONE);
 
+        boolean useOldApi = false;
+
+        for (ClusterNode node : nodes) {
+            if (node.version().compareTo(GridDhtPartitionMap2.SINCE) < 0)
+                useOldApi = true;
+        }
+
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (!cacheCtx.isLocal() && cacheCtx.started())
-                m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
+            if (!cacheCtx.isLocal() && cacheCtx.started()) {
+                GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
+
+                if (useOldApi) {
+                    locMap = new GridDhtPartitionFullMap(locMap.nodeId(), locMap.nodeOrder(), locMap.updateSequence(), locMap);
+                }
+
+                m.addFullPartitionsMap(cacheCtx.cacheId(), locMap);
+            }
         }
 
         // It is important that client topologies be added after contexts.
@@ -786,14 +801,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
-                GridDhtPartitionMap locMap = cacheCtx.topology().localPartitionMap();
+                GridDhtPartitionMap2 locMap = cacheCtx.topology().localPartitionMap();
+
+                if (node.version().compareTo(GridDhtPartitionMap2.SINCE) < 0)
+                    locMap = new GridDhtPartitionMap(locMap.nodeId(), locMap.updateSequence(), locMap.map());
 
                 m.addLocalPartitionMap(cacheCtx.cacheId(), locMap);
             }
         }
 
         for (GridClientPartitionTopology top : clientTops.values()) {
-            GridDhtPartitionMap locMap = top.localPartitionMap();
+            GridDhtPartitionMap2 locMap = top.localPartitionMap();
 
             m.addLocalPartitionMap(top.cacheId(), locMap);
         }
@@ -1019,10 +1037,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
-                for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
+                for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
                     Integer cacheId = entry.getKey();
 
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+
+                    if (cacheCtx != null && cacheCtx.startTopologyVersion() != null &&
+                        entry.getValue() != null &&
+                        entry.getValue().topologyVersion() != null && // Backward compatibility.
+                        cacheCtx.startTopologyVersion().compareTo(entry.getValue().topologyVersion()) > 0)
+                        continue;
 
                     GridDhtPartitionTopology top = null;
 

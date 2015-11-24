@@ -39,6 +39,13 @@ public interface MessageReader {
     public void setBuffer(ByteBuffer buf);
 
     /**
+     * Sets type of message currently read.
+     *
+     * @param msgCls Message type.
+     */
+    public void setCurrentReadClass(Class<? extends Message> msgCls);
+
+    /**
      * Callback that must be invoked by a message implementation before message body started decoding.
      *
      * @return {@code True} if reading can proceed, {@code false} otherwise.
@@ -272,4 +279,21 @@ public interface MessageReader {
      * Increments read state.
      */
     public void incrementState();
+
+    /**
+     * Callback called before inner message is read.
+     */
+    public void beforeInnerMessageRead();
+
+    /**
+     * Callback called after inner message is read.
+     *
+     * @param finished Whether message was fully read.
+     */
+    public void afterInnerMessageRead(boolean finished);
+
+    /**
+     * Resets this reader.
+     */
+    public void reset();
 }
