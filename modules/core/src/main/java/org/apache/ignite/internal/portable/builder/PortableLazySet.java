@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableUtils;
-import org.apache.ignite.internal.portable.PortableWriterExImpl;
+import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -47,9 +47,9 @@ class PortableLazySet extends PortableAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
         if (val == null) {
-            int size = reader.readIntAbsolute(off + 1);
+            int size = reader.readIntPositioned(off + 1);
 
             int hdrSize = 1 /* flag */ + 4 /* size */ + 1 /* col type */;
             writer.write(reader.array(), off, hdrSize);
@@ -78,7 +78,7 @@ class PortableLazySet extends PortableAbstractLazyValue {
 
     /** {@inheritDoc} */
     @Override protected Object init() {
-        int size = reader.readIntAbsolute(off + 1);
+        int size = reader.readIntPositioned(off + 1);
 
         reader.position(off + 1/* flag */ + 4/* size */ + 1/* col type */);
 
