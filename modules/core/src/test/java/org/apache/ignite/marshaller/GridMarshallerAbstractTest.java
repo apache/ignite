@@ -24,8 +24,14 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -55,6 +61,7 @@ import org.apache.ignite.internal.cluster.ClusterNodeLocalMapImpl;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.GridByNameRelation;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -83,6 +90,9 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
     /** */
     private static Marshaller marsh;
+
+    /** */
+    private static String gridName;
 
     /** Closure job. */
     protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
@@ -144,6 +154,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         marsh = grid().configuration().getMarshaller();
+        gridName = grid().configuration().getGridName();
     }
 
     /**
@@ -832,7 +843,18 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     protected static <T> T unmarshal(byte[] buf) throws IgniteCheckedException {
-        return marsh.<T>unmarshal(buf, Thread.currentThread().getContextClassLoader());
+        RunnableFuture<T> f = new FutureTask<>(new Callable<T>() {
+            @Override public T call() throws IgniteCheckedException {
+                return marsh.<T>unmarshal(buf, Thread.currentThread().getContextClassLoader());
+            }
+        });
+        new GridRelatedThread(f).start();
+        try {
+            return f.get(1, TimeUnit.MINUTES);
+        }
+        catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new RuntimeException("Fail to unmarshal obj in separated thread", e);
+        }
     }
 
     /**
@@ -925,6 +947,17 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
                 in.readFully(arr);
             else
                 in.read(arr);
+        }
+    }
+
+    private static class GridRelatedThread extends Thread implements GridByNameRelation {
+
+        GridRelatedThread(RunnableFuture f) {
+            super(f);
+        }
+
+        @Nullable @Override public String getGridName() {
+            return GridMarshallerAbstractTest.gridName;
         }
     }
 }

@@ -1060,17 +1060,15 @@ public class IgnitionEx {
     }
 
     /**
-     * Gets a name of the grid, which is owner of current thread. Default name is returned when
+     * Gets a name of the grid, which is owner of current thread. An Exception is thrown if
      * current thread doesn't have a {@link GridByNameRelation}.
      *
-     * @param defaultName Expected name of the current grid.
-     *
      * @return The name of the current grid. This method could return {@code null}.
+     * @throws ClassCastException to indicate, that current thread doesn't have a {@link GridByNameRelation}.
      */
-    public static String gridName(String defaultName) {
-        return (Thread.currentThread() instanceof GridByNameRelation) ?
-             ((GridByNameRelation)Thread.currentThread()).getGridName() : defaultName;
-
+    public static String gridName() {
+        assert Thread.currentThread() instanceof GridByNameRelation;
+        return ((GridByNameRelation)Thread.currentThread()).getGridName();
     }
 
     /**

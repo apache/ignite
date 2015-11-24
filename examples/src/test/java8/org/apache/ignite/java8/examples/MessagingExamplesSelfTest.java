@@ -18,7 +18,6 @@
 package org.apache.ignite.java8.examples;
 
 import org.apache.ignite.examples.java8.messaging.MessagingExample;
-import org.apache.ignite.examples.java8.messaging.MessagingInSingleJVMExample;
 import org.apache.ignite.examples.java8.messaging.MessagingPingPongExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
@@ -43,13 +42,6 @@ public class MessagingExamplesSelfTest extends GridAbstractExamplesTest {
      */
     public void testMessagingPingPongExample() throws Exception {
         MessagingPingPongExample.main(EMPTY_ARGS);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMessagingInSingleJVMExample() throws Exception {
-        MessagingInSingleJVMExample.main(EMPTY_ARGS);
     }
 
 //    TODO: IGNITE-711 next example(s) should be implemented for java 8
