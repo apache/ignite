@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -1414,6 +1415,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="fields">Fields metadata.</param>
         internal void SaveMetadata(IBinaryTypeDescriptor desc, IDictionary<string, int> fields)
         {
+            Debug.Assert(desc != null);
+
             if (_metas == null)
             {
                 BinaryType meta =
