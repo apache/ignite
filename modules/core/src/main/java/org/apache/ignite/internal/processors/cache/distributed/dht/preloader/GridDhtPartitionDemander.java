@@ -416,10 +416,12 @@ public class GridDhtPartitionDemander {
                         synchronized (fut) {
                             if (!fut.isDone())// Future can be already cancelled at this moment and all failovers happened.
                                 // New requests will not be covered by failovers.
+                            {
                                 cctx.io().sendOrderedMessage(node,
                                     rebalanceTopics.get(cnt), initD, cctx.ioPolicy(), initD.timeout());
 
-                            U.log(log, "D1>> " + cctx.name() + " " + initD.partitions().toString() + node.id() + " " + fut.isDone());
+                                U.log(log, "D1>> " + cctx.name() + " " + initD.partitions().toString() + node.id() + " " + fut.isDone());
+                            }
 
                         }
 

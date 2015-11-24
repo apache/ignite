@@ -334,6 +334,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 cctx.io().addOrderedHandler(rebalanceTopic(cnt), new CI2<UUID, GridCacheMessage>() {
                     @Override public void apply(final UUID id, final GridCacheMessage m) {
+                        U.log(log, "E1>> " + m.cacheId);
+
                         if (!enterBusy())
                             return;
 
