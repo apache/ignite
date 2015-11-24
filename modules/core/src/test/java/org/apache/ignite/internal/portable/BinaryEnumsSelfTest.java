@@ -115,13 +115,75 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     /**
      * Test operations on simple type which is registered in advance.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
-    public void testSimpleRegistered() throws Exception{
-        startUp(true);
+    public void testSimpleRegistered() throws Exception {
+        checkSimple(true);
+    }
+
+    /**
+     * Test operations on simple type which is not registered in advance.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSimpleNotRegistered() throws Exception {
+        checkSimple(false);
+    }
+
+    /**
+     * Test builder operations on simple type which is registered in advance.
+     *
+     * @throws Exception If failed.
+     */
+    public void testBuilderSimpleRegistered() throws Exception {
+        checkBuilderSimple(true);
+    }
+
+    /**
+     * Test builder operations on simple type which is not registered in advance.
+     *
+     * @throws Exception If failed.
+     */
+    public void testBuilderSimpleNotRegistered() throws Exception {
+        checkBuilderSimple(false);
+    }
+
+    /**
+     * Check simple serialization - deserialization.
+     *
+     * @param registered If type should be registered in advance.
+     * @throws Exception If failed.
+     */
+    public void checkSimple(boolean registered) throws Exception {
+        startUp(registered);
 
         cache1.put(1, EnumType.ONE);
 
+        validateSimple();
+    }
+
+    /**
+     * Check simple serialization - deserialization using builder.
+     *
+     * @param registered If type should be registered in advance.
+     * @throws Exception If failed.
+     */
+    public void checkBuilderSimple(boolean registered) throws Exception {
+        startUp(registered);
+
+        BinaryObject binary = node1.binary().buildEnum(EnumType.class.getSimpleName(), EnumType.ONE.ordinal());
+
+        cacheBinary1.put(1, binary);
+
+        validateSimple();
+    }
+
+    /**
+     * Internal check routine for simple scenario.
+     *
+     * @throws Exception If failed.
+     */
+    private void validateSimple() throws Exception {
         assertEquals(EnumType.ONE, cache1.get(1));
         assertEquals(EnumType.ONE, cache2.get(1));
 
