@@ -1960,6 +1960,8 @@ consoleModule.controller('activeLink', [
 consoleModule.controller('auth', [
     '$scope', '$modal', '$http', '$window', '$common', '$focus', 'Auth', '$state',
     function ($scope, $modal, $http, $window, $common, $focus, Auth, $state) {
+        $scope.auth = Auth.auth;
+
         $scope.action = 'login';
 
         $scope.userDropdown = [{text: 'Profile', href: '/profile'}];
@@ -1977,22 +1979,6 @@ consoleModule.controller('auth', [
 
         if ($scope.token && !$scope.error)
             $focus('user_password');
-
-        // Try to authorize user with provided credentials.
-        $scope.auth = function (action, user_info) {
-            $http.post('/api/v1/' + action, user_info)
-                .success(function (res) {
-                    if (action == 'login') {
-                        Auth.authorized = true;
-
-                        $state.go('base.configuration.clusters');
-                    } else if (action == 'password/forgot')
-                        $state.go('password.send');
-                })
-                .error(function (err, status) {
-                    $common.showPopoverMessage(undefined, undefined, 'user_email', err);
-                });
-        };
 
         $scope.validateToken = function () {
             $http.post('/api/v1/password/validate-token', {token: $state.params.token})

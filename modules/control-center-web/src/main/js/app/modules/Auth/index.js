@@ -21,18 +21,54 @@ angular
 .module('ignite-console.Auth', [
 	
 ])
-.provider('Auth', function() {
-	var _authorized = localStorage.isAuthorized;
+.provider('Auth', function () {
+	var _authorized = false;
 
-    this.$get = [function() {
+    try {
+        _authorized = localStorage.authorized === 'true';
+    } catch (ignore) {
+        // No-op.
+    }
+
+    function authorized (value) {
+        try {
+            return _authorized = localStorage.authorized = !!value;
+        } catch (ignore) {
+            return _authorized = !!value;
+        }
+    }
+
+    this.$get = function($http, $state, $common) {
     	return {
-    		get authorized () {
-    			return _authorized;
+    		get nonAuthorized () {
+    			return !_authorized;
     		},
+            auth(action, userInfo) {
+                $http.post('/api/v1/' + action, userInfo)
+                    .success(function (res) {
+                        if (action == 'password/forgot')
+                            $state.go('password.send');
+                        else {
+                            authorized(true);
 
-    		set authorized (value) {
-    			return _authorized = localStorage.isAuthorized = !!value;
-    		}
+                            $state.go('base.configuration.clusters');
+                        }
+                    })
+                    .error(function (err, status) {
+                        $common.showPopoverMessage(undefined, undefined, 'user_email', err);
+                    });
+            },
+			logout() {
+				$http.post('/api/v1/logout')
+					.success(function (res) {
+                        authorized(false);
+
+						$state.go('login');
+					})
+					.error(function (err, status) {
+						$common.showError(err);
+					});
+			}
     	}
-    }]
+    }
 });

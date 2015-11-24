@@ -26,10 +26,8 @@ angular
 	$stateProvider
 	.state('logout', {
 		url: '/logout',
-		controller: function(Auth, $state) {
-			Auth.authorized = false;
-
-			$state.go('login')
+		controller: function(Auth) {
+			Auth.logout();
 		}
 	})
 });

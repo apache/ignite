@@ -100,7 +100,7 @@ router.post('/register', function (req, res) {
                 if (err)
                     return res.status(401).send(err.message);
 
-                return res.sendStatus(200)
+                return res.sendStatus(200);
             });
         });
     });
@@ -121,7 +121,7 @@ router.post('/login', function (req, res, next) {
             if (err)
                 return res.status(401).send(err.message);
 
-            return res.sendStatus(200)
+            return res.sendStatus(200);
         });
     })(req, res, next);
 });
@@ -129,10 +129,10 @@ router.post('/login', function (req, res, next) {
 /**
  * Logout.
  */
-router.get('/logout', function (req, res) {
+router.post('/logout', function (req, res) {
     req.logout();
 
-    res.redirect('/');
+    res.sendStatus(200);
 });
 
 /**
