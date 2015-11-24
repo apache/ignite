@@ -875,6 +875,14 @@ public class PortableUtils {
                 );
             }
 
+            // Check enum flag.
+            if (oldMeta.isEnum() != newMeta.isEnum()) {
+                throw new BinaryObjectException(
+                    "Binary type has different enum flags [" + "typeName=" + newMeta.typeName() +
+                        ", isEnum1=" + oldMeta.isEnum() + ", isEnum2=" + newMeta.isEnum() + ']'
+                );
+            }
+
             // Check and merge fields.
             boolean changed = false;
 
@@ -906,7 +914,7 @@ public class PortableUtils {
 
             // Return either old meta if no changes detected, or new merged meta.
             return changed ? new BinaryMetadata(oldMeta.typeId(), oldMeta.typeName(), mergedFields,
-                oldMeta.affinityKeyFieldName(), mergedSchemas) : oldMeta;
+                oldMeta.affinityKeyFieldName(), mergedSchemas, oldMeta.isEnum()) : oldMeta;
         }
     }
 

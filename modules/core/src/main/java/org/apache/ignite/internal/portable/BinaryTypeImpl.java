@@ -68,6 +68,11 @@ public class BinaryTypeImpl implements BinaryType {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isEnum() {
+        return meta.isEnum();
+    }
+
+    /** {@inheritDoc} */
     public PortableContext context() {
         return ctx;
     }

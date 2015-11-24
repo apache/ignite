@@ -354,4 +354,13 @@ public interface IgniteBinary {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public Collection<BinaryType> metadata() throws BinaryObjectException;
+
+    /**
+     * Create enum object.
+     *
+     * @param typeName Type name.
+     * @param ordinal Ordinal.
+     * @return Enum object.
+     */
+    public BinaryObject buildEnum(String typeName, int ordinal);
 }

@@ -290,16 +290,16 @@ public class PortableContext implements Externalizable {
 
                     for (String clsName0 : classesInPackage(pkgName))
                         descs.add(clsName0, idMapper, serializer, affFields.get(clsName0),
-                            true);
+                            typeCfg.isEnum(), true);
                 }
                 else
                     descs.add(clsName, idMapper, serializer, affFields.get(clsName),
-                        false);
+                        typeCfg.isEnum(), false);
             }
         }
 
         for (TypeDescriptor desc : descs.descriptors()) {
-            registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName);
+            registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName, desc.isEnum);
         }
     }
 
@@ -519,7 +519,7 @@ public class PortableContext implements Externalizable {
 
         Collection<PortableSchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
-        metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null, schemas).wrap(this));
+        metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null, schemas, desc.isEnum()).wrap(this));
 
         // perform put() instead of putIfAbsent() because "registered" flag might have been changed or class loader
         // might have reloaded described class.
@@ -670,13 +670,15 @@ public class PortableContext implements Externalizable {
      * @param idMapper ID mapper.
      * @param serializer Serializer.
      * @param affKeyFieldName Affinity key field name.
+     * @param isEnum If enum.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("ErrorNotRethrown")
     public void registerUserType(String clsName,
         BinaryIdMapper idMapper,
         @Nullable BinarySerializer serializer,
-        @Nullable String affKeyFieldName)
+        @Nullable String affKeyFieldName,
+        boolean isEnum)
         throws BinaryObjectException {
         assert idMapper != null;
 
@@ -734,7 +736,7 @@ public class PortableContext implements Externalizable {
             descByCls.put(cls, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas).wrap(this));
+        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));
     }
 
     /**
@@ -905,6 +907,7 @@ public class PortableContext implements Externalizable {
          * @param idMapper ID mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
+         * @param isEnum Enum flag.
          * @param canOverride Whether this descriptor can be override.
          * @throws org.apache.ignite.binary.BinaryObjectException If failed.
          */
@@ -912,12 +915,14 @@ public class PortableContext implements Externalizable {
             BinaryIdMapper idMapper,
             BinarySerializer serializer,
             String affKeyFieldName,
+            boolean isEnum,
             boolean canOverride)
             throws BinaryObjectException {
             TypeDescriptor desc = new TypeDescriptor(clsName,
                 idMapper,
                 serializer,
                 affKeyFieldName,
+                isEnum,
                 canOverride);
 
             TypeDescriptor oldDesc = descs.get(clsName);
@@ -954,6 +959,9 @@ public class PortableContext implements Externalizable {
         /** Affinity key field name. */
         private String affKeyFieldName;
 
+        /** Enum flag. */
+        private boolean isEnum;
+
         /** Whether this descriptor can be override. */
         private boolean canOverride;
 
@@ -964,14 +972,16 @@ public class PortableContext implements Externalizable {
          * @param idMapper ID mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
+         * @param isEnum Enum type.
          * @param canOverride Whether this descriptor can be override.
          */
         private TypeDescriptor(String clsName, BinaryIdMapper idMapper, BinarySerializer serializer,
-            String affKeyFieldName, boolean canOverride) {
+            String affKeyFieldName, boolean isEnum, boolean canOverride) {
             this.clsName = clsName;
             this.idMapper = idMapper;
             this.serializer = serializer;
             this.affKeyFieldName = affKeyFieldName;
+            this.isEnum = isEnum;
             this.canOverride = canOverride;
         }
 

@@ -286,6 +286,13 @@ public class PortableClassDescriptor {
     }
 
     /**
+     * @return {@code True} if enum.
+     */
+    boolean isEnum() {
+        return mode == BinaryWriteMode.ENUM;
+    }
+
+    /**
      * @return Described class.
      */
     Class<?> describedClass() {
@@ -576,7 +583,7 @@ public class PortableClassDescriptor {
                                 PortableSchema newSchema = collector.schema();
 
                                 BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
-                                    affKeyFieldName, Collections.singleton(newSchema));
+                                    affKeyFieldName, Collections.singleton(newSchema), false);
 
                                 ctx.updateMetadata(typeId, meta);
 

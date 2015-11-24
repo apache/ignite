@@ -378,7 +378,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 PortableSchema curSchema = writer.currentSchema();
 
                 ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta,
-                    ctx.affinityKeyFieldName(typeId), Collections.singleton(curSchema)));
+                    ctx.affinityKeyFieldName(typeId), Collections.singleton(curSchema), false));
 
                 schemaReg.addSchema(curSchema.schemaId(), curSchema);
             }
