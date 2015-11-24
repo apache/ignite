@@ -842,7 +842,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws IgniteCheckedException Thrown if any exception occurs while unmarshalling.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    protected static <T> T unmarshal(byte[] buf) throws IgniteCheckedException {
+    protected static <T> T unmarshal(final byte[] buf) throws IgniteCheckedException {
         RunnableFuture<T> f = new FutureTask<>(new Callable<T>() {
             @Override public T call() throws IgniteCheckedException {
                 return marsh.<T>unmarshal(buf, Thread.currentThread().getContextClassLoader());
