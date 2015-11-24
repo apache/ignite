@@ -19,13 +19,11 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -151,11 +149,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return lockVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return Collections.emptyList();
     }
 
     /** {@inheritDoc} */

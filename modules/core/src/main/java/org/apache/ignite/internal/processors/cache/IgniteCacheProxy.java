@@ -97,6 +97,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** */
     private static final IgniteBiPredicate ACCEPT_ALL = new IgniteBiPredicate() {
+        /** */
+        private static final long serialVersionUID = -1640538788290240617L;
+
         @Override public boolean apply(Object k, Object v) {
             return true;
         }

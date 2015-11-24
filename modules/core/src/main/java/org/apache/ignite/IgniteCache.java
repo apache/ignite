@@ -325,7 +325,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <code>null</code> value for a key.
      */
     @IgniteAsyncSupported
-    <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args);
+    <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args);
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported
