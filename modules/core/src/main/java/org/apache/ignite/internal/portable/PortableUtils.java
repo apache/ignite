@@ -17,19 +17,29 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.portable.builder.PortableLazyValue;
+import org.apache.ignite.internal.portable.streams.PortableInputStream;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import java.io.ByteArrayInputStream;
 import java.io.Externalizable;
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -37,7 +47,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -45,6 +57,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.ARR_LIST;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
@@ -53,6 +67,8 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_HASH_MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_SKIP_LIST_SET;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL;
@@ -63,16 +79,25 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.HANDLE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_SET;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.LINKED_HASH_MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.LINKED_HASH_SET;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.LINKED_LIST;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJECT_TYPE_ID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROPERTIES_MAP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
@@ -80,6 +105,11 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TREE_MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TREE_SET;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.USER_COL;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.USER_SET;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_ARR;
 
@@ -802,9 +832,9 @@ public class PortableUtils {
     public static int fieldOffsetRelative(PortablePositionReadable stream, int pos, int fieldOffsetSize) {
         int res;
 
-        if (fieldOffsetSize == PortableUtils.OFFSET_1)
+        if (fieldOffsetSize == OFFSET_1)
             res = (int)stream.readBytePositioned(pos) & 0xFF;
-        else if (fieldOffsetSize == PortableUtils.OFFSET_2)
+        else if (fieldOffsetSize == OFFSET_2)
             res = (int)stream.readShortPositioned(pos) & 0xFFFF;
         else
             res = stream.readIntPositioned(pos);
@@ -860,8 +890,8 @@ public class PortableUtils {
                     throw new BinaryObjectException(
                         "Binary type has different field types [" + "typeName=" + oldMeta.typeName() +
                             ", fieldName=" + newField.getKey() +
-                            ", fieldTypeName1=" + PortableUtils.fieldTypeName(oldFieldType) +
-                            ", fieldTypeName2=" + PortableUtils.fieldTypeName(newField.getValue()) + ']'
+                            ", fieldTypeName1=" + fieldTypeName(oldFieldType) +
+                            ", fieldTypeName2=" + fieldTypeName(newField.getValue()) + ']'
                     );
                 }
             }
@@ -982,5 +1012,828 @@ public class PortableUtils {
             return BinaryWriteMode.CLASS;
         else
             return BinaryWriteMode.OBJECT;
+    }
+
+    /**
+     * @return Value.
+     */
+    public static byte[] doReadByteArray(PortableInputStream in) {
+        int len = in.readInt();
+
+        return in.readByteArray(len);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static boolean[] doReadBooleanArray(PortableInputStream in) {
+        int len = in.readInt();
+
+        return in.readBooleanArray(len);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static short[] doReadShortArray(PortableInputStream in) {
+        int len = in.readInt();
+
+        return in.readShortArray(len);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static char[] doReadCharArray(PortableInputStream in) {
+        int len = in.readInt();
+
+        return in.readCharArray(len);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static int[] doReadIntArray(PortableInputStream in) {
+        int len = in.readInt();
+
+        return in.readIntArray(len);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static long[] doReadLongArray(PortableInputStream in) {
+        int len = in.readInt();
+
+        return in.readLongArray(len);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static float[] doReadFloatArray(PortableInputStream in) {
+        int len = in.readInt();
+
+        return in.readFloatArray(len);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static double[] doReadDoubleArray(PortableInputStream in) {
+        int len = in.readInt();
+
+        return in.readDoubleArray(len);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static BigDecimal doReadDecimal(PortableInputStream in) {
+        int scale = in.readInt();
+        byte[] mag = doReadByteArray(in);
+
+        BigInteger intVal = new BigInteger(mag);
+
+        if (scale < 0) {
+            scale &= 0x7FFFFFFF;
+
+            intVal = intVal.negate();
+        }
+
+        return new BigDecimal(intVal, scale);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static String doReadString(PortableInputStream in) {
+        if (!in.hasArray())
+            return new String(doReadByteArray(in), UTF_8);
+
+        int strLen = in.readInt();
+
+        int pos = in.position();
+
+        // String will copy necessary array part for us.
+        String res = new String(in.array(), pos, strLen, UTF_8);
+
+        in.position(pos + strLen);
+
+        return res;
+    }
+
+    /**
+     * @return Value.
+     */
+    public static UUID doReadUuid(PortableInputStream in) {
+        return new UUID(in.readLong(), in.readLong());
+    }
+
+    /**
+     * @return Value.
+     */
+    public static Date doReadDate(PortableInputStream in) {
+        long time = in.readLong();
+
+        return new Date(time);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static Timestamp doReadTimestamp(PortableInputStream in) {
+        long time = in.readLong();
+        int nanos = in.readInt();
+
+        Timestamp ts = new Timestamp(time);
+
+        ts.setNanos(ts.getNanos() + nanos);
+
+        return ts;
+    }
+
+    /**
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static BigDecimal[] doReadDecimalArray(PortableInputStream in) throws BinaryObjectException {
+        int len = in.readInt();
+
+        BigDecimal[] arr = new BigDecimal[len];
+
+        for (int i = 0; i < len; i++) {
+            byte flag = in.readByte();
+
+            if (flag == NULL)
+                arr[i] = null;
+            else {
+                if (flag != DECIMAL)
+                    throw new BinaryObjectException("Invalid flag value: " + flag);
+
+                arr[i] = doReadDecimal(in);
+            }
+        }
+
+        return arr;
+    }
+
+    /**
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static String[] doReadStringArray(PortableInputStream in) throws BinaryObjectException {
+        int len = in.readInt();
+
+        String[] arr = new String[len];
+
+        for (int i = 0; i < len; i++) {
+            byte flag = in.readByte();
+
+            if (flag == NULL)
+                arr[i] = null;
+            else {
+                if (flag != STRING)
+                    throw new BinaryObjectException("Invalid flag value: " + flag);
+
+                arr[i] = doReadString(in);
+            }
+        }
+
+        return arr;
+    }
+
+    /**
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static UUID[] doReadUuidArray(PortableInputStream in) throws BinaryObjectException {
+        int len = in.readInt();
+
+        UUID[] arr = new UUID[len];
+
+        for (int i = 0; i < len; i++) {
+            byte flag = in.readByte();
+
+            if (flag == NULL)
+                arr[i] = null;
+            else {
+                if (flag != UUID)
+                    throw new BinaryObjectException("Invalid flag value: " + flag);
+
+                arr[i] = doReadUuid(in);
+            }
+        }
+
+        return arr;
+    }
+
+    /**
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static Date[] doReadDateArray(PortableInputStream in) throws BinaryObjectException {
+        int len = in.readInt();
+
+        Date[] arr = new Date[len];
+
+        for (int i = 0; i < len; i++) {
+            byte flag = in.readByte();
+
+            if (flag == NULL)
+                arr[i] = null;
+            else {
+                if (flag != DATE)
+                    throw new BinaryObjectException("Invalid flag value: " + flag);
+
+                arr[i] = doReadDate(in);
+            }
+        }
+
+        return arr;
+    }
+
+    /**
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static Timestamp[] doReadTimestampArray(PortableInputStream in) throws BinaryObjectException {
+        int len = in.readInt();
+
+        Timestamp[] arr = new Timestamp[len];
+
+        for (int i = 0; i < len; i++) {
+            byte flag = in.readByte();
+
+            if (flag == NULL)
+                arr[i] = null;
+            else {
+                if (flag != TIMESTAMP)
+                    throw new BinaryObjectException("Invalid flag value: " + flag);
+
+                arr[i] = doReadTimestamp(in);
+            }
+        }
+
+        return arr;
+    }
+
+    /**
+     * @return Value.
+     */
+    public static BinaryObject doReadPortableObject(PortableInputStream in, PortableContext ctx) {
+        if (in.offheapPointer() > 0) {
+            int len = in.readInt();
+
+            int pos = in.position();
+
+            in.position(in.position() + len);
+
+            int start = in.readInt();
+
+            return new BinaryObjectOffheapImpl(ctx, in.offheapPointer() + pos, start, len);
+        }
+        else {
+            byte[] arr = doReadByteArray(in);
+            int start = in.readInt();
+
+            return new BinaryObjectImpl(ctx, arr, start);
+        }
+    }
+
+    /**
+     * @return Value.
+     */
+    public static Class doReadClass(PortableInputStream in, PortableContext ctx, ClassLoader ldr)
+        throws BinaryObjectException {
+        int typeId = in.readInt();
+
+        return doReadClass(in, ctx, ldr, typeId);
+    }
+
+    /**
+     * @param typeId Type id.
+     * @return Value.
+     */
+    public static Class doReadClass(PortableInputStream in, PortableContext ctx, ClassLoader ldr, int typeId)
+        throws BinaryObjectException {
+        Class cls;
+
+        if (typeId == OBJECT_TYPE_ID)
+            return Object.class;
+
+        if (typeId != UNREGISTERED_TYPE_ID)
+            cls = ctx.descriptorForTypeId(true, typeId, ldr).describedClass();
+        else {
+            byte flag = in.readByte();
+
+            if (flag != STRING)
+                throw new BinaryObjectException("No class definition for typeId: " + typeId);
+
+            String clsName = doReadString(in);
+
+            try {
+                cls = U.forName(clsName, ldr);
+            }
+            catch (ClassNotFoundException e) {
+                throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
+            }
+
+            // forces registering of class by type id, at least locally
+            ctx.descriptorForClass(cls);
+        }
+
+        return cls;
+    }
+
+    /**
+     * Having target class in place we simply read ordinal and create final representation.
+     *
+     * @param cls Enum class.
+     * @return Value.
+     */
+    public static Enum<?> doReadEnum(PortableInputStream in, Class<?> cls) throws BinaryObjectException {
+        assert cls != null;
+
+        if (!cls.isEnum())
+            throw new BinaryObjectException("Class does not represent enum type: " + cls.getName());
+
+        int ord = in.readInt();
+
+        return BinaryEnumCache.get(cls, ord);
+    }
+
+    /**
+     * @param cls Enum class.
+     * @return Value.
+     */
+    public static Object[] doReadEnumArray(PortableInputStream in, PortableContext ctx, ClassLoader ldr, Class<?> cls)
+        throws BinaryObjectException {
+        int len = in.readInt();
+
+        Object[] arr = (Object[]) Array.newInstance(cls, len);
+
+        for (int i = 0; i < len; i++) {
+            byte flag = in.readByte();
+
+            if (flag == NULL)
+                arr[i] = null;
+            else
+                arr[i] = doReadEnum(in, doReadClass(in, ctx, ldr));
+        }
+
+        return arr;
+    }
+
+    /**
+     * Read object serialized using optimized marshaller.
+     *
+     * @return Result.
+     */
+    public static Object doReadOptimized(PortableInputStream in, PortableContext ctx) {
+        int len = in.readInt();
+
+        ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
+
+        try {
+            return ctx.optimizedMarsh().unmarshal(input, null);
+        }
+        catch (IgniteCheckedException e) {
+            throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);
+        }
+        finally {
+            in.position(in.position() + len);
+        }
+    }
+
+    /**
+     * @return Object.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable public static Object doReadObject(PortableInputStream in, PortableContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles) throws BinaryObjectException {
+        return new BinaryReaderExImpl(ctx, in, ldr, handles.handles()).deserialize();
+    }
+
+    /**
+     * @return Unmarshalled value.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable public static Object unmarshal(PortableInputStream in, PortableContext ctx, ClassLoader ldr)
+        throws BinaryObjectException {
+        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolderImpl());
+    }
+
+    /**
+     * @return Unmarshalled value.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable public static Object unmarshal(PortableInputStream in, PortableContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles) throws BinaryObjectException {
+        return unmarshal(in, ctx, ldr, handles, false);
+    }
+
+    /**
+     * @return Unmarshalled value.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable public static Object unmarshal(PortableInputStream in, PortableContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean detach) throws BinaryObjectException {
+        int start = in.position();
+
+        byte flag = in.readByte();
+
+        switch (flag) {
+            case NULL:
+                return null;
+
+            case HANDLE: {
+                int handlePos = start - in.readInt();
+
+                Object obj = handles.getHandle(handlePos);
+
+                if (obj == null) {
+                    int retPos = in.position();
+
+                    in.position(handlePos);
+
+                    obj = unmarshal(in, ctx, ldr, handles);
+
+                    in.position(retPos);
+                }
+
+                return obj;
+            }
+
+            case OBJ: {
+                checkProtocolVersion(in.readByte());
+
+                int len = length(in, start);
+
+                BinaryObjectEx po;
+
+                if (detach) {
+                    // In detach mode we simply copy object's content.
+                    in.position(start);
+
+                    po = new BinaryObjectImpl(ctx, in.readByteArray(len), 0);
+                }
+                else {
+                    if (in.offheapPointer() == 0)
+                        po = new BinaryObjectImpl(ctx, in.array(), start);
+                    else
+                        po = new BinaryObjectOffheapImpl(ctx, in.offheapPointer(), start,
+                            in.remaining() + in.position());
+
+                    in.position(start + po.length());
+                }
+
+                handles.setHandle(po, start);
+
+                return po;
+            }
+
+            case BYTE:
+                return in.readByte();
+
+            case SHORT:
+                return in.readShort();
+
+            case INT:
+                return in.readInt();
+
+            case LONG:
+                return in.readLong();
+
+            case FLOAT:
+                return in.readFloat();
+
+            case DOUBLE:
+                return in.readDouble();
+
+            case CHAR:
+                return in.readChar();
+
+            case BOOLEAN:
+                return in.readBoolean();
+
+            case DECIMAL:
+                return doReadDecimal(in);
+
+            case STRING:
+                return doReadString(in);
+
+            case UUID:
+                return doReadUuid(in);
+
+            case DATE:
+                return doReadDate(in);
+
+            case TIMESTAMP:
+                return doReadTimestamp(in);
+
+            case BYTE_ARR:
+                return doReadByteArray(in);
+
+            case SHORT_ARR:
+                return doReadShortArray(in);
+
+            case INT_ARR:
+                return doReadIntArray(in);
+
+            case LONG_ARR:
+                return doReadLongArray(in);
+
+            case FLOAT_ARR:
+                return doReadFloatArray(in);
+
+            case DOUBLE_ARR:
+                return doReadDoubleArray(in);
+
+            case CHAR_ARR:
+                return doReadCharArray(in);
+
+            case BOOLEAN_ARR:
+                return doReadBooleanArray(in);
+
+            case DECIMAL_ARR:
+                return doReadDecimalArray(in);
+
+            case STRING_ARR:
+                return doReadStringArray(in);
+
+            case UUID_ARR:
+                return doReadUuidArray(in);
+
+            case DATE_ARR:
+                return doReadDateArray(in);
+
+            case TIMESTAMP_ARR:
+                return doReadTimestampArray(in);
+
+            case OBJ_ARR:
+                return doReadObjectArray(in, ctx, ldr, handles, false);
+
+            case COL:
+                return doReadCollection(in, ctx, ldr, handles, false, null);
+
+            case MAP:
+                return doReadMap(in, ctx, ldr, handles, false, null);
+
+            case MAP_ENTRY:
+                return doReadMapEntry(in, ctx, ldr, handles, false);
+
+            case PORTABLE_OBJ:
+                return doReadPortableObject(in, ctx);
+
+            case ENUM:
+                return doReadEnum(in, doReadClass(in, ctx, ldr));
+
+            case ENUM_ARR:
+                return doReadEnumArray(in, ctx, ldr, doReadClass(in, ctx, ldr));
+
+            case CLASS:
+                return doReadClass(in, ctx, ldr);
+
+            case OPTM_MARSH:
+                return doReadOptimized(in, ctx);
+
+            default:
+                throw new BinaryObjectException("Invalid flag value: " + flag);
+        }
+    }
+
+    /**
+     * @param deserialize Deep flag.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static Object[] doReadObjectArray(PortableInputStream in, PortableContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean deserialize) throws BinaryObjectException {
+        int hPos = positionForHandle(in);
+
+        Class compType = doReadClass(in, ctx, ldr);
+
+        int len = in.readInt();
+
+        Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
+
+        handles.setHandle(arr, hPos);
+
+        for (int i = 0; i < len; i++)
+            arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
+
+        return arr;
+    }
+
+    /**
+     * @param deserialize Deep flag.
+     * @param cls Collection class.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    @SuppressWarnings("unchecked")
+    public static Collection<?> doReadCollection(PortableInputStream in, PortableContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean deserialize, @Nullable Class<? extends Collection> cls)
+        throws BinaryObjectException {
+        int hPos = positionForHandle(in);
+
+        int size = in.readInt();
+
+        assert size >= 0;
+
+        byte colType = in.readByte();
+
+        Collection<Object> col;
+
+        if (cls != null) {
+            try {
+                Constructor<? extends Collection> cons = cls.getConstructor();
+
+                col = cons.newInstance();
+            }
+            catch (NoSuchMethodException ignored) {
+                throw new BinaryObjectException("Collection class doesn't have public default constructor: " +
+                    cls.getName());
+            }
+            catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+                throw new BinaryObjectException("Failed to instantiate collection: " + cls.getName(), e);
+            }
+        }
+        else {
+            switch (colType) {
+                case ARR_LIST:
+                    col = new ArrayList<>(size);
+
+                    break;
+
+                case LINKED_LIST:
+                    col = new LinkedList<>();
+
+                    break;
+
+                case HASH_SET:
+                    col = U.newHashSet(size);
+
+                    break;
+
+                case LINKED_HASH_SET:
+                    col = U.newLinkedHashSet(size);
+
+                    break;
+
+                case TREE_SET:
+                    col = new TreeSet<>();
+
+                    break;
+
+                case CONC_SKIP_LIST_SET:
+                    col = new ConcurrentSkipListSet<>();
+
+                    break;
+
+                case USER_SET:
+                    col = U.newHashSet(size);
+
+                    break;
+
+                case USER_COL:
+                    col = new ArrayList<>(size);
+
+                    break;
+
+                default:
+                    throw new BinaryObjectException("Invalid collection type: " + colType);
+            }
+        }
+
+        handles.setHandle(col, hPos);
+
+        for (int i = 0; i < size; i++)
+            col.add(deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize));
+
+        return col;
+    }
+
+    /**
+     * @param deserialize Deep flag.
+     * @param cls Map class.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    @SuppressWarnings("unchecked")
+    public static Map<?, ?> doReadMap(PortableInputStream in, PortableContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean deserialize, @Nullable Class<? extends Map> cls)
+        throws BinaryObjectException {
+        int hPos = positionForHandle(in);
+
+        int size = in.readInt();
+
+        assert size >= 0;
+
+        byte mapType = in.readByte();
+
+        Map<Object, Object> map;
+
+        if (cls != null) {
+            try {
+                Constructor<? extends Map> cons = cls.getConstructor();
+
+                map = cons.newInstance();
+            }
+            catch (NoSuchMethodException ignored) {
+                throw new BinaryObjectException("Map class doesn't have public default constructor: " +
+                    cls.getName());
+            }
+            catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+                throw new BinaryObjectException("Failed to instantiate map: " + cls.getName(), e);
+            }
+        }
+        else {
+            switch (mapType) {
+                case HASH_MAP:
+                    map = U.newHashMap(size);
+
+                    break;
+
+                case LINKED_HASH_MAP:
+                    map = U.newLinkedHashMap(size);
+
+                    break;
+
+                case TREE_MAP:
+                    map = new TreeMap<>();
+
+                    break;
+
+                case CONC_HASH_MAP:
+                    map = new ConcurrentHashMap<>(size);
+
+                    break;
+
+                case USER_COL:
+                    map = U.newHashMap(size);
+
+                    break;
+
+                case PROPERTIES_MAP:
+                    map = new Properties();
+
+                    break;
+
+                default:
+                    throw new BinaryObjectException("Invalid map type: " + mapType);
+            }
+        }
+
+        handles.setHandle(map, hPos);
+
+        for (int i = 0; i < size; i++) {
+            Object key = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
+            Object val = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
+
+            map.put(key, val);
+        }
+
+        return map;
+    }
+
+    /**
+     * @param deserialize Deserialize flag flag.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static Map.Entry<?, ?> doReadMapEntry(PortableInputStream in, PortableContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean deserialize) throws BinaryObjectException {
+        int hPos = positionForHandle(in);
+
+        Object val1 = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
+        Object val2 = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
+
+        GridMapEntry entry = new GridMapEntry<>(val1, val2);
+
+        handles.setHandle(entry, hPos);
+
+        return entry;
+    }
+
+    /**
+     * Deserialize or unmarshal the object.
+     *
+     * @param deserialize Deserialize.
+     * @return Result.
+     */
+    private static Object deserializeOrUnmarshal(PortableInputStream in, PortableContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean deserialize) {
+        return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles);
+    }
+
+    /**
+     * Get position to be used for handle. We assume here that the hdr byte was read, hence subtract -1.
+     *
+     * @return Position for handle.
+     */
+    public static int positionForHandle(PortableInputStream in) {
+        return in.position() - 1;
     }
 }

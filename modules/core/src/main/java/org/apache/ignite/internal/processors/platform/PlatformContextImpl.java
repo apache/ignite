@@ -36,6 +36,7 @@ import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.portable.BinaryRawReaderEx;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryReaderExImpl;
 import org.apache.ignite.internal.portable.BinaryTypeImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
@@ -175,7 +176,8 @@ public class PlatformContextImpl implements PlatformContext {
 
     /** {@inheritDoc} */
     @Override public BinaryRawReaderEx reader(PlatformInputStream in) {
-        return marsh.reader(in);
+        // TODO: IGNITE-1272 - Is class loader needed here?
+        return new BinaryReaderExImpl(marsh.context(), in, null);
     }
 
     /** {@inheritDoc} */

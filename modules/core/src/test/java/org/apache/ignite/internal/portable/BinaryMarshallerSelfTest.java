@@ -795,7 +795,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryObjectEx po1 = marshal(obj1, marsh);
 
         assertEquals(11111, po1.typeId());
-        assertEquals(10, po1.field(22222));
+        assertEquals((Integer)10, po1.field(22222));
         assertEquals("str", po1.field(33333));
 
         assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
@@ -852,7 +852,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryObjectEx po1 = marshal(obj1, marsh);
 
         assertEquals(11111, po1.typeId());
-        assertEquals(10, po1.field(22222));
+        assertEquals((Integer)10, po1.field(22222));
         assertEquals("str1", po1.field(33333));
 
         assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
@@ -863,7 +863,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryObjectEx po2 = marshal(obj2, marsh);
 
         assertEquals(44444, po2.typeId());
-        assertEquals(20, po2.field(55555));
+        assertEquals((Integer)20, po2.field(55555));
         assertEquals("str2", po2.field(66666));
 
         assertEquals(20, po2.<CustomMappedObject2>deserialize().val1);

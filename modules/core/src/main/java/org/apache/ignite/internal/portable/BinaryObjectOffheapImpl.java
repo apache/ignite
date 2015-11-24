@@ -129,7 +129,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
 
     /** {@inheritDoc} */
     @Override protected PortableSchema createSchema() {
-        return newReader().getOrCreateSchema();
+        return reader(null).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -163,13 +163,13 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return (F)newReader().unmarshalField(fieldName);
+        return (F) reader(null).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return (F)newReader().unmarshalField(fieldId);
+        return (F) reader(null).unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -308,9 +308,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
 
                 stream.position(fieldPos);
 
-                BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, stream, null, new BinaryReaderHandles());
-
-                val = reader.unmarshal();
+                val = PortableUtils.unmarshal(stream, ctx, null);
 
                 break;
         }
@@ -321,18 +319,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
-        PortableOffheapInputStream stream = new PortableOffheapInputStream(ptr, size, false);
-
-        stream.position(start);
-
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, stream, null, rCtx);
-
-        return (F)reader.unmarshalField(fieldName);
+        return (F)reader(rCtx).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        return newReader().findFieldByName(fieldName);
+        return reader(null).findFieldByName(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -418,19 +410,20 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
      */
     private Object deserializeValue() {
         // TODO: IGNITE-1272 - Deserialize with proper class loader.
-        return newReader().deserialize();
+        return reader(null).deserialize();
     }
 
     /**
      * Create new reader for this object.
      *
+     * @param rCtx Reader context.
      * @return Reader.
      */
-    private BinaryReaderExImpl newReader() {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx) {
         PortableOffheapInputStream stream = new PortableOffheapInputStream(ptr, size, false);
 
         stream.position(start);
 
-        return new BinaryReaderExImpl(ctx, stream, null, new BinaryReaderHandles());
+        return new BinaryReaderExImpl(ctx, stream, null, rCtx);
     }
 }

@@ -15,31 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
-
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.internal.processors.cache.datastructures.GridCacheSetFailoverAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
+package org.apache.ignite.internal.portable;
 
 /**
- * Set failover tests.
+ * Simple holder for handles.
  */
-public class GridCachePartitionedAtomicSetFailoverSelfTest extends GridCacheSetFailoverAbstractSelfTest {
+public class BinaryReaderHandlesHolderImpl implements BinaryReaderHandlesHolder  {
+    /** Handles. */
+    private BinaryReaderHandles hnds;
+
     /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return ONHEAP_TIERED;
+    @Override public void setHandle(Object obj, int pos) {
+        handles().put(pos, obj);
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
-        return ATOMIC;
+    @Override public Object getHandle(int pos) {
+        return hnds != null ? hnds.get(pos) : null;
     }
 
     /** {@inheritDoc} */
-    @Override public void testNodeRestart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-170");
+    @Override public BinaryReaderHandles handles() {
+        if (hnds == null)
+            hnds = new BinaryReaderHandles();
+
+        return hnds;
     }
 }
