@@ -606,6 +606,9 @@ namespace Apache.Ignite.Core.Impl
                         metaWriter.WriteString(field.Key);
                         metaWriter.WriteInt(field.Value);
                     }
+
+                    // TODO: isEnum
+                    metaWriter.WriteBoolean(false);
                 }
 
                 _marsh.FinishMarshal(metaWriter);
