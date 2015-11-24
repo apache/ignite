@@ -908,6 +908,27 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new[] { TestEnum.Two }, obj.FEnumArr);
         }
 
+        [Test]
+        public void TestEnumMeta()
+        {
+            var bin = _grid.GetBinary();
+
+            // Unregistered enum
+            var binEnum = bin.ToBinary<IBinaryObject>(TestEnum.One);
+
+            Assert.IsTrue(binEnum.IsEnum);
+            Assert.AreEqual(-1, binEnum.TypeId);
+            Assert.AreEqual(0, binEnum.Value);
+
+            var meta = binEnum.GetBinaryType();
+
+            Assert.AreEqual(BinaryTypeNames.TypeNameObject, meta.TypeName);
+            Assert.AreEqual(0, meta.Fields.Count);
+
+            // Registered enum
+            // TODO
+        }
+
         /// <summary>
         /// Test arrays.
         /// </summary>
