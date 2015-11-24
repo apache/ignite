@@ -581,7 +581,7 @@ namespace Apache.Ignite.Core.Impl
         /// Put binary types to Grid.
         /// </summary>
         /// <param name="types">Binary types.</param>
-        internal void PutBinaryTypes(IDictionary<int, IBinaryType> types)
+        internal void PutBinaryTypes(IDictionary<int, BinaryType> types)
         {
             DoOutOp(OpMeta, stream =>
             {
@@ -591,13 +591,13 @@ namespace Apache.Ignite.Core.Impl
 
                 foreach (var meta in types.Values)
                 {
-                    BinaryType meta0 = (BinaryType)meta;
+                    BinaryType meta0 = meta;
 
                     metaWriter.WriteInt(meta0.TypeId);
                     metaWriter.WriteString(meta0.TypeName);
                     metaWriter.WriteString(meta0.AffinityKeyFieldName);
 
-                    IDictionary<string, int> fields = meta0.FieldsMap();
+                    IDictionary<string, int> fields = meta0.GetFieldsMap();
 
                     metaWriter.WriteInt(fields.Count);
 

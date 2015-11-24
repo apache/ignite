@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
@@ -472,7 +473,7 @@ namespace Apache.Ignite.Core.Impl
         /// Put metadata to Grid.
         /// </summary>
         /// <param name="metas">Metadata.</param>
-        internal void PutBinaryTypes(IDictionary<int, IBinaryType> metas)
+        internal void PutBinaryTypes(IDictionary<int, BinaryType> metas)
         {
             _prj.PutBinaryTypes(metas);
         }

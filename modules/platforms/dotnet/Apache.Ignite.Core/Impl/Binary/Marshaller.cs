@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -149,9 +148,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <returns>Dictionary with metadata.</returns>
-        public void FinishMarshal(IBinaryWriter writer)
+        public void FinishMarshal(BinaryWriter writer)
         {
-            var meta = ((BinaryWriter) writer).GetBinaryTypes();
+            var meta = writer.GetBinaryTypes();
 
             var ignite = Ignite;
 
@@ -312,16 +311,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Callback invoked when metadata has been sent to the server and acknowledged by it.
         /// </summary>
         /// <param name="newMetas">Binary types.</param>
-        public void OnBinaryTypesSent(IDictionary<int, IBinaryType> newMetas)
+        public void OnBinaryTypesSent(IDictionary<int, BinaryType> newMetas)
         {
-            foreach (KeyValuePair<int, IBinaryType> metaEntry in newMetas)
+            foreach (var metaEntry in newMetas)
             {
-                BinaryType meta = (BinaryType) metaEntry.Value;
+                BinaryType meta = metaEntry.Value;
 
-                IDictionary<int, Tuple<string, int>> mergeInfo =
-                    new Dictionary<int, Tuple<string, int>>(meta.FieldsMap().Count);
+                var mergeInfo = new Dictionary<int, Tuple<string, int>>(meta.GetFieldsMap().Count);
 
-                foreach (KeyValuePair<string, int> fieldMeta in meta.FieldsMap())
+                foreach (KeyValuePair<string, int> fieldMeta in meta.GetFieldsMap())
                 {
                     int fieldId = BinaryUtils.FieldId(metaEntry.Key, fieldMeta.Key, null, null);
 

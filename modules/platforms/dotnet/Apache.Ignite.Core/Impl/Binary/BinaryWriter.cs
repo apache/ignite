@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private BinaryHandleDictionary<object, long> _hnds;
 
         /** Metadatas collected during this write session. */
-        private IDictionary<int, IBinaryType> _metas;
+        private IDictionary<int, BinaryType> _metas;
 
         /** Current type ID. */
         private int _curTypeId;
@@ -1366,7 +1366,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets collected metadatas.
         /// </summary>
         /// <returns>Collected metadatas (if any).</returns>
-        internal IDictionary<int, IBinaryType> GetBinaryTypes()
+        internal IDictionary<int, BinaryType> GetBinaryTypes()
         {
             return _metas;
         }
@@ -1420,17 +1420,17 @@ namespace Apache.Ignite.Core.Impl.Binary
                 BinaryType meta =
                     new BinaryType(typeId, typeName, fields, affKeyFieldName);
 
-                _metas = new Dictionary<int, IBinaryType>(1);
+                _metas = new Dictionary<int, BinaryType>(1);
 
                 _metas[typeId] = meta;
             }
             else
             {
-                IBinaryType meta;
+                BinaryType meta;
 
                 if (_metas.TryGetValue(typeId, out meta))
                 {
-                    IDictionary<string, int> existingFields = ((BinaryType)meta).FieldsMap();
+                    IDictionary<string, int> existingFields = ((BinaryType)meta).GetFieldsMap();
 
                     foreach (KeyValuePair<string, int> field in fields)
                     {

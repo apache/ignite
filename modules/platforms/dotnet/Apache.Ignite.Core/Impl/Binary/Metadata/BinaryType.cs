@@ -37,82 +37,63 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Empty list. */
         private static readonly ICollection<string> EmptyList = new List<string>().AsReadOnly();
 
+        /** Type name map. */
+        private static readonly string[] TypeNames = new string[byte.MaxValue];
+
         /** Fields. */
         private readonly IDictionary<string, int> _fields;
+
+        /// <summary>
+        /// Initializes the <see cref="BinaryType"/> class.
+        /// </summary>
+        static BinaryType()
+        {
+            TypeNames[BinaryUtils.TypeBool] = BinaryTypeNames.TypeNameBool;
+            TypeNames[BinaryUtils.TypeByte] = BinaryTypeNames.TypeNameByte;
+            TypeNames[BinaryUtils.TypeShort] = BinaryTypeNames.TypeNameShort;
+            TypeNames[BinaryUtils.TypeChar] = BinaryTypeNames.TypeNameChar;
+            TypeNames[BinaryUtils.TypeInt] = BinaryTypeNames.TypeNameInt;
+            TypeNames[BinaryUtils.TypeLong] = BinaryTypeNames.TypeNameLong;
+            TypeNames[BinaryUtils.TypeFloat] = BinaryTypeNames.TypeNameFloat;
+            TypeNames[BinaryUtils.TypeDouble] = BinaryTypeNames.TypeNameDouble;
+            TypeNames[BinaryUtils.TypeDecimal] = BinaryTypeNames.TypeNameDecimal;
+            TypeNames[BinaryUtils.TypeString] = BinaryTypeNames.TypeNameString;
+            TypeNames[BinaryUtils.TypeGuid] = BinaryTypeNames.TypeNameGuid;
+            TypeNames[BinaryUtils.TypeTimestamp] = BinaryTypeNames.TypeNameTimestamp;
+            TypeNames[BinaryUtils.TypeEnum] = BinaryTypeNames.TypeNameEnum;
+            TypeNames[BinaryUtils.TypeObject] = BinaryTypeNames.TypeNameObject;
+            TypeNames[BinaryUtils.TypeArrayBool] = BinaryTypeNames.TypeNameArrayBool;
+            TypeNames[BinaryUtils.TypeArrayByte] = BinaryTypeNames.TypeNameArrayByte;
+            TypeNames[BinaryUtils.TypeArrayShort] = BinaryTypeNames.TypeNameArrayShort;
+            TypeNames[BinaryUtils.TypeArrayChar] = BinaryTypeNames.TypeNameArrayChar;
+            TypeNames[BinaryUtils.TypeArrayInt] = BinaryTypeNames.TypeNameArrayInt;
+            TypeNames[BinaryUtils.TypeArrayLong] = BinaryTypeNames.TypeNameArrayLong;
+            TypeNames[BinaryUtils.TypeArrayFloat] = BinaryTypeNames.TypeNameArrayFloat;
+            TypeNames[BinaryUtils.TypeArrayDouble] = BinaryTypeNames.TypeNameArrayDouble;
+            TypeNames[BinaryUtils.TypeArrayDecimal] = BinaryTypeNames.TypeNameArrayDecimal;
+            TypeNames[BinaryUtils.TypeArrayString] = BinaryTypeNames.TypeNameArrayString;
+            TypeNames[BinaryUtils.TypeArrayGuid] = BinaryTypeNames.TypeNameArrayGuid;
+            TypeNames[BinaryUtils.TypeArrayTimestamp] = BinaryTypeNames.TypeNameArrayTimestamp;
+            TypeNames[BinaryUtils.TypeArrayEnum] = BinaryTypeNames.TypeNameArrayEnum;
+            TypeNames[BinaryUtils.TypeArray] = BinaryTypeNames.TypeNameArrayObject;
+            TypeNames[BinaryUtils.TypeCollection] = BinaryTypeNames.TypeNameCollection;
+            TypeNames[BinaryUtils.TypeDictionary] = BinaryTypeNames.TypeNameMap;
+
+        }
 
         /// <summary>
         /// Get type name by type ID.
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <returns>Type name.</returns>
-        private static string ConvertTypeName(int typeId)
+        private static string GetTypeName(int typeId)
         {
-            switch (typeId)
-            {
-                case BinaryUtils.TypeBool:
-                    return BinaryTypeNames.TypeNameBool;
-                case BinaryUtils.TypeByte:
-                    return BinaryTypeNames.TypeNameByte;
-                case BinaryUtils.TypeShort:
-                    return BinaryTypeNames.TypeNameShort;
-                case BinaryUtils.TypeChar:
-                    return BinaryTypeNames.TypeNameChar;
-                case BinaryUtils.TypeInt:
-                    return BinaryTypeNames.TypeNameInt;
-                case BinaryUtils.TypeLong:
-                    return BinaryTypeNames.TypeNameLong;
-                case BinaryUtils.TypeFloat:
-                    return BinaryTypeNames.TypeNameFloat;
-                case BinaryUtils.TypeDouble:
-                    return BinaryTypeNames.TypeNameDouble;
-                case BinaryUtils.TypeDecimal:
-                    return BinaryTypeNames.TypeNameDecimal;
-                case BinaryUtils.TypeString:
-                    return BinaryTypeNames.TypeNameString;
-                case BinaryUtils.TypeGuid:
-                    return BinaryTypeNames.TypeNameGuid;
-                case BinaryUtils.TypeTimestamp:
-                    return BinaryTypeNames.TypeNameTimestamp;
-                case BinaryUtils.TypeEnum:
-                    return BinaryTypeNames.TypeNameEnum;
-                case BinaryUtils.TypeBinary:
-                case BinaryUtils.TypeObject:
-                    return BinaryTypeNames.TypeNameObject;
-                case BinaryUtils.TypeArrayBool:
-                    return BinaryTypeNames.TypeNameArrayBool;
-                case BinaryUtils.TypeArrayByte:
-                    return BinaryTypeNames.TypeNameArrayByte;
-                case BinaryUtils.TypeArrayShort:
-                    return BinaryTypeNames.TypeNameArrayShort;
-                case BinaryUtils.TypeArrayChar:
-                    return BinaryTypeNames.TypeNameArrayChar;
-                case BinaryUtils.TypeArrayInt:
-                    return BinaryTypeNames.TypeNameArrayInt;
-                case BinaryUtils.TypeArrayLong:
-                    return BinaryTypeNames.TypeNameArrayLong;
-                case BinaryUtils.TypeArrayFloat:
-                    return BinaryTypeNames.TypeNameArrayFloat;
-                case BinaryUtils.TypeArrayDouble:
-                    return BinaryTypeNames.TypeNameArrayDouble;
-                case BinaryUtils.TypeArrayDecimal:
-                    return BinaryTypeNames.TypeNameArrayDecimal;
-                case BinaryUtils.TypeArrayString:
-                    return BinaryTypeNames.TypeNameArrayString;
-                case BinaryUtils.TypeArrayGuid:
-                    return BinaryTypeNames.TypeNameArrayGuid;
-                case BinaryUtils.TypeArrayTimestamp:
-                    return BinaryTypeNames.TypeNameArrayTimestamp;
-                case BinaryUtils.TypeArrayEnum:
-                    return BinaryTypeNames.TypeNameArrayEnum;
-                case BinaryUtils.TypeArray:
-                    return BinaryTypeNames.TypeNameArrayObject;
-                case BinaryUtils.TypeCollection:
-                    return BinaryTypeNames.TypeNameCollection;
-                case BinaryUtils.TypeDictionary:
-                    return BinaryTypeNames.TypeNameMap;
-                default:
-                    throw new BinaryObjectException("Invalid type ID: " + typeId);
-            }
+            var typeName = typeId < TypeNames.Length ? TypeNames[typeId] : null;
+
+            if (typeName != null)
+                return typeName;
+
+            throw new BinaryObjectException("Invalid type ID: " + typeId);
         }
 
         /// <summary>
@@ -177,7 +158,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
 
                 _fields.TryGetValue(fieldName, out typeId);
 
-                return ConvertTypeName(typeId);
+                return GetTypeName(typeId);
             }
             
             return null;
@@ -192,7 +173,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// Gets fields map.
         /// </summary>
         /// <returns>Fields map.</returns>
-        public IDictionary<string, int> FieldsMap()
+        public IDictionary<string, int> GetFieldsMap()
         {
             return _fields ?? EmptyDict;
         }
