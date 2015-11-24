@@ -63,6 +63,7 @@ angular
 				$http.post('/api/v1/logout')
 					.success(function (res) {
                         authorized(false);
+                        User.clean()
 
 						$state.go('login');
 					})

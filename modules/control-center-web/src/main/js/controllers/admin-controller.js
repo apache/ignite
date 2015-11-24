@@ -35,10 +35,9 @@ consoleModule.controller('adminController',
 
     $scope.becomeUser = function (user) {
         $http
-        .post('/api/v1/admin/become', {viewedUserId: user._id})
-        .$promise
+        .get('/api/v1/admin/become', { params: {viewedUserId: user._id}})
         .then(User.read)
-        .then(() => {
+        .then(function() {
             $state.go('base.configuration.clusters')    
         })
         .catch((errMsg) => {

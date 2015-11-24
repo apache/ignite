@@ -22,13 +22,22 @@ angular
 	
 ])
 .provider('User', function () {
-	
 	var _user;
 
+	try {
+		_user = JSON.parse(localStorage.user);
+	} catch(ignore) {
+		// No-op.
+	} 
+
 	this.$get = ['$q', '$rootScope', '$http', ($q, $root, $http) => {
+		if (_user) {
+			$root.user = _user;
+		}
+
 		return {
 			read() {
-				return $http.post('/api/v1/user', () => {}).then((data) => {
+				return $http.post('/api/v1/user', {}).then(({data}) => {
 					try {
 						localStorage.user = JSON.stringify(data);
 					} catch(ignore) {
@@ -37,6 +46,11 @@ angular
 
 					return _user = $root.user = data;
 				})
+			},
+
+			clean() {
+				delete $root.user;
+				delete localStorage.user;
 			}
 		}
 	}]	
