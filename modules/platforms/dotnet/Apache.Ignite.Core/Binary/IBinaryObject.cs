@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Binary
         /// Gets a value indicating whether this instance contains an enum.
         /// </summary>
         /// <value>
-        ///   <c>true</c> if this instance contains an enum; otherwise, <c>false</c>.
+        /// <c>true</c> if this instance contains an enum; otherwise, <c>false</c>.
         /// </value>
         bool IsEnum { get; }
 
@@ -71,6 +71,6 @@ namespace Apache.Ignite.Core.Binary
         /// <value>
         /// The value of underlying enum in int form.
         /// </value>
-        int Value { get; }
+        int EnumValue { get; }
     }
 }

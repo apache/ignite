@@ -907,7 +907,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.IsTrue(binEnum.IsEnum);
             Assert.AreEqual(-1, binEnum.TypeId);
-            Assert.AreEqual(0, binEnum.Value);
+            Assert.AreEqual(0, binEnum.EnumValue);
 
             var meta = binEnum.GetBinaryType();
 
@@ -919,7 +919,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.IsTrue(binEnum.IsEnum);
             Assert.AreEqual(_marsh.GetDescriptor(typeof (TestEnumRegistered)).TypeId, binEnum.TypeId);
-            Assert.AreEqual(0, binEnum.Value);
+            Assert.AreEqual(0, binEnum.EnumValue);
 
             meta = binEnum.GetBinaryType();
 

@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly int _typeId;
 
         /** Value. */
-        private readonly int _value;
+        private readonly int _enumValue;
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -39,14 +39,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Initializes a new instance of the <see cref="BinaryEnum" /> class.
         /// </summary>
         /// <param name="typeId">The type identifier.</param>
-        /// <param name="value">The value.</param>
+        /// <param name="enumValue">The value.</param>
         /// <param name="marsh">The marshaller.</param>
-        public BinaryEnum(int typeId, int value, Marshaller marsh)
+        public BinaryEnum(int typeId, int enumValue, Marshaller marsh)
         {
             Debug.Assert(marsh != null);
 
             _typeId = typeId;
-            _value = value;
+            _enumValue = enumValue;
             _marsh = marsh;
         }
 
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
-            return BinaryUtils.GetEnumValue<T>(_value, _typeId, _marsh);
+            return BinaryUtils.GetEnumValue<T>(_enumValue, _typeId, _marsh);
         }
 
         /** <inheritdoc /> */
@@ -85,9 +85,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public int Value
+        public int EnumValue
         {
-            get { return _value; }
+            get { return _enumValue; }
         }
 
         /** <inheritdoc /> */
@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (ReferenceEquals(this, other))
                 return true;
 
-            return _typeId == other._typeId && _value == other._value;
+            return _typeId == other._typeId && _enumValue == other._enumValue;
         }
 
         /** <inheritdoc /> */
@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public override int GetHashCode()
         {
-            return _value.GetHashCode();
+            return _enumValue.GetHashCode();
         }
 
         /** <inheritdoc /> */

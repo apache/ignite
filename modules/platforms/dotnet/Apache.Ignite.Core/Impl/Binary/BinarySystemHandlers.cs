@@ -651,7 +651,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.Stream.WriteByte(BinaryUtils.TypeEnum);
 
             ctx.WriteInt(binEnum.TypeId);
-            ctx.WriteInt(binEnum.Value);
+            ctx.WriteInt(binEnum.EnumValue);
         }
 
         /// <summary>
