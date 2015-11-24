@@ -565,8 +565,13 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public byte type() {
+        @Override public byte cacheObjectType() {
             throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isPlatformType() {
+            return true;
         }
 
         /** {@inheritDoc} */

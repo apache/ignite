@@ -149,6 +149,13 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return {@code True} if custom stream receiver should use keepBinary flag.
+     */
+    protected boolean customKeepBinary() {
+        return false;
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testPartitioned() throws Exception {
@@ -914,6 +921,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             try (IgniteDataStreamer<String, TestObject> ldr = ignite.dataStreamer(null)) {
                 ldr.allowOverwrite(true);
+                ldr.keepBinary(customKeepBinary());
 
                 ldr.receiver(getStreamReceiver());
 

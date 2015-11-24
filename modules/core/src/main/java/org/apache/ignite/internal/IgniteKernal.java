@@ -65,6 +65,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteServices;
@@ -76,6 +77,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -94,7 +96,6 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
-import org.apache.ignite.internal.portable.api.IgnitePortables;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -103,8 +104,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessor;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -133,7 +133,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.GridEnumCache;
+import org.apache.ignite.internal.portable.BinaryEnumCache;
 import org.apache.ignite.internal.util.GridTimerTask;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -158,6 +158,7 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
@@ -202,6 +203,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LANG_RUNTIME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
@@ -1260,7 +1262,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Warn about loopback.
         if (ips.isEmpty() && macs.isEmpty())
             U.warn(log, "Ignite is starting on loopback address... Only nodes on the same physical " +
-                "computer can participate in topology.",
+                    "computer can participate in topology.",
                 "Ignite is starting on loopback address...");
 
         // Stick in network context into attributes.
@@ -1274,6 +1276,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
         add(ATTR_MARSHALLER_USE_DFLT_SUID,
             getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, OptimizedMarshaller.USE_DFLT_SUID));
+
+        if (cfg.getMarshaller() instanceof BinaryMarshaller) {
+            add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
+                BinaryConfiguration.DFLT_COMPACT_FOOTER :
+                cfg.getBinaryConfiguration().isCompactFooter());
+        }
+
         add(ATTR_USER_NAME, System.getProperty("user.name"));
         add(ATTR_GRID_NAME, gridName);
 
@@ -1492,6 +1501,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 mgr.start();
         }
         catch (IgniteCheckedException e) {
+            U.error(log, "Failed to start manager: " + mgr , e);
+
             throw new IgniteCheckedException("Failed to start manager: " + mgr, e);
         }
     }
@@ -1935,7 +1946,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             U.clearClassCache();
             MarshallerExclusions.clearCache();
-            GridEnumCache.clear();
+            BinaryEnumCache.clear();
 
             gw.writeLock();
 
@@ -2811,8 +2822,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgnitePortables portables() {
-        return ((CacheObjectPortableProcessor)ctx.cacheObjects()).portables();
+    @Override public IgniteBinary binary() {
+        IgniteCacheObjectProcessor objProc = ctx.cacheObjects();
+
+        return objProc.binary();
     }
 
     /** {@inheritDoc} */
@@ -3130,7 +3143,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return comp;
 
         if (cls.equals(IgniteCacheObjectProcessor.class))
-            return (T)new CacheObjectPortableProcessorImpl(ctx);
+            return (T)new CacheObjectBinaryProcessorImpl(ctx);
 
         if (cls.equals(DiscoveryNodeValidationProcessor.class))
             return (T)new OsDiscoveryNodeValidationProcessor(ctx);
@@ -3141,11 +3154,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             String clsName;
 
             // Handle special case for PlatformProcessor
-            if (cls.equals(PlatformProcessor.class)) {
-                clsName = PlatformNoopProcessor.class.getName();
-//                clsName = ctx.config().getPlatformConfiguration() == null ?
-//                    PlatformNoopProcessor.class.getName() : cls.getName() + "Impl";
-            }
+            if (cls.equals(PlatformProcessor.class))
+                clsName = ctx.config().getPlatformConfiguration() == null ?
+                    PlatformNoopProcessor.class.getName() : cls.getName() + "Impl";
             else
                 clsName = componentClassName(cls);
 

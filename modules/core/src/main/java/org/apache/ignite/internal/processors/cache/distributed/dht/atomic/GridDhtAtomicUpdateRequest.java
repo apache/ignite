@@ -157,6 +157,9 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     @GridDirectTransient
     private List<CacheObject> localPrevVals;
 
+    /** Keep portable flag. */
+    private boolean keepBinary;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -190,7 +193,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         UUID subjId,
         int taskNameHash,
         Object[] invokeArgs,
-        boolean addDepInfo
+        boolean addDepInfo,
+        boolean keepBinary
     ) {
         assert invokeArgs == null || forceTransformBackups;
 
@@ -205,6 +209,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         this.taskNameHash = taskNameHash;
         this.invokeArgs = invokeArgs;
         this.addDepInfo = addDepInfo;
+        this.keepBinary = keepBinary;
 
         keys = new ArrayList<>();
         partIds = new ArrayList<>();
@@ -481,6 +486,13 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     }
 
     /**
+     * @return Keep portable flag.
+     */
+    public boolean keepBinary() {
+        return keepBinary;
+    }
+
+    /**
      * @param idx Key index.
      * @return Value.
      */
@@ -729,43 +741,43 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
+                if (!writer.writeBoolean("keepBinary", keepBinary))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeCollection("nearEntryProcessorsBytes", nearEntryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage("nearExpireTimes", nearExpireTimes))
+                if (!writer.writeCollection("nearEntryProcessorsBytes", nearEntryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("nearExpireTimes", nearExpireTimes))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeMessage("nearTtls", nearTtls))
+                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollection("nearVals", nearVals, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("nearTtls", nearTtls))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeUuid("nodeId", nodeId))
+                if (!writer.writeCollection("nearVals", nearVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -889,7 +901,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 reader.incrementState();
 
             case 9:
-                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
+                keepBinary = reader.readBoolean("keepBinary");
 
                 if (!reader.isLastRead())
                     return false;
@@ -897,7 +909,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 reader.incrementState();
 
             case 10:
-                nearEntryProcessorsBytes = reader.readCollection("nearEntryProcessorsBytes", MessageCollectionItemType.BYTE_ARR);
+                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -905,7 +917,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 reader.incrementState();
 
             case 11:
-                nearExpireTimes = reader.readMessage("nearExpireTimes");
+                nearEntryProcessorsBytes = reader.readCollection("nearEntryProcessorsBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -913,7 +925,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 reader.incrementState();
 
             case 12:
-                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
+                nearExpireTimes = reader.readMessage("nearExpireTimes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -921,7 +933,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 reader.incrementState();
 
             case 13:
-                nearTtls = reader.readMessage("nearTtls");
+                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -929,7 +941,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 reader.incrementState();
 
             case 14:
-                nearVals = reader.readCollection("nearVals", MessageCollectionItemType.MSG);
+                nearTtls = reader.readMessage("nearTtls");
 
                 if (!reader.isLastRead())
                     return false;
@@ -937,7 +949,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 reader.incrementState();
 
             case 15:
-                nodeId = reader.readUuid("nodeId");
+                nearVals = reader.readCollection("nearVals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

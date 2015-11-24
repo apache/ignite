@@ -61,7 +61,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
-import org.apache.ignite.internal.util.GridEnumCache;
+import org.apache.ignite.internal.portable.BinaryEnumCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1365,7 +1365,7 @@ public abstract class GridAbstractTest extends TestCase {
                 GridClassLoaderCache.clear();
                 U.clearClassCache();
                 MarshallerExclusions.clearCache();
-                GridEnumCache.clear();
+                BinaryEnumCache.clear();
             }
 
             Thread.currentThread().setContextClassLoader(clsLdr);

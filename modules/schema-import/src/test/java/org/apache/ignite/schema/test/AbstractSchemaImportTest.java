@@ -48,7 +48,7 @@ public abstract class AbstractSchemaImportTest extends TestCase {
     protected static final String OUT_DIR_PATH = System.getProperty("java.io.tmpdir") + "/ignite-schema-import/out";
 
     /** Auto confirmation of file conflicts. */
-    protected ConfirmCallable askOverwrite = new ConfirmCallable(null, "") {
+    protected final ConfirmCallable askOverwrite = new ConfirmCallable(null, "") {
         @Override public MessageBox.Result confirm(String msg) {
             return YES_TO_ALL;
         }

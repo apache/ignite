@@ -130,17 +130,17 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     /**
      * @return {@code True} if for events.
      */
-    public boolean isForEvents();
+    public boolean isEvents();
 
     /**
      * @return {@code True} if for messaging.
      */
-    public boolean isForMessaging();
+    public boolean isMessaging();
 
     /**
      * @return {@code True} if for continuous queries.
      */
-    public boolean isForQuery();
+    public boolean isQuery();
 
     /**
      * @return Cache name if this is a continuous query handler.

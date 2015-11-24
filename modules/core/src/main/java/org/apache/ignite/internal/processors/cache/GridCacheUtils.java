@@ -150,6 +150,9 @@ public class GridCacheUtils {
     /** Skip store flag bit mask. */
     public static final int SKIP_STORE_FLAG_MASK = 0x1;
 
+    /** Keep serialized flag. */
+    public static final int KEEP_BINARY_FLAG_MASK = 0x2;
+
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
 
