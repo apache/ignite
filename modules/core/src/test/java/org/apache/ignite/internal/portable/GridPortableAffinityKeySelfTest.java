@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -70,8 +71,9 @@ public class GridPortableAffinityKeySelfTest extends GridCommonAbstractTest {
         cfg.setBinaryConfiguration(bCfg);
 
         CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(TestObject.class.getName(), "affKey");
+        CacheKeyConfiguration keyCfg2 = new CacheKeyConfiguration("TestObject2", "affKey");
 
-        cfg.setCacheKeyCfg(keyCfg);
+        cfg.setCacheKeyCfg(keyCfg, keyCfg2);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -134,6 +136,14 @@ public class GridPortableAffinityKeySelfTest extends GridCommonAbstractTest {
             assertEquals(i, aff.affinityKey(i));
 
             assertEquals(i, aff.affinityKey(new TestObject(i)));
+
+            assertEquals(i, aff.affinityKey(ignite.binary().toBinary(new TestObject(i))));
+
+            BinaryObjectBuilder bldr = ignite.binary().builder("TestObject2");
+
+            bldr.setField("affKey", i);
+
+            assertEquals(i, aff.affinityKey(bldr.build()));
 
             CacheObject cacheObj = cacheObjProc.toCacheObject(cacheObjCtx, new TestObject(i), true);
 

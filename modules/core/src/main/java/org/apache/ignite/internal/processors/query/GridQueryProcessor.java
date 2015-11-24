@@ -1540,18 +1540,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String alias = aliases.get(fullName.toString());
 
-            ClassProperty tmp;
+            StringBuilder bld = new StringBuilder("get");
 
-            try {
-                StringBuilder bld = new StringBuilder("get");
+            bld.append(prop);
 
-                bld.append(prop);
+            bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
 
-                bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
+            String[] mtdNames = new String[] {bld.toString(), prop};
 
-                tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias);
+            ClassProperty tmp = null;
+
+            for (String mtdName : mtdNames) {
+                try {
+                    tmp = new ClassProperty(cls.getMethod(mtdName), key, alias);
+                }
+                catch (NoSuchMethodException ignore) {
+                    // No-op, will try another method or field.
+                }
             }
-            catch (NoSuchMethodException ignore) {
+
+            if (tmp == null) {
                 try {
                     tmp = new ClassProperty(cls.getDeclaredField(prop), key, alias);
                 }
