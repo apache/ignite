@@ -33,7 +33,7 @@ angular
 })
 .run(function($rootScope, $state, Auth) {
 	$rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-		if (Auth.nonAuthorized && (toState.name !== 'login' && !_.startsWith(toState.name, 'password.'))) {
+		if (!Auth.authorized && (toState.name !== 'login' && !_.startsWith(toState.name, 'password.'))) {
 			event.preventDefault();
 
 			$state.go('login');

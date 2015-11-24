@@ -38,37 +38,36 @@ angular
         }
     }
 
-    this.$get = function($http, $state, $common, User) {
+    this.$get = function($http, $rootScope, $state, $common, User) {
     	return {
-    		get nonAuthorized () {
-    			return !_authorized;
+    		get authorized () {
+    			return _authorized;
     		},
             auth(action, userInfo) {
                 $http.post('/api/v1/' + action, userInfo)
-                    .success(function (res) {
-                        if (action == 'password/forgot')
-                            $state.go('password.send');
-                        else {
-                            authorized(true);
-                            User.read();
+                    .then(User.read)
+                    .then(function (user) {
+                        authorized(true);
 
-                            $state.go('base.configuration.clusters');
-                        }
+                        $state.go('base.configuration.clusters');
+
+                        $rootScope.$broadcast('user', user);
                     })
-                    .error(function (err, status) {
-                        $common.showPopoverMessage(undefined, undefined, 'user_email', err);
+                    .catch(function (errMsg) {
+                        $common.showPopoverMessage(undefined, undefined, 'user_email', errMsg);
                     });
             },
 			logout() {
 				$http.post('/api/v1/logout')
-					.success(function (res) {
+					.then(function () {
+                        User.clean();
+
                         authorized(false);
-                        User.clean()
 
 						$state.go('login');
 					})
-					.error(function (err, status) {
-						$common.showError(err);
+					.catch(function (errMsg) {
+						$common.showError(errMsg);
 					});
 			}
     	}

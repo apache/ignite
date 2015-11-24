@@ -38,41 +38,6 @@ router.post('/user', function (req, res) {
     res.json(user);
 });
 
-// GET dropdown-menu template.
-router.get('/select', function (req, res) {
-    res.render('templates/select', {});
-});
-
-// GET dropdown-menu template.
-router.get('/validation-error', function (req, res) {
-    res.render('templates/validation-error', {});
-});
-
-// GET confirmation dialog.
-router.get('/message', function (req, res) {
-    res.render('templates/message', {});
-});
-
-// GET confirmation dialog.
-router.get('/confirm', function (req, res) {
-    res.render('templates/confirm', {});
-});
-
-// GET batch confirmation dialog.
-router.get('/confirm/batch', function (req, res) {
-    res.render('templates/batch-confirm', {});
-});
-
-// GET copy dialog.
-router.get('/clone', function (req, res) {
-    res.render('templates/clone', {});
-});
-
-/* GET login dialog. */
-router.get('/login', function (req, res) {
-    res.render('login');
-});
-
 /**
  * Register new account.
  */
@@ -245,10 +210,6 @@ router.post('/password/reset', function(req, res) {
     });
 });
 
-router.get('/password/reset', function (req, res) {
-    res.render('reset');
-});
-
 /* GET reset password page. */
 router.post('/password/validate-token', function (req, res) {
     var token = req.body.token;
@@ -265,14 +226,6 @@ router.post('/password/validate-token', function (req, res) {
 
         res.json(data);
     });
-});
-
-/* GET home page. */
-router.get('/', function (req, res) {
-    if (req.isAuthenticated())
-        res.redirect('/configuration/clusters');
-    else
-        res.render('login');
 });
 
 module.exports = router;

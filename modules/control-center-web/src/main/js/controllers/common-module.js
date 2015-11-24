@@ -26,12 +26,25 @@ var consoleModule = angular.module('ignite-web-console',
         /* ignite:plugins */
         /* endignite */
     ])
-    .run(function ($rootScope, $http, Auth, User) {
-        if (!Auth.nonAuthorized) {
-            User.read().then((user) => {
+    .run(function ($rootScope, $http, $state, $common, Auth, User) {
+        if (Auth.authorized)
+            User.read().then(function (user) {
                 $rootScope.$broadcast('user', user);
             });
-        };
+
+        $rootScope.revertIdentity = function () {
+            $http
+                .get('/api/v1/admin/revertIdentity')
+                .then(User.read)
+                .then(function (user) {
+                    $rootScope.$broadcast('user', user);
+
+                    $state.go('base.admin')
+                })
+                .catch(function (errMsg) {
+                    $common.showError($common.errorMessage(errMsg));
+                });
+        }
     });
 
 // Modal popup configuration.
@@ -1956,6 +1969,7 @@ consoleModule.controller('activeLink', [
     }]);
 
 // Login popup controller.
+// TODO IGNITE-1936 Refactor this controller.
 consoleModule.controller('auth', [
     '$scope', '$modal', '$http', '$window', '$common', '$focus', 'Auth', '$state',
     function ($scope, $modal, $http, $window, $common, $focus, Auth, $state) {
@@ -1974,6 +1988,17 @@ consoleModule.controller('auth', [
             $scope.userDropdown.push({text: 'Log Out', href: '/logout'});
         }
 
+        $scope.$on('user', function (event, user) {
+            $scope.userDropdown = [{text: 'Profile', href: '/profile'}];
+
+            if (user && !user.becomeUsed) {
+                if (user && user.admin)
+                    $scope.userDropdown.push({text: 'Admin Panel', href: '/admin'});
+
+                $scope.userDropdown.push({text: 'Log Out', href: '/logout'});
+            }
+        });
+
         $focus('user_email');
 
         if ($scope.token && !$scope.error)
@@ -1991,19 +2016,16 @@ consoleModule.controller('auth', [
         // Try to reset user password for provided token.
         $scope.resetPassword = function (reset_info) {
             $http.post('/api/v1/password/reset', reset_info)
-                .success(function (data) {
+                .success(function () {
                     $common.showInfo('Password successfully changed');
 
-                    $scope.user_info = {email: data};
-                    $window.location = '/';
+                    $state.go('base.configuration.clusters');
                 })
                 .error(function (data, state) {
                     $common.showError(data);
 
-                    if (state == 503) {
-                        $scope.user_info = {};
-                        $scope.login();
-                    }
+                    if (state == 503)
+                        $state.go('base.configuration.clusters');
                 });
         }
     }]);

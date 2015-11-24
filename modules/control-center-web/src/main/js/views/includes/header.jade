@@ -18,12 +18,12 @@ header#header.header
     .viewedUser(ng-show='$root.user.becomeUsed') Currently assuming "
         strong {{$root.user.username}}
         | ",&nbsp;&nbsp;
-        a(href='/admin/become') revert to your identity.
+        a(ng-click='$root.revertIdentity()') revert to your identity.
     .container(ng-controller='auth')
         h1.navbar-brand
             a(href='/') Apache Ignite Web Console
-        .navbar-collapse.collapse(ng-controller='activeLink')
-            ul.nav.navbar-nav(ignite-navbar ng-show='$root.user')
+        .navbar-collapse.collapse(ng-controller='activeLink' ng-if='$root.user')
+            ul.nav.navbar-nav(ignite-navbar)
                 li
                     a.dropdown-toggle(ng-class='{active: isActive("/configuration.*")}' data-toggle='dropdown' bs-dropdown='configurationDropdown' data-placement='bottom-right') Configuration
                         span.caret
@@ -37,6 +37,6 @@ header#header.header
                     a(ng-class='{active: isActive(item.href)}' ng-href='{{::item.href}}') {{::item.title}}
 
             ul.nav.navbar-nav.pull-right
-                li(ng-if='$root.user')
+                li
                     a.dropdown-toggle(data-toggle='dropdown' ng-class='{active: isActive("/profile") || isActive("/admin")}' bs-dropdown='userDropdown' data-placement='bottom-right') {{user.username}}
                         span.caret

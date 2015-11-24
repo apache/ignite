@@ -104,15 +104,7 @@ router.post('/save', function (req, res) {
 
 // Become user.
 router.get('/become', function (req, res) {
-    var viewedUserId = req.query.viewedUserId;
-
-    if (!viewedUserId) {
-        req.session.viewedUser = null;
-
-        return res.sendStatus(404);
-    }
-
-    db.Account.findById(viewedUserId).exec(function (err, viewedUser) {
+    db.Account.findById(req.query.viewedUserId).exec(function (err, viewedUser) {
         if (err)
             return res.sendStatus(404);
 
@@ -120,6 +112,13 @@ router.get('/become', function (req, res) {
 
         return res.sendStatus(200);
     })
+});
+
+// Become user.
+router.get('/revertIdentity', function (req, res) {
+    req.session.viewedUser = null;
+
+    return res.sendStatus(200);
 });
 
 module.exports = router;

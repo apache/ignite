@@ -37,7 +37,7 @@ angular
 
 		return {
 			read() {
-				return $http.post('/api/v1/user', {}).then(({data}) => {
+				return $http.post('/api/v1/user').then(({data}) => {
 					try {
 						localStorage.user = JSON.stringify(data);
 					} catch(ignore) {
@@ -47,11 +47,11 @@ angular
 					return _user = $root.user = data;
 				})
 			},
-
 			clean() {
 				delete $root.user;
+
 				delete localStorage.user;
 			}
 		}
 	}]	
-})
+});
