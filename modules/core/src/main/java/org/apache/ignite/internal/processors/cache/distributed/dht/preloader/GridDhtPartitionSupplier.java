@@ -187,7 +187,7 @@ class GridDhtPartitionSupplier {
 
         T3<UUID, Integer, AffinityTopologyVersion> scId = new T3<>(id, idx, demTop);
 
-        U.log(log, "S1>> " + cctx.name() + " " + d.partitions() != null ? d.partitions().toString() : null);
+        U.log(log, "S1>> " + cctx.name() + " " + (d.partitions() != null ? d.partitions().toString() : null));
 
         if (d.updateSequence() == -1) {//Demand node requested context cleanup.
             synchronized (scMap) {
