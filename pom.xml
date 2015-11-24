@@ -83,7 +83,6 @@
         <module>modules/osgi</module>
         <module>modules/osgi-karaf</module>
         <module>modules/osgi-paxlogging</module>
-        <module>modules/platform</module>
     </modules>
 
     <profiles>
