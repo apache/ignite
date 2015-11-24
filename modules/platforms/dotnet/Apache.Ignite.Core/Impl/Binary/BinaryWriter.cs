@@ -820,7 +820,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (val == null)
                 WriteNullField();
             else
-                WriteEnumArray0(val);
+                WriteEnumArray((Array) val);
         }
 
         /// <summary>
@@ -833,21 +833,31 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (val == null)
                 WriteNullRawField();
             else
-                WriteEnumArray0(val);
+                WriteEnumArray((Array) val);
         }
 
         /// <summary>
         /// Writes the enum array.
         /// </summary>
         /// <param name="val">The value.</param>
-        private void WriteEnumArray0<T>(T[] val)
+        public void WriteEnumArray(Array val)
+        {
+            // typeof(T) can yield wrong results (string[] is object[], for example)
+            var elementType = val.GetType().GetElementType();
+
+            WriteEnumArray(val, BinaryUtils.GetEnumTypeId(elementType, Marshaller));
+        }
+
+        /// <summary>
+        /// Writes the enum array.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="elementTypeId">The element type id.</param>
+        public void WriteEnumArray(Array val, int elementTypeId)
         {
             _stream.WriteByte(BinaryUtils.TypeArrayEnum);
 
-            // typeof(T) can yield wrong results (string[] is object[], for example)
-            var elementType = val.GetType().GetElementType();  
-
-            BinaryUtils.WriteArray(val, this, BinaryUtils.GetEnumTypeId(elementType, Marshaller));
+            BinaryUtils.WriteArray(val, this, elementTypeId);
         }
 
         /// <summary>
