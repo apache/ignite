@@ -55,6 +55,9 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     /** Futures. */
     protected final ArrayList<IgniteInternalFuture<T>> futs = new ArrayList<>();
 
+    /** */
+    private final Listener lsnr = new Listener();
+
     /** Reducer. */
     @GridToStringInclude
     private IgniteReducer<T, R> rdc;
@@ -201,7 +204,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
             futs.add(fut);
         }
 
-        fut.listen(new Listener());
+        fut.listen(lsnr);
 
         if (isCancelled()) {
             try {

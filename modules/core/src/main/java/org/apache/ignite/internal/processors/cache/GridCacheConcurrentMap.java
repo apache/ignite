@@ -72,7 +72,7 @@ public class GridCacheConcurrentMap {
     private static final float DFLT_LOAD_FACTOR = 0.75f;
 
     /** The default concurrency level for this map. */
-    private static final int DFLT_CONCUR_LEVEL = 2048;
+    private static final int DFLT_CONCUR_LEVEL = Runtime.getRuntime().availableProcessors() * 2;
 
     /**
      * The maximum capacity, used if a higher value is implicitly specified by either
@@ -312,20 +312,6 @@ public class GridCacheConcurrentMap {
         this(ctx, initCap, loadFactor, DFLT_CONCUR_LEVEL);
 
         this.factory = factory;
-    }
-
-    /**
-     * Creates a new, empty map with the specified initial capacity,
-     * and with default load factor (0.75) and concurrencyLevel (16).
-     *
-     * @param ctx Cache context.
-     * @param initCap the initial capacity. The implementation
-     *      performs internal sizing to accommodate this many elements.
-     * @throws IllegalArgumentException if the initial capacity of
-     *      elements is negative.
-     */
-    public GridCacheConcurrentMap(GridCacheContext ctx, int initCap) {
-        this(ctx, initCap, DFLT_LOAD_FACTOR, DFLT_CONCUR_LEVEL);
     }
 
     /**

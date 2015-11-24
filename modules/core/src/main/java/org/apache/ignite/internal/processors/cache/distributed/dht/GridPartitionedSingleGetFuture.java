@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -198,10 +200,11 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             return;
         }
 
-        if (node.isLocal()) {
-            LinkedHashMap<KeyCacheObject, Boolean> map = U.newLinkedHashMap(1);
+        if (isDone())
+            return;
 
-            map.put(key, false);
+        if (node.isLocal()) {
+            Map<KeyCacheObject, Boolean> map = Collections.singletonMap(key, false);
 
             final GridDhtFuture<Collection<GridCacheEntryInfo>> fut = cctx.dht().getDhtAsync(node.id(),
                 -1,
