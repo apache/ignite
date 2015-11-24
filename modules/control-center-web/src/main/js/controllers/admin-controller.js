@@ -17,8 +17,8 @@
 
 // Controller for Admin screen.
 consoleModule.controller('adminController',
-    ['$scope', '$window', '$http', '$common', '$confirm',
-    function ($scope, $window, $http, $common, $confirm) {
+    ['$q', '$scope', '$window', '$http', '$common', '$confirm', '$state', 'User',
+    function ($q, $scope, $window, $http, $common, $confirm, $state, User) {
     $scope.users = null;
 
     function reload() {
@@ -34,7 +34,18 @@ consoleModule.controller('adminController',
     reload();
 
     $scope.becomeUser = function (user) {
-        $window.location = '/admin/become?viewedUserId=' + user._id;
+        $http
+        .post('/api/v1/admin/become', {viewedUserId: user._id})
+        .$promise
+        .then(User.read)
+        .then(() => {
+            $state.go('base.configuration.clusters')    
+        })
+        .catch((errMsg) => {
+            $common.showError($common.errorMessage(errMsg));
+        })
+
+        // $window.location = '/admin/become?viewedUserId=' + user._id;
     };
 
     $scope.removeUser = function (user) {

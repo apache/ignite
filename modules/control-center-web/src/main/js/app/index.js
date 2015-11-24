@@ -51,6 +51,7 @@ window.ace = ace;
 window.require = ace.require;
 window.angular = angular;
 
+import './modules/User/index'
 import './modules/Auth/index'
 
 import './modules/states/login/index'
@@ -66,6 +67,7 @@ angular
 	'ui.router',
 	// services
 	'ignite-console.Auth',
+	'ignite-console.User',
 	// states
 	'ignite-console.states.login',
 	'ignite-console.states.logout',

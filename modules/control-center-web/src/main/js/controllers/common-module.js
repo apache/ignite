@@ -26,13 +26,12 @@ var consoleModule = angular.module('ignite-web-console',
         /* ignite:plugins */
         /* endignite */
     ])
-    .run(function ($rootScope, $http) {
-        $http.post('/api/v1/user')
-            .success(function (user) {
-                $rootScope.user = user;
-
+    .run(function ($rootScope, $http, Auth, User) {
+        if (!Auth.nonAuthorized) {
+            User.read().then((user) => {
                 $rootScope.$broadcast('user', user);
             });
+        };
     });
 
 // Modal popup configuration.

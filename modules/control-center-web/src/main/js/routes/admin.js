@@ -109,7 +109,7 @@ router.get('/become', function (req, res) {
     if (!viewedUserId) {
         req.session.viewedUser = null;
 
-        return res.redirect('/admin');
+        return res.sendStatus(404);
     }
 
     db.Account.findById(viewedUserId).exec(function (err, viewedUser) {
@@ -118,7 +118,7 @@ router.get('/become', function (req, res) {
 
         req.session.viewedUser = viewedUser;
 
-        res.redirect('/');
+        return res.sendStatus(200);
     })
 });
 

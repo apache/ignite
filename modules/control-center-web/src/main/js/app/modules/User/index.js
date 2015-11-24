@@ -18,14 +18,26 @@
 import angular from 'angular'
 
 angular
-.module('ignite-console.states.admin', [
-	'ui.router'
+.module('ignite-console.User', [
+	
 ])
-.config(function($stateProvider) {
-	// set up the states
-	$stateProvider
-	.state('base.admin', {
-		url: '/admin',
-		templateUrl: '/settings/admin.html'
-	});
-});
+.provider('User', function () {
+	
+	var _user;
+
+	this.$get = ['$q', '$rootScope', '$http', ($q, $root, $http) => {
+		return {
+			read() {
+				return $http.post('/api/v1/user', () => {}).then((data) => {
+					try {
+						localStorage.user = JSON.stringify(data);
+					} catch(ignore) {
+						// No-op.
+					}
+
+					return _user = $root.user = data;
+				})
+			}
+		}
+	}]	
+})

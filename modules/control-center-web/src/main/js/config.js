@@ -12,6 +12,7 @@ System.config({
     "npm:*": "jspm_packages/npm/*"
   },
   separateCSS: true,
+
   map: {
     "Blob": "github:eligrey/Blob.js@master",
     "FileSaver": "github:eligrey/FileSaver.js@master",

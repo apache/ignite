@@ -38,7 +38,7 @@ angular
         }
     }
 
-    this.$get = function($http, $state, $common) {
+    this.$get = function($http, $state, $common, User) {
     	return {
     		get nonAuthorized () {
     			return !_authorized;
@@ -50,6 +50,7 @@ angular
                             $state.go('password.send');
                         else {
                             authorized(true);
+                            User.read();
 
                             $state.go('base.configuration.clusters');
                         }
