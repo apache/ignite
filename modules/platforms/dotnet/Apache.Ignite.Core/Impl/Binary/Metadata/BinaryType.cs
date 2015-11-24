@@ -27,9 +27,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     internal class BinaryType : IBinaryType
     {
         /** Empty metadata. */
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly BinaryType EmptyMeta =
-            new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null);
+            new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null, false);
 
         /** Empty dictionary. */
         private static readonly IDictionary<string, int> EmptyDict = new Dictionary<string, int>();
@@ -42,6 +41,18 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
 
         /** Fields. */
         private readonly IDictionary<string, int> _fields;
+
+        /** Enum flag. */
+        private readonly bool _isEnum;
+
+        /** Type id. */
+        private readonly int _typeId;
+
+        /** Type name. */
+        private readonly string _typeName;
+
+        /** Aff key field name. */
+        private readonly string _affinityKeyFieldName;
 
         /// <summary>
         /// Initializes the <see cref="BinaryType"/> class.
@@ -78,7 +89,6 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             TypeNames[BinaryUtils.TypeArray] = BinaryTypeNames.TypeNameArrayObject;
             TypeNames[BinaryUtils.TypeCollection] = BinaryTypeNames.TypeNameCollection;
             TypeNames[BinaryUtils.TypeDictionary] = BinaryTypeNames.TypeNameMap;
-
         }
 
         /// <summary>
@@ -102,10 +112,11 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="reader">The reader.</param>
         public BinaryType(IBinaryRawReader reader)
         {
-            TypeId = reader.ReadInt();
-            TypeName = reader.ReadString();
-            AffinityKeyFieldName = reader.ReadString();
+            _typeId = reader.ReadInt();
+            _typeName = reader.ReadString();
+            _affinityKeyFieldName = reader.ReadString();
             _fields = reader.ReadDictionaryAsGeneric<string, int>();
+            _isEnum = reader.ReadBoolean();
         }
 
         /// <summary>
@@ -115,25 +126,33 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="typeName">Type name.</param>
         /// <param name="fields">Fields.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
+        /// <param name="isEnum">Enum flag.</param>
         public BinaryType(int typeId, string typeName, IDictionary<string, int> fields,
-            string affKeyFieldName)
+            string affKeyFieldName, bool isEnum)
         {
-            TypeId = typeId;
-            TypeName = typeName;
-            AffinityKeyFieldName = affKeyFieldName;
+            _typeId = typeId;
+            _typeName = typeName;
+            _affinityKeyFieldName = affKeyFieldName;
             _fields = fields;
+            _isEnum = isEnum;
         }
 
         /// <summary>
         /// Type ID.
         /// </summary>
         /// <returns></returns>
-        public int TypeId { get; private set; }
+        public int TypeId
+        {
+            get { return _typeId; }
+        }
 
         /// <summary>
         /// Gets type name.
         /// </summary>
-        public string TypeName { get; private set; }
+        public string TypeName
+        {
+            get { return _typeName; }
+        }
 
         /// <summary>
         /// Gets field names for that type.
@@ -167,12 +186,15 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <summary>
         /// Gets optional affinity key field name.
         /// </summary>
-        public string AffinityKeyFieldName { get; private set; }
+        public string AffinityKeyFieldName
+        {
+            get { return _affinityKeyFieldName; }
+        }
 
         /** <inheritdoc /> */
         public bool IsEnum
         {
-            get { return false; }  // TODO
+            get { return _isEnum; }
         }
 
         /// <summary>

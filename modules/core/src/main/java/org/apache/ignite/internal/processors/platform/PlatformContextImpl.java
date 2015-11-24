@@ -438,6 +438,7 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeString(meta.typeName());
             writer.writeString(meta.affinityKeyFieldName());
             writer.writeMap(fields);
+            writer.writeBoolean(meta.isEnum());
         }
     }
 
