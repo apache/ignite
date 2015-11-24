@@ -18,6 +18,7 @@
 package org.apache.ignite.thread;
 
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.util.GridByNameRelation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.worker.GridWorker;
 
@@ -31,7 +32,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
  * </ul>
  * <b>Note</b>: this class is intended for internal use only.
  */
-public class IgniteThread extends Thread {
+public class IgniteThread extends Thread implements GridByNameRelation {
     /** Default thread's group. */
     private static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite");
 
@@ -40,6 +41,9 @@ public class IgniteThread extends Thread {
 
     /** Boolean flag indicating of this thread is currently processing message. */
     private boolean procMsg;
+
+    /** The name of the grid this thread belongs to. */
+    private final String gridName;
 
     /**
      * Creates thread with given worker.
@@ -72,6 +76,13 @@ public class IgniteThread extends Thread {
      */
     public IgniteThread(ThreadGroup grp, String gridName, String threadName, Runnable r) {
         super(grp, r, createName(threadCntr.incrementAndGet(), threadName, gridName));
+
+        this.gridName = gridName;
+    }
+
+    /** {@inheritDoc} */
+    public String getGridName() {
+        return gridName;
     }
 
     /**

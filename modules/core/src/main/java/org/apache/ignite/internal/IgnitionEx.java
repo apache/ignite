@@ -20,13 +20,10 @@ package org.apache.ignite.internal;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.IllegalCharsetNameException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,6 +62,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.GridByNameRelation;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
@@ -85,7 +83,6 @@ import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
-import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
 import org.apache.ignite.spi.collision.noop.NoopCollisionSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -1063,24 +1060,17 @@ public class IgnitionEx {
     }
 
     /**
-     * Gets a name of the grid, which is owner of current {@link IgniteSpiThread}. Default name is returned when
-     * current thread in not an {@link IgniteSpiThread}.
+     * Gets a name of the grid, which is owner of current thread. Default name is returned when
+     * current thread doesn't have a {@link GridByNameRelation}.
      *
      * @param defaultName Expected name of the current grid.
      *
      * @return The name of the current grid. This method could return {@code null}.
      */
     public static String gridName(String defaultName) {
-        String result = Thread.currentThread() instanceof IgniteSpiThread ?
-            ((IgniteSpiThread)Thread.currentThread()).getGridName() : defaultName;
-        try {
-            throw new IllegalCharsetNameException(Thread.currentThread().getClass().getName() + " result:" + result + " was:" + defaultName);
-        } catch (IllegalCharsetNameException icne) {
-            StringWriter sw = new StringWriter();
-            icne.printStackTrace(new PrintWriter(sw));
-            System.out.println(sw.toString());
-        }
-        return result;
+        return (Thread.currentThread() instanceof GridByNameRelation) ?
+             ((GridByNameRelation)Thread.currentThread()).getGridName() : defaultName;
+
     }
 
     /**
