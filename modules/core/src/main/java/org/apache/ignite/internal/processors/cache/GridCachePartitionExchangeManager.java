@@ -1136,10 +1136,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         dumpPendingObjects();
-
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            cacheCtx.preloader().dumpDebugInfo();
-        }
     }
 
     /**
