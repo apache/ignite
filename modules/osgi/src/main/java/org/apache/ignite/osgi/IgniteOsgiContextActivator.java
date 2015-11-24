@@ -57,7 +57,7 @@ import org.osgi.framework.BundleContext;
  * Currently, Ignite only allows a single instance per container. We may remove this limitation if enough demand
  * builds up in the community.
  *
- * @see <a href="http://wiki.osgi.org/wiki/Bundle-Activator">Bundle-Activator OSGi Manifest header</a>.
+ * @see <a href="http://wiki.osgi.org/wiki/Bundle-Activator">Bundle-Activator OSGi Manifest header</a>
  *
  */
 public abstract class IgniteOsgiContextActivator implements BundleActivator {

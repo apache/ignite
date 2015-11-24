@@ -134,7 +134,7 @@ public class BundleDelegatingClassLoader extends ClassLoader {
     }
 
     /**
-     * @return
+     * {@inheritDoc}
      */
     @Override
     public String toString() {

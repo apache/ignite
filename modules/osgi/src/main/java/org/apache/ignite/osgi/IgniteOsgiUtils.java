@@ -27,7 +27,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
 /**
- * Helper for OSGi.
+ * Helper class for OSGi.
  */
 public class IgniteOsgiUtils {
 
@@ -45,7 +45,7 @@ public class IgniteOsgiUtils {
     /**
      * Returns whether we are running in an OSGi environment.
      *
-     * @return
+     * @return {@core true/false}.
      */
     public static boolean isOsgi() {
         return osgi;
