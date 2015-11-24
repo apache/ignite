@@ -259,7 +259,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (elemType == typeof(Guid?))
                     return WriteGuidArray;
                 // Enums.
-                if (elemType.IsEnum || elemType == typeof(BinaryEnum))  // TODO...
+                if (elemType.IsEnum || elemType == typeof(BinaryEnum))
                     return WriteEnumArray;
                 
                 // Object array.
