@@ -18,9 +18,10 @@
 package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
 import java.util.Arrays;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredSelfTest;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 
 /**
  *
@@ -33,14 +34,14 @@ public class GridCacheOffHeapTieredPortableSelfTest extends GridCacheOffHeapTier
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        // Enable portables.
+        // Enable binary.
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        marsh.setClassNames(Arrays.asList(TestValue.class.getName()));
+        bCfg.setClassNames(Arrays.asList(TestValue.class.getName()));
 
-        cfg.setMarshaller(marsh);
+        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

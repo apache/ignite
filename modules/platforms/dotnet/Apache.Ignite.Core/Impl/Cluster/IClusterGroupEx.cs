@@ -17,8 +17,8 @@
 
 namespace Apache.Ignite.Core.Impl.Cluster
 {
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Extended internal Ignite interface.
@@ -30,6 +30,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <returns>Metadata.</returns>
-        IPortableMetadata GetMetadata(int typeId);
+        IBinaryType GetBinaryType(int typeId);
     }
 }

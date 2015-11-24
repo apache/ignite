@@ -138,26 +138,26 @@ private:
 
 namespace ignite
 {
-    namespace portable
+    namespace binary
     {
         /**
-         * Portable type definition.
+         * Binary type definition.
          */
-        IGNITE_PORTABLE_TYPE_START(QueryPerson)
-            IGNITE_PORTABLE_GET_TYPE_ID_AS_HASH(QueryPerson)
-            IGNITE_PORTABLE_GET_TYPE_NAME_AS_IS(QueryPerson)
-            IGNITE_PORTABLE_GET_FIELD_ID_AS_HASH
-            IGNITE_PORTABLE_GET_HASH_CODE_ZERO(QueryPerson)
-            IGNITE_PORTABLE_IS_NULL_FALSE(QueryPerson)
-            IGNITE_PORTABLE_GET_NULL_DEFAULT_CTOR(QueryPerson)
+        IGNITE_BINARY_TYPE_START(QueryPerson)
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(QueryPerson)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(QueryPerson)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_GET_HASH_CODE_ZERO(QueryPerson)
+            IGNITE_BINARY_IS_NULL_FALSE(QueryPerson)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(QueryPerson)
 
-            void Write(PortableWriter& writer, QueryPerson obj)
+            void Write(BinaryWriter& writer, QueryPerson obj)
             {
                 writer.WriteString("name", obj.GetName());
                 writer.WriteInt32("age", obj.GetAge());
             }
 
-            QueryPerson Read(PortableReader& reader)
+            QueryPerson Read(BinaryReader& reader)
             {
                 std::string name = reader.ReadString("name");
                 int age = reader.ReadInt32("age");
@@ -165,7 +165,7 @@ namespace ignite
                 return QueryPerson(name, age);
             }
 
-        IGNITE_PORTABLE_TYPE_END
+        IGNITE_BINARY_TYPE_END
     }
 }
 

@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTopologyReques
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
@@ -201,9 +200,6 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         for (Map.Entry<String, CacheMode> cache : nodeCaches.entrySet()) {
             String cacheName = cache.getKey();
-
-            if (CU.isSystemCache(cacheName) || CU.isIgfsCache(ctx.config(), cacheName))
-                continue;
 
             String mode = cache.getValue().toString();
 

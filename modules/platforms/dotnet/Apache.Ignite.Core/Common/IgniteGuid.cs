@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Common
 {
     using System;
     using System.Globalization;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Ignite guid with additional local ID.
@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Common
         /// Reads this object from the given reader.
         /// </summary> 
         /// <param name="r">Reader.</param>
-        internal static IgniteGuid? ReadPortable(IPortableRawReader r)
+        internal static IgniteGuid? Read(IBinaryRawReader r)
         {
             var guid = r.ReadGuid();
 

@@ -18,15 +18,16 @@
 using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
-using Apache.Ignite.Core.Portable;
-using Apache.Ignite.ExamplesDll.Portable;
+using Apache.Ignite.Core.Binary;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
     /// This example demonstrates several put-get operations on Ignite cache
-    /// with portable values. Note that portable object can be retrieved in
-    /// fully-deserialized form or in portable object format using special
+    /// with binary values. Note that binary object can be retrieved in
+    /// fully-deserialized form or in binary object format using special
     /// cache projection.
     /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
@@ -66,9 +67,9 @@ namespace Apache.Ignite.Examples.Datagrid
                 ignite.GetOrCreateCache<object, object>(CacheName).Clear();
 
                 PutGet(ignite);
-                PutGetPortable(ignite);
+                PutGetBinary(ignite);
                 PutAllGetAll(ignite);
-                PutAllGetAllPortable(ignite);
+                PutAllGetAllBinary(ignite);
 
                 Console.WriteLine();
             }
@@ -105,10 +106,10 @@ namespace Apache.Ignite.Examples.Datagrid
         }
 
         /// <summary>
-        /// Execute individual Put and Get, getting value in portable format, without de-serializing it.
+        /// Execute individual Put and Get, getting value in binary format, without de-serializing it.
         /// </summary>
         /// <param name="ignite">Ignite instance.</param>
-        private static void PutGetPortable(IIgnite ignite)
+        private static void PutGetBinary(IIgnite ignite)
         {
             var cache = ignite.GetCache<int, Organization>(CacheName);
 
@@ -123,17 +124,17 @@ namespace Apache.Ignite.Examples.Datagrid
             // Put created data entry to cache.
             cache.Put(1, org);
 
-            // Create projection that will get values as portable objects.
-            var portableCache = cache.WithKeepPortable<int, IPortableObject>();
+            // Create projection that will get values as binary objects.
+            var binaryCache = cache.WithKeepBinary<int, IBinaryObject>();
 
-            // Get recently created organization as a portable object.
-            var portableOrg = portableCache.Get(1);
+            // Get recently created organization as a binary object.
+            var binaryOrg = binaryCache.Get(1);
 
-            // Get organization's name from portable object (note that  object doesn't need to be fully deserialized).
-            string name = portableOrg.GetField<string>("name");
+            // Get organization's name from binary object (note that  object doesn't need to be fully deserialized).
+            string name = binaryOrg.GetField<string>("name");
 
             Console.WriteLine();
-            Console.WriteLine(">>> Retrieved organization name from portable object: " + name);
+            Console.WriteLine(">>> Retrieved organization name from binary object: " + name);
         }
 
         /// <summary>
@@ -175,10 +176,10 @@ namespace Apache.Ignite.Examples.Datagrid
         }
 
         /// <summary>
-        /// Execute bulk Put and Get operations getting values in portable format, without de-serializing it.
+        /// Execute bulk Put and Get operations getting values in binary format, without de-serializing it.
         /// </summary>
         /// <param name="ignite">Ignite instance.</param>
-        private static void PutAllGetAllPortable(IIgnite ignite)
+        private static void PutAllGetAllBinary(IIgnite ignite)
         {
             var cache = ignite.GetCache<int, Organization>(CacheName);
 
@@ -202,17 +203,16 @@ namespace Apache.Ignite.Examples.Datagrid
             // Put created data entries to cache.
             cache.PutAll(map);
 
-            // Create projection that will get values as portable objects.
-            var portableCache = cache.WithKeepPortable<int, IPortableObject>();
+            // Create projection that will get values as binary objects.
+            var binaryCache = cache.WithKeepBinary<int, IBinaryObject>();
 
-            // Get recently created organizations as portable objects.
-            IDictionary<int, IPortableObject> portableMap =
-                portableCache.GetAll(new List<int> { 1, 2 });
+            // Get recently created organizations as binary objects.
+            IDictionary<int, IBinaryObject> binaryMap = binaryCache.GetAll(new List<int> { 1, 2 });
 
             Console.WriteLine();
-            Console.WriteLine(">>> Retrieved organization names from portable objects:");
+            Console.WriteLine(">>> Retrieved organization names from binary objects:");
 
-            foreach (IPortableObject poratbleOrg in portableMap.Values)
+            foreach (IBinaryObject poratbleOrg in binaryMap.Values)
                 Console.WriteLine(">>>     " + poratbleOrg.GetField<string>("name"));
         }
     }

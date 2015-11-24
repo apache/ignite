@@ -19,9 +19,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Transactions;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="localNodeId">Local node id.</param>
-        public TransactionsImpl(IUnmanagedTarget target, PortableMarshaller marsh,
+        public TransactionsImpl(IUnmanagedTarget target, Marshaller marsh,
             Guid localNodeId) : base(target, marsh)
         {
             _localNodeId = localNodeId;
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         {
             return DoInOp(OpMetrics, stream =>
             {
-                IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                 return new TransactionMetricsImpl(reader);
             });

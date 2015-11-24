@@ -21,16 +21,16 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableWriter;
 
 /**
  * Person record used for query test.
  */
-public class Person implements Externalizable, PortableMarshalAware {
+public class Person implements Externalizable, Binarylizable {
     /** Person ID. */
     @QuerySqlField(index = true)
     private int id;
@@ -176,7 +176,7 @@ public class Person implements Externalizable, PortableMarshalAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         writer.writeInt("id", id);
         writer.writeInt("orgId", orgId);
         writer.writeString("firstName", firstName);
@@ -185,7 +185,7 @@ public class Person implements Externalizable, PortableMarshalAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         id = reader.readInt("id");
         orgId = reader.readInt("orgId");
         firstName = reader.readString("firstName");

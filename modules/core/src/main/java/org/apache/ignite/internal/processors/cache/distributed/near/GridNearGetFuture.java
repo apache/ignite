@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.GridFutureRemapTimeoutObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
@@ -60,7 +58,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -170,24 +167,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
-        return ver;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return
-            F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<Map<K, V>>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(IgniteInternalFuture<Map<K, V>> f) {
-                    if (isMini(f))
-                        return ((MiniFuture)f).node();
-
-                    return cctx.discovery().localNode();
-                }
-            });
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
@@ -227,7 +206,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         if (super.onDone(res, err)) {
             // Don't forget to clean up.
             if (trackable)
-                cctx.mvcc().removeFuture(this);
+                cctx.mvcc().removeFuture(futId);
 
             cache().dht().sendTtlUpdateRequest(expiryPlc);
 
@@ -270,9 +249,30 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
         Map<KeyCacheObject, GridNearCacheEntry> savedEntries = null;
 
-        // Assign keys to primary nodes.
-        for (KeyCacheObject key : keys)
-            savedEntries = map(key, mappings, topVer, mapped, savedEntries);
+        {
+            boolean success = false;
+
+            try {
+                // Assign keys to primary nodes.
+                for (KeyCacheObject key : keys)
+                    savedEntries = map(key, mappings, topVer, mapped, savedEntries);
+
+                success = true;
+            }
+            finally {
+                // Exception has been thrown, must release reserved near entries.
+                if (!success) {
+                    GridCacheVersion obsolete = cctx.versions().next(topVer);
+
+                    for (GridNearCacheEntry reserved : savedEntries.values()) {
+                        reserved.releaseEviction();
+
+                        if (reserved.markObsolete(obsolete))
+                            reserved.context().cache().removeEntry(reserved);
+                    }
+                }
+            }
+        }
 
         if (isDone())
             return;
@@ -343,7 +343,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 if (!trackable) {
                     trackable = true;
 
-                    cctx.mvcc().addFuture(this);
+                    cctx.mvcc().addFuture(this, futId);
                 }
 
                 MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer);
@@ -386,6 +386,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param saved Reserved near cache entries.
      * @return Map.
      */
+    @SuppressWarnings("unchecked")
     private Map<KeyCacheObject, GridNearCacheEntry> map(
         KeyCacheObject key,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings,
@@ -419,7 +420,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             subjId,
                             null,
                             taskName,
-                            expiryPlc);
+                            expiryPlc,
+                            !deserializePortable);
 
                         if (res != null) {
                             v = res.get1();
@@ -438,7 +440,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             subjId,
                             null,
                             taskName,
-                            expiryPlc);
+                            expiryPlc,
+                            !deserializePortable);
                     }
                 }
 
@@ -466,7 +469,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                                     subjId,
                                     null,
                                     taskName,
-                                    expiryPlc);
+                                    expiryPlc,
+                                    !deserializePortable);
 
                                 if (res != null) {
                                     v = res.get1();
@@ -485,7 +489,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                                     subjId,
                                     null,
                                     taskName,
-                                    expiryPlc);
+                                    expiryPlc,
+                                    !deserializePortable);
                             }
 
                             // Entry was not in memory or in swap, so we remove it from cache.
@@ -537,11 +542,10 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
                         }
                         else {
-                            K key0 = key.value(cctx.cacheObjectContext(), true);
-                            V val0 = v.value(cctx.cacheObjectContext(), true);
-
-                            val0 = (V)cctx.unwrapPortableIfNeeded(val0, !deserializePortable);
-                            key0 = (K)cctx.unwrapPortableIfNeeded(key0, !deserializePortable);
+                            K key0 = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
+                            V val0 = !skipVals ? 
+                                (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable) : 
+                                (V)Boolean.TRUE;
 
                             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
                         }
@@ -618,28 +622,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     }
 
     /**
-     * Affinity node to send get request to.
-     *
-     * @param key Key to get.
-     * @param topVer Topology version.
-     * @return Affinity node to get key from.
-     */
-    private ClusterNode affinityNode(KeyCacheObject key, AffinityTopologyVersion topVer) {
-        if (!canRemap) {
-            List<ClusterNode> affNodes = cctx.affinity().nodes(key, topVer);
-
-            for (ClusterNode node : affNodes) {
-                if (cctx.discovery().alive(node))
-                    return node;
-            }
-
-            return null;
-        }
-        else
-            return cctx.affinity().primary(key, topVer);
-    }
-
-    /**
      * @return Near cache.
      */
     private GridNearCacheAdapter<K, V> cache() {
@@ -697,6 +679,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             info.ttl(),
                             info.expireTime(),
                             true,
+                            !deserializePortable,
                             topVer,
                             subjId);
                     }
@@ -884,34 +867,23 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 final AffinityTopologyVersion updTopVer =
                     new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
-                final GridFutureRemapTimeoutObject timeout = new GridFutureRemapTimeoutObject(this,
-                    cctx.kernalContext().config().getNetworkTimeout(),
-                    updTopVer,
-                    e);
-
                 cctx.affinity().affinityReadyFuture(updTopVer).listen(
                     new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                            if (timeout.finish()) {
-                                cctx.kernalContext().timeout().removeTimeoutObject(timeout);
+                            try {
+                                fut.get();
 
-                                try {
-                                    fut.get();
+                                // Remap.
+                                map(keys.keySet(), F.t(node, keys), updTopVer);
 
-                                    // Remap.
-                                    map(keys.keySet(), F.t(node, keys), updTopVer);
-
-                                    onDone(Collections.<K, V>emptyMap());
-                                }
-                                catch (IgniteCheckedException e) {
-                                    GridNearGetFuture.this.onDone(e);
-                                }
+                                onDone(Collections.<K, V>emptyMap());
+                            }
+                            catch (IgniteCheckedException e) {
+                                GridNearGetFuture.this.onDone(e);
                             }
                         }
                     }
                 );
-
-                cctx.kernalContext().timeout().addTimeoutObject(timeout);
             }
         }
 

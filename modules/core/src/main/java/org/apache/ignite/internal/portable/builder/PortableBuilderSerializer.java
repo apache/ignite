@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.portable.builder;
 
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableObjectEx;
+import org.apache.ignite.internal.portable.BinaryObjectEx;
 import org.apache.ignite.internal.portable.PortableUtils;
-import org.apache.ignite.internal.portable.PortableWriterExImpl;
+import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.portable.*;
 
 import java.util.*;
 
@@ -31,16 +31,16 @@ import java.util.*;
  */
 class PortableBuilderSerializer {
     /** */
-    private final Map<PortableBuilderImpl, Integer> objToPos = new IdentityHashMap<>();
+    private final Map<BinaryObjectBuilderImpl, Integer> objToPos = new IdentityHashMap<>();
 
     /** */
-    private Map<PortableObject, PortableBuilderImpl> portableObjToWrapper;
+    private Map<BinaryObject, BinaryObjectBuilderImpl> portableObjToWrapper;
 
     /**
      * @param obj Mutable object.
      * @param posInResArr Object position in the array.
      */
-    public void registerObjectWriting(PortableBuilderImpl obj, int posInResArr) {
+    public void registerObjectWriting(BinaryObjectBuilderImpl obj, int posInResArr) {
         objToPos.put(obj, posInResArr);
     }
 
@@ -48,7 +48,7 @@ class PortableBuilderSerializer {
      * @param writer Writer.
      * @param val Value.
      */
-    public void writeValue(PortableWriterExImpl writer, Object val) {
+    public void writeValue(BinaryWriterExImpl writer, Object val) {
         if (val == null) {
             writer.writeByte(GridPortableMarshaller.NULL);
 
@@ -61,23 +61,23 @@ class PortableBuilderSerializer {
             return;
         }
 
-        if (val instanceof PortableObjectEx) {
+        if (val instanceof BinaryObjectEx) {
             if (portableObjToWrapper == null)
                 portableObjToWrapper = new IdentityHashMap<>();
 
-            PortableBuilderImpl wrapper = portableObjToWrapper.get(val);
+            BinaryObjectBuilderImpl wrapper = portableObjToWrapper.get(val);
 
             if (wrapper == null) {
-                wrapper = PortableBuilderImpl.wrap((PortableObject)val);
+                wrapper = BinaryObjectBuilderImpl.wrap((BinaryObject)val);
 
-                portableObjToWrapper.put((PortableObject)val, wrapper);
+                portableObjToWrapper.put((BinaryObject)val, wrapper);
             }
 
             val = wrapper;
         }
 
-        if (val instanceof PortableBuilderImpl) {
-            PortableBuilderImpl obj = (PortableBuilderImpl)val;
+        if (val instanceof BinaryObjectBuilderImpl) {
+            BinaryObjectBuilderImpl obj = (BinaryObjectBuilderImpl)val;
 
             Integer posInResArr = objToPos.get(obj);
 
@@ -186,7 +186,7 @@ class PortableBuilderSerializer {
      * @param arr The array.
      * @param compTypeId Component type ID.
      */
-    public void writeArray(PortableWriterExImpl writer, byte elementType, Object[] arr, int compTypeId) {
+    public void writeArray(BinaryWriterExImpl writer, byte elementType, Object[] arr, int compTypeId) {
         writer.writeByte(elementType);
         writer.writeInt(compTypeId);
         writer.writeInt(arr.length);
@@ -201,7 +201,7 @@ class PortableBuilderSerializer {
      * @param arr The array.
      * @param clsName Component class name.
      */
-    public void writeArray(PortableWriterExImpl writer, byte elementType, Object[] arr, String clsName) {
+    public void writeArray(BinaryWriterExImpl writer, byte elementType, Object[] arr, String clsName) {
         writer.writeByte(elementType);
         writer.writeInt(GridPortableMarshaller.UNREGISTERED_TYPE_ID);
         writer.writeString(clsName);

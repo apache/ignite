@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
 import java.util.Arrays;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionSelfTest;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
+import org.apache.ignite.binary.BinaryObject;
 
 /**
  *
@@ -29,14 +30,14 @@ import org.apache.ignite.portable.PortableObject;
 public class GridCacheOffHeapTieredEvictionPortableSelfTest extends GridCacheOffHeapTieredEvictionSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        // Enable portables.
+        // Enable binary.
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        marsh.setClassNames(Arrays.asList(TestValue.class.getName()));
+        bCfg.setClassNames(Arrays.asList(TestValue.class.getName()));
 
-        cfg.setMarshaller(marsh);
+        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }
@@ -66,7 +67,7 @@ public class GridCacheOffHeapTieredEvictionPortableSelfTest extends GridCacheOff
 
         /** {@inheritDoc} */
         @Override public void checkValue(Object val) {
-            PortableObject obj = (PortableObject)val;
+            BinaryObject obj = (BinaryObject)val;
 
             assertEquals(expVal, obj.field("val"));
         }
@@ -87,7 +88,7 @@ public class GridCacheOffHeapTieredEvictionPortableSelfTest extends GridCacheOff
 
         /** {@inheritDoc} */
         @Override public void checkValue(Object val) {
-            PortableObject obj = (PortableObject)val;
+            BinaryObject obj = (BinaryObject)val;
 
             assertEquals(expVal, obj.field("val"));
         }

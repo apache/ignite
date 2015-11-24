@@ -133,7 +133,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     ) {
         assert futId != null;
         assert miniId != null;
-        assert ver != null;
         assert keys != null;
 
         this.cacheId = cacheId;

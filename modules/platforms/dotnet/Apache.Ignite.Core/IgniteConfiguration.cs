@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core
 {
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Lifecycle;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Grid configuration.
@@ -61,8 +61,8 @@ namespace Apache.Ignite.Core
             JvmOptions = cfg.JvmOptions != null ? new List<string>(cfg.JvmOptions) : null;
             Assemblies = cfg.Assemblies != null ? new List<string>(cfg.Assemblies) : null;
 
-            PortableConfiguration = cfg.PortableConfiguration != null
-                ? new PortableConfiguration(cfg.PortableConfiguration)
+            BinaryConfiguration = cfg.BinaryConfiguration != null
+                ? new BinaryConfiguration(cfg.BinaryConfiguration)
                 : null;
 
             LifecycleBeans = cfg.LifecycleBeans != null ? new List<ILifecycleBean>(cfg.LifecycleBeans) : null;
@@ -72,12 +72,12 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Gets or sets the portable configuration.
+        /// Gets or sets the binary configuration.
         /// </summary>
         /// <value>
-        /// The portable configuration.
+        /// The binary configuration.
         /// </value>
-        public PortableConfiguration PortableConfiguration { get; set; }
+        public BinaryConfiguration BinaryConfiguration { get; set; }
 
         /// <summary>
         /// URL to Spring configuration file.

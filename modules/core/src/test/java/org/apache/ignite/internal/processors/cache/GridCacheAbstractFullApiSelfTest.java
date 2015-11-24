@@ -78,6 +78,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -182,6 +183,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
@@ -374,6 +377,81 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         checkContainsKey(true, "testContainsKey");
         checkContainsKey(false, "testContainsKeyWrongKey");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContainsKeyTx() throws Exception {
+        if (!txEnabled())
+            return;
+
+        IgniteCache<String, Integer> cache = jcache();
+
+        IgniteTransactions txs = ignite(0).transactions();
+
+        for (int i = 0; i < 10; i++) {
+            String key = String.valueOf(i);
+
+            try (Transaction tx = txs.txStart()) {
+                assertNull(key, cache.get(key));
+
+                assertFalse(cache.containsKey(key));
+
+                tx.commit();
+            }
+
+            try (Transaction tx = txs.txStart()) {
+                assertNull(key, cache.get(key));
+
+                cache.put(key, i);
+
+                assertTrue(cache.containsKey(key));
+
+                tx.commit();
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContainsKeysTx() throws Exception {
+        if (!txEnabled())
+            return;
+
+        IgniteCache<String, Integer> cache = jcache();
+
+        IgniteTransactions txs = ignite(0).transactions();
+
+        Set<String> keys = new HashSet<>();
+
+        for (int i = 0; i < 10; i++) {
+            String key = String.valueOf(i);
+
+            keys.add(key);
+        }
+
+        try (Transaction tx = txs.txStart()) {
+            for (String key : keys)
+                assertNull(key, cache.get(key));
+
+            assertFalse(cache.containsKeys(keys));
+
+            tx.commit();
+        }
+
+        try (Transaction tx = txs.txStart()) {
+            for (String key : keys)
+                assertNull(key, cache.get(key));
+
+            for (String key : keys)
+                cache.put(key, 0);
+
+            assertTrue(cache.containsKeys(keys));
+
+            tx.commit();
+        }
     }
 
     /**
@@ -3994,6 +4072,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testIgniteCacheIterator() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1756");
+
         IgniteCache<String, Integer> cache = jcache(0);
 
         Iterator<Cache.Entry<String, Integer>> it = cache.iterator();
@@ -4691,7 +4771,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         TransactionIsolation txIsolation)
         throws  Exception
     {
-        log.info("Test tx skip store [concurrency=" + txConcurrency + ", isolation=" + txIsolation + ']');
+        info("Test tx skip store [concurrency=" + txConcurrency + ", isolation=" + txIsolation + ']');
 
         cache.removeAll(data.keySet());
         checkEmpty(cache, cacheSkipStore);

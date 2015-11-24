@@ -17,8 +17,8 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.portable.datagrid.CacheClientPortablePutGetExample;
-import org.apache.ignite.examples.portable.datagrid.CacheClientPortableQueryExample;
+import org.apache.ignite.examples.binary.datagrid.CacheClientBinaryPutGetExample;
+import org.apache.ignite.examples.binary.datagrid.CacheClientBinaryQueryExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
@@ -34,13 +34,13 @@ public class CacheClientPortableExampleTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     public void testPortablePutGetExample() throws Exception {
-        CacheClientPortablePutGetExample.main(new String[] {});
+        CacheClientBinaryPutGetExample.main(new String[] {});
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPortableQueryExample() throws Exception {
-        CacheClientPortableQueryExample.main(new String[] {});
+        CacheClientBinaryQueryExample.main(new String[] {});
     }
 }

@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-#include "ignite/impl/portable/portable_reader_impl.h"
+#include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/ignite_environment.h"
-#include "ignite/portable/portable.h"
+#include "ignite/binary/binary.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::common::java;
 using namespace ignite::impl::interop;
-using namespace ignite::impl::portable;
-using namespace ignite::portable;
+using namespace ignite::impl::binary;
+using namespace ignite::binary;
 
 namespace ignite 
 {
@@ -56,7 +56,7 @@ namespace ignite
         } 
 
         IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(NULL),
-            metaMgr(new PortableMetadataManager())
+            metaMgr(new BinaryTypeManager())
         {
             // No-op.
         }
@@ -136,7 +136,7 @@ namespace ignite
             }
         }
 
-        PortableMetadataManager* IgniteEnvironment::GetMetadataManager()
+        BinaryTypeManager* IgniteEnvironment::GetTypeManager()
         {
             return metaMgr;
         }
@@ -146,7 +146,7 @@ namespace ignite
             InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
             InteropInputStream stream(&mem);
 
-            PortableReaderImpl reader(&stream);
+            BinaryReaderImpl reader(&stream);
             
             int32_t nameLen = reader.ReadString(NULL, 0);
 

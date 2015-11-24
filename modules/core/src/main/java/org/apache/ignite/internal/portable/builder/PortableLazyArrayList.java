@@ -131,7 +131,7 @@ class PortableLazyArrayList extends AbstractList<Object> implements PortableBuil
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
         if (delegate == null) {
             int size = reader.readIntPositioned(off + 1);
 

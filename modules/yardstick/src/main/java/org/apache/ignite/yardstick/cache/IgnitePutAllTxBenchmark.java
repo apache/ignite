@@ -28,7 +28,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 /**
  * Ignite benchmark that performs transactional putAll operations.
  */
-public class IgnitePutAllTxBenchmark extends IgniteCacheAbstractBenchmark {
+public class IgnitePutAllTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** Affinity mapper. */
     private Affinity<Integer> aff;
 

@@ -35,17 +35,17 @@
     <ClCompile Include="..\..\src\concurrent_test.cpp" />
     <ClCompile Include="..\..\src\ignition_test.cpp" />
     <ClCompile Include="..\..\src\handle_registry_test.cpp" />
-    <ClCompile Include="..\..\src\portable_reader_writer_raw_test.cpp" />
-    <ClCompile Include="..\..\src\portable_reader_writer_test.cpp" />
-    <ClCompile Include="..\..\src\portable_session_test.cpp" />
-    <ClCompile Include="..\..\src\portable_test_defs.cpp" />
+    <ClCompile Include="..\..\src\binary_reader_writer_raw_test.cpp" />
+    <ClCompile Include="..\..\src\binary_reader_writer_test.cpp" />
+    <ClCompile Include="..\..\src\binary_session_test.cpp" />
+    <ClCompile Include="..\..\src\binary_test_defs.cpp" />
     <ClCompile Include="..\..\src\cache_query_test.cpp" />
     <ClCompile Include="..\..\src\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity_messages.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\ignite\portable_test_defs.h" />
-    <ClInclude Include="..\..\include\ignite\portable_test_utils.h" />
+    <ClInclude Include="..\..\include\ignite\binary_test_defs.h" />
+    <ClInclude Include="..\..\include\ignite\binary_test_utils.h" />
     <ClInclude Include="..\..\include\teamcity_messages.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -315,6 +315,16 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteCache<K, V> cache(@Nullable String name);
 
     /**
+     * Gets the collection of names of currently available caches.
+     *
+     * Collection may contain {@code null} as a value for a cache name. Refer to {@link CacheConfiguration#getName()}
+     * for more info.
+     *
+     * @return Collection of names of currently available caches or an empty collection if no caches are available.
+     */
+    public Collection<String> cacheNames();
+
+    /**
      * Gets grid transactions facade.
      *
      * @return Grid transactions facade.
@@ -420,6 +430,23 @@ public interface Ignite extends AutoCloseable {
         throws IgniteException;
 
     /**
+     * Gets or creates semaphore. If semaphore is not found in cache and {@code create} flag
+     * is {@code true}, it is created using provided name and count parameter.
+     *
+     * @param name Name of the semaphore.
+     * @param cnt Count for new semaphore creation. Ignored if {@code create} flag is {@code false}.
+     * @param failoverSafe {@code True} to create failover safe semaphore which means that
+     *      if any node leaves topology permits already acquired by that node are silently released
+     *      and become available for alive nodes to acquire. If flag is {@code false} then
+     *      all threads waiting for available permits get interrupted.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Semaphore for the given name.
+     * @throws IgniteException If semaphore could not be fetched or created.
+     */
+    public IgniteSemaphore semaphore(String name, int cnt, boolean failoverSafe, boolean create)
+        throws IgniteException;
+
+    /**
      * Will get a named queue from cache and create one if it has not been created yet and {@code cfg} is not
      * {@code null}.
      * If queue is present already, queue properties will not be changed. Use
@@ -459,11 +486,11 @@ public interface Ignite extends AutoCloseable {
     public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException;
 
     /**
-     * Gets an instance of {@link IgnitePortables} interface.
+     * Gets an instance of {@link IgniteBinary} interface.
      *
-     * @return Instance of {@link IgnitePortables} interface.
+     * @return Instance of {@link IgniteBinary} interface.
      */
-    public IgnitePortables portables();
+    public IgniteBinary binary();
 
     /**
      * Closes {@code this} instance of grid. This method is identical to calling

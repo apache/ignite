@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
     /// Grid future implementation.
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
         /** <inheritdoc /> */
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public void OnResult(IPortableStream stream)
+        public void OnResult(IBinaryStream stream)
         {
             try
             {

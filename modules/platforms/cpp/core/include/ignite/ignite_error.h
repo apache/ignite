@@ -100,8 +100,8 @@ namespace ignite
         /** Memory operation error. */
         static const int IGNITE_ERR_MEMORY = 1001;
 
-        /** Portable error. */
-        static const int IGNITE_ERR_PORTABLE = 1002;
+        /** Binary error. */
+        static const int IGNITE_ERR_BINARY = 1002;
 
         /** Generic Ignite error. */
         static const int IGNITE_ERR_GENERIC = 2000;

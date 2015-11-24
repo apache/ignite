@@ -17,19 +17,22 @@
 
 package org.apache.ignite.internal.portable.builder;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.portable.BinaryObjectImpl;
+import org.apache.ignite.internal.portable.BinaryReaderExImpl;
+import org.apache.ignite.internal.portable.BinaryWriterExImpl;
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.PortablePositionReadable;
+import org.apache.ignite.internal.portable.PortablePrimitives;
+import org.apache.ignite.internal.portable.PortableSchema;
+import org.apache.ignite.internal.portable.PortableUtils;
+import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
+
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableContext;
-import org.apache.ignite.internal.portable.PortableObjectImpl;
-import org.apache.ignite.internal.portable.PortablePositionReadable;
-import org.apache.ignite.internal.portable.PortablePrimitives;
-import org.apache.ignite.internal.portable.PortableReaderExImpl;
-import org.apache.ignite.internal.portable.PortableUtils;
-import org.apache.ignite.internal.portable.PortableWriterExImpl;
-import org.apache.ignite.portable.PortableException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
@@ -40,30 +43,50 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
  */
 public class PortableBuilderReader implements PortablePositionReadable {
     /** */
-    private final Map<Integer, PortableBuilderImpl> objMap = new HashMap<>();
-
-    /** */
     private final PortableContext ctx;
 
     /** */
-    private final PortableReaderExImpl reader;
+    private final byte[] arr;
 
     /** */
-    private byte[] arr;
+    private final BinaryReaderExImpl reader;
+
+    /** */
+    private final Map<Integer, BinaryObjectBuilderImpl> objMap;
 
     /** */
     private int pos;
 
-    /**
+    /*
+     * Constructor.
+     *
      * @param objImpl Portable object
      */
-    PortableBuilderReader(PortableObjectImpl objImpl) {
+    PortableBuilderReader(BinaryObjectImpl objImpl) {
         ctx = objImpl.context();
         arr = objImpl.array();
         pos = objImpl.start();
 
         // TODO: IGNITE-1272 - Is class loader needed here?
-        reader = new PortableReaderExImpl(portableContext(), arr, pos, null);
+        reader = new BinaryReaderExImpl(ctx, PortableHeapInputStream.create(arr, pos), null);
+
+        objMap = new HashMap<>();
+    }
+
+    /**
+     * Copying constructor.
+     *
+     * @param other Other reader.
+     * @param start Start position.
+     */
+    PortableBuilderReader(PortableBuilderReader other, int start) {
+        this.ctx = other.ctx;
+        this.arr = other.arr;
+        this.pos = start;
+
+        reader = new BinaryReaderExImpl(ctx, PortableHeapInputStream.create(arr, start), null, other.reader.handles());
+
+        this.objMap = other.objMap;
     }
 
     /**
@@ -76,8 +99,17 @@ public class PortableBuilderReader implements PortablePositionReadable {
     /**
      * @param obj Mutable portable object.
      */
-    public void registerObject(PortableBuilderImpl obj) {
+    public void registerObject(BinaryObjectBuilderImpl obj) {
         objMap.put(obj.start(), obj);
+    }
+
+    /**
+     * Get schema of the object, starting at the given position.
+     *
+     * @return Object's schema.
+     */
+    public PortableSchema schema() {
+        return reader.getOrCreateSchema();
     }
 
     /**
@@ -151,11 +183,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
      * @return String length.
      */
     public int readStringLength() {
-        boolean utf = PortablePrimitives.readBoolean(arr, pos);
-
-        int arrLen = PortablePrimitives.readInt(arr, pos + 1);
-
-        return 1 + (utf ? arrLen : arrLen << 1);
+        return PortablePrimitives.readInt(arr, pos);
     }
 
     /**
@@ -170,23 +198,13 @@ public class PortableBuilderReader implements PortablePositionReadable {
             return null;
 
         if (flag != STRING)
-            throw new PortableException("Failed to deserialize String.");
+            throw new BinaryObjectException("Failed to deserialize String.");
 
-        boolean convert = readBoolean();
         int len = readInt();
 
-        String str;
+        String str = new String(arr, pos, len, UTF_8);
 
-        if (convert) {
-            str = new String(arr, pos, len, UTF_8);
-
-            pos += len;
-        }
-        else {
-            str = String.valueOf(PortablePrimitives.readCharArray(arr, pos, len));
-
-            pos += len << 1;
-        }
+        pos += len;
 
         return str;
     }
@@ -338,7 +356,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 break;
 
             default:
-                throw new PortableException("Invalid flag value: " + type);
+                throw new BinaryObjectException("Invalid flag value: " + type);
         }
 
         pos += len;
@@ -359,10 +377,10 @@ public class PortableBuilderReader implements PortablePositionReadable {
             case GridPortableMarshaller.HANDLE: {
                 int objStart = pos - readIntPositioned(pos + 1);
 
-                PortableBuilderImpl res = objMap.get(objStart);
+                BinaryObjectBuilderImpl res = objMap.get(objStart);
 
                 if (res == null) {
-                    res = new PortableBuilderImpl(this, objStart);
+                    res = new BinaryObjectBuilderImpl(new PortableBuilderReader(this, objStart), objStart);
 
                     objMap.put(objStart, res);
                 }
@@ -371,10 +389,10 @@ public class PortableBuilderReader implements PortablePositionReadable {
             }
 
             case GridPortableMarshaller.OBJ: {
-                PortableBuilderImpl res = objMap.get(pos);
+                BinaryObjectBuilderImpl res = objMap.get(pos);
 
                 if (res == null) {
-                    res = new PortableBuilderImpl(this, pos);
+                    res = new BinaryObjectBuilderImpl(new PortableBuilderReader(this, pos), pos);
 
                     objMap.put(pos, res);
                 }
@@ -455,13 +473,13 @@ public class PortableBuilderReader implements PortablePositionReadable {
 
                 int start = readIntPositioned(pos + 4 + size);
 
-                PortableObjectImpl portableObj = new PortableObjectImpl(ctx, arr, pos + 4 + start);
+                BinaryObjectImpl portableObj = new BinaryObjectImpl(ctx, arr, pos + 4 + start);
 
                 return new PortablePlainPortableObject(portableObj);
             }
 
             default:
-                throw new PortableException("Invalid flag value: " + type);
+                throw new BinaryObjectException("Invalid flag value: " + type);
         }
     }
 
@@ -484,10 +502,10 @@ public class PortableBuilderReader implements PortablePositionReadable {
             case GridPortableMarshaller.HANDLE: {
                 int objStart = pos - 1 - readInt();
 
-                PortableBuilderImpl res = objMap.get(objStart);
+                BinaryObjectBuilderImpl res = objMap.get(objStart);
 
                 if (res == null) {
-                    res = new PortableBuilderImpl(this, objStart);
+                    res = new BinaryObjectBuilderImpl(new PortableBuilderReader(this, objStart), objStart);
 
                     objMap.put(objStart, res);
                 }
@@ -498,10 +516,10 @@ public class PortableBuilderReader implements PortablePositionReadable {
             case GridPortableMarshaller.OBJ: {
                 pos--;
 
-                PortableBuilderImpl res = objMap.get(pos);
+                BinaryObjectBuilderImpl res = objMap.get(pos);
 
                 if (res == null) {
-                    res = new PortableBuilderImpl(this, pos);
+                    res = new BinaryObjectBuilderImpl(new PortableBuilderReader(this, pos), pos);
 
                     objMap.put(pos, res);
                 }
@@ -633,7 +651,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                     if (flag == GridPortableMarshaller.NULL) continue;
 
                     if (flag != GridPortableMarshaller.DATE)
-                        throw new PortableException("Invalid flag value: " + flag);
+                        throw new BinaryObjectException("Invalid flag value: " + flag);
 
                     long time = PortablePrimitives.readLong(arr, pos);
 
@@ -657,7 +675,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                         continue;
 
                     if (flag != GridPortableMarshaller.TIMESTAMP)
-                        throw new PortableException("Invalid flag value: " + flag);
+                        throw new BinaryObjectException("Invalid flag value: " + flag);
 
                     long time = PortablePrimitives.readLong(arr, pos);
 
@@ -719,7 +737,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                         return new PortableLazySet(this, size);
                 }
 
-                throw new PortableException("Unknown collection type: " + colType);
+                throw new BinaryObjectException("Unknown collection type: " + colType);
             }
 
             case GridPortableMarshaller.MAP:
@@ -741,14 +759,14 @@ public class PortableBuilderReader implements PortablePositionReadable {
 
                 int start = readInt();
 
-                PortableObjectImpl portableObj = new PortableObjectImpl(ctx, arr,
+                BinaryObjectImpl portableObj = new BinaryObjectImpl(ctx, arr,
                     pos - 4 - size + start);
 
                 return new PortablePlainPortableObject(portableObj);
             }
 
             default:
-                throw new PortableException("Invalid flag value: " + type);
+                throw new BinaryObjectException("Invalid flag value: " + type);
         }
 
         PortableAbstractLazyValue res;
@@ -794,7 +812,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
     /**
      * @return Reader.
      */
-    PortableReaderExImpl reader() {
+    BinaryReaderExImpl reader() {
         return reader;
     }
 
@@ -829,7 +847,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
         }
 
         /** {@inheritDoc} */
-        @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
+        @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
             ctx.writeValue(writer, wrappedCollection());
         }
 

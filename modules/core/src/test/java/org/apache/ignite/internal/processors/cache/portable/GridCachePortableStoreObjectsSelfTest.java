@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.portable;
 import java.util.Map;
 
 /**
- * Tests for cache store with portables.
+ * Tests for cache store with binary.
  */
 public class GridCachePortableStoreObjectsSelfTest extends GridCachePortableStoreAbstractSelfTest {
     /** {@inheritDoc} */

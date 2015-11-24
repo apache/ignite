@@ -6,7 +6,7 @@ Using Apache Ignite C++ APIs you can execute perform concurrent operations on
 the data stored in cache.
 
 Apache Ignite C++ can access cluster and share data with .Net and
-Java applications using portable object format.
+Java applications using binary object format.
 
 Support for the following will be added in next releases:
  * ACID transactions management.

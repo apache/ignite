@@ -26,12 +26,13 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
+import org.apache.ignite.binary.BinaryObject;
 
 /**
  * Tests that portable object is the same in cache entry and in index.
@@ -46,11 +47,13 @@ public abstract class GridPortableDuplicateIndexObjectsAbstractSelfTest extends 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        marsh.setClassNames(Collections.singletonList(TestPortable.class.getName()));
+        bCfg.setClassNames(Collections.singletonList(TestPortable.class.getName()));
 
-        cfg.setMarshaller(marsh);
+        cfg.setBinaryConfiguration(bCfg);
+
+        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }
@@ -96,9 +99,9 @@ public abstract class GridPortableDuplicateIndexObjectsAbstractSelfTest extends 
 
         cache.put(key, new TestPortable(fieldOneVal, fieldTwoVal));
 
-        IgniteCache<Integer, PortableObject> prj = grid(0).cache(null).withKeepPortable();
+        IgniteCache<Integer, BinaryObject> prj = grid(0).cache(null).withKeepBinary();
 
-        PortableObject cacheVal = prj.get(key);
+        BinaryObject cacheVal = prj.get(key);
 
         assertEquals(fieldOneVal, cacheVal.field("fieldOne"));
         assertEquals(new Integer(fieldTwoVal), cacheVal.field("fieldTwo"));
@@ -108,7 +111,7 @@ public abstract class GridPortableDuplicateIndexObjectsAbstractSelfTest extends 
 
         assertEquals(1, row.size());
 
-        PortableObject qryVal = (PortableObject)row.get(0);
+        BinaryObject qryVal = (BinaryObject)row.get(0);
 
         assertEquals(fieldOneVal, qryVal.field("fieldOne"));
         assertEquals(new Integer(fieldTwoVal), qryVal.field("fieldTwo"));

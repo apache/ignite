@@ -21,7 +21,9 @@ import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
@@ -31,8 +33,8 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -58,16 +60,21 @@ public class GridPortableAffinityKeySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PortableTypeConfiguration typeCfg = new PortableTypeConfiguration();
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
 
-        typeCfg.setClassName(TestObject.class.getName());
-        typeCfg.setAffinityKeyFieldName("affKey");
+        typeCfg.setTypeName(TestObject.class.getName());
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        marsh.setTypeConfigurations(Collections.singleton(typeCfg));
+        bCfg.setTypeConfigurations(Collections.singleton(typeCfg));
 
-        cfg.setMarshaller(marsh);
+        cfg.setBinaryConfiguration(bCfg);
+
+        CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(TestObject.class.getName(), "affKey");
+
+        cfg.setCacheKeyCfg(keyCfg);
+
+        cfg.setMarshaller(new BinaryMarshaller());
 
         if (!gridName.equals(getTestGridName(GRID_CNT))) {
             CacheConfiguration cacheCfg = new CacheConfiguration();

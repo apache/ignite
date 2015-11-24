@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.cache.store;
 
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
+import org.apache.ignite.internal.portable.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 
@@ -45,7 +45,7 @@ public abstract class PlatformCacheStoreCallback {
     public void invoke(long memPtr) {
         if (memPtr > 0) {
             try (PlatformMemory mem = ctx.memory().get(memPtr)) {
-                PortableRawReaderEx reader = ctx.reader(mem);
+                BinaryRawReaderEx reader = ctx.reader(mem);
 
                 invoke0(reader);
             }
@@ -57,5 +57,5 @@ public abstract class PlatformCacheStoreCallback {
      *
      * @param reader Reader.
      */
-    protected abstract void invoke0(PortableRawReaderEx reader);
+    protected abstract void invoke0(BinaryRawReaderEx reader);
 }

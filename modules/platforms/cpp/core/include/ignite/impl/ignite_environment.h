@@ -22,7 +22,7 @@
 #include <ignite/common/java.h>
 
 #include "ignite/impl/interop/interop_memory.h"
-#include "portable/portable_metadata_manager.h"
+#include "binary/binary_type_manager.h"
 
 namespace ignite 
 {    
@@ -104,11 +104,11 @@ namespace ignite
             ignite::common::concurrent::SharedPointer<interop::InteropMemory> GetMemory(int64_t memPtr);
 
             /**
-             * Get metadata manager.
+             * Get type manager.
              *
-             * @param Metadata manager.
+             * @param Type manager.
              */
-            portable::PortableMetadataManager* GetMetadataManager();
+            binary::BinaryTypeManager* GetTypeManager();
         private:
             /** Context to access Java. */
             ignite::common::concurrent::SharedPointer<ignite::common::java::JniContext> ctx;
@@ -119,8 +119,8 @@ namespace ignite
             /** Ignite name. */
             char* name;
 
-            /** Metadata manager. */
-            portable::PortableMetadataManager* metaMgr;       
+            /** Type manager. */
+            binary::BinaryTypeManager* metaMgr;       
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteEnvironment);
         };

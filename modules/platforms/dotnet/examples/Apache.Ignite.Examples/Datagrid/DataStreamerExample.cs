@@ -20,10 +20,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Datastream;
-using Apache.Ignite.ExamplesDll.Portable;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
     /// Demonstrates how cache can be populated with data utilizing <see cref="IDataStreamer{TK,TV}"/>.
     /// Data streamer is a lot more efficient to use than standard cache put operation 

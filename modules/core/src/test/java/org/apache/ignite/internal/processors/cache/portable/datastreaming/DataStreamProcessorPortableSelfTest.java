@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache.portable.datastreaming;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.stream.StreamReceiver;
 
 /**
@@ -34,7 +34,7 @@ public class DataStreamProcessorPortableSelfTest extends DataStreamProcessorSelf
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryMarshaller marsh = new BinaryMarshaller();
 
         cfg.setMarshaller(marsh);
 
@@ -46,6 +46,11 @@ public class DataStreamProcessorPortableSelfTest extends DataStreamProcessorSelf
         return new TestDataReceiver();
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean customKeepBinary() {
+        return true;
+    }
+
     /**
      *
      */
@@ -55,9 +60,9 @@ public class DataStreamProcessorPortableSelfTest extends DataStreamProcessorSelf
             Collection<Map.Entry<String, TestObject>> entries) {
             for (Map.Entry<String, TestObject> e : entries) {
                 assertTrue(e.getKey() instanceof String);
-                assertTrue(e.getValue() instanceof PortableObject);
+                assertTrue(String.valueOf(e.getValue()), e.getValue() instanceof BinaryObject);
 
-                TestObject obj = ((PortableObject)e.getValue()).deserialize();
+                TestObject obj = ((BinaryObject)e.getValue()).deserialize();
 
                 cache.put(e.getKey(), new TestObject(obj.val + 1));
             }

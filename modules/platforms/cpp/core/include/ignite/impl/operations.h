@@ -25,9 +25,9 @@
 #include <ignite/common/common.h>
 
 #include "ignite/cache/cache_entry.h"
-#include "ignite/impl/portable/portable_reader_impl.h"
-#include "ignite/impl/portable/portable_writer_impl.h"
-#include "ignite/portable/portable.h"
+#include "ignite/impl/binary/binary_reader_impl.h"
+#include "ignite/impl/binary/binary_writer_impl.h"
+#include "ignite/binary/binary.h"
 
 namespace ignite
 {
@@ -52,7 +52,7 @@ namespace ignite
              *
              * @param writer Writer.
              */
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer) = 0;
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer) = 0;
         };
 
         /**
@@ -72,7 +72,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer)
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
             {
                 writer.WriteTopObject<T>(*val);
             }
@@ -101,7 +101,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer)
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
             {
                 writer.WriteTopObject<T1>(*val1);
                 writer.WriteTopObject<T2>(*val2);
@@ -135,7 +135,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer)
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
             {
                 writer.WriteTopObject<T1>(*val1);
                 writer.WriteTopObject<T2>(*val2);
@@ -171,7 +171,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer)
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
             {
                 writer.GetStream()->WriteInt32(static_cast<int32_t>(val->size()));
 
@@ -202,7 +202,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer)
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
             {
                 writer.GetStream()->WriteInt32(static_cast<int32_t>(val->size()));
 
@@ -236,7 +236,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer)
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
             {
                 writer.WriteTopObject<T>(*key);
                 writer.GetStream()->WriteInt32(peekModes);
@@ -270,7 +270,7 @@ namespace ignite
              *
              * @param reader Reader.
              */
-            virtual void ProcessOutput(ignite::impl::portable::PortableReaderImpl& reader) = 0;
+            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader) = 0;
         };
 
         /**
@@ -288,7 +288,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::portable::PortableReaderImpl& reader)
+            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
             {
                 val = reader.ReadTopObject<T>();
             }
@@ -324,7 +324,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::portable::PortableReaderImpl& reader)
+            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
             {
                 val1 = reader.ReadTopObject<T1>();
                 val2 = reader.ReadTopObject<T2>();
@@ -375,7 +375,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::portable::PortableReaderImpl& reader)
+            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
             {
                 bool exists = reader.GetStream()->ReadBool();
 
@@ -427,7 +427,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::portable::PortableReaderImpl& reader)
+            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
             {
                 int32_t cnt = reader.ReadInt32();
 

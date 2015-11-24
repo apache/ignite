@@ -26,11 +26,11 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>
@@ -208,7 +208,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
 
             // 3. Write map result to the output stream.
-            PortableWriterImpl writer = prj.Marshaller.StartMarshal(outStream);
+            BinaryWriter writer = prj.Marshaller.StartMarshal(outStream);
 
             try
             {
@@ -221,34 +221,8 @@ namespace Apache.Ignite.Core.Impl.Compute
                     else
                     {
                         writer.WriteBoolean(true); // Map produced result.
-                        writer.WriteInt(map.Count); // Amount of mapped jobs.
 
-                        var jobHandles = new List<long>(map.Count);
-
-                        foreach (KeyValuePair<IComputeJob<T>, IClusterNode> mapEntry in map)
-                        {
-                            var job = new ComputeJobHolder(_compute.ClusterGroup.Ignite as Ignite, mapEntry.Key.ToNonGeneric());
-
-                            IClusterNode node = mapEntry.Value;
-
-                            var jobHandle = ignite.HandleRegistry.Allocate(job);
-
-                            jobHandles.Add(jobHandle);
-
-                            writer.WriteLong(jobHandle);
-
-                            if (node.IsLocal)
-                                writer.WriteBoolean(false); // Job is not serialized.
-                            else
-                            {
-                                writer.WriteBoolean(true); // Job is serialized.
-                                writer.WriteObject(job);
-                            }
-
-                            writer.WriteGuid(node.Id);
-                        }
-
-                        _jobHandles = jobHandles;
+                        _jobHandles = WriteJobs(writer, map);
                     }
                 }
                 else
@@ -277,6 +251,57 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
         }
 
+        /// <summary>
+        /// Writes job map.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="map">Map</param>
+        /// <returns>Job handle list.</returns>
+        private static List<long> WriteJobs(BinaryWriter writer, IDictionary<IComputeJob<T>, IClusterNode> map)
+        {
+            Debug.Assert(writer != null && map != null);
+
+            writer.WriteInt(map.Count); // Amount of mapped jobs.
+
+            var jobHandles = new List<long>(map.Count);
+            var ignite = writer.Marshaller.Ignite;
+
+            try
+            {
+                foreach (KeyValuePair<IComputeJob<T>, IClusterNode> mapEntry in map)
+                {
+                    var job = new ComputeJobHolder(ignite, mapEntry.Key.ToNonGeneric());
+
+                    IClusterNode node = mapEntry.Value;
+
+                    var jobHandle = ignite.HandleRegistry.Allocate(job);
+
+                    jobHandles.Add(jobHandle);
+
+                    writer.WriteLong(jobHandle);
+
+                    if (node.IsLocal)
+                        writer.WriteBoolean(false); // Job is not serialized.
+                    else
+                    {
+                        writer.WriteBoolean(true); // Job is serialized.
+                        writer.WriteObject(job);
+                    }
+
+                    writer.WriteGuid(node.Id);
+                }
+            }
+            catch (Exception)
+            {
+                foreach (var handle in jobHandles)
+                    ignite.HandleRegistry.Release(handle);
+
+                throw;
+            }
+
+            return jobHandles;
+        }
+
         /** <inheritDoc /> */
         public int JobResultLocal(ComputeJobHolder job)
         {
@@ -288,7 +313,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public int JobResultRemote(ComputeJobHolder job, PlatformMemoryStream stream)
         {
             // 1. Unmarshal result.
-            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
+            BinaryReader reader = _compute.Marshaller.StartUnmarshal(stream);
 
             var nodeId = reader.ReadGuid();
             Debug.Assert(nodeId.HasValue);
@@ -299,7 +324,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             {
                 object err;
 
-                var data = PortableUtils.ReadInvocationResult(reader, out err);
+                var data = BinaryUtils.ReadInvocationResult(reader, out err);
 
                 // 2. Process the result.
                 return (int) JobResult0(new ComputeJobResultImpl(data, (Exception) err, job.Job, nodeId.Value, cancelled));
@@ -358,14 +383,14 @@ namespace Apache.Ignite.Core.Impl.Compute
             Justification = "User object deserialization can throw any exception")]
         public void CompleteWithError(long taskHandle, PlatformMemoryStream stream)
         {
-            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
+            BinaryReader reader = _compute.Marshaller.StartUnmarshal(stream);
 
             Exception err;
 
             try
             {
                 err = reader.ReadBoolean()
-                    ? reader.ReadObject<PortableUserObject>().Deserialize<Exception>()
+                    ? reader.ReadObject<BinaryObject>().Deserialize<Exception>()
                     : ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
             }
             catch (Exception e)

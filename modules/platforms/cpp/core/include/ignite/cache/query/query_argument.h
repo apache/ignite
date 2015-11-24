@@ -18,7 +18,7 @@
 #ifndef _IGNITE_CACHE_QUERY_ARGUMENT
 #define _IGNITE_CACHE_QUERY_ARGUMENT
 
-#include "ignite/portable/portable_raw_writer.h"
+#include "ignite/binary/binary_raw_writer.h"
 
 namespace ignite
 {    
@@ -50,7 +50,7 @@ namespace ignite
                 /**
                  * Write argument.
                  */
-                virtual void Write(ignite::portable::PortableRawWriter& writer) = 0;
+                virtual void Write(ignite::binary::BinaryRawWriter& writer) = 0;
             };
 
             /**
@@ -109,7 +109,7 @@ namespace ignite
                     return new QueryArgument(val);
                 }
 
-                virtual void Write(ignite::portable::PortableRawWriter& writer)
+                virtual void Write(ignite::binary::BinaryRawWriter& writer)
                 {
                     writer.WriteObject<T>(val);
                 }

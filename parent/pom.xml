@@ -320,16 +320,16 @@
                                 <packages>org.apache.ignite.marshaller*</packages>
                             </group>
                             <group>
-                                <title>Portable Objects API</title>
-                                <packages>org.apache.ignite.portable*</packages>
+                                <title>Ignite Binary Objects API</title>
+                                <packages>org.apache.ignite.binary*</packages>
                             </group>
                             <group>
                                 <title>Visor Plugins</title>
                                 <packages>org.apache.ignite.visor.plugin</packages>
                             </group>
                             <group>
-                                <title>Spring Caching</title>
-                                <packages>org.apache.ignite.cache.spring</packages>
+                                <title>Spring Integration</title>
+                                <packages>org.apache.ignite.cache.spring:org.apache.ignite.transactions.spring</packages>
                             </group>
                             <group>
                                 <title>Mesos Framework</title>
@@ -684,6 +684,7 @@
                                         <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
                                         <exclude>**/*readme*.txt</exclude><!--readme files-->
                                         <exclude>**/*README*.txt</exclude><!--readme files-->
+                                        <exclude>**/*README*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
                                         <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
@@ -749,7 +750,8 @@
                                         <exclude>**/configure.ac</exclude>
                                         <exclude>**/*.pc.in</exclude>
                                         <exclude>**/*.sln</exclude>
-                                        <exclude>**/*.slnrel</exclude>                                        
+                                        <exclude>**/*.snk</exclude>
+                                        <exclude>**/*.slnrel</exclude>
                                         <exclude>**/*.sln.DotSettings</exclude>
                                         <exclude>**/*.FxCop</exclude>
                                         <exclude>**/*.csproj</exclude>
@@ -762,6 +764,7 @@
                                         <exclude>**/*.fxcop</exclude>
                                         <exclude>**/*.metaproj</exclude>
                                         <exclude>**/*.metaproj.tmp</exclude>
+                                        <exclude>**/*.nunit</exclude>
                                         <exclude>**/teamcity_boost.cpp</exclude>
                                         <exclude>**/teamcity_messages.h</exclude>
                                         <exclude>**/teamcity_messages.cpp</exclude>

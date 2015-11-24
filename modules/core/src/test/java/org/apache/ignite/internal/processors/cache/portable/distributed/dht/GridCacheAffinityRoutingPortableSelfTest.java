@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
 import java.util.Collections;
+import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 
 /**
  *
@@ -31,16 +33,21 @@ public class GridCacheAffinityRoutingPortableSelfTest extends GridCacheAffinityR
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PortableTypeConfiguration typeCfg = new PortableTypeConfiguration();
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
 
-        typeCfg.setClassName(AffinityTestKey.class.getName());
-        typeCfg.setAffinityKeyFieldName("affKey");
+        typeCfg.setTypeName(AffinityTestKey.class.getName());
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(AffinityTestKey.class.getName(), "affKey");
 
-        marsh.setTypeConfigurations(Collections.singleton(typeCfg));
+        cfg.setCacheKeyCfg(keyCfg);
 
-        cfg.setMarshaller(marsh);
+        BinaryConfiguration bCfg = new BinaryConfiguration();
+
+        bCfg.setTypeConfigurations(Collections.singleton(typeCfg));
+
+        cfg.setBinaryConfiguration(bCfg);
+
+        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

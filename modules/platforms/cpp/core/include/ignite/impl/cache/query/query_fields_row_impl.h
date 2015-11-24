@@ -156,7 +156,7 @@ namespace ignite
                     interop::InteropInputStream stream;
 
                     /** Row data reader. */
-                    portable::PortableReaderImpl reader;
+                    binary::BinaryReaderImpl reader;
 
                     /** Number of elements in a row. */
                     int32_t size;

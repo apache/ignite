@@ -24,9 +24,9 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using System.Linq;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="prj">Cluster group.</param>
-        public Messaging(IUnmanagedTarget target, PortableMarshaller marsh, IClusterGroup prj)
+        public Messaging(IUnmanagedTarget target, Marshaller marsh, IClusterGroup prj)
             : base(target, marsh)
         {
             Debug.Assert(prj != null);

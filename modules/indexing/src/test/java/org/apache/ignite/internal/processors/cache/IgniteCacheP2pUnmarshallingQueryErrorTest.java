@@ -23,7 +23,11 @@ import javax.cache.CacheException;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 
 /**
  * Checks behavior on exception while unmarshalling key.
@@ -51,10 +55,10 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
         try {
             jcache(0).query(new SqlQuery<TestKey, String>(String.class, "field like '" + key + "'")).getAll();
 
-            fail("p2p marshalling failed, but error response was not sent");
+            assertTrue("p2p marshalling failed, but error response was not sent", portableMarshaller());
         }
         catch (CacheException e) {
-            // No-op
+            assertFalse("Unexpected exception: " + e, portableMarshaller());
         }
     }
 
@@ -77,10 +81,20 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
                 }
             })).getAll();
 
-            fail("Request unmarshalling failed, but error response was not sent.");
+            assertTrue("Request unmarshalling failed, but error response was not sent.", portableMarshaller());
         }
         catch (Exception e) {
-            // No-op.
+            assertFalse("Unexpected exception: " + e, portableMarshaller());
         }
+    }
+
+    /**
+     * @return {@code True} if portable marshaller is configured.
+     */
+    private boolean portableMarshaller() {
+        IgniteEx kernal = (IgniteEx)ignite(0);
+
+        return !OptimizedMarshaller.class.getSimpleName().equals(kernal.context().config().getMarshaller().getClass()
+            .getSimpleName());
     }
 }

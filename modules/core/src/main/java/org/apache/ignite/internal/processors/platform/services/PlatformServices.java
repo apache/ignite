@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryRawReaderEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetService;
@@ -128,7 +128,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader)
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_DEPLOY: {
@@ -169,7 +169,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_SERVICES: {
@@ -177,7 +177,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 PlatformUtils.writeNullableCollection(writer, svcs,
                     new PlatformWriterClosure<Service>() {
-                        @Override public void write(PortableRawWriterEx writer, Service svc) {
+                        @Override public void write(BinaryRawWriterEx writer, Service svc) {
                             writer.writeLong(((PlatformService) svc).pointer());
                         }
                     },
@@ -197,8 +197,8 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInObjectStreamOutStream(int type, Object arg, PortableRawReaderEx reader,
-        PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processInObjectStreamOutStream(int type, Object arg, BinaryRawReaderEx reader,
+        BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_INVOKE: {
                 assert arg != null;
@@ -235,13 +235,13 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_DESCRIPTORS: {
                 Collection<ServiceDescriptor> descs = services.serviceDescriptors();
 
                 PlatformUtils.writeCollection(writer, descs, new PlatformWriterClosure<ServiceDescriptor>() {
-                    @Override public void write(PortableRawWriterEx writer, ServiceDescriptor d) {
+                    @Override public void write(BinaryRawWriterEx writer, ServiceDescriptor d) {
                         writer.writeString(d.name());
                         writer.writeString(d.cacheName());
                         writer.writeInt(d.maxPerNodeCount());
@@ -252,7 +252,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                         Map<UUID, Integer> top = d.topologySnapshot();
 
                         PlatformUtils.writeMap(writer, top, new PlatformWriterBiClosure<UUID, Integer>() {
-                            @Override public void write(PortableRawWriterEx writer, UUID key, Integer val) {
+                            @Override public void write(BinaryRawWriterEx writer, UUID key, Integer val) {
                                 writer.writeUuid(key);
                                 writer.writeInt(val);
                             }

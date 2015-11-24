@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.utils;
 
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
@@ -164,7 +164,7 @@ public class PlatformFutureUtils {
                             try (PlatformMemory mem = ctx.memory().allocate()) {
                                 PlatformOutputStream out = mem.output();
 
-                                PortableRawWriterEx outWriter = ctx.writer(out);
+                                BinaryRawWriterEx outWriter = ctx.writer(out);
 
                                 outWriter.writeObjectDetached(res);
 
@@ -244,7 +244,7 @@ public class PlatformFutureUtils {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx outWriter = ctx.writer(out);
+            BinaryRawWriterEx outWriter = ctx.writer(out);
 
             outWriter.writeString(err.getClass().getName());
             outWriter.writeString(err.getMessage());
@@ -276,7 +276,7 @@ public class PlatformFutureUtils {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx outWriter = ctx.writer(out);
+            BinaryRawWriterEx outWriter = ctx.writer(out);
 
             writer.write(outWriter, obj, err);
 
@@ -299,7 +299,7 @@ public class PlatformFutureUtils {
          * @param obj Object.
          * @param err Error.
          */
-        public void write(PortableRawWriterEx writer, Object obj, Throwable err);
+        public void write(BinaryRawWriterEx writer, Object obj, Throwable err);
 
         /**
          * Determines whether this writer can write given data.

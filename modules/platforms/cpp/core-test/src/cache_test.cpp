@@ -56,23 +56,23 @@ struct Person
 
 namespace ignite
 {
-    namespace portable
+    namespace binary
     {
-        IGNITE_PORTABLE_TYPE_START(Person)
-        IGNITE_PORTABLE_GET_TYPE_ID_AS_HASH(Person)
-        IGNITE_PORTABLE_GET_TYPE_NAME_AS_IS(Person)
-        IGNITE_PORTABLE_GET_FIELD_ID_AS_HASH
-        IGNITE_PORTABLE_GET_HASH_CODE_ZERO(Person)
-        IGNITE_PORTABLE_IS_NULL_FALSE(Person)
-        IGNITE_PORTABLE_GET_NULL_DEFAULT_CTOR(Person)
+        IGNITE_BINARY_TYPE_START(Person)
+        IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Person)
+        IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Person)
+        IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+        IGNITE_BINARY_GET_HASH_CODE_ZERO(Person)
+        IGNITE_BINARY_IS_NULL_FALSE(Person)
+        IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
             
-        void Write(PortableWriter& writer, Person obj)
+        void Write(BinaryWriter& writer, Person obj)
         {
             writer.WriteString("name", obj.name);
             writer.WriteInt32("age", obj.age);            
         }
 
-        Person Read(PortableReader& reader)
+        Person Read(BinaryReader& reader)
         {
             std::string name = reader.ReadString("name");
             int age = reader.ReadInt32("age");
@@ -80,7 +80,7 @@ namespace ignite
             return Person(name, age);
         }
 
-        IGNITE_PORTABLE_TYPE_END
+        IGNITE_BINARY_TYPE_END
     }
 }
 
@@ -428,7 +428,7 @@ BOOST_AUTO_TEST_CASE(TestLocalEvict)
     BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
 }
 
-BOOST_AUTO_TEST_CASE(TestPortable)
+BOOST_AUTO_TEST_CASE(TestBinary)
 {
     cache::Cache<int, Person> cache = grid0.GetCache<int, Person>("partitioned");
 

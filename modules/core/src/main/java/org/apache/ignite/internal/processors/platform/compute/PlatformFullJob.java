@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
+import org.apache.ignite.internal.portable.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
@@ -120,7 +120,7 @@ public class PlatformFullJob extends PlatformAbstractJob {
 
                     in.synchronize();
 
-                    PortableRawReaderEx reader = ctx.reader(in);
+                    BinaryRawReaderEx reader = ctx.reader(in);
 
                     return PlatformUtils.readInvocationResult(ctx, reader);
                 }
@@ -209,7 +209,7 @@ public class PlatformFullJob extends PlatformAbstractJob {
 
             in.synchronize();
 
-            PortableRawReaderEx reader = ctx.reader(in);
+            BinaryRawReaderEx reader = ctx.reader(in);
 
             if (res)
                 job = reader.readObjectDetached();

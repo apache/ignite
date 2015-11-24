@@ -21,15 +21,15 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableWriter;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 
 /**
  * Entity class for benchmark.
  */
-public class SampleValue implements Externalizable, PortableMarshalAware {
+public class SampleValue implements Externalizable, Binarylizable {
     /** */
     private int id;
 
@@ -70,12 +70,12 @@ public class SampleValue implements Externalizable, PortableMarshalAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         writer.writeInt("id", id);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         id = reader.readInt("id");
     }
 

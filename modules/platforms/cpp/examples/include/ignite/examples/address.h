@@ -18,7 +18,7 @@
 #ifndef _IGNITE_EXAMPLES_ADDRESS
 #define _IGNITE_EXAMPLES_ADDRESS
 
-#include "ignite/portable/portable.h"
+#include "ignite/binary/binary.h"
 
 namespace ignite
 {
@@ -54,14 +54,14 @@ namespace ignite
 
 namespace ignite
 {
-    namespace portable 
+    namespace binary
     {
         template<>
-        struct PortableType<ignite::examples::Address>
+        struct BinaryType<ignite::examples::Address>
         {
             int32_t GetTypeId()
             {
-                return GetPortableStringHashCode("Address");
+                return GetBinaryStringHashCode("Address");
             }
 
             std::string GetTypeName()
@@ -71,7 +71,7 @@ namespace ignite
 
             int32_t GetFieldId(const char* name)
             {
-                return GetPortableStringHashCode(name);
+                return GetBinaryStringHashCode(name);
             }
 
             int32_t GetHashCode(ignite::examples::Address obj)
@@ -89,13 +89,13 @@ namespace ignite
                 return ignite::examples::Address("", 0);
             }
 
-            void Write(PortableWriter& writer, ignite::examples::Address obj)
+            void Write(BinaryWriter& writer, ignite::examples::Address obj)
             {
                 writer.WriteString("street", obj.street);
                 writer.WriteInt32("zip", obj.zip);
             }
 
-            ignite::examples::Address Read(PortableReader& reader)
+            ignite::examples::Address Read(BinaryReader& reader)
             {
                 std::string street = reader.ReadString("street");
                 int zip = reader.ReadInt32("zip");
