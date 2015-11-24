@@ -17,9 +17,9 @@
 
 // Controller for SQL notebook screen.
 consoleModule.controller('sqlController',
-    ['$scope', '$window','$controller', '$http', '$timeout', '$common', '$confirm', '$interval', '$message', '$popover', '$loading',
-        '$location', '$anchorScroll', function ($scope, $window, $controller, $http, $timeout, $common, $confirm,
-        $interval, $message, $popover, $loading, $location, $anchorScroll) {
+    ['$scope', '$window','$controller', '$http', '$timeout', '$common', '$confirm', '$interval', '$message', '$popover',
+        '$loading', '$state', '$location', '$anchorScroll', function ($scope, $window, $controller, $http, $timeout,
+        $common, $confirm, $interval, $message, $popover, $loading, $location, $anchorScroll, $state) {
     // Initialize the super class and extend it.
     angular.extend(this, $controller('agent-download', {$scope: $scope}));
 
@@ -242,7 +242,7 @@ consoleModule.controller('sqlController',
     var loadNotebook = function () {
         $loading.start('loadingNotebookScreen');
 
-        $http.post('/api/v1/notebooks/get', {noteId: $common.getQueryVariable('id')})
+        $http.post('/api/v1/notebooks/get', {noteId: $state.params.id})
             .success(function (notebook) {
                 $scope.notebook = notebook;
 

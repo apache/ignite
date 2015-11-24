@@ -1982,20 +1982,20 @@ consoleModule.controller('auth', [
         $scope.auth = function (action, user_info) {
             $http.post('/api/v1/' + action, user_info)
                 .success(function (res) {
-                    Auth.isAuthorized = true;
-                    $state.go('base.configuration.clusters');
+                    if (action == 'login') {
+                        Auth.authorized = true;
+
+                        $state.go('base.configuration.clusters');
+                    } else if (action == 'password/forgot')
+                        $state.go('password.send');
                 })
                 .error(function (err, status) {
-                    if (status == 403) {
-                        $window.location = '/password/reset';
-                    }
-                    else
-                        $common.showPopoverMessage(undefined, undefined, 'user_email', err);
+                    $common.showPopoverMessage(undefined, undefined, 'user_email', err);
                 });
         };
 
         $scope.validateToken = function () {
-            $http.post('/api/v1/password/validate-token', {token: $common.getQueryVariable('token')})
+            $http.post('/api/v1/password/validate-token', {token: $state.params.token})
                 .success(function (res) {
                     $scope.email = res.email;
                     $scope.token = res.token;

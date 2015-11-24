@@ -27,7 +27,7 @@ angular
 	.state('logout', {
 		url: '/logout',
 		controller: function(Auth, $state) {
-			Auth.isAuthorized = false;
+			Auth.authorized = false;
 
 			$state.go('login')
 		}

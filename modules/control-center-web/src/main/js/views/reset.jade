@@ -14,25 +14,31 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-extends templates/layout
+header#header.header
+    .container
+        h1.navbar-brand
+            a(href='/') Apache Ignite Web Configurator
+        p.navbar-text(style='font-size: 18px;') Apache Ignite Web Console
 
-block container
-    .row(ng-controller='auth' ng-init='validateToken()')
-        .text-center(ng-if='!token')
-            p Further instructions for password reset have been sent to your e-mail address.
-        .text-center(ng-if='error')
-            p {{::error}}
-        div(ng-if='token && !error')
-            form.form-horizontal(name='resetForm' ng-init='reset_info.token = token')
-                .settings-row
-                    label.col-sm-1 E-mail:
-                    label {{::email}}
-                .settings-row
-                    label.col-sm-1.required Password:
-                    .col-sm-3
-                        input#user_password.form-control(enter-focus-next='user_confirm' type='password' ng-model='reset_info.password' placeholder='New password' required)
-                .settings-row
-                    label.col-sm-1.required Confirm:
-                    .col-sm-3
-                        input#user_confirm.form-control(type='password' ng-model='reset_info.confirm' match='reset_info.password' placeholder='Confirm new password' required on-enter='resetForm.$valid && resetPassword(user_info)')
-            button.btn.btn-primary(ng-disabled='resetForm.$invalid' ng-click='resetPassword(reset_info)') Reset Password
+.container.body-container
+    .main-content(ng-controller='auth')
+        .row(ng-controller='auth' ng-init='validateToken()')
+            .text-center(ng-if='!token')
+                p Further instructions for password reset have been sent to your e-mail address.
+            .text-center(ng-if='error')
+                p {{::error}}
+            div(ng-if='token && !error')
+                form.form-horizontal(name='resetForm' ng-init='reset_info.token = token')
+                    .settings-row
+                        label.col-sm-1 E-mail:
+                        label {{::email}}
+                    .settings-row
+                        label.col-sm-1.required Password:
+                        .col-sm-3
+                            input#user_password.form-control(enter-focus-next='user_confirm' type='password' ng-model='reset_info.password' placeholder='New password' required)
+                    .settings-row
+                        label.col-sm-1.required Confirm:
+                        .col-sm-3
+                            input#user_confirm.form-control(type='password' ng-model='reset_info.confirm' match='reset_info.password' placeholder='Confirm new password' required on-enter='resetForm.$valid && resetPassword(user_info)')
+                button.btn.btn-primary(ng-disabled='resetForm.$invalid' ng-click='resetPassword(reset_info)') Reset Password
+include includes/footer

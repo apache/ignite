@@ -185,7 +185,7 @@ router.post('/password/forgot', function(req, res) {
                 if (err)
                     return res.status(401).send('Failed to send e-mail with reset link!<br />' + err);
 
-                return res.status(403).send('An e-mail has been sent with further instructions.');
+                return res.status(200).send('An e-mail has been sent with further instructions.');
             });
         });
     });

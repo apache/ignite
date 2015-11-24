@@ -18,21 +18,23 @@
 import angular from 'angular'
 
 angular
-.module('ignite-console.Auth', [
-	
+.module('ignite-console.states.password', [
+	'ui.router'
 ])
-.provider('Auth', function() {
-	var _authorized = localStorage.isAuthorized;
-
-    this.$get = [function() {
-    	return {
-    		get authorized () {
-    			return _authorized;
-    		},
-
-    		set authorized (value) {
-    			return _authorized = localStorage.isAuthorized = !!value;
-    		}
-    	}
-    }]
+.config(function($stateProvider) {
+	// set up the states
+	$stateProvider
+    .state('password', {
+        url: '/password',
+        abstract: true,
+        template: '<ui-view></ui-view>'
+    })
+	.state('password.reset', {
+		url: '/reset?{token}',
+		templateUrl: '/reset.html'
+	})
+    .state('password.send', {
+        url: '/send',
+        templateUrl: '/reset.html'
+    })
 });
