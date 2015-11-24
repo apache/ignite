@@ -151,7 +151,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     public BinaryReaderExImpl(PortableContext ctx, PortableInputStream in, ClassLoader ldr) {
         this(ctx, in, ldr, null);
     }
-
     /**
      * Constructor.
      *
@@ -161,7 +160,20 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param hnds Context.
      */
     public BinaryReaderExImpl(PortableContext ctx, PortableInputStream in, ClassLoader ldr,
-        @Nullable BinaryReaderHandles hnds) {
+                              @Nullable BinaryReaderHandles hnds) {
+        this(ctx, in, ldr, hnds, false);
+    }
+    /**
+     * Constructor.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param hnds Context.
+     * @param skipHdrCheck Whether to skip header check.
+     */
+    public BinaryReaderExImpl(PortableContext ctx, PortableInputStream in, ClassLoader ldr,
+        @Nullable BinaryReaderHandles hnds, boolean skipHdrCheck) {
         // Initialize base members.
         this.ctx = ctx;
         this.in = in;
@@ -170,10 +182,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         start = in.position();
 
-        byte hdr = in.readByte();
-
         // Perform full header parsing in case of portable object.
-        if (hdr == GridPortableMarshaller.OBJ) {
+        if (!skipHdrCheck && (in.readByte() == GridPortableMarshaller.OBJ)) {
             // Ensure protocol is fine.
             PortableUtils.checkProtocolVersion(in.readByte());
 
