@@ -54,6 +54,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
@@ -837,6 +838,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         @Nullable final IgniteRunnable msgC
     ) throws IgniteCheckedException {
         assert msg != null;
+
+        if (msg.message() instanceof GridDhtPartitionDemandMessage)
+        {
+            U.log(log, "A1>> " + msg.message());
+        }
 
         long timeout = msg.timeout();
         boolean skipOnTimeout = msg.skipOnTimeout();
