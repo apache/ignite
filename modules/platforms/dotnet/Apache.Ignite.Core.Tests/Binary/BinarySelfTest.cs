@@ -903,6 +903,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Test enum field in binary form
             var binEnum = portObj.GetField<IBinaryObject>("PEnum");
             Assert.AreEqual(obj.PEnum.GetHashCode(), binEnum.GetHashCode());
+            Assert.IsTrue(binEnum.IsEnum);
             Assert.AreEqual((int) obj.PEnum, binEnum.Value);
             Assert.AreEqual(obj.PEnum, binEnum.Deserialize<TestEnum>());
 
