@@ -27,7 +27,7 @@ package org.apache.ignite.binary;
  * actually do collide {@code BinaryIdMapper} allows to override the automatically
  * generated hash code IDs for the type and field names.
  * <p>
- * Binary ID mapper can be configured for all binary objects via {@link org.apache.ignite.marshaller.portable.BinaryMarshaller#getIdMapper()} method,
+ * Binary ID mapper can be configured for all binary objects via {@link org.apache.ignite.configuration.BinaryConfiguration#getIdMapper()} method,
  * or for a specific binary type via {@link BinaryTypeConfiguration#getIdMapper()} method.
  */
 public interface BinaryIdMapper {

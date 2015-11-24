@@ -123,12 +123,21 @@ import org.apache.ignite.internal.util.typedef.F;
         return proc;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param o Object to unwrap.
+     * @param keepPortable Keep binary flag.
+     * @return Unwrapped object.
+     */
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
         return unwrapPortableIfNeeded(o, keepPortable, true);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param o Object to unwrap.
+     * @param keepPortable Keep binary flag.
+     * @param cpy Copy value flag.
+     * @return Unwrapped object.
+     */
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable, boolean cpy) {
         if (o == null)
             return null;
@@ -136,12 +145,21 @@ import org.apache.ignite.internal.util.typedef.F;
         return unwrapPortable(o, keepPortable, cpy);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param col Collection of objects to unwrap.
+     * @param keepPortable Keep binary flag.
+     * @return Unwrapped collection.
+     */
     public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
         return unwrapPortablesIfNeeded(col, keepPortable, true);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param col Collection to unwrap.
+     * @param keepPortable Keep binary flag.
+     * @param cpy Copy value flag.
+     * @return Unwrapped collection.
+     */
     public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable, boolean cpy) {
         if (col instanceof ArrayList)
             return unwrapPortables((ArrayList<Object>)col, keepPortable, cpy);

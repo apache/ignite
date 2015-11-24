@@ -308,7 +308,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 // Put from local node.
                 int key1 = PrimaryKey(cache1);
                 cache1.GetAndPut(key1, Entry(key1));
-                CheckFilterSingle(key1, null, Entry(key1), !loc);
+                CheckFilterSingle(key1, null, Entry(key1));
                 CheckCallbackSingle(key1, null, Entry(key1));
 
                 // Put from remote node.
@@ -322,7 +322,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 }
                 else
                 {
-                    CheckFilterSingle(key2, null, Entry(key2), true);
+                    CheckFilterSingle(key2, null, Entry(key2));
                     CheckCallbackSingle(key2, null, Entry(key2));
                 }
 
@@ -330,7 +330,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
                 // Ignored put from local node.
                 cache1.GetAndPut(key1, Entry(key1 + 1));
-                CheckFilterSingle(key1, Entry(key1), Entry(key1 + 1), !loc);
+                CheckFilterSingle(key1, Entry(key1), Entry(key1 + 1));
                 CheckNoCallback(100);
 
                 // Ignored put from remote node.
@@ -339,7 +339,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 if (loc)
                     CheckNoFilter(100);
                 else
-                    CheckFilterSingle(key2, Entry(key2), Entry(key2 + 1), true);
+                    CheckFilterSingle(key2, Entry(key2), Entry(key2 + 1));
 
                 CheckNoCallback(100);
             }
@@ -621,6 +621,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     .Deserialize<BinarizableEntry>());
 
                 // 2. Remote put.
+                ClearEvents();
                 cache1.GetAndPut(PrimaryKey(cache2), Entry(2));
 
                 Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
@@ -868,15 +869,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="expKey">Expected key.</param>
         /// <param name="expOldVal">Expected old value.</param>
         /// <param name="expVal">Expected value.</param>
-        /// <param name="hasBackup">Whether there is a backup node to check..</param>
-        private void CheckFilterSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal, 
-            bool hasBackup = false)
+        private void CheckFilterSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal)
         {
             CheckFilterSingle(expKey, expOldVal, expVal, 1000);
-
-            // Filter is called on each cache node (primary and backup)
-            if (hasBackup)
-                CheckFilterSingle(expKey, expOldVal, expVal, 1000);
+            ClearEvents();
         }
 
         /// <summary>
@@ -895,6 +891,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             Assert.AreEqual(expKey, evt.entry.Key);
             Assert.AreEqual(expOldVal, evt.entry.OldValue);
             Assert.AreEqual(expVal, evt.entry.Value);
+
+            ClearEvents();
+        }
+
+        /// <summary>
+        /// Clears the events collection.
+        /// </summary>
+        private static void ClearEvents()
+        {
+            while (FILTER_EVTS.Count > 0)
+                FILTER_EVTS.Take();
         }
 
         /// <summary>

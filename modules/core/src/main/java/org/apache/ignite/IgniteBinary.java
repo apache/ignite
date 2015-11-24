@@ -67,9 +67,7 @@ import org.jetbrains.annotations.Nullable;
  * String field = val.field("myFieldName");
  * </pre>
  * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
- * typed objects at all times. In this case we do incur the deserialization cost. However, if
- * {@link org.apache.ignite.marshaller.portable.BinaryMarshaller#isKeepDeserialized()} is {@code true} then Ignite will only deserialize on the first access
- * and will cache the deserialized object, so it does not have to be deserialized again:
+ * typed objects at all times.
  * <pre name=code class=java>
  * IgniteCache&lt;MyKey.class, MyValue.class&gt; cache = grid.cache(null);
  *
@@ -150,8 +148,6 @@ import org.jetbrains.annotations.Nullable;
  * automatically.
  * <h1 class="header">Configuration</h1>
  * By default all your objects are considered as binary and no specific configuration is needed.
- * However, in some cases, like when an object is used by both Java and .Net, you may need to specify portable objects
- * explicitly by calling {@link org.apache.ignite.marshaller.portable.BinaryMarshaller#setClassNames(Collection)}.
  * The only requirement Ignite imposes is that your object has an empty
  * constructor. Note, that since server side does not have to know the class definition,
  * you only need to list portable objects in configuration on the client side. However, if you
