@@ -45,7 +45,7 @@ public class IgniteOsgiUtils {
     /**
      * Returns whether we are running in an OSGi environment.
      *
-     * @return {@core true/false}.
+     * @return {@code true/false}.
      */
     public static boolean isOsgi() {
         return osgi;

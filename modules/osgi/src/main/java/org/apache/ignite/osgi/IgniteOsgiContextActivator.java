@@ -42,11 +42,9 @@ import org.osgi.framework.BundleContext;
  * You must provide the {@link IgniteConfiguration} to start by implementing the {@link #igniteConfiguration()}
  * abstract method. The return value of this method cannot be {@code null}. For example, if your implementation is
  * called {@code org.myorg.osgi.IgniteActivator}, your bundle must provide the following header:
- *
  * <pre>
- *     Bundle-Activator: org.myorg.osgi.IgniteActivator
+ * Bundle-Activator: org.myorg.osgi.IgniteActivator
  * </pre>
- *
  * You may use the
  * <a href="https://felix.apache.org/documentation/subprojects/apache-felix-maven-bundle-plugin-bnd.html">Maven
  * Bundle Plugin</a> to generate your bundle (or bundle manifest), including the required header.
