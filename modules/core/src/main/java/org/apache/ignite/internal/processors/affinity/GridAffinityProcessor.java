@@ -178,7 +178,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Picked node.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key, AffinityTopologyVersion topVer) throws IgniteCheckedException {
+    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key,
+        AffinityTopologyVersion topVer) throws IgniteCheckedException {
         Map<ClusterNode, Collection<K>> map = keysToNodes(cacheName, F.asList(key), topVer);
 
         return map != null ? F.first(map.keySet()) : null;
@@ -318,7 +319,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             if (cache == null)
                 return null;
 
-            GridCacheContext<Object,Object> cctx = cache.context();
+            GridCacheContext<Object, Object> cctx = cache.context();
 
             cctx.awaitStarted();
 
@@ -424,8 +425,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Requests {@link AffinityFunction} and
-     * {@link AffinityKeyMapper} from remote node.
+     * Requests {@link AffinityFunction} and {@link AffinityKeyMapper} from remote node.
      *
      * @param cacheName Name of cache on which affinity is requested.
      * @param topVer Topology version.
@@ -518,7 +518,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private <K> List<ClusterNode> primaryAndBackups(AffinityInfo aff, K key) {
         if (key instanceof CacheObject && !(key instanceof BinaryObject))
-            key = ((CacheObject) key).value(aff.cacheObjCtx, false);
+            key = ((CacheObject)key).value(aff.cacheObjCtx, false);
 
         int part = aff.affFunc.partition(aff.mapper.affinityKey(key));
 
@@ -880,9 +880,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                AffinityInfo cache = cache();
-
-                return cache != null ? cache.assignment().get(part) : Collections.<ClusterNode>emptyList();
+                return cache().assignment().get(part);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -897,7 +895,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
          * @throws IgniteCheckedException If failed.
          */
         @Nullable private AffinityInfo cache() throws IgniteCheckedException {
-            return affinityCache(cacheName, new AffinityTopologyVersion(topologyVersion()));
+            AffinityInfo info = affinityCache(cacheName, new AffinityTopologyVersion(topologyVersion()));
+
+            if (info == null)
+                throw new IgniteException("Failed to find a cache, looks like " +
+                    "a cache has not been created yet or has been already deleted [cacheName=" + cacheName + ']');
+
+            return info;
         }
 
         /**

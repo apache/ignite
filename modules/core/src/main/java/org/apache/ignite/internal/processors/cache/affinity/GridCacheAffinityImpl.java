@@ -23,9 +23,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -55,7 +57,12 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
 
     /** {@inheritDoc} */
     @Override public int partitions() {
-        return cctx.config().getAffinity().partitions();
+        CacheConfiguration ccfg = cctx.config();
+
+        if (ccfg == null)
+            throw new IgniteException(exceptionMessage());
+
+        return ccfg.getAffinity().partitions();
     }
 
     /** {@inheritDoc} */
@@ -153,7 +160,12 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
         if (key instanceof CacheObject)
             key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
 
-        return cctx.config().getAffinityMapper().affinityKey(key);
+        CacheConfiguration ccfg = cctx.config();
+
+        if (ccfg == null)
+            throw new IgniteException(exceptionMessage());
+
+        return ccfg.getAffinityMapper().affinityKey(key);
     }
 
     /** {@inheritDoc} */
@@ -215,4 +227,12 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     private AffinityTopologyVersion topologyVersion() {
         return cctx.affinity().affinityTopologyVersion();
     }
+
+    /**
+     * @return Exception message.
+     */
+    private String exceptionMessage() {
+        return "Failed to find a cache, looks like a cache has been already deleted [cacheName=" + cctx.name() + ']';
+    }
+
 }
