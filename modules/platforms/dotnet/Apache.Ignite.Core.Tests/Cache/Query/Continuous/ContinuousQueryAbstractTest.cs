@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
         /** Cache name. */
         private readonly string cacheName;
-        
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -308,7 +308,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 // Put from local node.
                 int key1 = PrimaryKey(cache1);
                 cache1.GetAndPut(key1, Entry(key1));
-                CheckFilterSingle(key1, null, Entry(key1));
+                CheckFilterSingle(key1, null, Entry(key1), !loc);
                 CheckCallbackSingle(key1, null, Entry(key1));
 
                 // Put from remote node.
@@ -322,7 +322,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 }
                 else
                 {
-                    CheckFilterSingle(key2, null, Entry(key2));
+                    CheckFilterSingle(key2, null, Entry(key2), true);
                     CheckCallbackSingle(key2, null, Entry(key2));
                 }
 
@@ -330,7 +330,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
                 // Ignored put from local node.
                 cache1.GetAndPut(key1, Entry(key1 + 1));
-                CheckFilterSingle(key1, Entry(key1), Entry(key1 + 1));
+                CheckFilterSingle(key1, Entry(key1), Entry(key1 + 1), !loc);
                 CheckNoCallback(100);
 
                 // Ignored put from remote node.
@@ -339,7 +339,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 if (loc)
                     CheckNoFilter(100);
                 else
-                    CheckFilterSingle(key2, Entry(key2), Entry(key2 + 1));
+                    CheckFilterSingle(key2, Entry(key2), Entry(key2 + 1), true);
 
                 CheckNoCallback(100);
             }
@@ -868,9 +868,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="expKey">Expected key.</param>
         /// <param name="expOldVal">Expected old value.</param>
         /// <param name="expVal">Expected value.</param>
-        private void CheckFilterSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal)
+        /// <param name="hasBackup">Whether there is a backup node to check..</param>
+        private void CheckFilterSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal, 
+            bool hasBackup = false)
         {
             CheckFilterSingle(expKey, expOldVal, expVal, 1000);
+
+            // Filter is called on each cache node (primary and backup)
+            if (hasBackup)
+                CheckFilterSingle(expKey, expOldVal, expVal, 1000);
         }
 
         /// <summary>
@@ -880,7 +886,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="expOldVal">Expected old value.</param>
         /// <param name="expVal">Expected value.</param>
         /// <param name="timeout">Timeout.</param>
-        private void CheckFilterSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal, int timeout)
+        private static void CheckFilterSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal, int timeout)
         {
             FilterEvent evt;
 
@@ -895,7 +901,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// Ensure that no filter events are logged.
         /// </summary>
         /// <param name="timeout">Timeout.</param>
-        private void CheckNoFilter(int timeout)
+        private static void CheckNoFilter(int timeout)
         {
             FilterEvent evt;
 
@@ -908,7 +914,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="expKey">Expected key.</param>
         /// <param name="expOldVal">Expected old value.</param>
         /// <param name="expVal">Expected new value.</param>
-        private void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal)
+        private static void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal)
         {
             CheckCallbackSingle(expKey, expOldVal, expVal, 1000);
         }
@@ -920,7 +926,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="expOldVal">Expected old value.</param>
         /// <param name="expVal">Expected new value.</param>
         /// <param name="timeout">Timeout.</param>
-        private void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal, int timeout)
+        private static void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal, int timeout)
         {
             CallbackEvent evt;
 
