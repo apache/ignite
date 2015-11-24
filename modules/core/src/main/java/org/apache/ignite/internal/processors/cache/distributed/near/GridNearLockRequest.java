@@ -143,6 +143,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         int taskNameHash,
         long accessTtl,
         boolean skipStore,
+        boolean keepBinary,
         boolean firstClientReq,
         boolean addDepInfo
 
@@ -162,6 +163,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             keyCnt,
             txSize,
             skipStore,
+            keepBinary,
             addDepInfo);
 
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;

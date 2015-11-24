@@ -313,6 +313,7 @@ public class SchemaImportApp extends Application {
     /** */
     private ProgressIndicator pi;
 
+    /** */
     private ObservableList<SchemaDescriptor> schemas = FXCollections.emptyObservableList();
 
     /** List with POJOs descriptors. */
@@ -425,7 +426,7 @@ public class SchemaImportApp extends Application {
             if (schema.selected().getValue())
                 selSchemas.add(schema.schema());
 
-        if (selSchemas.size() == 0)
+        if (selSchemas.isEmpty())
             if (!MessageBox.confirmDialog(owner, "No schemas selected.\nExtract tables for all available schemas?"))
                 return;
 
@@ -944,8 +945,8 @@ public class SchemaImportApp extends Application {
         schemaPnl.wrap();
 
         schemaPnl.add(button("Load schemas", "Load schemas for specified database", new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent evt) {
+            /** {@inheritDoc} */
+            @Override public void handle(ActionEvent evt) {
                 loadSchemas();
             }
         }));
@@ -1827,8 +1828,8 @@ public class SchemaImportApp extends Application {
      * Special list view cell to select loaded schemas.
      */
     private static class SchemaCell implements Callback<SchemaDescriptor, ObservableValue<Boolean>> {
-        @Override
-        public ObservableValue<Boolean> call(SchemaDescriptor item) {
+        /** {@inheritDoc} */
+        @Override public ObservableValue<Boolean> call(SchemaDescriptor item) {
             return item.selected();
         }
     }

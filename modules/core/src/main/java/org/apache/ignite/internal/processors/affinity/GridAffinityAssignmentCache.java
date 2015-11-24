@@ -33,6 +33,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -369,7 +370,7 @@ public class GridAffinityAssignmentCache {
      * @return Affinity key.
      */
     private Object affinityKey(Object key) {
-        if (key instanceof CacheObject)
+        if (key instanceof CacheObject && !(key instanceof BinaryObject))
             key = ((CacheObject)key).value(ctx.cacheObjectContext(), false);
 
         return (key instanceof GridCacheInternal ? ctx.defaultAffMapper() : affMapper).affinityKey(key);
