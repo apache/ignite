@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.portable.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.portable.BinaryMetadata;
 import org.apache.ignite.internal.portable.BinaryMetadataHandler;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
@@ -533,6 +534,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     }
                 });
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryObject buildEnum(String typeName, int ord) throws IgniteException {
+        typeName = PortableContext.typeName(typeName);
+
+        int typeId = portableCtx.typeId(typeName);
+
+        updateMetadata(typeId, typeName, null, null, true);
+
+        return new BinaryEnumObjectImpl(portableCtx, typeId, null, ord);
     }
 
     /** {@inheritDoc} */

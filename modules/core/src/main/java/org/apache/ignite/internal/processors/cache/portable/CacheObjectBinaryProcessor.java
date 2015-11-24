@@ -84,6 +84,14 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
     public Collection<BinaryType> metadata() throws IgniteException;
 
     /**
+     * @param typeName Type name.
+     * @param ord ordinal.
+     * @return Enum object.
+     * @throws IgniteException If failed.
+     */
+    public BinaryObject buildEnum(String typeName, int ord) throws IgniteException;
+
+    /**
      * @return Portables interface.
      * @throws IgniteException If failed.
      */

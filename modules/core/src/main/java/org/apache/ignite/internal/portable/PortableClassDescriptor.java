@@ -161,8 +161,12 @@ public class PortableClassDescriptor {
 
         if (excluded)
             mode = BinaryWriteMode.EXCLUSION;
-        else
-            mode = serializer != null ? BinaryWriteMode.PORTABLE : PortableUtils.mode(cls);
+        else {
+            if (cls == BinaryEnumObjectImpl.class)
+                mode = BinaryWriteMode.PORTABLE_ENUM;
+            else
+                mode = serializer != null ? BinaryWriteMode.PORTABLE : PortableUtils.mode(cls);
+        }
 
         switch (mode) {
             case P_BYTE:
@@ -538,6 +542,11 @@ public class PortableClassDescriptor {
 
             case ENUM:
                 writer.doWriteEnum((Enum<?>)obj);
+
+                break;
+
+            case PORTABLE_ENUM:
+                writer.doWritePortableEnum((BinaryEnumObjectImpl)obj);
 
                 break;
 
