@@ -1411,7 +1411,9 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var binEnum = binary.BuildEnum(typeof(TestEnumRegistered), val);
 
+            Assert.IsTrue(binEnum.IsEnum);
             Assert.AreEqual(val, binEnum.EnumValue);
+            Assert.AreEqual((TestEnumRegistered) val, binEnum.Deserialize<TestEnumRegistered>());
         }
     }
 
