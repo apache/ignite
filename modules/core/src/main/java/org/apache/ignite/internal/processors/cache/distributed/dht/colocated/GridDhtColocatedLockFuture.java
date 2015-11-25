@@ -296,10 +296,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId, txKey);
 
         if (inTx()) {
-            IgniteTxEntry txEntry = tx.entry(txKey);
-
-            txEntry.cached(entry);
-
             if (cand != null) {
                 if (!tx.implicit())
                     throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
@@ -308,6 +304,10 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     return null;
             }
             else {
+                IgniteTxEntry txEntry = tx.entry(txKey);
+
+                txEntry.cached(entry);
+
                 // Check transaction entries (corresponding tx entries must be enlisted in transaction).
                 cand = new GridCacheMvccCandidate(entry,
                     cctx.localNodeId(),

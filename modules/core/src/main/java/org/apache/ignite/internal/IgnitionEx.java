@@ -1187,8 +1187,8 @@ public class IgnitionEx {
         Ignite res;
 
         if (grid == null || (res = grid.grid()) == null)
-            throw new IgniteIllegalStateException("Grid instance was not properly started " +
-                "or was already stopped: " + name);
+            throw new IgniteIllegalStateException("Ignite instance with provided name doesn't exist. " +
+                "Did you call Ignition.start(..) to start an Ignite instance? [name=" + name + ']');
 
         return res;
     }
@@ -1205,7 +1205,8 @@ public class IgnitionEx {
         IgniteKernal res;
 
         if (grid == null || (res = grid.gridx()) == null)
-            throw new IllegalStateException("Grid instance was not properly started or was already stopped: " + name);
+            throw new IgniteIllegalStateException("Ignite instance with provided name doesn't exist. " +
+                "Did you call Ignition.start(..) to start an Ignite instance? [name=" + name + ']');
 
         return res;
     }

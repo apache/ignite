@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +36,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.TouchedExpiryPolicy;
@@ -45,6 +44,8 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -5125,6 +5126,43 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 return null;
             }
         }, EntryProcessorException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockInsideTransaction() throws Exception {
+        if (txEnabled()) {
+            GridTestUtils.assertThrows(
+                log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Transaction tx = ignite(0).transactions().txStart()) {
+                            jcache(0).lock("key").lock();
+                        }
+
+                        return null;
+                    }
+                },
+                CacheException.class,
+                "Explicit lock can't be acquired within a transaction."
+            );
+
+            GridTestUtils.assertThrows(
+                log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Transaction tx = ignite(0).transactions().txStart()) {
+                            jcache(0).lockAll(Arrays.asList("key1", "key2")).lock();
+                        }
+
+                        return null;
+                    }
+                },
+                CacheException.class,
+                "Explicit lock can't be acquired within a transaction."
+            );
+        }
     }
 
     /**
