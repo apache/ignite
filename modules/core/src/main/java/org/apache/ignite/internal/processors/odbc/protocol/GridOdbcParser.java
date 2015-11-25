@@ -17,15 +17,19 @@
 package org.apache.ignite.internal.processors.odbc.protocol;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.BinaryReaderExImpl;
-import org.apache.ignite.internal.portable.BinaryWriterExImpl;
+import org.apache.ignite.internal.portable.*;
+import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
 import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
 import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcQueryResult;
 import org.apache.ignite.internal.processors.odbc.request.QueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.request.QueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.request.QueryFetchRequest;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.memory.*;
 import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryFieldsMetaResult;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -41,6 +45,9 @@ import java.util.Collection;
  */
 public class GridOdbcParser implements GridNioParser {
 
+    /** Initial output stream capacity. */
+    private static final int INIT_CAP = 1024;
+
     /** Length in bytes of the remaining message part. */
     int leftToReceive = 0;
 
@@ -50,8 +57,15 @@ public class GridOdbcParser implements GridNioParser {
     /** Context. */
     protected final GridKernalContext ctx;
 
+    /** Marshaller. */
+    private final GridPortableMarshaller marsh;
+
     GridOdbcParser(GridKernalContext context) {
         ctx = context;
+
+        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
+
+        marsh = cacheObjProc.marshaller();
     }
 
     /**
@@ -60,7 +74,7 @@ public class GridOdbcParser implements GridNioParser {
      * @return Instance of the {@link BinaryReaderExImpl} positioned to read from the beginning of the message on
      * success and null otherwise.
      */
-    private BinaryReaderExImpl tryConstructMessage(ByteBuffer buf) {
+    private BinaryRawReaderEx tryConstructMessage(ByteBuffer buf) {
         if (leftToReceive != 0) {
             // Still receiving message
             int toConsume = Math.min(leftToReceive, buf.remaining());
@@ -106,7 +120,7 @@ public class GridOdbcParser implements GridNioParser {
     /** {@inheritDoc} */
     @Nullable @Override public GridOdbcRequest decode(GridNioSession ses, ByteBuffer buf) throws IOException,
             IgniteCheckedException {
-        BinaryReaderExImpl messageReader = tryConstructMessage(buf);
+        BinaryRawReaderEx messageReader = tryConstructMessage(buf);
 
         return messageReader == null ? null : readRequest(ses, messageReader);
     }
@@ -118,7 +132,7 @@ public class GridOdbcParser implements GridNioParser {
 
         System.out.println("Encoding query processing result");
 
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, 0, false);
+        BinaryRawWriterEx writer = marsh.writer(new PortableHeapOutputStream(INIT_CAP));
 
         // Reserving space for the message length.
         int msgLenPos = writer.reserveInt();
@@ -147,7 +161,7 @@ public class GridOdbcParser implements GridNioParser {
      * @return Instance of the {@link GridOdbcRequest}.
      * @throws IOException if the type of the request is unknown to the parser.
      */
-    private GridOdbcRequest readRequest(GridNioSession ses, BinaryReaderExImpl reader) throws IOException {
+    private GridOdbcRequest readRequest(GridNioSession ses, BinaryRawReaderEx reader) throws IOException {
         GridOdbcRequest res;
 
         byte cmd = reader.readByte();
@@ -198,15 +212,15 @@ public class GridOdbcParser implements GridNioParser {
     }
 
     /**
-     * Write ODBC response using provided {@link BinaryWriterExImpl} instance.
+     * Write ODBC response using provided {@link BinaryRawWriterEx} instance.
      * @param ses Current session.
      * @param writer Writer.
      * @param rsp ODBC response that should be written.
      * @throws IOException if the type of the response is unknown to the parser.
      */
-    private void writeResponse(GridNioSession ses, BinaryWriterExImpl writer, GridOdbcResponse rsp) throws IOException {
+    private void writeResponse(GridNioSession ses, BinaryRawWriterEx writer, GridOdbcResponse rsp) throws IOException {
         // Writing status
-        writer.writeByte(rsp.getSuccessStatus());
+        writer.writeByte((byte)rsp.getSuccessStatus());
 
         if (rsp.getSuccessStatus() != GridOdbcResponse.STATUS_SUCCESS) {
             writer.writeString(rsp.getError());
@@ -237,11 +251,26 @@ public class GridOdbcParser implements GridNioParser {
                 }
             }
 
-            Collection<?> items = res.getItems();
-            if (items != null) {
+            Collection<?> items0 = res.getItems();
+
+            if (items0 != null) {
+                Collection<Collection<Object>> items = (Collection<Collection<Object>>)items0;
+
                 writer.writeBoolean(res.getLast());
 
-                U.writeCollection(writer, items);
+                writer.writeInt(items.size());
+
+                for (Collection<Object> row : items) {
+                    if (row != null) {
+                        writer.writeInt(row.size());
+
+                        for (Object obj : row) {
+                            if (obj != null) {
+                                writer.writeObjectDetached(obj);
+                            }
+                        }
+                    }
+                }
             }
         } else {
             throw new IOException("Failed to serialize response packet (unknown response type) [ses=" + ses + "]");

@@ -490,6 +490,18 @@ SQLRETURN SQL_API SQLFetch(SQLHSTMT stmt)
     return SqlResultToReturnCode(statement->FetchRow());
 }
 
+SQLRETURN SQL_API SQLFetchScroll(SQLHSTMT       stmt,
+                                 SQLSMALLINT    orientation,
+                                 SQLLEN         offset)
+{
+    LOG_MSG("SQLFetchScroll called\n");
+
+    if (orientation != SQL_FETCH_NEXT)
+        return SQL_ERROR;
+
+    return SQLFetch(stmt);
+}
+
 SQLRETURN SQL_API SQLExtendedFetch(SQLHSTMT         stmt,
                                    SQLUSMALLINT     orientation,
                                    SQLLEN           offset,
@@ -497,15 +509,19 @@ SQLRETURN SQL_API SQLExtendedFetch(SQLHSTMT         stmt,
                                    SQLUSMALLINT*    rowStatusArray)
 {
     LOG_MSG("SQLExtendedFetch called\n");
-    return SQL_SUCCESS;
-}
 
-SQLRETURN SQL_API SQLFetchScroll(SQLHSTMT       stmt,
-                                 SQLSMALLINT    orientation,
-                                 SQLLEN         offset)
-{
-    LOG_MSG("SQLFetchScroll called\n");
-    return SQL_SUCCESS;
+    SQLRETURN res = SQLFetchScroll(stmt, orientation, offset);
+
+    if (res == SQL_SUCCESS || res == SQL_NO_DATA)
+    {
+        if (rowCount)
+            *rowCount = 1;
+
+        if (rowStatusArray)
+            rowStatusArray[0] = SQL_ROW_SUCCESS;
+    }
+
+    return res;
 }
 
 SQLRETURN SQL_API SQLNumResultCols(SQLHSTMT stmt, SQLSMALLINT *columnNum)

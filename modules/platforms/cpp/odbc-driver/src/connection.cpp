@@ -37,7 +37,7 @@ namespace ignite
 {
     namespace odbc
     {
-        Connection::Connection() : socket(), connected(false), cache()
+        Connection::Connection() : socket(), connected(false), cache(), parser()
         {
             // No-op.
         }

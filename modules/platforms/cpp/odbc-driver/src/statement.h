@@ -72,34 +72,6 @@ namespace ignite
             void UnbindAllColumns();
 
             /**
-             * Synchronously send request message and receive response.
-             * @param req Request message.
-             * @param rsp Response message.
-             * @return True on success.
-             */
-            template<typename ReqT, typename RspT>
-            bool SyncMessage(const ReqT& req, RspT& rsp)
-            {
-                std::vector<int8_t> tempBuffer;
-
-                parser.Encode(req, tempBuffer);
-
-                bool requestSent = connection.Send(tempBuffer.data(), tempBuffer.size());
-
-                if (!requestSent)
-                    return false;
-
-                bool responseReceived = connection.Receive(tempBuffer);
-
-                if (!responseReceived)
-                    return false;
-
-                parser.Decode(rsp, tempBuffer);
-                
-                return true;
-            }
-
-            /**
              * Prepare SQL query.
              * @note Only SELECT queries are supported currently.
              * @param query SQL query.
@@ -172,9 +144,6 @@ namespace ignite
             //TODO: Move to separate Cursor class.
             /** Cursor id. */
             int64_t resultQueryId;
-
-            /** Message parser. */
-            Parser parser;
 
             /** Column metadata. */
             std::vector<ColumnMeta> resultMeta;

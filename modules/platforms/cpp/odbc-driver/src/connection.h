@@ -96,6 +96,34 @@ namespace ignite
                 return cache;
             }
 
+            /**
+             * Synchronously send request message and receive response.
+             * @param req Request message.
+             * @param rsp Response message.
+             * @return True on success.
+             */
+            template<typename ReqT, typename RspT>
+            bool SyncMessage(const ReqT& req, RspT& rsp)
+            {
+                std::vector<int8_t> tempBuffer;
+
+                parser.Encode(req, tempBuffer);
+
+                bool requestSent = Send(tempBuffer.data(), tempBuffer.size());
+
+                if (!requestSent)
+                    return false;
+
+                bool responseReceived = Receive(tempBuffer);
+
+                if (!responseReceived)
+                    return false;
+
+                parser.Decode(rsp, tempBuffer);
+
+                return true;
+            }
+
         private:
             /**
              * Constructor.
@@ -110,6 +138,9 @@ namespace ignite
 
             /** Cache name. */
             std::string cache;
+
+            /** Message parser. */
+            Parser parser;
         };
     }
 }

@@ -29,7 +29,7 @@ namespace ignite
     namespace odbc
     {
         Statement::Statement(Connection& parent) :
-            connection(parent), columnBindings(), resultQueryId(0), parser(), resultMeta()
+            connection(parent), columnBindings(), resultQueryId(0), resultMeta()
         {
             // No-op.
         }
@@ -78,7 +78,7 @@ namespace ignite
             QueryExecuteRequest req(cacheName, sql);
             QueryExecuteResponse rsp;
 
-            bool success = SyncMessage(req, rsp);
+            bool success = connection.SyncMessage(req, rsp);
 
             if (!success)
                 return false;
@@ -118,7 +118,7 @@ namespace ignite
             QueryCloseRequest req(resultQueryId);
             QueryCloseResponse rsp;
 
-            bool success = SyncMessage(req, rsp);
+            bool success = connection.SyncMessage(req, rsp);
 
             if (!success)
                 return false;
@@ -138,7 +138,9 @@ namespace ignite
             QueryFetchRequest req(resultQueryId, DEFAULT_PAGE_SIZE);
             QueryFetchResponse rsp;
 
-            bool success = SyncMessage(req, rsp);
+            bool success = connection.SyncMessage(req, rsp);
+
+            LOG_MSG("Query id: %lld\n", rsp.GetQueryId());
 
             if (!success)
                 return SQL_RESULT_ERROR;
