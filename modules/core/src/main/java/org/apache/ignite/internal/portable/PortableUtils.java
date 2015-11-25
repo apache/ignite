@@ -877,10 +877,12 @@ public class PortableUtils {
 
             // Check enum flag.
             if (oldMeta.isEnum() != newMeta.isEnum()) {
-                throw new BinaryObjectException(
-                    "Binary type has different enum flags [" + "typeName=" + newMeta.typeName() +
-                        ", isEnum1=" + oldMeta.isEnum() + ", isEnum2=" + newMeta.isEnum() + ']'
-                );
+                if (oldMeta.isEnum())
+                    throw new BinaryObjectException("Binary type already registered as enum: " +
+                        newMeta.typeName());
+                else
+                    throw new BinaryObjectException("Binary type already registered as non-enum: " +
+                        newMeta.typeName());
             }
 
             // Check and merge fields.
