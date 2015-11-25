@@ -71,14 +71,17 @@ namespace Apache.Ignite.Examples.Messaging
                     var orderedCounter = new CountdownEvent(msgCount);
                     var unorderedCounter = new CountdownEvent(msgCount);
 
-                    localMessaging.LocalListen(new LocalListener(unorderedCounter), Topic.Unordered);
-                    localMessaging.LocalListen(new LocalListener(orderedCounter), Topic.Ordered);
+                    var unorderedListener = new LocalListener(unorderedCounter);
+                    localMessaging.LocalListen(unorderedListener, Topic.Unordered);
+
+                    var orderedListener = new LocalListener(orderedCounter);
+                    localMessaging.LocalListen(orderedListener, Topic.Ordered);
 
                     // Set up remote listeners
                     var remoteMessaging = remotes.GetMessaging();
 
-                    remoteMessaging.RemoteListen(new RemoteUnorderedListener(), Topic.Unordered);
-                    remoteMessaging.RemoteListen(new RemoteOrderedListener(), Topic.Ordered);
+                    var idUnordered = remoteMessaging.RemoteListen(new RemoteUnorderedListener(), Topic.Unordered);
+                    var idOrdered = remoteMessaging.RemoteListen(new RemoteOrderedListener(), Topic.Ordered);
 
                     // Send unordered
                     Console.WriteLine(">>> Sending unordered messages...");
@@ -101,6 +104,13 @@ namespace Apache.Ignite.Examples.Messaging
 
                     unorderedCounter.Wait();
                     orderedCounter.Wait();
+
+                    // Unsubscribe
+                    remoteMessaging.StopLocalListen(unorderedListener, Topic.Unordered);
+                    remoteMessaging.StopLocalListen(orderedListener, Topic.Ordered);
+
+                    remoteMessaging.StopRemoteListen(idUnordered);
+                    remoteMessaging.StopRemoteListen(idOrdered);
                 }
             }
 
