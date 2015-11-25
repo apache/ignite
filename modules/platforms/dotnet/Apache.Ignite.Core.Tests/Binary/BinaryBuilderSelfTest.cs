@@ -902,6 +902,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var bin = _grid.GetBinary();
 
+            // Put to cache to populate metas
+            var cache = _grid.GetOrCreateCache<object, object>(null);
+            cache.Put(1, TestEnum.One);
+            cache.Put(2, TestEnumRegistered.One);
+
             // Unregistered enum
             var binEnum = bin.ToBinary<IBinaryObject>(TestEnum.One);
 
