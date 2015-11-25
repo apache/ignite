@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -725,9 +724,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(ttl);
 
-        LinkedHashMap<KeyCacheObject, Boolean> map = U.newLinkedHashMap(1);
-
-        map.put(req.key(), req.addReader());
+        Map<KeyCacheObject, Boolean> map = Collections.singletonMap(req.key(), req.addReader());
 
         IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut =
             getDhtAsync(nodeId,
@@ -760,7 +757,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 info.key(null);
 
                                 res0 = info;
-                            } else if (req.needVersion())
+                            }
+                            else if (req.needVersion())
                                 res0 = new CacheVersionedValue(info.value(), info.version());
                             else
                                 res0 = info.value();
