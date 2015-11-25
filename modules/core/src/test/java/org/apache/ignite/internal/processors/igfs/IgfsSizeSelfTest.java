@@ -119,6 +119,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        igfs(0).format();
+
         G.stopAll(true);
     }
 
@@ -540,8 +542,13 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             // Now add file ID to trash listing so that delete worker could "see" it.
 
             try (Transaction tx = metaCache.unwrap(Ignite.class).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                IgfsFileInfo info2 = metaCache.invoke(info.id(),
+                    new IgfsMetaManager.UpdatePath(path));
+
+                assert info2.path() != null;
+
                 Map<String, IgfsListingEntry> listing = Collections.singletonMap(path.name(),
-                    new IgfsListingEntry(info));
+                    new IgfsListingEntry(info2));
 
                 // Clear root listing.
                 metaCache.put(ROOT_ID, new IgfsFileInfo(ROOT_ID));
@@ -549,10 +556,14 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
                 // Add file to trash listing.
                 IgfsFileInfo trashInfo = metaCache.get(TRASH_ID);
 
+                IgfsFileInfo x;
+
                 if (trashInfo == null)
-                    metaCache.put(TRASH_ID, new IgfsFileInfo(listing, new IgfsFileInfo(TRASH_ID)));
+                    x = new IgfsFileInfo(listing, new IgfsFileInfo(TRASH_ID));
                 else
-                    metaCache.put(TRASH_ID, new IgfsFileInfo(listing, trashInfo));
+                    x = new IgfsFileInfo(listing, trashInfo);
+
+                metaCache.put(TRASH_ID, x);
 
                 tx.commit();
             }

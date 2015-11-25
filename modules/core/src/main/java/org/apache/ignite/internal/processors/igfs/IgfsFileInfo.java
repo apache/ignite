@@ -170,6 +170,8 @@ public final class IgfsFileInfo implements Externalizable {
     IgfsFileInfo(IgfsFileInfo info, long len) {
         this(info.isDirectory(), info.id, info.blockSize, len, info.affKey, info.listing, info.props, info.fileMap(),
             info.lockId, true, info.accessTime, info.modificationTime, info.evictExclude());
+
+        path = info.path();
     }
 
     /**
@@ -182,6 +184,8 @@ public final class IgfsFileInfo implements Externalizable {
     IgfsFileInfo(IgfsFileInfo info, long accessTime, long modificationTime) {
         this(info.isDirectory(), info.id, info.blockSize, info.len, info.affKey, info.listing, info.props,
             info.fileMap(), info.lockId, false, accessTime, modificationTime, info.evictExclude());
+
+        path = info.path();
     }
 
     /**
@@ -193,6 +197,8 @@ public final class IgfsFileInfo implements Externalizable {
     IgfsFileInfo(IgfsFileInfo info, @Nullable Map<String, String> props) {
         this(info.isDirectory(), info.id, info.blockSize, info.len, info.affKey, info.listing, props,
             info.fileMap(), info.lockId, true, info.accessTime, info.modificationTime, info.evictExclude());
+
+        path = info.path();
     }
 
     /**
@@ -209,7 +215,7 @@ public final class IgfsFileInfo implements Externalizable {
     }
 
     /**
-     * Constructs file information.
+     * Makes IgfsFileInfo with a different lockId and modificationTime.
      *
      * @param info File information to copy data from.
      * @param lockId Lock ID.
@@ -218,6 +224,8 @@ public final class IgfsFileInfo implements Externalizable {
     IgfsFileInfo(IgfsFileInfo info, @Nullable IgniteUuid lockId, long modificationTime) {
         this(info.isDirectory(), info.id, info.blockSize, info.len, info.affKey, info.listing, info.props,
             info.fileMap(), lockId, true, info.accessTime, modificationTime, info.evictExclude());
+
+        path = info.path();
     }
 
     /**
@@ -229,6 +237,8 @@ public final class IgfsFileInfo implements Externalizable {
     IgfsFileInfo(@Nullable Map<String, IgfsListingEntry> listing, IgfsFileInfo old) {
         this(old.isDirectory(), old.id, old.blockSize, old.len, old.affKey, listing, old.props, old.fileMap(),
             old.lockId, false, old.accessTime, old.modificationTime, old.evictExclude());
+
+        path = old.path();
     }
 
     /**
@@ -315,9 +325,11 @@ public final class IgfsFileInfo implements Externalizable {
      *
      * @param info An object to copy data info.
      */
-    public IgfsFileInfo(IgfsFileInfo info) {
+    private IgfsFileInfo(IgfsFileInfo info) {
         this(info.isDirectory(), info.id, info.blockSize, info.len, info.affKey, info.listing, info.props,
             info.fileMap(), info.lockId, true, info.accessTime, info.modificationTime, info.evictExclude());
+
+        path = info.path();
     }
 
     /**

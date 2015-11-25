@@ -95,6 +95,7 @@ import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.TRASH_ID;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.builder;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_PURGED;
 
 /**
  * Cache based structure (meta data) manager.
@@ -967,7 +968,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     IgfsFileInfo moved = allInfos.get(srcPathIds.get(srcPathIds.size() - 1));
 
-                    // Set the new path to the info to simplify event creation:
+                    // Set the new path to the info to simplify delete event creation:
                     return IgfsFileInfo.builder(moved).path(realNewPath).build();
                 }
                 finally {
@@ -1134,7 +1135,10 @@ public class IgfsMetaManager extends IgfsManager {
                     // Construct new info and move locked entries from root to it.
                     Map<String, IgfsListingEntry> transferListing = new HashMap<>(rootListingMap);
 
-                    IgfsFileInfo newInfo = new IgfsFileInfo(transferListing);
+                    IgfsFileInfo newInfo = IgfsFileInfo.builder(new IgfsFileInfo(transferListing))
+                        .path(new IgfsPath("/")).build();
+
+                    assert newInfo.path() != null;
 
                     id2InfoPrj.put(newInfo.id(), newInfo);
 
@@ -1243,10 +1247,9 @@ public class IgfsMetaManager extends IgfsManager {
                     // Add listing entry into the destination parent listing.
                     id2InfoPrj.invoke(TRASH_ID, new UpdateListing(destFileName, srcEntry, false));
 
-                    if (victimInfo.isFile())
-                        // Update a file info of the removed file with a file path,
-                        // which will be used by delete worker for event notifications.
-                        id2InfoPrj.invoke(victimId, new UpdatePath(path));
+                    // Update a file/directory info of the removed file with a file path,
+                    // which will be used by delete worker for event notifications.
+                    id2InfoPrj.invoke(victimId, new UpdatePath(path));
 
                     tx.commit();
 
@@ -1352,8 +1355,11 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Collection of really deleted entries.
      * @throws IgniteCheckedException If failed.
      */
-    Collection<IgniteUuid> delete(IgniteUuid parentId, Map<String, IgfsListingEntry> listing)
+    Collection<IgniteUuid> delete(final IgniteUuid parentId, final IgfsPath parentPath,
+            Map<String, IgfsListingEntry> listing)
         throws IgniteCheckedException {
+        assert parentPath != null;
+
         if (busyLock.enterBusy()) {
             try {
                 assert parentId != null;
@@ -1379,6 +1385,8 @@ public class IgfsMetaManager extends IgfsManager {
 
                     IgfsFileInfo parentInfo = locks.get(parentId);
 
+                    List<String> deletedFileNames = new ArrayList<>(locks.size());
+
                     // Ensure parent is still in place.
                     if (parentInfo != null) {
                         Map<String, IgfsListingEntry> newListing =
@@ -1403,6 +1411,9 @@ public class IgfsMetaManager extends IgfsManager {
                                     newListing.remove(entry.getKey());
 
                                     res.add(entryId);
+
+                                    if (entryInfo.isFile())
+                                        deletedFileNames.add(entry.getKey());
                                 }
                             }
                             else {
@@ -1418,6 +1429,11 @@ public class IgfsMetaManager extends IgfsManager {
                     }
 
                     tx.commit();
+
+                    for (String name: deletedFileNames) {
+                        IgfsUtils.sendEvents(igfsCtx.kernalContext(),
+                            new IgfsPath(parentPath, name), EVT_IGFS_FILE_PURGED);
+                    }
 
                     return res;
                 }
@@ -3309,7 +3325,7 @@ public class IgfsMetaManager extends IgfsManager {
      * Update path closure.
      */
     @GridInternal
-    private static final class UpdatePath implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
+    static final class UpdatePath implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -3320,7 +3336,9 @@ public class IgfsMetaManager extends IgfsManager {
         /**
          * @param path Path.
          */
-        private UpdatePath(IgfsPath path) {
+        UpdatePath(IgfsPath path) {
+            assert path != null;
+
             this.path = path;
         }
 
@@ -3332,12 +3350,14 @@ public class IgfsMetaManager extends IgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> e, Object... args) {
+        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> e, Object... args) {
             IgfsFileInfo info = e.getValue();
 
-            e.setValue(builder(info).path(path).build());
+            IgfsFileInfo newInfo = builder(info).path(path).build();
 
-            return null;
+            e.setValue(newInfo);
+
+            return newInfo;
         }
 
         /** {@inheritDoc} */

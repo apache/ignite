@@ -27,6 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -213,8 +214,11 @@ public class IgfsDeleteWorker extends IgfsThread {
             IgfsFileInfo info = meta.info(id);
 
             if (info != null) {
+                assert info.path() != null : "Path of the top level item must be set since it is used in PURGE " +
+                    "event generation: [id=" + info.id() + ", isDir=" + info.isDirectory() + ']';
+
                 if (info.isDirectory()) {
-                    if (!deleteDirectoryContents(TRASH_ID, id))
+                    if (!deleteDirectoryContents(id, info.path()))
                         return false;
 
                     if (meta.delete(TRASH_ID, name, id))
@@ -237,8 +241,8 @@ public class IgfsDeleteWorker extends IgfsThread {
 
                     boolean ret = meta.delete(TRASH_ID, name, id);
 
-                    if (info.path() != null)
-                        IgfsUtils.sendEvents(igfsCtx.kernalContext(), info.path(), EVT_IGFS_FILE_PURGED);
+                    assert info.path() != null;
+                    IgfsUtils.sendEvents(igfsCtx.kernalContext(), info.path(), EVT_IGFS_FILE_PURGED);
 
                     return ret;
                 }
@@ -251,17 +255,16 @@ public class IgfsDeleteWorker extends IgfsThread {
     /**
      * Remove particular entry from the trash directory or subdirectory.
      *
-     * @param parentId Parent ID.
-     * @param id Entry id.
+     * @param dirId Entry id.
      * @return true iff all the items in the directory were deleted (directory is seen to be empty).
      * @throws IgniteCheckedException If delete failed for some reason.
      */
-    private boolean deleteDirectoryContents(IgniteUuid parentId, final IgniteUuid id) throws IgniteCheckedException {
-        assert parentId != null;
-        assert id != null;
+    private boolean deleteDirectoryContents(final IgniteUuid dirId, final IgfsPath dirPath)
+            throws IgniteCheckedException {
+        assert dirId != null;
 
         while (true) {
-            IgfsFileInfo info = meta.info(id);
+            IgfsFileInfo info = meta.info(dirId);
 
             if (info != null) {
                 assert info.isDirectory();
@@ -281,8 +284,11 @@ public class IgfsDeleteWorker extends IgfsThread {
                     if (cancelled)
                         return false;
 
+                    String name = entry.getKey();
+
                     if (entry.getValue().isDirectory()) {
-                        if (deleteDirectoryContents(id, entry.getValue().fileId())) // *** Recursive call.
+                        if (deleteDirectoryContents(entry.getValue().fileId(),
+                                new IgfsPath(dirPath, name))) // *** Recursive call.
                             delListing.put(entry.getKey(), entry.getValue());
                         else
                             failedFiles++;
@@ -325,8 +331,8 @@ public class IgfsDeleteWorker extends IgfsThread {
                     return false;
                 }
 
-                // Actual delete of folder content.
-                Collection<IgniteUuid> delIds = meta.delete(id, delListing);
+                // Actual delete of folder content. PURGE events are sent from there:
+                Collection<IgniteUuid> delIds = meta.delete(dirId, dirPath, delListing);
 
                 if (listing.size() == delIds.size())
                     return true; // All entries were deleted.
