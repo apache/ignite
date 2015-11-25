@@ -18,13 +18,13 @@
 package org.apache.ignite.osgi.activators;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.osgi.IgniteOsgiContextActivator;
+import org.apache.ignite.osgi.IgniteAbstractOsgiContextActivator;
 import org.apache.ignite.osgi.classloaders.OsgiClassLoadingStrategyType;
 
 /**
  * Basic Ignite Activator for testing.
  */
-public class BasicIgniteTestActivator extends IgniteOsgiContextActivator {
+public class BasicIgniteTestActivator extends IgniteAbstractOsgiContextActivator {
 
     /**
      * @return

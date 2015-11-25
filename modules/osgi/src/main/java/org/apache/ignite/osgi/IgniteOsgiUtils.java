@@ -57,7 +57,7 @@ public class IgniteOsgiUtils {
      *
      * @return The {@link Map}.
      */
-    public static Map<Ignite, ClassLoader> classloaders() {
+    protected static Map<Ignite, ClassLoader> classloaders() {
         return CLASSLOADERS;
     }
 

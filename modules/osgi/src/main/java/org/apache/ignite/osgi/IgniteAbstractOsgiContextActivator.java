@@ -58,7 +58,7 @@ import org.osgi.framework.BundleContext;
  * @see <a href="http://wiki.osgi.org/wiki/Bundle-Activator">Bundle-Activator OSGi Manifest header</a>
  *
  */
-public abstract class IgniteOsgiContextActivator implements BundleActivator {
+public abstract class IgniteAbstractOsgiContextActivator implements BundleActivator {
 
     /** OSGI service property name. */
     public static final String OSGI_SERVICE_PROP_IGNITE_NAME = "ignite.name";
@@ -78,7 +78,7 @@ public abstract class IgniteOsgiContextActivator implements BundleActivator {
      * @param context Bundle context.
      * @throws Exception
      */
-    @Override public void start(BundleContext context) throws Exception {
+    @Override public final void start(BundleContext context) throws Exception {
         // Ensure that no other instances are running.
         if (IgniteOsgiUtils.gridCount() > 0) {
             throw new IgniteException("Failed to start Ignite instance (another instance is already running " +
@@ -102,6 +102,8 @@ public abstract class IgniteOsgiContextActivator implements BundleActivator {
 
         config.setClassLoader(clsLdr);
 
+        preStart(context);
+
         // Start Ignite.
         ignite = Ignition.start(config);
 
@@ -115,6 +117,8 @@ public abstract class IgniteOsgiContextActivator implements BundleActivator {
         // Export Ignite as a service.
         exportOsgiService(ignite);
 
+        postStart(context);
+
     }
 
     /**
@@ -123,7 +127,9 @@ public abstract class IgniteOsgiContextActivator implements BundleActivator {
      * @param context Bundle context.
      * @throws Exception
      */
-    @Override public void stop(BundleContext context) throws Exception {
+    @Override public final void stop(BundleContext context) throws Exception {
+        preStop(context);
+
         try {
             ignite.close();
         }
@@ -135,6 +141,45 @@ public abstract class IgniteOsgiContextActivator implements BundleActivator {
         logger.info("Stopped Ignite from OSGi Activator [name=" + ignite.name() + ']');
 
         IgniteOsgiUtils.classloaders().remove(ignite);
+
+        postStop(context);
+    }
+
+    /**
+     * This method is called before Ignite initialises.
+     * <p>
+     * The default implementation is empty. Override it to introduce custom logic.
+     *
+     * @param context The {@link BundleContext}.
+     */
+    private void preStart(BundleContext context) { }
+
+    /**
+     * This method is called after Ignite initialises, only if initialization succeeded.
+     * <p>
+     * The default implementation is empty. Override it to introduce custom logic.
+     *
+     * @param context The {@link BundleContext}.
+     */
+    private void postStart(BundleContext context) { }
+
+    /**
+     * This method is called before Ignite stops.
+     * <p>
+     * The default implementation is empty. Override it to introduce custom logic.
+     *
+     * @param context The {@link BundleContext}.
+     */
+    private void preStop(BundleContext context) { }
+
+    /**
+     * This method is called after Ignite stops, only if the operation succeeded.
+     * <p>
+     * The default implementation is empty. Override it to introduce custom logic.
+     *
+     * @param context The {@link BundleContext}.
+     */
+    private void postStop(BundleContext context) {
     }
 
     /**

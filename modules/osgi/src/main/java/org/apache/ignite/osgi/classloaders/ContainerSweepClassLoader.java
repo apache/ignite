@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 
 import org.jsr166.ConcurrentHashMap8;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.Constants;
 
 /**
  * A {@link ClassLoader} implementation that first attempts to load the class from the associated {@link Bundle}. As
@@ -112,8 +113,14 @@ public class ContainerSweepClassLoader extends BundleDelegatingClassLoader {
         int bundleIdx = 0;
 
         for (; bundleIdx < bundles.length; bundleIdx++) {
+            Bundle b = bundles[bundleIdx];
+
+            // Skip bundles that haven't reached RESOLVED state; skip fragments.
+            if (b.getState() <= Bundle.RESOLVED || b.getHeaders().get(Constants.FRAGMENT_HOST) != null)
+                continue;
+
             try {
-                cls = bundles[bundleIdx].loadClass(name);
+                cls = b.loadClass(name);
                 break;
             }
             catch (ClassNotFoundException e) {
