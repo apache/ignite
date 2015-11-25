@@ -1709,7 +1709,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                             IdMapper = CreateInstance<IBinaryIdMapper>(reader),
                             Serializer = CreateInstance<IBinarySerializer>(reader),
                             AffinityKeyFieldName = reader.ReadString(),
-                            KeepDeserialized = reader.ReadObject<bool?>()
+                            KeepDeserialized = reader.ReadObject<bool?>(),
+                            IsEnum = reader.ReadBoolean()
                         });
                     }
                 }
