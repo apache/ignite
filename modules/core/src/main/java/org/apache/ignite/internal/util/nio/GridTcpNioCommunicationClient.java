@@ -119,8 +119,8 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
 
         if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
             fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> future) {
-                    U.log(log, "C1>> " + ((GridIoMessage)msg).message());
+                @Override public void apply(final IgniteInternalFuture<?> future) {
+                    U.log(log, "C1>> " + ((GridIoMessage)msg).message() + " " +future);
                 }
             });
         }
