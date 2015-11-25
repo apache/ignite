@@ -262,7 +262,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
             if (node.version().compareTo(SINGLE_GET_MSG_SINCE) >= 0) {
                 req = new GridNearSingleGetRequest(cctx.cacheId(),
-                    futId,
+                    futId.localId(),
                     key,
                     readThrough,
                     topVer,

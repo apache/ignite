@@ -140,7 +140,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (log.isDebugEnabled())
             log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
 
-        GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc().future(res.futureId());
+        GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc()
+            .future(new IgniteUuid(IgniteUuid.VM_ID, res.futureId()));
 
         if (fut == null) {
             if (log.isDebugEnabled())
