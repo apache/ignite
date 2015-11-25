@@ -69,8 +69,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformReaderBiClos
 import org.apache.ignite.internal.processors.platform.utils.PlatformReaderClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T4;
-import org.apache.ignite.internal.util.typedef.T5;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -342,9 +340,9 @@ public class PlatformContextImpl implements PlatformContext {
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override public void processMetadata(BinaryRawReaderEx reader) {
-        Collection<T5<Integer, String, String, Map<String, Integer>, Boolean>> metas = PlatformUtils.readCollection(reader,
-            new PlatformReaderClosure<T5<Integer, String, String, Map<String, Integer>, Boolean>>() {
-                @Override public T5<Integer, String, String, Map<String, Integer>, Boolean> read(BinaryRawReaderEx reader) {
+        Collection<Metadata> metas = PlatformUtils.readCollection(reader,
+            new PlatformReaderClosure<Metadata>() {
+                @Override public Metadata read(BinaryRawReaderEx reader) {
                     int typeId = reader.readInt();
                     String typeName = reader.readString();
                     String affKey = reader.readString();
@@ -358,50 +356,13 @@ public class PlatformContextImpl implements PlatformContext {
 
                     boolean isEnum = reader.readBoolean();
 
-                    return new T5<>(typeId, typeName, affKey, fields, isEnum);
+                    return new Metadata(typeId, typeName, affKey, fields, isEnum);
                 }
             }
         );
 
-        for (T5<Integer, String, String, Map<String, Integer>, Boolean> meta : metas)
-            cacheObjProc.updateMetadata(meta.get1(), meta.get2(), meta.get3(), meta.get4(), meta.get5());
-    }
-
-    /**
-     * Metadata holder.
-     */
-    private static class Metadata {
-        /** Type ID. */
-        private final int typeId;
-
-        /** Type name. */
-        private final String typeName;
-
-        /** Affinity key. */
-        private final String affKey;
-
-        /** Fields map. */
-        private final Map<String, Integer> fields;
-
-        /** Enum flag. */
-        private final boolean isEnum;
-
-        /**
-         * Constructor.
-         *
-         * @param typeId
-         * @param typeName
-         * @param affKey
-         * @param fields
-         * @param isEnum
-         */
-        public Metadata(int typeId, String typeName, String affKey, Map<String, Integer> fields, boolean isEnum) {
-            this.typeId = typeId;
-            this.typeName = typeName;
-            this.affKey = affKey;
-            this.fields = fields;
-            this.isEnum = isEnum;
-        }
+        for (Metadata meta : metas)
+            cacheObjProc.updateMetadata(meta.typeId, meta.typeName, meta.affKey, meta.fields, meta.isEnum);
     }
 
     /** {@inheritDoc} */
@@ -655,5 +616,42 @@ public class PlatformContextImpl implements PlatformContext {
     /** {@inheritDoc} */
     @Override public PlatformClusterNodeFilter createClusterNodeFilter(Object filter) {
         return new PlatformClusterNodeFilterImpl(filter, this);
+    }
+
+    /**
+     * Metadata holder.
+     */
+    private static class Metadata {
+        /** Type ID. */
+        private final int typeId;
+
+        /** Type name. */
+        private final String typeName;
+
+        /** Affinity key. */
+        private final String affKey;
+
+        /** Fields map. */
+        private final Map<String, Integer> fields;
+
+        /** Enum flag. */
+        private final boolean isEnum;
+
+        /**
+         * Constructor.
+         *
+         * @param typeId Type ID.
+         * @param typeName Type name.
+         * @param affKey Affinity key.
+         * @param fields Fields.
+         * @param isEnum Enum flag.
+         */
+        public Metadata(int typeId, String typeName, String affKey, Map<String, Integer> fields, boolean isEnum) {
+            this.typeId = typeId;
+            this.typeName = typeName;
+            this.affKey = affKey;
+            this.fields = fields;
+            this.isEnum = isEnum;
+        }
     }
 }
