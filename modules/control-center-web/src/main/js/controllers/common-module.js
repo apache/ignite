@@ -21,6 +21,7 @@ var consoleModule = angular.module('ignite-web-console',
         /* ignite:modules */
         , 'ignite-console'
         , 'ignite-web-console.navbar'
+        , 'ignite-web-console.userbar'
         , 'ignite-web-console.configuration.sidebar'
         /* endignite */
         /* ignite:plugins */
@@ -1968,50 +1969,19 @@ consoleModule.controller('activeLink', [
         };
     }]);
 
-// Login popup controller.
-// TODO IGNITE-1936 Refactor this controller.
-consoleModule.controller('auth', [
+consoleModule.controller('resetPassword', [
     '$scope', '$modal', '$http', '$window', '$common', '$focus', 'Auth', '$state',
-    function ($scope, $modal, $http, $window, $common, $focus, Auth, $state) {
-        $scope.auth = Auth.auth;
-
-        $scope.action = 'login';
-
-        $scope.userDropdown = [{text: 'Profile', href: '/profile'}];
-
-        var user = $scope.$root.user;
-
-        if (user && !user.becomeUsed) {
-            if (user && user.admin)
-                $scope.userDropdown.push({text: 'Admin Panel', href: '/admin'});
-
-            $scope.userDropdown.push({text: 'Log Out', href: '/logout'});
-        }
-
-        $scope.$on('user', function (event, user) {
-            $scope.userDropdown = [{text: 'Profile', href: '/profile'}];
-
-            if (user && !user.becomeUsed) {
-                if (user && user.admin)
-                    $scope.userDropdown.push({text: 'Admin Panel', href: '/admin'});
-
-                $scope.userDropdown.push({text: 'Log Out', href: '/logout'});
-            }
-        });
-
-        $focus('user_email');
-
-        if ($scope.token && !$scope.error)
-            $focus('user_password');
-
-        $scope.validateToken = function () {
+    function ($scope, $http, $common, $focus, Auth, $state) {
+        if ($state.params.token)
             $http.post('/api/v1/password/validate-token', {token: $state.params.token})
                 .success(function (res) {
                     $scope.email = res.email;
                     $scope.token = res.token;
                     $scope.error = res.error;
+
+                    if ($scope.token && !$scope.error)
+                        $focus('user_password');
                 });
-        };
 
         // Try to reset user password for provided token.
         $scope.resetPassword = function (reset_info) {
@@ -2028,6 +1998,19 @@ consoleModule.controller('auth', [
                         $state.go('base.configuration.clusters');
                 });
         }
+    }
+]);
+
+// Login popup controller.
+// TODO IGNITE-1936 Refactor this controller.
+consoleModule.controller('auth', [
+    '$scope', '$modal', '$http', '$window', '$common', '$focus', 'Auth', '$state',
+    function ($scope, $modal, $http, $window, $common, $focus, Auth, $state) {
+        $scope.auth = Auth.auth;
+
+        $scope.action = 'login';
+
+        $focus('user_email');
     }]);
 
 // Download agent controller.

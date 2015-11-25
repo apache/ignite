@@ -19,10 +19,10 @@ header#header.header
         strong {{$root.user.username}}
         | ",&nbsp;&nbsp;
         a(ng-click='$root.revertIdentity()') revert to your identity.
-    .container(ng-controller='auth')
+    .container
         h1.navbar-brand
             a(href='/') Apache Ignite Web Console
-        .navbar-collapse.collapse(ng-controller='activeLink' ng-if='$root.user')
+        .navbar-collapse.collapse(ng-if='$root.user' ng-controller='activeLink' )
             ul.nav.navbar-nav(ignite-navbar)
                 li
                     a.dropdown-toggle(ng-class='{active: isActive("/configuration.*")}' data-toggle='dropdown' bs-dropdown='configurationDropdown' data-placement='bottom-right') Configuration
@@ -36,7 +36,7 @@ header#header.header
                 li(ng-repeat='item in navbar.items')
                     a(ng-class='{active: isActive(item.href)}' ng-href='{{::item.href}}') {{::item.title}}
 
-            ul.nav.navbar-nav.pull-right
+            ul.nav.navbar-nav.pull-right(ignite-userbar)
                 li
-                    a.dropdown-toggle(data-toggle='dropdown' ng-class='{active: isActive("/profile") || isActive("/admin")}' bs-dropdown='userDropdown' data-placement='bottom-right') {{user.username}}
+                    a.dropdown-toggle(data-toggle='dropdown' ng-class='{active: isActive("/profile") || isActive("/admin")}' bs-dropdown='userbar.items' data-placement='bottom-right') {{user.username}}
                         span.caret
