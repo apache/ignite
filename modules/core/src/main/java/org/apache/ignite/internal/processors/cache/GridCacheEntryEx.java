@@ -303,7 +303,8 @@ public interface GridCacheEntryEx {
         UUID subjId,
         Object transformClo,
         String taskName,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc)
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -329,7 +330,8 @@ public interface GridCacheEntryEx {
         UUID subjId,
         Object transformClo,
         String taskName,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc)
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -376,6 +378,7 @@ public interface GridCacheEntryEx {
         long ttl,
         boolean evt,
         boolean metrics,
+        boolean keepPortable,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -413,6 +416,7 @@ public interface GridCacheEntryEx {
         boolean retval,
         boolean evt,
         boolean metrics,
+        boolean keepPortable,
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
@@ -468,6 +472,7 @@ public interface GridCacheEntryEx {
         boolean writeThrough,
         boolean readThrough,
         boolean retval,
+        boolean keepPortable,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
@@ -516,6 +521,7 @@ public interface GridCacheEntryEx {
         boolean writeThrough,
         boolean readThrough,
         boolean retval,
+        boolean keepPortable,
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
@@ -553,8 +559,9 @@ public interface GridCacheEntryEx {
     public boolean tmLock(IgniteInternalTx tx,
         long timeout,
         @Nullable GridCacheVersion serOrder,
-        @Nullable GridCacheVersion serReadVer)
-        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException;
+        @Nullable GridCacheVersion serReadVer,
+        boolean keepBinary
+    ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException;
 
     /**
      * Unlocks acquired lock.

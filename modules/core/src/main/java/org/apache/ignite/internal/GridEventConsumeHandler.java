@@ -110,17 +110,17 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isForEvents() {
+    @Override public boolean isEvents() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isForMessaging() {
+    @Override public boolean isMessaging() {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isForQuery() {
+    @Override public boolean isQuery() {
         return false;
     }
 

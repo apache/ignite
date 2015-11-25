@@ -377,12 +377,11 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param e Error cause.
      * @param ctx Context.
      */
-    public synchronized void addFailedKeys(Collection<Object> keys, Throwable e, GridCacheContext ctx) {
+    public synchronized void addFailedKeys(Collection<KeyCacheObject> keys, Throwable e, GridCacheContext ctx) {
         if (failedKeys == null)
             failedKeys = new ArrayList<>(keys.size());
 
-        for (Object key : keys)
-            failedKeys.add(ctx.toCacheKeyObject(key));
+        failedKeys.addAll(keys);
 
         if (err == null)
             err = new IgniteCheckedException("Failed to update keys on primary node.");

@@ -1,0 +1,1 @@
+Contains Visual Studio project artifacts.

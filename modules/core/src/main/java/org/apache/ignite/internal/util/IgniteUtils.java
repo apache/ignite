@@ -1337,9 +1337,9 @@ public abstract class IgniteUtils {
      */
     @Nullable public static Class<?> classForName(String cls, @Nullable Class<?> dflt) {
         try {
-            return Class.forName(cls);
+            return cls == null ? dflt : Class.forName(cls);
         }
-        catch (ClassNotFoundException e) {
+        catch (ClassNotFoundException ignore) {
             return dflt;
         }
     }
@@ -4984,6 +4984,31 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Read hash map.
+     *
+     * @param in Input.
+     * @return Read map.
+     * @throws IOException If de-serialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @SuppressWarnings({"unchecked"})
+    @Nullable public static <K, V> HashMap<K, V> readHashMap(ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            return null;
+
+        HashMap<K, V> map = U.newHashMap(size);
+
+        for (int i = 0; i < size; i++)
+            map.put((K)in.readObject(), (V)in.readObject());
+
+        return map;
+    }
+
+    /**
      *
      * @param in Input.
      * @return Read map.
@@ -8099,9 +8124,10 @@ public abstract class IgniteUtils {
         if (cls == null)
             return null;
 
-        Class<?> boxed = boxedClsMap.get(cls);
+        if (!cls.isPrimitive())
+            return cls;
 
-        return boxed != null ? boxed : cls;
+        return boxedClsMap.get(cls);
     }
 
     /**

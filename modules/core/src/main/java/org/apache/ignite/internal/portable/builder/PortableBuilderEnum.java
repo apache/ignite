@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.portable.builder;
 
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableWriterExImpl;
+import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.portable.api.PortableInvalidClassException;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 
 /**
  *
@@ -61,7 +61,7 @@ public class PortableBuilderEnum implements PortableBuilderSerializationAware {
                 cls = U.forName(reader.readString(), null);
             }
             catch (ClassNotFoundException e) {
-                throw new PortableInvalidClassException("Failed to load the class: " + clsName, e);
+                throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
             this.typeId = reader.portableContext().descriptorForClass(cls).typeId();
@@ -82,7 +82,7 @@ public class PortableBuilderEnum implements PortableBuilderSerializationAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
         writer.writeByte(GridPortableMarshaller.ENUM);
 
         if (typeId == GridPortableMarshaller.UNREGISTERED_TYPE_ID) {
