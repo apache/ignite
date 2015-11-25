@@ -22,10 +22,6 @@ var nodemailer = require('nodemailer');
 var db = require('../db');
 var config = require('../helpers/configuration-loader.js');
 
-router.get('/', function (req, res) {
-    res.render('settings/admin');
-});
-
 /**
  * Get list of user accounts.
  */

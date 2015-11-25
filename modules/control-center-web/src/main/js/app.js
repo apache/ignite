@@ -35,10 +35,8 @@ var cachesRouter = require('./routes/caches');
 var metadataRouter = require('./routes/metadata');
 var presetsRouter = require('./routes/presets');
 var igfsRouter = require('./routes/igfs');
-var summary = require('./routes/summary');
 var adminRouter = require('./routes/admin');
 var profileRouter = require('./routes/profile');
-var sqlRouter = require('./routes/sql');
 var agentRouter = require('./routes/agent');
 
 var passport = require('passport');

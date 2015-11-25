@@ -20,16 +20,6 @@ var _ = require('lodash');
 var router = require('express').Router();
 var db = require('../db');
 
-/* GET metadata page. */
-router.get('/', function (req, res) {
-    res.render('configuration/metadata');
-});
-
-/* GET metadata load dialog. */
-router.get('/metadata-load', function (req, res) {
-    res.render('configuration/metadata-load');
-});
-
 /**
  * Get spaces and metadata accessed for user account.
  *

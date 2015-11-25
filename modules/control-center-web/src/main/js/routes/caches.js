@@ -19,11 +19,6 @@ var _ = require('lodash');
 var router = require('express').Router();
 var db = require('../db');
 
-/* GET caches page. */
-router.get('/', function (req, res) {
-    res.render('configuration/caches');
-});
-
 /**
  * Get spaces and caches accessed for user account.
  *
