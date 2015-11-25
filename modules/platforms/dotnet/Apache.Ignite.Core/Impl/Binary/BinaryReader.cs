@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T ReadEnum<T>(string fieldName)
         {
-            return SeekField(fieldName, BinaryUtils.TypeEnum) ? ReadEnum<T>() : default(T);
+            return SeekField(fieldName) ? ReadEnum<T>() : default(T);
         }
 
         /** <inheritdoc /> */
