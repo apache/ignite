@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Class that defines the piece for application-to-network and vice-versa data conversions
@@ -103,6 +106,10 @@ public abstract class GridNioFilterAdapter implements GridNioFilter {
     /** {@inheritDoc} */
     @Override public void proceedMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
         checkPrevious();
+        if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage)
+        {
+            U.log(null, "A0>> " +((GridIoMessage)msg).message());
+        }
 
         prevFilter.onMessageReceived(ses, msg);
     }

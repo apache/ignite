@@ -49,6 +49,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -66,7 +68,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
-import sun.nio.ch.DirectBuffer;
+import sun.nio.ch.*;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.ACK_CLOSURE;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
@@ -408,6 +410,10 @@ public class GridNioServer<T> {
 
         NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg,
             skipRecoveryPred.apply(msg));
+
+        if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
+            U.log(log, "B42>> " + ((GridIoMessage)msg).message());
+        }
 
         send0(impl, fut, false);
 
@@ -995,6 +1001,10 @@ public class GridNioServer<T> {
 
                         assert msg != null;
 
+                        if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
+                            U.log(log, "B91>> " + ((GridIoMessage)msg).message());
+                        }
+
                         finished = msg.writeTo(buf, writer);
 
                         if (finished && writer != null)
@@ -1014,6 +1024,10 @@ public class GridNioServer<T> {
                             break;
 
                         msg = req.directMessage();
+
+                        if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
+                            U.log(log, "B92>> " + ((GridIoMessage)msg).message());
+                        }
 
                         assert msg != null;
 

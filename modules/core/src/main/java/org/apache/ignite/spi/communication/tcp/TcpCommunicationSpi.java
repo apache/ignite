@@ -1941,25 +1941,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     {
                         U.log(log, "B1>> " + ((GridIoMessage)msg).message() + " "+ retry);
 
-                        final GridCommunicationClient client0 = client;
-                        final UUID nodeId0 = nodeId;
-
-                        new Thread(new Runnable() {
-                            @Override public void run() {
-                                try {
-                                    U.sleep(2000);
-
-                                    ((GridDhtPartitionDemandMessage)((GridIoMessage)msg).message()).topologyVersion(AffinityTopologyVersion.NONE);
-
-                                    U.log(log, "B2>> " + ((GridIoMessage)msg).message());
-
-                                    client0.sendMessage(nodeId0, msg, ackC);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    U.error(log, e);
-                                }
-                            }
-                        }).start();
+//                        final GridCommunicationClient client0 = client;
+//                        final UUID nodeId0 = nodeId;
+//
+//                        new Thread(new Runnable() {
+//                            @Override public void run() {
+//                                try {
+//                                    U.sleep(2000);
+//
+//                                    ((GridDhtPartitionDemandMessage)((GridIoMessage)msg).message()).topologyVersion(AffinityTopologyVersion.NONE);
+//
+//                                    U.log(log, "B2>> " + ((GridIoMessage)msg).message());
+//
+//                                    client0.sendMessage(nodeId0, msg, ackC);
+//                                }
+//                                catch (IgniteCheckedException e) {
+//                                    U.error(log, e);
+//                                }
+//                            }
+//                        }).start();
                     }
 
                     client.release();
