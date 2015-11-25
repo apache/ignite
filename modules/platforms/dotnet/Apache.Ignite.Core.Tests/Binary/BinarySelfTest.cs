@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
@@ -479,11 +480,18 @@ namespace Apache.Ignite.Core.Tests.Binary
         * <summary>Check write of enum.</summary>
         */
         [Test]
+        [SuppressMessage("ReSharper", "ExpressionIsAlwaysNull")]
         public void TestWriteEnum()
         {
             TestEnum val = TestEnum.Val1;
 
             Assert.AreEqual(_marsh.Unmarshal<TestEnum>(_marsh.Marshal(val)), val);
+
+            TestEnum? val2 = TestEnum.Val1;
+            Assert.AreEqual(_marsh.Unmarshal<TestEnum?>(_marsh.Marshal(val2)), val2);
+
+            val2 = null;
+            Assert.AreEqual(_marsh.Unmarshal<TestEnum?>(_marsh.Marshal(val2)), val2);
         }
 
         /// <summary>
