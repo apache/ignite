@@ -62,7 +62,10 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1933,6 +1936,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         nodeId = node.id();
 
                     retry = client.sendMessage(nodeId, msg, ackC);
+
+                    if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage)
+                    {
+                        U.log(log, "B1>> " + msg);
+                    }
 
                     client.release();
 
