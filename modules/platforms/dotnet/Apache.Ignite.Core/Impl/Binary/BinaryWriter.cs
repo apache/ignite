@@ -803,14 +803,25 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Enum value.</param>
         public void WriteEnum<T>(T val)
         {
-            _stream.WriteByte(BinaryUtils.TypeEnum);
-
             if (val == null)
                 WriteNullField();
             else
             {
-                // TODO: Save meta
-                BinaryUtils.WriteEnum(this, val);
+                var desc = _marsh.GetDescriptor(val.GetType());
+
+                if (desc != null)
+                {
+                    SaveMetadata(desc, new Dictionary<string, int>());
+
+                    _stream.WriteByte(BinaryUtils.TypeEnum);
+
+                    BinaryUtils.WriteEnum(this, val);
+                }
+                else
+                {
+                    // Unregistered enum, write as serializable
+                    Write(new SerializableObjectHolder(val));
+                }
             }
         }
 
