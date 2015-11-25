@@ -48,6 +48,7 @@ namespace Apache.Ignite.Core.Binary
         public BinaryTypeConfiguration(Type type)
         {
             TypeName = type.AssemblyQualifiedName;
+            IsEnum = type.IsEnum;
         }
 
         /// <summary>

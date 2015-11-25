@@ -406,6 +406,13 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (refSerializer != null)
                     refSerializer.Register(type, typeId, nameMapper, idMapper);
 
+                if (typeCfg.IsEnum != type.IsEnum)
+                    throw new BinaryObjectException(
+                        string.Format(
+                            "Invalid IsEnum flag in binary type configuration. " +
+                            "Configuration value: IsEnum={0}, actual type: IsEnum={1}",
+                            typeCfg.IsEnum, type.IsEnum));
+
                 AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
                     typeCfg.AffinityKeyFieldName, type.IsEnum);
             }
@@ -417,7 +424,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
-                    typeCfg.AffinityKeyFieldName, false);
+                    typeCfg.AffinityKeyFieldName, typeCfg.IsEnum);
             }
         }
 
