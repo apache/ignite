@@ -146,6 +146,23 @@ namespace Apache.Ignite.Core.Impl.Binary
             return desc == null ? null : Marshaller.GetBinaryType(desc.TypeId);
         }
 
+        /** <inheritDoc /> */
+        public IBinaryObject BuildEnum(string typeName, int value)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
+
+            return new BinaryEnum(GetTypeId(typeName), value, Marshaller);
+        }
+
+        /** <inheritDoc /> */
+        public IBinaryObject BuildEnum(Type type, int value)
+        {
+            IgniteArgumentCheck.NotNull(type, "type");
+            IgniteArgumentCheck.Ensure(type.IsEnum, "type", "Type should be an Enum.");
+
+            return BuildEnum(type.Name, value);
+        }
+
         /// <summary>
         /// Marshaller.
         /// </summary>
