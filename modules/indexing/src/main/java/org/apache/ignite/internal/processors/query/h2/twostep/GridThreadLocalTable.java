@@ -90,8 +90,9 @@ public class GridThreadLocalTable extends Table {
     }
 
     /** {@inheritDoc} */
-    @Override public PlanItem getBestPlanItem(Session session, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        return innerTable().getBestPlanItem(session, masks, filter, sortOrder);
+    @Override public PlanItem getBestPlanItem(Session session, int[] masks, TableFilter[] filters, int filter,
+        SortOrder sortOrder) {
+        return innerTable().getBestPlanItem(session, masks, filters, filter, sortOrder);
     }
 
     /** {@inheritDoc} */
