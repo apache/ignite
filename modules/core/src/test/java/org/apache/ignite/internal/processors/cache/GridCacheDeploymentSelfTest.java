@@ -156,7 +156,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -191,7 +191,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -241,7 +241,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -337,7 +337,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -370,7 +370,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 

@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -40,6 +41,10 @@ import org.jetbrains.annotations.Nullable;
  * Affinity interface implementation.
  */
 public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
+    /** */
+    public static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
+        "yet or cache was already stopped): ";
+
     /** Cache context. */
     private GridCacheContext<K, V> cctx;
 
@@ -60,7 +65,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
         CacheConfiguration ccfg = cctx.config();
 
         if (ccfg == null)
-            throw new IgniteException(exceptionMessage());
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
         return ccfg.getAffinity().partitions();
     }
@@ -157,13 +162,19 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     @Override public Object affinityKey(K key) {
         A.notNull(key, "key");
 
-        if (key instanceof CacheObject)
-            key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
+        if (key instanceof CacheObject) {
+            CacheObjectContext ctx = cctx.cacheObjectContext();
+
+            if (ctx == null)
+                throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+            key = ((CacheObject)key).value(ctx, false);
+        }
 
         CacheConfiguration ccfg = cctx.config();
 
         if (ccfg == null)
-            throw new IgniteException(exceptionMessage());
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
         return ccfg.getAffinityMapper().affinityKey(key);
     }
@@ -227,12 +238,4 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     private AffinityTopologyVersion topologyVersion() {
         return cctx.affinity().affinityTopologyVersion();
     }
-
-    /**
-     * @return Exception message.
-     */
-    private String exceptionMessage() {
-        return "Failed to find a cache, looks like a cache has been already deleted [cacheName=" + cctx.name() + ']';
-    }
-
 }

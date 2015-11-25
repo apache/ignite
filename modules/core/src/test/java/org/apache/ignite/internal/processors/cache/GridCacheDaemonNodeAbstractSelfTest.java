@@ -171,10 +171,10 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
             for (long i = 0; i < Integer.MAX_VALUE; i = (i << 1) + 1) {
                 // Call mapKeyToNode for normal node.
-                assertNotNull(g1.cluster().mapKeyToNode(null, i));
+                assertNotNull(g1.<Long>affinity(null).mapKeyToNode(i));
 
                 // Call mapKeyToNode for daemon node.
-                assertNull(g2.cluster().mapKeyToNode(null, i));
+                assertNull(g2.<Long>affinity(null).mapKeyToNode(i));
             }
         }
         finally {

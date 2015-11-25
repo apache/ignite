@@ -43,6 +43,10 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /** */
     private static final AffinityTopologyVersion TOP_FIRST = new AffinityTopologyVersion(1);
 
+    /** */
+    public static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
+        "yet or cache was already stopped): ";
+
     /** Affinity cached function. */
     private GridAffinityAssignmentCache aff;
 
@@ -193,7 +197,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         GridAffinityAssignmentCache aff0 = aff;
 
         if (aff0 == null)
-            throw new IgniteException(exceptionMessage());
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
         return aff0.partitions();
     }
@@ -210,7 +214,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         GridAffinityAssignmentCache aff0 = aff;
 
         if (aff0 == null)
-            throw new IgniteException(exceptionMessage());
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
         return aff0.partition(key);
     }
@@ -236,7 +240,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         GridAffinityAssignmentCache aff0 = aff;
 
         if (aff0 == null)
-            throw new IgniteException(exceptionMessage());
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
         return aff0.nodes(part, topVer);
     }
@@ -382,7 +386,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         GridAffinityAssignmentCache aff0 = aff;
 
         if (aff0 == null)
-            throw new IgniteException(exceptionMessage());
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
         return aff0.primaryPartitions(nodeId, topVer);
     }
@@ -399,7 +403,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         GridAffinityAssignmentCache aff0 = aff;
 
         if (aff0 == null)
-            throw new IgniteException(exceptionMessage());
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
         return aff0.backupPartitions(nodeId, topVer);
     }
@@ -411,7 +415,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         GridAffinityAssignmentCache aff0 = aff;
 
         if (aff0 == null)
-            throw new IgniteException(exceptionMessage());
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
         return aff0.lastVersion();
     }
@@ -424,12 +428,5 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
         if (aff0 != null)
             aff0.dumpDebugInfo();
-    }
-
-    /**
-     * @return Exception message.
-     */
-    private String exceptionMessage() {
-        return "Failed to find a cache, looks like a cache has been already deleted [cacheName=" + cctx.name() + ']';
     }
 }

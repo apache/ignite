@@ -86,6 +86,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     /** Null cache name. */
     private static final String NULL_NAME = U.id8(UUID.randomUUID());
 
+    /** */
+    public static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
+        "yet or cache was already stopped): ";
+
     /** Affinity map. */
     private final ConcurrentMap<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>> affMap = new ConcurrentHashMap8<>();
 
@@ -207,20 +211,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             return Collections.emptyList();
 
         return primaryAndBackups(affInfo, key);
-    }
-
-    /**
-     * Map single key to primary and backup nodes.
-     *
-     * @param cacheName Cache name.
-     * @param key Key to map.
-     * @return Affinity nodes, primary first.
-     * @throws IgniteCheckedException If failed.
-     */
-    public <K> List<ClusterNode> mapKeyToPrimaryAndBackups(@Nullable String cacheName, K key)
-        throws IgniteCheckedException
-    {
-        return mapKeyToPrimaryAndBackups(cacheName, key, ctx.discovery().topologyVersionEx());
     }
 
     /**
@@ -801,7 +791,12 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                return GridAffinityProcessor.this.mapKeysToNodes(cacheName, keys);
+                if (F.isEmpty(keys))
+                    return Collections.emptyMap();
+
+                AffinityInfo affInfo = cache();
+
+                return affinityMap(affInfo, keys);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -813,10 +808,16 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Nullable @Override public ClusterNode mapKeyToNode(K key) {
+            A.notNull(key, "key");
+
             ctx.gateway().readLock();
 
             try {
-                return GridAffinityProcessor.this.mapKeyToNode(cacheName, key);
+                AffinityInfo affInfo = cache();
+
+                Map<ClusterNode, Collection<K>> map = affinityMap(affInfo, Collections.singletonList(key));
+
+                return F.first(map.keySet());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -895,20 +896,14 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
          * @throws IgniteCheckedException If failed.
          */
         @Nullable private AffinityInfo cache() throws IgniteCheckedException {
-            AffinityInfo info = affinityCache(cacheName, new AffinityTopologyVersion(topologyVersion()));
+            ctx.discovery().topologyVersionEx();
 
-            if (info == null)
-                throw new IgniteException("Failed to find a cache, looks like " +
-                    "a cache has not been created yet or has been already deleted [cacheName=" + cacheName + ']');
+            AffinityInfo aff = affinityCache(cacheName, ctx.discovery().topologyVersionEx());
 
-            return info;
-        }
+            if (aff == null)
+                throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cacheName);
 
-        /**
-         * @return Topology version.
-         */
-        private long topologyVersion() {
-            return ctx.discovery().topologyVersion();
+            return aff;
         }
     }
 }
