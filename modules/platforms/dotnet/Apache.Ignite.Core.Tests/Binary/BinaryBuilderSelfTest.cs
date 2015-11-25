@@ -1401,6 +1401,18 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
         }
+
+        [Test]
+        public void TestBuildEnum()
+        {
+            var binary = _grid.GetBinary();
+
+            int val = (int) TestEnumRegistered.Two;
+
+            var binEnum = binary.BuildEnum(typeof(TestEnumRegistered), val);
+
+            Assert.AreEqual(val, binEnum.EnumValue);
+        }
     }
 
     /// <summary>
