@@ -125,6 +125,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             TypeName = reader.ReadString();
             AffinityKeyFieldName = reader.ReadString();
             _fields = reader.ReadDictionaryAsGeneric<string, int>();
+
+            reader.ReadBoolean();
         }
 
         /// <summary>
