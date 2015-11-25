@@ -778,11 +778,8 @@ $generatorJava.cacheGeneral = function (cache, varName, res) {
 
     $generatorJava.property(res, varName, cache, 'name');
 
-    res.importClass('org.apache.ignite.cache.CacheAtomicityMode');
-    res.importClass('org.apache.ignite.cache.CacheMode');
-
-    $generatorJava.property(res, varName, cache, 'cacheMode', 'CacheMode');
-    $generatorJava.property(res, varName, cache, 'atomicityMode', 'CacheAtomicityMode');
+    $generatorJava.property(res, varName, cache, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
+    $generatorJava.property(res, varName, cache, 'atomicityMode', 'org.apache.ignite.cache.CacheAtomicityMode');
 
     if (cache.cacheMode == 'PARTITIONED')
         $generatorJava.property(res, varName, cache, 'backups');
@@ -801,7 +798,7 @@ $generatorJava.cacheMemory = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, varName, cache, 'memoryMode', 'CacheMemoryMode');
+    $generatorJava.property(res, varName, cache, 'memoryMode', 'org.apache.ignite.cache.CacheMemoryMode');
     $generatorJava.property(res, varName, cache, 'offHeapMaxMemory');
 
     res.needEmptyLine = true;
@@ -1004,7 +1001,7 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (cache.cacheMode != 'LOCAL') {
-        $generatorJava.property(res, varName, cache, 'rebalanceMode', 'CacheRebalanceMode');
+        $generatorJava.property(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode');
         $generatorJava.property(res, varName, cache, 'rebalanceThreadPoolSize');
         $generatorJava.property(res, varName, cache, 'rebalanceBatchSize');
         $generatorJava.property(res, varName, cache, 'rebalanceOrder');
@@ -1781,6 +1778,7 @@ $generatorJava.igfsGeneral = function(igfs, varName, res) {
         $generatorJava.property(res, varName, igfs, 'name');
         $generatorJava.property(res, varName, igfs, 'dataCacheName');
         $generatorJava.property(res, varName, igfs, 'metaCacheName');
+        $generatorJava.property(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', undefined, "DUAL_ASYNC");
 
         res.needEmptyLine = true;
     }
@@ -1802,7 +1800,6 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
 
     $generatorJava.property(res, varName, igfs, 'blockSize', null, null, 65536);
     $generatorJava.property(res, varName, igfs, 'streamBufferSize', null, null, 65536);
-    $generatorJava.property(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', undefined, "DUAL_ASYNC");
     $generatorJava.property(res, varName, igfs, 'maxSpaceSize', null, null, 0);
     $generatorJava.property(res, varName, igfs, 'maximumTaskRangeLength', null, null, 0);
     $generatorJava.property(res, varName, igfs, 'managementPort', null, null, 11400);
