@@ -25,6 +25,9 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -104,7 +107,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public boolean sendMessage(@Nullable UUID nodeId, Message msg, IgniteInClosure<IgniteException> closure)
+    @Override public boolean sendMessage(@Nullable UUID nodeId, final Message msg, IgniteInClosure<IgniteException> closure)
         throws IgniteCheckedException {
         // Node ID is never provided in asynchronous send mode.
         assert nodeId == null;
@@ -113,6 +116,14 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
             ses.addMeta(ACK_CLOSURE.ordinal(), closure);
 
         GridNioFuture<?> fut = ses.send(msg);
+
+        if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
+            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> future) {
+                    U.log(log, "C1>> " + ((GridIoMessage)msg).message());
+                }
+            });
+        }
 
         if (fut.isDone()) {
             try {
