@@ -40,6 +40,9 @@ import java.nio.ByteBuffer;
  * Binary enum object.
  */
 public class BinaryEnumObjectImpl implements BinaryObject, Externalizable, CacheObject {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Context. */
     @GridDirectTransient
     private PortableContext ctx;
