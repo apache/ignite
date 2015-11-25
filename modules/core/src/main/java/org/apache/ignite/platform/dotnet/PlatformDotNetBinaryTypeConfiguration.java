@@ -42,6 +42,9 @@ public class PlatformDotNetBinaryTypeConfiguration {
     /** Whether to cache deserialized value. */
     private Boolean keepDeserialized;
 
+    /** Enum flag. */
+    private boolean isEnum;
+
     /**
      * Default constructor.
      */
@@ -60,6 +63,7 @@ public class PlatformDotNetBinaryTypeConfiguration {
         serializer = cfg.getSerializer();
         affinityKeyFieldName = cfg.getAffinityKeyFieldName();
         keepDeserialized = cfg.isKeepDeserialized();
+        isEnum = cfg.isEnum();
     }
 
     /**
@@ -163,6 +167,25 @@ public class PlatformDotNetBinaryTypeConfiguration {
     public void setKeepDeserialized(@Nullable Boolean keepDeserialized) {
         this.keepDeserialized = keepDeserialized;
     }
+
+    /**
+     * Gets whether this is enum type.
+     *
+     * @return {@code True} if enum.
+     */
+    public boolean isEnum() {
+        return isEnum;
+    }
+
+    /**
+     * Sets whether this is enum type.
+     *
+     * @param isEnum {@code True} if enum.
+     */
+    public void setEnum(boolean isEnum) {
+        this.isEnum = isEnum;
+    }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {
