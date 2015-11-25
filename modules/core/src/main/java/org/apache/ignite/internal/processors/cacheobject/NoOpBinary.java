@@ -69,6 +69,11 @@ public class NoOpBinary implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
+    @Override public BinaryObject buildEnum(String typeName, int ord) {
+        throw unsupported();
+    }
+
+    /** {@inheritDoc} */
     private BinaryObjectException unsupported() {
         return new BinaryObjectException("Binary marshaller is not configured.");
     }

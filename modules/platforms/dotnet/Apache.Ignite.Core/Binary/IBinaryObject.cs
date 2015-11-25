@@ -56,5 +56,21 @@ namespace Apache.Ignite.Core.Binary
         /// Fully deserialized instance of binary object.
         /// </returns>
         T Deserialize<T>();
+
+        /// <summary>
+        /// Gets a value indicating whether this instance contains an enum.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance contains an enum; otherwise, <c>false</c>.
+        /// </value>
+        bool IsEnum { get; }
+
+        /// <summary>
+        /// Gets the value of underlying enum in int form.
+        /// </summary>
+        /// <value>
+        /// The value of underlying enum in int form.
+        /// </value>
+        int EnumValue { get; }
     }
 }

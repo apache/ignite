@@ -52,6 +52,9 @@ public class BinaryMetadata implements Externalizable {
     /** Schemas associated with type. */
     private Collection<PortableSchema> schemas;
 
+    /** Whether this is enum type. */
+    private boolean isEnum;
+
     /**
      * For {@link Externalizable}.
      */
@@ -67,9 +70,10 @@ public class BinaryMetadata implements Externalizable {
      * @param fields Fields map.
      * @param affKeyFieldName Affinity key field name.
      * @param schemas Schemas.
+     * @param isEnum Enum flag.
      */
     public BinaryMetadata(int typeId, String typeName, @Nullable Map<String, Integer> fields,
-        @Nullable String affKeyFieldName, @Nullable Collection<PortableSchema> schemas) {
+        @Nullable String affKeyFieldName, @Nullable Collection<PortableSchema> schemas, boolean isEnum) {
         assert typeName != null;
 
         this.typeId = typeId;
@@ -77,6 +81,7 @@ public class BinaryMetadata implements Externalizable {
         this.fields = fields;
         this.affKeyFieldName = affKeyFieldName;
         this.schemas = schemas;
+        this.isEnum = isEnum;
     }
 
     /**
@@ -132,6 +137,13 @@ public class BinaryMetadata implements Externalizable {
     }
 
     /**
+     * @return {@code True} if this is enum type.
+     */
+    public boolean isEnum() {
+        return isEnum;
+    }
+
+    /**
      * Wrap metadata into binary type.
      *
      * @param ctx Portable context.
@@ -148,6 +160,7 @@ public class BinaryMetadata implements Externalizable {
         U.writeMap(out, fields);
         U.writeString(out, affKeyFieldName);
         U.writeCollection(out, schemas);
+        out.writeBoolean(isEnum);
     }
 
     /** {@inheritDoc} */
@@ -157,6 +170,7 @@ public class BinaryMetadata implements Externalizable {
         fields = U.readMap(in);
         affKeyFieldName = U.readString(in);
         schemas = U.readCollection(in);
+        isEnum = in.readBoolean();
     }
 
     /** {@inheritDoc} */

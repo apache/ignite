@@ -436,7 +436,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var hdr = _obj.Data[pos];
 
-            var field = new BinaryBuilderField(typeof(T), val, hdr, GetWriteAction(hdr));
+            var field = new BinaryBuilderField(typeof(T), val, hdr, GetWriteAction(hdr, pos));
             
             _parent._cache[pos] = field;
 
@@ -447,8 +447,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the write action by header.
         /// </summary>
         /// <param name="header">The header.</param>
+        /// <param name="pos">Position.</param>
         /// <returns>Write action.</returns>
-        private static Action<BinaryWriter, object> GetWriteAction(byte header)
+        private Action<BinaryWriter, object> GetWriteAction(byte header, int pos)
         {
             // We need special actions for all cases where SetField(X) produces different result from SetSpecialField(X)
             // Arrays, Collections, Dates
@@ -466,9 +467,20 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 case BinaryUtils.TypeArrayTimestamp:
                     return WriteTimestampArrayAction;
-            }
 
-            return null;
+                case BinaryUtils.TypeArrayEnum:
+                    using (var stream = new BinaryHeapStream(_obj.Data))
+                    {
+                        stream.Seek(pos, SeekOrigin.Begin + 1);
+
+                        var elementTypeId = stream.ReadInt();
+
+                        return (w, o) => w.WriteEnumArrayInternal((Array) o, elementTypeId);
+                    }
+
+                default:
+                    return null;
+            }
         }
 
         /// <summary>
@@ -546,7 +558,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     IDictionary<string, int> meta = metaHnd.OnObjectWriteFinished();
 
                     if (meta != null)
-                        _parent._ctx.Writer.SaveMetadata(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName, meta);
+                        _parent._ctx.Writer.SaveMetadata(desc, meta);
                 }
             }
             finally

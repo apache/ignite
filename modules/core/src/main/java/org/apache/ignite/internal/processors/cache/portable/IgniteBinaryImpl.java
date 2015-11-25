@@ -142,6 +142,18 @@ public class IgniteBinaryImpl implements IgniteBinary {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public BinaryObject buildEnum(String typeName, int ord) {
+        guard();
+
+        try {
+            return proc.buildEnum(typeName, ord);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * @return Portable processor.
      */
