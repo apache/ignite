@@ -904,31 +904,18 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // Put to cache to populate metas
             var cache = _grid.GetOrCreateCache<object, object>(null);
-            cache.Put(1, TestEnum.One);
-            cache.Put(2, TestEnumRegistered.One);
+            cache.Put(1, TestEnumRegistered.One);
 
-            // Unregistered enum
-            var binEnum = bin.ToBinary<IBinaryObject>(TestEnum.One);
-
-            Assert.IsTrue(binEnum.IsEnum);
-            Assert.AreEqual(-1, binEnum.TypeId);
-            Assert.AreEqual(0, binEnum.EnumValue);
-
-            var meta = binEnum.GetBinaryType();
-
-            Assert.AreEqual(BinaryTypeNames.TypeNameObject, meta.TypeName);
-            Assert.AreEqual(0, meta.Fields.Count);
-
-            // Registered enum
-            binEnum = bin.ToBinary<IBinaryObject>(TestEnumRegistered.One);
+            var binEnum = bin.ToBinary<IBinaryObject>(TestEnumRegistered.One);
 
             Assert.IsTrue(binEnum.IsEnum);
             Assert.AreEqual(_marsh.GetDescriptor(typeof (TestEnumRegistered)).TypeId, binEnum.TypeId);
             Assert.AreEqual(0, binEnum.EnumValue);
 
-            meta = binEnum.GetBinaryType();
+            var meta = binEnum.GetBinaryType();
 
-            Assert.AreEqual(BinaryTypeNames.TypeNameObject, meta.TypeName);
+            Assert.IsTrue(meta.IsEnum);
+            Assert.AreEqual(typeof (TestEnumRegistered).Name, meta.TypeName);
             Assert.AreEqual(0, meta.Fields.Count);
         }
 
