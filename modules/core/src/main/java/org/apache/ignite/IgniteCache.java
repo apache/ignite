@@ -18,9 +18,12 @@
 package org.apache.ignite;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
@@ -104,6 +107,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @return Random entry, or {@code null} if cache is empty.
      */
+    @Deprecated
     public Entry<K, V> randomEntry();
 
     /**
@@ -126,6 +130,44 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache with no-retries behavior enabled.
      */
     public IgniteCache<K, V> withNoRetries();
+
+    /**
+     * Returns cache that will operate with binary objects.
+     * <p>
+     * Cache returned by this method will not be forced to deserialize binary objects,
+     * so keys and values will be returned from cache API methods without changes. Therefore,
+     * signature of the cache can contain only following types:
+     * <ul>
+     *     <li><code>org.apache.ignite.portable.PortableObject</code> for portable classes</li>
+     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+     *     <li>Arrays of primitives (byte[], int[], ...)</li>
+     *     <li>{@link String} and array of {@link String}s</li>
+     *     <li>{@link UUID} and array of {@link UUID}s</li>
+     *     <li>{@link Date} and array of {@link Date}s</li>
+     *     <li>{@link Timestamp} and array of {@link Timestamp}s</li>
+     *     <li>Enums and array of enums</li>
+     *     <li>
+     *         Maps, collections and array of objects (but objects inside
+     *         them will still be converted if they are portable)
+     *     </li>
+     * </ul>
+     * <p>
+     * For example, if you use {@link Integer} as a key and {@code Value} class as a value
+     * (which will be stored in binary format), you should acquire following projection
+     * to avoid deserialization:
+     * <pre>
+     * IgniteCache<Integer, BinaryObject> prj = cache.withKeepBinary();
+     *
+     * // Value is not deserialized and returned in portable format.
+     * BinaryObject po = prj.get(1);
+     * </pre>
+     * <p>
+     * Note that this method makes sense only if cache is working in binary mode ({@link org.apache.ignite.marshaller.portable.BinaryMarshaller} is used).
+     * If not, this method is no-op and will return current cache.
+     *
+     * @return New cache instance for portable objects.
+     */
+    public <K1, V1> IgniteCache<K1, V1> withKeepBinary();
 
     /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
@@ -306,6 +348,19 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
+     * Gets the number of all entries cached across all nodes as a long value. By default, if {@code peekModes} value
+     * isn't defined, only size of primary copies across all nodes will be returned. This behavior is identical to
+     * calling this method with {@link CachePeekMode#PRIMARY} peek mode.
+     * <p>
+     * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+     *
+     * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return Cache size across all nodes.
+     */
+    @IgniteAsyncSupported
+    public long sizeLong(CachePeekMode... peekModes) throws CacheException;
+
+    /**
      * Gets the number of all entries cached on this node. By default, if {@code peekModes} value isn't defined,
      * only size of primary copies will be returned. This behavior is identical to calling this method with
      * {@link CachePeekMode#PRIMARY} peek mode.
@@ -316,6 +371,16 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public int localSize(CachePeekMode... peekModes);
 
     /**
+     * Gets the number of all entries cached on this node as a long value. By default, if {@code peekModes} value isn't
+     * defined, only size of primary copies will be returned. This behavior is identical to calling this method with
+     * {@link CachePeekMode#PRIMARY} peek mode.
+     *
+     * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return Cache size on this node.
+     */
+    public long localSizeLong(CachePeekMode... peekModes);
+
+    /**
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
      * @return The map of {@link EntryProcessorResult}s of the processing per key,
@@ -324,7 +389,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <code>null</code> value for a key.
      */
     @IgniteAsyncSupported
-    <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args);
+    <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args);
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported

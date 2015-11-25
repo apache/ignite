@@ -55,6 +55,10 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     @GridToStringInclude
     private Collection<TcpDiscoveryNode> top;
 
+    /** */
+    @GridToStringInclude
+    private transient Collection<TcpDiscoveryNode> clientTop;
+
     /** Topology snapshots history. */
     private Map<Long, Collection<ClusterNode>> topHist;
 
@@ -90,6 +94,24 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
         this.gridStartTime = gridStartTime;
 
         oldNodesDiscoData = new LinkedHashMap<>();
+    }
+
+    /**
+     * @param msg Message.
+     */
+    public TcpDiscoveryNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
+        super(msg);
+
+        this.node = msg.node;
+        this.msgs = msg.msgs;
+        this.discardMsgId = msg.discardMsgId;
+        this.discardCustomMsgId = msg.discardCustomMsgId;
+        this.top = msg.top;
+        this.clientTop = msg.clientTop;
+        this.topHist = msg.topHist;
+        this.newNodeDiscoData = msg.newNodeDiscoData;
+        this.oldNodesDiscoData = msg.oldNodesDiscoData;
+        this.gridStartTime = msg.gridStartTime;
     }
 
     /**
@@ -133,6 +155,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      *
      * @param msgs Pending messages to send to new node.
      * @param discardMsgId Discarded message ID.
+     * @param discardCustomMsgId Discarded custom message ID.
      */
     public void messages(
         @Nullable Collection<TcpDiscoveryAbstractMessage> msgs,
@@ -160,6 +183,22 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      */
     public void topology(@Nullable Collection<TcpDiscoveryNode> top) {
         this.top = top;
+    }
+
+    /**
+     * @param top Topology at the moment when client joined.
+     */
+    public void clientTopology(Collection<TcpDiscoveryNode> top) {
+        assert top != null && !top.isEmpty() : top;
+
+        this.clientTop = top;
+    }
+
+    /**
+     * @return Topology at the moment when client joined.
+     */
+    public Collection<TcpDiscoveryNode> clientTopology() {
+        return clientTop;
     }
 
     /**

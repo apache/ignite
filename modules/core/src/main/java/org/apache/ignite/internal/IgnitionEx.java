@@ -1187,8 +1187,8 @@ public class IgnitionEx {
         Ignite res;
 
         if (grid == null || (res = grid.grid()) == null)
-            throw new IgniteIllegalStateException("Grid instance was not properly started " +
-                "or was already stopped: " + name);
+            throw new IgniteIllegalStateException("Ignite instance with provided name doesn't exist. " +
+                "Did you call Ignition.start(..) to start an Ignite instance? [name=" + name + ']');
 
         return res;
     }
@@ -1205,7 +1205,8 @@ public class IgnitionEx {
         IgniteKernal res;
 
         if (grid == null || (res = grid.gridx()) == null)
-            throw new IllegalStateException("Grid instance was not properly started or was already stopped: " + name);
+            throw new IgniteIllegalStateException("Ignite instance with provided name doesn't exist. " +
+                "Did you call Ignition.start(..) to start an Ignite instance? [name=" + name + ']');
 
         return res;
     }
@@ -2035,6 +2036,7 @@ public class IgnitionEx {
             cache.setAffinity(new RendezvousAffinityFunction(false, 20));
             cache.setNodeFilter(CacheConfiguration.ALL_NODES);
             cache.setStartSize(300);
+            cache.setRebalanceOrder(-2);//Prior to other system caches.
 
             return cache;
         }
@@ -2055,6 +2057,7 @@ public class IgnitionEx {
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new RendezvousAffinityFunction(false, 100));
             cache.setNodeFilter(CacheConfiguration.ALL_NODES);
+            cache.setRebalanceOrder(-1);//Prior to user caches.
 
             return cache;
         }
@@ -2075,6 +2078,7 @@ public class IgnitionEx {
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setCacheMode(cfg.getCacheMode());
             ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
+            ccfg.setRebalanceOrder(-1);//Prior to user caches.
 
             if (cfg.getCacheMode() == PARTITIONED)
                 ccfg.setBackups(cfg.getBackups());

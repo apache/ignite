@@ -31,6 +31,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.schema.parser.DbColumn;
 import org.apache.ignite.schema.parser.DbTable;
 
@@ -252,12 +255,12 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
      * @param stmt Prepared SQL statement to execute.
      * @param owner DB owner.
      * @param tbl Table name.
-     * @return Index columns.
+     * @return Indexes.
      * @throws SQLException If failed to retrieve indexes columns.
      */
-    private Map<String, Map<String, Boolean>> indexes(PreparedStatement stmt, String owner, String tbl)
+    private Collection<QueryIndex> indexes(PreparedStatement stmt, String owner, String tbl)
         throws SQLException {
-        Map<String, Map<String, Boolean>> idxs = new LinkedHashMap<>();
+        Map<String, QueryIndex> idxs = new LinkedHashMap<>();
 
         stmt.setString(1, owner);
         stmt.setString(2, tbl);
@@ -266,10 +269,13 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
             while (idxsRs.next()) {
                 String idxName = idxsRs.getString(IDX_NAME_IDX);
 
-                Map<String, Boolean> idx = idxs.get(idxName);
+                QueryIndex idx = idxs.get(idxName);
 
                 if (idx == null) {
-                    idx = new LinkedHashMap<>();
+                    idx = new QueryIndex();
+                    idx.setName(idxName);
+                    idx.setIndexType(QueryIndexType.SORTED);
+                    idx.setFields(new LinkedHashMap<String, Boolean>());
 
                     idxs.put(idxName, idx);
                 }
@@ -278,11 +284,11 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
                 String col = expr == null ? idxsRs.getString(IDX_COL_NAME_IDX) : expr.replaceAll("\"", "");
 
-                idx.put(col, "DESC".equals(idxsRs.getString(IDX_COL_DESCEND_IDX)));
+                idx.getFields().put(col, !"DESC".equals(idxsRs.getString(IDX_COL_DESCEND_IDX)));
             }
         }
 
-        return idxs;
+        return idxs.values();
     }
 
     /** {@inheritDoc} */
@@ -294,7 +300,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
         PreparedStatement idxStmt = conn.prepareStatement(SQL_INDEXES);
 
-        if (schemas.size() == 0)
+        if (schemas.isEmpty())
             schemas.add(null);
 
         Set<String> sysSchemas = systemSchemas();
@@ -307,7 +313,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                 Collection<DbColumn> cols = new ArrayList<>();
 
                 Set<String> pkCols = Collections.emptySet();
-                Map<String, Map<String, Boolean>> idxs = Collections.emptyMap();
+                Collection<QueryIndex> idxs = Collections.emptyList();
 
                 String sql = String.format(SQL_COLUMNS,
                         tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name and a.owner = b.owner" : "",

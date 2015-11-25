@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,46 +40,48 @@ public class GridDirectParser implements GridNioParser {
     private final MessageFactory msgFactory;
 
     /** */
-    private final MessageFormatter formatter;
+    private final GridNioMessageReaderFactory readerFactory;
 
     /**
      * @param msgFactory Message factory.
-     * @param formatter Formatter.
+     * @param readerFactory Message reader factory.
      */
-    public GridDirectParser(MessageFactory msgFactory, MessageFormatter formatter) {
+    public GridDirectParser(MessageFactory msgFactory, GridNioMessageReaderFactory readerFactory) {
         assert msgFactory != null;
-        assert formatter != null;
+        assert readerFactory != null;
 
         this.msgFactory = msgFactory;
-        this.formatter = formatter;
+        this.readerFactory = readerFactory;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf)
         throws IOException, IgniteCheckedException {
+        MessageReader reader = ses.meta(READER_META_KEY);
+
+        if (reader == null)
+            ses.addMeta(READER_META_KEY, reader = readerFactory.reader(ses, msgFactory));
+
         Message msg = ses.removeMeta(MSG_META_KEY);
 
-        MessageReader reader = null;
-
-        if (msg == null && buf.hasRemaining()) {
+        if (msg == null && buf.hasRemaining())
             msg = msgFactory.create(buf.get());
-
-            ses.addMeta(READER_META_KEY, reader = formatter.reader(msgFactory, msg.getClass()));
-        }
 
         boolean finished = false;
 
         if (buf.hasRemaining()) {
-            if (reader == null)
-                reader = ses.meta(READER_META_KEY);
-
-            assert reader != null;
+            if (reader != null)
+                reader.setCurrentReadClass(msg.getClass());
 
             finished = msg.readFrom(buf, reader);
         }
 
-        if (finished)
+        if (finished) {
+            if (reader != null)
+                reader.reset();
+
             return msg;
+        }
         else {
             ses.addMeta(MSG_META_KEY, msg);
 

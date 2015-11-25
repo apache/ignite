@@ -35,8 +35,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -105,7 +106,7 @@ public class VisorCache implements Serializable {
     private VisorCacheMetrics metrics;
 
     /** Cache partitions states. */
-    private GridDhtPartitionMap partitionsMap;
+    private GridDhtPartitionMap2 partitionsMap;
 
     /**
      * @param ignite Grid.
@@ -171,7 +172,7 @@ public class VisorCache implements Serializable {
                     // Pass -1 as topology version in order not to wait for topology version.
                     if (part.primary(AffinityTopologyVersion.NONE))
                         primaryPartitions.add(new IgnitePair<>(p, sz));
-                    else
+                    else if (part.state() == GridDhtPartitionState.OWNING && part.backup(AffinityTopologyVersion.NONE))
                         backupPartitions.add(new IgnitePair<>(p, sz));
                 }
             }
@@ -228,7 +229,9 @@ public class VisorCache implements Serializable {
     protected void estimateMemorySize(IgniteEx ignite, GridCacheAdapter ca, int sample) throws IgniteCheckedException {
         int size = ca.size();
 
-        Set<GridCacheEntryEx> set = ca.map().entries0();
+        Set<GridCacheEntryEx> set = ca.context().isNear()
+            ? ((GridNearCacheAdapter)ca).dht().map().entries0()
+            : ca.map().entries0();
 
         long memSz = 0;
 
@@ -398,7 +401,7 @@ public class VisorCache implements Serializable {
     /**
      * @return Cache partitions states.
      */
-    @Nullable public GridDhtPartitionMap partitionMap() {
+    @Nullable public GridDhtPartitionMap2 partitionMap() {
         return partitionsMap;
     }
 

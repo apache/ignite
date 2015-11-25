@@ -202,7 +202,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     };
 
     /** Current session. */
-    private final ThreadLocal<ComputeTaskSession> currentSess = new ThreadLocal<>();
+    private final ThreadLocal<ComputeTaskSession> currSess = new ThreadLocal<>();
 
     /**
      * @param ctx Kernal context.
@@ -448,18 +448,19 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 else if (!nodeId.equals(taskNodeId))
                     err = "Received job siblings response from unexpected node [taskNodeId=" + taskNodeId +
                         ", nodeId=" + nodeId + ']';
-                else
+                else {
                     // Sender and message type are fine.
                     res = (GridJobSiblingsResponse)msg;
 
-                if (res.jobSiblings() == null) {
-                    try {
-                        res.unmarshalSiblings(marsh);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to unmarshal job siblings.", e);
+                    if (res.jobSiblings() == null) {
+                        try {
+                            res.unmarshalSiblings(marsh);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to unmarshal job siblings.", e);
 
-                        err = e.getMessage();
+                            err = e.getMessage();
+                        }
                     }
                 }
 
@@ -830,7 +831,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 if (w == null)
                                     throw new NoSuchElementException();
 
-                                org.apache.ignite.spi.collision.CollisionJobContext ret = new CollisionJobContext(w, false);
+                                org.apache.ignite.spi.collision.CollisionJobContext ret =
+                                    new CollisionJobContext(w, false);
 
                                 w = null;
 
@@ -953,16 +955,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         GridJobWorker job = null;
 
-        rwLock.readLock();
+        if (!rwLock.tryReadLock()) {
+            if (log.isDebugEnabled())
+                log.debug("Received job execution request while stopping this node (will ignore): " + req);
+
+            return;
+        }
 
         try {
-            if (stopping) {
-                if (log.isDebugEnabled())
-                    log.debug("Received job execution request while stopping this node (will ignore): " + req);
-
-                return;
-            }
-
             long endTime = req.getCreateTime() + req.getTimeout();
 
             // Account for overflow.
@@ -1172,7 +1172,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param ses Session.
      */
     public void currentTaskSession(ComputeTaskSession ses) {
-        currentSess.set(ses);
+        currSess.set(ses);
     }
 
     /**
@@ -1195,7 +1195,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         if (!ctx.security().enabled())
             return null;
 
-        ComputeTaskSession ses = currentSess.get();
+        ComputeTaskSession ses = currSess.get();
 
         if (ses == null)
             return null;
@@ -1404,16 +1404,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "RedundantCast"})
     private void processTaskSessionRequest(UUID nodeId, GridTaskSessionRequest req) {
-        rwLock.readLock();
+        if (!rwLock.tryReadLock()) {
+            if (log.isDebugEnabled())
+                log.debug("Received job session request while stopping grid (will ignore): " + req);
+
+            return;
+        }
 
         try {
-            if (stopping) {
-                if (log.isDebugEnabled())
-                    log.debug("Received job session request while stopping grid (will ignore): " + req);
-
-                return;
-            }
-
             GridTaskSessionImpl ses = ctx.session().getSession(req.getSessionId());
 
             if (ses == null) {
@@ -1557,16 +1555,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Received external collision event.");
 
-            rwLock.readLock();
+            if (!rwLock.tryReadLock()) {
+                if (log.isDebugEnabled())
+                    log.debug("Received external collision notification while stopping grid (will ignore).");
+
+                return;
+            }
 
             try {
-                if (stopping) {
-                    if (log.isDebugEnabled())
-                        log.debug("Received external collision notification while stopping grid (will ignore).");
-
-                    return;
-                }
-
                 handleCollisions();
             }
             finally {
@@ -1653,16 +1649,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         updateJobMetrics();
                 }
                 else {
-                    rwLock.readLock();
+                    if (!rwLock.tryReadLock()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Skipping collision handling on job finish (node is stopping).");
+
+                        return;
+                    }
 
                     try {
-                        if (stopping) {
-                            if (log.isDebugEnabled())
-                                log.debug("Skipping collision handling on job finish (node is stopping).");
-
-                            return;
-                        }
-
                         handleCollisions();
                     }
                     finally {
@@ -1851,16 +1845,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
             }
 
             if (handleCollisions) {
-                rwLock.readLock();
+                if (!rwLock.tryReadLock()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Skipped collision handling on discovery event (node is stopping): " + evt);
+
+                    return;
+                }
 
                 try {
-                    if (stopping) {
-                        if (log.isDebugEnabled())
-                            log.debug("Skipped collision handling on discovery event (node is stopping): " + evt);
-
-                        return;
-                    }
-
                     if (!jobAlwaysActivate)
                         handleCollisions();
                     else if (metricsUpdateFreq > -1L)

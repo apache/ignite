@@ -24,8 +24,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
-import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.SINGLE_Q;
-
 /**
  * Concurrent linked set implementation.
  */
@@ -123,9 +121,6 @@ public class GridConcurrentLinkedHashSet<E> extends GridSetWrapper<E> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        // TODO GG-4788
-        return ((ConcurrentLinkedHashMap)map()).policy() != SINGLE_Q ?
-            S.toString(GridConcurrentLinkedHashSet.class, this) :
-            S.toString(GridConcurrentLinkedHashSet.class, this, "elements", map().keySet());
+        return S.toString(GridConcurrentLinkedHashSet.class, this, "elements", map().keySet());
     }
 }

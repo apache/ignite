@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.resource.GridLoggerInjectionSelfTest;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessorSelfTest;
 import org.apache.ignite.internal.processors.resource.GridServiceInjectionSelfTest;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest;
 
 /**
  * Ignite resource injection test Suite.
@@ -37,6 +38,7 @@ public class IgniteResourceSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridResourceProcessorSelfTest.class));
         suite.addTest(new TestSuite(GridLoggerInjectionSelfTest.class));
         suite.addTest(new TestSuite(GridServiceInjectionSelfTest.class));
+        suite.addTest(new TestSuite(GridSpringResourceInjectionSelfTest.class));
 
         return suite;
     }

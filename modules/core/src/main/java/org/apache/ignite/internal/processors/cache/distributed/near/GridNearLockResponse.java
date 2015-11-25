@@ -79,6 +79,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      * @param cnt Count.
      * @param err Error.
      * @param clientRemapVer {@code True} if client node should remap lock request.
+     * @param addDepInfo Deployment info.
      */
     public GridNearLockResponse(
         int cacheId,
@@ -88,9 +89,10 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         boolean filterRes,
         int cnt,
         Throwable err,
-        AffinityTopologyVersion clientRemapVer
+        AffinityTopologyVersion clientRemapVer,
+        boolean addDepInfo
     ) {
-        super(cacheId, lockVer, futId, cnt, err);
+        super(cacheId, lockVer, futId, cnt, err, addDepInfo);
 
         assert miniId != null;
 

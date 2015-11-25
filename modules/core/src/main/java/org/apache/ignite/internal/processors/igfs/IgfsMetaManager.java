@@ -990,7 +990,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param expIds Expected IDs for this path. Might contain additional elements, e.g. because they were created
      *     on a child path.
      * @param infos Locked infos.
-     * @return
+     * @return verification result.
      */
     private static boolean verifyPathIntegrity(IgfsPath path, List<IgniteUuid> expIds,
         Map<IgniteUuid, IgfsFileInfo> infos) {

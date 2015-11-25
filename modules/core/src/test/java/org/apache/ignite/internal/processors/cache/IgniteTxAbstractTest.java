@@ -175,9 +175,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
         for (int i = 0; i < iterations(); i++) {
             IgniteCache<Integer, String> cache = jcache(gridIdx);
 
-            Transaction tx = ignite(gridIdx).transactions().txStart(concurrency, isolation, 0, 0);
-
-            try {
+            try (Transaction tx = ignite(gridIdx).transactions().txStart(concurrency, isolation, 0, 0)) {
                 int prevKey = -1;
 
                 for (Integer key : getKeys()) {
@@ -236,46 +234,22 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                     debug("Committed transaction [i=" + i + ", tx=" + tx + ']');
             }
             catch (TransactionOptimisticException e) {
-                if (concurrency != OPTIMISTIC || isolation != SERIALIZABLE) {
-                    error("Received invalid optimistic failure.", e);
+                if (!(concurrency == OPTIMISTIC && isolation == SERIALIZABLE)) {
+                    log.error("Unexpected error: " + e, e);
 
                     throw e;
                 }
-
-                if (isTestDebug())
-                    info("Optimistic transaction failure (will rollback) [i=" + i + ", msg=" + e.getMessage() +
-                        ", tx=" + tx.xid() + ']');
-
-                try {
-                    tx.rollback();
-                }
-                catch (IgniteException ex) {
-                    error("Failed to rollback optimistic failure: " + tx, ex);
-
-                    throw ex;
-                }
             }
-            catch (Exception e) {
-                error("Transaction failed (will rollback): " + tx, e);
-
-                tx.rollback();
+            catch (Throwable e) {
+                log.error("Unexpected error: " + e, e);
 
                 throw e;
-            }
-            catch (Error e) {
-                error("Error when executing transaction (will rollback): " + tx, e);
-
-                tx.rollback();
-
-                throw e;
-            }
-            finally {
-                Transaction t = ignite(gridIdx).transactions().tx();
-
-                assert t == null : "Thread should not have transaction upon completion ['t==tx'=" + (t == tx) +
-                    ", t=" + t + (t != tx ? "tx=" + tx : "tx=''") + ']';
             }
         }
+
+        Transaction tx = ignite(gridIdx).transactions().tx();
+
+        assertNull("Thread should not have transaction upon completion", tx);
 
         if (printMemoryStats()) {
             if (cntr.getAndIncrement() % 100 == 0)

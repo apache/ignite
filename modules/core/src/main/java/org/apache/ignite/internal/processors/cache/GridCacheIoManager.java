@@ -34,25 +34,28 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -73,6 +76,9 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
  * Cache communication manager.
  */
 public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
+    /** Communication topic prefix for distributed queries. */
+    private static final String QUERY_TOPIC_PREFIX = "QUERY";
+
     /** Message ID generator. */
     private static final AtomicLong idGen = new AtomicLong();
 
@@ -264,7 +270,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             unmarshall(nodeId, cacheMsg);
 
             if (cacheMsg.classError() != null)
-                processFailedMessage(nodeId, cacheMsg);
+                processFailedMessage(nodeId, cacheMsg, c);
             else
                 processMessage(nodeId, cacheMsg, c);
         }
@@ -284,6 +290,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Sends response on failed message.
+     *
      * @param nodeId node id.
      * @param res response.
      * @param cctx shared context.
@@ -302,11 +309,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Processes failed messages.
-     * @param nodeId niode id.
-     * @param msg message.
+     *
+     * @param nodeId Node ID.
+     * @param msg Message.
      * @throws IgniteCheckedException If failed.
      */
-    private void processFailedMessage(UUID nodeId, GridCacheMessage msg) throws IgniteCheckedException {
+    private void processFailedMessage(UUID nodeId, GridCacheMessage msg, IgniteBiInClosure<UUID, GridCacheMessage> c)
+        throws IgniteCheckedException {
         GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
 
         switch (msg.directType()) {
@@ -332,7 +341,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.version(),
                     req.futureId(),
                     req.miniId(),
-                    0);
+                    0,
+                    ctx.deploymentEnabled());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }
@@ -345,7 +355,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(
                     req.version(),
                     req.futureId(),
-                    req.miniId());
+                    req.miniId(),
+                    req.deployInfo() != null);
 
                 res.error(req.classError());
 
@@ -359,7 +370,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     ctx.cacheId(),
-                    req.futureVersion());
+                    req.futureVersion(),
+                    ctx.deploymentEnabled());
 
                 res.onError(req.classError());
 
@@ -374,7 +386,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
                     ctx.cacheId(),
                     nodeId,
-                    req.futureVersion());
+                    req.futureVersion(),
+                    ctx.deploymentEnabled());
 
                 res.error(req.classError());
 
@@ -389,7 +402,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                     ctx.cacheId(),
                     req.futureId(),
-                    req.miniId()
+                    req.miniId(),
+                    ctx.deploymentEnabled()
                 );
 
                 res.error(req.classError());
@@ -400,9 +414,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             case 45: {
-                GridDhtPartitionSupplyMessage req = (GridDhtPartitionSupplyMessage)msg;
-
-                U.error(log, "Supply message cannot be unmarshalled.", req.classError());
+                processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
             }
 
             break;
@@ -414,7 +426,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     ctx.cacheId(),
                     req.futureId(),
                     req.miniId(),
-                    req.version());
+                    req.version(),
+                    req.deployInfo() != null);
 
                 res.error(req.classError());
 
@@ -426,7 +439,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             case 50: {
                 GridNearGetResponse res = (GridNearGetResponse)msg;
 
-                GridCacheFuture fut = ctx.mvcc().future(res.version(), res.futureId());
+                CacheGetFuture fut = (CacheGetFuture)ctx.mvcc().future(res.futureId());
 
                 if (fut == null) {
                     if (log.isDebugEnabled())
@@ -437,10 +450,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 res.error(res.classError());
 
-                if (fut instanceof GridNearGetFuture)
-                    ((GridNearGetFuture)fut).onResult(nodeId, res);
-                else
-                    ((GridPartitionedGetFuture)fut).onResult(nodeId, res);
+                fut.onResult(nodeId, res);
             }
 
             break;
@@ -456,7 +466,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     false,
                     0,
                     req.classError(),
-                    null);
+                    null,
+                    ctx.deploymentEnabled());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }
@@ -474,11 +485,74 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.version(),
                     null,
                     null,
-                    null);
+                    null,
+                    req.deployInfo() != null);
 
                 res.error(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
+            }
+
+            break;
+
+            case 58: {
+                GridCacheQueryRequest req = (GridCacheQueryRequest)msg;
+
+                GridCacheQueryResponse res = new GridCacheQueryResponse(
+                    req.cacheId(),
+                    req.id(),
+                    req.classError(),
+                    cctx.deploymentEnabled());
+
+                cctx.io().sendOrderedMessage(
+                    ctx.node(nodeId),
+                    TOPIC_CACHE.topic(QUERY_TOPIC_PREFIX, nodeId, req.id()),
+                    res,
+                    ctx.ioPolicy(),
+                    Long.MAX_VALUE);
+            }
+
+            break;
+
+            case 114: {
+                processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
+            }
+
+            break;
+
+            case 116: {
+                GridNearSingleGetRequest req = (GridNearSingleGetRequest)msg;
+
+                GridNearSingleGetResponse res = new GridNearSingleGetResponse(
+                    ctx.cacheId(),
+                    req.futureId(),
+                    req.topologyVersion(),
+                    null,
+                    false,
+                    req.deployInfo() != null);
+
+                res.error(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+            }
+
+            break;
+
+            case 117: {
+                GridNearSingleGetResponse res = (GridNearSingleGetResponse)msg;
+
+                GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc().future(res.futureId());
+
+                if (fut == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+
+                    return;
+                }
+
+                res.error(res.classError());
+
+                fut.onResult(nodeId, res);
             }
 
             break;
@@ -494,8 +568,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      * @param c Closure.
      */
-    private void processMessage(UUID nodeId, GridCacheMessage msg,
-        IgniteBiInClosure<UUID, GridCacheMessage> c) {
+    private void processMessage(UUID nodeId, GridCacheMessage msg, IgniteBiInClosure<UUID, GridCacheMessage> c) {
         try {
             // We will not end up with storing a bunch of new UUIDs
             // in each cache entry, since node ID is stored in NIO session
@@ -540,7 +613,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (destNodeId == null || !cctx.localNodeId().equals(destNodeId)) {
             msg.prepareMarshal(cctx);
 
-            if (depEnabled && msg instanceof GridCacheDeployable)
+            if (msg instanceof GridCacheDeployable && msg.addDeploymentInfo())
                 cctx.deploy().prepare((GridCacheDeployable)msg);
         }
 
@@ -766,8 +839,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @return ID that auto-grows based on local counter and counters received
-     *      from other nodes.
+     * @return ID that auto-grows based on local counter and counters received from other nodes.
      */
     public long nextIoId() {
         return idGen.incrementAndGet();
@@ -784,8 +856,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     public void sendNoRetry(ClusterNode node,
         GridCacheMessage msg,
         byte plc)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         assert node != null;
         assert msg != null;
 
