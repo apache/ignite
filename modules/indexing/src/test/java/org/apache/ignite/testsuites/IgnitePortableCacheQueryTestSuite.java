@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsDi
 import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexingDisabledSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheReduceQueryMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFieldsQueryNoDataSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLargeResultSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapTieredMultithreadedSelfTest;
@@ -74,8 +73,6 @@ public class IgnitePortableCacheQueryTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheQueryOffheapMultiThreadedSelfTest.class);
 
         suite.addTestSuite(IgniteCacheOffheapTieredMultithreadedSelfTest.class);
-        suite.addTestSuite(GridCacheReduceQueryMultithreadedSelfTest.class);
-
 
         // Fields queries.
         suite.addTestSuite(IgniteCacheFieldsQueryNoDataSelfTest.class);
