@@ -17,6 +17,9 @@
 
 var gulp = require('gulp');
 var jspm = require('jspm');
+var environments = require('gulp-environments');
+
+var production = environments.production;
 
 var paths = [
     './app/**/*.js'
@@ -27,6 +30,8 @@ var options = {
 };
 
 gulp.task('bundle', function() {
+	// options.minify = production();
+
 	return jspm.bundleSFX('app/index', 'build/app.min.js', options)
 });
 

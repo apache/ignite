@@ -17,7 +17,9 @@
 
 var gulp = require('gulp');
 var gulpSequence = require('gulp-sequence');
+var environments = require('gulp-environments');
 
+var production = environments.production;
 var igniteModules = process.env.IGNITE_MODULES || './ignite_modules';
 
 var paths = [
@@ -49,7 +51,7 @@ var igniteModulePaths = [
 ];
 
 gulp.task('copy', function(cb) {
-    return gulpSequence('copy:base', 'copy:legacy', 'copy:css', 'copy:fonts', 'copy:ignite_modules')(cb)
+    return gulpSequence('copy:base', production('copy:legacy'), 'copy:css', 'copy:fonts', 'copy:ignite_modules')(cb)
 });
 
 gulp.task('copy:base', function(cb) {
