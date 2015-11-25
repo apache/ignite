@@ -399,13 +399,33 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T ReadEnum<T>(string fieldName)
         {
-            return ReadField(fieldName, ReadEnum0<T>, BinaryUtils.TypeEnum);
+            return SeekField(fieldName, BinaryUtils.TypeEnum) ? ReadEnum<T>() : default(T);
         }
 
         /** <inheritdoc /> */
         public T ReadEnum<T>()
         {
-            return Read(ReadEnum0<T>, BinaryUtils.TypeEnum);
+            var hdr = ReadByte();
+
+            switch (hdr)
+            {
+                case BinaryUtils.HdrNull:
+                    return default(T);
+
+                case BinaryUtils.TypeEnum:
+                    return ReadEnum0<T>(this);
+
+                case BinaryUtils.HdrFull:
+                    // Unregistered enum written as serializable
+                    Stream.Seek(-1, SeekOrigin.Current);
+
+                    return ReadObject<T>(); 
+
+                default:
+                    throw new BinaryObjectException(
+                        string.Format("Invalid header on enum deserialization. Expected: {0} or {1} but was: {2}",
+                            BinaryUtils.TypeEnum, BinaryUtils.HdrFull, hdr));
+            }
         }
 
         /** <inheritdoc /> */
