@@ -811,11 +811,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (desc != null)
                 {
-                    SaveMetadata(desc, new Dictionary<string, int>());
+                    var metaHnd = _marsh.GetBinaryTypeHandler(desc);
 
                     _stream.WriteByte(BinaryUtils.TypeEnum);
 
                     BinaryUtils.WriteEnum(this, val);
+
+                    SaveMetadata(desc, metaHnd.OnObjectWriteFinished());
                 }
                 else
                 {
