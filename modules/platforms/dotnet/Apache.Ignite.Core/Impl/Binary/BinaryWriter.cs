@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Binary.Structure;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary writer implementation.
@@ -806,7 +805,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             _stream.WriteByte(BinaryUtils.TypeEnum);
 
-            BinaryUtils.WriteEnum(this, val);
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                // TODO: Save meta
+                BinaryUtils.WriteEnum(this, val);
+            }
         }
 
         /// <summary>
@@ -819,10 +824,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeArrayEnum);
 
-            if (val == null)
-                WriteNullField();
-            else
-                WriteEnumArray((Array) val);
+            WriteEnumArray(val);
         }
 
         /// <summary>
@@ -832,22 +834,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Enum array.</param>
         public void WriteEnumArray<T>(T[] val)
         {
-            if (val == null)
-                WriteNullRawField();
-            else
-                WriteEnumArray((Array) val);
-        }
-
-        /// <summary>
-        /// Writes the enum array.
-        /// </summary>
-        /// <param name="val">The value.</param>
-        public void WriteEnumArray(Array val)
-        {
-            // typeof(T) can yield wrong results (string[] is object[], for example)
-            var elementType = val.GetType().GetElementType();
-
-            WriteEnumArray(val, BinaryUtils.GetEnumTypeId(elementType, Marshaller));
+            WriteEnumArrayInternal(val, null);
         }
 
         /// <summary>
@@ -855,11 +842,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="val">The value.</param>
         /// <param name="elementTypeId">The element type id.</param>
-        public void WriteEnumArray(Array val, int elementTypeId)
+        public void WriteEnumArrayInternal(Array val, int? elementTypeId)
         {
-            _stream.WriteByte(BinaryUtils.TypeArrayEnum);
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                _stream.WriteByte(BinaryUtils.TypeArrayEnum);
 
-            BinaryUtils.WriteArray(val, this, elementTypeId);
+                var elTypeId = elementTypeId ?? BinaryUtils.GetEnumTypeId(val.GetType().GetElementType(), Marshaller);
+
+                BinaryUtils.WriteArray(val, this, elTypeId);
+            }
         }
 
         /// <summary>
@@ -1063,12 +1057,20 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
+            // Handle enums.
+            if (type.IsEnum)
+            {
+                WriteEnum(obj);
+
+                return;
+            }
+
             // Handle special case for builder.
             if (WriteBuilderSpecials(obj))
                 return;
 
             // Suppose that we faced normal object and perform descriptor lookup.
-            IBinaryTypeDescriptor desc = type.IsEnum ? null : _marsh.GetDescriptor(type);
+            IBinaryTypeDescriptor desc = _marsh.GetDescriptor(type);
 
             if (desc != null)
             {

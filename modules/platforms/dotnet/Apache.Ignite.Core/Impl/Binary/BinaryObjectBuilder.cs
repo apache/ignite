@@ -475,7 +475,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                         var elementTypeId = stream.ReadInt();
 
-                        return (w, o) => w.WriteEnumArray((Array) o, elementTypeId);
+                        return (w, o) => w.WriteEnumArrayInternal((Array) o, elementTypeId);
                     }
 
                 default:
