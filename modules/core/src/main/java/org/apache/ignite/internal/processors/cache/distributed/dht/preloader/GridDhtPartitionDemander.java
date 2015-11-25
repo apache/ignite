@@ -688,7 +688,7 @@ public class GridDhtPartitionDemander {
                         if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
                             cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
                                 (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
-                                false, null, null, null);
+                                false, null, null, null, true);
                     }
                     else if (log.isDebugEnabled())
                         log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +

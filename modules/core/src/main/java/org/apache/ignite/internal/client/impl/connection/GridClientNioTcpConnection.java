@@ -385,7 +385,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      *
      * @param msg Message to request,
      * @param destId Destination node identifier.
-     * @param keepPortables Keep portables flag.
+     * @param keepPortables Keep binary flag.
      * @return Response object.
      * @throws GridClientConnectionResetException If request failed.
      * @throws GridClientClosedException If client was closed.
@@ -1037,7 +1037,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         /** Flag indicating if connected message is a forwarded. */
         private final boolean forward;
 
-        /** Keep portables flag. */
+        /** Keep binary flag. */
         private final boolean keepPortables;
 
         /** Pending message for this future. */
@@ -1101,7 +1101,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         }
 
         /**
-         * @return Keep portables flag.
+         * @return Keep binary flag.
          */
         public boolean keepPortables() {
             return keepPortables;

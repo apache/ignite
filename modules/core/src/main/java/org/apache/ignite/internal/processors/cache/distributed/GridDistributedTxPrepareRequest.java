@@ -329,8 +329,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         }
 
         // Marshal txNodes only if there is a node in topology with an older version.
-        if (ctx.exchange().minimumNodeVersion(topologyVersion())
-            .compareTo(TX_NODES_DIRECT_MARSHALLABLE_SINCE) < 0) {
+        if (ctx.exchange().minimumNodeVersion(topologyVersion()).compareTo(TX_NODES_DIRECT_MARSHALLABLE_SINCE) < 0) {
             if (txNodes != null && txNodesBytes == null)
                 txNodesBytes = ctx.marshaller().marshal(txNodes);
         }

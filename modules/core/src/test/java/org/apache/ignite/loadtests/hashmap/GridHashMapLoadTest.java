@@ -85,7 +85,8 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
                 @Override public boolean tmLock(IgniteInternalTx tx,
                     long timeout,
                     @Nullable GridCacheVersion serOrder,
-                    GridCacheVersion serReadVer) {
+                    GridCacheVersion serReadVer,
+                    boolean keepBinary) {
                     return false;
                 }
 

@@ -416,6 +416,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         final Collection<KeyCacheObject> keys,
         boolean skipVals,
         boolean needVer,
+        boolean keepBinary,
         final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
     ) {
         assert cacheCtx.isLocal() : cacheCtx.name();
@@ -451,7 +452,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             CU.subjectId(this, cctx),
                             null,
                             resolveTaskName(),
-                            expiryPlc);
+                            expiryPlc,
+                            txEntry == null ? keepBinary : txEntry.keepBinary());
 
                         if (res == null) {
                             if (misses == null)
@@ -706,9 +708,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             if (intercept) {
-                                Object interceptorVal = cacheCtx.config().getInterceptor()
-                                    .onBeforePut(new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true)),
-                                        CU.value(val, cacheCtx, false));
+                                Object interceptorVal = cacheCtx.config().getInterceptor().onBeforePut(
+                                    new CacheLazyEntry(
+                                        cacheCtx,
+                                        key,
+                                        e.cached().rawGetOrUnmarshal(true),
+                                        e.keepBinary()),
+                                    cacheCtx.cacheObjectContext().unwrapPortableIfNeeded(val, e.keepBinary(), false));
 
                                 if (interceptorVal == null)
                                     continue;
@@ -723,7 +729,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 if (putMap == null)
                                     putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
 
-                                putMap.put(CU.value(key, cacheCtx, false), F.t(CU.value(val, cacheCtx, false), ver));
+                                putMap.put(key, F.<Object, GridCacheVersion>t(val, ver));
                             }
                         }
                         else if (op == DELETE) {
@@ -752,7 +758,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                             if (intercept) {
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor().onBeforeRemove(
-                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true)));
+                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true), e.keepBinary()));
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;
@@ -765,7 +771,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 if (rmvCol == null)
                                     rmvCol = new ArrayList<>();
 
-                                rmvCol.add(key.value(cacheCtx.cacheObjectContext(), false));
+                                rmvCol.add(key);
                             }
                         }
                         else if (log.isDebugEnabled())
@@ -1004,6 +1010,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             txEntry.ttl(),
                                             evt,
                                             metrics,
+                                            txEntry.keepBinary(),
                                             topVer,
                                             null,
                                             cached.detached() ? DR_NONE : drType,
@@ -1028,6 +1035,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 txEntry.ttl(),
                                                 false,
                                                 metrics,
+                                                txEntry.keepBinary(),
                                                 topVer,
                                                 CU.empty0(),
                                                 DR_NONE,
@@ -1047,6 +1055,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             false,
                                             evt,
                                             metrics,
+                                            txEntry.keepBinary(),
                                             topVer,
                                             null,
                                             cached.detached()  ? DR_NONE : drType,
@@ -1067,6 +1076,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 false,
                                                 false,
                                                 metrics,
+                                                txEntry.keepBinary(),
                                                 topVer,
                                                 CU.empty0(),
                                                 DR_NONE,
@@ -1408,7 +1418,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 CU.subjectId(this, cctx),
                                 transformClo,
                                 resolveTaskName(),
-                                null);
+                                null,
+                                txEntry.keepBinary());
 
                             if (val != null) {
                                 if (!readCommitted() && !skipVals)
@@ -1467,7 +1478,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         CU.subjectId(this, cctx),
                                         null,
                                         resolveTaskName(),
-                                        accessPlc) : null;
+                                        accessPlc,
+                                        !deserializePortable) : null;
 
                                 if (res != null) {
                                     val = res.get1();
@@ -1486,7 +1498,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     CU.subjectId(this, cctx),
                                     null,
                                     resolveTaskName(),
-                                    accessPlc);
+                                    accessPlc,
+                                    !deserializePortable);
                             }
 
                             if (val != null) {
@@ -1517,7 +1530,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 -1L,
                                 -1L,
                                 null,
-                                skipStore);
+                                skipStore,
+                                !deserializePortable);
 
                             // As optimization, mark as checked immediately
                             // for non-pessimistic if value is not null.
@@ -1622,6 +1636,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 missedMap.keySet(),
                 skipVals,
                 needReadVer,
+                !deserializePortable,
                 new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
                     @Override public void apply(KeyCacheObject key, Object val, GridCacheVersion loadVer) {
                         if (isRollbackOnly()) {
@@ -1756,8 +1771,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                         // Load keys only after the locks have been acquired.
                         for (KeyCacheObject cacheKey : lockKeys) {
-                            K keyVal =
-                                (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx.cacheObjectContext(), false));
+                            K keyVal = (K)
+                                (keepCacheObjects ? cacheKey :
+                                cacheCtx.cacheObjectContext().unwrapPortableIfNeeded(cacheKey, !deserializePortable));
 
                             if (retMap.containsKey(keyVal))
                                 // We already have a return value.
@@ -1790,7 +1806,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         CU.subjectId(IgniteTxLocalAdapter.this, cctx),
                                         transformClo,
                                         resolveTaskName(),
-                                        null);
+                                        null,
+                                        txEntry.keepBinary());
 
                                     // If value is in cache and passed the filter.
                                     if (val != null) {
@@ -2029,7 +2046,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         final CacheEntryPredicate[] filter,
         final GridCacheReturn ret,
         boolean skipStore,
-        final boolean singleRmv) {
+        final boolean singleRmv,
+        boolean keepBinary) {
         try {
             addActiveCache(cacheCtx);
 
@@ -2058,7 +2076,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 singleRmv,
                 hasFilters,
                 needVal,
-                needReadVer);
+                needReadVer,
+                keepBinary);
 
             if (loadMissed) {
                 return loadMissing(cacheCtx,
@@ -2069,7 +2088,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     singleRmv,
                     hasFilters,
                     skipStore,
-                    retval);
+                    retval,
+                    keepBinary);
             }
 
             return new GridFinishedFuture<>();
@@ -2114,7 +2134,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> drPutMap,
         @Nullable Map<KeyCacheObject, GridCacheVersion> drRmvMap,
         boolean skipStore,
-        final boolean singleRmv
+        final boolean singleRmv,
+        final boolean keepBinary
     ) {
         assert retval || invokeMap == null;
 
@@ -2127,8 +2148,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         boolean rmv = lookup == null && invokeMap == null;
 
-        Set<KeyCacheObject> missedForLoad = null;
-
         final boolean hasFilters = !F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter);
         final boolean needVal = singleRmv || retval || hasFilters;
         final boolean needReadVer = needVal && (serializable() && optimistic());
@@ -2137,6 +2156,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             // Set transform flag for transaction.
             if (invokeMap != null)
                 transform = true;
+
+            Set<KeyCacheObject> missedForLoad = null;
 
             for (Object key : keys) {
                 if (key == null) {
@@ -2200,7 +2221,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     singleRmv,
                     hasFilters,
                     needVal,
-                    needReadVer);
+                    needReadVer,
+                    keepBinary);
 
                 if (loadMissed) {
                     if (missedForLoad == null)
@@ -2219,7 +2241,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     singleRmv,
                     hasFilters,
                     skipStore,
-                    retval);
+                    retval,
+                    keepBinary);
             }
 
             return new GridFinishedFuture<>();
@@ -2250,7 +2273,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         final boolean singleRmv,
         final boolean hasFilters,
         final boolean skipStore,
-        final boolean retval) {
+        final boolean retval,
+        final boolean keepBinary) {
         GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c =
             new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
                 @Override public void apply(KeyCacheObject key,
@@ -2273,7 +2297,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         assert !hasFilters && !retval;
                         assert val == null || Boolean.TRUE.equals(val) : val;
 
-                        ret.set(cacheCtx, null, val != null);
+                        ret.set(cacheCtx, null, val != null, keepBinary);
                     }
                     else {
                         CacheObject cacheVal = cacheCtx.toCacheObject(val);
@@ -2298,7 +2322,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         else {
                             boolean success = !hasFilters || isAll(e.context(), key, cacheVal, filter);
 
-                            ret.set(cacheCtx, cacheVal, success);
+                            ret.set(cacheCtx, cacheVal, success, keepBinary);
                         }
                     }
                 }
@@ -2311,6 +2335,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             keys,
             /*skipVals*/singleRmv,
             needReadVer,
+            keepBinary,
             c);
     }
 
@@ -2322,7 +2347,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param expiryPlc Explicitly specified expiry policy for entry.
      * @param retval Return value flag.
-     * @param lockOnly
+     * @param lockOnly Lock only flag.
      * @param filter Filter.
      * @param drVer DR version.
      * @param drTtl DR ttl.
@@ -2339,10 +2364,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      */
     private boolean enlistWriteEntry(GridCacheContext cacheCtx,
         final KeyCacheObject cacheKey,
-        final @Nullable Object val,
-        final @Nullable EntryProcessor<?, ?, ?> entryProcessor,
-        final @Nullable Object[] invokeArgs,
-        final @Nullable ExpiryPolicy expiryPlc,
+        @Nullable final Object val,
+        @Nullable final EntryProcessor<?, ?, ?> entryProcessor,
+        @Nullable final Object[] invokeArgs,
+        @Nullable final ExpiryPolicy expiryPlc,
         final boolean retval,
         final boolean lockOnly,
         final CacheEntryPredicate[] filter,
@@ -2355,7 +2380,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         boolean singleRmv,
         boolean hasFilters,
         final boolean needVal,
-        boolean needReadVer
+        boolean needReadVer,
+        boolean keepBinary
     ) throws IgniteCheckedException {
         boolean loadMissed = false;
 
@@ -2399,7 +2425,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         CU.subjectId(this, cctx),
                                         entryProcessor,
                                         resolveTaskName(),
-                                        null) : null;
+                                        null,
+                                        keepBinary) : null;
 
                                 if (res != null) {
                                     old = res.get1();
@@ -2418,7 +2445,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     CU.subjectId(this, cctx),
                                     entryProcessor,
                                     resolveTaskName(),
-                                    null);
+                                    null,
+                                    keepBinary);
                             }
                         }
                         catch (ClusterTopologyCheckedException e) {
@@ -2431,7 +2459,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         old = retval ? entry.rawGetOrUnmarshal(false) : entry.rawGet();
 
                     if (old != null && hasFilters && !filter(entry.context(), cacheKey, old, filter)) {
-                        ret.set(cacheCtx, old, false);
+                        ret.set(cacheCtx, old, false, keepBinary);
 
                         if (!readCommitted()) {
                             // Enlist failed filters as reads for non-read-committed mode,
@@ -2447,7 +2475,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 -1L,
                                 -1L,
                                 null,
-                                skipStore);
+                                skipStore,
+                                keepBinary);
 
                             txEntry.markValid();
 
@@ -2478,7 +2507,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         drTtl,
                         drExpireTime,
                         drVer,
-                        skipStore);
+                        skipStore,
+                        keepBinary);
 
                     if (!implicit() && readCommitted() && !cacheCtx.offheapTiered())
                         cacheCtx.evicts().touch(entry, topologyVersion());
@@ -2497,7 +2527,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 assert txEntry.op() != TRANSFORM : txEntry;
 
                                 if (retval)
-                                    ret.set(cacheCtx, null, true);
+                                    ret.set(cacheCtx, null, true, keepBinary);
                                 else
                                     ret.success(true);
                             }
@@ -2510,7 +2540,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             if (retval && !transform)
-                                ret.set(cacheCtx, old, true);
+                                ret.set(cacheCtx, old, true, keepBinary);
                             else {
                                 if (txEntry.op() == TRANSFORM) {
                                     GridCacheVersion ver;
@@ -2538,7 +2568,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     // Pessimistic.
                     else {
                         if (retval && !transform)
-                            ret.set(cacheCtx, old, true);
+                            ret.set(cacheCtx, old, true, keepBinary);
                         else
                             ret.success(true);
                     }
@@ -2564,7 +2594,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             if (!del) {
                 if (hasFilters && !filter(entry.context(), cacheKey, v, filter)) {
-                    ret.set(cacheCtx, v, false);
+                    ret.set(cacheCtx, v, false, keepBinary);
 
                     return loadMissed;
                 }
@@ -2583,7 +2613,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     drTtl,
                     drExpireTime,
                     drVer,
-                    skipStore);
+                    skipStore,
+                    keepBinary);
 
                 if (enlisted != null)
                     enlisted.add(cacheKey);
@@ -2611,7 +2642,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 txEntry.markValid();
 
                 if (retval && !transform)
-                    ret.set(cacheCtx, v, true);
+                    ret.set(cacheCtx, v, true, keepBinary);
                 else
                     ret.success(true);
             }
@@ -2718,7 +2749,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     CU.subjectId(this, cctx),
                                     null,
                                     resolveTaskName(),
-                                    null);
+                                    null,
+                                    txEntry.keepBinary());
                             }
                         }
                         else {
@@ -2746,7 +2778,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
                         }
                         else
-                            ret.value(cacheCtx, v);
+                            ret.value(cacheCtx, v, txEntry.keepBinary());
                     }
 
                     boolean pass = F.isEmpty(filter) || cacheCtx.isAll(cached, filter);
@@ -2817,7 +2849,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                 CacheInvokeEntry<Object, Object> invokeEntry =
-                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0, ver);
+                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0, ver,
+                        txEntry.keepBinary());
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 
@@ -2883,7 +2916,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         final GridCacheContext cacheCtx,
         K key,
         @Nullable V val,
-        @Nullable EntryProcessor entryProcessor,
+        @Nullable EntryProcessor<K, V, Object> entryProcessor,
         @Nullable final Object[] invokeArgs,
         final boolean retval,
         @Nullable final CacheEntryPredicate[] filter
@@ -2911,7 +2944,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 filter,
                 ret,
                 opCtx != null && opCtx.skipStore(),
-                /*singleRmv*/false);
+                /*singleRmv*/false,
+                opCtx != null && opCtx.isKeepBinary());
 
             if (pessimistic()) {
                 assert loadFut == null || loadFut.isDone() : loadFut;
@@ -3080,7 +3114,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 drMap,
                 null,
                 opCtx != null && opCtx.skipStore(),
-                false);
+                false,
+                opCtx != null && opCtx.isKeepBinary());
 
             if (pessimistic()) {
                 assert loadFut == null || loadFut.isDone() : loadFut;
@@ -3317,7 +3352,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             null,
             drMap,
             opCtx != null && opCtx.skipStore(),
-            singleRmv
+            singleRmv,
+            opCtx != null && opCtx.isKeepBinary()
         );
 
         if (log.isDebugEnabled())
@@ -3435,12 +3471,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * Checks if portable values should be deserialized.
      *
      * @param cacheCtx Cache context.
-     * @return {@code True} if portables should be deserialized, {@code false} otherwise.
+     * @return {@code True} if binary should be deserialized, {@code false} otherwise.
      */
     private boolean deserializePortables(GridCacheContext cacheCtx) {
         CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-        return opCtx == null || !opCtx.isKeepPortable();
+        return opCtx == null || !opCtx.isKeepBinary();
     }
 
     /**
@@ -3522,7 +3558,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         long drTtl,
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary
+    ) {
         assert invokeArgs == null || op == TRANSFORM;
 
         IgniteTxKey key = entry.txKey();
@@ -3592,7 +3630,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 entry,
                 filter,
                 drVer,
-                skipStore);
+                skipStore,
+                keepBinary);
 
             txEntry.conflictExpireTime(drExpireTime);
 

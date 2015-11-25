@@ -141,18 +141,25 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 Collection<GridCacheMvccFuture<?>> futCol = mvccFuts.get(owner.version());
 
                 if (futCol != null) {
-                    synchronized (futCol) {
-                        for (GridCacheMvccFuture<?> fut : futCol) {
-                            if (!fut.isDone()) {
-                                GridCacheMvccFuture<Boolean> mvccFut = (GridCacheMvccFuture<Boolean>)fut;
+                    ArrayList<GridCacheMvccFuture<?>> futColCp;
 
-                                // Since this method is called outside of entry synchronization,
-                                // we can safely invoke any method on the future.
-                                // Also note that we don't remove future here if it is done.
-                                // The removal is initiated from within future itself.
-                                if (mvccFut.onOwnerChanged(entry, owner))
-                                    return;
-                            }
+                    synchronized (futCol) {
+                        futColCp = new ArrayList<>(futCol.size());
+
+                        futColCp.addAll(futCol);
+                    }
+
+                    // Must invoke onOwnerChanged outside of synchronization block.
+                    for (GridCacheMvccFuture<?> fut : futColCp) {
+                        if (!fut.isDone()) {
+                            GridCacheMvccFuture<Boolean> mvccFut = (GridCacheMvccFuture<Boolean>)fut;
+
+                            // Since this method is called outside of entry synchronization,
+                            // we can safely invoke any method on the future.
+                            // Also note that we don't remove future here if it is done.
+                            // The removal is initiated from within future itself.
+                            if (mvccFut.onOwnerChanged(entry, owner))
+                                return;
                         }
                     }
                 }

@@ -30,6 +30,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.schema.model.PojoDescriptor;
 import org.apache.ignite.schema.model.SchemaDescriptor;
 import org.apache.ignite.schema.parser.dialect.DB2MetadataDialect;
@@ -59,7 +60,7 @@ public class DatabaseMetadataParser {
                 return new OracleMetadataDialect();
             else if (dbProductName.startsWith("DB2/"))
                 return new DB2MetadataDialect();
-            else if (dbProductName.equals("MySQL"))
+            else if ("MySQL".equals(dbProductName))
                 return new MySQLMetadataDialect();
             else
                 return new JdbcMetadataDialect();
@@ -76,7 +77,7 @@ public class DatabaseMetadataParser {
      *
      * @param conn Connection to database.
      * @return List of schema descriptors.
-     * @throws SQLException If shemas loading failed.
+     * @throws SQLException If schemas loading failed.
      */
     public static ObservableList<SchemaDescriptor> schemas(Connection conn) throws SQLException  {
         List<String> dbSchemas = dialect(conn).schemas(conn);
@@ -93,7 +94,7 @@ public class DatabaseMetadataParser {
      * Parse database metadata.
      *
      * @param conn Connection to database.
-     * @param schemas Collention of schema names to load.
+     * @param schemas Collection of schema names to load.
      * @param tblsOnly If {@code true} then process tables only else process tables and views.
      * @return Collection of POJO descriptors.
      * @throws SQLException If parsing failed.
@@ -114,8 +115,7 @@ public class DatabaseMetadataParser {
 
             if (parent == null) {
                 parent = new PojoDescriptor(null, new DbTable(schema, "", Collections.<DbColumn>emptyList(),
-                    Collections.<String>emptySet(), Collections.<String>emptySet(),
-                    Collections.<String, Map<String, Boolean>>emptyMap()));
+                    Collections.<QueryIndex>emptyList()));
 
                 children = new ArrayList<>();
 

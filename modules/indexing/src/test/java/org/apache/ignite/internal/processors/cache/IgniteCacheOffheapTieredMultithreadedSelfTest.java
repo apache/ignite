@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -155,7 +152,7 @@ public class IgniteCacheOffheapTieredMultithreadedSelfTest extends GridCommonAbs
     /**
      * Person record used for query test.
      */
-    public static class Person implements Externalizable {
+    public static class Person implements Serializable {
         /** Person ID. */
         @QuerySqlField(index = true)
         private int id;
@@ -280,24 +277,6 @@ public class IgniteCacheOffheapTieredMultithreadedSelfTest extends GridCommonAbs
          */
         public void setSalary(double salary) {
             this.salary = salary;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(id);
-            out.writeInt(orgId);
-            out.writeUTF(firstName);
-            out.writeUTF(lastName);
-            out.writeDouble(salary);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            id = in.readInt();
-            orgId = in.readInt();
-            firstName = in.readUTF();
-            lastName = in.readUTF();
-            salary = in.readDouble();
         }
 
         /** {@inheritDoc} */

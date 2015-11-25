@@ -35,7 +35,7 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     /** Task parameter. */
     private Object arg;
 
-    /** Keep portables flag. */
+    /** Keep binary flag. */
     private boolean keepPortables;
 
     /**
@@ -67,14 +67,14 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     }
 
     /**
-     * @return Keep portables flag.
+     * @return Keep binary flag.
      */
     public boolean keepPortables() {
         return keepPortables;
     }
 
     /**
-     * @param keepPortables Keep portables flag.
+     * @param keepPortables Keep binary flag.
      */
     public void keepPortables(boolean keepPortables) {
         this.keepPortables = keepPortables;
