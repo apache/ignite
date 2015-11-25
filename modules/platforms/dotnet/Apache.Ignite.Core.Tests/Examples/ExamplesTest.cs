@@ -102,13 +102,16 @@ namespace Apache.Ignite.Core.Tests.Examples
                     if (example.NeedsTestDll)
                         args.Add(" -assembly=" + typeof(AverageSalaryJob).Assembly.Location);
 
-                    // ReSharper disable once UnusedVariable
                     var proc = new IgniteProcess(args.ToArray());
 
                     Assert.IsTrue(ignite.WaitTopology(i + 2, 30000));
+                    Assert.IsTrue(proc.Alive);
                 }
 
                 Ignition.ClientMode = clientMode;
+
+                // Run twice to catch issues with standalone node state
+                example.Run();
                 example.Run();
             }
         }
