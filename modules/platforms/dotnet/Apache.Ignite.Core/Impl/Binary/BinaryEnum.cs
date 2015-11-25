@@ -59,7 +59,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public IBinaryType GetBinaryType()
         {
-            // TODO: Should we be able to build an Enum with builder?
             return _marsh.GetBinaryType(_typeId);
         }
 
