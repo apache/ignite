@@ -1409,11 +1409,18 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             int val = (int) TestEnumRegistered.Two;
 
-            var binEnum = binary.BuildEnum(typeof(TestEnumRegistered), val);
+            var binEnums = new[]
+            {
+                binary.BuildEnum(typeof (TestEnumRegistered), val),
+                binary.BuildEnum(typeof (TestEnumRegistered).Name, val)
+            };
 
-            Assert.IsTrue(binEnum.IsEnum);
-            Assert.AreEqual(val, binEnum.EnumValue);
-            Assert.AreEqual((TestEnumRegistered) val, binEnum.Deserialize<TestEnumRegistered>());
+            foreach (var binEnum in binEnums)
+            {
+                Assert.IsTrue(binEnum.IsEnum);
+                Assert.AreEqual(val, binEnum.EnumValue);
+                Assert.AreEqual((TestEnumRegistered)val, binEnum.Deserialize<TestEnumRegistered>());
+            }
         }
     }
 
