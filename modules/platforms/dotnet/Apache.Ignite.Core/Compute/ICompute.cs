@@ -70,12 +70,12 @@ namespace Apache.Ignite.Core.Compute
         ICompute WithTimeout(long timeout);
 
         /// <summary>
-        /// Sets keep-portable flag for the next executed Java task on this projection in the current
+        /// Sets keep-binary flag for the next executed Java task on this projection in the current
         /// thread so that task argument passed to Java and returned task results will not be
         /// deserialized.
         /// </summary>
         /// <returns>This compute instance for chaining calls.</returns>
-        ICompute WithKeepPortable();
+        ICompute WithKeepBinary();
 
         /// <summary>
         /// Executes given Java task on the grid projection. If task for given name has not been deployed yet,

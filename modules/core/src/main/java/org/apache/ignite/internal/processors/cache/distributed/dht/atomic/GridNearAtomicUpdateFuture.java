@@ -243,11 +243,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         return state.futureVersion();
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * @return {@code True} if this future should block partition map exchange.
      */

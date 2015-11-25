@@ -38,7 +38,7 @@ public interface BinaryType {
      *
      * @return Collection of all field names for this binary type.
      */
-    public Collection<String> fields();
+    public Collection<String> fieldNames();
 
     /**
      * Gets name of the field type for a given field.
@@ -47,6 +47,15 @@ public interface BinaryType {
      * @return Field type name.
      */
     public String fieldTypeName(String fieldName);
+
+    /**
+     * Get {@link BinaryField} for the given field name. Later this field can be used for fast field's value
+     * retrieval from concrete {@link BinaryObject}.
+     *
+     * @param fieldName Field name.
+     * @return Binary field.
+     */
+    public BinaryField field(String fieldName);
 
     /**
      * Binary objects can optionally specify custom key-affinity mapping in the

@@ -18,8 +18,8 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
     /// Marshals and converts future value.
@@ -27,34 +27,34 @@ namespace Apache.Ignite.Core.Impl.Common
     internal class FutureConverter<T> : IFutureConverter<T>
     {
         /** Marshaller. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
 
-        /** Keep portable flag. */
-        private readonly bool _keepPortable;
+        /** Keep binary flag. */
+        private readonly bool _keepBinary;
 
         /** Converting function. */
-        private readonly Func<PortableReaderImpl, T> _func;
+        private readonly Func<BinaryReader, T> _func;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="func">Converting function.</param>
-        public FutureConverter(PortableMarshaller marsh, bool keepPortable,
-            Func<PortableReaderImpl, T> func = null)
+        public FutureConverter(Marshaller marsh, bool keepBinary,
+            Func<BinaryReader, T> func = null)
         {
             _marsh = marsh;
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
             _func = func ?? (reader => reader == null ? default(T) : reader.ReadObject<T>());
         }
 
         /// <summary>
         /// Read and convert a value.
         /// </summary>
-        public T Convert(IPortableStream stream)
+        public T Convert(IBinaryStream stream)
         {
-            var reader = stream == null ? null : _marsh.StartUnmarshal(stream, _keepPortable);
+            var reader = stream == null ? null : _marsh.StartUnmarshal(stream, _keepBinary);
 
             return _func(reader);
         }

@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAbstractNearPartitionedByteArrayValuesSelfTest;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 
 /**
  *
@@ -34,7 +34,7 @@ public class GridCachePortablesNearPartitionedByteArrayValuesSelfTest
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new PortableMarshaller());
+        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

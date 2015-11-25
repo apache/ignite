@@ -125,7 +125,27 @@ public class PortableOffheapOutputStream extends PortableAbstractOutputStream {
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeShortPositioned(int pos, short val) {
+    @Override public boolean hasArray() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteByte(byte val) {
+        UNSAFE.putByte(ptr + pos++, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteShort(short val) {
+        if (!LITTLE_ENDIAN)
+            val = Short.reverseBytes(val);
+
+        UNSAFE.putShort(ptr + pos, val);
+
+        shift(2);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteShort(int pos, short val) {
         if (!LITTLE_ENDIAN)
             val = Short.reverseBytes(val);
 
@@ -133,7 +153,27 @@ public class PortableOffheapOutputStream extends PortableAbstractOutputStream {
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeIntPositioned(int pos, int val) {
+    @Override public void unsafeWriteChar(char val) {
+        if (!LITTLE_ENDIAN)
+            val = Character.reverseBytes(val);
+
+        UNSAFE.putChar(ptr + pos, val);
+
+        shift(2);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteInt(int val) {
+        if (!LITTLE_ENDIAN)
+            val = Integer.reverseBytes(val);
+
+        UNSAFE.putInt(ptr + pos, val);
+
+        shift(4);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteInt(int pos, int val) {
         if (!LITTLE_ENDIAN)
             val = Integer.reverseBytes(val);
 
@@ -141,8 +181,13 @@ public class PortableOffheapOutputStream extends PortableAbstractOutputStream {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasArray() {
-        return false;
+    @Override public void unsafeWriteLong(long val) {
+        if (!LITTLE_ENDIAN)
+            val = Long.reverseBytes(val);
+
+        UNSAFE.putLong(ptr + pos, val);
+
+        shift(8);
     }
 
     /**

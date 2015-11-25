@@ -64,3 +64,6 @@ nobase_include_HEADERS = ignite/cache/cache.h \
                          ignite/ignite_error.h \
                          ignite/ignition.h \
                          ignite/guid.h
+
+uninstall-hook:
+	find ${includedir}/ignite -type d -empty -delete

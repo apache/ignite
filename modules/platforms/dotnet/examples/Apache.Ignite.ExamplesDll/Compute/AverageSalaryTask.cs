@@ -19,10 +19,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Apache.Ignite.Core.Compute;
-using Apache.Ignite.ExamplesDll.Portable;
 
 namespace Apache.Ignite.ExamplesDll.Compute
 {
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
     /// Average salary task.
     /// </summary>

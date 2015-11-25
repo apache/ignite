@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheCon
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
@@ -58,7 +58,7 @@ public class IgnitePortableCacheQueryTestSuite extends TestSuite {
      * @throws Exception In case of error.
      */
     public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, PortableMarshaller.class.getName());
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
         TestSuite suite = new TestSuite("Grid Cache Query Test Suite using PortableMarshaller");
 

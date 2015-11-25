@@ -61,6 +61,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.AsyncSupportAdapter;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
@@ -96,6 +97,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** */
     private static final IgniteBiPredicate ACCEPT_ALL = new IgniteBiPredicate() {
+        /** */
+        private static final long serialVersionUID = -1640538788290240617L;
+
         @Override public boolean apply(Object k, Object v) {
             return true;
         }
@@ -275,7 +279,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Nullable @Override public Cache.Entry<K, V> randomEntry() {
+        GridKernalContext kctx = ctx.kernalContext();
+
+        if (kctx.isDaemon() || kctx.clientNode())
+            throw new UnsupportedOperationException("Not applicable for daemon or client node.");
+
         GridCacheGateway<K, V> gate = this.gate;
 
         CacheOperationContext prev = onEnter(gate, opCtx);
@@ -775,6 +785,30 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public long sizeLong(CachePeekMode... peekModes) throws CacheException {
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            if (isAsync()) {
+                setFuture(delegate.sizeLongAsync(peekModes));
+
+                return 0;
+            }
+            else
+                return delegate.sizeLong(peekModes);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
+
+
+    /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
         GridCacheGateway<K, V> gate = this.gate;
 
@@ -782,6 +816,23 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             return delegate.localSize(peekModes);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(CachePeekMode... peekModes) {
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            return delegate.localSizeLong(peekModes);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);

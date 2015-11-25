@@ -168,15 +168,15 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public IServices WithKeepPortable()
+        public IServices WithKeepBinary()
         {
-            return new ServicesAsyncWrapper(_services.WithKeepPortable());
+            return new ServicesAsyncWrapper(_services.WithKeepBinary());
         }
 
         /** <inheritDoc /> */
-        public IServices WithServerKeepPortable()
+        public IServices WithServerKeepBinary()
         {
-            return new ServicesAsyncWrapper(_services.WithServerKeepPortable());
+            return new ServicesAsyncWrapper(_services.WithServerKeepBinary());
         }
     }
 }

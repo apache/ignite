@@ -22,14 +22,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import javax.cache.CacheException;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.doInTransaction;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
@@ -51,7 +47,7 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
         for (int i = 0; i < keys.length; i++)
             keys[i] = "key-" + k + "-" + i;
 
-        return doInTransaction(ignite(), new Callable<Boolean>() {
+        return doInTransaction(ignite().transactions(), PESSIMISTIC, REPEATABLE_READ, new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 Map<String, Long> map = new HashMap<>();
 
@@ -84,7 +80,7 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
                         }
                     }
 
-                    throw new IllegalStateException("Found different values for keys (see above information).");
+                    throw new IgniteConsistencyException("Found different values for keys (see above information).");
                 }
 
                 final Long oldVal = map.get(keys[0]);
@@ -99,39 +95,6 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
                 return true;
             }
         });
-    }
-
-    /**
-     * @param ignite Ignite instance.
-     * @param clo Closure.
-     * @return Result of closure execution.
-     * @throws Exception
-     */
-    public static <T> T doInTransaction(Ignite ignite, Callable<T> clo) throws Exception {
-        while (true) {
-            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                T res = clo.call();
-
-                tx.commit();
-
-                return res;
-            }
-            catch (CacheException e) {
-                if (e.getCause() instanceof ClusterTopologyException) {
-                    ClusterTopologyException topEx = (ClusterTopologyException)e.getCause();
-
-                    topEx.retryReadyFuture().get();
-                }
-                else
-                    throw e;
-            }
-            catch (ClusterTopologyException e) {
-                e.retryReadyFuture().get();
-            }
-            catch (TransactionRollbackException ignore) {
-                // Safe to retry right away.
-            }
-        }
     }
 
     /** {@inheritDoc} */

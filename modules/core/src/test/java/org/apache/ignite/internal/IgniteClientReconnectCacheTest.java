@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -765,6 +766,12 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             }
         };
 
+        IgniteInClosure<IgniteCache<Object, Object>> getAllOp = new CI1<IgniteCache<Object, Object>>() {
+            @Override public void apply(IgniteCache<Object, Object> cache) {
+                cache.getAll(F.asSet(1, 2));
+            }
+        };
+
         int cnt = 0;
 
         for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
@@ -799,7 +806,9 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
                     log.info("Test cache get [atomicity=" + atomicityMode + ", syncMode=" + syncMode + ']');
 
-                    checkOperationInProgressFails(client, ccfg, GridNearGetResponse.class, getOp);
+                    checkOperationInProgressFails(client, ccfg, GridNearSingleGetResponse.class, getOp);
+
+                    checkOperationInProgressFails(client, ccfg, GridNearGetResponse.class, getAllOp);
 
                     client.destroyCache(ccfg.getName());
                 }

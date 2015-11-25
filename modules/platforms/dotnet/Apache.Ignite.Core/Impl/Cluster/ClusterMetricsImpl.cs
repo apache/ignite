@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
 {
     using System;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Cluster metrics implementation.
@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// Initializes a new instance of the <see cref="ClusterMetricsImpl"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ClusterMetricsImpl(IPortableRawReader reader)
+        public ClusterMetricsImpl(IBinaryRawReader reader)
         {
             LastUpdateTimeRaw = reader.ReadLong();
 

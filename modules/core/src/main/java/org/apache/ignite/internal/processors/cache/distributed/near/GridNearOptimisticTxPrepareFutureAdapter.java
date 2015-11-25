@@ -20,13 +20,11 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -75,56 +73,14 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
      * @return Topology ready future.
      */
     protected final GridDhtTopologyFuture topologyReadLock() {
-        if (tx.activeCacheIds().isEmpty())
-            return cctx.exchange().lastTopologyFuture();
-
-        GridCacheContext<?, ?> nonLocCtx = null;
-
-        for (int cacheId : tx.activeCacheIds()) {
-            GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
-
-            if (!cacheCtx.isLocal()) {
-                nonLocCtx = cacheCtx;
-
-                break;
-            }
-        }
-
-        if (nonLocCtx == null)
-            return cctx.exchange().lastTopologyFuture();
-
-        nonLocCtx.topology().readLock();
-
-        if (nonLocCtx.topology().stopping()) {
-            onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
-                nonLocCtx.name()));
-
-            return null;
-        }
-
-        return nonLocCtx.topology().topologyVersionFuture();
+        return tx.txState().topologyReadLock(cctx, this);
     }
 
     /**
      * Releases topology read lock.
      */
     protected final void topologyReadUnlock() {
-        if (!tx.activeCacheIds().isEmpty()) {
-            GridCacheContext<?, ?> nonLocCtx = null;
-
-            for (int cacheId : tx.activeCacheIds()) {
-                GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
-
-                if (!cacheCtx.isLocal()) {
-                    nonLocCtx = cacheCtx;
-
-                    break;
-                }
-            }
-
-            if (nonLocCtx != null)
-                nonLocCtx.topology().readUnlock();
-        }
+        tx.txState().topologyReadUnlock(cctx);
     }
 
     /**
@@ -160,28 +116,10 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         }
 
         if (topVer != null) {
-            StringBuilder invalidCaches = null;
+            IgniteCheckedException err = tx.txState().validateTopology(cctx, topFut);
 
-            for (Integer cacheId : tx.activeCacheIds()) {
-                GridCacheContext ctx = cctx.cacheContext(cacheId);
-
-                assert ctx != null : cacheId;
-
-                Throwable err = topFut.validateCache(ctx);
-
-                if (err != null) {
-                    if (invalidCaches != null)
-                        invalidCaches.append(", ");
-                    else
-                        invalidCaches = new StringBuilder();
-
-                    invalidCaches.append(U.maskName(ctx.name()));
-                }
-            }
-
-            if (invalidCaches != null) {
-                onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
-                    invalidCaches.toString()));
+            if (err != null) {
+                onDone(err);
 
                 return;
             }

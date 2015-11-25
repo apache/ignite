@@ -23,9 +23,10 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.binary.BinaryType;
@@ -46,11 +47,13 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        marsh.setClassNames(Arrays.asList(TestObject1.class.getName(), TestObject2.class.getName()));
+        bCfg.setClassNames(Arrays.asList(TestObject1.class.getName(), TestObject2.class.getName()));
 
-        cfg.setMarshaller(marsh);
+        cfg.setBinaryConfiguration(bCfg);
+
+        cfg.setMarshaller(new BinaryMarshaller());
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -93,7 +96,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
             switch (meta.typeName()) {
                 case "TestObject1":
-                    fields = meta.fields();
+                    fields = meta.fieldNames();
 
                     assertEquals(7, fields.size());
 
@@ -116,7 +119,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
                     break;
 
                 case "TestObject2":
-                    fields = meta.fields();
+                    fields = meta.fieldNames();
 
                     assertEquals(7, fields.size());
 
@@ -148,8 +151,6 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoConfiguration() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1377");
-
         portables().toBinary(new TestObject3());
 
         assertNotNull(portables().metadata(TestObject3.class));
@@ -165,7 +166,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertEquals("TestObject1", meta.typeName());
 
-        Collection<String> fields = meta.fields();
+        Collection<String> fields = meta.fieldNames();
 
         assertEquals(7, fields.size());
 
@@ -198,7 +199,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertEquals("TestObject2", meta.typeName());
 
-        Collection<String> fields = meta.fields();
+        Collection<String> fields = meta.fieldNames();
 
         assertEquals(7, fields.size());
 
@@ -235,7 +236,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertEquals("TestObject2", meta.typeName());
 
-        Collection<String> fields = meta.fields();
+        Collection<String> fields = meta.fieldNames();
 
         assertEquals(9, fields.size());
 
@@ -284,7 +285,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertEquals("TestObject1", meta.typeName());
 
-        Collection<String> fields = meta.fields();
+        Collection<String> fields = meta.fieldNames();
 
         assertEquals(7, fields.size());
 

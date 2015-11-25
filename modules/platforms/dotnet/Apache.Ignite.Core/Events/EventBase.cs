@@ -20,10 +20,10 @@ namespace Apache.Ignite.Core.Events
     using System;
     using System.Diagnostics;
     using System.Globalization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Base event implementation.
@@ -55,9 +55,9 @@ namespace Apache.Ignite.Core.Events
         /// Initializes a new instance of the <see cref="EventBase"/> class.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        protected EventBase(IPortableRawReader r)
+        protected EventBase(IBinaryRawReader r)
         {
-            var id = IgniteGuid.ReadPortable(r);
+            var id = IgniteGuid.Read(r);
             Debug.Assert(id.HasValue);
             _id = id.Value;
 
@@ -159,9 +159,9 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Node or null.</returns>
-        protected static IClusterNode ReadNode(IPortableRawReader reader)
+        protected static IClusterNode ReadNode(IBinaryRawReader reader)
         {
-            return ((PortableReaderImpl)reader).Marshaller.Ignite.GetNode(reader.ReadGuid());
+            return ((BinaryReader)reader).Marshaller.Ignite.GetNode(reader.ReadGuid());
         }
     }
 }

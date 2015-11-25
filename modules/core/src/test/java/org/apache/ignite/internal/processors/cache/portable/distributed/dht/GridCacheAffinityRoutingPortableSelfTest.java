@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
 import java.util.Collections;
 import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 
 /**
@@ -34,17 +35,19 @@ public class GridCacheAffinityRoutingPortableSelfTest extends GridCacheAffinityR
 
         BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
 
-        typeCfg.setClassName(AffinityTestKey.class.getName());
+        typeCfg.setTypeName(AffinityTestKey.class.getName());
 
         CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(AffinityTestKey.class.getName(), "affKey");
 
         cfg.setCacheKeyCfg(keyCfg);
 
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        marsh.setTypeConfigurations(Collections.singleton(typeCfg));
+        bCfg.setTypeConfigurations(Collections.singleton(typeCfg));
 
-        cfg.setMarshaller(marsh);
+        cfg.setBinaryConfiguration(bCfg);
+
+        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

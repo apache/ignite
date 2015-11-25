@@ -20,11 +20,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Cluster node implementation.
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// Initializes a new instance of the <see cref="ClusterNodeImpl"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ClusterNodeImpl(IPortableRawReader reader)
+        public ClusterNodeImpl(IBinaryRawReader reader)
         {
             var id = reader.ReadGuid();
 

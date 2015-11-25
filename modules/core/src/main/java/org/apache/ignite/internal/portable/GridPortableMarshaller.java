@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
 import org.apache.ignite.internal.portable.streams.PortableInputStream;
 import org.apache.ignite.internal.portable.streams.PortableOutputStream;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -254,9 +255,7 @@ public class GridPortableMarshaller {
     @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws BinaryObjectException {
         assert bytes != null;
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, bytes, 0, clsLdr);
-
-        return (T)reader.unmarshal();
+        return (T)PortableUtils.unmarshal(PortableHeapInputStream.create(bytes, 0), ctx, clsLdr);
     }
 
     /**
@@ -266,7 +265,7 @@ public class GridPortableMarshaller {
      */
     @SuppressWarnings("unchecked")
     @Nullable public <T> T unmarshal(PortableInputStream in) throws BinaryObjectException {
-        return (T)reader(in).unmarshal();
+        return (T)PortableUtils.unmarshal(in, ctx, null);
     }
 
     /**
@@ -283,9 +282,7 @@ public class GridPortableMarshaller {
         if (arr[0] == NULL)
             return null;
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, arr, 0, ldr);
-
-        return (T)reader.deserialize();
+        return (T)new BinaryReaderExImpl(ctx, PortableHeapInputStream.create(arr, 0), ldr).deserialize();
     }
 
     /**
@@ -295,18 +292,7 @@ public class GridPortableMarshaller {
      * @return Writer.
      */
     public BinaryWriterExImpl writer(PortableOutputStream out) {
-        return new BinaryWriterExImpl(ctx, out);
-    }
-
-    /**
-     * Gets reader for the given input stream.
-     *
-     * @param in Input stream.
-     * @return Reader.
-     */
-    public BinaryReaderExImpl reader(PortableInputStream in) {
-        // TODO: IGNITE-1272 - Is class loader needed here?
-        return new BinaryReaderExImpl(ctx, in, in.position(), null);
+        return new BinaryWriterExImpl(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), null);
     }
 
     /**

@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// returns <c>false</c>, then cache entry event will not be sent to a node where
         /// continuous query has been started.
         /// <para />
-        /// Must be either portable or serializable in case query is not local.
+        /// Must be either binary or serializable in case query is not local.
         /// </summary>
         public ICacheEntryEventFilter<TK, TV> Filter { get; set; }
 

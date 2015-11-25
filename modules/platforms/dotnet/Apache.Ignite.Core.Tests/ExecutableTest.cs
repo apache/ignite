@@ -22,9 +22,9 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Process;
     using Microsoft.CSharp;
@@ -287,16 +287,16 @@ namespace Apache.Ignite.Core.Tests
             var cfg = new IgniteConfiguration();
 
 
-            var portCfg = new PortableConfiguration();
+            var portCfg = new BinaryConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof (RemoteConfiguration)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof (RemoteConfigurationClosure)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof (RemoteConfiguration)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof (RemoteConfigurationClosure)));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
 
             cfg.JvmClasspath = TestUtils.CreateTestClasspath();
 

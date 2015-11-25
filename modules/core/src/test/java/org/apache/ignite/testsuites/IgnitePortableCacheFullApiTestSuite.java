@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
@@ -30,7 +30,7 @@ public class IgnitePortableCacheFullApiTestSuite extends TestSuite {
      * @throws Exception In case of error.
      */
     public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, PortableMarshaller.class.getName());
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
         return IgniteCacheFullApiSelfTestSuite.suite();
     }

@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -63,7 +63,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
 
-        cfg.setMarshaller(new PortableMarshaller());
+        cfg.setMarshaller(new BinaryMarshaller());
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -169,7 +169,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
                 assertNull(meta.affinityKeyFieldName());
 
-                assertEquals(10, meta.fields().size());
+                assertEquals(10, meta.fieldNames().size());
             }
 
             assertEquals(allTypes.size(), names.size());
@@ -255,7 +255,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
                 assertNull(meta.affinityKeyFieldName());
 
-                assertEquals(1, meta.fields().size());
+                assertEquals(1, meta.fieldNames().size());
             }
 
             assertEquals(1000, names.size());

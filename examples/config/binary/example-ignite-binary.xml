@@ -38,7 +38,7 @@
     <bean parent="ignite.cfg">
         <!-- Enables portable marshaller -->
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.portable.PortableMarshaller"/>
+            <bean class="org.apache.ignite.marshaller.portable.BinaryMarshaller"/>
         </property>
     </bean>
 </beans>

@@ -183,6 +183,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     private byte flags;
 
+    /** Partition update counter. */
+    @GridDirectTransient
+    private long partUpdateCntr;
+
     /** */
     private GridCacheVersion serReadVer;
 
@@ -378,6 +382,22 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public void markLocked() {
         locked = true;
+    }
+
+    /**
+     * Sets partition counter.
+     *
+     * @param partCntr Partition counter.
+     */
+    public void updateCounter(long partCntr) {
+        this.partUpdateCntr = partCntr;
+    }
+
+    /**
+     * @return Partition index.
+     */
+    public long updateCounter() {
+        return partUpdateCntr;
     }
 
     /**
@@ -643,19 +663,19 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     @SuppressWarnings("unchecked")
     public CacheObject applyEntryProcessors(CacheObject cacheVal) {
-        Object val = null;
-        Object keyVal = null;
-
         GridCacheVersion ver;
 
         try {
             ver = entry.version();
         }
-        catch (GridCacheEntryRemovedException e) {
+        catch (GridCacheEntryRemovedException ignore) {
             assert tx == null || tx.optimistic() : tx;
 
             ver = null;
         }
+
+        Object val = null;
+        Object keyVal = null;
 
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
             try {
@@ -818,6 +838,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     public void unmarshal(GridCacheSharedContext<?, ?> ctx, boolean near, ClassLoader clsLdr) throws IgniteCheckedException {
         if (this.ctx == null) {
             GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
+
+            assert cacheCtx != null : "Failed to find cache context [cacheId=" + cacheId +
+                ", readyTopVer=" + ctx.exchange().readyAffinityVersion() + ']';
 
             if (cacheCtx.isNear() && !near)
                 cacheCtx = cacheCtx.near().dht().context();
@@ -1122,5 +1145,4 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxEntry.class, this, "xidVer", tx == null ? "null" : tx.xidVersion());
     }
-
 }

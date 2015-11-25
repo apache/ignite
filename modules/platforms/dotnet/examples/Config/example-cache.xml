@@ -28,16 +28,16 @@
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="platformConfiguration">
             <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
-                <property name="portableConfiguration">
-                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
+                <property name="binaryConfiguration">
+                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration">
                         <property name="types">
                             <list>
-                                <value>Apache.Ignite.Examples.Dll.Portable.Account</value>
-                                <value>Apache.Ignite.Examples.Dll.Portable.Address</value>
-                                <value>Apache.Ignite.Examples.Dll.Portable.Employee</value>
-                                <value>Apache.Ignite.Examples.Dll.Portable.EmployeeKey</value>
-                                <value>Apache.Ignite.Examples.Dll.Portable.Organization</value>
-                                <value>Apache.Ignite.Examples.Dll.Portable.OrganizationType</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.Account</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.Address</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.Employee</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.EmployeeKey</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.Organization</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.OrganizationType</value>
                             </list>
                         </property>
                     </bean>

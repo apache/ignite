@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.binary.BinaryObject;
@@ -67,7 +67,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         if (portables) {
-            PortableMarshaller marsh = new PortableMarshaller();
+            BinaryMarshaller marsh = new BinaryMarshaller();
 
             cfg.setMarshaller(marsh);
         }
