@@ -1939,7 +1939,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage)
                     {
-                        U.log(log, "B1>> " + ((GridIoMessage)msg).message());
+                        U.log(log, "B1>> " + ((GridIoMessage)msg).message() + " "+ retry);
                     }
 
                     client.release();
