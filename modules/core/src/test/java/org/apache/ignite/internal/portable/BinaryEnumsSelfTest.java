@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 /**
@@ -131,6 +132,24 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test operations when enum is nested into an object (registered).
+     *
+     * @throws Exception If failed.
+     */
+    public void testNestedRegistered() throws Exception {
+        checkNested(true);
+    }
+
+    /**
+     * Test operations when enum is nested into an object (not registered).
+     *
+     * @throws Exception If failed.
+     */
+    public void testNestedNotRegistered() throws Exception {
+        checkNested(false);
+    }
+
+    /**
      * Test builder operations on simple type which is registered in advance.
      *
      * @throws Exception If failed.
@@ -149,6 +168,24 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test builder operations when enum is nested into an object (registered).
+     *
+     * @throws Exception If failed.
+     */
+    public void testNestedBuilderRegistered() throws Exception {
+        checkNestedBuilder(true);
+    }
+
+    /**
+     * Test builder operations when enum is nested into an object (not registered).
+     *
+     * @throws Exception If failed.
+     */
+    public void testNestedBuilderNotRegistered() throws Exception {
+        checkNestedBuilder(false);
+    }
+
+    /**
      * Check simple serialization - deserialization.
      *
      * @param registered If type should be registered in advance.
@@ -159,7 +196,65 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
 
         cache1.put(1, EnumType.ONE);
 
-        validateSimple();
+        validateSimple(1, EnumType.ONE);
+    }
+
+    /**
+     * Check nested serialization - deserialization.
+     *
+     * @param registered If type should be registered in advance.
+     * @throws Exception If failed.
+     */
+    private void checkNested(boolean registered) throws Exception {
+        startUp(registered);
+
+        cache1.put(1, new EnumHolder(EnumType.ONE));
+
+        validateNested(1, EnumType.ONE);
+    }
+
+    /**
+     * Check nested builder serialization - deserialization.
+     *
+     * @param registered If type should be registered in advance.
+     * @throws Exception If failed.
+     */
+    private void checkNestedBuilder(boolean registered) throws Exception {
+        startUp(registered);
+
+        BinaryObject obj = node1.binary().builder("EnumHolder").setField("val", EnumType.ONE).build();
+
+        cacheBinary1.put(1, obj);
+
+        validateNested(1, EnumType.ONE);
+
+        obj = (BinaryObject)cacheBinary1.get(1);
+        obj = node1.binary().builder(obj).setField("val", EnumType.TWO).build();
+
+        cacheBinary1.put(1, obj);
+
+        validateNested(1, EnumType.TWO);
+    }
+
+    /**
+     * Validate nested object.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @throws Exception If failed.
+     */
+    private void validateNested(int key, EnumType val) throws Exception {
+        EnumHolder res1 = (EnumHolder)cache1.get(key);
+        EnumHolder res2 = (EnumHolder)cache2.get(key);
+
+        assertEquals(val, res1.val);
+        assertEquals(val, res2.val);
+
+        BinaryObject resBinary1 = (BinaryObject)cacheBinary1.get(key);
+        BinaryObject resBinary2 = (BinaryObject)cacheBinary2.get(key);
+
+        validate((BinaryObject)resBinary1.field("val"), val);
+        validate((BinaryObject)resBinary2.field("val"), val);
     }
 
     /**
@@ -175,7 +270,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
 
         cacheBinary1.put(1, binary);
 
-        validateSimple();
+        validateSimple(1, EnumType.ONE);
     }
 
     /**
@@ -267,24 +362,26 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         assertEquals(2, arr1.length);
         assertEquals(2, arr2.length);
 
-        validateValue((BinaryObject)arrBinary1[0], EnumType.ONE);
-        validateValue((BinaryObject)arrBinary1[1], EnumType.TWO);
+        validate((BinaryObject) arrBinary1[0], EnumType.ONE);
+        validate((BinaryObject) arrBinary1[1], EnumType.TWO);
 
-        validateValue((BinaryObject)arrBinary2[0], EnumType.ONE);
-        validateValue((BinaryObject)arrBinary2[1], EnumType.TWO);
+        validate((BinaryObject) arrBinary2[0], EnumType.ONE);
+        validate((BinaryObject) arrBinary2[1], EnumType.TWO);
     }
 
     /**
      * Internal check routine for simple scenario.
      *
+     * @param key Key.
+     * @param val Value.
      * @throws Exception If failed.
      */
-    private void validateSimple() throws Exception {
-        assertEquals(EnumType.ONE, cache1.get(1));
-        assertEquals(EnumType.ONE, cache2.get(1));
+    private void validateSimple(int key, EnumType val) throws Exception {
+        assertEquals(val, cache1.get(key));
+        assertEquals(val, cache2.get(key));
 
-        validateValue((BinaryObject)cacheBinary1.get(1), EnumType.ONE);
-        validateValue((BinaryObject)cacheBinary2.get(1), EnumType.ONE);
+        validate((BinaryObject) cacheBinary1.get(key), val);
+        validate((BinaryObject) cacheBinary2.get(key), val);
     }
 
     /**
@@ -293,7 +390,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      * @param obj Binary value.
      * @param val Expected value.
      */
-    private void validateValue(BinaryObject obj, EnumType val) {
+    private void validate(BinaryObject obj, EnumType val) {
         assertTrue(obj.type().isEnum());
 
         assertEquals(node1.binary().typeId(EnumType.class.getName()), obj.typeId());
@@ -305,13 +402,14 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     /**
      * Enumeration holder.
      */
-    public static class EnumHolder {
+    public static class EnumHolder implements Serializable {
         /** Value. */
         public EnumType val;
 
         /**
          * Default constructor.
          */
+        @SuppressWarnings("UnusedDeclaration")
         public EnumHolder() {
             // No-op.
         }
