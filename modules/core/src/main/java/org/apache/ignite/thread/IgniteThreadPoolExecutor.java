@@ -166,7 +166,7 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
     /**
      * Creates a new service with the given initial parameters.
      *
-     * @param gridName Name of the grid
+     * @param gridName Must be the name of the grid.
      * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
      * @param maxPoolSize The maximum number of threads to allow in the pool.
      * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
@@ -187,6 +187,35 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
             TimeUnit.MILLISECONDS,
             workQ,
             new IgniteThreadFactory(gridName)
+        );
+    }
+
+    /**
+     * Creates a new service with the given initial parameters.
+     *
+     * @param threadNamePrefix Will be added at the beginning of all created threads.
+     * @param gridName Must be the name of the grid.
+     * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
+     * @param maxPoolSize The maximum number of threads to allow in the pool.
+     * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
+     *      that excess idle threads will wait for new tasks before terminating.
+     * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only
+     *      runnable tasks submitted by the {@link #execute(Runnable)} method.
+     */
+    public IgniteThreadPoolExecutor(
+        String threadNamePrefix,
+        String gridName,
+        int corePoolSize,
+        int maxPoolSize,
+        long keepAliveTime,
+        BlockingQueue<Runnable> workQ) {
+        super(
+            corePoolSize,
+            maxPoolSize,
+            keepAliveTime,
+            TimeUnit.MILLISECONDS,
+            workQ,
+            new IgniteThreadFactory(gridName, threadNamePrefix)
         );
     }
 

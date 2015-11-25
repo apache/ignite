@@ -58,7 +58,6 @@ import org.apache.ignite.internal.cluster.ClusterNodeLocalMapImpl;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.service.DummyService;
-import org.apache.ignite.internal.util.GridByNameRelation;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -847,12 +846,15 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         });
 
         // Any deserialization has to be executed under a thread, that contains the grid name.
-        new GridRelatedThread(f).start();
+        new GridRelatedThread(f, gridName).start();
 
         try {
             return f.get();
         }
         catch (Exception e) {
+            if (e.getCause() instanceof IgniteCheckedException) {
+                throw (IgniteCheckedException)e.getCause();
+            }
             fail(e.getCause().getMessage());
         }
 
@@ -949,23 +951,6 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
                 in.readFully(arr);
             else
                 in.read(arr);
-        }
-    }
-
-    /**
-     * We need this class for deserialization, since any deserialization has to be executed under a thread,
-     * that contains the grid name.
-     */
-    private static class GridRelatedThread extends Thread implements GridByNameRelation {
-
-        /** {@inheritDoc} */
-        GridRelatedThread(RunnableFuture f) {
-            super(f);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public String getGridName() {
-            return GridMarshallerAbstractTest.gridName;
         }
     }
 }
