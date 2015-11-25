@@ -1546,17 +1546,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
 
-            String[] mtdNames = new String[] {bld.toString(), prop};
-
             ClassProperty tmp = null;
 
-            for (String mtdName : mtdNames) {
-                try {
-                    tmp = new ClassProperty(cls.getMethod(mtdName), key, alias);
-                }
-                catch (NoSuchMethodException ignore) {
-                    // No-op, will try another method or field.
-                }
+            try {
+                tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias);
+            }
+            catch (NoSuchMethodException ignore) {
+                // No-op.
             }
 
             if (tmp == null) {
@@ -1564,9 +1560,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     tmp = new ClassProperty(cls.getDeclaredField(prop), key, alias);
                 }
                 catch (NoSuchFieldException ignored) {
-                    return null;
+                    // No-op.
                 }
             }
+
+            if (tmp == null) {
+                try {
+                    tmp = new ClassProperty(cls.getMethod(prop), key, alias);
+                }
+                catch (NoSuchMethodException ignored) {
+                    // No-op.
+                }
+            }
+
+            if (tmp == null)
+                return null;
 
             tmp.parent(res);
 

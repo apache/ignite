@@ -125,6 +125,36 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testNullField() throws Exception {
+        BinaryObjectBuilder builder = builder("Class");
+
+        builder.hashCode(42);
+
+        builder.setField("objField", (Object)null);
+
+        builder.setField("otherField", "value");
+
+        BinaryObject obj = builder.build();
+
+        assertNull(obj.field("objField"));
+        assertEquals("value", obj.field("otherField"));
+        assertEquals(42, obj.hashCode());
+
+        builder = builder(obj);
+
+        builder.setField("objField", "value");
+        builder.setField("otherField", (Object)null);
+
+        obj = builder.build();
+
+        assertNull(obj.field("otherField"));
+        assertEquals("value", obj.field("objField"));
+        assertEquals(42, obj.hashCode());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testByteField() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
