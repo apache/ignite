@@ -176,6 +176,10 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         return topVer;
     }
 
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {

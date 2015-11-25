@@ -62,9 +62,9 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -1905,7 +1905,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *      Note that this is not guaranteed that failed communication will result
      *      in thrown exception as this is dependant on SPI implementation.
      */
-    private void sendMessage0(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
+    private void sendMessage0(ClusterNode node, final Message msg, final IgniteInClosure<IgniteException> ackC)
         throws IgniteSpiException {
         assert node != null;
         assert msg != null;
@@ -1940,6 +1940,26 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage)
                     {
                         U.log(log, "B1>> " + ((GridIoMessage)msg).message() + " "+ retry);
+
+                        final GridCommunicationClient client0 = client;
+                        final UUID nodeId0 = nodeId;
+
+                        new Thread(new Runnable() {
+                            @Override public void run() {
+                                try {
+                                    U.sleep(2000);
+
+                                    ((GridDhtPartitionDemandMessage)((GridIoMessage)msg).message()).topologyVersion(AffinityTopologyVersion.NONE);
+
+                                    U.log(log, "B2>> " + ((GridIoMessage)msg).message());
+
+                                    client0.sendMessage(nodeId0, msg, ackC);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, e);
+                                }
+                            }
+                        }).start();
                     }
 
                     client.release();
