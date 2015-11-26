@@ -16,10 +16,8 @@
  */
 
 // Controller for SQL notebook screen.
-consoleModule.controller('sqlController',
-    ['$scope', '$window','$controller', '$http', '$timeout', '$common', '$confirm', '$interval', '$message', '$popover',
-        '$loading', '$state', '$location', '$anchorScroll', function ($scope, $window, $controller, $http, $timeout,
-        $common, $confirm, $interval, $message, $popover, $loading, $location, $anchorScroll, $state) {
+consoleModule.controller('sqlController', function ($scope, $window, $controller, $http, $timeout, $common, $confirm,
+    $interval, $message, $popover, $loading, $location, $anchorScroll, $state) {
     // Initialize the super class and extend it.
     angular.extend(this, $controller('agent-download', {$scope: $scope}));
 
@@ -1487,4 +1485,4 @@ consoleModule.controller('sqlController',
             $message.message(title, [queryMsg]);
         }
     }
-}]);
+});
