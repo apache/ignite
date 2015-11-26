@@ -36,6 +36,7 @@ import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStorePortableMarshallerSe
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreMultithreadedSelfTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheFutureExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheNamesSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityApiSelfTest;
@@ -262,6 +263,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedOffHeapLocalStoreSelfTest.class);
         suite.addTestSuite(GridCacheTxPartitionedLocalStoreSelfTest.class);
         suite.addTestSuite(IgniteCacheSystemTransactionsSelfTest.class);
+        suite.addTestSuite(CacheDeferredDeleteSanitySelfTest.class);
 
         suite.addTest(IgniteCacheTcpClientDiscoveryTestSuite.suite());
 
