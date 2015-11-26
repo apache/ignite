@@ -18,25 +18,16 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCachePutRetryAtomicPrimaryWriteOrderSelfTest;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Test suite.
+ *
  */
-public class IgniteCacheFailoverTestSuite3 extends TestSuite {
-    /**
-     * @return Ignite Cache Failover test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
+public class IgniteBinaryObjectsCacheTestSuite3 {
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Cache Failover Test Suite3");
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
-        suite.addTestSuite(IgniteCachePutRetryAtomicPrimaryWriteOrderSelfTest.class);
-        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
-
-        return suite;
+        return IgniteCacheTestSuite3.suite();
     }
 }

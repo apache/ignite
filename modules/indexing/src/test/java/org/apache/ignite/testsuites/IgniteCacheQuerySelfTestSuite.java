@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReduceQueryMultithre
 import org.apache.ignite.internal.processors.cache.IgniteCacheCollocatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFieldsQueryNoDataSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLargeResultSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheNoClassQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapEvictQueryTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapTieredMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingQueryErrorTest;
@@ -204,6 +205,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         //Unmarshallig query test.
         suite.addTestSuite(IgniteCacheP2pUnmarshallingQueryErrorTest.class);
+        suite.addTestSuite(IgniteCacheNoClassQuerySelfTest.class);
 
         return suite;
     }

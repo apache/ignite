@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.portable;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
@@ -68,6 +69,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_AR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_HASH_MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_LINKED_QUEUE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_SKIP_LIST_SET;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
@@ -1689,6 +1691,11 @@ public class PortableUtils {
 
                 case CONC_SKIP_LIST_SET:
                     col = new ConcurrentSkipListSet<>();
+
+                    break;
+
+                case CONC_LINKED_QUEUE:
+                    col = new ConcurrentLinkedQueue<>();
 
                     break;
 

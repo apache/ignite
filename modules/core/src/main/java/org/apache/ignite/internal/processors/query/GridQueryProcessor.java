@@ -222,6 +222,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             desc.keyClass(Object.class);
                     }
                     else {
+                        if (keyCls == null)
+                            throw new IgniteCheckedException("Failed to find key class in the node classpath " +
+                                "(use default marshaller to enable binary objects): " + qryEntity.getKeyType());
+
+                        if (valCls == null)
+                            throw new IgniteCheckedException("Failed to find value class in the node classpath " +
+                                "(use default marshaller to enable binary objects) : " + qryEntity.getValueType());
+
                         desc.valueClass(valCls);
                         desc.keyClass(keyCls);
                     }
