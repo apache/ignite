@@ -933,6 +933,8 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
 
                         res.needEmptyLine = true;
 
+                        $generatorJava.property(res, 'jdbcType', cache, 'name', undefined, 'setCacheName');
+
                         $generatorJava.metadataStore(meta, true, res);
 
                         res.needEmptyLine = true;
