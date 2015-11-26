@@ -45,6 +45,7 @@ import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -208,7 +209,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default value for keep binary in store behavior .*/
     @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
-    public static final Boolean DFLT_KEEP_BINARY_IN_STORE = new Boolean(true);
+    public static final Boolean DFLT_KEEP_BINARY_IN_STORE = new Boolean(false);
 
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
@@ -891,8 +892,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Flag indicating that {@link CacheStore} implementation
      * is working with binary objects instead of Java objects.
-     * Default value of this flag is {@link #DFLT_KEEP_BINARY_IN_STORE},
-     * because this is recommended behavior from performance standpoint.
+     * Default value of this flag is {@link #DFLT_KEEP_BINARY_IN_STORE}.
      * <p>
      * If set to {@code false}, Ignite will deserialize keys and
      * values stored in binary format before they are passed

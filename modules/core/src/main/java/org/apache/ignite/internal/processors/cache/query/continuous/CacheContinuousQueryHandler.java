@@ -81,7 +81,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 /**
  * Continuous query handler.
  */
-class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
+public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -128,7 +128,10 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private transient Collection<CacheContinuousQueryEntry> backupQueue;
 
     /** */
-    private boolean localCache;
+    private boolean locCache;
+
+    /** */
+    private transient boolean keepBinary;
 
     /** */
     private transient ConcurrentMap<Integer, PartitionRecovery> rcvs;
@@ -180,7 +183,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         boolean ignoreExpired,
         int taskHash,
         boolean skipPrimaryCheck,
-        boolean locCache) {
+        boolean locCache,
+        boolean keepBinary) {
         assert topic != null;
         assert locLsnr != null;
 
@@ -195,7 +199,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         this.ignoreExpired = ignoreExpired;
         this.taskHash = taskHash;
         this.skipPrimaryCheck = skipPrimaryCheck;
-        this.localCache = locCache;
+        this.locCache = locCache;
+        this.keepBinary = keepBinary;
 
         cacheId = CU.cacheId(cacheName);
     }
@@ -213,6 +218,18 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** {@inheritDoc} */
     @Override public boolean isQuery() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean keepBinary() {
+        return keepBinary;
+    }
+
+    /**
+     * @param keepBinary Keep binary flag.
+     */
+    public void keepBinary(boolean keepBinary) {
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc} */
@@ -284,6 +301,11 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 }
             }
 
+            /** {@inheritDoc} */
+            @Override public boolean keepBinary() {
+                return keepBinary;
+            }
+
             @Override public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt, boolean primary,
                 boolean recordIgniteEvt) {
                 if (ignoreExpired && evt.getEventType() == EventType.EXPIRED)
@@ -317,7 +339,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                     if (primary || skipPrimaryCheck) {
                         if (loc) {
-                            if (!localCache) {
+                            if (!locCache) {
                                 Collection<CacheContinuousQueryEntry> entries = handleEvent(ctx, entry);
 
                                 if (!entries.isEmpty()) {

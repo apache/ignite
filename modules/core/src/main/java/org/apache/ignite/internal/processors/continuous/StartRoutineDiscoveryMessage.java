@@ -40,14 +40,18 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     private Map<Integer, Long> updateCntrs;
 
+    /** Keep binary flag. */
+    private boolean keepBinary;
+
     /**
      * @param routineId Routine id.
      * @param startReqData Start request data.
      */
-    public StartRoutineDiscoveryMessage(UUID routineId, StartRequestData startReqData) {
+    public StartRoutineDiscoveryMessage(UUID routineId, StartRequestData startReqData, boolean keepBinary) {
         super(routineId);
 
         this.startReqData = startReqData;
+        this.keepBinary = keepBinary;
     }
 
     /**
@@ -86,6 +90,13 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
      */
     public Map<UUID, IgniteCheckedException> errs() {
         return errs;
+    }
+
+    /**
+     * @return {@code True} if keep binary flag was set on continuous handler.
+     */
+    public boolean keepBinary() {
+        return keepBinary;
     }
 
     /** {@inheritDoc} */

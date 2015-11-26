@@ -1049,6 +1049,6 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAtomicUpdateRequest.class, this);
+        return S.toString(GridDhtAtomicUpdateRequest.class, this, "super", super.toString());
     }
 }

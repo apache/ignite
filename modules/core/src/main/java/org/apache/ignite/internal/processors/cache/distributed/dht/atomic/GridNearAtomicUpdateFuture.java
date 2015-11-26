@@ -324,7 +324,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         GridCacheReturn ret = (GridCacheReturn)res;
 
         Object retval =
-            res == null ? null : rawRetval ? ret : (this.retval || op == TRANSFORM) ? ret.value() : ret.success();
+            res == null ? null : rawRetval ? ret : (this.retval || op == TRANSFORM) ?
+                cctx.unwrapPortableIfNeeded(ret.value(), keepBinary) : ret.success();
 
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();

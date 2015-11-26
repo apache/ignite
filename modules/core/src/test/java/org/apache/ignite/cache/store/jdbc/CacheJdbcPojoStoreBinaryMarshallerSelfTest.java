@@ -18,12 +18,12 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 
 /**
  * Class for {@code PojoCacheStore} tests.
  */
-public class CacheJdbcPojoStorePortableMarshallerSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
+public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller(){
         return new BinaryMarshaller();

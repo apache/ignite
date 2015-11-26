@@ -17,6 +17,8 @@
 
 package org.apache.ignite.examples.binary;
 
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+
 /**
  * This class represents key for employee object.
  * <p>
@@ -28,6 +30,7 @@ public class EmployeeKey {
     private int id;
 
     /** Organization ID. */
+    @AffinityKeyMapped
     private int organizationId;
 
     /**

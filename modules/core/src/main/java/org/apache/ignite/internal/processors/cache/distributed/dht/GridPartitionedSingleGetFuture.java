@@ -323,7 +323,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             GridDhtCacheAdapter colocated = cctx.dht();
 
             while (true) {
-                GridCacheEntryEx entry;
+                GridCacheEntryEx entry = null;
 
                 try {
                     entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
@@ -401,6 +401,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     return null;
                 }
                 catch (GridCacheEntryRemovedException ignored) {
+                    U.debug(log, ">>>>>>>>> " + entry);
                     // No-op, will retry.
                 }
             }

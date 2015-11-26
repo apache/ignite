@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
-
 /**
  * Compact offsets tests for heap portable objects.
  */

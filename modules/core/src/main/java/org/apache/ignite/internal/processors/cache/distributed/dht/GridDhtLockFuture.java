@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -481,7 +482,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     private void onFailed(boolean dist) {
         undoLocks(dist);
 
-        onComplete(false);
+        onComplete(false, false);
     }
 
     /**
@@ -627,7 +628,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             err = t;
         }
 
-        onComplete(false);
+        onComplete(false, false);
     }
 
     /**
@@ -690,7 +691,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     /** {@inheritDoc} */
     @Override public boolean cancel() {
         if (onCancelled())
-            onComplete(false);
+            onComplete(false, false);
 
         return isCancelled();
     }
@@ -720,7 +721,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                 this.err = err;
         }
 
-        return onComplete(success);
+        return onComplete(success, err instanceof NodeStoppingException);
     }
 
     /**
@@ -729,17 +730,17 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * @param success {@code True} if lock was acquired.
      * @return {@code True} if complete by this operation.
      */
-    private boolean onComplete(boolean success) {
+    private boolean onComplete(boolean success, boolean stopping) {
         if (log.isDebugEnabled())
             log.debug("Received onComplete(..) callback [success=" + success + ", fut=" + this + ']');
 
-        if (!success)
+        if (!success && !stopping)
             undoLocks(true);
 
         if (tx != null)
             cctx.tm().txContext(tx);
 
-        if (err == null)
+        if (err == null && !stopping)
             loadMissingFromStore();
 
         if (super.onDone(success, err)) {
@@ -771,7 +772,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      */
     public void map() {
         if (F.isEmpty(entries)) {
-            onComplete(true);
+            onComplete(true, false);
 
             return;
         }
@@ -1062,7 +1063,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
             timedOut = true;
 
-            onComplete(false);
+            onComplete(false, false);
         }
 
         /** {@inheritDoc} */

@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.binary.BinaryType;

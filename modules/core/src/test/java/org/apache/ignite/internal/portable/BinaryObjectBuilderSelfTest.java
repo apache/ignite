@@ -44,7 +44,6 @@ import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.T
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import sun.misc.Unsafe;
@@ -122,6 +121,36 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         TestObjectAllTypes deserialized = builder(toPortable(obj)).build().deserialize();
 
         GridTestUtils.deepEquals(obj, deserialized);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNullField() throws Exception {
+        BinaryObjectBuilder builder = builder("Class");
+
+        builder.hashCode(42);
+
+        builder.setField("objField", (Object)null);
+
+        builder.setField("otherField", "value");
+
+        BinaryObject obj = builder.build();
+
+        assertNull(obj.field("objField"));
+        assertEquals("value", obj.field("otherField"));
+        assertEquals(42, obj.hashCode());
+
+        builder = builder(obj);
+
+        builder.setField("objField", "value");
+        builder.setField("otherField", (Object)null);
+
+        obj = builder.build();
+
+        assertNull(obj.field("otherField"));
+        assertEquals("value", obj.field("objField"));
+        assertEquals(42, obj.hashCode());
     }
 
     /**

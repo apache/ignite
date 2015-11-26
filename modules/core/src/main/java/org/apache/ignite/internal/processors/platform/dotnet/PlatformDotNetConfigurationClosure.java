@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
 
 import java.util.ArrayList;

@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
