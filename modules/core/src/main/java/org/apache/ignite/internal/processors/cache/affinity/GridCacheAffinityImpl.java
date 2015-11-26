@@ -200,17 +200,18 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
         for (K key : keys) {
             ClusterNode primary = cctx.affinity().primary(key, topVer);
 
-            if (primary != null) {
-                Collection<K> mapped = res.get(primary);
+            if (primary == null)
+                throw new IgniteException("Failed to get primare node [topVer=" + topVer + ", key=" + key + ']');
 
-                if (mapped == null) {
-                    mapped = new ArrayList<>(Math.max(keys.size() / nodesCnt, 16));
+            Collection<K> mapped = res.get(primary);
 
-                    res.put(primary, mapped);
-                }
+            if (mapped == null) {
+                mapped = new ArrayList<>(Math.max(keys.size() / nodesCnt, 16));
 
-                mapped.add(key);
+                res.put(primary, mapped);
             }
+
+            mapped.add(key);
         }
 
         return res;
