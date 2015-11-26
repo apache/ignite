@@ -19,16 +19,11 @@ package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
 import java.util.List;
-import javax.cache.CacheException;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.h2.value.Value;
 
 /**
  * SQL Row message.
@@ -52,23 +47,7 @@ public class GridH2RowMessage implements Message {
         this.vals = vals;
     }
 
-    /**
-     * @param ctx Kernal context.
-     * @return Row.
-     */
-    public GridH2Row row(GridKernalContext ctx) {
-        Value[] v = new Value[vals.size()];
-
-        try {
-            GridH2ValueMessageFactory.fillArray(vals.iterator(), v, ctx);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e);
-        }
-
-        return new GridH2Row(v);
-    }
-
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -91,6 +70,7 @@ public class GridH2RowMessage implements Message {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -111,10 +91,12 @@ public class GridH2RowMessage implements Message {
         return reader.afterMessageRead(GridH2RowMessage.class);
     }
 
+    /** {@inheritDoc} */
     @Override public byte directType() {
         return -25;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
     }

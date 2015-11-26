@@ -79,6 +79,7 @@ import static java.util.Collections.emptyIterator;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds.rangeBounds;
+import static org.h2.result.Row.MEMORY_CALCULATE;
 
 /**
  * Base class for snapshotable tree indexes.
@@ -937,7 +938,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             }
         }
 
-        return new GridH2Row(vals);
+        return database.createRow(vals, MEMORY_CALCULATE);
     }
 
     /**
@@ -992,7 +993,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             }
         }
 
-        return new GridH2Row(vals0);
+        return database.createRow(vals0, MEMORY_CALCULATE);
     }
 
     /**
