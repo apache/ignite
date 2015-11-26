@@ -62,11 +62,13 @@ import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.internal.portable.BinaryMarshaller;
@@ -388,6 +390,15 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 pArr[i] = marshalToPortable(arr[i]);
 
             return pArr;
+        }
+
+        if (obj instanceof IgniteBiTuple) {
+            IgniteBiTuple tup = (IgniteBiTuple)obj;
+
+            if (obj instanceof T2)
+                return new T2<>(marshalToPortable(tup.get1()), marshalToPortable(tup.get2()));
+
+            return new IgniteBiTuple<>(marshalToPortable(tup.get1()), marshalToPortable(tup.get2()));
         }
 
         if (obj instanceof Collection) {
