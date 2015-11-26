@@ -55,6 +55,12 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     protected long expirationTime;
 
+    /** */
+    private Value key;
+
+    /** */
+    private volatile Value val;
+
     /**
      * Constructor.
      *
@@ -68,8 +74,6 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      */
     protected GridH2AbstractKeyValueRow(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val,
         int valType, long expirationTime) throws IgniteCheckedException {
-        super(null, null);
-
         setValue(KEY_COL, desc.wrap(key, keyType));
 
         if (val != null) // We remove by key only, so value can be null here.
@@ -90,8 +94,6 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @param desc Row descriptor.
      */
     protected GridH2AbstractKeyValueRow(GridH2RowDescriptor desc) {
-        super(new Value[DEFAULT_COLUMNS_COUNT]);
-
         this.desc = desc;
     }
 
@@ -189,7 +191,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @return Value if exists.
      */
     protected final Value peekValue(int col) {
-        return getValueList()[col];
+        return col == KEY_COL ? key : val;
     }
 
     /** {@inheritDoc} */
@@ -472,6 +474,17 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             throw new IllegalStateException();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setValue(int idx, Value v) {
+        if (idx == VAL_COL)
+            val = v;
+        else {
+            assert idx == KEY_COL : idx + " " + v;
+
+            key = v;
         }
     }
 }
