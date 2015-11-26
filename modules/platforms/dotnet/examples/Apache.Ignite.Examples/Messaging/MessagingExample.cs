@@ -106,9 +106,6 @@ namespace Apache.Ignite.Examples.Messaging
                     orderedCounter.Wait();
 
                     // Unsubscribe
-                    remoteMessaging.StopLocalListen(unorderedListener, Topic.Unordered);
-                    remoteMessaging.StopLocalListen(orderedListener, Topic.Ordered);
-
                     remoteMessaging.StopRemoteListen(idUnordered);
                     remoteMessaging.StopRemoteListen(idOrdered);
                 }
