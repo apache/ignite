@@ -886,7 +886,9 @@ public class GridNioServer<T> {
                 return;
             }
 
-           // if (gridName().endsWith("0"))
+            if (gridName().endsWith("0") && (cnt == 170 )) {
+                U.log(log, ">>>>>> cnt ==" + cnt);
+            }
 
 
             if (log.isTraceEnabled())
