@@ -886,6 +886,9 @@ public class GridNioServer<T> {
                 return;
             }
 
+           // if (gridName().endsWith("0"))
+
+
             if (log.isTraceEnabled())
                 log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 

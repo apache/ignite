@@ -126,7 +126,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
 
             ses.addMeta(ACK_CLOSURE.ordinal(), new IgniteInClosure<IgniteException>(){
                 @Override public void apply(IgniteException e) {
-                    U.log(log, "R1>> " + ((GridIoMessage)msg).message() +  e.toString());
+                    U.log(log, "R1>> " + ((GridIoMessage)msg).message() +  (e != null ? e.toString(): null));
                 }
             });
         }
