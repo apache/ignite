@@ -54,7 +54,7 @@ angular
                         $rootScope.$broadcast('user', user);
                     })
                     .catch(function (errMsg) {
-                        $common.showPopoverMessage(undefined, undefined, 'user_email', errMsg);
+                        $common.showPopoverMessage(undefined, undefined, 'user_email', errMsg.data);
                     });
             },
 			logout() {
