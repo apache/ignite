@@ -3,10 +3,10 @@ Apache Ignite Release Notes
 
 Apache Ignite In-Memory Data Fabric 1.5
 ---------------------------------------
+* Ignite.NET: Initial Release.
+* Ignite C++: Initial Release.
 * Massive performance improvements for cache operations and SQL.
 * Added new binary cache object marshalling implementation.
-* Added Ignite.NET In-Memory Data Fabric.
-* Added Ignite.C++ In-Memory Data Fabric.
 * Added IgniteSemaphore data structure.
 * Added MQTT Streamer.
 * Fixed failover for continuous queries.
