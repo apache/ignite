@@ -1663,6 +1663,7 @@ button.dropdown-toggle {
 }
 
 button.select-toggle {
+    position: relative;
     padding-right: 15px;
 }
 
@@ -1675,14 +1676,6 @@ button.select-toggle::after {
     position: absolute;
     right: 5px;
     top: 50%;
-}
-
-button.btn.select-toggle::after {
-    right: 15px;
-}
-
-.input-tip > button.select-toggle::after {
-    right: 20px;
 }
 
 // Prevent scroll bars from being hidden for OS X.
