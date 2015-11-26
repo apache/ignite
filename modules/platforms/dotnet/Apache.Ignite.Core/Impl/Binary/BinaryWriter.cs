@@ -811,7 +811,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (desc != null)
                 {
-                    // TODO: Simplify
                     var metaHnd = _marsh.GetBinaryTypeHandler(desc);
 
                     _stream.WriteByte(BinaryUtils.TypeEnum);
@@ -1384,9 +1383,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets collected metadatas.
         /// </summary>
         /// <returns>Collected metadatas (if any).</returns>
-        internal IDictionary<int, BinaryType> GetBinaryTypes()
+        internal ICollection<BinaryType> GetBinaryTypes()
         {
-            return _metas;
+            return _metas == null ? null : _metas.Values;
         }
 
         /// <summary>

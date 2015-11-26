@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// </summary>
         /// <param name="desc">Descriptor.</param>
         /// <param name="fields">Fields.</param>
-        public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields) 
+        public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields = null) 
             : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum)
         {
             // No-op.

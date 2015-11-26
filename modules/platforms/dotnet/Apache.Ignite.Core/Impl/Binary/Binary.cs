@@ -156,15 +156,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             IgniteArgumentCheck.Ensure(desc.IsEnum, "typeName", "Type should be an Enum.");
 
-            var ignite = Marshaller.Ignite;
-
-            if (ignite != null)
-            {
-                ignite.PutBinaryTypes(new Dictionary<int, BinaryType>
-                {
-                    {desc.TypeId, new BinaryType(desc, null)}
-                });
-            }
+            _marsh.PutBinaryType(desc);
 
             return new BinaryEnum(GetTypeId(typeName), value, Marshaller);
         }

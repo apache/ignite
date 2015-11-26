@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -150,12 +151,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Dictionary with metadata.</returns>
         public void FinishMarshal(BinaryWriter writer)
         {
-            var meta = writer.GetBinaryTypes();
+            var metas = writer.GetBinaryTypes();
 
             var ignite = Ignite;
 
-            if (ignite != null && meta != null && meta.Count > 0)
-                ignite.PutBinaryTypes(meta);
+            if (ignite != null && metas != null && metas.Count > 0)
+                ignite.PutBinaryTypes(metas);
         }
 
         /// <summary>
@@ -269,6 +270,21 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Puts the binary type metadata to Ignite.
+        /// </summary>
+        /// <param name="desc">Descriptor.</param>
+        /// <param name="fields">Fields.</param>
+        public void PutBinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields = null)
+        {
+            Debug.Assert(desc != null);
+
+            GetBinaryTypeHandler(desc);  // ensure that handler exists
+
+            if (Ignite != null)
+                Ignite.PutBinaryTypes(new[] {new BinaryType(desc, fields)});
+        }
+
+        /// <summary>
         /// Gets binary type handler for the given type ID.
         /// </summary>
         /// <param name="desc">Type descriptor.</param>
@@ -311,22 +327,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Callback invoked when metadata has been sent to the server and acknowledged by it.
         /// </summary>
         /// <param name="newMetas">Binary types.</param>
-        public void OnBinaryTypesSent(IDictionary<int, BinaryType> newMetas)
+        public void OnBinaryTypesSent(IEnumerable<BinaryType> newMetas)
         {
-            foreach (var metaEntry in newMetas)
+            foreach (var meta in newMetas)
             {
-                BinaryType meta = metaEntry.Value;
-
                 var mergeInfo = new Dictionary<int, Tuple<string, int>>(meta.GetFieldsMap().Count);
 
                 foreach (KeyValuePair<string, int> fieldMeta in meta.GetFieldsMap())
                 {
-                    int fieldId = BinaryUtils.FieldId(metaEntry.Key, fieldMeta.Key, null, null);
+                    int fieldId = BinaryUtils.FieldId(meta.TypeId, fieldMeta.Key, null, null);
 
                     mergeInfo[fieldId] = new Tuple<string, int>(fieldMeta.Key, fieldMeta.Value);
                 }
 
-                _metas[metaEntry.Key].Merge(mergeInfo);
+                _metas[meta.TypeId].Merge(mergeInfo);
             }
         }
         
