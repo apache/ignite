@@ -33,7 +33,7 @@ public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstract
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setSslContextFactory(GridTestUtils.sslFactory());
+        //cfg.setSslContextFactory(GridTestUtils.sslFactory());
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSocketWriteTimeout(Integer.MAX_VALUE);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectTimeout(Integer.MAX_VALUE);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setMaxConnectTimeout(Integer.MAX_VALUE);
