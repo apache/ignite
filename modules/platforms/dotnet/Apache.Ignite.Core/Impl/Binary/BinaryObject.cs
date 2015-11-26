@@ -106,12 +106,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public bool IsEnum
-        {
-            get { return false; }
-        }
-
-        /** <inheritdoc /> */
         public int EnumValue
         {
             get

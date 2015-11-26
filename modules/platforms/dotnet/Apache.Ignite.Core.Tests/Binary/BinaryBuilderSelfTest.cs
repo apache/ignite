@@ -906,7 +906,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var binEnum = bin.ToBinary<IBinaryObject>(TestEnumRegistered.One);
 
-            Assert.IsTrue(binEnum.IsEnum);
             Assert.AreEqual(_marsh.GetDescriptor(typeof (TestEnumRegistered)).TypeId, binEnum.TypeId);
             Assert.AreEqual(0, binEnum.EnumValue);
 
@@ -1417,7 +1416,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             foreach (var binEnum in binEnums)
             {
-                Assert.IsTrue(binEnum.IsEnum);
+                Assert.IsTrue(binEnum.GetBinaryType().IsEnum);
                 Assert.AreEqual(val, binEnum.EnumValue);
                 Assert.AreEqual((TestEnumRegistered)val, binEnum.Deserialize<TestEnumRegistered>());
             }
