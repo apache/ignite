@@ -56,6 +56,7 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
@@ -86,11 +87,14 @@ public class GridH2Table extends TableBase {
     /** */
     private final AtomicReference<Object[]> actualSnapshot = new AtomicReference<>();
 
-    /** In case when all the indexes do not support snapshots. */
-    private volatile boolean noSnapshots;
-
     /** */
     private IndexColumn affKeyCol;
+
+    /** */
+    private final LongAdder8 size = new LongAdder8();
+
+    /** */
+    private final boolean snapshotEnabled;
 
     /**
      * Creates table.
@@ -105,8 +109,6 @@ public class GridH2Table extends TableBase {
         super(createTblData);
 
         assert idxsFactory != null;
-
-        lock = new ReentrantReadWriteLock();
 
         this.desc = desc;
         this.spaceName = spaceName;
@@ -130,6 +132,10 @@ public class GridH2Table extends TableBase {
 
         // Add scan index at 0 which is required by H2.
         idxs.add(0, new ScanIndex(index(0)));
+
+        snapshotEnabled = desc == null || desc.snapshotableIndex();
+
+        lock = snapshotEnabled ? new ReentrantReadWriteLock() : null;
     }
 
     /**
@@ -246,7 +252,7 @@ public class GridH2Table extends TableBase {
             ses.addLock(this);
         }
 
-        if (snapshotInLock())
+        if (snapshotEnabled && snapshotInLock())
             snapshotIndexes(null);
 
         return false;
@@ -411,7 +417,7 @@ public class GridH2Table extends TableBase {
                 index(i).destroy();
         }
         finally {
-            l.unlock();
+            writeUnlock();
         }
     }
 
@@ -501,6 +507,8 @@ public class GridH2Table extends TableBase {
 
                     kvOld.onUnswap(kvOld.getValue(VAL_COL), true);
                 }
+                else if (old == null)
+                    size.increment();
 
                 int len = idxs.size();
 
@@ -536,6 +544,8 @@ public class GridH2Table extends TableBase {
                 }
 
                 if (old != null) {
+                    size.decrement();
+
                     // Remove row from all indexes.
                     // Start from 2 because 0 - Scan (don't need to update), 1 - PK (already updated).
                     for (int i = 2, len = idxs.size(); i < len; i++) {
@@ -549,8 +559,7 @@ public class GridH2Table extends TableBase {
             }
 
             // The snapshot is not actual after update.
-            if (!noSnapshots)
-                actualSnapshot.set(null);
+            actualSnapshot.set(null);
 
             return true;
         }
@@ -592,6 +601,9 @@ public class GridH2Table extends TableBase {
      * Rebuilds all indexes of this table.
      */
     public void rebuildIndexes() {
+        if (!snapshotEnabled)
+            return;
+
         Lock l = lock(true, Long.MAX_VALUE);
 
         try {
@@ -699,7 +711,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        return getUniqueIndex().getRowCountApproximation();
+        return size.longValue();
     }
 
     /** {@inheritDoc} */
@@ -722,6 +734,38 @@ public class GridH2Table extends TableBase {
         res.sortType = sorting;
 
         return res;
+    }
+
+    /**
+     *
+     */
+    private void readLock() {
+        if (snapshotEnabled)
+            lock.readLock().lock();
+    }
+
+    /**
+     *
+     */
+    private void readUnlock() {
+        if (snapshotEnabled)
+            lock.readLock().unlock();
+    }
+
+    /**
+     *
+     */
+    private void writeLock() {
+        if (snapshotEnabled)
+            lock.writeLock().lock();
+    }
+
+    /**
+     *
+     */
+    private void writeUnlock() {
+        if (snapshotEnabled)
+            lock.writeLock().unlock();
     }
 
     /**

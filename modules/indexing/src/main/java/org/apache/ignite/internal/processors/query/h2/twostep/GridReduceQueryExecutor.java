@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -61,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
@@ -76,10 +78,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -96,7 +96,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
 
 /**
  * Reduce query executor.
@@ -106,7 +105,7 @@ public class GridReduceQueryExecutor {
     public static final byte QUERY_POOL = GridIoPolicy.SYSTEM_POOL;
 
     /** */
-    private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.5.0");
+    private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.6.0");
 
     /** */
     private GridKernalContext ctx;
@@ -197,8 +196,8 @@ public class GridReduceQueryExecutor {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 for (QueryRun r : runs.values()) {
-                    for (GridMergeTable tbl : r.tbls) {
-                        if (tbl.getScanIndex(null).hasSource(nodeId)) {
+                    for (GridMergeIndex idx : r.idxs) {
+                        if (idx.hasSource(nodeId)) {
                             handleNodeLeft(r, nodeId);
 
                             break;
@@ -283,7 +282,7 @@ public class GridReduceQueryExecutor {
 
         final int pageSize = r.pageSize;
 
-        GridMergeIndex idx = r.tbls.get(msg.query()).getScanIndex(null);
+        GridMergeIndex idx = r.idxs.get(msg.query());
 
         GridResultPage page;
 
@@ -509,7 +508,7 @@ public class GridReduceQueryExecutor {
 
             r.pageSize = qry.pageSize() <= 0 ? GridCacheTwoStepQuery.DFLT_PAGE_SIZE : qry.pageSize();
 
-            r.tbls = new ArrayList<>(qry.mapQueries().size());
+            r.idxs = new ArrayList<>(qry.mapQueries().size());
 
             String space = cctx.name();
 
@@ -542,7 +541,7 @@ public class GridReduceQueryExecutor {
             assert !nodes.isEmpty();
 
             if (cctx.isReplicated() || qry.explain()) {
-                assert qry.explain() || !nodes.contains(ctx.cluster().get().localNode()) :
+                assert qry.explain() || !nodes.contains(ctx.discovery().localNode()) :
                     "We must be on a client node.";
 
                 // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
@@ -551,27 +550,35 @@ public class GridReduceQueryExecutor {
 
             int tblIdx = 0;
 
+            final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
+
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
-                GridMergeTable tbl;
+                GridMergeIndex idx;
 
-                try {
-                    tbl = createMergeTable(r.conn, mapQry, qry.explain());
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
+                if (!skipMergeTbl) {
+                    GridMergeTable tbl;
 
-                GridMergeIndex idx = tbl.getScanIndex(null);
+                    try {
+                        tbl = createMergeTable(r.conn, mapQry, qry.explain());
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+
+                    idx = tbl.getScanIndex(null);
+
+                    fakeTable(r.conn, tblIdx++).innerTable(tbl);
+                }
+                else
+                    idx = GridMergeIndexUnsorted.createDummy();
 
                 for (ClusterNode node : nodes)
                     idx.addSource(node.id());
 
-                r.tbls.add(tbl);
-
-                fakeTable(r.conn, tblIdx++).innerTable(tbl);
+                r.idxs.add(idx);
             }
 
-            r.latch = new CountDownLatch(r.tbls.size() * nodes.size());
+            r.latch = new CountDownLatch(r.idxs.size() * nodes.size());
 
             runs.put(qryReqId, r);
 
@@ -635,7 +642,7 @@ public class GridReduceQueryExecutor {
                 else // Send failed.
                     retry = true;
 
-                ResultSet res = null;
+                Iterator<List<?>> resIter = null;
 
                 if (!retry) {
                     UUID locNodeId = ctx.localNodeId();
@@ -651,7 +658,13 @@ public class GridReduceQueryExecutor {
 
                         GridCacheSqlQuery rdc = qry.reduceQuery();
 
-                        res = h2.executeSqlQueryWithTimer(space, r.conn, rdc.query(), F.asList(rdc.parameters()));
+                        ResultSet res = h2.executeSqlQueryWithTimer(space, 
+                            r.conn, 
+                            rdc.query(), 
+                            F.asList(rdc.parameters()), 
+                            false);
+                        
+                        resIter = new Iter(res);
                     }
                     finally {
                         h2.enforceJoinOrder(false);
@@ -669,7 +682,7 @@ public class GridReduceQueryExecutor {
 
                 final Collection<ClusterNode> finalNodes = nodes;
 
-                return new GridQueryCacheObjectsIterator(new Iter(res), cctx, keepPortable) {
+                return new GridQueryCacheObjectsIterator(resIter, cctx, keepPortable) {
                     @Override public void close() throws Exception {
                         super.close();
 
@@ -699,24 +712,13 @@ public class GridReduceQueryExecutor {
             finally {
                 if (!runs.remove(qryReqId, r))
                     U.warn(log, "Query run was already removed: " + qryReqId);
-
-                for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
-                    fakeTable(null, i).innerTable(null); // Drop all merge tables.
+                
+                if (!skipMergeTbl) {
+                    for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
+                        fakeTable(null, i).innerTable(null); // Drop all merge tables.
+                }
             }
         }
-    }
-
-    /**
-     * @param tbls Merge tables.
-     * @return {@code true} If all remote data was fetched.
-     */
-    private static boolean allTablesFetched(Collection<GridMergeTable> tbls) {
-        for (GridMergeTable tbl : tbls) {
-            if (!tbl.getScanIndex(null).fetchedAll())
-                return false;
-        }
-
-        return true;
     }
 
     /**
@@ -1021,7 +1023,7 @@ public class GridReduceQueryExecutor {
         List<List<?>> lists = new ArrayList<>();
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
-            ResultSet rs = h2.executeSqlQueryWithTimer(space, c, "SELECT PLAN FROM " + table(i), null);
+            ResultSet rs = h2.executeSqlQueryWithTimer(space, c, "SELECT PLAN FROM " + table(i), null, false);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1036,7 +1038,11 @@ public class GridReduceQueryExecutor {
 
         GridCacheSqlQuery rdc = qry.reduceQuery();
 
-        ResultSet rs = h2.executeSqlQueryWithTimer(space, c, "EXPLAIN " + rdc.query(), F.asList(rdc.parameters()));
+        ResultSet rs = h2.executeSqlQueryWithTimer(space,
+            c,
+            "EXPLAIN " + rdc.query(),
+            F.asList(rdc.parameters()),
+            false);
 
         lists.add(F.asList(getPlan(rs)));
 
@@ -1220,7 +1226,7 @@ public class GridReduceQueryExecutor {
      */
     private static class QueryRun {
         /** */
-        private List<GridMergeTable> tbls;
+        private List<GridMergeIndex> idxs;
 
         /** */
         private CountDownLatch latch;
@@ -1248,8 +1254,8 @@ public class GridReduceQueryExecutor {
             while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
                 latch.countDown();
 
-            for (GridMergeTable tbl : tbls) // Fail all merge indexes.
-                tbl.getScanIndex(null).fail(nodeId);
+            for (GridMergeIndex idx : idxs) // Fail all merge indexes.
+                idx.fail(nodeId);
         }
 
         /**
@@ -1262,8 +1268,8 @@ public class GridReduceQueryExecutor {
             while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
                 latch.countDown();
 
-            for (GridMergeTable tbl : tbls) // Fail all merge indexes.
-                tbl.getScanIndex(null).fail(e);
+            for (GridMergeIndex idx : idxs) // Fail all merge indexes.
+                idx.fail(e);
         }
     }
 
@@ -1279,7 +1285,7 @@ public class GridReduceQueryExecutor {
          * @throws IgniteCheckedException If failed.
          */
         protected Iter(ResultSet data) throws IgniteCheckedException {
-            super(data);
+            super(data, true);
         }
 
         /** {@inheritDoc} */

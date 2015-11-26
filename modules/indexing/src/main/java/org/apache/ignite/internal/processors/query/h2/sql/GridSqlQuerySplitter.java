@@ -33,6 +33,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.util.IntArray;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
@@ -392,6 +393,16 @@ public class GridSqlQuerySplitter {
     }
 
     /**
+     * @param arr Integer array.
+     * @return Primitive int array.
+     */
+    private static int[] toIntArray(IntArray arr) {
+        int[] res = new int[arr.size()];
+        arr.toArray(res);
+        return res;
+    }
+
+    /**
      * @param cols Columns from SELECT clause.
      * @return Map of columns with types.
      */
@@ -533,19 +544,21 @@ public class GridSqlQuerySplitter {
      * @param qry Select.
      * @param params Parameters.
      * @param target Extracted parameters.
+     * @param paramIdxs Parameter indexes.
      * @return Extracted parameters list.
      */
-    private static List<Object> findParams(GridSqlQuery qry, Object[] params, ArrayList<Object> target) {
+    private static List<Object> findParams(GridSqlQuery qry, Object[] params, ArrayList<Object> target,
+        IntArray paramIdxs) {
         if (qry instanceof GridSqlSelect)
-            return findParams((GridSqlSelect)qry, params, target);
+            return findParams((GridSqlSelect)qry, params, target, paramIdxs);
 
         GridSqlUnion union = (GridSqlUnion)qry;
 
-        findParams(union.left(), params, target);
-        findParams(union.right(), params, target);
+        findParams(union.left(), params, target, paramIdxs);
+        findParams(union.right(), params, target, paramIdxs);
 
-        findParams(qry.limit(), params, target);
-        findParams(qry.offset(), params, target);
+        findParams(qry.limit(), params, target, paramIdxs);
+        findParams(qry.offset(), params, target, paramIdxs);
 
         return target;
     }
@@ -554,22 +567,24 @@ public class GridSqlQuerySplitter {
      * @param qry Select.
      * @param params Parameters.
      * @param target Extracted parameters.
+     * @param paramIdxs Parameter indexes.
      * @return Extracted parameters list.
      */
-    private static List<Object> findParams(GridSqlSelect qry, Object[] params, ArrayList<Object> target) {
+    private static List<Object> findParams(GridSqlSelect qry, Object[] params, ArrayList<Object> target,
+        IntArray paramIdxs) {
         if (params.length == 0)
             return target;
 
         for (GridSqlElement el : qry.columns(false))
-            findParams(el, params, target);
+            findParams(el, params, target, paramIdxs);
 
-        findParams(qry.from(), params, target);
-        findParams(qry.where(), params, target);
+        findParams(qry.from(), params, target, paramIdxs);
+        findParams(qry.where(), params, target, paramIdxs);
 
         // Don't search in GROUP BY and HAVING since they expected to be in select list.
 
-        findParams(qry.limit(), params, target);
-        findParams(qry.offset(), params, target);
+        findParams(qry.limit(), params, target, paramIdxs);
+        findParams(qry.offset(), params, target, paramIdxs);
 
         return target;
     }
@@ -578,15 +593,17 @@ public class GridSqlQuerySplitter {
      * @param el Element.
      * @param params Parameters.
      * @param target Extracted parameters.
+     * @param paramIdxs Parameter indexes.
      */
-    private static void findParams(@Nullable GridSqlElement el, Object[] params, ArrayList<Object> target) {
+    private static void findParams(@Nullable GridSqlElement el, Object[] params, ArrayList<Object> target,
+        IntArray paramIdxs) {
         if (el == null)
             return;
 
         if (el instanceof GridSqlParameter) {
             // H2 Supports queries like "select ?5" but first 4 non-existing parameters are need to be set to any value.
             // Here we will set them to NULL.
-            int idx = ((GridSqlParameter)el).index();
+            final int idx = ((GridSqlParameter)el).index();
 
             while (target.size() < idx)
                 target.add(null);
@@ -601,12 +618,14 @@ public class GridSqlQuerySplitter {
                 target.add(param);
             else
                 target.set(idx, param);
+
+            paramIdxs.add(idx);
         }
         else if (el instanceof GridSqlSubquery)
-            findParams(((GridSqlSubquery)el).select(), params, target);
+            findParams(((GridSqlSubquery)el).select(), params, target, paramIdxs);
         else
             for (GridSqlElement child : el)
-                findParams(child, params, target);
+                findParams(child, params, target, paramIdxs);
     }
 
     /**

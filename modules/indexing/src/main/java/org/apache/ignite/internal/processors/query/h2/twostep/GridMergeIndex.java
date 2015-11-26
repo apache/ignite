@@ -81,6 +81,13 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
+     *
+     */
+    protected GridMergeIndex() {
+        // No-op.
+    }
+
+    /**
      * @return Return source nodes for this merge index.
      */
     public Set<UUID> sources() {

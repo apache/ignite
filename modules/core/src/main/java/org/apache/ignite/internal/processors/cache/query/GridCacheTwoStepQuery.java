@@ -53,6 +53,9 @@ public class GridCacheTwoStepQuery {
     /** */
     private boolean fullCollocation;
 
+    /** */
+    private final boolean skipMergeTbl;
+
     /**
      * @param spaces All spaces accessed in query.
      * @param tbls Tables.
@@ -67,6 +70,12 @@ public class GridCacheTwoStepQuery {
      */
     public void fullCollocation(boolean fullCollocation) {
         this.fullCollocation = fullCollocation;
+    }
+    /**
+     * @return {@code True} if reduce query can skip merge table creation and get data directly from merge index.
+     */
+    public boolean skipMergeTable() {
+        return skipMergeTbl;
     }
 
     /**
@@ -106,9 +115,12 @@ public class GridCacheTwoStepQuery {
 
     /**
      * @param qry SQL Query.
+     * @return {@code this}.
      */
-    public void addMapQuery(GridCacheSqlQuery qry) {
+    public GridCacheTwoStepQuery addMapQuery(GridCacheSqlQuery qry) {
         mapQrys.add(qry);
+
+        return this;
     }
 
     /**
@@ -144,6 +156,21 @@ public class GridCacheTwoStepQuery {
      */
     public void spaces(Set<String> spaces) {
         this.spaces = spaces;
+    }
+
+    /**
+     * @param args New arguments to copy with.
+     * @return Copy.
+     */
+    public GridCacheTwoStepQuery copy(Object[] args) {
+        assert !explain;
+
+        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(spaces, rdc.copy(args), skipMergeTbl);
+        cp.pageSize = pageSize;
+        for (int i = 0; i < mapQrys.size(); i++)
+            cp.mapQrys.add(mapQrys.get(i).copy(args));
+
+        return cp;
     }
 
     /**
