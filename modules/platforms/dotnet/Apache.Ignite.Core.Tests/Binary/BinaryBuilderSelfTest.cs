@@ -901,9 +901,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             var bin = _grid.GetBinary();
 
             // Put to cache to populate metas
-            var cache = _grid.GetOrCreateCache<object, object>(null);
-            cache.Put(1, TestEnumRegistered.One);
-
             var binEnum = bin.ToBinary<IBinaryObject>(TestEnumRegistered.One);
 
             Assert.AreEqual(_marsh.GetDescriptor(typeof (TestEnumRegistered)).TypeId, binEnum.TypeId);
