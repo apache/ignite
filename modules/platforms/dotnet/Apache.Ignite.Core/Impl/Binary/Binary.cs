@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Binary implementation.
     /// </summary>
-    internal class IgniteBinary : IIgniteBinary
+    internal class Binary : IBinary
     {
         /** Owning grid. */
         private readonly Marshaller _marsh;
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Constructor.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
-        internal IgniteBinary(Marshaller marsh)
+        internal Binary(Marshaller marsh)
         {
             _marsh = marsh;
         }

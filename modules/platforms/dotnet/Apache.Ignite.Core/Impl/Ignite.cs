@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Impl
         private readonly ClusterGroupImpl _prj;
 
         /** Binary. */
-        private readonly IgniteBinary _igniteBinary;
+        private readonly Binary.Binary _binary;
 
         /** Cached proxy. */
         private readonly IgniteProxy _proxy;
@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Impl
 
             _prj = new ClusterGroupImpl(proc, UU.ProcessorProjection(proc), marsh, this, null);
 
-            _igniteBinary = new IgniteBinary(marsh);
+            _binary = new Binary.Binary(marsh);
 
             _proxy = new IgniteProxy(this);
 
@@ -395,9 +395,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IIgniteBinary GetBinary()
+        public IBinary GetBinary()
         {
-            return _igniteBinary;
+            return _binary;
         }
 
         /** <inheritdoc /> */

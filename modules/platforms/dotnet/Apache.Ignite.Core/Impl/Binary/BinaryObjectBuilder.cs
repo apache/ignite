@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             new Dictionary<int, BinaryBuilderField>();
         
         /** Binary. */
-        private readonly IgniteBinary _igniteBinary;
+        private readonly Binary _binary;
 
         /** */
         private readonly BinaryObjectBuilder _parent;
@@ -79,18 +79,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="igniteBinary">Binary.</param>
+        /// <param name="binary">Binary.</param>
         /// <param name="parent">Parent builder.</param>
         /// <param name="obj">Initial binary object.</param>
         /// <param name="desc">Type descriptor.</param>
-        public BinaryObjectBuilder(IgniteBinary igniteBinary, BinaryObjectBuilder parent, 
+        public BinaryObjectBuilder(Binary binary, BinaryObjectBuilder parent, 
             BinaryObject obj, IBinaryTypeDescriptor desc)
         {
-            Debug.Assert(igniteBinary != null);
+            Debug.Assert(binary != null);
             Debug.Assert(obj != null);
             Debug.Assert(desc != null);
 
-            _igniteBinary = igniteBinary;
+            _binary = binary;
             _parent = parent ?? this;
             _obj = obj;
             _desc = desc;
@@ -361,7 +361,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             BinaryHeapStream outStream = new BinaryHeapStream(estimatedCapacity);
 
-            BinaryWriter writer = _igniteBinary.Marshaller.StartMarshal(outStream);
+            BinaryWriter writer = _binary.Marshaller.StartMarshal(outStream);
 
             writer.SetBuilder(this);
 
@@ -374,10 +374,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writer.Write(this);
                 
                 // Process metadata.
-                _igniteBinary.Marshaller.FinishMarshal(writer);
+                _binary.Marshaller.FinishMarshal(writer);
 
                 // Create binary object once metadata is processed.
-                return new BinaryObject(_igniteBinary.Marshaller, outStream.InternalArray, 0, 
+                return new BinaryObject(_binary.Marshaller, outStream.InternalArray, 0, 
                     BinaryObjectHeader.Read(outStream, 0));
             }
             finally
@@ -394,9 +394,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Child builder.</returns>
         public BinaryObjectBuilder Child(BinaryObject obj)
         {
-            var desc = _igniteBinary.Marshaller.GetDescriptor(true, obj.TypeId);
+            var desc = _binary.Marshaller.GetDescriptor(true, obj.TypeId);
 
-            return new BinaryObjectBuilder(_igniteBinary, null, obj, desc);
+            return new BinaryObjectBuilder(_binary, null, obj, desc);
         }
         
         /// <summary>
@@ -522,7 +522,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             try
             {
                 // Prepare fields.
-                IBinaryTypeHandler metaHnd = _igniteBinary.Marshaller.GetBinaryTypeHandler(desc);
+                IBinaryTypeHandler metaHnd = _binary.Marshaller.GetBinaryTypeHandler(desc);
 
                 IDictionary<int, BinaryBuilderField> vals0;
 

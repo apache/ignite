@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Binary
     ///     </item>
     /// </list>
     /// </summary>
-    public interface IIgniteBinary
+    public interface IBinary
     {
         /// <summary>
         /// Converts provided object to binary form.

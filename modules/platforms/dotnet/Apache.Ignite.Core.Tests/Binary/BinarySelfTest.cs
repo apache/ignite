@@ -1116,7 +1116,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             inner.RawOuter = outer;
 
             var bytes = asbinary
-                ? marsh.Marshal(new IgniteBinary(marsh).ToBinary<IBinaryObject>(outer))
+                ? marsh.Marshal(new Binary(marsh).ToBinary<IBinaryObject>(outer))
                 : marsh.Marshal(outer);
 
             IBinaryObject outerObj;

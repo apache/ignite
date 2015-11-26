@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             DateTime date = DateTime.Now.ToUniversalTime();
             Guid guid = Guid.NewGuid();
 
-            IIgniteBinary api = _grid.GetBinary();
+            IBinary api = _grid.GetBinary();
 
             // 1. Primitives.
             Assert.AreEqual(1, api.ToBinary<byte>((byte)1));
