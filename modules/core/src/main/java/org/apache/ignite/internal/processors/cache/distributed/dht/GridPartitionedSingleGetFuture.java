@@ -401,7 +401,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     return null;
                 }
                 catch (GridCacheEntryRemovedException ignored) {
-                    U.debug(log, ">>>>>>>>> " + entry);
                     // No-op, will retry.
                 }
             }
