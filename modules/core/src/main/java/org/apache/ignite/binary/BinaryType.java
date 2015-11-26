@@ -34,6 +34,13 @@ public interface BinaryType {
     public String typeName();
 
     /**
+     * Gets binary type ID.
+     *
+     * @return Binary type ID.
+     */
+    public int typeId();
+
+    /**
      * Gets collection of all field names for this binary type.
      *
      * @return Collection of all field names for this binary type.

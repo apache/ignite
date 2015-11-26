@@ -100,13 +100,6 @@ import java.util.TreeMap;
  */
 public interface BinaryObject extends Serializable, Cloneable {
     /**
-     * Gets binary object type ID.
-     *
-     * @return Type ID.
-     */
-    public int typeId();
-
-    /**
      * Gets type information for this binary object.
      *
      * @return Binary object type information.
