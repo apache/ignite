@@ -42,6 +42,13 @@ namespace Apache.Ignite.Core.Binary
         TF GetField<TF>(string fieldName);
 
         /// <summary>
+        /// Determines whether the field with specified name exists in this instance.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <returns>True if there is a field with specified name; false otherwise.</returns>
+        bool HasField(string fieldName);
+
+        /// <summary>
         /// Gets fully deserialized instance of binary object.
         /// </summary>
         /// <returns>
