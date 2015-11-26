@@ -791,9 +791,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str");
 
-        BinaryObjectEx po1 = marshal(obj1, marsh);
+        BinaryObjectExImpl po1 = marshal(obj1, marsh);
 
-        assertEquals(11111, po1.typeId());
+        assertEquals(11111, po1.type().typeId());
         assertEquals((Integer)10, po1.field(22222));
         assertEquals("str", po1.field(33333));
 
@@ -848,9 +848,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str1");
 
-        BinaryObjectEx po1 = marshal(obj1, marsh);
+        BinaryObjectExImpl po1 = marshal(obj1, marsh);
 
-        assertEquals(11111, po1.typeId());
+        assertEquals(11111, po1.type().typeId());
         assertEquals((Integer)10, po1.field(22222));
         assertEquals("str1", po1.field(33333));
 
@@ -859,9 +859,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomMappedObject2 obj2 = new CustomMappedObject2(20, "str2");
 
-        BinaryObjectEx po2 = marshal(obj2, marsh);
+        BinaryObjectExImpl po2 = marshal(obj2, marsh);
 
-        assertEquals(44444, po2.typeId());
+        assertEquals(44444, po2.type().typeId());
         assertEquals((Integer)20, po2.field(55555));
         assertEquals("str2", po2.field(66666));
 
@@ -1773,7 +1773,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             assertTrue(offheapObj.equals(offheapObj1));
             assertTrue(offheapObj1.equals(offheapObj));
 
-            assertEquals(obj.typeId(), offheapObj.typeId());
+            assertEquals(obj.type().typeId(), offheapObj.type().typeId());
             assertEquals(obj.hashCode(), offheapObj.hashCode());
 
             checkSimpleObjectData(simpleObj, offheapObj);
@@ -1786,7 +1786,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             obj = (BinaryObjectImpl)offheapObj.heapCopy();
 
-            assertEquals(obj.typeId(), offheapObj.typeId());
+            assertEquals(obj.type().typeId(), offheapObj.type().typeId());
             assertEquals(obj.hashCode(), offheapObj.hashCode());
 
             checkSimpleObjectData(simpleObj, obj);

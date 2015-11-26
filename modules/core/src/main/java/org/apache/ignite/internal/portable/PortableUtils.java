@@ -1470,7 +1470,7 @@ public class PortableUtils {
 
                 int len = length(in, start);
 
-                BinaryObjectEx po;
+                BinaryObjectExImpl po;
 
                 if (detach) {
                     // In detach mode we simply copy object's content.
