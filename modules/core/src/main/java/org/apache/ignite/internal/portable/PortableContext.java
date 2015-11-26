@@ -47,6 +47,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.jar.JarEntry;
@@ -160,6 +161,7 @@ public class PortableContext implements Externalizable {
         colTypes.put(LinkedHashSet.class, GridPortableMarshaller.LINKED_HASH_SET);
         colTypes.put(TreeSet.class, GridPortableMarshaller.TREE_SET);
         colTypes.put(ConcurrentSkipListSet.class, GridPortableMarshaller.CONC_SKIP_LIST_SET);
+        colTypes.put(ConcurrentLinkedQueue.class, GridPortableMarshaller.CONC_LINKED_QUEUE);
 
         mapTypes.put(HashMap.class, GridPortableMarshaller.HASH_MAP);
         mapTypes.put(LinkedHashMap.class, GridPortableMarshaller.LINKED_HASH_MAP);
@@ -893,8 +895,12 @@ public class PortableContext implements Externalizable {
                 // This is an anonymous class. Don't cut off enclosing class name for it.
                 idx = -1;
             }
-            catch (NumberFormatException e) {
-                return typeName;
+            catch (NumberFormatException ignore) {
+                // This is a lambda class.
+                if (clsName.indexOf("$$Lambda$") > 0)
+                    idx = -1;
+                else
+                    return typeName;
             }
         }
 
