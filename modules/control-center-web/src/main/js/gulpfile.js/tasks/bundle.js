@@ -16,10 +16,10 @@
  */
 
 var gulp = require('gulp');
-var jspm = require('jspm');
-var environments = require('gulp-environments');
-
-var production = environments.production;
+// var jspm = require('jspm');
+var jspm = require('gulp-jspm');
+var util = require('gulp-util');
+var uglify = require('gulp-uglify');
 
 var paths = [
     './app/**/*.js'
@@ -30,9 +30,14 @@ var options = {
 };
 
 gulp.task('bundle', function() {
-	// options.minify = production();
+	if (!util.env.debug) {
+		delete options.minify;
+		delete options.sourceMaps;
+	}
 
-	return jspm.bundleSFX('app/index', 'build/app.min.js', options)
+	// return jspm.bundleSFX('app/index', 'build/app.min.js', options).then(function() {
+	// 	return gulp.src('build/app.min.js').pipe(uglify()).pipe(gulp.dest('build/app.min.js'))
+	// })
 });
 
 gulp.task('bundle:watch', function() {

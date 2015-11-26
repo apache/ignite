@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
+import angular from 'angular'
+
 angular
-.module('ignite-web-console.configuration.sidebar', [
+.module('ignite-console.configuration-sidebar', [
 
 ])
 .provider('igniteConfigurationSidebar', function() {

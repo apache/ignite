@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
+import angular from 'angular'
+
 angular
-.module('ignite-web-console.navbar', [
+.module('ignite-console.navbar', [
 
 ])
 .provider('igniteNavbar', function() {

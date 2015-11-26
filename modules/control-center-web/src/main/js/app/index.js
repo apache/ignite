@@ -62,6 +62,12 @@ import './modules/states/sql/index'
 import './modules/states/profile/index'
 import './modules/states/admin/index'
 
+// ignite:modules
+import './modules/navbar/main'
+import './modules/userbar/main'
+import './modules/configuration-sidebar/main'
+// endignite
+
 angular
 .module('ignite-console', [
 	'ui.router',
@@ -75,7 +81,11 @@ angular
 	'ignite-console.states.configuration',
 	'ignite-console.states.sql',
 	'ignite-console.states.profile',
-	'ignite-console.states.admin'
+	'ignite-console.states.admin',
+	//
+	'ignite-console.navbar',
+	'ignite-console.userbar',
+    'ignite-console.configuration-sidebar'
 ])
 .config(function($stateProvider, $locationProvider, $urlRouterProvider) {
 	// set up the states

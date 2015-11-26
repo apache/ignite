@@ -26,7 +26,7 @@ var paths = [
 gulp.task('sass', function () {
     return gulp.src(paths)
         .pipe(sass({ outputStyle: 'nested' }).on('error', sass.logError))
-        .pipe(gulp.dest('./public/stylesheets'));
+        .pipe(gulp.dest('./build/public/stylesheets'));
 });
 
 gulp.task('sass:watch', function (cb) {
