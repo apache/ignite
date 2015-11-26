@@ -133,12 +133,9 @@ app.use('/configuration/caches', cachesRouter);
 app.use('/configuration/metadata', metadataRouter);
 app.use('/configuration/presets', presetsRouter);
 app.use('/configuration/igfs', igfsRouter);
-app.use('/configuration/summary', summary);
-
-app.use('/notebooks', mustAuthenticated, notebooksRoutes);
-app.use('/sql', mustAuthenticated, sqlRouter);
 
 app.use('/agent', mustAuthenticated, agentRouter);
+app.use('/notebooks', mustAuthenticated, notebooksRoutes);
 
 config.findIgniteModules()
     .filter(function(path) { return path.match(/\/routes\/.+\.js$/); })
