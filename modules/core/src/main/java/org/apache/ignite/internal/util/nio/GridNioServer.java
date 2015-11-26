@@ -1004,7 +1004,7 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf, writer);
 
                         if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
-                            U.log(log, "B91>> " + ((GridIoMessage)msg).message());
+                            U.log(log, "B91>> " + ((GridIoMessage)msg).message() + " " + finished + " " + (writer != null));
                         }
 
                         if (finished && writer != null)
