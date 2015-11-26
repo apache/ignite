@@ -357,7 +357,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                 .input-tip
                     button.select-toggle.form-control(id='{{::field.id}}' bs-select data-placeholder='{{::field.placeholder}}' bs-options='item.value as item.label for item in {{field.items}}' ng-attr-data-container='{{::field.container}}' tabindex='0')&attributes(fieldCommon)&attributes(dropdownPlaceholder)&attributes(fieldDisabled)
         div(ng-switch-when='dropdown-multiple' ng-hide=fieldHide)
-            dic(class=lblClasses)
+            div(class=lblClasses)
                 label(ng-class=fieldRequiredClass) {{::field.label}}:
                 a.customize(ng-if='field.addLink' ng-href='{{field.addLink.ref}}&id={{backupItem._id}}') (add)
             div(class=fieldClasses)
