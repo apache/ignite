@@ -756,6 +756,8 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
                     _.forEach(metadatas, function (meta) {
                         res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.JdbcType">');
 
+                        $generatorXml.property(res, cache, 'name', 'cacheName');
+
                         $generatorXml.classNameProperty(res, meta, 'keyType');
                         $generatorXml.property(res, meta, 'valueType');
 
@@ -1307,6 +1309,7 @@ $generatorXml.igfsGeneral = function(igfs, res) {
         $generatorXml.property(res, igfs, 'name');
         $generatorXml.property(res, igfs, 'dataCacheName');
         $generatorXml.property(res, igfs, 'metaCacheName');
+        $generatorXml.property(res, igfs, 'defaultMode', undefined, "DUAL_ASYNC");
 
         res.needEmptyLine = true;
     }
@@ -1321,7 +1324,6 @@ $generatorXml.igfsMisc = function(igfs, res) {
 
     $generatorXml.property(res, igfs, 'blockSize', undefined, 65536);
     $generatorXml.property(res, igfs, 'streamBufferSize', undefined, 65536);
-    $generatorXml.property(res, igfs, 'defaultMode', undefined, "DUAL_ASYNC");
     $generatorXml.property(res, igfs, 'maxSpaceSize', undefined, 0);
     $generatorXml.property(res, igfs, 'maximumTaskRangeLength', undefined, 0);
     $generatorXml.property(res, igfs, 'managementPort', undefined, 11400);

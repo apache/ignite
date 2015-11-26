@@ -60,7 +60,7 @@ config.findIgniteModules = function () {
                     _find(root, filter, files, path.join(prefix, name))
                 });
         else
-            files.push(path.join(igniteModules, prefix));
+            files.push(path.join(igniteModules, prefix).replace(/\\/g, '/')); // Replace backslashes to work under Windows
 
         return files;
     }

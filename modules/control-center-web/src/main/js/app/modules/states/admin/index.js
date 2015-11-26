@@ -27,5 +27,5 @@ angular
 	.state('base.admin', {
 		url: '/admin',
 		templateUrl: '/settings/admin.html'
-	});
+	})
 });

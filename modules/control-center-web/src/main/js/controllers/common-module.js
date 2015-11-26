@@ -21,17 +21,31 @@ var consoleModule = angular.module('ignite-web-console',
         /* ignite:modules */
         , 'ignite-console'
         , 'ignite-web-console.navbar'
+        , 'ignite-web-console.userbar'
         , 'ignite-web-console.configuration.sidebar'
         /* endignite */
         /* ignite:plugins */
         /* endignite */
     ])
-    .run(function ($rootScope, $http, Auth, User) {
-        if (!Auth.nonAuthorized) {
-            User.read().then((user) => {
+    .run(function ($rootScope, $http, $state, $common, Auth, User) {
+        if (Auth.authorized)
+            User.read().then(function (user) {
                 $rootScope.$broadcast('user', user);
             });
-        };
+
+        $rootScope.revertIdentity = function () {
+            $http
+                .get('/api/v1/admin/revertIdentity')
+                .then(User.read)
+                .then(function (user) {
+                    $rootScope.$broadcast('user', user);
+
+                    $state.go('base.admin')
+                })
+                .catch(function (errMsg) {
+                    $common.showError($common.errorMessage(errMsg));
+                });
+        }
     });
 
 // Modal popup configuration.
@@ -533,7 +547,7 @@ consoleModule.service('$common', [
 
             popover = newPopover;
 
-            $timeout(function () { newPopover.$promise.then(newPopover.show); });
+            $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
 
             $timeout(function () { newPopover.hide(); }, 5000);
 
@@ -1896,7 +1910,7 @@ consoleModule.factory('$focus', function ($timeout) {
 
                 elem[0].focus();
             }
-        });
+        }, 100);
     };
 });
 
@@ -1955,7 +1969,40 @@ consoleModule.controller('activeLink', [
         };
     }]);
 
+consoleModule.controller('resetPassword', [
+    '$scope', '$modal', '$http', '$window', '$common', '$focus', 'Auth', '$state',
+    function ($scope, $http, $common, $focus, Auth, $state) {
+        if ($state.params.token)
+            $http.post('/api/v1/password/validate-token', {token: $state.params.token})
+                .success(function (res) {
+                    $scope.email = res.email;
+                    $scope.token = res.token;
+                    $scope.error = res.error;
+
+                    if ($scope.token && !$scope.error)
+                        $focus('user_password');
+                });
+
+        // Try to reset user password for provided token.
+        $scope.resetPassword = function (reset_info) {
+            $http.post('/api/v1/password/reset', reset_info)
+                .success(function () {
+                    $common.showInfo('Password successfully changed');
+
+                    $state.go('base.configuration.clusters');
+                })
+                .error(function (data, state) {
+                    $common.showError(data);
+
+                    if (state == 503)
+                        $state.go('base.configuration.clusters');
+                });
+        }
+    }
+]);
+
 // Login popup controller.
+// TODO IGNITE-1936 Refactor this controller.
 consoleModule.controller('auth', [
     '$scope', '$modal', '$http', '$window', '$common', '$focus', 'Auth', '$state',
     function ($scope, $modal, $http, $window, $common, $focus, Auth, $state) {
@@ -1963,49 +2010,7 @@ consoleModule.controller('auth', [
 
         $scope.action = 'login';
 
-        $scope.userDropdown = [{text: 'Profile', href: '/profile'}];
-
-        var user = $scope.$root.user;
-
-        if (user && !user.becomeUsed) {
-            if (user && user.admin)
-                $scope.userDropdown.push({text: 'Admin Panel', href: '/admin'});
-
-            $scope.userDropdown.push({text: 'Log Out', href: '/logout'});
-        }
-
         $focus('user_email');
-
-        if ($scope.token && !$scope.error)
-            $focus('user_password');
-
-        $scope.validateToken = function () {
-            $http.post('/api/v1/password/validate-token', {token: $state.params.token})
-                .success(function (res) {
-                    $scope.email = res.email;
-                    $scope.token = res.token;
-                    $scope.error = res.error;
-                });
-        };
-
-        // Try to reset user password for provided token.
-        $scope.resetPassword = function (reset_info) {
-            $http.post('/api/v1/password/reset', reset_info)
-                .success(function (data) {
-                    $common.showInfo('Password successfully changed');
-
-                    $scope.user_info = {email: data};
-                    $window.location = '/';
-                })
-                .error(function (data, state) {
-                    $common.showError(data);
-
-                    if (state == 503) {
-                        $scope.user_info = {};
-                        $scope.login();
-                    }
-                });
-        }
     }]);
 
 // Download agent controller.

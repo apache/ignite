@@ -21,8 +21,8 @@ header#header.header
         p.navbar-text(style='font-size: 18px;') Apache Ignite Web Console
 
 .container.body-container
-    .main-content(ng-controller='auth')
-        .row(ng-controller='auth' ng-init='validateToken()')
+    .main-content(ng-controller='resetPassword')
+        .row
             .text-center(ng-if='!token')
                 p Further instructions for password reset have been sent to your e-mail address.
             .text-center(ng-if='error')

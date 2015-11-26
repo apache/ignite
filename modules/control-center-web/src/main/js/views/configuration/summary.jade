@@ -54,7 +54,7 @@ block content
             | You have no clusters configured. Please configure them &nbsp;
             a(href='clusters') here.
         +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
-        .padding-top-dflt(bs-affix)
+        .padding-top-dflt(ng-if='clusters.length > 0' bs-affix)
             button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip data-title='Download configuration' data-placement='bottom') Download
             hr
         div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)' role='tab')

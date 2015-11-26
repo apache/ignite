@@ -18,20 +18,6 @@
 var router = require('express').Router();
 var db = require('../db');
 
-/**
- * Get user profile page.
- */
-router.get('/', function (req, res) {
-    var user_id = req.currentUserId();
-
-    db.Account.findById(user_id, function (err) {
-        if (err)
-            return res.status(500).send(err.message);
-
-        res.render('settings/profile');
-    });
-});
-
 function _updateUser(res, user, params) {
     if (params.userName)
         user.username = params.userName;
