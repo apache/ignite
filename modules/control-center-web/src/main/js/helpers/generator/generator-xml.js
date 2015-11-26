@@ -756,6 +756,8 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
                     _.forEach(metadatas, function (meta) {
                         res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.JdbcType">');
 
+                        $generatorXml.property(res, cache, 'name', 'cacheName');
+
                         $generatorXml.classNameProperty(res, meta, 'keyType');
                         $generatorXml.property(res, meta, 'valueType');
 
