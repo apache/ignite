@@ -903,7 +903,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Put to cache to populate metas
             var binEnum = bin.ToBinary<IBinaryObject>(TestEnumRegistered.One);
 
-            Assert.AreEqual(_marsh.GetDescriptor(typeof (TestEnumRegistered)).TypeId, binEnum.TypeId);
+            Assert.AreEqual(_marsh.GetDescriptor(typeof (TestEnumRegistered)).TypeId, binEnum.GetBinaryType().TypeId);
             Assert.AreEqual(0, binEnum.EnumValue);
 
             var meta = binEnum.GetBinaryType();

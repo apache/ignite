@@ -56,5 +56,10 @@ namespace Apache.Ignite.Core.Binary
         /// <c>true</c> if this instance represents an enum; otherwise, <c>false</c>.
         /// </value>
         bool IsEnum { get; }
+
+        /// <summary>
+        /// Gets the type identifier.
+        /// </summary>
+        int TypeId { get; }
     }
 }

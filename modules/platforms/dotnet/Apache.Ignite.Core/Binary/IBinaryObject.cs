@@ -25,14 +25,6 @@ namespace Apache.Ignite.Core.Binary
     public interface IBinaryObject
     {
         /// <summary>
-        /// Gets binary object type ID.
-        /// </summary>
-        /// <value>
-        /// Type ID.
-        /// </value>
-        int TypeId { get; }
-
-        /// <summary>
         /// Gets object metadata.
         /// </summary>
         /// <returns>Metadata.</returns>
