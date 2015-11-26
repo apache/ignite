@@ -84,6 +84,7 @@ public abstract class GridCacheMessage implements Message {
     private boolean skipPrepare;
 
     /** Cache ID. */
+    @GridToStringInclude
     protected int cacheId;
 
     /**
