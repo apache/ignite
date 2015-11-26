@@ -308,8 +308,10 @@ class GridNioSslHandler extends ReentrantLock {
         // append buf to inNetBuffer
         inNetBuf.put(buf);
 
-        if (!handshakeFinished)
+        if (!handshakeFinished) {
             handshake();
+            U.log(log, "Handshake");
+        }
         else
             unwrapData();
 
