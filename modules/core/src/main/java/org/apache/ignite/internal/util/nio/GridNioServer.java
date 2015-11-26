@@ -1001,11 +1001,11 @@ public class GridNioServer<T> {
 
                         assert msg != null;
 
+                        finished = msg.writeTo(buf, writer);
+
                         if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
                             U.log(log, "B91>> " + ((GridIoMessage)msg).message());
                         }
-
-                        finished = msg.writeTo(buf, writer);
 
                         if (finished && writer != null)
                             writer.reset();
@@ -1025,13 +1025,13 @@ public class GridNioServer<T> {
 
                         msg = req.directMessage();
 
-                        if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
-                            U.log(log, "B92>> " + ((GridIoMessage)msg).message());
-                        }
-
                         assert msg != null;
 
                         finished = msg.writeTo(buf, writer);
+
+                        if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
+                            U.log(log, "B92>> " + ((GridIoMessage)msg).message());
+                        }
 
                         if (finished && writer != null)
                             writer.reset();
