@@ -21,7 +21,7 @@ import java.util.Collection;
 
 /**
  * Binary type meta data. Metadata for binary types can be accessed from any of the
- * {@link org.apache.ignite.IgniteBinary#metadata(String)} methods.
+ * {@link org.apache.ignite.IgniteBinary#type(String)} methods.
  * Having metadata also allows for proper formatting of {@code BinaryObject#toString()} method,
  * even when binary objects are kept in binary format only, which may be necessary for audit reasons.
  */

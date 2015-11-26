@@ -968,7 +968,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         mutableObj.build();
 
-        BinaryType metadata = portables().metadata(TestObjectContainer.class);
+        BinaryType metadata = portables().type(TestObjectContainer.class);
 
         assertEquals("String", metadata.fieldTypeName("xx567"));
     }
@@ -984,7 +984,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         mutableObj.build();
 
-        BinaryType metadata = portables().metadata(TestObjectContainer.class);
+        BinaryType metadata = portables().type(TestObjectContainer.class);
 
         assertEquals("String", metadata.fieldTypeName("xx567"));
     }
@@ -1008,7 +1008,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         mutableObj.build();
 
-        BinaryType metadata = portables().metadata(c.getClass());
+        BinaryType metadata = portables().type(c.getClass());
 
         assertTrue(metadata.fieldNames().containsAll(Arrays.asList("intField", "intArrField", "arrField", "strField",
             "colField", "mapField", "enumField", "enumArrField")));

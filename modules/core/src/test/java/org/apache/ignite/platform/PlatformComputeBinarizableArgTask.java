@@ -89,7 +89,7 @@ public class PlatformComputeBinarizableArgTask extends ComputeTaskAdapter<Object
         @Nullable @Override public Object execute() {
             BinaryObjectEx arg0 = ((BinaryObjectEx)arg);
 
-            BinaryType meta = ignite.binary().metadata(arg0.typeId());
+            BinaryType meta = ignite.binary().type(arg0.typeId());
 
             if (meta == null)
                 throw new IgniteException("Metadata doesn't exist.");
