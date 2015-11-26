@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.LinkedBlockingDeque;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -67,6 +68,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 import sun.nio.ch.*;
 
@@ -831,6 +833,8 @@ public class GridNioServer<T> {
         }
     }
 
+    public static ConcurrentHashMap8<SocketAddress, LinkedBlockingDeque<ByteBuffer>> map = new ConcurrentHashMap8<>();
+
     /**
      * Client worker for direct mode.
      */
@@ -874,6 +878,12 @@ public class GridNioServer<T> {
             // Attempt to read off the channel.
             int cnt = sockCh.read(readBuf);
 
+//            SocketAddress adr =((SocketChannel)sockCh).getRemoteAddress();
+//
+//            if (map.get(adr)!=null) {
+//                assert map.get(adr).peek().limit() == readBuf.limit();
+//            }
+
             if (cnt == -1) {
                 U.log(log, ">>>>> Remote client closed connection: " + ses);
 
@@ -886,9 +896,9 @@ public class GridNioServer<T> {
                 return;
             }
 
-            if (gridName().endsWith("0") && (cnt == 170 )) {
-                U.log(log, ">>>>>> cnt ==" + cnt);
-            }
+//            if (gridName().endsWith("0") && (cnt == 170 )) {
+//                U.log(log, ">>>>>> cnt ==" + cnt);
+//            }
 
 
             if (log.isTraceEnabled())
@@ -1070,6 +1080,12 @@ public class GridNioServer<T> {
                     assert buf.hasRemaining();
 
                     if (!skipWrite) {
+//                        SocketAddress adr =((SocketChannel)sockCh).getRemoteAddress();
+//
+//                        map.putIfAbsent(adr, new LinkedBlockingDeque<ByteBuffer>());
+//
+//                        map.get(adr).push(buf);
+
                         int cnt = sockCh.write(buf);
 
                         if (demandMess != null) {

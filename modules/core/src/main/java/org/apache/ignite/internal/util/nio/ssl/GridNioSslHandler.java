@@ -310,6 +310,7 @@ class GridNioSslHandler extends ReentrantLock {
 
         if (!handshakeFinished) {
             handshake();
+            U.log(log, "handshake");
         }
         else
             unwrapData();
