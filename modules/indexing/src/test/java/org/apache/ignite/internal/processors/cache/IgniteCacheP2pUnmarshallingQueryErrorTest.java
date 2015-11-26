@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -68,8 +69,6 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
     public void testResponseMessageOnRequestUnmarshallingFailed() throws Exception {
         readCnt.set(Integer.MAX_VALUE);
 
-        jcache(0).put(new TestKey(String.valueOf(++key)), "");
-
         try {
             jcache().query(new ScanQuery<>(new IgniteBiPredicate<TestKey, String>() {
                 @Override public boolean apply(TestKey key, String val) {
@@ -77,6 +76,10 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
                 }
 
                 private void readObject(ObjectInputStream is) throws IOException {
+                    throw new IOException();
+                }
+
+                private void writeObject(ObjectOutputStream os) throws IOException {
                     throw new IOException();
                 }
             })).getAll();
