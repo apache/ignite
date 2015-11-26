@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -150,6 +151,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObject BuildEnum(string typeName, int value)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
+
+            var desc = Marshaller.GetDescriptor(typeName);
+
+            IgniteArgumentCheck.Ensure(desc.IsEnum, "typeName", "Type should be an Enum.");
+
+            var ignite = Marshaller.Ignite;
+
+            if (ignite != null)
+            {
+                ignite.PutBinaryTypes(new Dictionary<int, BinaryType>
+                {
+                    {desc.TypeId, new BinaryType(desc, null)}
+                });
+            }
 
             return new BinaryEnum(GetTypeId(typeName), value, Marshaller);
         }

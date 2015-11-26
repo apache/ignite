@@ -120,6 +120,17 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryType"/> class.
+        /// </summary>
+        /// <param name="desc">Descriptor.</param>
+        /// <param name="fields">Fields.</param>
+        public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields) 
+            : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum)
+        {
+            // No-op.
+        }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="typeId">Type ID.</param>

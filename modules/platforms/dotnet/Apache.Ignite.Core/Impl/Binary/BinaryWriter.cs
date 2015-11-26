@@ -811,6 +811,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (desc != null)
                 {
+                    // TODO: Simplify
                     var metaHnd = _marsh.GetBinaryTypeHandler(desc);
 
                     _stream.WriteByte(BinaryUtils.TypeEnum);
@@ -1434,12 +1435,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (_metas == null)
             {
-                BinaryType meta =
-                    new BinaryType(desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum);
-
-                _metas = new Dictionary<int, BinaryType>(1);
-
-                _metas[desc.TypeId] = meta;
+                _metas = new Dictionary<int, BinaryType>(1)
+                {
+                    {desc.TypeId, new BinaryType(desc, fields)}
+                };
             }
             else
             {
@@ -1456,8 +1455,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     }
                 }
                 else
-                    _metas[desc.TypeId] = 
-                        new BinaryType(desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum);
+                    _metas[desc.TypeId] = new BinaryType(desc, fields);
             }
         }
     }
