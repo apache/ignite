@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -275,9 +274,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     cctx.deploymentEnabled());
             }
             else {
-                LinkedHashMap<KeyCacheObject, Boolean> map = U.newLinkedHashMap(1);
-
-                map.put(key, false);
+                Map<KeyCacheObject, Boolean> map = Collections.singletonMap(key, false);
 
                 req = new GridNearGetRequest(
                     cctx.cacheId(),
