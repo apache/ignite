@@ -25,6 +25,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -56,6 +57,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     protected final ArrayList<IgniteInternalFuture<T>> futs = new ArrayList<>();
 
     /** */
+    @GridToStringExclude
     private final Listener lsnr = new Listener();
 
     /** Reducer. */
