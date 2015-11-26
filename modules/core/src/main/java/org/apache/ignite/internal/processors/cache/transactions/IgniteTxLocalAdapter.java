@@ -2932,6 +2932,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
 
+            boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+
             final IgniteInternalFuture<Void> loadFut = enlistWrite(
                 cacheCtx,
                 cacheKey,
@@ -2945,7 +2947,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 ret,
                 opCtx != null && opCtx.skipStore(),
                 /*singleRmv*/false,
-                opCtx != null && opCtx.isKeepBinary());
+                keepBinary);
 
             if (pessimistic()) {
                 assert loadFut == null || loadFut.isDone() : loadFut;
@@ -3009,7 +3011,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 }
             }
             else
-                return optimisticPutFuture(loadFut, ret);
+                return optimisticPutFuture(cacheCtx, loadFut, ret, keepBinary);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);
@@ -3099,6 +3101,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
+            final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+
             final IgniteInternalFuture<Void> loadFut = enlistWrite(
                 cacheCtx,
                 keySet,
@@ -3115,7 +3119,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 null,
                 opCtx != null && opCtx.skipStore(),
                 false,
-                opCtx != null && opCtx.isKeepBinary());
+                keepBinary);
 
             if (pessimistic()) {
                 assert loadFut == null || loadFut.isDone() : loadFut;
@@ -3177,7 +3181,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 }
             }
             else
-                return optimisticPutFuture(loadFut, ret);
+                return optimisticPutFuture(cacheCtx, loadFut, ret, keepBinary);
         }
         catch (RuntimeException e) {
             onException();
@@ -3191,7 +3195,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param ret Future result.
      * @return Future.
      */
-    private IgniteInternalFuture optimisticPutFuture(IgniteInternalFuture<Void> loadFut, final GridCacheReturn ret) {
+    private IgniteInternalFuture optimisticPutFuture(
+        final GridCacheContext cacheCtx,
+        IgniteInternalFuture<Void> loadFut,
+        final GridCacheReturn ret,
+        final boolean keepBinary
+    ) {
         if (implicit()) {
             // Should never load missing values for implicit transaction as values will be returned
             // with prepare response, if required.
@@ -3211,7 +3220,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         try {
                             txFut.get();
 
-                            return implicitRes;
+                            return new GridCacheReturn(cacheCtx, true, keepBinary,
+                                implicitRes.value(), implicitRes.success());
                         }
                         catch (IgniteCheckedException | RuntimeException e) {
                             rollbackAsync();
@@ -3337,6 +3347,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         else
             plc = null;
 
+        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+
         final IgniteInternalFuture<Void> loadFut = enlistWrite(
             cacheCtx,
             keys0,
@@ -3353,7 +3365,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             drMap,
             opCtx != null && opCtx.skipStore(),
             singleRmv,
-            opCtx != null && opCtx.isKeepBinary()
+            keepBinary
         );
 
         if (log.isDebugEnabled())
@@ -3432,7 +3444,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         try {
                             txFut.get();
 
-                            return implicitRes;
+                            return new GridCacheReturn(cacheCtx, true, keepBinary,
+                                implicitRes.value(), implicitRes.success());
                         }
                         catch (IgniteCheckedException | RuntimeException e) {
                             rollbackAsync();
