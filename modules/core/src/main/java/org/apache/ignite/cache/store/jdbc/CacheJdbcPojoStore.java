@@ -32,6 +32,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.portable.BinaryObjectEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -270,7 +271,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
      */
     @Override protected Object typeIdForObject(Object obj) throws CacheException {
         if (obj instanceof BinaryObject)
-            return ((BinaryObject)obj).typeId();
+            return ((BinaryObjectEx)obj).typeId();
 
         return obj.getClass();
     }

@@ -809,6 +809,21 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testMethodAnnotationWithoutGet() throws Exception {
+        QueryCursor<List<?>> qry = grid(0).cache(null)
+            .query(new SqlFieldsQuery("select methodField from Organization where methodField='name-A'")
+            .setPageSize(10));
+
+        List<List<?>> flds = qry.getAll();
+
+        assertEquals(1, flds.size());
+
+        assertEquals("name-A", flds.get(0).get(0));
+    }
+
+    /**
      * @param cacheName Cache name.
      * @throws Exception If failed.
      */
@@ -993,6 +1008,14 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
             this.id = id;
             this.name = name;
+        }
+
+        /**
+         * @return Generated method value.
+         */
+        @QuerySqlField
+        public String methodField() {
+            return "name-" + name;
         }
 
         /** {@inheritDoc} */

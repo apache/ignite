@@ -15,22 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheMemoryModeSelfTest;
+import junit.framework.TestSuite;
 import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Memory models test.
+ *
  */
-public class GridCacheMemoryModePortableSelfTest extends GridCacheMemoryModeSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+public class IgniteBinaryObjectsCacheTestSuite2 {
+    public static TestSuite suite() throws Exception {
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
+        return IgniteCacheTestSuite2.suite();
     }
 }

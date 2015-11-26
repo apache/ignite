@@ -682,6 +682,6 @@ public abstract class GridCacheMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheMessage.class, this);
+        return S.toString(GridCacheMessage.class, this, "cacheId", cacheId);
     }
 }

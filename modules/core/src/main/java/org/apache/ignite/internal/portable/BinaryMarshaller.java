@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.portable;
+package org.apache.ignite.internal.portable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -24,54 +24,52 @@ import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.jetbrains.annotations.Nullable;
+import sun.misc.Unsafe;
 
 /**
  * Implementation of {@link org.apache.ignite.marshaller.Marshaller} that lets to serialize and deserialize all objects
- * in the portable format.
+ * in the binary format.
  * <p>
  * {@code PortableMarshaller} is tested only on Java HotSpot VM on other VMs it could yield unexpected results.
- * <p>
- * <h1 class="header">Configuration</h1>
- * <h2 class="header">Mandatory</h2>
- * This marshaller has no mandatory configuration parameters.
- * <h2 class="header">Java Example</h2>
- * <pre name="code" class="java">
- * PortableMarshaller marshaller = new PortableMarshaller();
- *
- * IgniteConfiguration cfg = new IgniteConfiguration();
- *
- * // Override marshaller.
- * cfg.setMarshaller(marshaller);
- *
- * // Starts grid.
- * G.start(cfg);
- * </pre>
- * <h2 class="header">Spring Example</h2>
- * PortableMarshaller can be configured from Spring XML configuration file:
- * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
- *     ...
- *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.apache.ignite.marshaller.portable.PortableMarshaller"&gt;
- *            ...
- *         &lt;/bean&gt;
- *     &lt;/property&gt;
- *     ...
- * &lt;/bean&gt;
- * </pre>
- * <p>
- * <img src="http://ignite.apache.org/images/spring-small.png">
- * <br>
- * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class BinaryMarshaller extends AbstractMarshaller {
     /** */
     private GridPortableMarshaller impl;
+
+    /**
+     * Checks whether {@code BinaryMarshaller} is able to work on the current JVM.
+     * <p>
+     * As long as {@code BinaryMarshaller} uses JVM-private API, which is not guaranteed
+     * to be available on all JVM, this method should be called to ensure marshaller could work properly.
+     * <p>
+     * Result of this method is automatically checked in constructor.
+     *
+     * @return {@code true} if {@code BinaryMarshaller} can work on the current JVM or
+     *      {@code false} if it can't.
+     */
+    @SuppressWarnings({"TypeParameterExtendsFinalClass", "ErrorNotRethrown"})
+    public static boolean available() {
+        try {
+            Unsafe unsafe = GridUnsafe.unsafe();
+
+            Class<? extends Unsafe> unsafeCls = unsafe.getClass();
+
+            unsafeCls.getMethod("allocateInstance", Class.class);
+            unsafeCls.getMethod("copyMemory", Object.class, long.class, Object.class, long.class, long.class);
+
+            return true;
+        }
+        catch (Exception ignored) {
+            return false;
+        }
+        catch (NoClassDefFoundError ignored) {
+            return false;
+        }
+    }
 
     /**
      * Returns currently set {@link MarshallerContext}.

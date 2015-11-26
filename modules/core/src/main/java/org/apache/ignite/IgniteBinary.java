@@ -231,7 +231,8 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  * Alternatively, if you cannot change class definitions, you can provide custom serialization
- * logic in {@link org.apache.ignite.binary.BinarySerializer} either globally in {@link org.apache.ignite.marshaller.portable.BinaryMarshaller} or
+ * logic in {@link org.apache.ignite.binary.BinarySerializer} either globally in
+ * {@link org.apache.ignite.configuration.BinaryConfiguration} or
  * for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <p>
  * Similar to java serialization you can use {@code writeReplace()} and {@code readResolve()} methods.
@@ -251,7 +252,7 @@ import org.jetbrains.annotations.Nullable;
  * internally. However, in cases when you want to provide your own ID mapping schema,
  * you can provide your own {@link org.apache.ignite.binary.BinaryIdMapper} implementation.
  * <p>
- * ID-mapper may be provided either globally in {@link org.apache.ignite.marshaller.portable.BinaryMarshaller},
+ * ID-mapper may be provided either globally in {@link org.apache.ignite.configuration.BinaryConfiguration},
  * or for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
  * Portable objects can be indexed for querying by specifying index fields in

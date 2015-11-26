@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -145,6 +146,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             if (fut != null && !fut.isDone()) {
+                U.debug(log, "<> Will wait for affinity ready future [fut=" + fut + ", msg=" + msg + ']');
+
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         cctx.kernalContext().closure().runLocalSafe(new Runnable() {
@@ -1033,6 +1036,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
         catch (IgniteCheckedException e) {
             cacheMsg.onClassError(e);
+        }
+        catch (BinaryObjectException e) {
+            cacheMsg.onClassError(new IgniteCheckedException(e));
         }
         catch (Error e) {
             if (cacheMsg.ignoreClassErrors() && X.hasCause(e, NoClassDefFoundError.class,
