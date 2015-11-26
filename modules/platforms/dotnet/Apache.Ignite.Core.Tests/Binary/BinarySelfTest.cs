@@ -676,8 +676,13 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             IBinaryObject portNewObj = marsh.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
+            Assert.IsTrue(portNewObj.HasField("field1"));
+            Assert.IsTrue(portNewObj.HasField("field2"));
+            Assert.IsFalse(portNewObj.HasField("field3"));
+
             Assert.AreEqual(obj.Field1, portNewObj.GetField<int>("field1"));
             Assert.AreEqual(obj.Field2, portNewObj.GetField<int>("Field2"));
+            Assert.AreEqual(0, portNewObj.GetField<int>("field3"));
         }
 
         /**
@@ -915,6 +920,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(obj.PEnum, binEnum.Deserialize<TestEnum>());
             Assert.AreEqual(obj.PEnum, binEnum.Deserialize<object>());
             Assert.AreEqual(typeof(TestEnum), binEnum.Deserialize<object>().GetType());
+            Assert.AreEqual(null, binEnum.GetField<object>("someField"));
+            Assert.IsFalse(binEnum.HasField("anyField"));
 
             var binEnumArr = portObj.GetField<IBinaryObject[]>("PEnumArray");
             Assert.IsTrue(binEnumArr.Select(x => x.Deserialize<TestEnum>()).SequenceEqual(obj.PEnumArray));
