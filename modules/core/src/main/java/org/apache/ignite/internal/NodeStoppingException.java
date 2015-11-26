@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.binary;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Starts up an empty node with example configuration and binary marshaller enabled.
+ *
  */
-public class ExampleBinaryNodeStartup {
+public class NodeStoppingException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * Start up an empty node with example configuration and binary marshaller enabled.
-     *
-     * @param args Command line arguments, none required.
-     * @throws IgniteException If failed.
+     * @param msg Exception message.
      */
-    public static void main(String[] args) throws IgniteException {
-        Ignition.start("examples/config/binary/example-ignite-binary.xml");
+    public NodeStoppingException(String msg) {
+        super(msg);
     }
 }

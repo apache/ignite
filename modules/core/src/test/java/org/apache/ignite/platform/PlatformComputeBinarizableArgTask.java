@@ -19,14 +19,14 @@ package org.apache.ignite.platform;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.portable.BinaryObjectEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -87,9 +87,9 @@ public class PlatformComputeBinarizableArgTask extends ComputeTaskAdapter<Object
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
-            BinaryObject arg0 = ((BinaryObject)arg);
+            BinaryObjectEx arg0 = ((BinaryObjectEx)arg);
 
-            BinaryType meta = ignite.binary().metadata(arg0.typeId());
+            BinaryType meta = ignite.binary().type(arg0.typeId());
 
             if (meta == null)
                 throw new IgniteException("Metadata doesn't exist.");

@@ -134,7 +134,7 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Portable Metadata</h1>
  * Even though Ignite portable protocol only works with hash codes for type and field names
  * to achieve better performance, Ignite provides metadata for all portable types which
- * can be queried ar runtime via any of the {@link IgniteBinary#metadata(Class)}
+ * can be queried ar runtime via any of the {@link IgniteBinary#type(Class)}
  * methods. Having metadata also allows for proper formatting of {@code PortableObject#toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  * <h1 class="header">Dynamic Structure Changes</h1>
@@ -231,7 +231,8 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  * Alternatively, if you cannot change class definitions, you can provide custom serialization
- * logic in {@link org.apache.ignite.binary.BinarySerializer} either globally in {@link org.apache.ignite.marshaller.portable.BinaryMarshaller} or
+ * logic in {@link org.apache.ignite.binary.BinarySerializer} either globally in
+ * {@link org.apache.ignite.configuration.BinaryConfiguration} or
  * for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <p>
  * Similar to java serialization you can use {@code writeReplace()} and {@code readResolve()} methods.
@@ -251,7 +252,7 @@ import org.jetbrains.annotations.Nullable;
  * internally. However, in cases when you want to provide your own ID mapping schema,
  * you can provide your own {@link org.apache.ignite.binary.BinaryIdMapper} implementation.
  * <p>
- * ID-mapper may be provided either globally in {@link org.apache.ignite.marshaller.portable.BinaryMarshaller},
+ * ID-mapper may be provided either globally in {@link org.apache.ignite.configuration.BinaryConfiguration},
  * or for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
  * Portable objects can be indexed for querying by specifying index fields in
@@ -323,7 +324,7 @@ public interface IgniteBinary {
      * @return Metadata.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public BinaryType metadata(Class<?> cls) throws BinaryObjectException;
+    public BinaryType type(Class<?> cls) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided class name.
@@ -332,7 +333,7 @@ public interface IgniteBinary {
      * @return Metadata.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public BinaryType metadata(String typeName) throws BinaryObjectException;
+    public BinaryType type(String typeName) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided type ID.
@@ -341,7 +342,7 @@ public interface IgniteBinary {
      * @return Metadata.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public BinaryType metadata(int typeId) throws BinaryObjectException;
+    public BinaryType type(int typeId) throws BinaryObjectException;
 
     /**
      * Gets metadata for all known types.
@@ -349,5 +350,5 @@ public interface IgniteBinary {
      * @return Metadata.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public Collection<BinaryType> metadata() throws BinaryObjectException;
+    public Collection<BinaryType> types() throws BinaryObjectException;
 }

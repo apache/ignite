@@ -474,6 +474,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         });
 
         return S.toString(GridDhtTxFinishFuture.class, this,
+            "xidVer", tx.xidVersion(),
             "innerFuts", futs,
             "super", super.toString());
     }

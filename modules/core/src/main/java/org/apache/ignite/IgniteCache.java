@@ -162,7 +162,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * BinaryObject po = prj.get(1);
      * </pre>
      * <p>
-     * Note that this method makes sense only if cache is working in binary mode ({@link org.apache.ignite.marshaller.portable.BinaryMarshaller} is used).
+     * Note that this method makes sense only if cache is working in binary mode
+     * if default marshaller is used.
      * If not, this method is no-op and will return current cache.
      *
      * @return New cache instance for portable objects.

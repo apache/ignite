@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheMemoryModeSelfTest;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
 /**
- * Memory models test.
+ *
  */
-public class GridCacheMemoryModePortableSelfTest extends GridCacheMemoryModeSelfTest {
+public class IgniteCachePartitionedSnapshotEnabledQuerySelfTest extends IgniteCachePartitionedQuerySelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
+    @Override protected boolean snapshotableIndex() {
+        return true;
     }
 }

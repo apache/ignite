@@ -1540,25 +1540,41 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String alias = aliases.get(fullName.toString());
 
-            ClassProperty tmp;
+            StringBuilder bld = new StringBuilder("get");
+
+            bld.append(prop);
+
+            bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
+
+            ClassProperty tmp = null;
 
             try {
-                StringBuilder bld = new StringBuilder("get");
-
-                bld.append(prop);
-
-                bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
-
                 tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias);
             }
             catch (NoSuchMethodException ignore) {
+                // No-op.
+            }
+
+            if (tmp == null) {
                 try {
                     tmp = new ClassProperty(cls.getDeclaredField(prop), key, alias);
                 }
                 catch (NoSuchFieldException ignored) {
-                    return null;
+                    // No-op.
                 }
             }
+
+            if (tmp == null) {
+                try {
+                    tmp = new ClassProperty(cls.getMethod(prop), key, alias);
+                }
+                catch (NoSuchMethodException ignored) {
+                    // No-op.
+                }
+            }
+
+            if (tmp == null)
+                return null;
 
             tmp.parent(res);
 
@@ -1672,34 +1688,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     *
-     */
-    private abstract static class Property {
-        /**
-         * Gets this property value from the given object.
-         *
-         * @param key Key.
-         * @param val Value.
-         * @return Property value.
-         * @throws IgniteCheckedException If failed.
-         */
-        public abstract Object value(Object key, Object val) throws IgniteCheckedException;
-
-        /**
-         * @return Property name.
-         */
-        public abstract String name();
-
-        /**
-         * @return Class member type.
-         */
-        public abstract Class<?> type();
-    }
-
-    /**
      * Description of type property.
      */
-    private static class ClassProperty extends Property {
+    private static class ClassProperty extends GridQueryProperty {
         /** */
         private final Member member;
 
@@ -1794,7 +1785,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private class PortableProperty extends Property {
+    private class PortableProperty extends GridQueryProperty {
         /** Property name. */
         private String propName;
 
@@ -1938,7 +1929,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** */
         @GridToStringExclude
-        private final Map<String, Property> props = new HashMap<>();
+        private final Map<String, GridQueryProperty> props = new HashMap<>();
 
         /** */
         @GridToStringInclude
@@ -1993,11 +1984,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override public GridQueryProperty property(String name) {
+            return props.get(name);
+        }
+
+        /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
             assert field != null;
 
-            Property prop = props.get(field);
+            GridQueryProperty prop = props.get(field);
 
             if (prop == null)
                 throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
@@ -2096,7 +2092,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param failOnDuplicate Fail on duplicate flag.
          * @throws IgniteCheckedException In case of error.
          */
-        public void addProperty(Property prop, boolean failOnDuplicate) throws IgniteCheckedException {
+        public void addProperty(GridQueryProperty prop, boolean failOnDuplicate) throws IgniteCheckedException {
             String name = prop.name();
 
             if (props.put(name, prop) != null && failOnDuplicate)

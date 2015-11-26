@@ -15,22 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
+package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheMemoryModeSelfTest;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Memory models test.
+ * Description and access method for query entity field.
  */
-public class GridCacheMemoryModePortableSelfTest extends GridCacheMemoryModeSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+public abstract class GridQueryProperty {
+    /**
+     * Gets this property value from the given object.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @return Property value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public abstract Object value(Object key, Object val) throws IgniteCheckedException;
 
-        cfg.setMarshaller(new BinaryMarshaller());
+    /**
+     * @return Property name.
+     */
+    public abstract String name();
 
-        return cfg;
-    }
+    /**
+     * @return Class member type.
+     */
+    public abstract Class<?> type();
 }

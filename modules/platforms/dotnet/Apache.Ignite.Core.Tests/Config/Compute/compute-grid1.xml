@@ -86,10 +86,5 @@
                 </property>
             </bean>
         </property>
-
-        <!-- Binary marshaller configuration -->
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.portable.BinaryMarshaller"/>
-        </property>
     </bean>
 </beans>
