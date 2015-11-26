@@ -995,6 +995,7 @@ public class GridNioServer<T> {
 
                     Message msg;
                     boolean finished = false;
+                    Message demandMess = null;
 
                     if (req != null) {
                         msg = req.directMessage();
@@ -1004,6 +1005,8 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf, writer);
 
                         if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
+                            demandMess = ((GridIoMessage)msg).message();
+
                             U.log(log, "B91>> " + ((GridIoMessage)msg).message() + " " + finished + " " + (writer != null));
                         }
 
@@ -1030,6 +1033,8 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf, writer);
 
                         if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
+                            demandMess = ((GridIoMessage)msg).message();
+
                             U.log(log, "B92>> " + ((GridIoMessage)msg).message());
                         }
 
@@ -1060,6 +1065,10 @@ public class GridNioServer<T> {
 
                     if (!skipWrite) {
                         int cnt = sockCh.write(buf);
+
+                        if (demandMess != null) {
+                            U.log(log, "B95>> " + demandMess + " cnt="+cnt);
+                        }
 
                         if (!F.isEmpty(doneFuts)) {
                             for (int i = 0; i < doneFuts.size(); i++)
