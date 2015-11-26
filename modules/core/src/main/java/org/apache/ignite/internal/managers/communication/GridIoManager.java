@@ -247,7 +247,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         utilityCachePool = ctx.utilityCachePool();
         marshCachePool = ctx.marshallerCachePool();
         affPool = new IgniteThreadPoolExecutor(
-            "aff-",
+            "aff",
             ctx.gridName(),
             1,
             1,

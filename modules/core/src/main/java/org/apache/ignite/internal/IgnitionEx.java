@@ -1067,7 +1067,8 @@ public class IgnitionEx {
      * @throws ClassCastException to indicate, that current thread doesn't have a {@link GridByNameRelation}.
      */
     public static String gridName() {
-        assert Thread.currentThread() instanceof GridByNameRelation : Thread.currentThread().getClass().getName();
+        assert Thread.currentThread() instanceof GridByNameRelation :
+            Thread.currentThread().getClass().getName() + " is not an instance of the " + GridByNameRelation.class.getName();
 
         return ((GridByNameRelation)Thread.currentThread()).getGridName();
     }
@@ -1541,7 +1542,7 @@ public class IgnitionEx {
             }
 
             execSvc = new IgniteThreadPoolExecutor(
-                "pub-",
+                "pub",
                 cfg.getGridName(),
                 cfg.getPublicThreadPoolSize(),
                 cfg.getPublicThreadPoolSize(),
@@ -1555,7 +1556,7 @@ public class IgnitionEx {
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
             sysExecSvc = new IgniteThreadPoolExecutor(
-                "sys-",
+                "sys",
                 cfg.getGridName(),
                 cfg.getSystemThreadPoolSize(),
                 cfg.getSystemThreadPoolSize(),
@@ -1570,7 +1571,7 @@ public class IgnitionEx {
             // Note, that we do not pre-start threads here as management pool may
             // not be needed.
             mgmtExecSvc = new IgniteThreadPoolExecutor(
-                "mgmt-",
+                "mgmt",
                 cfg.getGridName(),
                 cfg.getManagementThreadPoolSize(),
                 cfg.getManagementThreadPoolSize(),
@@ -1582,7 +1583,7 @@ public class IgnitionEx {
             // Note, that we do not pre-start threads here as class loading pool may
             // not be needed.
             p2pExecSvc = new IgniteThreadPoolExecutor(
-                "p2p-",
+                "p2p",
                 cfg.getGridName(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
@@ -1591,7 +1592,7 @@ public class IgnitionEx {
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             igfsExecSvc = new IgniteThreadPoolExecutor(
-                "igfs-",
+                "igfs",
                 cfg.getGridName(),
                 cfg.getIgfsThreadPoolSize(),
                 cfg.getIgfsThreadPoolSize(),
@@ -1600,7 +1601,7 @@ public class IgnitionEx {
 
             if (myCfg.getConnectorConfiguration() != null) {
                 restExecSvc = new IgniteThreadPoolExecutor(
-                    "rest-",
+                    "rest",
                     myCfg.getGridName(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
@@ -1610,7 +1611,7 @@ public class IgnitionEx {
             }
 
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
-                "utility-",
+                "utility",
                 cfg.getGridName(),
                 myCfg.getUtilityCacheThreadPoolSize(),
                 DFLT_SYSTEM_MAX_THREAD_CNT,
@@ -1618,7 +1619,7 @@ public class IgnitionEx {
                 new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
 
             marshCacheExecSvc = new IgniteThreadPoolExecutor(
-                "marshaller-cache-",
+                "marshaller-cache",
                 cfg.getGridName(),
                 myCfg.getMarshallerCacheThreadPoolSize(),
                 DFLT_SYSTEM_MAX_THREAD_CNT,
