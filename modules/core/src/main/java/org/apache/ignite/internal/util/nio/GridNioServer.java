@@ -875,15 +875,16 @@ public class GridNioServer<T> {
             int cnt = sockCh.read(readBuf);
 
             if (cnt == -1) {
-                if (log.isDebugEnabled())
-                    log.debug("Remote client closed connection: " + ses);
+                U.log(log, ">>>>> Remote client closed connection: " + ses);
 
                 close(ses, null);
 
                 return;
             }
-            else if (cnt == 0 && !readBuf.hasRemaining())
+            else if (cnt == 0 && !readBuf.hasRemaining()) {
+                U.log(log, ">>>>>> cnt == 0");
                 return;
+            }
 
             if (log.isTraceEnabled())
                 log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');

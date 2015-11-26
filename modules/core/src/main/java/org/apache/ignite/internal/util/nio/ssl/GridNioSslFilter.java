@@ -308,8 +308,6 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
             if (appBuf.hasRemaining())
                 proceedMessageReceived(ses, appBuf);
-            else
-            U.log(log, "Declined message");
 
             appBuf.compact();
 
