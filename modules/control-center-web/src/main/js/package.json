@@ -22,7 +22,7 @@
   "dependencies": {
     "async": "1.5.0",
     "body-parser": "~1.14.1",
-    "bootstrap-sass": "^3.3.5",
+    "bootstrap-sass": "^3.3.6",
     "compression": "1.6.0",
     "connect-modrewrite": "^0.8.2",
     "connect-mongo": "^0.8.1",
@@ -79,7 +79,7 @@
       "angular-ui-ace": "github:angular-ui/ui-ace@^0.2.3",
       "angular-ui-router": "github:angular-ui/ui-router@^0.2.15",
       "blob": "github:eligrey/Blob.js@master",
-      "bootstrap-carousel": "github:twbs/bootstrap@^3.3.5",
+      "bootstrap-carousel": "github:twbs/bootstrap@^3.3.6",
       "css": "github:systemjs/plugin-css@^0.1.19",
       "file-saver": "github:eligrey/FileSaver.js@master",
       "font-awesome": "npm:font-awesome@^4.4.0",
@@ -202,15 +202,6 @@
         "format": "global",
         "dependencies": {
           "blob": "github:eligrey/Blob.js@master"
-        }
-      },
-      "github:twbs/bootstrap@3.3.5": {
-        "shim": {
-          "js/carousel.js": {
-            "deps": [
-              "jquery"
-            ]
-          }
         }
       },
       "github:eligrey/Blob.js@master": {
