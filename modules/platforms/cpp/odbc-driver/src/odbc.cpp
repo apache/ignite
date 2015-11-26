@@ -448,6 +448,8 @@ SQLRETURN SQL_API SQLBindCol(SQLHSTMT       stmt,
                              SQLLEN         bufferLength,
                              SQLLEN*        strLengthOrIndicator)
 {
+    using namespace ignite::odbc::type_traits;
+
     using ignite::odbc::Statement;
     using ignite::odbc::ApplicationDataBuffer;
 
@@ -458,7 +460,9 @@ SQLRETURN SQL_API SQLBindCol(SQLHSTMT       stmt,
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-    if (!ignite::odbc::type_traits::IsApplicationTypeSupported(targetType))
+    IgniteSqlType driverType = ToDriverType(targetType);
+
+    if (driverType == IGNITE_SQL_TYPE_UNSUPPORTED)
         return SQL_ERROR;
 
     if (bufferLength < 0)
@@ -466,7 +470,7 @@ SQLRETURN SQL_API SQLBindCol(SQLHSTMT       stmt,
 
     if (targetValue || strLengthOrIndicator)
     {
-        ApplicationDataBuffer dataBuffer(targetType, targetValue, bufferLength, strLengthOrIndicator);
+        ApplicationDataBuffer dataBuffer(driverType, targetValue, bufferLength, strLengthOrIndicator);
 
         statement->BindColumn(colNum, dataBuffer);
     }

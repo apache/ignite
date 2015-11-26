@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <map>
+#include <memory>
 
 #include <ignite/impl/interop/interop_output_stream.h>
 #include <ignite/impl/interop/interop_input_stream.h>
@@ -29,6 +30,7 @@
 #include "application_data_buffer.h"
 #include "parser.h"
 #include "common_types.h"
+#include "cursor.h"
 #include "column_meta.h"
 
 #include "utility.h"
@@ -119,12 +121,34 @@ namespace ignite
             }
 
         private:
+
             /**
              * Constructor.
              * Called by friend classes.
              * @param parent Connection associated with the statement.
              */
             Statement(Connection& parent);
+
+            /**
+             * Make query execute request and use response to set internal
+             * state.
+             *
+             * @return True on success.
+             */
+            bool MakeRequestExecute();
+
+            /**
+             * Make query close request.
+             * @return True on success.
+             */
+            bool MakeRequestClose();
+
+            /**
+             * Make data fetch request and use response to set internal state.
+             *
+             * @return True on success.
+             */
+            bool MakeRequestFetch();
 
             /** Column binging map type alias. */
             typedef std::map<uint16_t, ApplicationDataBuffer> ColumnBindingMap;
@@ -141,12 +165,11 @@ namespace ignite
             /** Statement is in opened state. */
             bool opened;
 
-            //TODO: Move to separate Cursor class.
-            /** Cursor id. */
-            int64_t resultQueryId;
-
             /** Column metadata. */
             std::vector<ColumnMeta> resultMeta;
+
+            /** Cursor. */
+            std::auto_ptr<Cursor> cursor;
         };
     }
 }

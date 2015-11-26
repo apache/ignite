@@ -26,6 +26,8 @@
 
 #include "utility.h"
 #include "column_meta.h"
+#include "result_page.h"
+
 
 namespace ignite
 {
@@ -168,6 +170,83 @@ namespace ignite
             /** SQL query. */
             int32_t pageSize;
         };
+
+        /**
+         * Query close response.
+         */
+        class QueryResponse
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            QueryResponse() : status(RESPONSE_STATUS_FAILED), error()
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            void Read(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                status = reader.ReadInt8();
+
+                if (status == RESPONSE_STATUS_SUCCESS)
+                {
+                    ReadOnSuccess(reader);
+                }
+                else
+                {
+                    int32_t errorLen = reader.ReadString(0, 0);
+                    error.resize(errorLen);
+
+                    reader.ReadString(&error[0], static_cast<int32_t>(error.size()));
+                }
+            }
+            
+            /**
+             * Get request processing status.
+             * @return Status.
+             */
+            int8_t GetStatus() const
+            {
+                return status;
+            }
+
+            /**
+             * Get resulting error.
+             * @return Error.
+             */
+            const std::string& GetError() const
+            {
+                return error;
+            }
+
+        protected:
+            /**
+             * Read data if response status is RESPONSE_STATUS_SUCCESS.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader) = 0;
+
+        private:
+            /** Request processing status. */
+            int8_t status;
+
+            /** Error message. */
+            std::string error;
+        };
+
 
         /**
          * Query close response.
@@ -369,9 +448,11 @@ namespace ignite
         public:
             /**
              * Constructor.
+             * @param resultPage Result page.
              */
-            QueryFetchResponse() : status(RESPONSE_STATUS_FAILED),
-                queryId(0), error(), last(false), rowsNum(0)
+            QueryFetchResponse(ResultPage& resultPage) : 
+                status(RESPONSE_STATUS_FAILED), queryId(0), error(),
+                resultPage(resultPage)
             {
                 // No-op.
             }
@@ -396,11 +477,9 @@ namespace ignite
                 {
                     queryId = reader.ReadInt64();
 
-                    last = reader.ReadBool();
+                    LOG_MSG("queryId: %u\n", queryId);
 
-                    int32_t rowsNum = reader.ReadInt32();
-
-                    //TODO: implement me.
+                    resultPage.Read(reader);
                 }
                 else
                 {
@@ -448,11 +527,8 @@ namespace ignite
             /** Error message. */
             std::string error;
 
-            /** Contains last row. */
-            bool last;
-
-            /** Rows number. */
-            int32_t rowsNum;
+            /** Result page. */
+            ResultPage& resultPage;
         };
     }
 }

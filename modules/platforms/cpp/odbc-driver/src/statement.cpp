@@ -21,7 +21,7 @@
 #include "message.h"
 #include "statement.h"
 
-// Temporary solution
+// Default result page size.
 #define DEFAULT_PAGE_SIZE 32
 
 namespace ignite
@@ -29,7 +29,7 @@ namespace ignite
     namespace odbc
     {
         Statement::Statement(Connection& parent) :
-            connection(parent), columnBindings(), resultQueryId(0), resultMeta()
+            connection(parent), columnBindings(), resultMeta()
         {
             // No-op.
         }
@@ -70,10 +70,75 @@ namespace ignite
 
         bool Statement::ExecuteSqlQuery()
         {
-            const std::string& cacheName = connection.GetCache();
-
             if (sql.empty())
                 return false;
+
+            bool success = MakeRequestExecute();
+
+            if (!success)
+                return false;
+
+            opened = true;
+
+            return true;
+        }
+
+        bool Statement::Close()
+        {
+            if (!cursor.get())
+                return false;
+
+            bool success = MakeRequestClose();
+
+            cursor.reset();
+
+            return success;
+        }
+
+        SqlResult Statement::FetchRow()
+        {
+            if (!cursor.get())
+                return SQL_RESULT_ERROR;
+
+            if (!cursor->HasNext())
+            {
+                cursor.reset();
+
+                return SQL_RESULT_NO_DATA;
+            }
+
+            if (cursor->NeedDataUpdate())
+            {
+                bool success = MakeRequestFetch();
+
+                if (!success)
+                    return SQL_RESULT_ERROR;
+            }
+            else
+                cursor->Increment();
+
+
+            Row* row = cursor->GetRow();
+
+            if (!row)
+                return SQL_RESULT_ERROR;
+
+            for (int32_t i = 1; i < row->GetSize() + 1; ++i)
+            {
+                ColumnBindingMap::iterator it = columnBindings.find(i);
+
+                if (it != columnBindings.end())
+                    row->ReadColumnToBuffer(it->second);
+                //else
+                //    row->SkipColumn();
+            }
+
+            return SQL_RESULT_SUCCESS;
+        }
+
+        bool Statement::MakeRequestExecute()
+        {
+            const std::string& cacheName = connection.GetCache();
 
             QueryExecuteRequest req(cacheName, sql);
             QueryExecuteResponse rsp;
@@ -90,11 +155,11 @@ namespace ignite
                 return false;
             }
 
-            resultQueryId = rsp.GetQueryId();
+            cursor.reset(new Cursor(rsp.GetQueryId()));
 
             resultMeta.assign(rsp.GetMeta().begin(), rsp.GetMeta().end());
 
-            LOG_MSG("Query id: %lld\n", resultQueryId);
+            LOG_MSG("Query id: %lld\n", cursor->GetQueryId());
 
             for (int i = 0; i < rsp.GetMeta().size(); ++i)
             {
@@ -105,17 +170,12 @@ namespace ignite
                 LOG_MSG("\n");
             }
 
-            opened = true;
-
             return true;
         }
 
-        bool Statement::Close()
+        bool Statement::MakeRequestClose()
         {
-            if (!opened)
-                return false;
-
-            QueryCloseRequest req(resultQueryId);
+            QueryCloseRequest req(cursor->GetQueryId());
             QueryCloseResponse rsp;
 
             bool success = connection.SyncMessage(req, rsp);
@@ -125,27 +185,40 @@ namespace ignite
 
             LOG_MSG("Query id: %lld\n", rsp.GetQueryId());
 
-            opened = false;
+            if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
+            {
+                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+
+                return false;
+            }
 
             return true;
         }
 
-        SqlResult Statement::FetchRow()
+        bool Statement::MakeRequestFetch()
         {
-            if (!opened)
-                return SQL_RESULT_ERROR;
+            std::auto_ptr<ResultPage> resultPage(new ResultPage());
 
-            QueryFetchRequest req(resultQueryId, DEFAULT_PAGE_SIZE);
-            QueryFetchResponse rsp;
+            QueryFetchRequest req(cursor->GetQueryId(), DEFAULT_PAGE_SIZE);
+            QueryFetchResponse rsp(*resultPage);
 
             bool success = connection.SyncMessage(req, rsp);
 
             LOG_MSG("Query id: %lld\n", rsp.GetQueryId());
 
             if (!success)
-                return SQL_RESULT_ERROR;
+                return false;
 
-            return SQL_RESULT_SUCCESS;
+            if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
+            {
+                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+
+                return false;
+            }
+
+            cursor->UpdateData(resultPage);
+
+            return true;
         }
     }
 }

@@ -19,6 +19,7 @@
 #define _IGNITE_GUID
 
 #include <stdint.h>
+#include <iomanip>
 
 #include <ignite/common/common.h>
 
@@ -107,6 +108,31 @@ namespace ignite
         /** Least significant bits. */
         int64_t least; 
     };
+
+    /**
+     * Output operator.
+     *
+     * @param os Output stream.
+     * @param guid Guid to output.
+     * @return Reference to the first param.
+     */
+    template<typename C>
+    std::basic_ostream<C>& operator<<(std::basic_ostream<C>& os, const Guid& guid)
+    {
+        uint32_t part1 = static_cast<uint32_t>(guid.GetMostSignificantBits() >> 32);
+        uint16_t part2 = static_cast<uint16_t>(guid.GetMostSignificantBits() >> 16);
+        uint16_t part3 = static_cast<uint16_t>(guid.GetMostSignificantBits());
+        uint16_t part4 = static_cast<uint16_t>(guid.GetLeastSignificantBits() >> 48);
+        uint64_t part5 = guid.GetLeastSignificantBits() & 0x0000FFFFFFFFFFFFULL;
+
+        os  << std::setfill<C>('0') << std::setw(8)  << std::hex << part1 << '-'
+            << std::setfill<C>('0') << std::setw(4)  << std::hex << part2 << '-'
+            << std::setfill<C>('0') << std::setw(4)  << std::hex << part3 << '-'
+            << std::setfill<C>('0') << std::setw(4)  << std::hex << part4 << '-'
+            << std::setfill<C>('0') << std::setw(12) << std::hex << part5;
+
+        return os;
+    }
 }
 
 #endif

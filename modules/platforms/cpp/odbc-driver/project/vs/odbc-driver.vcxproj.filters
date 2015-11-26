@@ -43,6 +43,15 @@
     <ClCompile Include="..\..\src\utility.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\cursor.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\result_page.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\row.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -90,6 +99,13 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\column_meta.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="result_page.h" />
+    <ClInclude Include="..\..\src\result_page.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\row.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

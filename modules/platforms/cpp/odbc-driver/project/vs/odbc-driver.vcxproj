@@ -149,10 +149,13 @@
     <ClCompile Include="..\..\src\common_types.cpp" />
     <ClCompile Include="..\..\src\configuration.cpp" />
     <ClCompile Include="..\..\src\connection.cpp" />
+    <ClCompile Include="..\..\src\cursor.cpp" />
     <ClCompile Include="..\..\src\environment.cpp" />
     <ClCompile Include="..\..\src\connection_info.cpp" />
     <ClCompile Include="..\..\src\odbc.cpp" />
     <ClCompile Include="..\..\src\application_data_buffer.cpp" />
+    <ClCompile Include="..\..\src\result_page.cpp" />
+    <ClCompile Include="..\..\src\row.cpp" />
     <ClCompile Include="..\..\src\statement.cpp" />
     <ClCompile Include="..\..\src\type_traits.cpp" />
     <ClCompile Include="..\..\src\utility.cpp" />
@@ -180,9 +183,12 @@
     <ClInclude Include="..\..\src\column_meta.h" />
     <ClInclude Include="..\..\src\message.h" />
     <ClInclude Include="..\..\src\parser.h" />
+    <ClInclude Include="..\..\src\result_page.h" />
+    <ClInclude Include="..\..\src\row.h" />
     <ClInclude Include="..\..\src\statement.h" />
     <ClInclude Include="..\..\src\type_traits.h" />
     <ClInclude Include="..\..\src\utility.h" />
+    <ClInclude Include="result_page.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

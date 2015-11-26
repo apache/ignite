@@ -96,8 +96,8 @@ namespace ignite
             {
                 using namespace ignite::impl::binary;
 
-                //for (int i = 0; i < buf.size(); ++i)
-                //    LOG_MSG("[%0.3i] : %c %u\n", i, buf[i], buf[i]);
+                for (int i = 0; i < buf.size(); ++i)
+                    LOG_MSG("[%0.4i] : %c %u\n", i, buf[i] > 32 && buf[i] < 128 ? buf[i] : '.', (unsigned char) buf[i]);
 
                 if (inMem.Capacity() < buf.size())
                     inMem.Reallocate(static_cast<int32_t>(buf.size()));
