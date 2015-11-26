@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -28,6 +30,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -174,7 +177,13 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
                 assertNotNull(g1.<Long>affinity(null).mapKeyToNode(i));
 
                 // Call mapKeyToNode for daemon node.
-                assertNull(g2.<Long>affinity(null).mapKeyToNode(i));
+                final long i0 = i;
+
+                GridTestUtils.assertThrows(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return g2.<Long>affinity(null).mapKeyToNode(i0);
+                    }
+                }, IgniteException.class, "Failed to find cache");
             }
         }
         finally {
