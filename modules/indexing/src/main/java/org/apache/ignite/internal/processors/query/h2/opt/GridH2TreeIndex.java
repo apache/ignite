@@ -29,6 +29,7 @@ import java.util.NavigableMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -49,7 +50,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
-import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
@@ -88,20 +88,16 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
 @SuppressWarnings("ComparatorNotSerializable")
 public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridSearchRowPointer> {
     /** */
-    private static Object EXPLICIT_NULL = new Object();
+    private static final Object EXPLICIT_NULL = new Object();
 
     /** */
     protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
     /** */
     private final Object msgTopic;
-    private final ThreadLocal<ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>> snapshot = new ThreadLocal<>();
 
     /** */
     private final GridMessageListener msgLsnr;
-
-    /** */
-    private final GridKernalContext ctx;
 
     /** */
     private final IgniteLogger log;
@@ -192,14 +188,13 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         }
 
         if (desc != null && desc.context() != null) {
-            ctx = desc.context().kernalContext();
-            log = ctx.log(GridH2TreeIndex.class);
+            log = kernalContext().log(GridH2TreeIndex.class);
 
             msgTopic = new IgniteBiTuple<>(GridTopic.TOPIC_QUERY, tbl.identifier() + '.' + getName());
 
             msgLsnr = new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg) {
-                    ClusterNode node = ctx.discovery().node(nodeId);
+                    ClusterNode node = kernalContext().discovery().node(nodeId);
 
                     if (node == null)
                         return;
@@ -219,14 +214,20 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 }
             };
 
-            ctx.io().addMessageListener(msgTopic, msgLsnr);
+            kernalContext().io().addMessageListener(msgTopic, msgLsnr);
         }
         else {
             msgTopic = null;
             msgLsnr = null;
-            ctx =  null;
             log = new NullLogger();
         }
+    }
+
+    /**
+     * @return Kernal context.
+     */
+    private GridKernalContext kernalContext() {
+        return getTable().rowDescriptor().context().kernalContext();
     }
 
     /**
@@ -234,7 +235,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @param msg Request message.
      */
     private void onIndexRangeRequest(ClusterNode node, GridH2IndexRangeRequest msg) {
-        GridH2QueryContext qctx = GridH2QueryContext.get(ctx.localNodeId(), msg.originNodeId(), msg.queryId(), MAP);
+        GridH2QueryContext qctx = GridH2QueryContext.get(kernalContext().localNodeId(),
+            msg.originNodeId(), msg.queryId(), MAP);
 
         if (qctx == null) {
             // TODO respond NOT_FOUND
@@ -299,7 +301,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @param msg Response message.
      */
     private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
-        GridH2QueryContext qctx = GridH2QueryContext.get(ctx.localNodeId(), msg.originNodeId(), msg.queryId(), MAP);
+        GridH2QueryContext qctx = GridH2QueryContext.get(kernalContext().localNodeId(),
+            msg.originNodeId(), msg.queryId(), MAP);
 
         if (qctx == null)
             return;
@@ -346,7 +349,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             U.closeQuiet((AutoCloseable)tree);
 
         if (msgLsnr != null)
-            ctx.io().removeMessageListener(msgTopic, msgLsnr);
+            kernalContext().io().removeMessageListener(msgTopic, msgLsnr);
     }
 
     /** {@inheritDoc} */
@@ -728,6 +731,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 Object pkAffKeyLast;
 
                 try {
+                    GridKernalContext ctx = kernalContext();
                     pkAffKeyFirst = ctx.affinity().affinityKey(cctx.name(), pkFirst.getObject());
                     pkAffKeyLast = ctx.affinity().affinityKey(cctx.name(), pkFirst.getObject());
                 }
@@ -887,6 +891,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         else {
             res = new ArrayList<>(partMap.size());
 
+            GridKernalContext ctx = kernalContext();
+
             for (UUID nodeId : partMap.keySet()) {
                 ClusterNode node = ctx.discovery().node(nodeId);
 
@@ -963,6 +969,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         if (msg == null)
             return null;
 
+        GridKernalContext ctx = kernalContext();
+
         Value[] vals = new Value[getTable().getColumns().length];
 
         for (int i = 0; i < indexColumns.length; i++) {
@@ -1015,6 +1023,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     private Row toRow(GridH2RowMessage msg) {
         if (msg == null)
             return null;
+
+        GridKernalContext ctx = kernalContext();
 
         List<GridH2ValueMessage> vals = msg.values();
 
@@ -1321,7 +1331,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                     }
                 }
 
-                if (!ctx.discovery().alive(node))
+                if (!kernalContext().discovery().alive(node))
                     throw new GridH2RetryException("Node left.");
             }
 

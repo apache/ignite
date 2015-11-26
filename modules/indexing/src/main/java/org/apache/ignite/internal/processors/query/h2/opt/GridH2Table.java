@@ -228,7 +228,7 @@ public class GridH2Table extends TableBase {
             return true;
         }
         finally {
-            l.unlock();
+            unlock(l);
 
             if (mem != null)
                 desc.guard().end();
@@ -284,9 +284,6 @@ public class GridH2Table extends TableBase {
             snapshots = actualSnapshot.get();
 
             if (snapshots != null) { // Reuse existing snapshot without locking.
-                if (noSnapshots)
-                    return snapshots; // Return fake snapshots.
-
                 snapshots = doSnapshotIndexes(snapshots, qctx);
 
                 if (snapshots != null)
@@ -315,7 +312,7 @@ public class GridH2Table extends TableBase {
             }
         }
         finally {
-            l.unlock();
+            unlock(l);
         }
 
         return snapshots;
@@ -329,11 +326,22 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * @param l Lock.
+     */
+    private static void unlock(Lock l) {
+        if (l != null)
+            l.unlock();
+    }
+
+    /**
      * @param exclusive Exclusive lock.
      * @param waitMillis Milliseconds to wait for the lock.
      * @return The acquired lock or {@code null} if the lock time out occurred.
      */
     public Lock lock(boolean exclusive, long waitMillis) {
+        if (!snapshotEnabled)
+            return null;
+
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
@@ -345,7 +353,7 @@ public class GridH2Table extends TableBase {
         }
 
         if (destroyed) {
-            l.unlock();
+            unlock(l);
 
             throw new IllegalStateException("Table " + identifier() + " already destroyed.");
         }
@@ -364,8 +372,6 @@ public class GridH2Table extends TableBase {
     private Object[] doSnapshotIndexes(Object[] snapshots, GridH2QueryContext qctx) {
         if (snapshots == null) // Nothing to reuse, create new snapshots.
             snapshots = new Object[idxs.size() - 1];
-
-        boolean noSnapshots0 = true;
 
         // Take snapshots on all except first which is scan.
         for (int i = 1, len = idxs.size(); i < len; i++) {
@@ -387,12 +393,7 @@ public class GridH2Table extends TableBase {
             }
 
             snapshots[i - 1] = s;
-
-            noSnapshots0 &= (s == null);
         }
-
-        if (noSnapshots0)
-            noSnapshots = true;
 
         return snapshots;
     }
@@ -417,7 +418,7 @@ public class GridH2Table extends TableBase {
                 index(i).destroy();
         }
         finally {
-            writeUnlock();
+            unlock(l);
         }
     }
 
@@ -426,7 +427,7 @@ public class GridH2Table extends TableBase {
         if (ses != null && !sessions.remove(ses))
             return;
 
-        if (snapshotInLock())
+        if (snapshotEnabled && snapshotInLock())
             releaseSnapshots();
     }
 
@@ -564,7 +565,7 @@ public class GridH2Table extends TableBase {
             return true;
         }
         finally {
-            l.unlock();
+            unlock(l);
 
             if (mem != null)
                 desc.guard().end();
@@ -624,7 +625,7 @@ public class GridH2Table extends TableBase {
         finally {
             releaseSnapshots();
 
-            l.unlock();
+            unlock(l);
         }
     }
 
@@ -734,38 +735,6 @@ public class GridH2Table extends TableBase {
         res.sortType = sorting;
 
         return res;
-    }
-
-    /**
-     *
-     */
-    private void readLock() {
-        if (snapshotEnabled)
-            lock.readLock().lock();
-    }
-
-    /**
-     *
-     */
-    private void readUnlock() {
-        if (snapshotEnabled)
-            lock.readLock().unlock();
-    }
-
-    /**
-     *
-     */
-    private void writeLock() {
-        if (snapshotEnabled)
-            lock.writeLock().lock();
-    }
-
-    /**
-     *
-     */
-    private void writeUnlock() {
-        if (snapshotEnabled)
-            lock.writeLock().unlock();
     }
 
     /**

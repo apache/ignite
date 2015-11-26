@@ -1032,6 +1032,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final String sqlQry = qry.getSql();
 
         Connection c = connectionForSpace(space);
+        final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
 
         GridCacheTwoStepQuery twoStepQry;
         List<GridQueryFieldMetadata> meta;
@@ -1044,8 +1045,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             meta = cachedQry.meta;
         }
         else {
-            final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
-
             final UUID locNodeId = ctx.localNodeId();
 
             enforceJoinOrder(enforceJoinOrder);
@@ -1397,7 +1396,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return -1;
 
         ResultSet rs = executeSqlQuery(connectionForSpace(spaceName),
-            "SELECT COUNT(*) FROM " + tbl.fullTableName(), null);
+            "SELECT COUNT(*) FROM " + tbl.fullTableName(), null, false);
 
         try {
             if (!rs.next())

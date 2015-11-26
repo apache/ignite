@@ -54,7 +54,7 @@ public class GridCacheTwoStepQuery {
     private boolean fullCollocation;
 
     /** */
-    private final boolean skipMergeTbl;
+    private boolean skipMergeTbl;
 
     /**
      * @param spaces All spaces accessed in query.
@@ -76,6 +76,13 @@ public class GridCacheTwoStepQuery {
      */
     public boolean skipMergeTable() {
         return skipMergeTbl;
+    }
+
+    /**
+     * @param skipMergeTbl Skip merge table.
+     */
+    public void skipMergeTbl(boolean skipMergeTbl) {
+        this.skipMergeTbl = skipMergeTbl;
     }
 
     /**
@@ -165,8 +172,12 @@ public class GridCacheTwoStepQuery {
     public GridCacheTwoStepQuery copy(Object[] args) {
         assert !explain;
 
-        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(spaces, rdc.copy(args), skipMergeTbl);
+        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(spaces, tbls);
+
+        cp.rdc = rdc.copy(args);
+        cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
+
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy(args));
 

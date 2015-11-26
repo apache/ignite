@@ -253,42 +253,6 @@ public class GridSqlQuerySplitter {
         });
     }
 
-    private static boolean split(@Nullable GridSqlElement rdcParent, int childIdx, GridSqlSelect mapQry) {
-        if (!hasPartitionedTableInFrom(mapQry))
-            return false;
-
-        boolean needSplit = false;
-
-        if (mapQry.distinct() || mapQry.groupColumns() != null ||
-            mapQry.limit() != null || mapQry.offset() != null || mapQry.sort() != null)
-            needSplit = true;
-        else {
-            for (GridSqlElement expr : mapQry.columns(false)) {
-                if (hasAggregates(expr)) {
-                    needSplit = true;
-
-                    break;
-                }
-            }
-        }
-
-        if (findTablesInFrom(mapQry.from(), new IgnitePredicate<GridSqlElement>() {
-            @Override public boolean apply(GridSqlElement gridSqlElement) {
-                // TODO split child subqueries.
-
-                return false;
-            }
-        }))
-            return false;
-
-        if (!needSplit)
-            return false;
-
-        // TODO split
-
-        return true;
-    }
-
     /**
      * @param res Resulting two step query.
      * @param splitIdx Split index.
@@ -382,14 +346,27 @@ public class GridSqlQuerySplitter {
             rdcQry.distinct(true);
         }
 
-        res.addMapQuery(new GridCacheSqlQuery(mapQry.getSQL(),
-            findParams(mapQry, params, new ArrayList<>(params.length)).toArray())
-            .columns(collectColumns(mapExps)));
+        IntArray paramIdxs = new IntArray(params.length);
+
+        GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL(),
+            findParams(mapQry, params, new ArrayList<>(params.length), paramIdxs).toArray());
+
+        map.columns(collectColumns(mapExps));
+        map.parameterIndexes(toIntArray(paramIdxs));
+
+        res.addMapQuery(map);
 
         res.explain(explain);
 
-        return new GridCacheSqlQuery(rdcQry.getSQL(),
-            findParams(rdcQry, params, new ArrayList<>()).toArray());
+        paramIdxs = new IntArray(params.length);
+
+        GridCacheSqlQuery rdc = new GridCacheSqlQuery(rdcQry.getSQL(),
+            findParams(rdcQry, params, new ArrayList<>(), paramIdxs).toArray());
+
+        rdc.parameterIndexes(toIntArray(paramIdxs));
+        res.skipMergeTbl(rdcQry.simpleQuery());
+
+        return rdc;
     }
 
     /**

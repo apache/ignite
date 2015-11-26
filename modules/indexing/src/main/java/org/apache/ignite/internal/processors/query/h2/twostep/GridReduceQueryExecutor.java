@@ -32,7 +32,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.NavigableMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -62,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
@@ -78,17 +76,21 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
+import org.h2.index.Cursor;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.jdbc.JdbcStatement;
 import org.h2.result.ResultInterface;
+import org.h2.result.Row;
 import org.h2.table.Column;
 import org.h2.util.IntArray;
 import org.h2.value.Value;
@@ -96,6 +98,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
 
 /**
  * Reduce query executor.
@@ -521,7 +524,7 @@ public class GridReduceQueryExecutor {
             Collection<ClusterNode> nodes;
 
             // Explicit partition mapping for unstable topology.
-            Map<ClusterNode, IntArray> partsMap = null;
+            Map<ClusterNode,IntArray> partsMap = null;
 
             if (isPreloadingActive(cctx, extraSpaces)) {
                 if (cctx.isReplicated())
@@ -555,7 +558,7 @@ public class GridReduceQueryExecutor {
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeIndex idx;
 
-                if (!skipMergeTbl) {
+                if (!skipMergeTbl || qry.explain()) {
                     GridMergeTable tbl;
 
                     try {
@@ -586,7 +589,7 @@ public class GridReduceQueryExecutor {
                 if (ctx.clientDisconnected()) {
                     throw new CacheException("Query was cancelled, client node disconnected.",
                         new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
-                        "Client node disconnected."));
+                            "Client node disconnected."));
                 }
 
                 List<GridCacheSqlQuery> mapQrys = qry.mapQueries();
@@ -645,31 +648,57 @@ public class GridReduceQueryExecutor {
                 Iterator<List<?>> resIter = null;
 
                 if (!retry) {
-                    UUID locNodeId = ctx.localNodeId();
+                    if (skipMergeTbl && !qry.explain()) {
+                        List<List<?>> res = new ArrayList<>();
 
-                    GridH2QueryContext.set(
-                        new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE).pageSize(r.pageSize));
+                        assert r.idxs.size() == 1 : r.idxs;
 
-                    h2.enforceJoinOrder(enforceJoinOrder);
+                        GridMergeIndex idx = r.idxs.get(0);
 
-                    try {
-                        if (qry.explain())
-                            return explainPlan(r.conn, space, qry);
+                        Cursor cur = idx.findInStream(null, null);
 
-                        GridCacheSqlQuery rdc = qry.reduceQuery();
+                        while (cur.next()) {
+                            Row row = cur.get();
 
-                        ResultSet res = h2.executeSqlQueryWithTimer(space, 
-                            r.conn, 
-                            rdc.query(), 
-                            F.asList(rdc.parameters()), 
-                            false);
-                        
-                        resIter = new Iter(res);
+                            int cols = row.getColumnCount();
+
+                            List<Object> resRow = new ArrayList<>(cols);
+
+                            for (int c = 0; c < cols; c++)
+                                resRow.add(row.getValue(c).getObject());
+
+                            res.add(resRow);
+                        }
+
+                        resIter = res.iterator();
                     }
-                    finally {
-                        h2.enforceJoinOrder(false);
+                    else {
+                        UUID locNodeId = ctx.localNodeId();
 
-                        GridH2QueryContext.clear(false);
+                        GridH2QueryContext.set(
+                            new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE).pageSize(r.pageSize));
+
+                        h2.enforceJoinOrder(enforceJoinOrder);
+
+                        try {
+                            if (qry.explain())
+                                return explainPlan(r.conn, space, qry);
+
+                            GridCacheSqlQuery rdc = qry.reduceQuery();
+
+                            ResultSet res = h2.executeSqlQueryWithTimer(space,
+                                r.conn,
+                                rdc.query(),
+                                F.asList(rdc.parameters()),
+                                false);
+
+                            resIter = new Iter(res);
+                        }
+                        finally {
+                            h2.enforceJoinOrder(false);
+
+                            GridH2QueryContext.clear(false);
+                        }
                     }
                 }
 
@@ -686,7 +715,7 @@ public class GridReduceQueryExecutor {
                     @Override public void close() throws Exception {
                         super.close();
 
-                        if (distributedJoins || !allTablesFetched(r.tbls))
+                        if (distributedJoins || !allIndexesFetched(r.idxs))
                             send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
                     }
                 };
@@ -712,13 +741,26 @@ public class GridReduceQueryExecutor {
             finally {
                 if (!runs.remove(qryReqId, r))
                     U.warn(log, "Query run was already removed: " + qryReqId);
-                
+
                 if (!skipMergeTbl) {
                     for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
                         fakeTable(null, i).innerTable(null); // Drop all merge tables.
                 }
             }
         }
+    }
+
+    /**
+     * @param idxs Merge indexes.
+     * @return {@code true} If all remote data was fetched.
+     */
+    private static boolean allIndexesFetched(List<GridMergeIndex> idxs) {
+        for (int i = 0; i <  idxs.size(); i++) {
+            if (!idxs.get(i).fetchedAll())
+                return false;
+        }
+
+        return true;
     }
 
     /**
