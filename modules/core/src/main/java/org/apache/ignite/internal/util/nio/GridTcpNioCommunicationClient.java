@@ -123,6 +123,12 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
                     U.log(log, "C1>> " + ((GridIoMessage)msg).message() + " " +future);
                 }
             });
+
+            ses.addMeta(ACK_CLOSURE.ordinal(), new IgniteInClosure<IgniteException>(){
+                @Override public void apply(IgniteException e) {
+                    U.log(log, "R1>> " + ((GridIoMessage)msg).message());
+                }
+            });
         }
 
         if (fut.isDone()) {
