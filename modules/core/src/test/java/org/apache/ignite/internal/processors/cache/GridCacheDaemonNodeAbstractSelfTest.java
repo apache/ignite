@@ -170,7 +170,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
             // Start daemon node.
             daemon = true;
 
-            Ignite g2 = startGrid(4);
+            final Ignite g2 = startGrid(4);
 
             for (long i = 0; i < Integer.MAX_VALUE; i = (i << 1) + 1) {
                 // Call mapKeyToNode for normal node.
