@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     internal class BinaryType : IBinaryType
     {
         /** Empty metadata. */
-        public static readonly BinaryType EmptyMeta =
+        public static readonly BinaryType Empty =
             new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null, false);
 
         /** Empty dictionary. */

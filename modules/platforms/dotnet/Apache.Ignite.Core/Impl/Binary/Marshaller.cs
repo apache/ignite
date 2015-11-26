@@ -266,7 +266,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return meta;
             }
 
-            return BinaryType.EmptyMeta;
+            return BinaryType.Empty;
         }
 
         /// <summary>
