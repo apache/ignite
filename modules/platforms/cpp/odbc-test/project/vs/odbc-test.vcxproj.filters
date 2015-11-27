@@ -21,5 +21,8 @@
     <ClInclude Include="..\..\include\teamcity_messages.h">
       <Filter>Code</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Code</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
