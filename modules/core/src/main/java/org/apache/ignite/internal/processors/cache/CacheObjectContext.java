@@ -256,7 +256,7 @@ import org.apache.ignite.internal.util.typedef.F;
             CacheObject co = (CacheObject)o;
 
             if (!keepPortable || co.isPlatformType())
-                return unwrapPortable(co.value(this, true), keepPortable, cpy);
+                return unwrapPortable(co.value(this, cpy), keepPortable, cpy);
         }
 
         return o;

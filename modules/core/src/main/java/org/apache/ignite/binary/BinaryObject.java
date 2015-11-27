@@ -94,18 +94,11 @@ import java.util.TreeMap;
  * <h1 class="header">Binary Type Metadata</h1>
  * Even though Ignite binary protocol only works with hash codes for type and field names
  * to achieve better performance, Ignite provides metadata for all binary types which
- * can be queried ar runtime via any of the {@link org.apache.ignite.IgniteBinary#metadata(Class)}
+ * can be queried ar runtime via any of the {@link org.apache.ignite.IgniteBinary#type(Class)}
  * methods. Having metadata also allows for proper formatting of {@code BinaryObject.toString()} method,
  * even when binary objects are kept in binary format only, which may be necessary for audit reasons.
  */
 public interface BinaryObject extends Serializable, Cloneable {
-    /**
-     * Gets binary object type ID.
-     *
-     * @return Type ID.
-     */
-    public int typeId();
-
     /**
      * Gets type information for this binary object.
      *

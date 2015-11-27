@@ -328,7 +328,7 @@ public class PortableClassDescriptor {
     }
 
     /**
-     * @return {@code true} if {@link OptimizedMarshaller} must be used instead of {@link org.apache.ignite.marshaller.portable.BinaryMarshaller}
+     * @return {@code true} if {@link OptimizedMarshaller} must be used instead of {@link BinaryMarshaller}
      * for object serialization and deserialization.
      */
     public boolean useOptimizedMarshaller() {
