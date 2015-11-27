@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
@@ -232,9 +233,21 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration)
+        {
+            return _ignite.GetOrCreateCache<TK, TV>(configuration);
+        }
+
+        /** <inheritdoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(string name)
         {
             return _ignite.CreateCache<TK, TV>(name);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration)
+        {
+            return _ignite.CreateCache<TK, TV>(configuration);
         }
 
         /** <inheritdoc /> */
@@ -275,7 +288,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IIgniteBinary GetBinary()
+        public IBinary GetBinary()
         {
             return _ignite.GetBinary();
         }
@@ -315,6 +328,12 @@ namespace Apache.Ignite.Core.Impl
         public IAtomicLong GetAtomicLong(string name, long initialValue, bool create)
         {
             return _ignite.GetAtomicLong(name, initialValue, create);
+        }
+
+        /** <inheritdoc /> */
+        public IgniteConfiguration GetConfiguration()
+        {
+            return _ignite.GetConfiguration();
         }
 
         /** <inheritdoc /> */

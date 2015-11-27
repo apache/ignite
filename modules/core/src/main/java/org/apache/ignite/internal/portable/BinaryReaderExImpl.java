@@ -1616,7 +1616,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OPTM_MARSH:
-                obj = PortableUtils.doReadOptimized(in, ctx);
+                obj = PortableUtils.doReadOptimized(in, ctx, ldr);
 
                 break;
 

@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.binary;
+package org.apache.ignite.testsuites;
+
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Organization type enum.
+ *
  */
-public enum OrganizationType {
-    /** Non-profit organization. */
-    NON_PROFIT,
+public class IgniteBinaryObjectsCacheRestartTestSuite {
+    public static TestSuite suite() throws Exception {
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-    /** Private organization. */
-    PRIVATE,
-
-    /** Government organization. */
-    GOVERNMENT
+        return IgniteCacheRestartTestSuite.suite();
+    }
 }

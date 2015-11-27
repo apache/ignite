@@ -34,6 +34,7 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     private static final long serialVersionUID = 0L;
 
     /** Name of cache data structure. */
+    @AffinityKeyMapped
     private String name;
 
     /**
@@ -55,7 +56,6 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     }
 
     /** {@inheritDoc} */
-    @AffinityKeyMapped
     @Override public String name() {
         return name;
     }

@@ -118,8 +118,8 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
                 aff0.mapKeyToPrimaryAndBackups(obj2));
         }
 
-        Collection<BinaryType> meta1 = ignite1.binary().metadata();
-        Collection<BinaryType> meta2 = ignite1.binary().metadata();
+        Collection<BinaryType> meta1 = ignite1.binary().types();
+        Collection<BinaryType> meta2 = ignite1.binary().types();
 
         assertEquals(meta1.size(), meta2.size());
 

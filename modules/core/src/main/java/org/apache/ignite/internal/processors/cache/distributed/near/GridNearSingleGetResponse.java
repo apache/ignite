@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -48,7 +47,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
     public static final int CONTAINS_VAL_FLAG_MASK = 0x2;
 
     /** Future ID. */
-    private IgniteUuid futId;
+    private long futId;
 
     /** */
     private Message res;
@@ -83,14 +82,12 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
      */
     public GridNearSingleGetResponse(
         int cacheId,
-        IgniteUuid futId,
+        long futId,
         AffinityTopologyVersion topVer,
         @Nullable Message res,
         boolean invalidPartitions,
         boolean addDepInfo
     ) {
-        assert futId != null;
-
         this.cacheId = cacheId;
         this.futId = futId;
         this.topVer = topVer;
@@ -151,7 +148,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
     /**
      * @return Future ID.
      */
-    public IgniteUuid futureId() {
+    public long futureId() {
         return futId;
     }
 
@@ -221,7 +218,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
@@ -271,7 +268,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
                 reader.incrementState();
 
             case 5:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;

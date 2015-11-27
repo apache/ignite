@@ -158,7 +158,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
             IgniteBinary portables = ignite(i).binary();
 
-            Collection<BinaryType> metaCol = portables.metadata();
+            Collection<BinaryType> metaCol = portables.types();
 
             assertEquals(allTypes.size(), metaCol.size());
 
@@ -238,13 +238,13 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    Collection<BinaryType> metaCol = p0.metadata();
+                    Collection<BinaryType> metaCol = p0.types();
 
                     return metaCol.size() == 1000;
                 }
             }, getTestTimeout());
 
-            Collection<BinaryType> metaCol = portables.metadata();
+            Collection<BinaryType> metaCol = portables.types();
 
             assertEquals(1000, metaCol.size());
 
@@ -290,6 +290,6 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
             cache.put(i, builder.build());
         }
 
-        assertEquals(100, ignite(0).binary().metadata().size());
+        assertEquals(100, ignite(0).binary().types().size());
     }
 }

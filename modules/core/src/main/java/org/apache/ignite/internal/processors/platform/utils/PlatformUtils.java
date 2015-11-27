@@ -38,9 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.CacheException;
@@ -761,43 +758,6 @@ public class PlatformUtils {
                 throw new IgniteCheckedException(errMsg);
             }
         }
-    }
-
-    /**
-     * Write .Net configuration to the stream.
-     *
-     * @param writer Writer.
-     * @param cfg Configuration.
-     */
-    public static void writeDotNetConfiguration(BinaryRawWriterEx writer, PlatformDotNetConfiguration cfg) {
-        // 1. Write assemblies.
-        writeNullableCollection(writer, cfg.getAssemblies());
-
-        PlatformDotNetBinaryConfiguration binaryCfg = cfg.getBinaryConfiguration();
-
-        if (binaryCfg != null) {
-            writer.writeBoolean(true);
-
-            writeNullableCollection(writer, binaryCfg.getTypesConfiguration(),
-                new PlatformWriterClosure<PlatformDotNetBinaryTypeConfiguration>() {
-                @Override public void write(BinaryRawWriterEx writer, PlatformDotNetBinaryTypeConfiguration typ) {
-                    writer.writeString(typ.getTypeName());
-                    writer.writeString(typ.getNameMapper());
-                    writer.writeString(typ.getIdMapper());
-                    writer.writeString(typ.getSerializer());
-                    writer.writeString(typ.getAffinityKeyFieldName());
-                    writer.writeObject(typ.getKeepDeserialized());
-                }
-            });
-
-            writeNullableCollection(writer, binaryCfg.getTypes());
-            writer.writeString(binaryCfg.getDefaultNameMapper());
-            writer.writeString(binaryCfg.getDefaultIdMapper());
-            writer.writeString(binaryCfg.getDefaultSerializer());
-            writer.writeBoolean(binaryCfg.isDefaultKeepDeserialized());
-        }
-        else
-            writer.writeBoolean(false);
     }
 
     /**

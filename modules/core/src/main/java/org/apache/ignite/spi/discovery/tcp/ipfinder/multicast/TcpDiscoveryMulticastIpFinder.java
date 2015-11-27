@@ -264,7 +264,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      *
      * @return Time to live.
      */
-    public int getTimeToLive() {
+    public Integer getTimeToLive() {
         return ttl;
     }
 

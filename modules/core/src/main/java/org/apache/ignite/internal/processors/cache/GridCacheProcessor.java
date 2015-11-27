@@ -1049,9 +1049,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheCtx.onStarted();
 
-        U.debug(log, "Started cache [name=" + U.maskName(cfg.getName()) + ", deploymentId=" +
-            cacheCtx.dynamicDeploymentId() + ']');
-
         if (log.isInfoEnabled())
             log.info("Started cache [name=" + U.maskName(cfg.getName()) + ", mode=" + cfg.getCacheMode() + ']');
     }
@@ -1603,10 +1600,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (sharedCtx.cacheContext(CU.cacheId(cfg.getName())) != null)
             return;
-
-        U.debug(log, "prepare cache start [locNodeId=" + ctx.localNodeId() +
-            ", initiatingNodeId=" + initiatingNodeId + ", deploymentId=" + deploymentId + ", topVer=" + topVer +
-            ", name=" + cfg.getName() + ']');
 
         if (affNodeStart || clientNodeStart) {
             if (clientNodeStart && !affNodeStart) {

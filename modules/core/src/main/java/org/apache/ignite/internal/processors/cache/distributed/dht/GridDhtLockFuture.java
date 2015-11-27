@@ -728,6 +728,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * Completeness callback.
      *
      * @param success {@code True} if lock was acquired.
+     * @param stopping {@code True} if node is stopping.
      * @return {@code True} if complete by this operation.
      */
     private boolean onComplete(boolean success, boolean stopping) {

@@ -4070,7 +4070,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (node != null) {
-                assert !node.isLocal() : msg;
+                assert !node.isLocal() || !msg.verified() : msg;
 
                 synchronized (mux) {
                     failedNodes.add(node);

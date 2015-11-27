@@ -15,43 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl
+namespace Apache.Ignite.Core.Configuration
 {
     /// <summary>
-    /// Internal extensions for IgniteConfiguration.
+    /// Memory modes define whether cache entries are stored on heap memory, offheap memory, or in swap space.
     /// </summary>
-    internal class IgniteConfigurationEx : IgniteConfiguration
+    public enum CacheMemoryMode
     {
         /// <summary>
-        /// Default constructor.
+        /// Entries will be stored on-heap first.
         /// </summary>
-        public IgniteConfigurationEx()
-        {
-            // No-op.
-        }
+        OnheapTiered,
 
         /// <summary>
-        /// Copying constructor.
+        /// Entries will be stored off-heap in unmanaged memory.
         /// </summary>
-        /// <param name="cfg">Configuration.</param>
-        public IgniteConfigurationEx(IgniteConfiguration cfg) : base(cfg)
-        {
-            // No-op.
-        }
+        OffheapTiered,
 
         /// <summary>
-        /// Copying constructor.
+        /// Entry keys will be stored on heap memory, and values will be stored in offheap memory.
         /// </summary>
-        /// <param name="cfg">Configuration.</param>
-        public IgniteConfigurationEx(IgniteConfigurationEx cfg)
-            : this((IgniteConfiguration) cfg)
-        {
-            GridName = cfg.GridName;
-        }
-
-        /// <summary>
-        /// Grid name which is used if not provided in configuration file.
-        /// </summary>
-        public string GridName { get; set; }
+        OffheapValues
     }
 }

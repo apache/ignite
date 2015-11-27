@@ -67,9 +67,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 var reader = marsh.StartUnmarshal(stream).GetRawReader();
 
-                concurrency = reader.ReadEnum<TransactionConcurrency>();
-                isolation = reader.ReadEnum<TransactionIsolation>();
-                timeout = TimeSpan.FromMilliseconds(reader.ReadLong());
+                concurrency = (TransactionConcurrency) reader.ReadInt();
+                isolation = (TransactionIsolation) reader.ReadInt();
+                timeout = reader.ReadLongAsTimespan();
             });
 
             _dfltConcurrency = concurrency;

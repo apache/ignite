@@ -45,6 +45,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcProcessorCache = "IgniteProcessorCache";
         private const string ProcProcessorGetOrCreateCache = "IgniteProcessorGetOrCreateCache";
         private const string ProcProcessorCreateCache = "IgniteProcessorCreateCache";
+        private const string ProcProcessorGetOrCreateCacheFromConfig = "IgniteProcessorGetOrCreateCacheFromConfig";
+        private const string ProcProcessorCreateCacheFromConfig = "IgniteProcessorCreateCacheFromConfig";
         private const string ProcProcessorAffinity = "IgniteProcessorAffinity";
         private const string ProcProcessorDataStreamer = "IgniteProcessorDataStreamer";
         private const string ProcProcessorTransactions = "IgniteProcessorTransactions";
@@ -54,6 +56,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcProcessorServices = "IgniteProcessorServices";
         private const string ProcProcessorExtensions = "IgniteProcessorExtensions";
         private const string ProcProcessorAtomicLong = "IgniteProcessorAtomicLong";
+        private const string ProcProcessorGetIgniteConfiguration = "IgniteProcessorGetIgniteConfiguration";
         
         private const string ProcTargetInStreamOutLong = "IgniteTargetInStreamOutLong";
         private const string ProcTargetInStreamOutStream = "IgniteTargetInStreamOutStream";
@@ -176,6 +179,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void* ProcessorCacheDelegate(void* ctx, void* obj, sbyte* name);
         private delegate void* ProcessorCreateCacheDelegate(void* ctx, void* obj, sbyte* name);
         private delegate void* ProcessorGetOrCreateCacheDelegate(void* ctx, void* obj, sbyte* name);
+        private delegate void* ProcessorCreateCacheFromConfigDelegate(void* ctx, void* obj, long memPtr);
+        private delegate void* ProcessorGetOrCreateCacheFromConfigDelegate(void* ctx, void* obj, long memPtr);
         private delegate void* ProcessorAffinityDelegate(void* ctx, void* obj, sbyte* name);
         private delegate void* ProcessorDataStreamerDelegate(void* ctx, void* obj, sbyte* name, bool keepBinary);
         private delegate void* ProcessorTransactionsDelegate(void* ctx, void* obj);
@@ -185,6 +190,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void* ProcessorServicesDelegate(void* ctx, void* obj, void* prj);
         private delegate void* ProcessorExtensionsDelegate(void* ctx, void* obj);
         private delegate void* ProcessorAtomicLongDelegate(void* ctx, void* obj, sbyte* name, long initVal, bool create);
+        private delegate void ProcessorGetIgniteConfigurationDelegate(void* ctx, void* obj, long memPtr);
         
         private delegate long TargetInStreamOutLongDelegate(void* ctx, void* target, int opType, long memPtr);
         private delegate void TargetInStreamOutStreamDelegate(void* ctx, void* target, int opType, long inMemPtr, long outMemPtr);
@@ -308,6 +314,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ProcessorCacheDelegate PROCESSOR_CACHE;
         private static readonly ProcessorCreateCacheDelegate PROCESSOR_CREATE_CACHE;
         private static readonly ProcessorGetOrCreateCacheDelegate PROCESSOR_GET_OR_CREATE_CACHE;
+        private static readonly ProcessorCreateCacheFromConfigDelegate PROCESSOR_CREATE_CACHE_FROM_CONFIG;
+        private static readonly ProcessorGetOrCreateCacheFromConfigDelegate PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG;
         private static readonly ProcessorAffinityDelegate PROCESSOR_AFFINITY;
         private static readonly ProcessorDataStreamerDelegate PROCESSOR_DATA_STREAMER;
         private static readonly ProcessorTransactionsDelegate PROCESSOR_TRANSACTIONS;
@@ -317,6 +325,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ProcessorServicesDelegate PROCESSOR_SERVICES;
         private static readonly ProcessorExtensionsDelegate PROCESSOR_EXTENSIONS;
         private static readonly ProcessorAtomicLongDelegate PROCESSOR_ATOMIC_LONG;
+        private static readonly ProcessorGetIgniteConfigurationDelegate PROCESSOR_GET_IGNITE_CONFIGURATION;
         
         private static readonly TargetInStreamOutLongDelegate TARGET_IN_STREAM_OUT_LONG;
         private static readonly TargetInStreamOutStreamDelegate TARGET_IN_STREAM_OUT_STREAM;
@@ -456,6 +465,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             PROCESSOR_CACHE = CreateDelegate<ProcessorCacheDelegate>(ProcProcessorCache);
             PROCESSOR_CREATE_CACHE = CreateDelegate<ProcessorCreateCacheDelegate>(ProcProcessorCreateCache);
             PROCESSOR_GET_OR_CREATE_CACHE = CreateDelegate<ProcessorGetOrCreateCacheDelegate>(ProcProcessorGetOrCreateCache);
+            PROCESSOR_CREATE_CACHE_FROM_CONFIG = CreateDelegate<ProcessorCreateCacheFromConfigDelegate>(ProcProcessorCreateCacheFromConfig);
+            PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG = CreateDelegate<ProcessorGetOrCreateCacheFromConfigDelegate>(ProcProcessorGetOrCreateCacheFromConfig);
             PROCESSOR_AFFINITY = CreateDelegate<ProcessorAffinityDelegate>(ProcProcessorAffinity);
             PROCESSOR_DATA_STREAMER = CreateDelegate<ProcessorDataStreamerDelegate>(ProcProcessorDataStreamer);
             PROCESSOR_TRANSACTIONS = CreateDelegate<ProcessorTransactionsDelegate>(ProcProcessorTransactions);
@@ -465,6 +476,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             PROCESSOR_SERVICES = CreateDelegate<ProcessorServicesDelegate>(ProcProcessorServices);
             PROCESSOR_EXTENSIONS = CreateDelegate<ProcessorExtensionsDelegate>(ProcProcessorExtensions);
             PROCESSOR_ATOMIC_LONG = CreateDelegate<ProcessorAtomicLongDelegate>(ProcProcessorAtomicLong);
+            PROCESSOR_GET_IGNITE_CONFIGURATION = CreateDelegate<ProcessorGetIgniteConfigurationDelegate>(ProcProcessorGetIgniteConfiguration);
             
             TARGET_IN_STREAM_OUT_LONG = CreateDelegate<TargetInStreamOutLongDelegate>(ProcTargetInStreamOutLong);
             TARGET_IN_STREAM_OUT_STREAM = CreateDelegate<TargetInStreamOutStreamDelegate>(ProcTargetInStreamOutStream);
@@ -678,6 +690,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        internal static IUnmanagedTarget ProcessorCreateCache(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = PROCESSOR_CREATE_CACHE_FROM_CONFIG(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
+        }
+
+        internal static IUnmanagedTarget ProcessorGetOrCreateCache(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
+        }
+
         internal static IUnmanagedTarget ProcessorAffinity(IUnmanagedTarget target, string name)
         {
             sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
@@ -767,6 +793,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 Marshal.FreeHGlobal(new IntPtr(name0));
             }
+        }
+
+        internal static void ProcessorGetIgniteConfiguration(IUnmanagedTarget target, long memPtr)
+        {
+            PROCESSOR_GET_IGNITE_CONFIGURATION(target.Context, target.Target, memPtr);
         }
 
         #endregion

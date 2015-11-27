@@ -22,7 +22,7 @@ package org.apache.ignite.internal.portable;
  */
 public class BinaryFieldsHeapSelfTest extends BinaryFieldsAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected BinaryObjectEx toPortable(BinaryMarshaller marsh, Object obj) throws Exception {
+    @Override protected BinaryObjectExImpl toPortable(BinaryMarshaller marsh, Object obj) throws Exception {
         byte[] bytes = marsh.marshal(obj);
 
         return new BinaryObjectImpl(portableContext(marsh), bytes, 0);

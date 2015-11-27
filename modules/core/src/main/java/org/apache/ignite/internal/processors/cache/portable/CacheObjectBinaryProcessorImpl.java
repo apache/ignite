@@ -30,8 +30,10 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.portable.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.portable.BinaryMetadata;
 import org.apache.ignite.internal.portable.BinaryMetadataHandler;
+import org.apache.ignite.internal.portable.BinaryObjectEx;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryTypeImpl;
@@ -466,8 +468,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public void updateMetadata(int typeId, String typeName, @Nullable String affKeyFieldName,
-        Map<String, Integer> fieldTypeIds) throws BinaryObjectException {
-        portableCtx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null));
+        Map<String, Integer> fieldTypeIds, boolean isEnum) throws BinaryObjectException {
+        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null, isEnum);
+
+        portableCtx.updateMetadata(typeId, meta);
     }
 
     /** {@inheritDoc} */
@@ -554,6 +558,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Override public BinaryObject buildEnum(String typeName, int ord) throws IgniteException {
+        typeName = PortableContext.typeName(typeName);
+
+        int typeId = portableCtx.typeId(typeName);
+
+        updateMetadata(typeId, typeName, null, null, true);
+
+        return new BinaryEnumObjectImpl(portableCtx, typeId, null, ord);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteBinary binary() throws IgniteException {
         return portables;
     }
@@ -595,7 +610,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (obj == null)
             return 0;
 
-        return isPortableObject(obj) ? ((BinaryObject)obj).typeId() : typeId(obj.getClass().getSimpleName());
+        return isPortableObject(obj) ? ((BinaryObjectEx)obj).typeId() : typeId(obj.getClass().getSimpleName());
     }
 
     /** {@inheritDoc} */

@@ -899,6 +899,12 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnumField);
 
+            var enumMeta = _grid1.GetBinary().GetBinaryType(typeof (PlatformComputeEnum));
+
+            Assert.IsTrue(enumMeta.IsEnum);
+            Assert.AreEqual(enumMeta.TypeName, typeof(PlatformComputeEnum).Name);
+            Assert.AreEqual(0, enumMeta.Fields.Count);
+
             Assert.AreEqual(enumVal, res);
         }
 

@@ -173,6 +173,9 @@ public class GridPortableMarshaller {
     public static final byte CONC_SKIP_LIST_SET = 6;
 
     /** */
+    public static final byte CONC_LINKED_QUEUE = 7;
+
+    /** */
     public static final byte HASH_MAP = 1;
 
     /** */
@@ -283,6 +286,18 @@ public class GridPortableMarshaller {
             return null;
 
         return (T)new BinaryReaderExImpl(ctx, PortableHeapInputStream.create(arr, 0), ldr).deserialize();
+    }
+
+    /**
+     * Creates a reader.
+     *
+     * @param stream Stream.
+     * @return Reader.
+     */
+    public BinaryReaderExImpl reader(PortableInputStream stream) {
+        assert stream != null;
+
+        return new BinaryReaderExImpl(ctx, stream, null);
     }
 
     /**

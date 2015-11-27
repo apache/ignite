@@ -27,10 +27,12 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
@@ -66,7 +68,7 @@ namespace Apache.Ignite.Core.Impl
         private readonly ClusterGroupImpl _prj;
 
         /** Binary. */
-        private readonly IgniteBinary _igniteBinary;
+        private readonly Binary.Binary _binary;
 
         /** Cached proxy. */
         private readonly IgniteProxy _proxy;
@@ -117,7 +119,7 @@ namespace Apache.Ignite.Core.Impl
 
             _prj = new ClusterGroupImpl(proc, UU.ProcessorProjection(proc), marsh, this, null);
 
-            _igniteBinary = new IgniteBinary(marsh);
+            _binary = new Binary.Binary(marsh);
 
             _proxy = new IgniteProxy(this);
 
@@ -338,9 +340,45 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
+
+                configuration.Write(writer);
+
+                stream.SynchronizeOutput();
+
+                return Cache<TK, TV>(UU.ProcessorGetOrCreateCache(_proc, stream.MemoryPointer));
+            }
+        }
+
+        /** <inheritdoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(string name)
         {
             return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, name));
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
+
+                configuration.Write(writer);
+
+                stream.SynchronizeOutput();
+
+                return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, stream.MemoryPointer));
+            }
         }
 
         /// <summary>
@@ -394,9 +432,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IIgniteBinary GetBinary()
+        public IBinary GetBinary()
         {
-            return _igniteBinary;
+            return _binary;
         }
 
         /** <inheritdoc /> */
@@ -443,6 +481,19 @@ namespace Apache.Ignite.Core.Impl
             return new AtomicLong(nativeLong, Marshaller, name);
         }
 
+        /** <inheritdoc /> */
+        public IgniteConfiguration GetConfiguration()
+        {
+            using (var stream = IgniteManager.Memory.Allocate(1024).GetStream())
+            {
+                UU.ProcessorGetIgniteConfiguration(_proc, stream.MemoryPointer);
+
+                stream.SynchronizeInput();
+
+                return new IgniteConfiguration(_marsh.StartUnmarshal(stream));
+            }
+        }
+
         /// <summary>
         /// Gets internal projection.
         /// </summary>
@@ -472,7 +523,7 @@ namespace Apache.Ignite.Core.Impl
         /// Put metadata to Grid.
         /// </summary>
         /// <param name="metas">Metadata.</param>
-        internal void PutBinaryTypes(IDictionary<int, IBinaryType> metas)
+        internal void PutBinaryTypes(ICollection<BinaryType> metas)
         {
             _prj.PutBinaryTypes(metas);
         }

@@ -27,12 +27,13 @@ import org.apache.ignite.internal.portable.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
-import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -144,15 +145,16 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      */
     @SuppressWarnings("ConstantConditions")
     private void prepare(IgniteConfiguration igniteCfg, PlatformDotNetConfigurationEx interopCfg) {
-        this.cfg = igniteCfg;
+        cfg = igniteCfg;
 
         try (PlatformMemory outMem = memMgr.allocate()) {
             try (PlatformMemory inMem = memMgr.allocate()) {
                 PlatformOutputStream out = outMem.output();
 
-                BinaryRawWriterEx writer = marshaller().writer(out);
+                GridPortableMarshaller marshaller = marshaller();
+                BinaryRawWriterEx writer = marshaller.writer(out);
 
-                PlatformUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
+                PlatformConfigurationUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
                 List<PlatformDotNetLifecycleBean> beans = beans(igniteCfg);
 
@@ -168,7 +170,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 gate.extensionCallbackInLongLongOutLong(
                     PlatformUtils.OP_PREPARE_DOT_NET, outMem.pointer(), inMem.pointer());
 
-                processPrepareResult(inMem.input());
+                processPrepareResult(marshaller.reader(inMem.input()));
             }
         }
     }
@@ -178,8 +180,10 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      *
      * @param in Input stream.
      */
-    private void processPrepareResult(PlatformInputStream in) {
+    private void processPrepareResult(BinaryReaderExImpl in) {
         assert cfg != null;
+
+        PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);
 
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);
         List<PlatformLifecycleBean> newBeans = new ArrayList<>();

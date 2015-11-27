@@ -68,6 +68,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -146,8 +147,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             if (fut != null && !fut.isDone()) {
-                U.debug(log, "<> Will wait for affinity ready future [fut=" + fut + ", msg=" + msg + ']');
-
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         cctx.kernalContext().closure().runLocalSafe(new Runnable() {
@@ -544,7 +543,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             case 117: {
                 GridNearSingleGetResponse res = (GridNearSingleGetResponse)msg;
 
-                GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc().future(res.futureId());
+                GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc()
+                    .future(new IgniteUuid(IgniteUuid.VM_ID, res.futureId()));
 
                 if (fut == null) {
                     if (log.isDebugEnabled())
