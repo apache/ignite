@@ -20,9 +20,9 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections.Generic;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
 
     /// <summary>
@@ -49,10 +49,10 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = "config\\compute\\compute-standalone.xml",
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations =
-                        new List<PortableTypeConfiguration> { new PortableTypeConfiguration(typeof(Portable)) }
+                        new List<BinaryTypeConfiguration> { new BinaryTypeConfiguration(typeof(Binarizable)) }
                 }
             });
 
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Tests
 
             TestType(18m); // decimal
 
-            TestType(new Portable { A = 10, B = "foo" });
+            TestType(new Binarizable { A = 10, B = "foo" });
         }
 
         /// <summary>
@@ -123,22 +123,22 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Portable test class.
+        /// Binary test class.
         /// </summary>
-        private class Portable : IPortableMarshalAware
+        private class Binarizable : IBinarizable
         {
             public int A;
             public string B;
 
             /** <inheritDoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("a", A);
                 writer.GetRawWriter().WriteString(B);
             }
 
             /** <inheritDoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 A = reader.ReadInt("a");
                 B = reader.GetRawReader().ReadString();
@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Tests
                 if (obj.GetType() != GetType())
                     return false;
 
-                var other = (Portable)obj;
+                var other = (Binarizable)obj;
 
                 return A == other.A && string.Equals(B, other.B);
             }

@@ -43,6 +43,7 @@ import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -175,14 +176,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     };
 
-    /** Disco history entries comparator. */
-    private static final Comparator<Map.Entry<AffinityTopologyVersion, DiscoCache>> histCmp =
-        new Comparator<Map.Entry<AffinityTopologyVersion, DiscoCache>>() {
-            @Override public int compare(Map.Entry<AffinityTopologyVersion, DiscoCache> o1, Map.Entry<AffinityTopologyVersion, DiscoCache> o2) {
-                return o1.getKey().compareTo(o2.getKey());
-            }
-        };
-
     /** Discovery event worker. */
     private final DiscoveryWorker discoWrk = new DiscoveryWorker();
 
@@ -208,7 +201,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private final AtomicBoolean lastSegChkRes = new AtomicBoolean(true);
 
     /** Topology cache history. */
-    private final Map<AffinityTopologyVersion, DiscoCache> discoCacheHist =
+    private final ConcurrentNavigableMap<AffinityTopologyVersion, DiscoCache> discoCacheHist =
         new GridBoundedConcurrentOrderedMap<>(DISCOVERY_HISTORY_SIZE);
 
     /** Topology snapshots history. */
@@ -1594,7 +1587,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /**
      * @param node Node to check.
-     * @return Cache names accessible on the given node.
+     * @return Public cache names accessible on the given node.
      */
     public Map<String, CacheMode> nodeCaches(ClusterNode node) {
         Map<String, CacheMode> caches = U.newHashMap(registeredCaches.size());
@@ -1604,7 +1597,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             CachePredicate pred = entry.getValue();
 
-            if (pred != null && pred.cacheNode(node))
+            if (!CU.isSystemCache(cacheName) && !CU.isIgfsCache(ctx.config(), cacheName) &&
+                pred != null && pred.cacheNode(node))
                 caches.put(cacheName, pred.cacheMode);
         }
 
@@ -1637,10 +1631,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (cache == null) {
             // Find the eldest acceptable discovery cache.
-            Map.Entry<AffinityTopologyVersion, DiscoCache> eldest = Collections.min(discoCacheHist.entrySet(), histCmp);
+            Map.Entry<AffinityTopologyVersion, DiscoCache> eldest = discoCacheHist.firstEntry();
 
-            if (topVer.compareTo(eldest.getKey()) < 0)
-                cache = eldest.getValue();
+            if (eldest != null) {
+                if (topVer.compareTo(eldest.getKey()) < 0)
+                    cache = eldest.getValue();
+            }
         }
 
         if (cache == null) {
@@ -2135,7 +2131,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         customEvt.node(ctx.discovery().localNode());
                         customEvt.eventNode(node);
                         customEvt.type(type);
-                        customEvt.topologySnapshot(topVer.topologyVersion(), null);
+                        customEvt.topologySnapshot(topVer.topologyVersion(), evt.get4());
                         customEvt.affinityTopologyVersion(topVer);
                         customEvt.customMessage(evt.get5());
 

@@ -39,13 +39,13 @@ namespace ignite
             enum BinaryOffsetType
             {
                 /** Means all field offsets can be fit in one byte. */
-                OFFSET_TYPE_1_BYTE,
+                OFFSET_TYPE_ONE_BYTE,
 
                 /** Means all field offsets can be fit in two bytes. */
-                OFFSET_TYPE_2_BYTE,
+                OFFSET_TYPE_TWO_BYTES,
 
                 /** Means field offsets should be stored in four bytes. */
-                OFFSET_TYPE_4_BYTE
+                OFFSET_TYPE_FOUR_BYTES
             };
 
             /**

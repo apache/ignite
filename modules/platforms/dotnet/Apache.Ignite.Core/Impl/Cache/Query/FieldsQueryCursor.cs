@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Cache.Query
 {
     using System.Collections;
-    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
@@ -31,15 +31,15 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaler.</param>
-        /// <param name="keepPortable">Keep poratble flag.</param>
-        public FieldsQueryCursor(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable)
-            : base(target, marsh, keepPortable)
+        /// <param name="keepBinary">Keep poratble flag.</param>
+        public FieldsQueryCursor(IUnmanagedTarget target, Marshaller marsh, bool keepBinary)
+            : base(target, marsh, keepBinary)
         {
             // No-op.
         }
 
         /** <inheritdoc /> */
-        protected override IList Read(PortableReaderImpl reader)
+        protected override IList Read(BinaryReader reader)
         {
             int cnt = reader.ReadInt();
 

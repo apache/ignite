@@ -23,20 +23,20 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Impl.Messaging;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.Metadata;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Services;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="ignite">Grid.</param>
         /// <param name="pred">Predicate.</param>
         [SuppressMessage("Microsoft.Performance", "CA1805:DoNotInitializeUnnecessarily")]
-        public ClusterGroupImpl(IUnmanagedTarget proc, IUnmanagedTarget target, PortableMarshaller marsh,
+        public ClusterGroupImpl(IUnmanagedTarget proc, IUnmanagedTarget target, Marshaller marsh,
             Ignite ignite, Func<IClusterNode, bool> pred)
             : base(target, marsh)
         {
@@ -339,7 +339,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             {
                 return DoInOp(OpMetrics, stream =>
                 {
-                    IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+                    IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                     return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
                 });
@@ -349,7 +349,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 WriteEnumerable(writer, GetNodes().Select(node => node.Id));
             }, stream =>
             {
-                IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                 return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
             });
@@ -405,7 +405,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                     writer.WriteLong(lastUpdateTime);
                 }, stream =>
                 {
-                    IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+                    IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                     return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
                 }
@@ -495,7 +495,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 writer.WriteLong(oldTopVer);
             }, input =>
             {
-                PortableReaderImpl reader = Marshaller.StartUnmarshal(input);
+                BinaryReader reader = Marshaller.StartUnmarshal(input);
 
                 if (reader.ReadBoolean())
                 {
@@ -523,7 +523,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action.</param>
         /// <returns>Native projection.</returns>
-        private IUnmanagedTarget DoProjetionOutOp(int type, Action<PortableWriterImpl> action)
+        private IUnmanagedTarget DoProjetionOutOp(int type, Action<BinaryWriter> action)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -538,15 +538,15 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
         
         /** <inheritDoc /> */
-        public IPortableMetadata GetMetadata(int typeId)
+        public IBinaryType GetBinaryType(int typeId)
         {
-            return DoOutInOp<IPortableMetadata>(OpMetadata, 
+            return DoOutInOp<IBinaryType>(OpMetadata, 
                 writer => writer.WriteInt(typeId),
                 stream =>
                 {
                     var reader = Marshaller.StartUnmarshal(stream, false);
 
-                    return reader.ReadBoolean() ? new PortableMetadataImpl(reader) : null;
+                    return reader.ReadBoolean() ? new BinaryType(reader) : null;
                 }
             );
         }
@@ -554,7 +554,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <summary>
         /// Gets metadata for all known types.
         /// </summary>
-        public List<IPortableMetadata> Metadata()
+        public List<IBinaryType> GetBinaryTypes()
         {
             return DoInOp(OpAllMetadata, s =>
             {
@@ -562,10 +562,10 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
                 var size = reader.ReadInt();
 
-                var res = new List<IPortableMetadata>(size);
+                var res = new List<IBinaryType>(size);
 
                 for (var i = 0; i < size; i++)
-                    res.Add(reader.ReadBoolean() ? new PortableMetadataImpl(reader) : null);
+                    res.Add(reader.ReadBoolean() ? new BinaryType(reader) : null);
 
                 return res;
             });

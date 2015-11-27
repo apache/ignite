@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 
 /**
  * Checks behavior on exception while unmarshalling key.
@@ -66,8 +67,6 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
     public void testResponseMessageOnRequestUnmarshallingFailed() throws Exception {
         readCnt.set(Integer.MAX_VALUE);
 
-        jcache(0).put(new TestKey(String.valueOf(++key)), "");
-
         try {
             jcache().query(new ScanQuery<>(new IgniteBiPredicate<TestKey, String>() {
                 @Override public boolean apply(TestKey key, String val) {
@@ -75,6 +74,10 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
                 }
 
                 private void readObject(ObjectInputStream is) throws IOException {
+                    throw new IOException();
+                }
+
+                private void writeObject(ObjectOutputStream os) throws IOException {
                     throw new IOException();
                 }
             })).getAll();
@@ -90,8 +93,9 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
      * @return {@code True} if portable marshaller is configured.
      */
     private boolean portableMarshaller() {
-        IgniteEx kernal = (IgniteKernal)ignite(0);
+        IgniteEx kernal = (IgniteEx)ignite(0);
 
-        return "PortableMarshaller".equals(kernal.context().config().getMarshaller().getClass().getSimpleName());
+        return !OptimizedMarshaller.class.getSimpleName().equals(kernal.context().config().getMarshaller().getClass()
+            .getSimpleName());
     }
 }

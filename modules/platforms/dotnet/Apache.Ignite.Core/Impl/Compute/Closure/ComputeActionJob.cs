@@ -18,15 +18,15 @@
 namespace Apache.Ignite.Core.Impl.Compute.Closure
 {
     using System;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// System job which wraps over <c>Action</c>.
     /// </summary>
-    internal class ComputeActionJob : IComputeJob, IComputeResourceInjector, IPortableWriteAware
+    internal class ComputeActionJob : IComputeJob, IComputeResourceInjector, IBinaryWriteAware
     {
         /** Closure. */
         private readonly IComputeAction _action;
@@ -61,9 +61,9 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriter)writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_action));
         }
@@ -72,9 +72,9 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// Initializes a new instance of the <see cref="ComputeActionJob"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ComputeActionJob(IPortableReader reader)
+        public ComputeActionJob(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.GetRawReader();
+            var reader0 = (BinaryReader)reader.GetRawReader();
 
             _action = reader0.ReadObject<IComputeAction>();
         }

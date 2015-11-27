@@ -45,6 +45,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -221,6 +222,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             desc.keyClass(Object.class);
                     }
                     else {
+                        if (keyCls == null)
+                            throw new IgniteCheckedException("Failed to find key class in the node classpath " +
+                                "(use default marshaller to enable binary objects): " + qryEntity.getKeyType());
+
+                        if (valCls == null)
+                            throw new IgniteCheckedException("Failed to find value class in the node classpath " +
+                                "(use default marshaller to enable binary objects) : " + qryEntity.getValueType());
+
                         desc.valueClass(valCls);
                         desc.keyClass(keyCls);
                     }
@@ -258,6 +267,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
                     if (F.isEmpty(meta.getValueType()))
                         throw new IgniteCheckedException("Value type is not set: " + meta);
+
+                    if (meta.getQueryFields().isEmpty() && meta.getAscendingFields().isEmpty() &&
+                        meta.getDescendingFields().isEmpty() && meta.getGroups().isEmpty())
+                        continue;
 
                     TypeDescriptor desc = new TypeDescriptor();
 
@@ -1535,25 +1548,41 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String alias = aliases.get(fullName.toString());
 
-            ClassProperty tmp;
+            StringBuilder bld = new StringBuilder("get");
+
+            bld.append(prop);
+
+            bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
+
+            ClassProperty tmp = null;
 
             try {
-                StringBuilder bld = new StringBuilder("get");
-
-                bld.append(prop);
-
-                bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
-
                 tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias);
             }
             catch (NoSuchMethodException ignore) {
+                // No-op.
+            }
+
+            if (tmp == null) {
                 try {
                     tmp = new ClassProperty(cls.getDeclaredField(prop), key, alias);
                 }
                 catch (NoSuchFieldException ignored) {
-                    return null;
+                    // No-op.
                 }
             }
+
+            if (tmp == null) {
+                try {
+                    tmp = new ClassProperty(cls.getMethod(prop), key, alias);
+                }
+                catch (NoSuchMethodException ignored) {
+                    // No-op.
+                }
+            }
+
+            if (tmp == null)
+                return null;
 
             tmp.parent(res);
 
@@ -1667,34 +1696,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     *
-     */
-    private abstract static class Property {
-        /**
-         * Gets this property value from the given object.
-         *
-         * @param key Key.
-         * @param val Value.
-         * @return Property value.
-         * @throws IgniteCheckedException If failed.
-         */
-        public abstract Object value(Object key, Object val) throws IgniteCheckedException;
-
-        /**
-         * @return Property name.
-         */
-        public abstract String name();
-
-        /**
-         * @return Class member type.
-         */
-        public abstract Class<?> type();
-    }
-
-    /**
      * Description of type property.
      */
-    private static class ClassProperty extends Property {
+    private static class ClassProperty extends GridQueryProperty {
         /** */
         private final Member member;
 
@@ -1789,7 +1793,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private class PortableProperty extends Property {
+    private class PortableProperty extends GridQueryProperty {
         /** Property name. */
         private String propName;
 
@@ -1807,6 +1811,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** Binary field to speed-up deserialization. */
         private volatile BinaryField field;
+
+        /** Flag indicating that we already tried to take a field. */
+        private volatile boolean fieldTaken;
 
         /**
          * Constructor.
@@ -1861,7 +1868,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             BinaryObject obj0 = (BinaryObject)obj;
 
-            return binaryField(obj0).value(obj0);
+            return fieldValue(obj0);
         }
 
         /**
@@ -1873,16 +1880,37 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private BinaryField binaryField(BinaryObject obj) {
             BinaryField field0 = field;
 
-            if (field0 == null)
-            {
-                field0 = obj.fieldDescriptor(propName);
+            if (field0 == null && !fieldTaken) {
+                BinaryType type = obj.type();
 
-                assert field0 != null;
+                if (type != null) {
+                    field0 = type.field(propName);
 
-                field = field0;
+                    assert field0 != null;
+
+                    field = field0;
+                }
+
+                fieldTaken = true;
             }
 
             return field0;
+        }
+
+        /**
+         * Gets field value for the given binary object.
+         *
+         * @param obj Binary object.
+         * @return Field value.
+         */
+        @SuppressWarnings("IfMayBeConditional")
+        private Object fieldValue(BinaryObject obj) {
+            BinaryField field = binaryField(obj);
+
+            if (field != null)
+                return field.value(obj);
+            else
+                return obj.field(propName);
         }
 
         /** {@inheritDoc} */
@@ -1909,7 +1937,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** */
         @GridToStringExclude
-        private final Map<String, Property> props = new HashMap<>();
+        private final Map<String, GridQueryProperty> props = new HashMap<>();
 
         /** */
         @GridToStringInclude
@@ -1964,11 +1992,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override public GridQueryProperty property(String name) {
+            return props.get(name);
+        }
+
+        /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
             assert field != null;
 
-            Property prop = props.get(field);
+            GridQueryProperty prop = props.get(field);
 
             if (prop == null)
                 throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
@@ -2067,7 +2100,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param failOnDuplicate Fail on duplicate flag.
          * @throws IgniteCheckedException In case of error.
          */
-        public void addProperty(Property prop, boolean failOnDuplicate) throws IgniteCheckedException {
+        public void addProperty(GridQueryProperty prop, boolean failOnDuplicate) throws IgniteCheckedException {
             String name = prop.name();
 
             if (props.put(name, prop) != null && failOnDuplicate)

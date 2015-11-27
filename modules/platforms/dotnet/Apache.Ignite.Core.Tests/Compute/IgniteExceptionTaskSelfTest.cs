@@ -21,10 +21,10 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Mode = ErrorMode.MapJobNotMarshalable;
 
-            var e = ExecuteWithError() as PortableException;
+            var e = ExecuteWithError() as BinaryObjectException;
 
             Assert.IsNotNull(e);
         }

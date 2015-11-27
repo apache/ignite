@@ -507,8 +507,7 @@ object visor extends VisorTag {
                 "If logging is already stopped - it's no-op."
             ),
             "-dl" -> Seq(
-                "Disables collecting of job and task fail events, licence violation events, cache rebalance events" +
-                    " from remote nodes."
+                "Disables collecting of job and task fail events, cache rebalance events from remote nodes."
             )
         ),
         examples = Seq(

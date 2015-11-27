@@ -19,10 +19,11 @@ using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.ExamplesDll.Compute;
-using Apache.Ignite.ExamplesDll.Portable;
 
 namespace Apache.Ignite.Examples.Compute
 {
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
     /// Example demonstrating task execution.
     /// <para />

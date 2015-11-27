@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
     using System.Diagnostics;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Services;
 
     /// <summary>
@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Initializes a new instance of the <see cref="ServiceContext"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ServiceContext(IPortableRawReader reader)
+        public ServiceContext(IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 

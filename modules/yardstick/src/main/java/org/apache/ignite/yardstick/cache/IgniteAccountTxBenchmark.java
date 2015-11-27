@@ -30,21 +30,20 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class IgniteAccountTxBenchmark extends IgniteAccountTxAbstractBenchmark {
-    /** */
-    private static final int ACCOUNT_NUMBER = 3;
-
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         Set<Integer> accountIds = new TreeSet<>();
 
-        while (accountIds.size() < ACCOUNT_NUMBER)
+        int accNum = args.batch();
+
+        while (accountIds.size() < accNum)
             accountIds.add(nextRandom(args.range()));
 
         try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Map<Integer, Account> accounts = (Map)cache.getAll(accountIds);
 
-            if (accounts.size() != ACCOUNT_NUMBER)
+            if (accounts.size() != accNum)
                 throw new Exception("Failed to find accounts: " + accountIds);
 
             Integer fromId = accountIds.iterator().next();

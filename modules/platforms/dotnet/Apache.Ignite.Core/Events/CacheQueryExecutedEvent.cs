@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Events
 {
     using System;
     using System.Globalization;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Cache query execution event.
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal CacheQueryExecutedEvent(IPortableRawReader r) : base(r)
+        internal CacheQueryExecutedEvent(IBinaryRawReader r) : base(r)
         {
             _queryType = r.ReadString();
             _cacheName = r.ReadString();

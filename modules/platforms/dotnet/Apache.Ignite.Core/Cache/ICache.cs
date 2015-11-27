@@ -73,9 +73,9 @@ namespace Apache.Ignite.Core.Cache
         bool IsEmpty();
 
         /// <summary>
-        /// Gets a value indicating whether to keep values in portable form.
+        /// Gets a value indicating whether to keep values in binary form.
         /// </summary>
-        bool IsKeepPortable { get; }
+        bool IsKeepBinary { get; }
 
         /// <summary>
         /// Get another cache instance with read-through and write-through behavior disabled.
@@ -95,14 +95,14 @@ namespace Apache.Ignite.Core.Cache
         ICache<TK, TV> WithExpiryPolicy(IExpiryPolicy plc);
 
         /// <summary>
-        /// Gets cache with KeepPortable mode enabled, changing key and/or value types if necessary.
-        /// You can only change key/value types when transitioning from non-portable to portable cache;
-        /// Changing type of portable cache is not allowed and will throw an <see cref="InvalidOperationException"/>
+        /// Gets cache with KeepBinary mode enabled, changing key and/or value types if necessary.
+        /// You can only change key/value types when transitioning from non-binary to binary cache;
+        /// Changing type of binary cache is not allowed and will throw an <see cref="InvalidOperationException"/>
         /// </summary>
-        /// <typeparam name="TK1">Key type in portable mode.</typeparam>
-        /// <typeparam name="TV1">Value type in protable mode.</typeparam>
-        /// <returns>Cache instance with portable mode enabled.</returns>
-        ICache<TK1, TV1> WithKeepPortable<TK1, TV1>();
+        /// <typeparam name="TK1">Key type in binary mode.</typeparam>
+        /// <typeparam name="TV1">Value type in binary mode.</typeparam>
+        /// <returns>Cache instance with binary mode enabled.</returns>
+        ICache<TK1, TV1> WithKeepBinary<TK1, TV1>();
 
         /// <summary>
         /// Executes <see cref="LocalLoadCache"/> on all cache nodes.

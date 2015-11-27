@@ -19,9 +19,9 @@ namespace Apache.Ignite.Core.Events
 {
     using System;
     using System.Globalization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// In-memory database (cache) event.
@@ -74,14 +74,14 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal CacheEvent(IPortableRawReader r) : base(r)
+        internal CacheEvent(IBinaryRawReader r) : base(r)
         {
             _cacheName = r.ReadString();
             _partition = r.ReadInt();
             _isNear = r.ReadBoolean();
             _eventNode = ReadNode(r);
             _key = r.ReadObject<object>();
-            _xid = IgniteGuid.ReadPortable(r);
+            _xid = IgniteGuid.Read(r);
             _lockId = r.ReadObject<object>();
             _newValue = r.ReadObject<object>();
             _oldValue = r.ReadObject<object>();

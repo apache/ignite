@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.portable.builder;
 
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.portable.BinaryMetadata;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.BinaryObjectEx;
+import org.apache.ignite.internal.portable.BinaryObjectExImpl;
+import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.*;
@@ -61,7 +63,7 @@ class PortableBuilderSerializer {
             return;
         }
 
-        if (val instanceof BinaryObjectEx) {
+        if (val instanceof BinaryObjectExImpl) {
             if (portableObjToWrapper == null)
                 portableObjToWrapper = new IdentityHashMap<>();
 
@@ -97,8 +99,14 @@ class PortableBuilderSerializer {
         }
 
         if (val.getClass().isEnum()) {
+            String typeName = PortableContext.typeName(val.getClass().getName());
+            int typeId = writer.context().typeId(typeName);
+
+            BinaryMetadata meta = new BinaryMetadata(typeId, typeName, null, null, null, true);
+            writer.context().updateMetadata(typeId, meta);
+
             writer.writeByte(GridPortableMarshaller.ENUM);
-            writer.writeInt(writer.context().typeId(val.getClass().getName()));
+            writer.writeInt(typeId);
             writer.writeInt(((Enum)val).ordinal());
 
             return;

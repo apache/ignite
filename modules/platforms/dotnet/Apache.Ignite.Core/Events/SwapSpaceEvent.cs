@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System.Globalization;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Grid swap space event.
@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal SwapSpaceEvent(IPortableRawReader r) : base(r)
+        internal SwapSpaceEvent(IBinaryRawReader r) : base(r)
         {
             _space = r.ReadString();
         }

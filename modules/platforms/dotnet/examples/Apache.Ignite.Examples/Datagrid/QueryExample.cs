@@ -21,10 +21,11 @@ using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Cache;
 using Apache.Ignite.Core.Cache.Query;
-using Apache.Ignite.ExamplesDll.Portable;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
     /// This example populates cache with sample data and runs several SQL and
     /// full text queries over this data.

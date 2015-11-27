@@ -34,19 +34,19 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.binary.Address;
-import org.apache.ignite.examples.binary.Employee;
-import org.apache.ignite.examples.binary.EmployeeKey;
-import org.apache.ignite.examples.binary.Organization;
-import org.apache.ignite.examples.binary.OrganizationType;
+import org.apache.ignite.examples.model.binary.Address;
+import org.apache.ignite.examples.model.binary.Employee;
+import org.apache.ignite.examples.model.binary.EmployeeKey;
+import org.apache.ignite.examples.model.binary.Organization;
+import org.apache.ignite.examples.model.binary.OrganizationType;
 import org.apache.ignite.binary.BinaryObject;
 
 /**
  * This example demonstrates use of binary objects with cache queries.
  * The example populates cache with sample data and runs several SQL and full text queries over this data.
  * <p>
- * Remote nodes should always be started with {@link org.apache.ignite.examples.binary.ExampleBinaryNodeStartup} which starts a node with
- * {@code examples/config/binary/example-ignite-binary.xml} configuration.
+ * Remote nodes should always be started with {@link org.apache.ignite.examples.ExampleNodeStartup} which starts
+ * a node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheClientBinaryQueryExample {
     /** Organization cache name. */
@@ -63,7 +63,7 @@ public class CacheClientBinaryQueryExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) {
-        try (Ignite ignite = Ignition.start("examples/config/binary/example-ignite-binary.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Binary objects cache query example started.");
 
@@ -204,14 +204,14 @@ public class CacheClientBinaryQueryExample {
      * @param cache Ignite cache.
      */
     private static void sqlJoinQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
-        SqlQuery<BinaryObject, BinaryObject> query = new SqlQuery<>(Employee.class,
+        SqlQuery<BinaryObject, BinaryObject> qry = new SqlQuery<>(Employee.class,
             "from Employee, \"" + ORGANIZATION_CACHE_NAME + "\".Organization as org " +
                 "where Employee.organizationId = org._key and org.name = ?");
 
         String organizationName = "GridGain";
 
         QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> employees =
-            cache.query(query.setArgs(organizationName));
+            cache.query(qry.setArgs(organizationName));
 
         System.out.println();
         System.out.println(">>> Employees working for " + organizationName + ':');
@@ -226,9 +226,9 @@ public class CacheClientBinaryQueryExample {
      * @param cache Ignite cache.
      */
     private static void sqlFieldsQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
-        SqlFieldsQuery query = new SqlFieldsQuery("select name, salary from Employee");
+        SqlFieldsQuery qry = new SqlFieldsQuery("select name, salary from Employee");
 
-        QueryCursor<List<?>> employees = cache.query(query);
+        QueryCursor<List<?>> employees = cache.query(qry);
 
         System.out.println();
         System.out.println(">>> Employee names and their salaries:");
@@ -243,9 +243,9 @@ public class CacheClientBinaryQueryExample {
      * @param cache Ignite cache.
      */
     private static void textQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
-        TextQuery<BinaryObject, BinaryObject> query = new TextQuery<>(Employee.class, "TX");
+        TextQuery<BinaryObject, BinaryObject> qry = new TextQuery<>(Employee.class, "TX");
 
-        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> employees = cache.query(query);
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> employees = cache.query(qry);
 
         System.out.println();
         System.out.println(">>> Employees living in Texas:");

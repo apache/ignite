@@ -21,3 +21,6 @@ nobase_include_HEADERS = ignite/common/concurrent.h \
                          ignite/common/java.h \
                          ignite/common/exports.h \
                          ignite/common/utils.h
+
+uninstall-hook:
+	find ${includedir}/ignite -type d -empty -delete

@@ -19,14 +19,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
 {
     using System.Collections;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Handle;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Interop cache store.
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         private const byte OpSesEnd = 7;
         
         /** */
-        private readonly bool _convertPortable;
+        private readonly bool _convertBinary;
 
         /** Store. */
         private readonly ICacheStore _store;
@@ -73,14 +73,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// Initializes a new instance of the <see cref="CacheStore" /> class.
         /// </summary>
         /// <param name="store">Store.</param>
-        /// <param name="convertPortable">Whether to convert portable objects.</param>
+        /// <param name="convertBinary">Whether to convert binary objects.</param>
         /// <param name="registry">The handle registry.</param>
-        private CacheStore(ICacheStore store, bool convertPortable, HandleRegistry registry)
+        private CacheStore(ICacheStore store, bool convertBinary, HandleRegistry registry)
         {
             Debug.Assert(store != null);
 
             _store = store;
-            _convertPortable = convertPortable;
+            _convertBinary = convertBinary;
 
             _sesProxy = new CacheStoreSessionProxy();
 
@@ -101,17 +101,17 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var reader = PortableUtils.Marshaller.StartUnmarshal(stream, PortableMode.KeepPortable);
+                var reader = BinaryUtils.Marshaller.StartUnmarshal(stream, BinaryMode.KeepBinary);
 
                 var className = reader.ReadString();
-                var convertPortable = reader.ReadBoolean();
+                var convertBinary = reader.ReadBoolean();
                 var propertyMap = reader.ReadDictionaryAsGeneric<string, object>();
 
                 var store = IgniteUtils.CreateInstance<ICacheStore>(className);
 
                 IgniteUtils.SetProperties(store, propertyMap);
 
-                return new CacheStore(store, convertPortable, registry);
+                return new CacheStore(store, convertBinary, registry);
             }
         }
 
@@ -140,12 +140,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// <param name="grid">Grid.</param>
         /// <returns>Invocation result.</returns>
         /// <exception cref="IgniteException">Invalid operation type:  + opType</exception>
-        public int Invoke(IPortableStream input, IUnmanagedTarget cb, Ignite grid)
+        public int Invoke(IBinaryStream input, IUnmanagedTarget cb, Ignite grid)
         {
-            IPortableReader reader = grid.Marshaller.StartUnmarshal(input,
-                _convertPortable ? PortableMode.Deserialize : PortableMode.ForcePortable);
+            IBinaryReader reader = grid.Marshaller.StartUnmarshal(input,
+                _convertBinary ? BinaryMode.Deserialize : BinaryMode.ForceBinary);
             
-            IPortableRawReader rawReader = reader.GetRawReader();
+            IBinaryRawReader rawReader = reader.GetRawReader();
 
             int opType = rawReader.ReadByte();
 
@@ -235,7 +235,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                PortableWriterImpl writer = grid.Marshaller.StartMarshal(stream);
+                BinaryWriter writer = grid.Marshaller.StartMarshal(stream);
 
                 try
                 {

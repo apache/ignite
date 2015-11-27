@@ -19,14 +19,14 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Runtime.Serialization.Formatters.Binary;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
     /// Holder of exception which must be serialized to Java and then backwards to the native platform.
     /// </summary>
-    internal class InteropExceptionHolder : IPortableMarshalAware
+    internal class InteropExceptionHolder : IBinarizable
     {
         /** Initial exception. */
         private Exception _err;
@@ -57,11 +57,11 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl) writer.GetRawWriter();
+            var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            if (writer0.IsPortable(_err))
+            if (writer0.IsBinarizable(_err))
             {
                 writer0.WriteBoolean(true);
                 writer0.WriteObject(_err);
@@ -72,12 +72,12 @@ namespace Apache.Ignite.Core.Impl
 
                 BinaryFormatter bf = new BinaryFormatter();
 
-                bf.Serialize(new PortableStreamAdapter(writer0.Stream), _err);
+                bf.Serialize(new BinaryStreamAdapter(writer0.Stream), _err);
             }
         }
 
         /** <inheritDoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             throw new NotImplementedException();
         }

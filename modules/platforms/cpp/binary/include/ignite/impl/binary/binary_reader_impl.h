@@ -771,6 +771,13 @@ namespace ignite
                             }
 
                             int16_t flags = stream->ReadInt16();
+
+                            if (flags & IGNITE_BINARY_FLAG_COMPACT_FOOTER) {
+                                IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_BINARY,
+                                    "Unsupported binary protocol flag: IGNITE_BINARY_FLAG_COMPACT_FOOTER: ", 
+                                    IGNITE_BINARY_FLAG_COMPACT_FOOTER);
+                            }
+
                             int32_t typeId = stream->ReadInt32();
                             int32_t hashCode = stream->ReadInt32();
                             int32_t len = stream->ReadInt32();
@@ -783,50 +790,43 @@ namespace ignite
                             int32_t rawOff;
                             int32_t footerBegin;
 
-                            if (flags & IGNITE_BINARY_FLAG_RAW_ONLY)
-                                footerBegin = len;
+                            if (flags & IGNITE_BINARY_FLAG_HAS_SCHEMA)
+                                footerBegin = pos + schemaOrRawOff;
                             else
-                                footerBegin = schemaOrRawOff;
+                                footerBegin = pos + len;
 
                             BinaryOffsetType schemaType;
-                            int32_t trailingBytes;
 
-                            if (flags & IGNITE_BINARY_FLAG_OFFSET_1_BYTE)
+                            if (flags & IGNITE_BINARY_FLAG_OFFSET_ONE_BYTE)
+                                schemaType = OFFSET_TYPE_ONE_BYTE;
+                            else if (flags & IGNITE_BINARY_FLAG_OFFSET_TWO_BYTES)
+                                schemaType = OFFSET_TYPE_TWO_BYTES;
+                            else
+                                schemaType = OFFSET_TYPE_FOUR_BYTES;
+
+                            int32_t footerEnd;
+
+                            if (flags & IGNITE_BINARY_FLAG_HAS_RAW)
                             {
-                                schemaType = OFFSET_TYPE_1_BYTE;
+                                // 4 is the size of RawOffset field at the end of the packet.
+                                footerEnd = pos + len - 4;
 
-                                trailingBytes = (len - footerBegin) % 5;
-                            }
-                            else if (flags & IGNITE_BINARY_FLAG_OFFSET_2_BYTE)
-                            {
-                                schemaType = OFFSET_TYPE_2_BYTE;
-
-                                trailingBytes = (len - footerBegin) % 6;
+                                rawOff = stream->ReadInt32(footerEnd);
                             }
                             else
                             {
-                                schemaType = OFFSET_TYPE_4_BYTE;
+                                footerEnd = pos + len;
 
-                                trailingBytes = (len - footerBegin) % 8;
-                            }
-
-                            int32_t footerEnd = len - trailingBytes;
-
-                            if (trailingBytes)
-                                rawOff = stream->ReadInt32(pos + len - 4);
-                            else
                                 rawOff = schemaOrRawOff;
+                            }
 
-                            bool usrType = flags & IGNITE_BINARY_FLAG_USER_OBJECT;
-
-                            footerBegin += pos;
-                            footerEnd += pos;
+                            bool usrType = flags & IGNITE_BINARY_FLAG_USER_TYPE;
 
                             ignite::binary::BinaryType<T> type;
                             TemplatedBinaryIdResolver<T> idRslvr(type);
                             BinaryReaderImpl readerImpl(stream, &idRslvr, pos, usrType,
-                                                          typeId, hashCode, len, rawOff,
-                                                          footerBegin, footerEnd, schemaType);
+                                                        typeId, hashCode, len, rawOff,
+                                                        footerBegin, footerEnd, schemaType);
                             ignite::binary::BinaryReader reader(&readerImpl);
 
                             T val = type.Read(reader);
@@ -1038,9 +1038,7 @@ namespace ignite
                     {
                         CheckRawMode(false);
                         CheckSingleMode(true);
-
-                        int32_t pos = stream->Position();
-
+                        
                         int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
                         int32_t fieldPos = FindField(fieldId);
 

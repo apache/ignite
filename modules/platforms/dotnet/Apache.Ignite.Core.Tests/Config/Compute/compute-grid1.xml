@@ -22,12 +22,12 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-      <property name="localHost" value="127.0.0.1"/>
-      <property name="connectorConfiguration"><null/></property>
+        <property name="localHost" value="127.0.0.1"/>
+        <property name="connectorConfiguration"><null/></property>
 
-      <property name="gridName" value="grid1"/>
+        <property name="gridName" value="grid1"/>
 
-      <property name="metricsUpdateFrequency" value="1000"/>
+        <property name="metricsUpdateFrequency" value="1000"/>
         <property name="metricsLogFrequency" value="0"/>
 
         <property name="userAttributes">
@@ -52,6 +52,27 @@
             </list>
         </property>
 
+        <property name="binaryConfiguration">
+            <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                <property name="compactFooter" value="false"/>
+                <property name="typeConfigurations">
+                    <list>
+                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
+                            <property name="typeName" value="org.apache.ignite.platform.PlatformComputeBinarizable"/>
+                        </bean>
+                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
+                            <property name="typeName" value="org.apache.ignite.platform.PlatformComputeJavaBinarizable"/>
+                        </bean>
+                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
+                            <property name="typeName" value="org.apache.ignite.platform.PlatformComputeEnum" />
+                            <property name="enum" value="true" />
+                        </bean>
+                    </list>
+                </property>
+
+            </bean>
+        </property>
+
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
@@ -66,25 +87,5 @@
                 </property>
             </bean>
         </property>
-
-        <!-- Portable marshaller configuration -->
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.portable.PortableMarshaller">
-                <property name="typeConfigurations">
-                    <list>
-                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.platform.PlatformComputePortable"/>
-                        </bean>
-                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.platform.PlatformComputeJavaPortable"/>
-                        </bean>
-                        <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.platform.PlatformComputeEnum"/>
-                        </bean>
-                    </list>
-                </property>
-            </bean>
-        </property>
-
     </bean>
 </beans>

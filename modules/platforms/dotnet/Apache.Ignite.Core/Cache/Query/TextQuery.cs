@@ -18,8 +18,8 @@
 namespace Apache.Ignite.Core.Cache.Query
 {
     using System;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
     /// Text query.
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Cache.Query
         public string Text { get; set; }
 
         /** <inheritDoc /> */
-        internal override void Write(PortableWriterImpl writer, bool keepPortable)
+        internal override void Write(BinaryWriter writer, bool keepBinary)
         {
             if (string.IsNullOrEmpty(Text))
                 throw new ArgumentException("Text cannot be null or empty");
