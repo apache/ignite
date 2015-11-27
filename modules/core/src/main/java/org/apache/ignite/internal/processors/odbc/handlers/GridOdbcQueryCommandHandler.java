@@ -118,9 +118,6 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
 
         res.setLast(!cur.hasNext());
 
-        if (!cur.hasNext())
-            qryCurs.remove(qryId);
-
         return res;
     }
 

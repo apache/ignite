@@ -102,8 +102,6 @@ namespace ignite
 
             if (!cursor->HasNext())
             {
-                cursor.reset();
-
                 return SQL_RESULT_NO_DATA;
             }
 
