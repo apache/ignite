@@ -235,7 +235,7 @@ consoleModule.service('$common', [
             'void',         'volatile',      'while'
         ];
 
-        var VALID_JAVA_IDENTIFIER = new RegExp('^[a-zA-Z_$][a-zA-Z\d_$]*');
+        var VALID_JAVA_IDENTIFIER = new RegExp('^[a-zA-Z_$][a-zA-Z\d_$]*$');
 
         function isValidJavaIdentifier(msg, ident, elemId, panels, panelId) {
             if (isEmptyString(ident))
@@ -977,7 +977,6 @@ consoleModule.service('$unsavedChangesGuard', function () {
         }
     }
 });
-
 
 // Service for confirm or skip several steps.
 consoleModule.service('$confirmBatch', function ($rootScope, $modal,  $q) {

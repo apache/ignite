@@ -72,6 +72,16 @@ $commonUtils.hasAtLeastOneProperty = function (obj, props) {
 };
 
 /**
+ * Convert some name to valid java package name.
+ *
+ * @param name to convert.
+ * @returns {string} Valid java package name.
+ */
+$commonUtils.toJavaPackageName = function (name) {
+    return name ? name.replace(/[^A-Za-z_0-9/.]+/g, '_') : 'org'
+};
+
+/**
  * Convert some name to valid java name.
  *
  * @param prefix To append to java name.
