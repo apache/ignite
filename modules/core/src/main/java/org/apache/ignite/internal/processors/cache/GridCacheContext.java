@@ -1743,9 +1743,19 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param keepPortable Keep portable flag.
      * @return Unwrapped object.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
         return cacheObjCtx.unwrapPortableIfNeeded(o, keepPortable);
+    }
+
+    /**
+     * Unwraps object for binary.
+     *
+     * @param o Object to unwrap.
+     * @param keepPortable Keep portable flag.
+     * @return Unwrapped object.
+     */
+    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable, boolean cpy) {
+        return cacheObjCtx.unwrapPortableIfNeeded(o, keepPortable, cpy);
     }
 
     /**

@@ -103,7 +103,7 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     /** {@inheritDoc} */
     @Override public V getValue() {
         if (val == null)
-            val = (V)cctx.unwrapPortableIfNeeded(valObj, keepPortable);
+            val = (V)cctx.unwrapPortableIfNeeded(valObj, keepPortable, false);
 
         return val;
     }
