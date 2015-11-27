@@ -702,7 +702,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             boolean batchFull;
 
             /** */
-            boolean clearRes;
+            boolean findCalled;
 
             private Object getAffinityKey(SearchRow firstRow, SearchRow lastRow) {
                 if (firstRow == null || lastRow == null)
@@ -748,10 +748,10 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 return null;
             }
 
-            @Override public void addSearchRows(SearchRow firstRow, SearchRow lastRow) {
-                // If this is a beginning of the new lookup clear old results.
-                if (clearRes) {
-                    clearRes = false;
+            @Override public boolean addSearchRows(SearchRow firstRow, SearchRow lastRow) {
+                if (findCalled) {
+                    // If this is a beginning of the new lookup clear old results.
+                    findCalled = false;
 
                     res.clear();
                 }
@@ -764,9 +764,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 if (affKey != null) {
                     // Affinity key is provided.
                     if (affKey == EXPLICIT_NULL) // Affinity key is explicit null, we will not find anything.
-                        nodes = null;
-                    else
-                        nodes = F.asList(rangeNode(cctx, qctx, affKey));
+                        return false;
+
+                    nodes = F.asList(rangeNode(cctx, qctx, affKey));
                 }
                 else {
                     // Affinity key is not provided or is not the same in upper and lower bounds, we have to broadcast.
@@ -776,52 +776,50 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                     nodes = broadcastNodes;
                 }
 
-                if (nodes != null) {
-                    assert !F.isEmpty(nodes);
+                assert !F.isEmpty(nodes);
 
-                    final int rangeId = res.size();
+                final int rangeId = res.size();
 
-                    // Create messages.
-                    GridH2RowMessage first = toSearchRowMessage(firstRow);
-                    GridH2RowMessage last = toSearchRowMessage(lastRow);
+                // Create messages.
+                GridH2RowMessage first = toSearchRowMessage(firstRow);
+                GridH2RowMessage last = toSearchRowMessage(lastRow);
 
-                    // Range containing upper and lower bounds.
-                    GridH2RowRangeBounds rangeBounds = rangeBounds(rangeId, first, last);
+                // Range containing upper and lower bounds.
+                GridH2RowRangeBounds rangeBounds = rangeBounds(rangeId, first, last);
 
-                    // Add range to every message of every participating node.
-                    for (ClusterNode node : nodes) {
-                        assert node != null;
+                // Add range to every message of every participating node.
+                for (ClusterNode node : nodes) {
+                    assert node != null;
 
-                        RangeStream stream = rangeStreams.get(node);
+                    RangeStream stream = rangeStreams.get(node);
 
-                        List<GridH2RowRangeBounds> bounds;
+                    List<GridH2RowRangeBounds> bounds;
 
-                        if (stream == null) {
-                            stream = new RangeStream(qctx, node);
+                    if (stream == null) {
+                        stream = new RangeStream(qctx, node);
 
-                            stream.req = createRequest(qctx, batchLookupId);
-                            stream.req.bounds(bounds = new ArrayList<>());
+                        stream.req = createRequest(qctx, batchLookupId);
+                        stream.req.bounds(bounds = new ArrayList<>());
 
-                            rangeStreams.put(node, stream);
-                        }
-                        else
-                            bounds = stream.req.bounds();
-
-                        bounds.add(rangeBounds);
-
-                        // If at least one node will have a full batch then we are ok.
-                        if (bounds.size() >= qctx.pageSize())
-                            batchFull = true;
+                        rangeStreams.put(node, stream);
                     }
+                    else
+                        bounds = stream.req.bounds();
 
-                    fut = new DoneFuture<>(nodes.size() == 1 ?
-                        new SimpleCursor(rangeId, nodes, rangeStreams) :
-                        new MergeCursor(rangeId, nodes, rangeStreams));
+                    bounds.add(rangeBounds);
+
+                    // If at least one node will have a full batch then we are ok.
+                    if (bounds.size() >= qctx.pageSize())
+                        batchFull = true;
                 }
-                else
-                    fut = null;
+
+                fut = new DoneFuture<>(nodes.size() == 1 ?
+                    new SimpleCursor(rangeId, nodes, rangeStreams) :
+                    new MergeCursor(rangeId, nodes, rangeStreams));
 
                 res.add(fut);
+
+                return true;
             }
 
             @Override public boolean isBatchFull() {
@@ -843,11 +841,23 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
             @Override public List<Future<Cursor>> find() {
                 batchFull = false;
-                clearRes = !res.isEmpty();
+                findCalled = true;
 
                 startStreams();
 
                 return res;
+            }
+
+            @Override public void reset() {
+                rangeStreams.clear();
+                res.clear();
+                broadcastNodes = null;
+                batchFull = false;
+                findCalled = false;
+            }
+
+            @Override public String getPlanSQL() {
+                return "ignite";
             }
         };
     }
