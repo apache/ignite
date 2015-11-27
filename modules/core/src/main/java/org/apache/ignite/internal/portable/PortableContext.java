@@ -24,6 +24,7 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -31,6 +32,7 @@ import java.net.URLClassLoader;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -45,12 +47,15 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -69,7 +74,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -82,28 +86,6 @@ public class PortableContext implements Externalizable {
 
     /** */
     private static final ClassLoader dfltLdr = U.gridClassLoader();
-
-    /** */
-    static final BinaryIdMapper DFLT_ID_MAPPER = new IdMapperWrapper(null);
-
-    /** */
-    static final BinaryIdMapper BASIC_CLS_ID_MAPPER = new BasicClassIdMapper();
-
-    /** */
-    static final char[] LOWER_CASE_CHARS;
-
-    /** */
-    static final char MAX_LOWER_CASE_CHAR = 0x7e;
-
-    /**
-     *
-     */
-    static {
-        LOWER_CASE_CHARS = new char[MAX_LOWER_CASE_CHAR + 1];
-
-        for (char c = 0; c <= MAX_LOWER_CASE_CHAR; c++)
-            LOWER_CASE_CHARS[c] = Character.toLowerCase(c);
-    }
 
     /** */
     private final ConcurrentMap<Class<?>, PortableClassDescriptor> descByCls = new ConcurrentHashMap8<>();
@@ -147,9 +129,6 @@ public class PortableContext implements Externalizable {
     /** */
     private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller();
 
-    /** */
-    private boolean keepDeserialized;
-
     /** Compact footer flag. */
     private boolean compactFooter;
 
@@ -182,6 +161,7 @@ public class PortableContext implements Externalizable {
         colTypes.put(LinkedHashSet.class, GridPortableMarshaller.LINKED_HASH_SET);
         colTypes.put(TreeSet.class, GridPortableMarshaller.TREE_SET);
         colTypes.put(ConcurrentSkipListSet.class, GridPortableMarshaller.CONC_SKIP_LIST_SET);
+        colTypes.put(ConcurrentLinkedQueue.class, GridPortableMarshaller.CONC_LINKED_QUEUE);
 
         mapTypes.put(HashMap.class, GridPortableMarshaller.HASH_MAP);
         mapTypes.put(LinkedHashMap.class, GridPortableMarshaller.LINKED_HASH_MAP);
@@ -245,60 +225,42 @@ public class PortableContext implements Externalizable {
      * @param marsh Portable marshaller.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public void configure(PortableMarshaller marsh) throws BinaryObjectException {
+    public void configure(BinaryMarshaller marsh, IgniteConfiguration cfg) throws BinaryObjectException {
         if (marsh == null)
             return;
 
-        keepDeserialized = marsh.isKeepDeserialized();
-
         marshCtx = marsh.getContext();
+
+        BinaryConfiguration binaryCfg = cfg.getBinaryConfiguration();
+
+        if (binaryCfg == null)
+            binaryCfg = new BinaryConfiguration();
 
         assert marshCtx != null;
 
         optmMarsh.setContext(marshCtx);
 
         configure(
-            marsh.getIdMapper(),
-            marsh.getSerializer(),
-            marsh.isKeepDeserialized(),
-            marsh.getClassNames(),
-            marsh.getTypeConfigurations()
+            binaryCfg.getIdMapper(),
+            binaryCfg.getSerializer(),
+            binaryCfg.getTypeConfigurations()
         );
 
-        compactFooter = marsh.isCompactFooter();
+        compactFooter = binaryCfg.isCompactFooter();
     }
 
     /**
      * @param globalIdMapper ID mapper.
      * @param globalSerializer Serializer.
-     * @param globalKeepDeserialized Keep deserialized flag.
-     * @param clsNames Class names.
      * @param typeCfgs Type configurations.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     private void configure(
         BinaryIdMapper globalIdMapper,
         BinarySerializer globalSerializer,
-        boolean globalKeepDeserialized,
-        Collection<String> clsNames,
         Collection<BinaryTypeConfiguration> typeCfgs
     ) throws BinaryObjectException {
         TypeDescriptors descs = new TypeDescriptors();
-
-        if (clsNames != null) {
-            BinaryIdMapper idMapper = new IdMapperWrapper(globalIdMapper);
-
-            for (String clsName : clsNames) {
-                if (clsName.endsWith(".*")) { // Package wildcard
-                    String pkgName = clsName.substring(0, clsName.length() - 2);
-
-                    for (String clsName0 : classesInPackage(pkgName))
-                        descs.add(clsName0, idMapper, null, null, globalKeepDeserialized, true);
-                }
-                else // Regular single class
-                    descs.add(clsName, idMapper, null, null, globalKeepDeserialized, true);
-            }
-        }
 
         Map<String, String> affFields = new HashMap<>();
 
@@ -309,7 +271,7 @@ public class PortableContext implements Externalizable {
 
         if (typeCfgs != null) {
             for (BinaryTypeConfiguration typeCfg : typeCfgs) {
-                String clsName = typeCfg.getClassName();
+                String clsName = typeCfg.getTypeName();
 
                 if (clsName == null)
                     throw new BinaryObjectException("Class name is required for portable type configuration.");
@@ -319,32 +281,39 @@ public class PortableContext implements Externalizable {
                 if (typeCfg.getIdMapper() != null)
                     idMapper = typeCfg.getIdMapper();
 
-                idMapper = new IdMapperWrapper(idMapper);
+                idMapper = BinaryInternalIdMapper.create(idMapper);
 
                 BinarySerializer serializer = globalSerializer;
 
                 if (typeCfg.getSerializer() != null)
                     serializer = typeCfg.getSerializer();
 
-                boolean keepDeserialized = typeCfg.isKeepDeserialized() != null ? typeCfg.isKeepDeserialized() :
-                    globalKeepDeserialized;
-
                 if (clsName.endsWith(".*")) {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
                     for (String clsName0 : classesInPackage(pkgName))
                         descs.add(clsName0, idMapper, serializer, affFields.get(clsName0),
-                            keepDeserialized, true);
+                            true);
                 }
                 else
                     descs.add(clsName, idMapper, serializer, affFields.get(clsName),
-                        keepDeserialized, false);
+                        false);
             }
         }
 
         for (TypeDescriptor desc : descs.descriptors()) {
-            registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName,
-                desc.keepDeserialized);
+            registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName);
+        }
+
+        BinaryInternalIdMapper dfltMapper = BinaryInternalIdMapper.create(globalIdMapper);
+
+        // Put affinity field names for unconfigured types.
+        for (Map.Entry<String, String> entry : affFields.entrySet()) {
+            String typeName = entry.getKey();
+
+            int typeId = dfltMapper.typeId(typeName);
+
+            affKeyFieldNames.putIfAbsent(typeId, entry.getValue());
         }
     }
 
@@ -509,10 +478,9 @@ public class PortableContext implements Externalizable {
                 clsName.hashCode(),
                 clsName,
                 null,
-                BASIC_CLS_ID_MAPPER,
+                BinaryInternalIdMapper.defaultInstance(),
                 null,
                 false,
-                keepDeserialized,
                 true, /* registered */
                 false /* predefined */
             );
@@ -550,19 +518,24 @@ public class PortableContext implements Externalizable {
             throw new BinaryObjectException("Failed to register class.", e);
         }
 
+        String affFieldName = affinityFieldName(cls);
+
         PortableClassDescriptor desc = new PortableClassDescriptor(this,
             cls,
             true,
             typeId,
             typeName,
-            null,
+            affFieldName,
             idMapper,
             null,
             true,
-            keepDeserialized,
             registered,
             false /* predefined */
         );
+
+        Collection<PortableSchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
+
+        metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas).wrap(this));
 
         // perform put() instead of putIfAbsent() because "registered" flag might have been changed or class loader
         // might have reloaded described class.
@@ -572,9 +545,6 @@ public class PortableContext implements Externalizable {
         descByCls.put(cls, desc);
 
         mappers.putIfAbsent(typeId, idMapper);
-
-        metaHnd.addMeta(typeId,
-            new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), null, desc.schemas()).wrap(this));
 
         return desc;
     }
@@ -611,9 +581,9 @@ public class PortableContext implements Externalizable {
      * @return Type ID.
      */
     public int typeId(String typeName) {
-        String shortTypeName = typeName(typeName);
+        String typeName0 = typeName(typeName);
 
-        Integer id = predefinedTypeNames.get(shortTypeName);
+        Integer id = predefinedTypeNames.get(typeName0);
 
         if (id != null)
             return id;
@@ -621,7 +591,7 @@ public class PortableContext implements Externalizable {
         if (marshCtx.isSystemType(typeName))
             return typeName.hashCode();
 
-        return userTypeIdMapper(shortTypeName).typeId(shortTypeName);
+        return userTypeIdMapper(typeName0).typeId(typeName0);
     }
 
     /**
@@ -640,13 +610,7 @@ public class PortableContext implements Externalizable {
     public BinaryIdMapper userTypeIdMapper(int typeId) {
         BinaryIdMapper idMapper = mappers.get(typeId);
 
-        if (idMapper != null)
-            return idMapper;
-
-        if (predefinedTypes.containsKey(typeId))
-            return DFLT_ID_MAPPER;
-
-        return BASIC_CLS_ID_MAPPER;
+        return idMapper != null ? idMapper : BinaryInternalIdMapper.defaultInstance();
     }
 
     /**
@@ -656,7 +620,22 @@ public class PortableContext implements Externalizable {
     private BinaryIdMapper userTypeIdMapper(String typeName) {
         BinaryIdMapper idMapper = typeMappers.get(typeName);
 
-        return idMapper != null ? idMapper : DFLT_ID_MAPPER;
+        return idMapper != null ? idMapper : BinaryInternalIdMapper.defaultInstance();
+    }
+
+    /**
+     * @param cls Class to get affinity field for.
+     * @return Affinity field name or {@code null} if field name was not found.
+     */
+    private String affinityFieldName(Class cls) {
+        for (; cls != Object.class; cls = cls.getSuperclass()) {
+            for (Field f : cls.getDeclaredFields()) {
+                if (f.getAnnotation(AffinityKeyMapped.class) != null)
+                    return f.getName();
+            }
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -702,9 +681,8 @@ public class PortableContext implements Externalizable {
             id,
             typeName,
             null,
-            DFLT_ID_MAPPER,
+            BinaryInternalIdMapper.defaultInstance(),
             null,
-            false,
             false,
             true, /* registered */
             true /* predefined */
@@ -723,15 +701,13 @@ public class PortableContext implements Externalizable {
      * @param idMapper ID mapper.
      * @param serializer Serializer.
      * @param affKeyFieldName Affinity key field name.
-     * @param keepDeserialized Keep deserialized flag.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("ErrorNotRethrown")
     public void registerUserType(String clsName,
         BinaryIdMapper idMapper,
         @Nullable BinarySerializer serializer,
-        @Nullable String affKeyFieldName,
-        boolean keepDeserialized)
+        @Nullable String affKeyFieldName)
         throws BinaryObjectException {
         assert idMapper != null;
 
@@ -744,7 +720,9 @@ public class PortableContext implements Externalizable {
             // No-op.
         }
 
-        int id = idMapper.typeId(clsName);
+        String typeName = typeName(clsName);
+
+        int id = idMapper.typeId(typeName);
 
         //Workaround for IGNITE-1358
         if (predefinedTypes.get(id) != null)
@@ -757,8 +735,6 @@ public class PortableContext implements Externalizable {
             if (affKeyFieldNames.put(id, affKeyFieldName) != null)
                 throw new BinaryObjectException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
         }
-
-        String typeName = typeName(clsName);
 
         typeMappers.put(typeName, idMapper);
 
@@ -776,13 +752,12 @@ public class PortableContext implements Externalizable {
                 idMapper,
                 serializer,
                 true,
-                keepDeserialized,
                 true, /* registered */
                 false /* predefined */
             );
 
             fieldsMeta = desc.fieldsMeta();
-            schemas = desc.schemas();
+            schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
             if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
                 userTypes.put(id, desc);
@@ -920,8 +895,12 @@ public class PortableContext implements Externalizable {
                 // This is an anonymous class. Don't cut off enclosing class name for it.
                 idx = -1;
             }
-            catch (NumberFormatException e) {
-                return typeName;
+            catch (NumberFormatException ignore) {
+                // This is a lambda class.
+                if (clsName.indexOf("$$Lambda$") > 0)
+                    idx = -1;
+                else
+                    return typeName;
             }
         }
 
@@ -929,26 +908,6 @@ public class PortableContext implements Externalizable {
             idx = clsName.lastIndexOf('.');
 
         return idx >= 0 ? clsName.substring(idx + 1) : clsName;
-    }
-
-    /**
-     * @param str String.
-     * @return Hash code for given string converted to lower case.
-     */
-    private static int lowerCaseHashCode(String str) {
-        int len = str.length();
-
-        int h = 0;
-
-        for (int i = 0; i < len; i++) {
-            int c = str.charAt(i);
-
-            c = c <= MAX_LOWER_CASE_CHAR ? LOWER_CASE_CHARS[c] : Character.toLowerCase(c);
-
-            h = 31 * h + c;
-        }
-
-        return h;
     }
 
     /**
@@ -968,60 +927,11 @@ public class PortableContext implements Externalizable {
     }
 
     /**
-     */
-    private static class IdMapperWrapper implements BinaryIdMapper {
-        /** */
-        private final BinaryIdMapper mapper;
-
-        /**
-         * @param mapper Custom ID mapper.
-         */
-        private IdMapperWrapper(@Nullable BinaryIdMapper mapper) {
-            this.mapper = mapper;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int typeId(String clsName) {
-            int id = 0;
-
-            if (mapper != null)
-                id = mapper.typeId(clsName);
-
-            return id != 0 ? id : lowerCaseHashCode(typeName(clsName));
-        }
-
-        /** {@inheritDoc} */
-        @Override public int fieldId(int typeId, String fieldName) {
-            int id = 0;
-
-            if (mapper != null)
-                id = mapper.fieldId(typeId, fieldName);
-
-            return id != 0 ? id : lowerCaseHashCode(fieldName);
-        }
-    }
-
-    /**
-     * Basic class ID mapper.
-     */
-    private static class BasicClassIdMapper implements BinaryIdMapper {
-        /** {@inheritDoc} */
-        @Override public int typeId(String clsName) {
-            return clsName.hashCode();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int fieldId(int typeId, String fieldName) {
-            return lowerCaseHashCode(fieldName);
-        }
-    }
-
-    /**
      * Type descriptors.
      */
     private static class TypeDescriptors {
         /** Descriptors map. */
-        private final Map<String, TypeDescriptor> descs = new HashMap<>();
+        private final Map<String, TypeDescriptor> descs = new LinkedHashMap<>();
 
         /**
          * Add type descriptor.
@@ -1030,7 +940,6 @@ public class PortableContext implements Externalizable {
          * @param idMapper ID mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
-         * @param keepDeserialized Keep deserialized flag.
          * @param canOverride Whether this descriptor can be override.
          * @throws org.apache.ignite.binary.BinaryObjectException If failed.
          */
@@ -1038,14 +947,12 @@ public class PortableContext implements Externalizable {
             BinaryIdMapper idMapper,
             BinarySerializer serializer,
             String affKeyFieldName,
-            boolean keepDeserialized,
             boolean canOverride)
             throws BinaryObjectException {
             TypeDescriptor desc = new TypeDescriptor(clsName,
                 idMapper,
                 serializer,
                 affKeyFieldName,
-                keepDeserialized,
                 canOverride);
 
             TypeDescriptor oldDesc = descs.get(clsName);
@@ -1082,9 +989,6 @@ public class PortableContext implements Externalizable {
         /** Affinity key field name. */
         private String affKeyFieldName;
 
-        /** Keep deserialized flag. */
-        private boolean keepDeserialized;
-
         /** Whether this descriptor can be override. */
         private boolean canOverride;
 
@@ -1095,16 +999,14 @@ public class PortableContext implements Externalizable {
          * @param idMapper ID mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
-         * @param keepDeserialized Keep deserialized flag.
          * @param canOverride Whether this descriptor can be override.
          */
         private TypeDescriptor(String clsName, BinaryIdMapper idMapper, BinarySerializer serializer,
-            String affKeyFieldName, boolean keepDeserialized, boolean canOverride) {
+            String affKeyFieldName, boolean canOverride) {
             this.clsName = clsName;
             this.idMapper = idMapper;
             this.serializer = serializer;
             this.affKeyFieldName = affKeyFieldName;
-            this.keepDeserialized = keepDeserialized;
             this.canOverride = canOverride;
         }
 
@@ -1121,7 +1023,6 @@ public class PortableContext implements Externalizable {
                 idMapper = other.idMapper;
                 serializer = other.serializer;
                 affKeyFieldName = other.affKeyFieldName;
-                keepDeserialized = other.keepDeserialized;
                 canOverride = other.canOverride;
             }
             else if (!other.canOverride)

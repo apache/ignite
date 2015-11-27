@@ -18,3 +18,6 @@
 ACLOCAL_AMFLAGS = "-Im4"
 
 nobase_include_HEADERS = ignite/impl/utils.h
+
+uninstall-hook:
+	find ${includedir}/ignite -type d -empty -delete

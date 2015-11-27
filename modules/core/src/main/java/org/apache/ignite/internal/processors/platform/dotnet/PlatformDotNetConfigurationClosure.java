@@ -19,8 +19,9 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.portable.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
@@ -36,8 +37,8 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -97,20 +98,27 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         Marshaller marsh = igniteCfg.getMarshaller();
 
         if (marsh == null) {
-            PortableMarshaller marsh0 = new PortableMarshaller();
-
-            marsh0.setCompactFooter(false);
-
-            igniteCfg.setMarshaller(marsh0);
+            igniteCfg.setMarshaller(new BinaryMarshaller());
 
             dotNetCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
-                PortableMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
+                BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
         }
-        else if (!(marsh instanceof PortableMarshaller))
-            throw new IgniteException("Unsupported marshaller (only " + PortableMarshaller.class.getName() +
+        else if (!(marsh instanceof BinaryMarshaller))
+            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
                 " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
-        else if (((PortableMarshaller)marsh).isCompactFooter())
-            throw new IgniteException("Unsupported " + PortableMarshaller.class.getName() +
+
+        BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
+
+        if (bCfg == null) {
+            bCfg = new BinaryConfiguration();
+
+            bCfg.setCompactFooter(false);
+
+            igniteCfg.setBinaryConfiguration(bCfg);
+        }
+
+        if (bCfg.isCompactFooter())
+            throw new IgniteException("Unsupported " + BinaryMarshaller.class.getName() +
                 " \"compactFooter\" flag: must be false when running Apache Ignite.NET.");
 
         // Set Ignite home so that marshaller context works.
@@ -359,11 +367,11 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         try {
             PortableContext ctx = new PortableContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration());
 
-            PortableMarshaller marsh = new PortableMarshaller();
+            BinaryMarshaller marsh = new BinaryMarshaller();
 
             marsh.setContext(new MarshallerContextImpl(null));
 
-            ctx.configure(marsh);
+            ctx.configure(marsh, new IgniteConfiguration());
 
             return new GridPortableMarshaller(ctx);
         }

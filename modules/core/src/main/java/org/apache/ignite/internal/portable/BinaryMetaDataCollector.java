@@ -82,163 +82,163 @@ class BinaryMetadataCollector implements BinaryWriter {
 
     /** {@inheritDoc} */
     @Override public void writeByte(String fieldName, byte val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.BYTE);
+        add(fieldName, BinaryWriteMode.BYTE);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(String fieldName, short val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.SHORT);
+        add(fieldName, BinaryWriteMode.SHORT);
     }
 
     /** {@inheritDoc} */
     @Override public void writeInt(String fieldName, int val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.INT);
+        add(fieldName, BinaryWriteMode.INT);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLong(String fieldName, long val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.LONG);
+        add(fieldName, BinaryWriteMode.LONG);
     }
 
     /** {@inheritDoc} */
     @Override public void writeFloat(String fieldName, float val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.FLOAT);
+        add(fieldName, BinaryWriteMode.FLOAT);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDouble(String fieldName, double val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.DOUBLE);
+        add(fieldName, BinaryWriteMode.DOUBLE);
     }
 
     /** {@inheritDoc} */
     @Override public void writeChar(String fieldName, char val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.CHAR);
+        add(fieldName, BinaryWriteMode.CHAR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeBoolean(String fieldName, boolean val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.BOOLEAN);
+        add(fieldName, BinaryWriteMode.BOOLEAN);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDecimal(String fieldName, @Nullable BigDecimal val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.DECIMAL);
+        add(fieldName, BinaryWriteMode.DECIMAL);
     }
 
     /** {@inheritDoc} */
     @Override public void writeString(String fieldName, @Nullable String val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.STRING);
+        add(fieldName, BinaryWriteMode.STRING);
     }
 
     /** {@inheritDoc} */
     @Override public void writeUuid(String fieldName, @Nullable UUID val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.UUID);
+        add(fieldName, BinaryWriteMode.UUID);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDate(String fieldName, @Nullable Date val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.DATE);
+        add(fieldName, BinaryWriteMode.DATE);
     }
 
     /** {@inheritDoc} */
     @Override public void writeTimestamp(String fieldName, @Nullable Timestamp val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.TIMESTAMP);
+        add(fieldName, BinaryWriteMode.TIMESTAMP);
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Enum<?>> void writeEnum(String fieldName, T val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.ENUM);
+        add(fieldName, BinaryWriteMode.ENUM);
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Enum<?>> void writeEnumArray(String fieldName, T[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.ENUM_ARR);
+        add(fieldName, BinaryWriteMode.ENUM_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeObject(String fieldName, @Nullable Object obj) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.OBJECT);
+        add(fieldName, BinaryWriteMode.OBJECT);
     }
 
     /** {@inheritDoc} */
     @Override public void writeByteArray(String fieldName, @Nullable byte[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.BYTE_ARR);
+        add(fieldName, BinaryWriteMode.BYTE_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShortArray(String fieldName, @Nullable short[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.SHORT_ARR);
+        add(fieldName, BinaryWriteMode.SHORT_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeIntArray(String fieldName, @Nullable int[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.INT_ARR);
+        add(fieldName, BinaryWriteMode.INT_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLongArray(String fieldName, @Nullable long[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.LONG_ARR);
+        add(fieldName, BinaryWriteMode.LONG_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeFloatArray(String fieldName, @Nullable float[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.FLOAT_ARR);
+        add(fieldName, BinaryWriteMode.FLOAT_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDoubleArray(String fieldName, @Nullable double[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.DOUBLE_ARR);
+        add(fieldName, BinaryWriteMode.DOUBLE_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeCharArray(String fieldName, @Nullable char[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.CHAR_ARR);
+        add(fieldName, BinaryWriteMode.CHAR_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeBooleanArray(String fieldName, @Nullable boolean[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.BOOLEAN_ARR);
+        add(fieldName, BinaryWriteMode.BOOLEAN_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDecimalArray(String fieldName, @Nullable BigDecimal[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.DECIMAL_ARR);
+        add(fieldName, BinaryWriteMode.DECIMAL_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeStringArray(String fieldName, @Nullable String[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.STRING_ARR);
+        add(fieldName, BinaryWriteMode.STRING_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeUuidArray(String fieldName, @Nullable UUID[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.UUID_ARR);
+        add(fieldName, BinaryWriteMode.UUID_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDateArray(String fieldName, @Nullable Date[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.DATE_ARR);
+        add(fieldName, BinaryWriteMode.DATE_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeTimestampArray(String fieldName, @Nullable Timestamp[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.TIMESTAMP_ARR);
+        add(fieldName, BinaryWriteMode.TIMESTAMP_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public void writeObjectArray(String fieldName, @Nullable Object[] val) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.OBJECT_ARR);
+        add(fieldName, BinaryWriteMode.OBJECT_ARR);
     }
 
     /** {@inheritDoc} */
     @Override public <T> void writeCollection(String fieldName, @Nullable Collection<T> col)
         throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.COL);
+        add(fieldName, BinaryWriteMode.COL);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> void writeMap(String fieldName, @Nullable Map<K, V> map) throws BinaryObjectException {
-        add(fieldName, PortableClassDescriptor.Mode.MAP);
+        add(fieldName, BinaryWriteMode.MAP);
     }
 
     /** {@inheritDoc} */
@@ -257,7 +257,7 @@ class BinaryMetadataCollector implements BinaryWriter {
      * @param mode Field mode.
      * @throws BinaryObjectException In case of error.
      */
-    private void add(String name, PortableClassDescriptor.Mode mode) throws BinaryObjectException {
+    private void add(String name, BinaryWriteMode mode) throws BinaryObjectException {
         assert name != null;
 
         int fieldTypeId = mode.typeId();

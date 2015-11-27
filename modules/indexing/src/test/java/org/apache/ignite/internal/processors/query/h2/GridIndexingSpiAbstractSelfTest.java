@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexType;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -502,6 +503,24 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** {@inheritDoc} */
         @Override public Map<String, Class<?>> fields() {
             return valFields;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridQueryProperty property(final String name) {
+            return new GridQueryProperty() {
+                @Override public Object value(Object key, Object val) throws IgniteCheckedException {
+                    return TypeDesc.this.value(name, key, val);
+                }
+
+                @Override public String name() {
+                    return name;
+                }
+
+                @Override
+                public Class<?> type() {
+                    return Object.class;
+                }
+            };
         }
 
         /** {@inheritDoc} */

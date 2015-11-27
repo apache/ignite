@@ -61,6 +61,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -93,6 +94,7 @@ import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -1783,28 +1785,41 @@ public class GridCacheUtils {
     public static <S> Callable<S> retryTopologySafe(final Callable<S> c ) {
         return new Callable<S>() {
             @Override public S call() throws Exception {
-                int retries = GridCacheAdapter.MAX_RETRIES;
-
                 IgniteCheckedException err = null;
 
-                for (int i = 0; i < retries; i++) {
+                for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
                     try {
                         return c.call();
                     }
-                    catch (IgniteCheckedException e) {
-                        if (X.hasCause(e, ClusterTopologyCheckedException.class) ||
-                            X.hasCause(e, IgniteTxRollbackCheckedException.class) ||
-                            X.hasCause(e, CachePartialUpdateCheckedException.class)) {
-                            if (i < retries - 1) {
-                                err = e;
-
-                                U.sleep(1);
-
-                                continue;
-                            }
-
+                    catch (ClusterGroupEmptyCheckedException | ClusterTopologyServerNotFoundException e) {
+                        throw e;
+                    }
+                    catch (TransactionRollbackException e) {
+                        if (i + 1 == GridCacheAdapter.MAX_RETRIES)
                             throw e;
+
+                        U.sleep(1);
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (i + 1 == GridCacheAdapter.MAX_RETRIES)
+                            throw e;
+
+                        if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                            ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
+
+                            if (topErr instanceof ClusterGroupEmptyCheckedException || topErr instanceof
+                                ClusterTopologyServerNotFoundException)
+                                throw e;
+
+                            // IGNITE-1948: remove this check when the issue is fixed
+                            if (topErr.retryReadyFuture() != null)
+                                topErr.retryReadyFuture().get();
+                            else
+                                U.sleep(1);
                         }
+                        else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
+                            CachePartialUpdateCheckedException.class))
+                            U.sleep(1);
                         else
                             throw e;
                     }

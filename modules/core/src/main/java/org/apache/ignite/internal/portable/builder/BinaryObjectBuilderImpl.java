@@ -31,7 +31,6 @@ import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableSchema;
 import org.apache.ignite.internal.portable.PortableSchemaRegistry;
 import org.apache.ignite.internal.portable.PortableUtils;
-import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -178,7 +177,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
     /** {@inheritDoc} */
     @Override public BinaryObject build() {
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, typeId, false)) {
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+            writer.typeId(typeId);
+
             PortableBuilderSerializer serializationCtx = new PortableBuilderSerializer();
 
             serializationCtx.registerObjectWriting(this, 0);
@@ -197,16 +198,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      */
     void serializeTo(BinaryWriterExImpl writer, PortableBuilderSerializer serializer) {
         try {
-            PortableUtils.writeHeader(writer,
-                registeredType ? typeId : UNREGISTERED_TYPE_ID,
-                hashCode,
-                registeredType ? null : clsNameToWrite
-            );
+            writer.preWrite(registeredType ? null : clsNameToWrite);
 
             Set<Integer> remainsFlds = null;
 
             if (reader != null) {
-                PortableSchema schema = reader.schema(start);
+                PortableSchema schema = reader.schema();
 
                 Map<Integer, Object> assignedFldsById;
 
@@ -361,7 +358,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 reader.position(start + PortableUtils.length(reader, start));
             }
 
-            writer.postWrite(true);
+            writer.postWrite(true, registeredType, hashCode);
 
             // Update metadata if needed.
             int schemaId = writer.schemaId();
@@ -440,7 +437,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             int fieldIdLen = PortableUtils.fieldIdLength(flags);
             int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
 
-            PortableSchema schema = reader.schema(start);
+            PortableSchema schema = reader.schema();
 
             Map<Integer, Object> readCache = new HashMap<>();
 
@@ -494,15 +491,15 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectBuilder setField(String name, Object val) {
-        GridArgumentCheck.notNull(val, name);
+    @Override public BinaryObjectBuilder setField(String name, Object val0) {
+        Object val = val0 == null ? new PortableValueWithType(PortableUtils.typeByClass(Object.class), null) : val0;
 
         if (assignedVals == null)
             assignedVals = new LinkedHashMap<>();
 
         Object oldVal = assignedVals.put(name, val);
 
-        if (oldVal instanceof PortableValueWithType) {
+        if (oldVal instanceof PortableValueWithType && val0 != null) {
             ((PortableValueWithType)oldVal).value(val);
 
             assignedVals.put(name, oldVal);
@@ -515,8 +512,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     @Override public <T> BinaryObjectBuilder setField(String name, @Nullable T val, Class<? super T> type) {
         if (assignedVals == null)
             assignedVals = new LinkedHashMap<>();
-
-        //int fldId = ctx.fieldId(typeId, fldName);
 
         assignedVals.put(name, new PortableValueWithType(PortableUtils.typeByClass(type), val));
 

@@ -45,6 +45,7 @@ import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -208,7 +209,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default value for keep binary in store behavior .*/
     @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
-    public static final Boolean DFLT_KEEP_BINARY_IN_STORE = new Boolean(true);
+    public static final Boolean DFLT_KEEP_BINARY_IN_STORE = new Boolean(false);
 
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
@@ -373,6 +374,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
 
+    /** */
+    private boolean snapshotableIdx;
+
     /** Copy on read flag. */
     private boolean cpOnRead = DFLT_COPY_ON_READ;
 
@@ -463,6 +467,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         rebalancePoolSize = cc.getRebalanceThreadPoolSize();
         rebalanceTimeout = cc.getRebalanceTimeout();
         rebalanceThrottle = cc.getRebalanceThrottle();
+        snapshotableIdx = cc.isSnapshotableIndex();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
         sqlOnheapRowCacheSize = cc.getSqlOnheapRowCacheSize();
@@ -887,8 +892,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Flag indicating that {@link CacheStore} implementation
      * is working with binary objects instead of Java objects.
-     * Default value of this flag is {@link #DFLT_KEEP_BINARY_IN_STORE},
-     * because this is recommended behavior from performance standpoint.
+     * Default value of this flag is {@link #DFLT_KEEP_BINARY_IN_STORE}.
      * <p>
      * If set to {@code false}, Ignite will deserialize keys and
      * values stored in binary format before they are passed
@@ -1836,7 +1840,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setIndexedTypes(Class<?>... indexedTypes) {
-        A.notNull(indexedTypes, "indexedTypes");
+        if (F.isEmpty(indexedTypes))
+            return this;
 
         int len = indexedTypes.length;
 
@@ -1894,6 +1899,32 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setSqlOnheapRowCacheSize(int size) {
         this.sqlOnheapRowCacheSize = size;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether SQL indexes should support snapshots.
+     *
+     * @return {@code True} if SQL indexes should support snapshots.
+     */
+    public boolean isSnapshotableIndex() {
+        return snapshotableIdx;
+    }
+
+    /**
+     * Sets flag indicating whether SQL indexes should support snapshots.
+     * <p>
+     * Default value is {@code false}.
+     * <p>
+     * <b>Note</b> that this flag is ignored if indexes are stored in offheap memory,
+     * for offheap indexes snapshots are always enabled.
+     *
+     * @param snapshotableIdx {@code True} if SQL indexes should support snapshots.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSnapshotableIndex(boolean snapshotableIdx) {
+        this.snapshotableIdx = snapshotableIdx;
 
         return this;
     }

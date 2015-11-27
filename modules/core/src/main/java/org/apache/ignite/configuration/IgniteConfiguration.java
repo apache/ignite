@@ -437,6 +437,9 @@ public class IgniteConfiguration {
     /** Cache key configuration. */
     private CacheKeyConfiguration[] cacheKeyCfg;
 
+    /** */
+    private BinaryConfiguration binaryCfg;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -471,6 +474,7 @@ public class IgniteConfiguration {
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
+        binaryCfg = cfg.getBinaryConfiguration();
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
@@ -1360,11 +1364,12 @@ public class IgniteConfiguration {
      *
      * Default is {@code 1} which has minimal impact on the operation of the grid.
      *
-     * @param size Size.
+     * @param rebalanceThreadPoolSize Number of system threads that will be assigned for partition transfer during
+     *      rebalancing.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setRebalanceThreadPoolSize(int size) {
-        this.rebalanceThreadPoolSize = size;
+    public IgniteConfiguration setRebalanceThreadPoolSize(int rebalanceThreadPoolSize) {
+        this.rebalanceThreadPoolSize = rebalanceThreadPoolSize;
 
         return this;
     }
@@ -2001,6 +2006,24 @@ public class IgniteConfiguration {
      */
     public void setCacheKeyCfg(CacheKeyConfiguration... cacheKeyCfg) {
         this.cacheKeyCfg = cacheKeyCfg;
+    }
+
+    /**
+     * Gets configuration for Ignite Binary objects.
+     *
+     * @return Binary configuration object.
+     */
+    public BinaryConfiguration getBinaryConfiguration() {
+        return binaryCfg;
+    }
+
+    /**
+     * Sets configuration for Ignite Binary objects.
+     *
+     * @param binaryCfg Binary configuration object.
+     */
+    public void setBinaryConfiguration(BinaryConfiguration binaryCfg) {
+        this.binaryCfg = binaryCfg;
     }
 
     /**

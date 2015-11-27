@@ -10,7 +10,7 @@ With LGPL dependencies:
   mvn clean package -DskipTests -Prelease,lgpl -Dignite.edition=fabric-lgpl
 
 With LGPL dependencies and Scala 2.10:
-  mvn clean package -DskipTests -Prelease,lgpl -Dscala-2.10
+  mvn clean package -DskipTests -Prelease,lgpl -Dignite.edition=fabric-lgpl -Dscala-2.10
 
 Look for apache-ignite-fabric-<version>-bin.zip in ./target/bin directory.
 

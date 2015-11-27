@@ -50,6 +50,12 @@ public interface GridQueryTypeDescriptor {
     public <T> T value(String field, Object key, Object val) throws IgniteCheckedException;
 
     /**
+     * @param name Property name.
+     * @return Property.
+     */
+    public GridQueryProperty property(String name);
+
+    /**
      * Gets indexes for this type.
      *
      * @return Indexes for this type.

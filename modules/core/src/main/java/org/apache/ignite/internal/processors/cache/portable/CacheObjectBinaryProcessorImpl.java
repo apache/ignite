@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.portable.BinaryMetadata;
 import org.apache.ignite.internal.portable.BinaryMetadataHandler;
+import org.apache.ignite.internal.portable.BinaryObjectEx;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryTypeImpl;
@@ -62,14 +63,16 @@ import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
@@ -157,7 +160,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (marsh instanceof PortableMarshaller) {
+        if (marsh instanceof BinaryMarshaller) {
             BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
                 @Override public void addMeta(int typeId, BinaryType newMeta) throws BinaryObjectException {
                     assert newMeta != null;
@@ -201,11 +204,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             };
 
-            PortableMarshaller pMarh0 = (PortableMarshaller)marsh;
+            BinaryMarshaller pMarh0 = (BinaryMarshaller)marsh;
 
             portableCtx = new PortableContext(metaHnd, ctx.config());
 
-            IgniteUtils.invoke(PortableMarshaller.class, pMarh0, "setPortableContext", portableCtx);
+            IgniteUtils.invoke(BinaryMarshaller.class, pMarh0, "setPortableContext", portableCtx,
+                ctx.config());
 
             portableMarsh = new GridPortableMarshaller(portableCtx);
 
@@ -216,7 +220,16 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onUtilityCacheStarted() throws IgniteCheckedException {
-        metaDataCache = (IgniteCacheProxy)ctx.cache().jcache(CU.UTILITY_CACHE_NAME).withNoRetries();
+        IgniteCacheProxy<Object, Object> proxy = ctx.cache().jcache(CU.UTILITY_CACHE_NAME);
+
+        boolean old = proxy.context().deploy().ignoreOwnership(true);
+
+        try {
+            metaDataCache = (IgniteCacheProxy)proxy.withNoRetries();
+        }
+        finally {
+            proxy.context().deploy().ignoreOwnership(old);
+        }
 
         if (clientNode) {
             assert !metaDataCache.context().affinityNode();
@@ -272,12 +285,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             }
         }
 
-        startLatch.countDown();
-
         for (Map.Entry<Integer, BinaryMetadata> e : metaBuf.entrySet())
             addMeta(e.getKey(), e.getValue().wrap(portableCtx));
 
         metaBuf.clear();
+
+        startLatch.countDown();
     }
 
     /** {@inheritDoc} */
@@ -380,6 +393,15 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return pArr;
         }
 
+        if (obj instanceof IgniteBiTuple) {
+            IgniteBiTuple tup = (IgniteBiTuple)obj;
+
+            if (obj instanceof T2)
+                return new T2<>(marshalToPortable(tup.get1()), marshalToPortable(tup.get2()));
+
+            return new IgniteBiTuple<>(marshalToPortable(tup.get1()), marshalToPortable(tup.get2()));
+        }
+
         if (obj instanceof Collection) {
             Collection<Object> col = (Collection<Object>)obj;
 
@@ -419,9 +441,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         Object obj0 = portableMarsh.unmarshal(arr, null);
 
-        assert obj0 instanceof BinaryObject;
-
-        ((BinaryObjectImpl)obj0).detachAllowed(true);
+        // Possible if a class has writeObject method.
+        if (obj0 instanceof BinaryObject)
+            ((BinaryObjectImpl)obj0).detachAllowed(true);
 
         return obj0;
     }
@@ -544,7 +566,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public boolean isPortableEnabled(CacheConfiguration<?, ?> ccfg) {
-        return marsh instanceof PortableMarshaller;
+        return marsh instanceof BinaryMarshaller;
     }
 
     /**
@@ -574,7 +596,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (obj == null)
             return 0;
 
-        return isPortableObject(obj) ? ((BinaryObject)obj).typeId() : typeId(obj.getClass().getSimpleName());
+        return isPortableObject(obj) ? ((BinaryObjectEx)obj).typeId() : typeId(obj.getClass().getSimpleName());
     }
 
     /** {@inheritDoc} */
@@ -601,7 +623,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public CacheObjectContext contextForCache(CacheConfiguration cfg) throws IgniteCheckedException {
         assert cfg != null;
 
-        boolean portableEnabled = marsh instanceof PortableMarshaller && !GridCacheUtils.isSystemCache(cfg.getName()) &&
+        boolean portableEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(cfg.getName()) &&
             !GridCacheUtils.isIgfsCache(ctx.config(), cfg.getName());
 
         CacheObjectContext ctx0 = super.contextForCache(cfg);

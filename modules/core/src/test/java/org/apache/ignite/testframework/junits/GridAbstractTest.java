@@ -61,7 +61,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
-import org.apache.ignite.internal.util.GridEnumCache;
+import org.apache.ignite.internal.portable.BinaryEnumCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -856,7 +856,7 @@ public abstract class GridAbstractTest extends TestCase {
         List<Ignite> ignites = G.allGrids();
 
         for (Ignite g : ignites) {
-            if (g.cluster().localNode().isClient())
+            if (g.configuration().getDiscoverySpi().isClientMode())
                 stopGrid(g.name(), cancel);
         }
     }
@@ -868,7 +868,7 @@ public abstract class GridAbstractTest extends TestCase {
         List<Ignite> ignites = G.allGrids();
 
         for (Ignite g : ignites) {
-            if (!g.cluster().localNode().isClient())
+            if (!g.configuration().getDiscoverySpi().isClientMode())
                 stopGrid(g.name(), cancel);
         }
     }
@@ -1248,7 +1248,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (isDebug()) {
             discoSpi.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-            cfg.setNetworkTimeout(Long.MAX_VALUE);
+            cfg.setNetworkTimeout(Long.MAX_VALUE / 3);
         }
         else {
             // Set network timeout to 10 sec to avoid unexpected p2p class loading errors.
@@ -1365,7 +1365,7 @@ public abstract class GridAbstractTest extends TestCase {
                 GridClassLoaderCache.clear();
                 U.clearClassCache();
                 MarshallerExclusions.clearCache();
-                GridEnumCache.clear();
+                BinaryEnumCache.clear();
             }
 
             Thread.currentThread().setContextClassLoader(clsLdr);
