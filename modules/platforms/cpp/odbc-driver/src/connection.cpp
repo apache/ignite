@@ -19,8 +19,8 @@
 
 #include <sstream>
 
-#include "connection.h"
-#include "utility.h"
+#include "ignite/odbc/connection.h"
+#include "ignite/odbc/utility.h"
 
 // TODO: implement appropriate protocol with de-/serialisation.
 namespace

@@ -20,9 +20,9 @@
 
 #include <stdint.h>
 
-#include "result_page.h"
-#include "common_types.h"
-#include "application_data_buffer.h"
+#include "ignite/odbc/result_page.h"
+#include "ignite/odbc/common_types.h"
+#include "ignite/odbc/application_data_buffer.h"
 
 namespace ignite
 {

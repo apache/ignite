@@ -13,9 +13,6 @@
     <ClCompile Include="..\..\src\odbc.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\os\win\socket_client.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\connection.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -52,6 +49,9 @@
     <ClCompile Include="..\..\src\row.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\os\win\src\socket_client.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -59,53 +59,56 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\os\win\socket_client.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\connection.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\environment.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\configuration.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\utility.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\statement.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\type_traits.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\application_data_buffer.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common_types.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cursor.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\message.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\parser.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\connection_info.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\column_meta.h">
-      <Filter>Code</Filter>
-    </ClInclude>
     <ClInclude Include="result_page.h" />
-    <ClInclude Include="..\..\src\result_page.h">
+    <ClInclude Include="..\..\include\ignite\odbc\application_data_buffer.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\row.h">
+    <ClInclude Include="..\..\include\ignite\odbc\column_meta.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\common_types.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\configuration.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\connection.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\connection_info.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\cursor.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\environment.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\interop_stack_memory.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\message.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\parser.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\result_page.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\row.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\statement.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\type_traits.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\utility.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\odbc\socket_client.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

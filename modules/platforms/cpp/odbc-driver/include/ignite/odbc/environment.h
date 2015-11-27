@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#include "connection.h"
+#include "ignite/odbc/connection.h"
 
 namespace ignite
 {

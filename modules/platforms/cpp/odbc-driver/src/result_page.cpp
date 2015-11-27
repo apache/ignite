@@ -17,7 +17,7 @@
 
 #include <ignite/impl/interop/interop_input_stream.h>
 
-#include "result_page.h"
+#include "ignite/odbc/result_page.h"
 
 namespace ignite
 {

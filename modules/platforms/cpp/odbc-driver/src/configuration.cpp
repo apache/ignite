@@ -22,8 +22,8 @@
 #include <algorithm>
 #include <iterator>
 
-#include "utility.h"
-#include "configuration.h"
+#include "ignite/odbc/utility.h"
+#include "ignite/odbc/configuration.h"
 
 namespace ignite
 {

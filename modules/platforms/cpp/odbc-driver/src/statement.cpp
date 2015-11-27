@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-#include "connection.h"
-
-#include "utility.h"
-#include "message.h"
-#include "statement.h"
+#include "ignite/odbc/connection.h"
+#include "ignite/odbc/utility.h"
+#include "ignite/odbc/message.h"
+#include "ignite/odbc/statement.h"
 
 // Default result page size.
 #define DEFAULT_PAGE_SIZE 32

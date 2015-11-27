@@ -22,7 +22,7 @@
 
 #include <stdint.h>
 
-#include "type_traits.h"
+#include "ignite/odbc/type_traits.h"
 
 namespace ignite
 {

@@ -24,9 +24,9 @@
 #include "ignite/impl/binary/binary_writer_impl.h"
 #include "ignite/impl/binary/binary_reader_impl.h"
 
-#include "utility.h"
-#include "column_meta.h"
-#include "result_page.h"
+#include "ignite/odbc/utility.h"
+#include "ignite/odbc/column_meta.h"
+#include "ignite/odbc/result_page.h"
 
 
 namespace ignite

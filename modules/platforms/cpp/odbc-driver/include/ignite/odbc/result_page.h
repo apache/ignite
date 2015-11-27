@@ -22,8 +22,8 @@
 
 #include <ignite/impl/binary/binary_reader_impl.h>
 
-#include "application_data_buffer.h"
-#include "common_types.h"
+#include "ignite/odbc/application_data_buffer.h"
+#include "ignite/odbc/common_types.h"
 
 namespace ignite
 {

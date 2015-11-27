@@ -29,7 +29,7 @@
 #include <string>
 #include <sstream>
 
-#include "application_data_buffer.h"
+#include "ignite/odbc/application_data_buffer.h"
 
 namespace ignite
 {

@@ -43,8 +43,8 @@
 #include <cstring>
 #include <algorithm>
 
-#include "utility.h"
-#include "connection_info.h"
+#include "ignite/odbc/utility.h"
+#include "ignite/odbc/connection_info.h"
 
 namespace ignite
 {

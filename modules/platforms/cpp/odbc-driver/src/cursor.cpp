@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "cursor.h"
+#include "ignite/odbc/cursor.h"
 
 namespace ignite
 {

@@ -23,7 +23,7 @@
 #include <sqlext.h>
 #include <odbcinst.h>
 
-#include "common_types.h"
+#include "ignite/odbc/common_types.h"
 
 namespace ignite
 {

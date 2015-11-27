@@ -21,8 +21,8 @@
 
 #include <sstream>
 
-#include "socket_client.h"
-#include "utility.h"
+#include "ignite/odbc/socket_client.h"
+#include "ignite/odbc/utility.h"
 
 namespace ignite
 {

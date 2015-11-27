@@ -22,9 +22,9 @@
 
 #include <map>
 
-#include "result_page.h"
-#include "common_types.h"
-#include "row.h"
+#include "ignite/odbc/result_page.h"
+#include "ignite/odbc/common_types.h"
+#include "ignite/odbc/row.h"
 
 namespace ignite
 {

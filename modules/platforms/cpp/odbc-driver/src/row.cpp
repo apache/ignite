@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-#include "utility.h"
-
 #include <ignite/impl/interop/interop_stream_position_guard.h>
 
-#include "row.h"
+#include "ignite/odbc/utility.h"
+#include "ignite/odbc/row.h"
 
 namespace
 {

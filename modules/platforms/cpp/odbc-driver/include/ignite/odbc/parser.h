@@ -27,7 +27,7 @@
 #include <ignite/impl/binary/binary_writer_impl.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
 
-#include "utility.h"
+#include "ignite/odbc/utility.h"
 
 namespace ignite
 {

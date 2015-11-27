@@ -28,11 +28,11 @@
 #include <sqlext.h>
 #include <odbcinst.h>
 
-#include "utility.h"
-#include "type_traits.h"
-#include "configuration.h"
-#include "environment.h"
-#include "connection.h"
+#include "ignite/odbc/utility.h"
+#include "ignite/odbc/type_traits.h"
+#include "ignite/odbc/configuration.h"
+#include "ignite/odbc/environment.h"
+#include "ignite/odbc/connection.h"
 
 #undef min
 

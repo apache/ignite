@@ -27,13 +27,12 @@
 #include <ignite/impl/interop/interop_input_stream.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
-#include "application_data_buffer.h"
-#include "parser.h"
-#include "common_types.h"
-#include "cursor.h"
-#include "column_meta.h"
-
-#include "utility.h"
+#include "ignite/odbc/application_data_buffer.h"
+#include "ignite/odbc/parser.h"
+#include "ignite/odbc/common_types.h"
+#include "ignite/odbc/cursor.h"
+#include "ignite/odbc/column_meta.h"
+#include "ignite/odbc/utility.h"
 
 namespace ignite
 {

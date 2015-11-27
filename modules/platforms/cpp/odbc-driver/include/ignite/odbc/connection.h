@@ -22,9 +22,9 @@
 
 #include <vector>
 
-#include "socket_client.h"
-#include "statement.h"
-#include "connection_info.h"
+#include "ignite/odbc/socket_client.h"
+#include "ignite/odbc/statement.h"
+#include "ignite/odbc/connection_info.h"
 
 namespace ignite
 {
