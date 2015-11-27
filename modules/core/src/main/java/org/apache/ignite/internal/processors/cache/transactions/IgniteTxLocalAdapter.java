@@ -598,7 +598,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param entry Cache entry to check.
      */
     private void checkCommitLocks(GridCacheEntryEx entry) {
-        assert ownsLockUnsafe(entry) : "Lock is not owned for commit in PESSIMISTIC mode [entry=" + entry +
+        assert ownsLockUnsafe(entry) : "Lock is not owned for commit [entry=" + entry +
             ", tx=" + this + ']';
     }
 

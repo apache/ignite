@@ -423,7 +423,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "Compound future listener: " + GridCompoundFuture.this;
+            return "Compound future listener []";
         }
     }
 }
