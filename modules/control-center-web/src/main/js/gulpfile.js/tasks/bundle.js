@@ -17,17 +17,26 @@
 
 var gulp = require('gulp');
 var jspm = require('jspm');
+var util = require('gulp-util');
 
 var paths = [
     './app/**/*.js'
 ];
 
 var options = {
-	sourceMaps: true
+	minify: true
 };
 
 gulp.task('bundle', function() {
-	return jspm.bundleSFX('app/index', 'build/app.min.js', options)
+	if (util.env.debug) {
+		delete options.minify;
+	}
+
+	if (util.env.debug || util.env.sourcemaps) {
+		options.sourceMaps = true;
+	}
+
+	return jspm.bundleSFX('app/index', 'build/app.min.js', options);
 });
 
 gulp.task('bundle:watch', function() {

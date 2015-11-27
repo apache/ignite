@@ -21,7 +21,7 @@ angular
 .module('ignite-console.states.logout', [
 	'ui.router'
 ])
-.config(function($stateProvider) {
+.config(['$stateProvider', function($stateProvider) {
 	// set up the states
 	$stateProvider
 	.state('logout', {
@@ -30,4 +30,4 @@ angular
 			Auth.logout();
 		}
 	})
-});
+}]);

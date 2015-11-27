@@ -21,11 +21,11 @@ angular
 .module('ignite-console.states.profile', [
 	'ui.router'
 ])
-.config(function($stateProvider) {
+.config(['$stateProvider', function($stateProvider) {
 	// set up the states
 	$stateProvider
 	.state('base.profile', {
 		url: '/profile',
 		templateUrl: '/settings/profile.html'
 	})
-});
+}]);

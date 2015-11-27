@@ -16,7 +16,7 @@
  */
 
 angular
-.module('ignite-web-console.userbar', [
+.module('ignite-console.userbar', [
 
 ])
 .provider('igniteUserbar', function() {

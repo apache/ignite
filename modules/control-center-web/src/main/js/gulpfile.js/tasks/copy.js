@@ -16,7 +16,8 @@
  */
 
 var gulp = require('gulp');
-var gulpSequence = require('gulp-sequence');
+var util = require('gulp-util');
+var sequence = require('gulp-sequence');
 
 var igniteModules = process.env.IGNITE_MODULES || './ignite_modules';
 
@@ -25,7 +26,6 @@ var paths = [
 ];
 
 var cssPaths = [
-    'public/stylesheets/style.css',
     'jspm_packages/**/nvd3@*/build/nv.d3.css',
     'jspm_packages/**/angular-tree-control@*/css/*.css',
     'jspm_packages/**/ag-grid@*/dist/ag-grid.css',
@@ -39,7 +39,8 @@ var legacyPaths = [
     './controllers/**/*.json',
     './helpers/*.js',
     './helpers/**/*.js',
-    './public/**/*.png'
+    './public/**/*.png',
+    './public/*.png'
 ];
 
 var igniteModulePaths = [
@@ -50,31 +51,38 @@ var igniteModulePaths = [
 ];
 
 gulp.task('copy', function(cb) {
-    return gulpSequence('copy:base', 'copy:legacy', 'copy:css', 'copy:fonts', 'copy:ignite_modules')(cb)
+    var tasks = ['copy:legacy', 'copy:fonts', 'copy:ignite_modules'];
+
+    if (util.env.debug || util.env.sourcemaps) {
+        tasks.push('copy:css')
+        tasks.push('copy:base')
+    }
+
+    return sequence(tasks)(cb);
 });
 
 gulp.task('copy:base', function(cb) {
-    return gulp.src(paths, {base: './'}).pipe(gulp.dest('./build'))
+    return gulp.src(paths, {base: './'}).pipe(gulp.dest('./build'));
 });
 
 gulp.task('copy:legacy', function(cb) {
-    return gulp.src(legacyPaths).pipe(gulp.dest('./build'))
+    return gulp.src(legacyPaths).pipe(gulp.dest('./build'));
 });
 
 gulp.task('copy:css', function(cb) {
-    return gulp.src(cssPaths, {base: './'}).pipe(gulp.dest('./build'))
+    return gulp.src(cssPaths, {base: './'}).pipe(gulp.dest('./build'));
 });
 
 gulp.task('copy:fonts', function(cb) {
-    return gulp.src('./node_modules/font-awesome/fonts/*', {base: './node_modules/font-awesome'}).pipe(gulp.dest('./build'))
+    return gulp.src('./node_modules/font-awesome/fonts/*', {base: './node_modules/font-awesome'}).pipe(gulp.dest('./build'));
 });
 
 gulp.task('copy:ignite_modules', function(cb) {
-    return gulp.src(igniteModulePaths).pipe(gulp.dest('./build/ignite_modules'))
+    return gulp.src(igniteModulePaths).pipe(gulp.dest('./build/ignite_modules'));
 });
 
 gulp.task('copy:watch', function(cb) {
     gulp.watch([paths, legacyPaths, igniteModulePaths], function(glob) {
-        gulpSequence(['copy:base', 'copy:legacy', 'copy:ignite_modules'], 'inject:plugins:js')(cb)
+        sequence(['copy:base', 'copy:legacy', 'copy:ignite_modules'], 'inject:plugins:js')(cb);
     });
 });

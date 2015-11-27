@@ -20,9 +20,6 @@ var consoleModule = angular.module('ignite-web-console',
         'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'agGrid', 'nvd3', 'dndLists'
         /* ignite:modules */
         , 'ignite-console'
-        , 'ignite-web-console.navbar'
-        , 'ignite-web-console.userbar'
-        , 'ignite-web-console.configuration.sidebar'
         /* endignite */
         /* ignite:plugins */
         /* endignite */
@@ -960,12 +957,22 @@ consoleModule.service('$confirm', function ($modal, $rootScope, $q) {
 });
 
 // Confirm change location.
-consoleModule.service('$unsavedChangesGuard', function () {
+consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
     return {
         install: function ($scope) {
             $scope.$on("$destroy", function() {
                 window.onbeforeunload = null;
             });
+
+            var unbind = $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+                if ($scope.ui && $scope.ui.isDirty()) {
+                    if (!confirm('You have unsaved changes.\n\nAre you sure you want to discard them?')) {
+                        event.preventDefault(); 
+                    } else {
+                        unbind();
+                    }
+                }
+            })
 
             window.onbeforeunload = function(){
                 return $scope.ui && $scope.ui.isDirty()
