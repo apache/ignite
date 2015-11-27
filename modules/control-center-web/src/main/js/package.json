@@ -37,6 +37,7 @@
     "gulp-rimraf": "^0.2.0",
     "gulp-sass": "^2.1.0",
     "gulp-sequence": "^0.4.1",
+    "gulp-util": "^3.0.7",
     "jade": "~1.11.0",
     "jszip": "^2.5.0",
     "lodash": "3.10.1",
