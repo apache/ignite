@@ -793,13 +793,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectExImpl po1 = marshal(obj1, marsh);
 
-<<<<<<< HEAD:modules/core/src/test/java/org/apache/ignite/internal/portable/GridPortableMarshallerSelfTest.java
-        assertEquals(11111, po1.typeId());
-        //assertEquals(10, po1.field(22222));
-=======
         assertEquals(11111, po1.type().typeId());
         assertEquals((Integer)10, po1.field(22222));
->>>>>>> ignite-1.5:modules/core/src/test/java/org/apache/ignite/internal/portable/BinaryMarshallerSelfTest.java
         assertEquals("str", po1.field(33333));
 
         assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
@@ -855,13 +850,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectExImpl po1 = marshal(obj1, marsh);
 
-<<<<<<< HEAD:modules/core/src/test/java/org/apache/ignite/internal/portable/GridPortableMarshallerSelfTest.java
-        assertEquals(11111, po1.typeId());
-        //assertEquals(10, po1.field(22222));
-=======
         assertEquals(11111, po1.type().typeId());
         assertEquals((Integer)10, po1.field(22222));
->>>>>>> ignite-1.5:modules/core/src/test/java/org/apache/ignite/internal/portable/BinaryMarshallerSelfTest.java
         assertEquals("str1", po1.field(33333));
 
         assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
@@ -871,13 +861,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectExImpl po2 = marshal(obj2, marsh);
 
-<<<<<<< HEAD:modules/core/src/test/java/org/apache/ignite/internal/portable/GridPortableMarshallerSelfTest.java
-        assertEquals(44444, po2.typeId());
-        //assertEquals(20, po2.field(55555));
-=======
         assertEquals(44444, po2.type().typeId());
         assertEquals((Integer)20, po2.field(55555));
->>>>>>> ignite-1.5:modules/core/src/test/java/org/apache/ignite/internal/portable/BinaryMarshallerSelfTest.java
         assertEquals("str2", po2.field(66666));
 
         assertEquals(20, po2.<CustomMappedObject2>deserialize().val1);

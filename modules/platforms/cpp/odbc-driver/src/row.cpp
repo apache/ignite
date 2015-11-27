@@ -21,7 +21,6 @@
 
 #include "row.h"
 
-
 namespace
 {
     using namespace ignite::impl::interop;
@@ -55,7 +54,6 @@ namespace
         return true;
     }
 }
-
 
 namespace ignite
 {
