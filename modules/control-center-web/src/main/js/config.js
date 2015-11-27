@@ -110,7 +110,7 @@ System.config({
     },
     "github:krispo/angular-nvd3@1.0.4": {
       "angular": "github:angular/bower-angular@1.4.8",
-      "d3": "npm:d3@3.5.8",
+      "d3": "npm:d3@3.5.9",
       "nvd3": "npm:nvd3@1.8.1"
     },
     "github:marceljuenemann/angular-drag-and-drop-lists@1.3.0": {
@@ -331,7 +331,7 @@ System.config({
       "brorand": "npm:brorand@1.0.5"
     },
     "npm:nvd3@1.8.1": {
-      "d3": "npm:d3@3.5.8"
+      "d3": "npm:d3@3.5.9"
     },
     "npm:os-browserify@0.1.2": {
       "os": "github:jspm/nodelibs-os@0.1.0"

@@ -116,7 +116,7 @@
         "dependencies": {
           "angular": "^1",
           "nvd3": "npm:nvd3@1.8.1",
-          "d3": "npm:d3@3.5.8"
+          "d3": "npm:d3@3.5.9"
         },
         "shim": {
           "dist/angular-nvd3": {
