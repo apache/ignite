@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.portable;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -359,6 +363,23 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         map.put(3, "str3");
 
         assertEquals(map, marshalUnmarshal(map));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExternalizableHashCode() throws Exception {
+        SimpleExternalizable sim1 = new SimpleExternalizable("Simple");
+        SimpleExternalizable sim2 = new SimpleExternalizable("Simple");
+
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        BinaryObjectImpl sim1Binary = marshal(sim1, marsh);
+        BinaryObjectImpl sim2Binary = marshal(sim2, marsh);
+
+        assertEquals(sim1.hashCode(), sim2.hashCode());
+        assertEquals(sim1.hashCode(), sim1Binary.hashCode());
+        assertEquals(sim2.hashCode(), sim2Binary.hashCode());
     }
 
     /**
@@ -3616,6 +3637,49 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public static class ChildPortable extends ParentPortable {
 
+    }
+
+    /**
+     *
+     */
+    public static class SimpleExternalizable implements Externalizable {
+        /** */
+        private String field;
+
+        /**
+         * @param field Field.
+         */
+        public SimpleExternalizable(String field) {
+            this.field = field;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, field);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            field = U.readString(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SimpleExternalizable that = (SimpleExternalizable)o;
+
+            return field.equals(that.field);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return field.hashCode();
+        }
     }
 
     /**

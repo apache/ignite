@@ -70,7 +70,7 @@ public class GridCacheNearTxForceKeyTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = startGrid(1);
 
-        final Integer key = 2;
+        final Integer key = primaryKey(ignite1.cache(null));
 
         assertNull(cache.getAndPut(key, key));
 
