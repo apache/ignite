@@ -3,7 +3,7 @@
   <ItemGroup>
     <Filter Include="Code">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx;h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
     <Filter Include="Misc">
       <UniqueIdentifier>{3f714d15-6347-46a7-bc59-d87c1aea900c}</UniqueIdentifier>
