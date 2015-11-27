@@ -87,7 +87,7 @@ angular
 	'ignite-console.userbar',
     'ignite-console.configuration-sidebar'
 ])
-.config(function($stateProvider, $locationProvider, $urlRouterProvider) {
+.config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {
 	// set up the states
 	$stateProvider
 	.state('base', {
@@ -99,4 +99,4 @@ angular
 	$urlRouterProvider.when('/', '/configuration/clusters');
 
 	$locationProvider.html5Mode(true)
-});
+}]);

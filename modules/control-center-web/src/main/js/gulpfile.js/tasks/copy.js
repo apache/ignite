@@ -53,7 +53,7 @@ var igniteModulePaths = [
 gulp.task('copy', function(cb) {
     var tasks = ['copy:legacy', 'copy:fonts', 'copy:ignite_modules'];
 
-    if (util.env.debug) {
+    if (util.env.debug || util.env.sourcemaps) {
         tasks.push('copy:css')
         tasks.push('copy:base')
     }

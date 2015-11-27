@@ -41,7 +41,7 @@ angular
         return r;
     }]
 })
-.directive('igniteConfigurationSidebar', function(igniteConfigurationSidebar) {
+.directive('igniteConfigurationSidebar', ['igniteConfigurationSidebar', function(igniteConfigurationSidebar) {
     function controller() {
         var ctrl = this;
 
@@ -53,4 +53,4 @@ angular
         controller: controller,
         controllerAs: 'sidebar'
     }
-});
+}]);

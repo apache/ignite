@@ -23,15 +23,15 @@ angular
 	// services
 	'ignite-console.Auth'
 ])
-.config(function($stateProvider) {
+.config(['$stateProvider', function($stateProvider) {
 	// set up the states
 	$stateProvider
 	.state('login', {
 		url: '/login',
 		templateUrl: '/login.html'
 	})
-})
-.run(function($rootScope, $state, Auth) {
+}])
+.run(['$rootScope', '$state', 'Auth', function($rootScope, $state, Auth) {
 	$rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
 		if (!Auth.authorized && (toState.name !== 'login' && !_.startsWith(toState.name, 'password.'))) {
 			event.preventDefault();
@@ -39,4 +39,4 @@ angular
 			$state.go('login');
 		}
 	})
-});
+}]);

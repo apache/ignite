@@ -21,7 +21,7 @@ angular
 .module('ignite-console.states.password', [
 	'ui.router'
 ])
-.config(function($stateProvider) {
+.config(['$stateProvider', function($stateProvider) {
 	// set up the states
 	$stateProvider
     .state('password', {
@@ -37,4 +37,4 @@ angular
         url: '/send',
         templateUrl: '/reset.html'
     })
-});
+}]);

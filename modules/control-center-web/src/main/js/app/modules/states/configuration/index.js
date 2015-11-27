@@ -21,7 +21,7 @@ angular
 .module('ignite-console.states.configuration', [
 	'ui.router'
 ])
-.config(function($stateProvider) {
+.config(['$stateProvider', function($stateProvider) {
 	// set up the states
 	$stateProvider
 	.state('base.configuration', {
@@ -48,4 +48,4 @@ angular
 		url: '/summary',
 		templateUrl: '/configuration/summary.html'	
 	})	
-});
+}]);

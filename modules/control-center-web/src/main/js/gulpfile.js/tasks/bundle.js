@@ -30,6 +30,9 @@ var options = {
 gulp.task('bundle', function() {
 	if (util.env.debug) {
 		delete options.minify;
+	}
+
+	if (util.env.debug || util.env.sourcemaps) {
 		options.sourceMaps = true;
 	}
 

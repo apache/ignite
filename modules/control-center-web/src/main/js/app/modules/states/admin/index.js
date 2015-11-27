@@ -21,11 +21,11 @@ angular
 .module('ignite-console.states.admin', [
 	'ui.router'
 ])
-.config(function($stateProvider) {
+.config(['$stateProvider', function($stateProvider) {
 	// set up the states
 	$stateProvider
 	.state('base.admin', {
 		url: '/admin',
 		templateUrl: '/settings/admin.html'
 	})
-});
+}]);

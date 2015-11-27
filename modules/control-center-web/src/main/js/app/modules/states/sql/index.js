@@ -21,11 +21,11 @@ angular
 .module('ignite-console.states.sql', [
 	'ui.router'
 ])
-.config(function($stateProvider) {
-	// set up the states
-	$stateProvider
-	.state('base.sql', {
-		url: '/sql?{id}',
+.config(['$stateProvider', function($stateProvider) {
+    // set up the states
+    $stateProvider
+    .state('base.sql', {
+        url: '/sql?{id}',
 		templateUrl: '/sql/sql.html'
-	})
-});
+	});
+}]);

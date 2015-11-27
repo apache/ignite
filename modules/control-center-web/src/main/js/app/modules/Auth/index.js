@@ -38,7 +38,7 @@ angular
         }
     }
 
-    this.$get = function($http, $rootScope, $state, $common, User) {
+    this.$get = ['$http', '$rootScope', '$state', '$common', 'User', function($http, $rootScope, $state, $common, User) {
     	return {
     		get authorized () {
     			return _authorized;
@@ -71,5 +71,5 @@ angular
 					});
 			}
     	}
-    }
+    }]
 });
