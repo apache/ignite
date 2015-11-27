@@ -39,7 +39,8 @@ var legacyPaths = [
     './controllers/**/*.json',
     './helpers/*.js',
     './helpers/**/*.js',
-    './public/**/*.png'
+    './public/**/*.png',
+    './public/*.png'
 ];
 
 var igniteModulePaths = [
