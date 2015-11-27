@@ -26,7 +26,7 @@ namespace ignite
     namespace odbc
     {
         Row::Row(ignite::impl::interop::InteropUnpooledMemory& pageData) :
-            pageData(pageData), stream(&pageData)
+            pos(0), pageData(pageData), stream(&pageData)
         {
             size = stream.ReadInt32();
 
@@ -38,23 +38,51 @@ namespace ignite
             // No-op.
         }
 
-        void Row::ReadColumnToBuffer(ApplicationDataBuffer& dataBuf)
+        int8_t Row::ReadColumnHeader()
+        {
+            using namespace ignite::impl::binary;
+
+            int32_t headerPos = stream.Position();
+
+            int8_t hdr = stream.ReadInt8();
+
+            // Check if we need to restore position - to read complex types
+            // stream should have unread header, but for primitive types it
+            // should not.
+            switch (hdr)
+            {
+                case IGNITE_TYPE_BYTE:
+                case IGNITE_TYPE_SHORT:
+                case IGNITE_TYPE_CHAR:
+                case IGNITE_TYPE_INT:
+                case IGNITE_TYPE_LONG:
+                case IGNITE_TYPE_FLOAT:
+                case IGNITE_TYPE_DOUBLE:
+                case IGNITE_TYPE_BOOL:
+                {
+                    // No-op.
+                    break;
+                }
+
+                default:
+                {
+                    // Restoring position.
+                    stream.Position(headerPos);
+                    break;
+                }
+            }
+
+            return hdr;
+        }
+
+        bool Row::ReadColumnToBuffer(ApplicationDataBuffer& dataBuf)
         {
             using namespace ignite::impl::binary;
             using namespace ignite::impl::interop;
 
             BinaryReaderImpl reader(&stream);
 
-            int8_t hdr;
-
-            // Reading header without changing stream position.
-            {
-                InteropStreamPositionGuard<InteropInputStream> guard(stream);
-
-                hdr = stream.ReadInt8();
-            }
-            
-            int32_t objectSize = 0;
+            int8_t hdr = ReadColumnHeader();
 
             switch (hdr)
             {
@@ -122,10 +150,111 @@ namespace ignite
                 case IGNITE_TYPE_DATE:
                 default:
                 {
-                    // No-op.
-                    break;
+                    // TODO: This is a fail case. Process it somehow.
+                    return false;
                 }
             }
+
+            ++pos;
+            return true;
+        }
+
+        bool Row::SkipColumn()
+        {
+            using namespace ignite::impl::binary;
+            using namespace ignite::impl::interop;
+
+            BinaryReaderImpl reader(&stream);
+
+            int8_t hdr = ReadColumnHeader();
+
+            switch (hdr)
+            {
+                case IGNITE_TYPE_BYTE:
+                {
+                    reader.ReadInt8();
+                    break;
+                }
+
+                case IGNITE_TYPE_SHORT:
+                case IGNITE_TYPE_CHAR:
+                {
+                    reader.ReadInt16();
+                    break;
+                }
+
+                case IGNITE_TYPE_INT:
+                {
+                    reader.ReadInt32();
+                    break;
+                }
+
+                case IGNITE_TYPE_LONG:
+                {
+                    reader.ReadInt64();
+                    break;
+                }
+
+                case IGNITE_TYPE_FLOAT:
+                {
+                    reader.ReadFloat();
+                    break;
+                }
+
+                case IGNITE_TYPE_DOUBLE:
+                {
+                    reader.ReadDouble();
+                    break;
+                }
+
+                case IGNITE_TYPE_BOOL:
+                {
+                    reader.ReadBool();
+                    break;
+                }
+
+                case IGNITE_TYPE_STRING:
+                {
+                    std::string str;
+                    utility::ReadString(reader, str);
+
+                    break;
+                }
+
+                case IGNITE_TYPE_UUID:
+                {
+                    Guid guid = reader.ReadGuid();
+                    break;
+                }
+
+                case IGNITE_TYPE_DECIMAL:
+                case IGNITE_TYPE_DATE:
+                default:
+                {
+                    // TODO: This is a fail case. Process it somehow.
+                    return false;
+                }
+            }
+
+            ++pos;
+            return true;
+        }
+
+        bool Row::MoveToNext()
+        {
+            for (int32_t i = pos; i < size; ++i)
+            {
+                if (!SkipColumn())
+                    return false;
+            }
+
+            size = stream.ReadInt32();
+
+            rowBeginPos = stream.Position();
+
+            pos = 0;
+
+            return true;
         }
     }
 }

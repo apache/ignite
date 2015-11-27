@@ -40,8 +40,8 @@ namespace ignite
 
                 Row *row = currentRow.get();
 
-                //if (row)
-                //    row->MoveToNext();
+                if (row)
+                    row->MoveToNext();
 
                 return true;
             }

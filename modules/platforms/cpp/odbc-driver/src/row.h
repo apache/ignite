@@ -47,6 +47,7 @@ namespace ignite
             /**
              * Get row size in columns.
              * @return Row size.
+             * @return True on success.
              */
             int32_t GetSize() const
             {
@@ -56,13 +57,35 @@ namespace ignite
             /**
              * Read column data and store it in application data buffer.
              * @param dataBuf Application data buffer.
+             * @return True on success.
              */
-            void ReadColumnToBuffer(ApplicationDataBuffer& dataBuf);
+            bool ReadColumnToBuffer(ApplicationDataBuffer& dataBuf);
 
+            /**
+             * Skip columnt.
+             * @return True on success.
+             */
+            bool SkipColumn();
+
+            /**
+             * Move to next row.
+             * @return True on success.
+             */
+            bool MoveToNext();
 
         private:
+            /**
+             * Read column header and restores position if the column is of
+             * complex type.
+             * @return Column type header.
+             */
+            int8_t ReadColumnHeader();
+
             /** Row size in columns. */
             int32_t size;
+
+            /** Current position in row. */
+            int32_t pos;
 
             /** Row position in current page. */
             int32_t rowBeginPos;
