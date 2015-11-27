@@ -351,4 +351,13 @@ public interface IgniteBinary {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public Collection<BinaryType> types() throws BinaryObjectException;
+
+    /**
+     * Create enum object.
+     *
+     * @param typeName Type name.
+     * @param ord Ordinal.
+     * @return Enum object.
+     */
+    public BinaryObject buildEnum(String typeName, int ord);
 }

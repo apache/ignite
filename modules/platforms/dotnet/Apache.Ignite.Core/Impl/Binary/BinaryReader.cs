@@ -399,13 +399,34 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T ReadEnum<T>(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadEnum<T>, BinaryUtils.TypeEnum);
+            return SeekField(fieldName) ? ReadEnum<T>() : default(T);
         }
 
         /** <inheritdoc /> */
         public T ReadEnum<T>()
         {
-            return Read(BinaryUtils.ReadEnum<T>, BinaryUtils.TypeEnum);
+            var hdr = ReadByte();
+
+            switch (hdr)
+            {
+                case BinaryUtils.HdrNull:
+                    return default(T);
+
+                case BinaryUtils.TypeEnum:
+                    // Never read enums in binary mode when reading a field (we do not support half-binary objects)
+                    return ReadEnum0<T>(this, false);  
+
+                case BinaryUtils.HdrFull:
+                    // Unregistered enum written as serializable
+                    Stream.Seek(-1, SeekOrigin.Current);
+
+                    return ReadObject<T>(); 
+
+                default:
+                    throw new BinaryObjectException(
+                        string.Format("Invalid header on enum deserialization. Expected: {0} or {1} but was: {2}",
+                            BinaryUtils.TypeEnum, BinaryUtils.HdrFull, hdr));
+            }
         }
 
         /** <inheritdoc /> */
@@ -560,14 +581,15 @@ namespace Apache.Ignite.Core.Impl.Binary
                     res = ReadBinaryObject<T>(doDetach);
 
                     return true;
+
+                case BinaryUtils.TypeEnum:
+                    res = ReadEnum0<T>(this, _mode != BinaryMode.Deserialize);
+
+                    return true;
             }
 
-            if (BinaryUtils.IsPredefinedType(hdr))
-            {
-                res = BinarySystemHandlers.ReadSystemType<T>(hdr, this);
-
+            if (BinarySystemHandlers.TryReadSystemType(hdr, this, out res))
                 return true;
-            }
 
             throw new BinaryObjectException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']');
         }
@@ -960,6 +982,21 @@ namespace Apache.Ignite.Core.Impl.Binary
         private T Read<T>(Func<IBinaryStream, T> readFunc, byte expHdr)
         {
             return IsNotNullHeader(expHdr) ? readFunc(Stream) : default(T);
+        }
+
+        /// <summary>
+        /// Reads the enum.
+        /// </summary>
+        private static T ReadEnum0<T>(BinaryReader reader, bool keepBinary)
+        {
+            var enumType = reader.ReadInt();
+
+            var enumValue = reader.ReadInt();
+
+            if (!keepBinary)
+                return BinaryUtils.GetEnumValue<T>(enumValue, enumType, reader.Marshaller);
+
+            return TypeCaster<T>.Cast(new BinaryEnum(enumType, enumValue, reader.Marshaller));
         }
     }
 }

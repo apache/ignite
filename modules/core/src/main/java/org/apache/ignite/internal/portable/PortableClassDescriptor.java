@@ -161,8 +161,12 @@ public class PortableClassDescriptor {
 
         if (excluded)
             mode = BinaryWriteMode.EXCLUSION;
-        else
-            mode = serializer != null ? BinaryWriteMode.PORTABLE : PortableUtils.mode(cls);
+        else {
+            if (cls == BinaryEnumObjectImpl.class)
+                mode = BinaryWriteMode.PORTABLE_ENUM;
+            else
+                mode = serializer != null ? BinaryWriteMode.PORTABLE : PortableUtils.mode(cls);
+        }
 
         switch (mode) {
             case P_BYTE:
@@ -205,6 +209,7 @@ public class PortableClassDescriptor {
             case MAP_ENTRY:
             case PORTABLE_OBJ:
             case ENUM:
+            case PORTABLE_ENUM:
             case ENUM_ARR:
             case CLASS:
             case EXCLUSION:
@@ -283,6 +288,13 @@ public class PortableClassDescriptor {
             readResolveMtd = null;
             writeReplaceMtd = null;
         }
+    }
+
+    /**
+     * @return {@code True} if enum.
+     */
+    boolean isEnum() {
+        return mode == BinaryWriteMode.ENUM;
     }
 
     /**
@@ -534,6 +546,11 @@ public class PortableClassDescriptor {
 
                 break;
 
+            case PORTABLE_ENUM:
+                writer.doWritePortableEnum((BinaryEnumObjectImpl)obj);
+
+                break;
+
             case ENUM_ARR:
                 writer.doWriteEnumArray((Object[])obj);
 
@@ -576,7 +593,7 @@ public class PortableClassDescriptor {
                                 PortableSchema newSchema = collector.schema();
 
                                 BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
-                                    affKeyFieldName, Collections.singleton(newSchema));
+                                    affKeyFieldName, Collections.singleton(newSchema), false);
 
                                 ctx.updateMetadata(typeId, meta);
 
