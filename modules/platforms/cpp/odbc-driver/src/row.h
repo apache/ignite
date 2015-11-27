@@ -95,6 +95,9 @@ namespace ignite
 
             /** Page data input stream. */
             ignite::impl::interop::InteropInputStream stream;
+
+            /** Data reader. */
+            ignite::impl::binary::BinaryReaderImpl reader;
         };
     }
 }

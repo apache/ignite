@@ -62,7 +62,7 @@ namespace ignite
     namespace odbc
     {
         Row::Row(ignite::impl::interop::InteropUnpooledMemory& pageData) :
-            pos(0), pageData(pageData), stream(&pageData)
+            pos(0), pageData(pageData), stream(&pageData), reader(&stream)
         {
             size = stream.ReadInt32();
 
@@ -119,8 +119,6 @@ namespace ignite
 
             if (pos == size)
                 return false;
-
-            BinaryReaderImpl reader(&stream);
 
             int8_t hdr = ReadColumnHeader();
 
@@ -228,8 +226,6 @@ namespace ignite
 
             if (pos == size)
                 return false;
-
-            BinaryReaderImpl reader(&stream);
 
             int8_t hdr = ReadColumnHeader();
 
