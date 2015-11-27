@@ -30,12 +30,12 @@ namespace ignite
     {
         namespace type_traits
         {
-            bool IsApplicationTypeSupported(uint16_t type)
+            bool IsApplicationTypeSupported(int16_t type)
             {
                 return ToDriverType(type) != IGNITE_SQL_TYPE_UNSUPPORTED;
             }
 
-            IgniteSqlType ToDriverType(uint16_t type)
+            IgniteSqlType ToDriverType(int16_t type)
             {
                 switch (type)
                 {

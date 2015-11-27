@@ -103,7 +103,7 @@ namespace ignite
              * @param type Application type.
              * @return True if the type is supported.
              */
-            bool IsApplicationTypeSupported(uint16_t type);
+            bool IsApplicationTypeSupported(int16_t type);
 
             /**
              * Convert ODBC type to driver type alias.
@@ -111,7 +111,7 @@ namespace ignite
              * @param ODBC type;
              * @return Internal driver type.
              */
-            IgniteSqlType ToDriverType(uint16_t type);
+            IgniteSqlType ToDriverType(int16_t type);
         }
     }
 }
