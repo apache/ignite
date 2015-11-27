@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -214,7 +215,12 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
             while (System.currentTimeMillis() < stop) {
                 log.info("Iteration: " + iter++);
 
-                c.apply(ignite);
+                try {
+                    c.apply(ignite);
+                }
+                catch (IgniteClientDisconnectedException e) {
+                    e.reconnectFuture().get();
+                }
             }
 
             finished.set(true);
