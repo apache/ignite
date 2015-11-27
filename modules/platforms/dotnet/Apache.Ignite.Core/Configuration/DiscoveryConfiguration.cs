@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Configuration
 {
     using System;
     using Apache.Ignite.Core.Binary;
+    using Impl.Binary;
 
     /// <summary>
     /// Node discovery configuration.
@@ -60,6 +61,21 @@ namespace Apache.Ignite.Core.Configuration
             MaxAckTimeout = DefaultMaxAckTimeout;
             NetworkTimeout = DefaultNetworkTimeout;
             JoinTimeout = DefaultJoinTimeout;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DiscoveryConfiguration"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        internal DiscoveryConfiguration(BinaryReader reader)
+        {
+            IpFinder = reader.ReadBoolean() ? IpFinder.ReadInstance(reader) : null;
+
+            SocketTimeout = reader.ReadLongAsTimespan();
+            AckTimeout = reader.ReadLongAsTimespan();
+            MaxAckTimeout = reader.ReadLongAsTimespan();
+            NetworkTimeout = reader.ReadLongAsTimespan();
+            JoinTimeout = reader.ReadLongAsTimespan();
         }
 
         /// <summary>

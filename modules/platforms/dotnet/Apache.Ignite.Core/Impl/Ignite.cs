@@ -481,6 +481,19 @@ namespace Apache.Ignite.Core.Impl
             return new AtomicLong(nativeLong, Marshaller, name);
         }
 
+        /** <inheritdoc /> */
+        public IgniteConfiguration GetConfiguration()
+        {
+            using (var stream = IgniteManager.Memory.Allocate(1024).GetStream())
+            {
+                UU.ProcessorGetIgniteConfiguration(_proc, stream.MemoryPointer);
+
+                stream.SynchronizeInput();
+
+                return new IgniteConfiguration(_marsh.StartUnmarshal(stream));
+            }
+        }
+
         /// <summary>
         /// Gets internal projection.
         /// </summary>

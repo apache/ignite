@@ -138,4 +138,9 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     @Override public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public void getIgniteConfiguration(long memPtr) {
+        // No-op.
+    }
 }

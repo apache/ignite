@@ -331,6 +331,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IgniteConfiguration GetConfiguration()
+        {
+            return _ignite.GetConfiguration();
+        }
+
+        /** <inheritdoc /> */
         public void WriteBinary(IBinaryWriter writer)
         {
             // No-op.

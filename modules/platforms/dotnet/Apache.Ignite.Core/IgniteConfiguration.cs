@@ -19,10 +19,14 @@ namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Lifecycle;
 
     /// <summary>
@@ -47,6 +51,65 @@ namespace Apache.Ignite.Core
         {
             JvmInitialMemoryMb = DefaultJvmInitMem;
             JvmMaxMemoryMb = DefaultJvmMaxMem;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class from a reader.
+        /// </summary>
+        /// <param name="binaryReader">The binary reader.</param>
+        internal IgniteConfiguration(BinaryReader binaryReader)
+        {
+            var r = binaryReader;
+
+            GridName = r.ReadString();
+
+            var cacheCfgCount = r.ReadInt();
+            CacheConfiguration = new List<CacheConfiguration>(cacheCfgCount);
+            for (int i = 0; i < cacheCfgCount; i++)
+                CacheConfiguration.Add(new CacheConfiguration(r));
+
+            IgniteHome = r.ReadString();
+
+            JvmInitialMemoryMb = (int) (r.ReadLong() / 1024 / 2014);
+            JvmMaxMemoryMb = (int) (r.ReadLong() / 1024 / 2014);
+
+            DiscoveryConfiguration = r.ReadBoolean() ? new DiscoveryConfiguration(r) : null;
+
+            ClientMode = r.ReadBoolean();
+            IncludedEventTypes = r.ReadIntArray();
+
+            MetricsExpireTime = r.ReadLongAsTimespan();
+            MetricsHistorySize = r.ReadInt();
+            MetricsLogFrequency = r.ReadLongAsTimespan();
+            MetricsUpdateFrequency = r.ReadLongAsTimespan();
+            NetworkSendRetryCount = r.ReadInt();
+            NetworkSendRetryDelay = r.ReadLongAsTimespan();
+            NetworkTimeout = r.ReadLongAsTimespan();
+            WorkDirectory = r.ReadString();
+
+
+            // Local data (not from reader)
+            JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
+                .Single(x => string.Equals(x.ModuleName, IgniteUtils.FileJvmDll, StringComparison.OrdinalIgnoreCase))
+                .FileName;
+
+            var marsh = r.Marshaller;
+
+            var origCfg = marsh.Ignite.Configuration;
+
+            BinaryConfiguration = marsh.BinaryConfiguration;
+
+            SpringConfigUrl = origCfg.SpringConfigUrl;
+
+            JvmClasspath = origCfg.JvmClasspath;
+
+            JvmOptions = origCfg.JvmOptions;
+
+            Assemblies = origCfg.Assemblies;
+
+            SuppressWarnings = origCfg.SuppressWarnings;
+
+            LifecycleBeans = origCfg.LifecycleBeans;
         }
 
         /// <summary>

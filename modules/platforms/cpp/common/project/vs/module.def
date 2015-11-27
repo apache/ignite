@@ -111,3 +111,4 @@ IgniteAtomicLongIsClosed @108
 IgniteAtomicLongClose @109
 IgniteProcessorCreateCacheFromConfig @110
 IgniteProcessorGetOrCreateCacheFromConfig @111
+IgniteProcessorGetIgniteConfiguration @112

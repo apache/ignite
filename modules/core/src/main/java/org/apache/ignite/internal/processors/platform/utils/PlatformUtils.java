@@ -21,20 +21,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.portable.BinaryRawReaderEx;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
-import org.apache.ignite.internal.portable.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -47,10 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
-import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.CacheException;
@@ -771,155 +758,6 @@ public class PlatformUtils {
                 throw new IgniteCheckedException(errMsg);
             }
         }
-    }
-
-    /**
-     * Write .Net configuration to the stream.
-     *
-     * @param writer Writer.
-     * @param cfg Configuration.
-     */
-    public static void writeDotNetConfiguration(BinaryRawWriterEx writer, PlatformDotNetConfiguration cfg) {
-        // 1. Write assemblies.
-        writeNullableCollection(writer, cfg.getAssemblies());
-
-        PlatformDotNetBinaryConfiguration binaryCfg = cfg.getBinaryConfiguration();
-
-        if (binaryCfg != null) {
-            writer.writeBoolean(true);
-
-            writeNullableCollection(writer, binaryCfg.getTypesConfiguration(),
-                new PlatformWriterClosure<PlatformDotNetBinaryTypeConfiguration>() {
-                @Override public void write(BinaryRawWriterEx writer, PlatformDotNetBinaryTypeConfiguration typ) {
-                    writer.writeString(typ.getTypeName());
-                    writer.writeString(typ.getNameMapper());
-                    writer.writeString(typ.getIdMapper());
-                    writer.writeString(typ.getSerializer());
-                    writer.writeString(typ.getAffinityKeyFieldName());
-                    writer.writeObject(typ.getKeepDeserialized());
-                    writer.writeBoolean(typ.isEnum());
-                }
-            });
-
-            writeNullableCollection(writer, binaryCfg.getTypes());
-            writer.writeString(binaryCfg.getDefaultNameMapper());
-            writer.writeString(binaryCfg.getDefaultIdMapper());
-            writer.writeString(binaryCfg.getDefaultSerializer());
-            writer.writeBoolean(binaryCfg.isDefaultKeepDeserialized());
-        }
-        else
-            writer.writeBoolean(false);
-    }
-
-    /**
-     * Reads cache configuration from a stream.
-     *
-     * @param in Stream.
-     * @return Cache configuration.
-     */
-    public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in) {
-        assert in != null;
-
-        CacheConfiguration ccfg = new CacheConfiguration();
-
-        ccfg.setAtomicityMode(CacheAtomicityMode.fromOrdinal(in.readInt()));
-        ccfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.fromOrdinal((byte)in.readInt()));
-        ccfg.setBackups(in.readInt());
-        ccfg.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
-        ccfg.setCopyOnRead(in.readBoolean());
-        ccfg.setEagerTtl(in.readBoolean());
-        ccfg.setSwapEnabled(in.readBoolean());
-        ccfg.setEvictSynchronized(in.readBoolean());
-        ccfg.setEvictSynchronizedConcurrencyLevel(in.readInt());
-        ccfg.setEvictSynchronizedKeyBufferSize(in.readInt());
-        ccfg.setEvictSynchronizedTimeout(in.readLong());
-        ccfg.setInvalidate(in.readBoolean());
-        ccfg.setKeepBinaryInStore(in.readBoolean());
-        ccfg.setLoadPreviousValue(in.readBoolean());
-        ccfg.setDefaultLockTimeout(in.readLong());
-        ccfg.setLongQueryWarningTimeout(in.readLong());
-        ccfg.setMaxConcurrentAsyncOperations(in.readInt());
-        ccfg.setEvictMaxOverflowRatio(in.readFloat());
-        ccfg.setMemoryMode(CacheMemoryMode.values()[in.readInt()]);
-        ccfg.setName(in.readString());
-        ccfg.setOffHeapMaxMemory(in.readLong());
-        ccfg.setReadFromBackup(in.readBoolean());
-        ccfg.setRebalanceBatchSize(in.readInt());
-        ccfg.setRebalanceDelay(in.readLong());
-        ccfg.setRebalanceMode(CacheRebalanceMode.fromOrdinal(in.readInt()));
-        ccfg.setRebalanceThreadPoolSize(in.readInt());
-        ccfg.setRebalanceThrottle(in.readLong());
-        ccfg.setRebalanceTimeout(in.readLong());
-        ccfg.setSqlEscapeAll(in.readBoolean());
-        ccfg.setSqlOnheapRowCacheSize(in.readInt());
-        ccfg.setStartSize(in.readInt());
-        ccfg.setWriteBehindBatchSize(in.readInt());
-        ccfg.setWriteBehindEnabled(in.readBoolean());
-        ccfg.setWriteBehindFlushFrequency(in.readLong());
-        ccfg.setWriteBehindFlushSize(in.readInt());
-        ccfg.setWriteBehindFlushThreadCount(in.readInt());
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
-
-        Object storeFactory = in.readObjectDetached();
-
-        if (storeFactory != null)
-            ccfg.setCacheStoreFactory(new PlatformDotNetCacheStoreFactoryNative(storeFactory));
-
-        return ccfg;
-    }
-
-    /**
-     * Writes cache configuration.
-     *
-     * @param writer Writer.
-     * @param ccfg Configuration.
-     */
-    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg) {
-        assert writer != null;
-        assert ccfg != null;
-
-        writer.writeInt(ccfg.getAtomicityMode().ordinal());
-        writer.writeInt(ccfg.getAtomicWriteOrderMode().ordinal());
-        writer.writeInt(ccfg.getBackups());
-        writer.writeInt(ccfg.getCacheMode().ordinal());
-        writer.writeBoolean(ccfg.isCopyOnRead());
-        writer.writeBoolean(ccfg.isEagerTtl());
-        writer.writeBoolean(ccfg.isSwapEnabled());
-        writer.writeBoolean(ccfg.isEvictSynchronized());
-        writer.writeInt(ccfg.getEvictSynchronizedConcurrencyLevel());
-        writer.writeInt(ccfg.getEvictSynchronizedKeyBufferSize());
-        writer.writeLong(ccfg.getEvictSynchronizedTimeout());
-        writer.writeBoolean(ccfg.isInvalidate());
-        writer.writeBoolean(ccfg.isKeepBinaryInStore());
-        writer.writeBoolean(ccfg.isLoadPreviousValue());
-        writer.writeLong(ccfg.getDefaultLockTimeout());
-        writer.writeLong(ccfg.getLongQueryWarningTimeout());
-        writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
-        writer.writeFloat(ccfg.getEvictMaxOverflowRatio());
-        writer.writeInt(ccfg.getMemoryMode().ordinal());
-        writer.writeString(ccfg.getName());
-        writer.writeLong(ccfg.getOffHeapMaxMemory());
-        writer.writeBoolean(ccfg.isReadFromBackup());
-        writer.writeInt(ccfg.getRebalanceBatchSize());
-        writer.writeLong(ccfg.getRebalanceDelay());
-        writer.writeInt(ccfg.getRebalanceMode().ordinal());
-        writer.writeInt(ccfg.getRebalanceThreadPoolSize());
-        writer.writeLong(ccfg.getRebalanceThrottle());
-        writer.writeLong(ccfg.getRebalanceTimeout());
-        writer.writeBoolean(ccfg.isSqlEscapeAll());
-        writer.writeInt(ccfg.getSqlOnheapRowCacheSize());
-        writer.writeInt(ccfg.getStartSize());
-        writer.writeInt(ccfg.getWriteBehindBatchSize());
-        writer.writeBoolean(ccfg.isWriteBehindEnabled());
-        writer.writeLong(ccfg.getWriteBehindFlushFrequency());
-        writer.writeInt(ccfg.getWriteBehindFlushSize());
-        writer.writeInt(ccfg.getWriteBehindFlushThreadCount());
-        writer.writeInt(ccfg.getWriteSynchronizationMode().ordinal());
-
-        if (ccfg.getCacheStoreFactory() instanceof PlatformDotNetCacheStoreFactoryNative)
-            writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());
-        else
-            writer.writeObject(null);
     }
 
     /**

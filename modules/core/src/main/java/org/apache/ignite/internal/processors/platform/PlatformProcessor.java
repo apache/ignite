@@ -198,4 +198,11 @@ public interface PlatformProcessor extends GridProcessor {
      * @throws IgniteException
      */
     public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException;
+
+    /**
+     * Gets the configuration of the current Ignite instance.
+     *
+     * @param memPtr Stream to write data to.
+     */
+    public void getIgniteConfiguration(long memPtr);
 }

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
@@ -47,10 +48,11 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CacheConfiguration = new List<CacheConfiguration>
                 {
                     new CacheConfiguration(),
-                     GetCustomCacheConfiguration()
+                    GetCustomCacheConfiguration()
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions()
+                JvmOptions = TestUtils.TestJavaOptions(),
+                GridName = CacheName
             };
 
             _ignite = Ignition.Start(cfg);
@@ -68,6 +70,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertConfigIsDefault(new CacheConfiguration());
 
             AssertConfigIsDefault(_ignite.GetCache<int, int>(null).GetConfiguration());
+
+            AssertConfigIsDefault(_ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == null));
         }
 
         [Test]
@@ -75,6 +79,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             AssertConfigsAreEqual(GetCustomCacheConfiguration(),
                 _ignite.GetCache<int, int>(CacheName).GetConfiguration());
+
+            AssertConfigsAreEqual(GetCustomCacheConfiguration(),
+                _ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == CacheName));
         }
 
         [Test]

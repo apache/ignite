@@ -106,6 +106,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public Ignite Ignite { get; set; }
 
         /// <summary>
+        /// Gets the binary configuration.
+        /// </summary>
+        public BinaryConfiguration BinaryConfiguration
+        {
+            get { return _cfg; }
+        }
+
+        /// <summary>
         /// Marshal object.
         /// </summary>
         /// <param name="val">Value.</param>

@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Configuration
         public MulticastIpFinder()
         {
             MulticastPort = DefaultMulticastPort;
-            AddressRequestAtempts = DefaultAddressRequestAttempts;
+            AddressRequestAttempts = DefaultAddressRequestAttempts;
             ResponseTimeout = DefaultResponseTimeout;
         }
 
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the number of attempts to send multicast address request. IP finder re-sends
         /// request only in case if no reply for previous request is received.
         /// </summary>
-        public int AddressRequestAtempts { get; set; }
+        public int AddressRequestAttempts { get; set; }
 
         /// <summary>
         /// Gets or sets the response timeout.
@@ -88,7 +88,6 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         public byte? TimeToLive { get; set; }
 
-        /*
         /// <summary>
         /// Initializes a new instance of the <see cref="MulticastIpFinder"/> class.
         /// </summary>
@@ -98,9 +97,10 @@ namespace Apache.Ignite.Core.Configuration
             LocalAddress = reader.ReadString();
             MulticastGroup = reader.ReadString();
             MulticastPort = reader.ReadInt();
-            AddressRequestAtempts = reader.ReadInt();
-            ResponseTimeout = TimeSpan.FromMilliseconds(reader.ReadLong());
-        }*/
+            AddressRequestAttempts = reader.ReadInt();
+            ResponseTimeout = TimeSpan.FromMilliseconds(reader.ReadInt());
+            TimeToLive = reader.ReadBoolean() ? (byte?) reader.ReadInt() : null;
+        }
 
         /** <inheritdoc /> */
         internal override void Write(IBinaryRawWriter writer)
@@ -110,13 +110,13 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteString(LocalAddress);
             writer.WriteString(MulticastGroup);
             writer.WriteInt(MulticastPort);
-            writer.WriteInt(AddressRequestAtempts);
+            writer.WriteInt(AddressRequestAttempts);
             writer.WriteInt((int) ResponseTimeout.TotalMilliseconds);
 
             writer.WriteBoolean(TimeToLive.HasValue);
 
             if (TimeToLive.HasValue)
-                writer.WriteByte(TimeToLive.Value);
+                writer.WriteInt(TimeToLive.Value);
         }
 
         /** <inheritdoc /> */

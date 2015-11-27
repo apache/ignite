@@ -183,5 +183,11 @@ namespace Apache.Ignite.Core
         /// or null if it does not exist and <see cref="create"/> flag is not set.</returns>
         /// <exception cref="IgniteException">If atomic long could not be fetched or created.</exception>
         IAtomicLong GetAtomicLong(string name, long initialValue, bool create);
+
+        /// <summary>
+        /// Gets the configuration of this Ignite instance.
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        IgniteConfiguration GetConfiguration();
     }
 }
