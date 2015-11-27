@@ -31,6 +31,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
+import org.apache.ignite.internal.portable.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
@@ -714,7 +715,12 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..118] - this
+            case 119:
+                msg = new BinaryEnumObjectImpl();
+
+                break;
+
+            // [-3..119] - this
             // [120..123] - DR
             // [-4..-22] - SQL
             default:

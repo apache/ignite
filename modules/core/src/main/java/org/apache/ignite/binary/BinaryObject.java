@@ -139,4 +139,12 @@ public interface BinaryObject extends Serializable, Cloneable {
      * @return Copy of this binary object.
      */
     public BinaryObject clone() throws CloneNotSupportedException;
+
+    /**
+     * Get ordinal for this enum object. Use {@link BinaryType#isEnum()} to check if object is of enum type.
+     *
+     * @return Ordinal.
+     * @throws BinaryObjectException If object is not enum.
+     */
+    public int enumOrdinal() throws BinaryObjectException;
 }

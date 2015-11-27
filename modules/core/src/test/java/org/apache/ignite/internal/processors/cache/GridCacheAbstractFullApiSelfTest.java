@@ -2408,7 +2408,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert oldVal != null && F.eq(val1, oldVal);
 
-        assert cache.remove("key1", val1);
+        assert cache.remove("key1");
 
         assert cache.get("key1") == null;
 

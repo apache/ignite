@@ -176,6 +176,23 @@ import org.apache.ignite.internal.util.typedef.F;
     }
 
     /**
+     * Unwrap array of portables if needed.
+     *
+     * @param arr Array.
+     * @param keepPortable Keep portable flag.
+     * @param cpy Copy.
+     * @return Result.
+     */
+    public Object[] unwrapPortablesInArrayIfNeeded(Object[] arr, boolean keepPortable, boolean cpy) {
+        Object[] res = new Object[arr.length];
+
+        for (int i = 0; i < arr.length; i++)
+            res[i] = unwrapPortable(arr[i], keepPortable, cpy);
+
+        return res;
+    }
+
+    /**
      * Unwraps map.
      *
      * @param map Map to unwrap.
@@ -252,6 +269,8 @@ import org.apache.ignite.internal.util.typedef.F;
             return unwrapPortablesIfNeeded((Collection<Object>)o, keepPortable, cpy);
         else if (o instanceof Map)
             return unwrapPortablesIfNeeded((Map<Object, Object>)o, keepPortable, cpy);
+        else if (o instanceof Object[])
+            return unwrapPortablesInArrayIfNeeded((Object[])o, keepPortable, cpy);
         else if (o instanceof CacheObject) {
             CacheObject co = (CacheObject)o;
 

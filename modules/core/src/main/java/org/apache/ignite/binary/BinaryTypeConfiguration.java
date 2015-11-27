@@ -38,6 +38,9 @@ public class BinaryTypeConfiguration {
     /** Serializer. */
     private BinarySerializer serializer;
 
+    /** Enum flag. */
+    private boolean isEnum;
+
     /**
      */
     public BinaryTypeConfiguration() {
@@ -103,6 +106,24 @@ public class BinaryTypeConfiguration {
      */
     public void setSerializer(BinarySerializer serializer) {
         this.serializer = serializer;
+    }
+
+    /**
+     * Gets whether this is enum type.
+     *
+     * @return {@code True} if enum.
+     */
+    public boolean isEnum() {
+        return isEnum;
+    }
+
+    /**
+     * Sets whether this is enum type.
+     *
+     * @param isEnum {@code True} if enum.
+     */
+    public void setEnum(boolean isEnum) {
+        this.isEnum = isEnum;
     }
 
     /** {@inheritDoc} */

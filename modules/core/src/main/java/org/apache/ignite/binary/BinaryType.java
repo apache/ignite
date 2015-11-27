@@ -72,4 +72,11 @@ public interface BinaryType {
      * @return Affinity key field name.
      */
     public String affinityKeyFieldName();
+
+    /**
+     * Check whether type represents enum or not.
+     *
+     * @return {@code True} if type is enum.
+     */
+    public boolean isEnum();
 }
