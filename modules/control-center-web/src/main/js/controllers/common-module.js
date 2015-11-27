@@ -2106,6 +2106,7 @@ consoleModule.controller('agent-download', [
             var lnk = document.createElement('a');
 
             lnk.setAttribute('href', '/api/v1/agent/download/zip');
+            lnk.setAttribute('target', '_self');
             lnk.style.display = 'none';
 
             document.body.appendChild(lnk);
