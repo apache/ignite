@@ -973,12 +973,22 @@ consoleModule.service('$message', function ($modal, $rootScope) {
 });
 
 // Confirm change location.
-consoleModule.service('$unsavedChangesGuard', function () {
+consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
     return {
         install: function ($scope) {
             $scope.$on("$destroy", function() {
                 window.onbeforeunload = null;
             });
+
+            var unbind = $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+                if ($scope.ui && $scope.ui.isDirty()) {
+                    if (!confirm('You have unsaved changes.\n\nAre you sure you want to discard them?')) {
+                        event.preventDefault(); 
+                    } else {
+                        unbind();
+                    }
+                }
+            })
 
             window.onbeforeunload = function(){
                 return $scope.ui && $scope.ui.isDirty()
