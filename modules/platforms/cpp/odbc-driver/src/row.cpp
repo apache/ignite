@@ -21,6 +21,42 @@
 
 #include "row.h"
 
+
+namespace
+{
+    using namespace ignite::impl::interop;
+    using namespace ignite::impl::binary;
+
+    bool GetObjectLength(InteropInputStream& stream, int32_t& len)
+    {
+        InteropStreamPositionGuard<InteropInputStream> guard(stream);
+
+        int8_t hdr = stream.ReadInt8();
+
+        if (hdr != IGNITE_HDR_FULL)
+            return false;
+
+        int8_t protoVer = stream.ReadInt8();
+
+        if (protoVer != IGNITE_PROTO_VER)
+            return false;
+
+        // Skipping flags
+        stream.ReadInt16();
+
+        // Skipping typeId
+        stream.ReadInt32();
+
+        // Skipping hash code
+        stream.ReadInt32();
+
+        len = stream.ReadInt32();
+
+        return true;
+    }
+}
+
+
 namespace ignite
 {
     namespace odbc
@@ -59,6 +95,7 @@ namespace ignite
                 case IGNITE_TYPE_FLOAT:
                 case IGNITE_TYPE_DOUBLE:
                 case IGNITE_TYPE_BOOL:
+                case IGNITE_HDR_NULL:
                 {
                     // No-op.
                     break;
@@ -149,6 +186,28 @@ namespace ignite
                     break;
                 }
 
+                case IGNITE_HDR_NULL:
+                {
+                    // TODO: clear buffer here.
+                    break;
+                }
+
+                case IGNITE_HDR_FULL:
+                {
+                    int32_t len;
+
+                    if (!GetObjectLength(stream, len))
+                        return false;
+
+                    int32_t offset = stream.Position();
+
+                    dataBuf.PutBinaryData(pageData.Data() + offset, static_cast<size_t>(len));
+
+                    stream.Position(stream.Position() + len);
+
+                    break;
+                }
+
                 case IGNITE_TYPE_DECIMAL:
                 case IGNITE_TYPE_DATE:
                 default:
@@ -230,6 +289,24 @@ namespace ignite
                 case IGNITE_TYPE_UUID:
                 {
                     Guid guid = reader.ReadGuid();
+                    break;
+                }
+
+                case IGNITE_HDR_NULL:
+                {
+                    // No-op.
+                    break;
+                }
+
+                case IGNITE_HDR_FULL:
+                {
+                    int32_t len;
+
+                    if (!GetObjectLength(stream, len))
+                        return false;
+
+                    stream.Position(stream.Position() + len);
+
                     break;
                 }
 
