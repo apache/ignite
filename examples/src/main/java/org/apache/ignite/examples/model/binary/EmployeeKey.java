@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.binary;
+package org.apache.ignite.examples.model.binary;
 
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 

@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cache.store.CacheStoreSession;
-import org.apache.ignite.examples.datagrid.store.Person;
+import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.CacheStoreSessionResource;
@@ -85,7 +85,7 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
 
         System.out.println(">>> Store loadCache for entry count: " + cnt);
 
-        for (int i = 0; i < cnt; i++) {
+        for (long i = 0; i < cnt; i++) {
             // Generate dummy person on the fly.
             Person p = new Person(i, "first-" + i, "last-" + 1);
 
@@ -93,13 +93,13 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
             // but we check if local node is primary or backup anyway just to demonstrate that we can.
             // Ideally, partition ID of a key would be stored  in the database and only keys
             // for partitions that belong on this node would be loaded from database.
-            if (ignite.affinity(cacheName).isPrimaryOrBackup(ignite.cluster().localNode(), p.getId())) {
+            if (ignite.affinity(cacheName).isPrimaryOrBackup(ignite.cluster().localNode(), p.id)) {
                 // Update dummy database.
                 // In real life data would be loaded from database.
-                dummyDB.put(p.getId(), p);
+                dummyDB.put(p.id, p);
 
                 // Pass data to cache.
-                clo.apply(p.getId(), p);
+                clo.apply(p.id, p);
             }
         }
     }
