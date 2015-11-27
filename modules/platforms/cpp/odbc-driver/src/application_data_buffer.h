@@ -71,51 +71,67 @@ namespace ignite
 
             /**
              * Put in buffer value of type int8_t.
+             *
              * @param value Value.
              */
             void PutInt8(int8_t value);
 
             /**
              * Put in buffer value of type int16_t.
+             *
              * @param value Value.
              */
             void PutInt16(int16_t value);
 
             /**
              * Put in buffer value of type int32_t.
+             *
              * @param value Value.
              */
             void PutInt32(int32_t value);
 
             /**
              * Put in buffer value of type int64_t.
+             *
              * @param value Value.
              */
             void PutInt64(int64_t value);
 
             /**
              * Put in buffer value of type float.
+             *
              * @param value Value.
              */
             void PutFloat(float value);
 
             /**
              * Put in buffer value of type double.
+             *
              * @param value Value.
              */
             void PutDouble(double value);
 
             /**
              * Put in buffer value of type string.
+             *
              * @param value Value.
              */
             void PutString(const std::string& value);
 
             /**
              * Put in buffer value of type GUID.
+             *
              * @param value Value.
              */
             void PutGuid(const Guid& value);
+
+            /**
+             * Put binary data in buffer.
+             *
+             * @param data Data pointer.
+             * @param len Data length.
+             */
+            void PutBinaryData(void* data, size_t len);
 
         private:
             /**
@@ -149,6 +165,14 @@ namespace ignite
              */
             template<typename OutCharT, typename InCharT>
             void PutStrToStrBuffer(const std::basic_string<InCharT>& value);
+
+            /**
+             * Put raw data to any buffer.
+             *
+             * @param data Data pointer.
+             * @param len Data length.
+             */
+            void PutRawDataToBuffer(void *data, size_t len);
 
             /** Underlying data type. */
             type_traits::IgniteSqlType type;

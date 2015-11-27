@@ -70,7 +70,7 @@ namespace ignite
         }
 
         template<typename T>
-        inline void ApplicationDataBuffer::PutNum(T value)
+        void ApplicationDataBuffer::PutNum(T value)
         {
             using namespace type_traits;
             switch (type)
@@ -203,7 +203,7 @@ namespace ignite
         }
 
         template<typename Tbuf, typename Tin>
-        inline void ApplicationDataBuffer::PutNumToNumBuffer(Tin value)
+        void ApplicationDataBuffer::PutNumToNumBuffer(Tin value)
         {
             if (buffer)
             {
@@ -213,7 +213,7 @@ namespace ignite
         }
 
         template<typename CharT, typename Tin>
-        inline void ApplicationDataBuffer::PutValToStrBuffer(const Tin & value)
+        void ApplicationDataBuffer::PutValToStrBuffer(const Tin & value)
         {
             typedef std::basic_stringstream<CharT> ConverterType;
 
@@ -227,17 +227,19 @@ namespace ignite
         template<typename OutCharT, typename InCharT>
         void ApplicationDataBuffer::PutStrToStrBuffer(const std::basic_string<InCharT>& value)
         {
+            int64_t charSize = static_cast<int64_t>(sizeof(OutCharT));
+
             if (buffer)
             {
-                if (static_cast<size_t>(buflen) >= sizeof(OutCharT))
+                if (buflen >= charSize)
                 {
                     OutCharT* out = reinterpret_cast<OutCharT*>(buffer);
 
-                    size_t outLen = (buflen / sizeof(OutCharT)) - 1;
+                    int64_t outLen = (buflen / charSize) - 1;
 
-                    size_t toCopy = std::min(outLen, value.size());
+                    int64_t toCopy = std::min<int64_t>(outLen, value.size());
 
-                    for (size_t i = 0; i < toCopy; ++i)
+                    for (int64_t i = 0; i < toCopy; ++i)
                         out[i] = value[i];
 
                     out[toCopy] = 0;
@@ -245,7 +247,7 @@ namespace ignite
 
                 if (*reslen)
                 {
-                    if (static_cast<size_t>(buflen) >= (value.size() + 1) * sizeof(OutCharT))
+                    if (buflen >= static_cast<int64_t>((value.size() + 1) * charSize))
                         *reslen = value.size();
                     else
                         *reslen = SQL_NO_TOTAL;
@@ -254,6 +256,30 @@ namespace ignite
             else if (reslen)
             {
                 *reslen = value.size();
+            }
+        }
+
+        void ApplicationDataBuffer::PutRawDataToBuffer(void *data, size_t len)
+        {
+            int64_t ilen = static_cast<int64_t>(len);
+
+            if (buffer)
+            {
+                int64_t toCopy = std::min(buflen, ilen);
+
+                memcpy(buffer, data, toCopy);
+
+                if (*reslen)
+                {
+                    if (buflen >= ilen)
+                        *reslen = ilen;
+                    else
+                        *reslen = SQL_NO_TOTAL;
+                }
+            }
+            else if (reslen)
+            {
+                *reslen = ilen;
             }
         }
 
@@ -382,6 +408,28 @@ namespace ignite
                     uint64_t lsb = value.GetLeastSignificantBits();
                     memcpy(guid->Data4, &lsb, std::min(sizeof(guid->Data4), sizeof(lsb)));
 
+                    break;
+                }
+
+                default:
+                {
+                    if (reslen)
+                        *reslen = SQL_NO_TOTAL;
+                }
+            }
+        }
+
+        void ApplicationDataBuffer::PutBinaryData(void *data, size_t len)
+        {
+            using namespace type_traits;
+            switch (type)
+            {
+                case IGNITE_SQL_TYPE_CHAR:
+                case IGNITE_SQL_TYPE_WCHAR:
+                case IGNITE_SQL_TYPE_BINARY:
+                case IGNITE_SQL_TYPE_DEFAULT:
+                {
+                    PutRawDataToBuffer(data, len);
                     break;
                 }
 
