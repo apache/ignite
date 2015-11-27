@@ -66,6 +66,11 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      */
     @Nullable public abstract <F> F field(int fieldId) throws BinaryObjectException;
 
+    /** {@inheritDoc} */
+    @Override public int enumOrdinal() throws BinaryObjectException {
+        throw new BinaryObjectException("Object is not enum.");
+    }
+
     /**
      * Get field by offset.
      *

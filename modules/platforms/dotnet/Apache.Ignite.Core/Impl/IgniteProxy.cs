@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IIgniteBinary GetBinary()
+        public IBinary GetBinary()
         {
             return _ignite.GetBinary();
         }

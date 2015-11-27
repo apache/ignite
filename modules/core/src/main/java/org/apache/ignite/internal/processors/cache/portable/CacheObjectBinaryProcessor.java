@@ -57,10 +57,11 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @param typeName Type name.
      * @param affKeyFieldName Affinity key field name.
      * @param fieldTypeIds Fields map.
+     * @param isEnum Enum flag.
      * @throws IgniteException In case of error.
      */
     public void updateMetadata(int typeId, String typeName, @Nullable String affKeyFieldName,
-        Map<String, Integer> fieldTypeIds) throws IgniteException;
+        Map<String, Integer> fieldTypeIds, boolean isEnum) throws IgniteException;
 
     /**
      * @param typeId Type ID.
@@ -81,6 +82,14 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @throws IgniteException In case of error.
      */
     public Collection<BinaryType> metadata() throws IgniteException;
+
+    /**
+     * @param typeName Type name.
+     * @param ord ordinal.
+     * @return Enum object.
+     * @throws IgniteException If failed.
+     */
+    public BinaryObject buildEnum(String typeName, int ord) throws IgniteException;
 
     /**
      * @return Portables interface.
