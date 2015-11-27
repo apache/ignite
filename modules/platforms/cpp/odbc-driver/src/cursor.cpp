@@ -51,13 +51,13 @@ namespace ignite
         bool Cursor::NeedDataUpdate() const
         {
             return !currentPage.get() || (!currentPage->IsLast() &&
-                currentPagePos == currentPage->GetSize());
+                currentPagePos == currentPage->GetSize() - 1);
         }
 
         bool Cursor::HasNext() const
         {
             return !currentPage.get() || !currentPage->IsLast() ||
-                currentPagePos < currentPage->GetSize();
+                currentPagePos < currentPage->GetSize() - 1;
         }
 
         void Cursor::UpdateData(std::auto_ptr<ResultPage>& newPage)

@@ -80,6 +80,9 @@ namespace ignite
             using namespace ignite::impl::binary;
             using namespace ignite::impl::interop;
 
+            if (pos == size)
+                return false;
+
             BinaryReaderImpl reader(&stream);
 
             int8_t hdr = ReadColumnHeader();
@@ -163,6 +166,9 @@ namespace ignite
         {
             using namespace ignite::impl::binary;
             using namespace ignite::impl::interop;
+
+            if (pos == size)
+                return false;
 
             BinaryReaderImpl reader(&stream);
 

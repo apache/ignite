@@ -127,10 +127,15 @@ namespace ignite
             {
                 ColumnBindingMap::iterator it = columnBindings.find(i);
 
+                bool success;
+
                 if (it != columnBindings.end())
-                    row->ReadColumnToBuffer(it->second);
-                //else
-                //    row->SkipColumn();
+                    success = row->ReadColumnToBuffer(it->second);
+                else
+                    success = row->SkipColumn();
+
+                if (!success)
+                    return SQL_RESULT_ERROR;
             }
 
             return SQL_RESULT_SUCCESS;
