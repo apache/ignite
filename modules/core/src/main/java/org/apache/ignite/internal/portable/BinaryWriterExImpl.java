@@ -803,6 +803,25 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
+     * @param val Value.
+     */
+    void doWritePortableEnum(BinaryEnumObjectImpl val) {
+        assert val != null;
+
+        int typeId = val.typeId();
+
+        out.unsafeEnsure(1 + 4);
+
+        out.unsafeWriteByte(ENUM);
+        out.unsafeWriteInt(typeId);
+
+        if (typeId == UNREGISTERED_TYPE_ID)
+            doWriteString(val.className());
+
+        out.writeInt(val.enumOrdinal());
+    }
+
+    /**
      * @param val Array.
      */
     void doWriteEnumArray(@Nullable Object[] val) {
