@@ -279,20 +279,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     @Override public void addInvalidPartition(GridCacheContext cacheCtx, int part) {
         super.addInvalidPartition(cacheCtx, part);
 
-        Map<IgniteTxKey, IgniteTxEntry> writeMap = txState.writeMap();
-
-        for (Iterator<IgniteTxEntry> it = writeMap.values().iterator(); it.hasNext();) {
-            IgniteTxEntry e = it.next();
-
-            GridCacheEntryEx cached = e.cached();
-
-            if (cached != null) {
-                if (cached.partition() == part)
-                    it.remove();
-            }
-            else if (cacheCtx.affinity().partition(e.key()) == part)
-                it.remove();
-        }
+        txState.invalidPartition(part);
     }
 
     /**

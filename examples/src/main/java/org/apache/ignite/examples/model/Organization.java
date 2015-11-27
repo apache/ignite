@@ -15,25 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.transactions;
+package org.apache.ignite.examples.model;
+
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+
+import java.io.Serializable;
+import java.util.Random;
 
 /**
- *
+ * Organization class.
  */
-public interface IgniteTxRemoteState extends IgniteTxState {
-    /**
-     * @param key Key.
-     * @param e Entry.
-     */
-    public void addWriteEntry(IgniteTxKey key, IgniteTxEntry e);
+public class Organization implements Serializable {
+    /** */
+    private static final Random RND = new Random();
+
+    /** Organization ID (indexed). */
+    @QuerySqlField(index = true)
+    public Long id;
+
+    /** Organization name (indexed). */
+    @QuerySqlField(index = true)
+    public String name;
 
     /**
-     * @param key Entry key.
+     * Create organization.
+     *
+     * @param name Organization name.
      */
-    public void clearEntry(IgniteTxKey key);
+    public Organization(String name) {
+        id = RND.nextLong();
 
-    /**
-     * @param part Partition number.
-     */
-    public void invalidPartition(int part);
+        this.name = name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "Organization [id=" + id + ", name=" + name + ']';
+    }
 }

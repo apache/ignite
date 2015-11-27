@@ -1498,13 +1498,13 @@ public class PortableUtils {
      *
      * @return Result.
      */
-    public static Object doReadOptimized(PortableInputStream in, PortableContext ctx) {
+    public static Object doReadOptimized(PortableInputStream in, PortableContext ctx, @Nullable ClassLoader clsLdr) {
         int len = in.readInt();
 
         ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
         try {
-            return ctx.optimizedMarsh().unmarshal(input, null);
+            return ctx.optimizedMarsh().unmarshal(input, clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);
@@ -1706,7 +1706,7 @@ public class PortableUtils {
                 return doReadClass(in, ctx, ldr);
 
             case OPTM_MARSH:
-                return doReadOptimized(in, ctx);
+                return doReadOptimized(in, ctx, ldr);
 
             default:
                 throw new BinaryObjectException("Invalid flag value: " + flag);

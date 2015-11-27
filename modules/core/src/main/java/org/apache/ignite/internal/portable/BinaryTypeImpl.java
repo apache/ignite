@@ -77,7 +77,9 @@ public class BinaryTypeImpl implements BinaryType {
         return meta.isEnum();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Context.
+     */
     public PortableContext context() {
         return ctx;
     }
