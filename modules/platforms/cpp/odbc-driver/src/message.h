@@ -251,14 +251,13 @@ namespace ignite
         /**
          * Query close response.
          */
-        class QueryCloseResponse
+        class QueryCloseResponse : public QueryResponse
         {
         public:
             /**
              * Constructor.
              */
-            QueryCloseResponse() : status(RESPONSE_STATUS_FAILED),
-                queryId(0), error()
+            QueryCloseResponse() : queryId(0)
             {
                 // No-op.
             }
@@ -272,27 +271,6 @@ namespace ignite
             }
 
             /**
-             * Read response using provided reader.
-             * @param reader Reader.
-             */
-            void Read(ignite::impl::binary::BinaryReaderImpl& reader)
-            {
-                status = reader.ReadInt8();
-
-                if (status == RESPONSE_STATUS_SUCCESS)
-                {
-                    queryId = reader.ReadInt64();
-                }
-                else
-                {
-                    int32_t errorLen = reader.ReadString(0, 0);
-                    error.resize(errorLen);
-
-                    reader.ReadString(&error[0], static_cast<int32_t>(error.size()));
-                }
-            }
-
-            /**
              * Get query ID.
              * @return Query ID.
              */
@@ -301,46 +279,30 @@ namespace ignite
                 return queryId;
             }
 
-            /**
-             * Get request processing status.
-             * @return Status.
-             */
-            int8_t GetStatus() const
-            {
-                return status;
-            }
-
-            /**
-             * Get resulting error.
-             * @return Error.
-             */
-            const std::string& GetError() const
-            {
-                return error;
-            }
-
         private:
-            /** Request processing status. */
-            int8_t status;
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                queryId = reader.ReadInt64();
+            }
 
             /** Query ID. */
             int64_t queryId;
-
-            /** Error message. */
-            std::string error;
         };
 
         /**
          * Query execute response.
          */
-        class QueryExecuteResponse
+        class QueryExecuteResponse : public QueryResponse
         {
         public:
             /**
              * Constructor.
              */
-            QueryExecuteResponse() : status(RESPONSE_STATUS_FAILED), 
-                queryId(0), error(), meta()
+            QueryExecuteResponse() : queryId(0), meta()
             {
                 // No-op.
             }
@@ -354,67 +316,12 @@ namespace ignite
             }
 
             /**
-             * Read response using provided reader.
-             * @param reader Reader.
-             */
-            void Read(ignite::impl::binary::BinaryReaderImpl& reader)
-            {
-                status = reader.ReadInt8();
-
-                if (status == RESPONSE_STATUS_SUCCESS)
-                {
-                    queryId = reader.ReadInt64();
-
-                    //LOG_MSG("Query id: %lld\n", queryId);
-
-                    int32_t metaNum = reader.ReadInt32();
-
-                    //LOG_MSG("metaNum: %d\n", metaNum);
-
-                    meta.clear();
-                    meta.reserve(static_cast<size_t>(metaNum));
-
-                    for (int32_t i = 0; i < metaNum; ++i)
-                    {
-                        meta.push_back(ColumnMeta());
-
-                        meta.back().Read(reader);
-                    }
-                }
-                else
-                {
-                    int32_t errorLen = reader.ReadString(0, 0);
-                    error.resize(errorLen);
-
-                    reader.ReadString(&error[0], static_cast<int32_t>(error.size()));
-                }
-            }
-
-            /**
              * Get query ID.
              * @return Query ID.
              */
             int64_t GetQueryId() const
             {
                 return queryId;
-            }
-
-            /**
-             * Get request processing status.
-             * @return Status.
-             */
-            int8_t GetStatus() const
-            {
-                return status;
-            }
-
-            /**
-             * Get resulting error.
-             * @return Error.
-             */
-            const std::string& GetError() const
-            {
-                return error;
             }
 
             /**
@@ -427,14 +334,29 @@ namespace ignite
             }
 
         private:
-            /** Request processing status. */
-            int8_t status;
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                queryId = reader.ReadInt64();
+
+                int32_t metaNum = reader.ReadInt32();
+
+                meta.clear();
+                meta.reserve(static_cast<size_t>(metaNum));
+
+                for (int32_t i = 0; i < metaNum; ++i)
+                {
+                    meta.push_back(ColumnMeta());
+
+                    meta.back().Read(reader);
+                }
+            }
 
             /** Query ID. */
             int64_t queryId;
-
-            /** Error message. */
-            std::string error;
 
             /** Columns metadata. */
             std::vector<ColumnMeta> meta;
@@ -443,16 +365,14 @@ namespace ignite
         /**
          * Query fetch response.
          */
-        class QueryFetchResponse
+        class QueryFetchResponse : public QueryResponse
         {
         public:
             /**
              * Constructor.
              * @param resultPage Result page.
              */
-            QueryFetchResponse(ResultPage& resultPage) : 
-                status(RESPONSE_STATUS_FAILED), queryId(0), error(),
-                resultPage(resultPage)
+            QueryFetchResponse(ResultPage& resultPage) : queryId(0), resultPage(resultPage)
             {
                 // No-op.
             }
@@ -466,31 +386,6 @@ namespace ignite
             }
 
             /**
-             * Read response using provided reader.
-             * @param reader Reader.
-             */
-            void Read(ignite::impl::binary::BinaryReaderImpl& reader)
-            {
-                status = reader.ReadInt8();
-
-                if (status == RESPONSE_STATUS_SUCCESS)
-                {
-                    queryId = reader.ReadInt64();
-
-                    LOG_MSG("queryId: %u\n", queryId);
-
-                    resultPage.Read(reader);
-                }
-                else
-                {
-                    int32_t errorLen = reader.ReadString(0, 0);
-                    error.resize(errorLen);
-
-                    reader.ReadString(&error[0], static_cast<int32_t>(error.size()));
-                }
-            }
-
-            /**
              * Get query ID.
              * @return Query ID.
              */
@@ -499,33 +394,20 @@ namespace ignite
                 return queryId;
             }
 
-            /**
-             * Get request processing status.
-             * @return Status.
-             */
-            int8_t GetStatus() const
-            {
-                return status;
-            }
-
-            /**
-             * Get resulting error.
-             * @return Error.
-             */
-            const std::string& GetError() const
-            {
-                return error;
-            }
-
         private:
-            /** Request processing status. */
-            int8_t status;
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                queryId = reader.ReadInt64();
+
+                resultPage.Read(reader);
+            }
 
             /** Query ID. */
             int64_t queryId;
-
-            /** Error message. */
-            std::string error;
 
             /** Result page. */
             ResultPage& resultPage;
