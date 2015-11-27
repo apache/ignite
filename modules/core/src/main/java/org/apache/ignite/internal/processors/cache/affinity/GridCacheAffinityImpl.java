@@ -163,7 +163,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     @Override public Object affinityKey(K key) {
         A.notNull(key, "key");
 
-        if (key instanceof CacheObject && !(key instanceof BinaryObject))
+        if (key instanceof CacheObject && !(key instanceof BinaryObject)) {
             CacheObjectContext ctx = cctx.cacheObjectContext();
 
             if (ctx == null)
