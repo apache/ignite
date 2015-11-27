@@ -29,7 +29,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cache.store.CacheStoreSession;
-import org.apache.ignite.examples.datagrid.store.Person;
+import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.h2.jdbcx.JdbcConnectionPool;
@@ -107,9 +107,9 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
             // Some databases would allow these to be done in one 'upsert' operation.
             try (PreparedStatement st = conn.prepareStatement(
                 "update PERSONS set firstName = ?, lastName = ? where id = ?")) {
-                st.setString(1, val.getFirstName());
-                st.setString(2, val.getLastName());
-                st.setLong(3, val.getId());
+                st.setString(1, val.firstName);
+                st.setString(2, val.lastName);
+                st.setLong(3, val.id);
 
                 updated = st.executeUpdate();
             }
@@ -118,9 +118,9 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
             if (updated == 0) {
                 try (PreparedStatement st = conn.prepareStatement(
                     "insert into PERSONS (id, firstName, lastName) values (?, ?, ?)")) {
-                    st.setLong(1, val.getId());
-                    st.setString(2, val.getFirstName());
-                    st.setString(3, val.getLastName());
+                    st.setLong(1, val.id);
+                    st.setString(2, val.firstName);
+                    st.setString(3, val.lastName);
 
                     st.executeUpdate();
                 }
@@ -166,7 +166,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
             while (rs.next()) {
                 Person person = new Person(rs.getLong(1), rs.getString(2), rs.getString(3));
 
-                clo.apply(person.getId(), person);
+                clo.apply(person.id, person);
 
                 cnt++;
             }
