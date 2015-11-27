@@ -80,7 +80,6 @@
       "jquery": "github:components/jquery@^2.1.4",
       "jszip": "github:Stuk/jszip@^2.5.0",
       "lodash": "npm:lodash@^3.10.1",
-      "nvd3": "npm:nvd3@^1.8.1",
       "query-command-supported": "github:zenorocha/document.queryCommandSupported@^1.0.0",
       "sass": "github:mobilexag/plugin-sass@^0.0.10",
       "scss": "github:theefer/plugin-sass@master",
@@ -113,6 +112,7 @@
         }
       },
       "github:krispo/angular-nvd3@1.0.4": {
+        "main": "dist/angular-nvd3",
         "dependencies": {
           "angular": "^1",
           "nvd3": "npm:nvd3@1.8.1",
