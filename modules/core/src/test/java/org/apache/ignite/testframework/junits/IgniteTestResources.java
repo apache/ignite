@@ -26,7 +26,12 @@ import java.util.concurrent.ThreadPoolExecutor;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.portable.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -257,6 +262,12 @@ public class IgniteTestResources {
             ((OptimizedMarshaller)marsh).setRequireSerializable(false);
 
         marsh.setContext(new MarshallerContextTestImpl());
+
+        if (marsh instanceof BinaryMarshaller) {
+            PortableContext ctx = new PortableContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
+
+            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, new IgniteConfiguration());
+        }
 
         return marsh;
     }
