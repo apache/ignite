@@ -136,7 +136,7 @@ mixin table-igfs-path-mode-edit(prefix, keyPlaceholder, valPlaceholder, focusId,
         label.placeholder #{valPlaceholder}
         +btn-save(btnVisible, btnSave)
         .input-tip
-            button.form-control(id=valFocusId bs-select ng-model=valModel data-placeholder=valPlaceholder bs-options="item.value as item.label for item in igfsModes" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
+            button.select-toggle.form-control(id=valFocusId bs-select ng-model=valModel data-placeholder=valPlaceholder bs-options="item.value as item.label for item in igfsModes" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
 
 mixin table-igfs-path-mode(header, tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder)
     .col-sm-12.group
@@ -261,7 +261,7 @@ mixin table-db-field-edit(prefix, focusId, index)
         label.placeholder DB type
         label.fieldSep /
         .input-tip
-            button.form-control(id=databaseTypeId enter-focus-next=javaNameId ng-model=databaseTypeModel data-placeholder='DB type' ng-class='{placeholder: !#{databaseTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJdbcTypes}}' on-escape='tableReset()' tabindex='0')
+            button.select-toggle.form-control(id=databaseTypeId enter-focus-next=javaNameId ng-model=databaseTypeModel data-placeholder='DB type' ng-class='{placeholder: !#{databaseTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJdbcTypes}}' on-escape='tableReset()' tabindex='0')
     .col-xs-3.col-sm-3.col-md-3
         label.placeholder Java name
         label.fieldSep /
@@ -275,7 +275,7 @@ mixin table-db-field-edit(prefix, focusId, index)
         label.placeholder Java type
         +btn-save(btnVisible, btnSave)
         .input-tip
-            button.form-control(id=javaTypeId ng-model=javaTypeModel data-placeholder='Java type' ng-class='{placeholder: !#{javaTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJavaTypes}}' on-enter=btnVisibleAndSave on-escape='tableReset()' tabindex='0')
+            button.select-toggle.form-control(id=javaTypeId ng-model=javaTypeModel data-placeholder='Java type' ng-class='{placeholder: !#{javaTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJavaTypes}}' on-enter=btnVisibleAndSave on-escape='tableReset()' tabindex='0')
 
 mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
     -var fieldName = prefix + 'FieldName'
@@ -297,7 +297,7 @@ mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
         label.placeholder Sort order
         +btn-save(btnVisible, btnSave)
         .input-tip
-            button.form-control(id='{{::"#{direction}S" + #{idAddition}}}' ng-model=directionModel bs-select bs-options='item.value as item.label for item in {{sortDirections}}' on-enter=btnVisibleAndSave on-escape='tableReset()' tabindex='0')
+            button.select-toggle.form-control(id='{{::"#{direction}S" + #{idAddition}}}' ng-model=directionModel bs-select bs-options='item.value as item.label for item in {{sortDirections}}' on-enter=btnVisibleAndSave on-escape='tableReset()' tabindex='0')
     .col-xs-12(ng-show='!(#{sortAvailable})')
         label.placeholder Field name
         +btn-save(btnVisible, btnSave)
@@ -470,7 +470,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                             label.placeholder Index type
                                             +btn-save('tableIndexSaveVisible(field, $index)', 'tableIndexSave(field, $index)')
                                             .input-tip
-                                                button.form-control(id='{{"curIndexType" + $index}}' bs-select ng-model='field.curIndexType' data-placeholder='Select index type' bs-options="item.value as item.label for item in indexType" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
+                                                button.select-toggle.form-control(id='{{"curIndexType" + $index}}' bs-select ng-model='field.curIndexType' data-placeholder='Select index type' bs-options="item.value as item.label for item in indexType" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
                                     .margin-left-dflt
                                         table.links-edit-sub(st-table='item.fields' ng-init='itemIndex = $index')
                                             tbody
@@ -498,7 +498,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                         label.placeholder Index type
                                         +btn-save('tableIndexSaveVisible(field, -1)', 'tableIndexSave(field, -1)')
                                         .input-tip
-                                            button#newIndexType.form-control(bs-select ng-model='field.newIndexType' data-placeholder='Select index type' bs-options="item.value as item.label for item in indexType" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
+                                            button#newIndexType.select-toggle.form-control(bs-select ng-model='field.newIndexType' data-placeholder='Select index type' bs-options="item.value as item.label for item in indexType" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
 
 mixin main-table(title, rows, focusId, click, rowTemplate)
     .padding-bottom-dflt(ng-show='#{rows} && #{rows}.length > 0')
