@@ -959,22 +959,6 @@ consoleModule.service('$confirm', function ($modal, $rootScope, $q) {
     return confirmModal;
 });
 
-// Show modal message service.
-consoleModule.service('$message', function ($modal, $rootScope) {
-    var scope = $rootScope.$new();
-
-    var messageModal = $modal({templateUrl: '/templates/message.html', scope: scope, placement: 'center', show: false});
-
-    messageModal.message = function (title, content) {
-        scope.title = title || 'Message';
-        scope.content = content.join('<br/>') || '...';
-
-        messageModal.show();
-    };
-
-    return messageModal;
-});
-
 // Confirm change location.
 consoleModule.service('$unsavedChangesGuard', function () {
     return {
@@ -2167,8 +2151,8 @@ consoleModule.controller('agent-download', [
     }]);
 
 // Navigation bar controller.
-consoleModule.controller('notebooks', ['$scope', '$modal', '$window', '$http', '$common',
-    function ($scope, $modal, $window, $http, $common) {
+consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$common',
+    function ($scope, $modal, $state, $http, $common) {
     $scope.$root.notebooks = [];
 
     // Pre-fetch modal dialogs.
@@ -2210,7 +2194,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$window', '$http', '
             .success(function (id) {
                 _notebookNewModal.hide();
 
-                $window.location = '/sql?id=' + id;
+                $state.go('base.sql', {id: id});
             })
             .error(function (message, state) {
                 $common.showError(message);

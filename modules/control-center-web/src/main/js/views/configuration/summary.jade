@@ -52,7 +52,7 @@ block content
         hr
         .padding-dflt(ng-if='clusters.length == 0')
             | You have no clusters configured. Please configure them &nbsp;
-            a(href='clusters') here.
+§            a(href='/configuration/clusters') here.
         +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
         .padding-top-dflt(ng-if='clusters.length > 0' bs-affix)
             button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip data-title='Download configuration' data-placement='bottom') Download

@@ -17,16 +17,14 @@
 
 // Controller for IGFS screen.
 consoleModule.controller('igfsController', [
-    '$scope', '$controller', '$filter', '$http', '$timeout', '$common', '$focus', '$confirm', '$message', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
-    function ($scope, $controller, $filter, $http, $timeout, $common, $focus, $confirm, $message, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
+    '$scope', '$controller', '$filter', '$http', '$timeout', '$common', '$focus', '$confirm', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
+    function ($scope, $controller, $filter, $http, $timeout, $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
             $unsavedChangesGuard.install($scope);
 
             // Initialize the super class and extend it.
             angular.extend(this, $controller('save-remove', {$scope: $scope}));
 
             $scope.ui = $common.formUI();
-
-            $scope.showMoreInfo = $message.message;
 
             $scope.joinTip = $common.joinTip;
             $scope.getModel = $common.getModel;

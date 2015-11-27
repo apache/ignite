@@ -17,8 +17,8 @@
 
 // Controller for Admin screen.
 consoleModule.controller('adminController',
-    ['$q', '$rootScope', '$scope', '$window', '$http', '$common', '$confirm', '$state', 'User',
-    function ($q, $rootScope, $scope, $window, $http, $common, $confirm, $state, User) {
+    ['$q', '$rootScope', '$scope', '$http', '$common', '$confirm', '$state', 'User',
+    function ($q, $rootScope, $scope, $http, $common, $confirm, $state, User) {
     $scope.users = null;
 
     function reload() {

@@ -139,7 +139,7 @@ router.post('/new', function (req, res) {
         if (err)
             return res.status(500).send(err.message);
 
-        (new db.Notebook({space: space.id, name: req.body.name, paragraphs: []})).save(function (err, note) {
+        (new db.Notebook({space: space.id, name: req.body.name})).save(function (err, note) {
             if (err)
                 return res.status(500).send(err.message);
 

@@ -16,8 +16,8 @@
  */
 
 // Controller for SQL notebook screen.
-consoleModule.controller('sqlController', function ($scope, $window, $controller, $http, $timeout, $common, $confirm,
-    $interval, $message, $popover, $loading, $location, $anchorScroll, $state) {
+consoleModule.controller('sqlController', function ($scope, $controller, $http, $timeout, $common, $confirm,
+    $interval, $modal, $popover, $loading, $location, $anchorScroll, $state) {
     // Initialize the super class and extend it.
     angular.extend(this, $controller('agent-download', {$scope: $scope}));
 
@@ -234,7 +234,7 @@ consoleModule.controller('sqlController', function ($scope, $window, $controller
     };
 
     $scope.goToConfiguration = function () {
-        $window.location = '/';
+        $state.go('/configuration/clusters');
     };
 
     var loadNotebook = function () {
@@ -245,6 +245,12 @@ consoleModule.controller('sqlController', function ($scope, $window, $controller
                 $scope.notebook = notebook;
 
                 $scope.notebook_name = notebook.name;
+
+                if (!$scope.notebook.activePanels)
+                    $scope.notebook.activePanels = [];
+
+                if (!$scope.notebook.paragraphs)
+                    $scope.notebook.paragraphs = [];
 
                 _.forEach(notebook.paragraphs, function (paragraph) {
                     paragraph.id = 'paragraph-' + paragraphId++;
@@ -317,10 +323,9 @@ consoleModule.controller('sqlController', function ($scope, $window, $controller
                             $scope.$root.notebooks.splice(idx, 1);
 
                             if ($scope.$root.notebooks.length > 0)
-                                $window.location = '/sql/' +
-                                    $scope.$root.notebooks[Math.min(idx,  $scope.$root.notebooks.length - 1)]._id;
+                                $state.go('/sql', {id: $scope.$root.notebooks[Math.min(idx,  $scope.$root.notebooks.length - 1)]._id});
                             else
-                                $window.location = '/configuration/clusters';
+                                $state.go('/configuration/clusters');
                         }
                     })
                     .error(function (errMsg) {
@@ -345,9 +350,6 @@ consoleModule.controller('sqlController', function ($scope, $window, $controller
     };
 
     $scope.addParagraph = function () {
-        if (!$scope.notebook.paragraphs)
-            $scope.notebook.paragraphs = [];
-
         var sz = $scope.notebook.paragraphs.length;
 
         var paragraph = {
@@ -1482,7 +1484,8 @@ consoleModule.controller('sqlController', function ($scope, $window, $controller
                     queryMsg = 'SCAN query for cache <b>' + paragraph.queryArgs.cacheName + '</b>';
             }
 
-            $message.message(title, [queryMsg]);
+            // Show a basic modal from a controller
+            $modal({title: title, content: [queryMsg], template: '/templates/message.html', show: true});
         }
     }
 });

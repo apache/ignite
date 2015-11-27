@@ -17,8 +17,8 @@
 
 // Controller for Metadata screen.
 consoleModule.controller('metadataController', [
-    '$scope', '$controller', '$filter', '$http', '$modal', '$common', '$timeout', '$focus', '$confirm', '$confirmBatch', '$message', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
-    function ($scope, $controller, $filter, $http, $modal, $common, $timeout, $focus, $confirm, $confirmBatch, $message, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
+    '$scope', '$controller', '$filter', '$http', '$modal', '$common', '$timeout', '$focus', '$confirm', '$confirmBatch', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
+    function ($scope, $controller, $filter, $http, $modal, $common, $timeout, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
             $unsavedChangesGuard.install($scope);
 
             // Initialize the super class and extend it.
@@ -30,8 +30,6 @@ consoleModule.controller('metadataController', [
             $scope.ui = $common.formUI();
 
             $scope.ui.packageName = $scope.$root.user.email.replace('@', '.').split('.').reverse().join('.') + '.model';
-
-            $scope.showMoreInfo = $message.message;
 
             $scope.agentGoal = 'load metadata from database schema';
             $scope.agentTestDriveOption = '--test-drive-metadata';
