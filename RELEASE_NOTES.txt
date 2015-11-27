@@ -10,7 +10,7 @@ Apache Ignite In-Memory Data Fabric 1.5
 * Added IgniteSemaphore data structure.
 * Added MQTT Streamer.
 * Fixed failover for continuous queries.
-* Fixed compilation and runtime errors under OpnJDK and IBM JDK.
+* Fixed compilation and runtime errors under OpenJDK and IBM JDK.
 * Fixed Integer.size limitation for cache.
 * Fixed and improved cache types configuration.
 * Fixed cache rebalancing.
