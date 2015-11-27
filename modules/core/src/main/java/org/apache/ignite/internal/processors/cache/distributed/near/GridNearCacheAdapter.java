@@ -123,9 +123,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public void onReconnected() {
-        map = new GridCacheConcurrentMap(ctx,
+        map = new GridCacheConcurrentMap(
+            ctx,
             ctx.config().getNearConfiguration().getNearStartSize(),
-            0.75F,
             map.getEntryFactory());
     }
 

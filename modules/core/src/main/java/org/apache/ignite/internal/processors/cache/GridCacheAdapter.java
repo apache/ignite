@@ -296,7 +296,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     @SuppressWarnings("OverriddenMethodCallDuringObjectConstruction")
     protected GridCacheAdapter(GridCacheContext<K, V> ctx, int startSize) {
-        this(ctx, new GridCacheConcurrentMap(ctx, startSize, 0.75F, null));
+        this(ctx, new GridCacheConcurrentMap(ctx, startSize, null));
     }
 
     /**
@@ -925,60 +925,25 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     @Nullable private GridCacheEntryEx entry0(KeyCacheObject key, AffinityTopologyVersion topVer, boolean create,
         boolean touch) {
-        GridCacheMapEntry cur = map.getEntry(key);
+        GridTriple<GridCacheMapEntry> t = map.putEntryIfObsoleteOrAbsent(topVer, key, null, create);
 
-        if (cur == null || cur.obsolete()) {
-            GridTriple<GridCacheMapEntry> t = map.putEntryIfObsoleteOrAbsent(
-                topVer,
-                key,
-                null,
-                create);
+        GridCacheEntryEx cur = t.get1();
+        GridCacheEntryEx created = t.get2();
+        GridCacheEntryEx doomed = t.get3();
 
-            cur = t.get1();
+        if (doomed != null && ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
+            // Event notification.
+            ctx.events().addEvent(doomed.partition(), doomed.key(), locNodeId, (IgniteUuid)null, null,
+                EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null, true);
 
-            GridCacheEntryEx created = t.get2();
-            GridCacheEntryEx doomed = t.get3();
+        if (created != null) {
+            // Event notification.
+            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
+                ctx.events().addEvent(created.partition(), created.key(), locNodeId, (IgniteUuid)null, null,
+                    EVT_CACHE_ENTRY_CREATED, null, false, null, false, null, null, null, true);
 
-            if (doomed != null && ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
-                // Event notification.
-                ctx.events().addEvent(doomed.partition(),
-                    doomed.key(),
-                    locNodeId,
-                    (IgniteUuid)null,
-                    null,
-                    EVT_CACHE_ENTRY_DESTROYED,
-                    null,
-                    false,
-                    null,
-                    false,
-                    null,
-                    null,
-                    null,
-                    true);
-
-            if (created != null) {
-                // Event notification.
-                if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
-                    ctx.events().addEvent(created.partition(),
-                        created.key(),
-                        locNodeId,
-                        (IgniteUuid)null,
-                        null,
-                        EVT_CACHE_ENTRY_CREATED,
-                        null,
-                        false,
-                        null,
-                        false,
-                        null,
-                        null,
-                        null,
-                        true);
-
-                if (touch)
-                    ctx.evicts().touch(
-                        cur,
-                        topVer);
-            }
+            if (touch)
+                ctx.evicts().touch(cur, topVer);
         }
 
         return cur;

@@ -237,6 +237,7 @@ public class GridCacheConcurrentMap {
      * @param ctx Cache context.
      * @param initCap the initial capacity. The implementation
      *      performs internal sizing to accommodate this many elements.
+     * @param factory Entry factory.
      * @param loadFactor  the load factor threshold, used to control resizing.
      *      Resizing may be performed when the average number of elements per
      *      bin exceeds this threshold.
@@ -248,8 +249,13 @@ public class GridCacheConcurrentMap {
      *      non-positive.
      */
     @SuppressWarnings({"unchecked"})
-    protected GridCacheConcurrentMap(GridCacheContext ctx, int initCap, float loadFactor,
-        int concurrencyLevel) {
+    protected GridCacheConcurrentMap(
+        GridCacheContext ctx,
+        int initCap,
+        GridCacheMapEntryFactory factory,
+        float loadFactor,
+        int concurrencyLevel
+    ) {
         this.ctx = ctx;
 
         if (!(loadFactor > 0) || initCap < 0 || concurrencyLevel <= 0)
@@ -289,6 +295,8 @@ public class GridCacheConcurrentMap {
 
         for (int i = 0; i < segs.length; ++i)
             segs[i] = new Segment(cap, loadFactor);
+
+        this.factory = factory;
     }
 
     /**
@@ -298,20 +306,16 @@ public class GridCacheConcurrentMap {
      * @param ctx Cache context.
      * @param initCap The implementation performs internal
      *      sizing to accommodate this many elements.
-     * @param loadFactor  the load factor threshold, used to control resizing.
-     *      Resizing may be performed when the average number of elements per
-     *      bin exceeds this threshold.
      * @param factory Entries factory.
      * @throws IllegalArgumentException if the initial capacity of
      *      elements is negative or the load factor is non-positive.
      */
-    public GridCacheConcurrentMap(GridCacheContext ctx,
+    public GridCacheConcurrentMap(
+        GridCacheContext ctx,
         int initCap,
-        float loadFactor,
-        @Nullable GridCacheMapEntryFactory factory) {
-        this(ctx, initCap, loadFactor, DFLT_CONCUR_LEVEL);
-
-        this.factory = factory;
+        @Nullable GridCacheMapEntryFactory factory
+    ) {
+        this(ctx, initCap, factory, DFLT_LOAD_FACTOR, DFLT_CONCUR_LEVEL);
     }
 
     /**
@@ -1425,32 +1429,10 @@ public class GridCacheConcurrentMap {
         }
 
         /**
-         * @return Number of reads.
-         */
-        long reads() {
-            return reads.sum();
-        }
-
-        /**
          * @return Header ID.
          */
         int id() {
             return id;
-        }
-
-        /**
-         * @return {@code True} if {@code ID} is even.
-         */
-        boolean even() {
-            return id % 2 == 0;
-        }
-
-        /**
-         * @return {@code True} if {@code ID} is odd.
-         */
-        @SuppressWarnings("BadOddness")
-        boolean odd() {
-            return id % 2 == 1;
         }
 
         /**
@@ -2108,9 +2090,7 @@ public class GridCacheConcurrentMap {
             it.next();
 
             // Cached value.
-            V val = it.currentValue();
-
-            return val;
+            return it.currentValue();
         }
 
         /** {@inheritDoc} */
