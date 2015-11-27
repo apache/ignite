@@ -194,9 +194,9 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                 case TYPE_ENUM_FIELD:
                     IgniteCache<Integer, BinaryObject> cache = ignite.cache(null).withKeepBinary();
                     BinaryObject obj = cache.get(TYPE_ENUM_FIELD);
-                    PlatformComputeEnum val = obj.field("interopEnum");
+                    BinaryObject val = obj.field("interopEnum");
 
-                    return val;
+                    return val.deserialize();
 
                 default:
                     throw new IgniteException("Unknown type: " + type);

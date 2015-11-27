@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -141,7 +140,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (log.isDebugEnabled())
             log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
 
-        GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc().future(res.futureId());
+        GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc()
+            .future(new IgniteUuid(IgniteUuid.VM_ID, res.futureId()));
 
         if (fut == null) {
             if (log.isDebugEnabled())
@@ -178,18 +178,17 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry create(GridCacheContext ctx,
+            @Override public GridCacheMapEntry create(
+                GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
                 KeyCacheObject key,
                 int hash,
-                CacheObject val,
-                GridCacheMapEntry next,
-                int hdrId)
-            {
+                CacheObject val
+            ) {
                 if (ctx.useOffheapEntry())
-                    return new GridDhtOffHeapCacheEntry(ctx, topVer, key, hash, val, next, hdrId);
+                    return new GridDhtOffHeapCacheEntry(ctx, topVer, key, hash, val);
 
-                return new GridDhtCacheEntry(ctx, topVer, key, hash, val, next, hdrId);
+                return new GridDhtCacheEntry(ctx, topVer, key, hash, val);
             }
         });
     }
@@ -593,7 +592,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public int primarySize() {
-        int sum = 0;
+        return (int)primarySizeLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long primarySizeLong() {
+        long sum = 0;
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -607,7 +611,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, AffinityTopologyVersion, UUID, int, IgniteCacheExpiryPolicy, boolean)}
+     * {@link #getDhtAsync(UUID, long, Map, boolean, AffinityTopologyVersion, UUID, int, IgniteCacheExpiryPolicy, boolean)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -685,7 +689,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     public GridDhtFuture<Collection<GridCacheEntryInfo>> getDhtAsync(UUID reader,
         long msgId,
-        LinkedHashMap<KeyCacheObject, Boolean> keys,
+        Map<KeyCacheObject, Boolean> keys,
         boolean readThrough,
         AffinityTopologyVersion topVer,
         @Nullable UUID subjId,
@@ -720,9 +724,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(ttl);
 
-        LinkedHashMap<KeyCacheObject, Boolean> map = U.newLinkedHashMap(1);
-
-        map.put(req.key(), req.addReader());
+        Map<KeyCacheObject, Boolean> map = Collections.singletonMap(req.key(), req.addReader());
 
         IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut =
             getDhtAsync(nodeId,
@@ -755,7 +757,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 info.key(null);
 
                                 res0 = info;
-                            } else if (req.needVersion())
+                            }
+                            else if (req.needVersion())
                                 res0 = new CacheVersionedValue(info.value(), info.version());
                             else
                                 res0 = info.value();

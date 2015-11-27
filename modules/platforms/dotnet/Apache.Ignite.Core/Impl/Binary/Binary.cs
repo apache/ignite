@@ -23,12 +23,13 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary implementation.
     /// </summary>
-    internal class IgniteBinary : IIgniteBinary
+    internal class Binary : IBinary
     {
         /** Owning grid. */
         private readonly Marshaller _marsh;
@@ -37,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Constructor.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
-        internal IgniteBinary(Marshaller marsh)
+        internal Binary(Marshaller marsh)
         {
             _marsh = marsh;
         }
@@ -144,6 +145,29 @@ namespace Apache.Ignite.Core.Impl.Binary
             var desc = Marshaller.GetDescriptor(type);
 
             return desc == null ? null : Marshaller.GetBinaryType(desc.TypeId);
+        }
+
+        /** <inheritDoc /> */
+        public IBinaryObject BuildEnum(string typeName, int value)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
+
+            var desc = Marshaller.GetDescriptor(typeName);
+
+            IgniteArgumentCheck.Ensure(desc.IsEnum, "typeName", "Type should be an Enum.");
+
+            _marsh.PutBinaryType(desc);
+
+            return new BinaryEnum(GetTypeId(typeName), value, Marshaller);
+        }
+
+        /** <inheritDoc /> */
+        public IBinaryObject BuildEnum(Type type, int value)
+        {
+            IgniteArgumentCheck.NotNull(type, "type");
+            IgniteArgumentCheck.Ensure(type.IsEnum, "type", "Type should be an Enum.");
+
+            return BuildEnum(type.Name, value);
         }
 
         /// <summary>

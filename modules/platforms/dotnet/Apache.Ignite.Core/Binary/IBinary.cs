@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Binary
     ///     </item>
     /// </list>
     /// </summary>
-    public interface IIgniteBinary
+    public interface IBinary
     {
         /// <summary>
         /// Converts provided object to binary form.
@@ -116,5 +116,21 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         /// <returns>Metadata.</returns>
         IBinaryType GetBinaryType(Type type);
+
+        /// <summary>
+        /// Converts enum to a binary form.
+        /// </summary>
+        /// <param name="typeName">Enum type name.</param>
+        /// <param name="value">Enum int value.</param>
+        /// <returns>Binary representation of the specified enum value.</returns>
+        IBinaryObject BuildEnum(string typeName, int value);
+
+        /// <summary>
+        /// Converts enum to a binary form.
+        /// </summary>
+        /// <param name="type">Enum type.</param>
+        /// <param name="value">Enum int value.</param>
+        /// <returns>Binary representation of the specified enum value.</returns>
+        IBinaryObject BuildEnum(Type type, int value);
     }
 }

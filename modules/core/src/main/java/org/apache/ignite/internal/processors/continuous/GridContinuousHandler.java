@@ -143,6 +143,11 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public boolean isQuery();
 
     /**
+     * @return {@code True} if Ignite Binary objects should be passed to the listener and filter.
+     */
+    public boolean keepBinary();
+
+    /**
      * @return Cache name if this is a continuous query handler.
      */
     public String cacheName();

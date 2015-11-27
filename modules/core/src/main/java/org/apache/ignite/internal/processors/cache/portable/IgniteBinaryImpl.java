@@ -59,6 +59,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T toBinary(@Nullable Object obj) throws BinaryObjectException {
         guard();
 
@@ -95,7 +96,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType metadata(Class<?> cls) throws BinaryObjectException {
+    @Nullable @Override public BinaryType type(Class<?> cls) throws BinaryObjectException {
         guard();
 
         try {
@@ -107,7 +108,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType metadata(String typeName) throws BinaryObjectException {
+    @Nullable @Override public BinaryType type(String typeName) throws BinaryObjectException {
         guard();
 
         try {
@@ -119,7 +120,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+    @Nullable @Override public BinaryType type(int typeId) throws BinaryObjectException {
         guard();
 
         try {
@@ -131,11 +132,23 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
+    @Override public Collection<BinaryType> types() throws BinaryObjectException {
         guard();
 
         try {
             return proc.metadata();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryObject buildEnum(String typeName, int ord) {
+        guard();
+
+        try {
+            return proc.buildEnum(typeName, ord);
         }
         finally {
             unguard();

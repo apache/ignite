@@ -39,12 +39,10 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -76,7 +74,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
     /** */
     @GridToStringExclude
-    private KeyLockFuture keyLockFut = new KeyLockFuture();
+    private KeyLockFuture keyLockFut;
 
     /** */
     @GridToStringExclude
@@ -134,7 +132,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                     }
                 }
 
-                keyLockFut.onKeyLocked(entry.txKey());
+                if (keyLockFut != null)
+                    keyLockFut.onKeyLocked(entry.txKey());
 
                 return true;
             }
@@ -189,7 +188,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         err.compareAndSet(null, e);
 
-        keyLockFut.onDone(e);
+        if (keyLockFut != null)
+            keyLockFut.onDone(e);
     }
 
     /** {@inheritDoc} */
@@ -210,7 +210,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         if (err != null) {
             this.err.compareAndSet(null, err);
 
-            keyLockFut.onDone(err);
+            if (keyLockFut != null)
+                keyLockFut.onDone(err);
         }
 
         return onComplete();
@@ -335,10 +336,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         for (IgniteTxEntry read : reads)
             map(read, topVer, mappings, remap, topLocked);
 
-        keyLockFut.onAllKeysAdded();
-
-        if (!remap)
-            add(keyLockFut);
+        if (keyLockFut != null)
+            keyLockFut.onAllKeysAdded();
 
         if (isDone()) {
             if (log.isDebugEnabled())
@@ -535,8 +534,15 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             entry.cached(cacheCtx.local().entryEx(entry.key(), topVer));
 
         if (!remap && (cacheCtx.isNear() || cacheCtx.isLocal())) {
-            if (entry.explicitVersion() == null)
+            if (entry.explicitVersion() == null) {
+                if (keyLockFut == null) {
+                    keyLockFut = new KeyLockFuture();
+
+                    add(keyLockFut);
+                }
+
                 keyLockFut.addLockKey(entry.txKey());
+            }
         }
 
         IgniteBiTuple<ClusterNode, Boolean> key = F.t(primary, cacheCtx.isNear());
@@ -852,70 +858,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MiniFuture.class, this, "done", isDone(), "cancelled", isCancelled(), "err", error());
-        }
-    }
-
-    /**
-     * Keys lock future.
-     */
-    private class KeyLockFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
-        /** */
-        @GridToStringInclude
-        private Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
-
-        /** */
-        private volatile boolean allKeysAdded;
-
-        /**
-         * @param key Key to track for locking.
-         */
-        private void addLockKey(IgniteTxKey key) {
-            assert !allKeysAdded;
-
-            lockKeys.add(key);
-        }
-
-        /**
-         * @param key Locked keys.
-         */
-        private void onKeyLocked(IgniteTxKey key) {
-            lockKeys.remove(key);
-
-            checkLocks();
-        }
-
-        /**
-         * Moves future to the ready state.
-         */
-        private void onAllKeysAdded() {
-            allKeysAdded = true;
-
-            checkLocks();
-        }
-
-        /**
-         * @return {@code True} if all locks are owned.
-         */
-        private boolean checkLocks() {
-            boolean locked = lockKeys.isEmpty();
-
-            if (locked && allKeysAdded) {
-                if (log.isDebugEnabled())
-                    log.debug("All locks are acquired for near prepare future: " + this);
-
-                onDone((GridNearTxPrepareResponse)null);
-            }
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("Still waiting for locks [fut=" + this + ", keys=" + lockKeys + ']');
-            }
-
-            return locked;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(KeyLockFuture.class, this, super.toString());
         }
     }
 }

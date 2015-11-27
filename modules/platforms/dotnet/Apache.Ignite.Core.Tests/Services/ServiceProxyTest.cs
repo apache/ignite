@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Services
         });
 
         /** */
-        protected readonly IIgniteBinary IgniteBinary;
+        protected readonly IBinary Binary;
 
         /** */
         private readonly PlatformMemoryManager _memory = new PlatformMemoryManager(1024);
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         public ServiceProxyTest()
         {
-            IgniteBinary = new IgniteBinary(_marsh);
+            Binary = new Binary(_marsh);
         }
 
         /// <summary>
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         protected T GetProxy<T>()
         {
-            _svc = new TestIgniteService(IgniteBinary);
+            _svc = new TestIgniteService(Binary);
 
             var prx = new ServiceProxy<T>(InvokeProxyMethod).GetTransparentProxy();
 
@@ -439,15 +439,15 @@ namespace Apache.Ignite.Core.Tests.Services
         private class TestIgniteService : ITestIgniteService, ITestIgniteServiceAmbiguity
         {
             /** */
-            private readonly IIgniteBinary _igniteBinary;
+            private readonly IBinary _binary;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="TestIgniteService"/> class.
             /// </summary>
-            /// <param name="igniteBinary">Binary.</param>
-            public TestIgniteService(IIgniteBinary igniteBinary)
+            /// <param name="binary">Binary.</param>
+            public TestIgniteService(IBinary binary)
             {
-                _igniteBinary = igniteBinary;
+                _binary = binary;
             }
 
             /** <inheritdoc /> */
@@ -534,13 +534,13 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public IBinaryObject BinarizableResultMethod(int arg1, TestBinarizableClass arg2)
             {
-                return _igniteBinary.ToBinary<IBinaryObject>(arg2);
+                return _binary.ToBinary<IBinaryObject>(arg2);
             }
 
             /** <inheritdoc /> */
             public IBinaryObject BinarizableArgAndResultMethod(int arg1, IBinaryObject arg2)
             {
-                return _igniteBinary.ToBinary<IBinaryObject>(arg2.Deserialize<TestBinarizableClass>());
+                return _binary.ToBinary<IBinaryObject>(arg2.Deserialize<TestBinarizableClass>());
             }
 
             /** <inheritdoc /> */
@@ -703,7 +703,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
 
             var obj = new TestBinarizableClass { Prop = "PropValue" };
-            var portObj = IgniteBinary.ToBinary<IBinaryObject>(obj);
+            var portObj = Binary.ToBinary<IBinaryObject>(obj);
 
             var result = prx.BinarizableArgMethod(1, portObj);
 
@@ -731,7 +731,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
             
             var obj = new TestBinarizableClass { Prop = "PropValue" };
-            var portObj = IgniteBinary.ToBinary<IBinaryObject>(obj);
+            var portObj = Binary.ToBinary<IBinaryObject>(obj);
 
             var result = prx.BinarizableArgAndResultMethod(1, portObj);
 

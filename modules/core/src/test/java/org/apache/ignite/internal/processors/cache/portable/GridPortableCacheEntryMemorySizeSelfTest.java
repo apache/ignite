@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfT
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 
 /**
  *

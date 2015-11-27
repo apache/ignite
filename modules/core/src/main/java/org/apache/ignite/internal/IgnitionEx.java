@@ -61,6 +61,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -76,7 +77,6 @@ import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.mxbean.IgnitionMXBean;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.SpringApplicationContextResource;
@@ -1187,8 +1187,8 @@ public class IgnitionEx {
         Ignite res;
 
         if (grid == null || (res = grid.grid()) == null)
-            throw new IgniteIllegalStateException("Grid instance was not properly started " +
-                "or was already stopped: " + name);
+            throw new IgniteIllegalStateException("Ignite instance with provided name doesn't exist. " +
+                "Did you call Ignition.start(..) to start an Ignite instance? [name=" + name + ']');
 
         return res;
     }
@@ -1205,7 +1205,8 @@ public class IgnitionEx {
         IgniteKernal res;
 
         if (grid == null || (res = grid.gridx()) == null)
-            throw new IllegalStateException("Grid instance was not properly started or was already stopped: " + name);
+            throw new IgniteIllegalStateException("Ignite instance with provided name doesn't exist. " +
+                "Did you call Ignition.start(..) to start an Ignite instance? [name=" + name + ']');
 
         return res;
     }
@@ -1793,7 +1794,7 @@ public class IgnitionEx {
             Marshaller marsh = myCfg.getMarshaller();
 
             if (marsh == null) {
-                if (!OptimizedMarshaller.available()) {
+                if (!BinaryMarshaller.available()) {
                     U.warn(log, "OptimizedMarshaller is not supported on this JVM " +
                         "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
@@ -1804,7 +1805,7 @@ public class IgnitionEx {
                     marsh = new JdkMarshaller();
                 }
                 else
-                    marsh = new OptimizedMarshaller();
+                    marsh = new BinaryMarshaller();
             }
 
             myCfg.setMarshaller(marsh);

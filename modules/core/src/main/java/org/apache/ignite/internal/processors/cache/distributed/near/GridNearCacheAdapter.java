@@ -102,16 +102,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 AffinityTopologyVersion topVer,
                 KeyCacheObject key,
                 int hash,
-                CacheObject val,
-                GridCacheMapEntry next,
-                int hdrId
+                CacheObject val
             ) {
                 // Can't hold any locks here - this method is invoked when
                 // holding write-lock on the whole cache map.
                 if (ctx.useOffheapEntry())
-                    return new GridNearOffHeapCacheEntry(ctx, key, hash, val, next, hdrId);
+                    return new GridNearOffHeapCacheEntry(ctx, key, hash, val);
 
-                return new GridNearCacheEntry(ctx, key, hash, val, next, hdrId);
+                return new GridNearCacheEntry(ctx, key, hash, val);
             }
         });
     }
@@ -123,9 +121,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public void onReconnected() {
-        map = new GridCacheConcurrentMap(ctx,
+        map = new GridCacheConcurrentMap(
+            ctx,
             ctx.config().getNearConfiguration().getNearStartSize(),
-            0.75F,
             map.getEntryFactory());
     }
 
@@ -310,8 +308,18 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
+    @Override public long sizeLong() {
+        return nearEntries().size() + dht().sizeLong();
+    }
+
+    /** {@inheritDoc} */
     @Override public int primarySize() {
         return dht().primarySize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long primarySizeLong() {
+        return dht().primarySizeLong();
     }
 
     /** {@inheritDoc} */

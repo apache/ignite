@@ -61,7 +61,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
 /**
  *  Portable object implementation over offheap memory
  */
-public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externalizable, CacheObject {
+public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizable, CacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
