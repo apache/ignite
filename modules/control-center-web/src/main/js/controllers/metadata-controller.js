@@ -29,7 +29,8 @@ consoleModule.controller('metadataController', [
 
             $scope.ui = $common.formUI();
 
-            $scope.ui.packageName = $scope.$root.user.email.replace('@', '.').split('.').reverse().join('.') + '.model';
+            $scope.ui.packageName = $commonUtils.toJavaPackageName($scope.$root.user.email.replace('@', '.').split('.')
+                .reverse().join('.') + '.model');
 
             $scope.agentGoal = 'load metadata from database schema';
             $scope.agentTestDriveOption = '--test-drive-metadata';
@@ -493,7 +494,7 @@ consoleModule.controller('metadataController', [
                         if (dup)
                             dupCnt++;
 
-                        var valType = $scope.ui.packageName + '.' + toJavaClassName(tableName);
+                        var valType = $commonUtils.toJavaPackageName($scope.ui.packageName) + '.' + toJavaClassName(tableName);
 
                         function queryField(name, jdbcType) {
                             return {name: toJavaName(name), className: jdbcType.javaType}

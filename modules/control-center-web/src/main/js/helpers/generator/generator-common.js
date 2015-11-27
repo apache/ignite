@@ -94,18 +94,19 @@ $generatorCommon.builder = function (deep) {
 
     res.line = function (s) {
         if (s) {
-            if (this.needEmptyLine)
-                this.push('');
+            if (res.needEmptyLine)
+                res.push('');
 
-            this.append(s);
+            res.append(s);
         }
 
-        this.needEmptyLine = false;
+        res.needEmptyLine = false;
 
-        this.lineStart = true;
+        res.lineStart = true;
 
-        return this;
+        return res;
     };
+
 
     res.startBlock = function (s) {
         if (s) {
@@ -419,4 +420,8 @@ $generatorCommon.IGFS_IPC_CONFIGURATION = {
         memorySize: {dflt: 262144},
         tokenDirectoryPath: {dflt: 'ipc/shmem'}
     }
+};
+
+$generatorCommon.loadOfPropertiesNeeded = function (cluster, res) {
+    return res.datasources.length > 0 || cluster.sslEnabled;
 };

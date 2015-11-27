@@ -24,7 +24,7 @@ System.config({
     "angular-grid": "github:ceolter/ag-grid@2.3.5",
     "angular-loading": "github:darthwade/angular-loading@0.1.4",
     "angular-motion": "github:mgcrea/angular-motion@0.4.3",
-    "angular-nvd3": "github:krispo/angular-nvd3@1.0.3",
+    "angular-nvd3": "github:krispo/angular-nvd3@1.0.4",
     "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.8",
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.5",
     "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
@@ -35,7 +35,7 @@ System.config({
     "babel-runtime": "npm:babel-runtime@5.8.34",
     "blob": "github:eligrey/Blob.js@master",
     "bootstrap": "github:twbs/bootstrap@3.3.5",
-    "bootstrap-carousel": "github:twbs/bootstrap@3.3.5",
+    "bootstrap-carousel": "github:twbs/bootstrap@3.3.6",
     "clean-css": "npm:clean-css@3.4.8",
     "core-js": "npm:core-js@1.2.6",
     "css": "github:systemjs/plugin-css@0.1.19",
@@ -111,7 +111,7 @@ System.config({
     "github:jspm/nodelibs-util@0.1.0": {
       "util": "npm:util@0.10.3"
     },
-    "github:krispo/angular-nvd3@1.0.3": {
+    "github:krispo/angular-nvd3@1.0.4": {
       "angular": "github:angular/bower-angular@1.4.8",
       "d3": "npm:d3@3.5.9",
       "nvd3": "npm:nvd3@1.8.1"
@@ -124,6 +124,9 @@ System.config({
       "css": "github:systemjs/plugin-css@0.1.19"
     },
     "github:twbs/bootstrap@3.3.5": {
+      "jquery": "github:components/jquery@2.1.4"
+    },
+    "github:twbs/bootstrap@3.3.6": {
       "jquery": "github:components/jquery@2.1.4"
     },
     "github:wix/angular-tree-control@0.2.22": {

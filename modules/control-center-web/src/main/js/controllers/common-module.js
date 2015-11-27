@@ -246,7 +246,7 @@ consoleModule.service('$common', [
             'void',         'volatile',      'while'
         ];
 
-        var VALID_JAVA_IDENTIFIER = new RegExp('^[a-zA-Z_$][a-zA-Z\d_$]*');
+        var VALID_JAVA_IDENTIFIER = new RegExp('^[a-zA-Z_$][a-zA-Z\\d_$]*$');
 
         function isValidJavaIdentifier(msg, ident, elemId, panels, panelId) {
             if (isEmptyString(ident))
@@ -394,7 +394,7 @@ consoleModule.service('$common', [
             for (nameIx = 0; nameIx < len; nameIx ++) {
                 var s = names[nameIx];
 
-                if (s.length > (nameLength / 2) | 0) {
+                if (s.length > (nameLength / 2 | 0)) {
                     var totalWidth = measureText(s);
 
                     if (totalWidth > widthByName[nameIx]) {
@@ -456,6 +456,50 @@ consoleModule.service('$common', [
             }
 
             return names;
+        }
+
+        /**
+         * Compact any string by max number of pixels.
+         *
+         * @param label String to compact.
+         * @param nameWidth Maximum available width in pixels for simple name.
+         * @returns {*} Compacted string.
+         */
+        function compactLabelByPixels(label, nameWidth) {
+            if (nameWidth <= 0)
+                return label;
+
+            var totalWidth = measureText(label);
+
+            if (totalWidth > nameWidth) {
+                var maxLen = label.length;
+
+                var minLen = Math.min(maxLen, 3);
+
+                var middleLen = (minLen + (maxLen - minLen) / 2 ) | 0;
+
+                var minLenPx = measureText(label.substr(0, minLen) + '...');
+                var maxLenPx = totalWidth;
+
+                while (middleLen != minLen && middleLen != maxLen) {
+                    var middleLenPx = measureText(label.substr(0, middleLen) + '...');
+
+                    if (middleLenPx > nameWidth) {
+                        maxLen = middleLen;
+                        maxLenPx = middleLenPx;
+                    }
+                    else {
+                        minLen = middleLen;
+                        minLenPx = middleLenPx;
+                    }
+
+                    middleLen = (minLen + (maxLen - minLen) / 2 ) | 0;
+                }
+
+                return label.substring(0, middleLen) + '...';
+            }
+
+            return label;
         }
 
         /**
@@ -723,8 +767,8 @@ consoleModule.service('$common', [
             /**
              * Cut class name by width in pixel or width in symbol count.
              *
-             * @param id Id of contains link table.
-             * @param index Showed index of element.
+             * @param id Id of parent table.
+             * @param index Row number in table.
              * @param maxLength Maximum length in symbols for all names.
              * @param names Array of class names to compact.
              * @param divider String to visualy divide items.
@@ -756,6 +800,32 @@ consoleModule.service('$common', [
                     result += divider + names[nameIx];
 
                 return result;
+            },
+            /**
+             * Compact text by width in pixels or symbols count.
+             *
+             * @param id Id of parent table.
+             * @param index Row number in table.
+             * @param maxLength Maximum length in symbols for all names.
+             * @param label Text to compact.
+             * @returns Compacted label text.
+             */
+            compactTableLabel: function (id, index, maxLength, label) {
+                label = index + ') ' + label;
+
+                try {
+                    var nameWidth = availableWidth(index, id) | 0;
+
+                    // HTML5 calculation of showed message width.
+                    label = compactLabelByPixels(label, nameWidth);
+                }
+                catch (err) {
+                    var nameLength = maxLength - 3 | 0;
+
+                    label = label.length > maxLength ? label.substr(0, nameLength) + '...' : label;
+                }
+
+                return label;
             },
             widthIsSufficient: function(id, index, text) {
                 try {
@@ -982,7 +1052,6 @@ consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
         }
     }
 });
-
 
 // Service for confirm or skip several steps.
 consoleModule.service('$confirmBatch', function ($rootScope, $modal,  $q) {
