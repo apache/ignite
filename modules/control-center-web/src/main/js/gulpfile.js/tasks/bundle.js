@@ -16,28 +16,24 @@
  */
 
 var gulp = require('gulp');
-// var jspm = require('jspm');
-var jspm = require('gulp-jspm');
+var jspm = require('jspm');
 var util = require('gulp-util');
-var uglify = require('gulp-uglify');
 
 var paths = [
     './app/**/*.js'
 ];
 
 var options = {
-	sourceMaps: true
+	minify: true
 };
 
 gulp.task('bundle', function() {
-	if (!util.env.debug) {
+	if (util.env.debug) {
 		delete options.minify;
-		delete options.sourceMaps;
+		options.sourceMaps = true;
 	}
 
-	// return jspm.bundleSFX('app/index', 'build/app.min.js', options).then(function() {
-	// 	return gulp.src('build/app.min.js').pipe(uglify()).pipe(gulp.dest('build/app.min.js'))
-	// })
+	return jspm.bundleSFX('app/index', 'build/app.min.js', options);
 });
 
 gulp.task('bundle:watch', function() {
