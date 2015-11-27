@@ -20,7 +20,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.portable.*;
+import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
 import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
+import org.apache.ignite.internal.portable.streams.PortableInputStream;
+import org.apache.ignite.internal.portable.streams.PortableOffheapInputStream;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
 import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
@@ -87,7 +90,9 @@ public class GridOdbcParser implements GridNioParser {
             if (leftToReceive != 0)
                 return null;
 
-            BinaryReaderExImpl reader = new BinaryReaderExImpl(null, currentMessage.array(), 0, null);
+            PortableInputStream stream = new PortableHeapInputStream(currentMessage.array());
+
+            BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null);
 
             currentMessage = null;
 
@@ -96,7 +101,9 @@ public class GridOdbcParser implements GridNioParser {
 
         // Receiving new message
         // Getting message length. It's in the first four bytes of the message.
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, buf.array(), buf.position(), null);
+        PortableInputStream stream = new PortableHeapInputStream(buf.array());
+
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null);
 
         int messageLen = reader.readInt();
         buf.getInt();
