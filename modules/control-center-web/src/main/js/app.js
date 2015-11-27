@@ -19,7 +19,6 @@ var fs = require('fs');
 var express = require('express');
 var compress = require('compression');
 var path = require('path');
-var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
@@ -54,9 +53,6 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 app.set('views', path.join(__dirname, 'build'));
 app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
-
-// Site favicon.
-app.use(favicon(__dirname + '/public/favicon.ico'));
 
 app.use(logger('dev', {
     skip: function (req, res) {
