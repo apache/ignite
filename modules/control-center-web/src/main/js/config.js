@@ -34,7 +34,7 @@ System.config({
     "babel": "npm:babel-core@5.8.34",
     "babel-runtime": "npm:babel-runtime@5.8.34",
     "blob": "github:eligrey/Blob.js@master",
-    "bootstrap": "github:twbs/bootstrap@3.3.5",
+    "bootstrap": "github:twbs/bootstrap@3.3.6",
     "bootstrap-carousel": "github:twbs/bootstrap@3.3.6",
     "clean-css": "npm:clean-css@3.4.8",
     "core-js": "npm:core-js@1.2.6",
@@ -122,9 +122,6 @@ System.config({
     "github:mgcrea/angular-motion@0.4.3": {
       "angular": "github:angular/bower-angular@1.4.8",
       "css": "github:systemjs/plugin-css@0.1.19"
-    },
-    "github:twbs/bootstrap@3.3.5": {
-      "jquery": "github:components/jquery@2.1.4"
     },
     "github:twbs/bootstrap@3.3.6": {
       "jquery": "github:components/jquery@2.1.4"
