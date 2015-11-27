@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -56,7 +57,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /** Grid count. */
     private static final int GRID_CNT = 5;
 
-    /** Restart cound. */
+    /** Restart count. */
     private static final int RESTART_CNT = 15;
 
     /** Atomic long name. */
@@ -133,8 +134,6 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testClientAtomicLongCreateCloseFailover() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1732");
-
         testFailoverWithClient(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite ignite) {
                 for (int i = 0; i < 100; i++) {
@@ -150,8 +149,6 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testClientQueueCreateCloseFailover() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1976");
-
         testFailoverWithClient(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite ignite) {
                 for (int i = 0; i < 100; i++) {
@@ -164,6 +161,27 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
                     IgniteQueue q = ignite.queue("q-" + i, 0, colCfg);
 
                     q.close();
+                }
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientSetCreateCloseFailover() throws Exception {
+        testFailoverWithClient(new IgniteInClosure<Ignite>() {
+            @Override public void apply(Ignite ignite) {
+                for (int i = 0; i < 100; i++) {
+                    CollectionConfiguration colCfg = new CollectionConfiguration();
+
+                    colCfg.setBackups(1);
+                    colCfg.setCacheMode(PARTITIONED);
+                    colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
+
+                    IgniteSet set = ignite.set("set-" + i, colCfg);
+
+                    set.close();
                 }
             }
         });
@@ -188,7 +206,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
 
         IgniteInternalFuture<?> fut = restartThread(finished);
 
-        long stop = System.currentTimeMillis() + 30_000;
+        long stop = System.currentTimeMillis() + 60_000;
 
         try {
             int iter = 0;
