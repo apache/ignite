@@ -192,7 +192,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * @param detailMsg Detailed error message.
      * @return Appropriate exception.
      */
-    private IgfsException handleSecondaryFsError(IOException e, String detailMsg) {
+    static IgfsException handleSecondaryFsError(IOException e, String detailMsg) {
         return cast(detailMsg, e);
     }
 

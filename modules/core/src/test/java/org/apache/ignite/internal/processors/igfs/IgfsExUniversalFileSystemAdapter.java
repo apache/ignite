@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
+import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 
@@ -28,7 +29,6 @@ import org.apache.ignite.igfs.IgfsPath;
  * Universal adapter over {@link IgfsEx} filesystem.
  */
 public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdapter {
-
     /** The wrapped igfs. */
     private final IgfsEx igfsEx;
 
@@ -62,25 +62,26 @@ public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdap
 
     /** {@inheritDoc} */
     @Override public Map<String, String> properties(String path) {
-        return igfsEx.info(new IgfsPath(path)).properties();
+        IgfsFile file = igfsEx.info(new IgfsPath(path));
+
+        if (file == null)
+            return null;
+
+        return file.properties();
     }
 
     /** {@inheritDoc} */
     @Override public boolean delete(String path, boolean recursive) throws IOException {
         IgfsPath igfsPath = new IgfsPath(path);
 
-        boolean del = igfsEx.delete(igfsPath, recursive);
-
-        return del;
+        return igfsEx.delete(igfsPath, recursive);
     }
 
     /** {@inheritDoc} */
     @Override public InputStream openInputStream(String path) throws IOException {
         IgfsPath igfsPath = new IgfsPath(path);
 
-        IgfsInputStreamAdapter adapter = igfsEx.open(igfsPath);
-
-        return adapter;
+        return igfsEx.open(igfsPath);
     }
 
     /** {@inheritDoc} */
