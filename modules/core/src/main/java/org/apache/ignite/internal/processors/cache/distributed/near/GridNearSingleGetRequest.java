@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -58,7 +57,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
     public static final int NEED_ENTRY_INFO_FLAG_MASK = 0x10;
 
     /** Future ID. */
-    private IgniteUuid futId;
+    private long futId;
 
     /** */
     private KeyCacheObject key;
@@ -102,7 +101,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
      */
     public GridNearSingleGetRequest(
         int cacheId,
-        IgniteUuid futId,
+        long futId,
         KeyCacheObject key,
         boolean readThrough,
         @NotNull AffinityTopologyVersion topVer,
@@ -114,7 +113,6 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
         boolean needVer,
         boolean addDepInfo
     ) {
-        assert futId != null;
         assert key != null;
 
         this.cacheId = cacheId;
@@ -149,7 +147,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
     /**
      * @return Future ID.
      */
-    public IgniteUuid futureId() {
+    public long futureId() {
         return futId;
     }
 
@@ -268,7 +266,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 5:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -340,7 +338,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();

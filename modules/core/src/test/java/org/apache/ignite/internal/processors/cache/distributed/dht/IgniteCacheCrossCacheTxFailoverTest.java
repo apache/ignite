@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -390,6 +391,11 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
 
             ignite0.destroyCache(CACHE1);
             ignite0.destroyCache(CACHE2);
+
+            AffinityTopologyVersion topVer = ignite0.context().cache().context().exchange().lastTopologyFuture().get();
+
+            for (Ignite ignite : G.allGrids())
+                ((IgniteKernal)ignite).context().cache().context().exchange().affinityReadyFuture(topVer).get();
 
             awaitPartitionMapExchange();
         }

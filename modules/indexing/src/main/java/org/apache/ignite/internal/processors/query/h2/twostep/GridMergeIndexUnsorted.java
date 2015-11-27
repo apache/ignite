@@ -47,6 +47,20 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
         super(tbl, name, IndexType.createScan(false), IndexColumn.wrap(tbl.getColumns()));
     }
 
+    /**
+     * @return Dummy index instance.
+     */
+    public static GridMergeIndexUnsorted createDummy() {
+        return new GridMergeIndexUnsorted();
+    }
+
+    /**
+     *
+     */
+    private GridMergeIndexUnsorted() {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override protected void addPage0(GridResultPage page) {
         assert page.rowsInPage() > 0 || page.isLast() || page.isFail();

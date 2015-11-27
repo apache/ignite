@@ -1,42 +1,18 @@
-Apache Ignite Flume Streamer Module
-------------------------
+Apache Ignite Flume Sink Module
+-------------------------------
 
-Apache Ignite Flume Streamer module provides streaming from Flume to Ignite cache.
+IgniteSink is a Flume sink that extracts Events from an associated Flume channel and injects into an Ignite cache.
+Flume 1.6.0 is supported.
 
-To enable Flume Streamer module when starting a standalone node, move 'optional/ignite-Flume' folder to
-'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
-be added to classpath in this case.
-
-Importing Ignite Flume Streamer Module In Maven Project
--------------------------------------
-
-If you are using Maven to manage dependencies of your project, you can add JCL module
-dependency like this (replace '${ignite.version}' with actual Ignite version you are
-interested in):
-
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                        http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    ...
-    <dependencies>
-        ...
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-Flume</artifactId>
-            <version>${ignite.version}</version>
-        </dependency>
-        ...
-    </dependencies>
-    ...
-</project>
-
+IgniteSink, which can be found in 'optional/ignite-flume', and its dependencies have to be included in the agent's classpath,
+as described in the following subsection, before starting the Flume agent.
 
 ## Setting up and running
 
 1. Create a transformer by implementing EventTransformer interface.
-2. Build it and copy to ${FLUME_HOME}/plugins.d/ignite-sink/lib.
-3. Copy other Ignite-related jar files to ${FLUME_HOME}/plugins.d/ignite-sink/libext to have them as shown below.
+2. Create 'ignite' directory inside plugins.d directory which is located in ${FLUME_HOME}. If the plugins.d directory is not there, create it.
+3. Build it and copy to ${FLUME_HOME}/plugins.d/ignite-sink/lib.
+4. Copy other Ignite-related jar files from Apache Ignite distribution to ${FLUME_HOME}/plugins.d/ignite-sink/libext to have them as shown below.
 
 ```
 plugins.d/
@@ -46,7 +22,7 @@ plugins.d/
     `-- libext
         |-- cache-api-1.0.0.jar
         |-- ignite-core-x.x.x.jar
-        |-- ignite-flume-x.x.x.jar
+        |-- ignite-flume-x.x.x.jar <-- IgniteSink
         |-- ignite-spring-x.x.x.jar
         |-- spring-aop-4.1.0.RELEASE.jar
         |-- spring-beans-4.1.0.RELEASE.jar

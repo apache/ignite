@@ -196,8 +196,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public long sizeLong(CachePeekMode... peekModes) throws CacheException {
+        return compute.call(new SizeLongTask(cacheName, isAsync, peekModes, false));
+    }
+
+    /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
         return compute.call(new SizeTask(cacheName, isAsync, peekModes, true));
+    }
+
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(CachePeekMode... peekModes) {
+        return compute.call(new SizeLongTask(cacheName, isAsync, peekModes, true));
     }
 
     /** {@inheritDoc} */
@@ -643,6 +653,34 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
             return loc ? cache().localSize(peekModes) : cache().size(peekModes);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SizeLongTask extends CacheTaskAdapter<Void, Void, Long> {
+        /** Peek modes. */
+        private final CachePeekMode[] peekModes;
+
+        /** Local. */
+        private final boolean loc;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param peekModes Peek modes.
+         * @param loc Local.
+         */
+        public SizeLongTask(String cacheName, boolean async, CachePeekMode[] peekModes, boolean loc) {
+            super(cacheName, async);
+            this.loc = loc;
+            this.peekModes = peekModes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Long call() throws Exception {
+            return loc ? cache().localSizeLong(peekModes) : cache().sizeLong(peekModes);
         }
     }
 

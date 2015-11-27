@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.portable;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
@@ -68,6 +69,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_AR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_HASH_MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_LINKED_QUEUE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_SKIP_LIST_SET;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
@@ -875,6 +877,16 @@ public class PortableUtils {
                 );
             }
 
+            // Check enum flag.
+            if (oldMeta.isEnum() != newMeta.isEnum()) {
+                if (oldMeta.isEnum())
+                    throw new BinaryObjectException("Binary type already registered as enum: " +
+                        newMeta.typeName());
+                else
+                    throw new BinaryObjectException("Binary type already registered as non-enum: " +
+                        newMeta.typeName());
+            }
+
             // Check and merge fields.
             boolean changed = false;
 
@@ -906,7 +918,7 @@ public class PortableUtils {
 
             // Return either old meta if no changes detected, or new merged meta.
             return changed ? new BinaryMetadata(oldMeta.typeId(), oldMeta.typeName(), mergedFields,
-                oldMeta.affinityKeyFieldName(), mergedSchemas) : oldMeta;
+                oldMeta.affinityKeyFieldName(), mergedSchemas, oldMeta.isEnum()) : oldMeta;
         }
     }
 
@@ -1312,6 +1324,37 @@ public class PortableUtils {
     }
 
     /**
+     * Read plain type.
+     *
+     * @param in Input stream.
+     * @return Plain type.
+     */
+    private static EnumType doReadEnumType(PortableInputStream in) {
+        int typeId = in.readInt();
+
+        if (typeId != UNREGISTERED_TYPE_ID)
+            return new EnumType(typeId, null);
+        else {
+            String clsName = doReadClassName(in);
+
+            return new EnumType(UNREGISTERED_TYPE_ID, clsName);
+        }
+    }
+
+    /**
+     * @param in Input stream.
+     * @return Class name.
+     */
+    private static String doReadClassName(PortableInputStream in) {
+        byte flag = in.readByte();
+
+        if (flag != STRING)
+            throw new BinaryObjectException("Failed to read class name [position=" + (in.position() - 1) + ']');
+
+        return doReadString(in);
+    }
+
+    /**
      * @param typeId Type id.
      * @return Value.
      */
@@ -1325,12 +1368,7 @@ public class PortableUtils {
         if (typeId != UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr).describedClass();
         else {
-            byte flag = in.readByte();
-
-            if (flag != STRING)
-                throw new BinaryObjectException("No class definition for typeId: " + typeId);
-
-            String clsName = doReadString(in);
+            String clsName = doReadClassName(in);
 
             try {
                 cls = U.forName(clsName, ldr);
@@ -1344,6 +1382,76 @@ public class PortableUtils {
         }
 
         return cls;
+    }
+
+    /**
+     * Resolve the class.
+     *
+     * @param ctx Portable context.
+     * @param typeId Type ID.
+     * @param clsName Class name.
+     * @param ldr Class loaded.
+     * @return Resovled class.
+     */
+    public static Class resolveClass(PortableContext ctx, int typeId, @Nullable String clsName,
+        @Nullable ClassLoader ldr) {
+        Class cls;
+
+        if (typeId == OBJECT_TYPE_ID)
+            return Object.class;
+
+        if (typeId != UNREGISTERED_TYPE_ID)
+            cls = ctx.descriptorForTypeId(true, typeId, ldr).describedClass();
+        else {
+            try {
+                cls = U.forName(clsName, ldr);
+            }
+            catch (ClassNotFoundException e) {
+                throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
+            }
+
+            // forces registering of class by type id, at least locally
+            ctx.descriptorForClass(cls);
+        }
+
+        return cls;
+    }
+
+    /**
+     * Read portable enum.
+     *
+     * @param in Input stream.
+     * @param ctx Portable context.
+     * @param type Plain type.
+     * @return Enum.
+     */
+    private static BinaryEnumObjectImpl doReadPortableEnum(PortableInputStream in, PortableContext ctx,
+        EnumType type) {
+        return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
+    }
+
+    /**
+     * Read portable enum array.
+     *
+     * @param in Input stream.
+     * @param ctx Portable context.
+     * @return Enum array.
+     */
+    private static Object[] doReadPortableEnumArray(PortableInputStream in, PortableContext ctx) {
+        int len = in.readInt();
+
+        Object[] arr = (Object[]) Array.newInstance(BinaryObject.class, len);
+
+        for (int i = 0; i < len; i++) {
+            byte flag = in.readByte();
+
+            if (flag == NULL)
+                arr[i] = null;
+            else
+                arr[i] = doReadPortableEnum(in, ctx, doReadEnumType(in));
+        }
+
+        return arr;
     }
 
     /**
@@ -1390,13 +1498,13 @@ public class PortableUtils {
      *
      * @return Result.
      */
-    public static Object doReadOptimized(PortableInputStream in, PortableContext ctx) {
+    public static Object doReadOptimized(PortableInputStream in, PortableContext ctx, @Nullable ClassLoader clsLdr) {
         int len = in.readInt();
 
         ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
         try {
-            return ctx.optimizedMarsh().unmarshal(input, null);
+            return ctx.optimizedMarsh().unmarshal(input, clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);
@@ -1470,7 +1578,7 @@ public class PortableUtils {
 
                 int len = length(in, start);
 
-                BinaryObjectEx po;
+                BinaryObjectExImpl po;
 
                 if (detach) {
                     // In detach mode we simply copy object's content.
@@ -1587,16 +1695,18 @@ public class PortableUtils {
                 return doReadPortableObject(in, ctx);
 
             case ENUM:
-                return doReadEnum(in, doReadClass(in, ctx, ldr));
+                return doReadPortableEnum(in, ctx, doReadEnumType(in));
 
             case ENUM_ARR:
-                return doReadEnumArray(in, ctx, ldr, doReadClass(in, ctx, ldr));
+                doReadEnumType(in); // Simply skip this part as we do not need it.
+
+                return doReadPortableEnumArray(in, ctx);
 
             case CLASS:
                 return doReadClass(in, ctx, ldr);
 
             case OPTM_MARSH:
-                return doReadOptimized(in, ctx);
+                return doReadOptimized(in, ctx, ldr);
 
             default:
                 throw new BinaryObjectException("Invalid flag value: " + flag);
@@ -1689,6 +1799,11 @@ public class PortableUtils {
 
                 case CONC_SKIP_LIST_SET:
                     col = new ConcurrentSkipListSet<>();
+
+                    break;
+
+                case CONC_LINKED_QUEUE:
+                    col = new ConcurrentLinkedQueue<>();
 
                     break;
 
@@ -1835,5 +1950,30 @@ public class PortableUtils {
      */
     public static int positionForHandle(PortableInputStream in) {
         return in.position() - 1;
+    }
+
+    /**
+     * Enum type.
+     */
+    private static class EnumType {
+        /** Type ID. */
+        private final int typeId;
+
+        /** Class name. */
+        private final String clsName;
+
+        /**
+         * Constructor.
+         *
+         * @param typeId Type ID.
+         * @param clsName Class name.
+         */
+        public EnumType(int typeId, @Nullable String clsName) {
+            assert typeId != UNREGISTERED_TYPE_ID && clsName == null ||
+                typeId == UNREGISTERED_TYPE_ID && clsName != null;
+
+            this.typeId = typeId;
+            this.clsName = clsName;
+        }
     }
 }

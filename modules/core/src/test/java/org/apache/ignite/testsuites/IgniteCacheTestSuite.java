@@ -32,7 +32,7 @@ import org.apache.ignite.cache.store.StoreResourceInjectionSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreMultitreadedSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreOptimizedMarshallerSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreTest;
-import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStorePortableMarshallerSelfTest;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreBinaryMarshallerSelfTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreMultithreadedSelfTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
@@ -215,7 +215,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheJdbcBlobStoreMultithreadedSelfTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreOptimizedMarshallerSelfTest.class);
-        suite.addTestSuite(CacheJdbcPojoStorePortableMarshallerSelfTest.class);
+        suite.addTestSuite(CacheJdbcPojoStoreBinaryMarshallerSelfTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreMultitreadedSelfTest.class);
         suite.addTestSuite(GridCacheBalancingStoreSelfTest.class);
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);

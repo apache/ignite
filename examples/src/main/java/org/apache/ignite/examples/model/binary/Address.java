@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.binary;
+package org.apache.ignite.examples.model.binary;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
