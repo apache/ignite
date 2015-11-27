@@ -86,10 +86,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     /** Null cache name. */
     private static final String NULL_NAME = U.id8(UUID.randomUUID());
 
-    /** */
-    public static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
-        "yet or cache was already stopped): ";
-
     /** Affinity map. */
     private final ConcurrentMap<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>> affMap = new ConcurrentHashMap8<>();
 
@@ -901,7 +897,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             AffinityInfo aff = affinityCache(cacheName, ctx.discovery().topologyVersionEx());
 
             if (aff == null)
-                throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cacheName);
+                throw new IgniteException("Failed to find cache (cache was not started " +
+                    "yet or cache was already stopped): " + cacheName);
 
             return aff;
         }
