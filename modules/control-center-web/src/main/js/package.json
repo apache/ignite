@@ -40,7 +40,7 @@
     "jade": "~1.11.0",
     "jszip": "^2.5.0",
     "lodash": "3.10.1",
-    "mongoose": "^4.2.6",
+    "mongoose": "^4.2.8",
     "mongoose-deep-populate": "2.0.3",
     "nconf": "^0.8.2",
     "nodemailer": "1.10.0",
@@ -99,6 +99,7 @@
         "format": "global"
       },
       "github:krispo/angular-nvd3@1.0.4": {
+        "main": "dist/angular-nvd3",
         "dependencies": {
           "angular": "^1",
           "nvd3": "npm:nvd3@1.8.1",
