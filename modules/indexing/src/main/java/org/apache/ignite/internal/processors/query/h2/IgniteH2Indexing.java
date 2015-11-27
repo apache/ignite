@@ -49,6 +49,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -255,7 +256,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 set(c);
 
                 // Reset statement cache when new connection is created.
-                stmtCache.get().clear();
+                stmtCache.remove(Thread.currentThread());
             }
 
             return c;
@@ -280,12 +281,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private volatile GridKernalContext ctx;
 
-    /** */
-    private final ThreadLocal<StatementCache> stmtCache = new ThreadLocal<StatementCache>() {
-        @Override protected StatementCache initialValue() {
-            return new StatementCache(PREPARED_STMT_CACHE_SIZE);
-        }
-    };
+    /** Statement cache. */
+    private final ConcurrentHashMap<Thread, StatementCache> stmtCache = new ConcurrentHashMap<>();
 
     /** */
     private final GridBoundedConcurrentLinkedHashMap<T3<String, String, Boolean>, TwoStepCachedQuery> twoStepCache =
@@ -313,7 +310,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private PreparedStatement prepareStatement(Connection c, String sql, boolean useStmtCache) throws SQLException {
         if (useStmtCache) {
-            StatementCache cache = stmtCache.get();
+            Thread curThread = Thread.currentThread();
+
+            StatementCache cache = stmtCache.get(curThread);
+
+            if (cache == null) {
+                StatementCache cache0 = new StatementCache(PREPARED_STMT_CACHE_SIZE);
+
+                cache = stmtCache.putIfAbsent(curThread, cache0);
+
+                if (cache == null)
+                    cache = cache0;
+            }
 
             PreparedStatement stmt = cache.get(sql);
 
