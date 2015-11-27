@@ -289,6 +289,18 @@ public class GridPortableMarshaller {
     }
 
     /**
+     * Creates a reader.
+     *
+     * @param stream Stream.
+     * @return Reader.
+     */
+    public BinaryReaderExImpl reader(PortableInputStream stream) {
+        assert stream != null;
+
+        return new BinaryReaderExImpl(ctx, stream, null);
+    }
+
+    /**
      * Gets writer for the given output stream.
      *
      * @param out Output stream.
