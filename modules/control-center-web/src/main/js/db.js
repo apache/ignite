@@ -453,6 +453,8 @@ ClusterSchema.plugin(deepPopulate, {
 // Define Cluster model.
 exports.Cluster = mongoose.model('Cluster', ClusterSchema);
 
+exports.ClusterDefaultPopulate = '';
+
 // Define Notebook schema.
 var NotebookSchema = new Schema({
     space: {type: ObjectId, ref: 'Space'},
@@ -491,15 +493,6 @@ var DatabasePresetSchema = new Schema({
 // Define Database preset model.
 exports.DatabasePreset = mongoose.model('DatabasePreset', DatabasePresetSchema);
 
-config.findIgniteModules()
-    .filter(function(path) { return path.match(/.+\/db\.js$/); })
-    .forEach(function(db) {
-        var moduleExports = require(db)(mongoose);
-
-        for (var name in moduleExports)
-            exports[name] = moduleExports[name];
-    });
-
 exports.upsert = function (model, data, cb) {
     if (data._id) {
         var id = data._id;
@@ -521,5 +514,14 @@ exports.processed = function(err, res) {
 
     return true;
 };
+
+config.findIgniteModules()
+    .filter(function(path) { return path.match(/.+\/db\.js$/); })
+    .forEach(function(db) {
+        var moduleExports = require(db)(mongoose, exports);
+
+        for (var name in moduleExports)
+            exports[name] = moduleExports[name];
+    });
 
 exports.mongoose = mongoose;

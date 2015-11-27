@@ -1831,6 +1831,38 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
     return res;
 };
 
+$generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
+    $generatorJava.clusterGeneral(cluster, clientNearCfg, res);
+
+    $generatorJava.clusterAtomics(cluster, res);
+
+    $generatorJava.clusterCommunication(cluster, res);
+
+    $generatorJava.clusterConnector(cluster, res);
+
+    $generatorJava.clusterDeployment(cluster, res);
+
+    $generatorJava.clusterEvents(cluster, res);
+
+    $generatorJava.clusterMarshaller(cluster, res);
+
+    $generatorJava.clusterMetrics(cluster, res);
+
+    $generatorJava.clusterSwap(cluster, res);
+
+    $generatorJava.clusterTime(cluster, res);
+
+    $generatorJava.clusterPools(cluster, res);
+
+    $generatorJava.clusterTransactions(cluster, res);
+
+    $generatorJava.clusterCaches(cluster.caches, cluster.igfss, res);
+
+    $generatorJava.clusterSsl(cluster, res);
+
+    return $generatorJava.igfss(cluster.igfss, 'cfg', res);
+};
+
 /**
  * Function to generate java code for cluster configuration.
  *
@@ -1843,7 +1875,14 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
     var res = $generatorCommon.builder();
 
     if (cluster) {
+        var resCfg = $generatorJava.clusterConfiguration(cluster, clientNearCfg, $generatorCommon.builder(1));
+
         if (javaClass) {
+            if (clientMode)
+                res.importClass('org.apache.ignite.Ignite');
+
+            res.importClass('org.apache.ignite.Ignition');
+
             res.line('/**');
             res.line(' * ' + $generatorCommon.mainComment());
             res.line(' */');
@@ -1857,18 +1896,7 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
             res.startBlock('public static IgniteConfiguration createConfiguration() throws Exception {');
         }
 
-        var haveDS = _.findIndex(cluster.caches, function(cache) {
-            if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
-                var factory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
-
-                if (factory && factory.dialect)
-                    return true;
-            }
-
-            return false;
-        }) >= 0;
-
-        if (haveDS || cluster.sslEnabled) {
+        if ($generatorCommon.loadOfPropertiesNeeded(cluster, res)) {
             $generatorJava.declareVariableCustom(res, 'res', 'java.net.URL', 'IgniteConfiguration.class.getResource("/secret.properties")');
 
             $generatorJava.declareVariableCustom(res, 'propsFile', 'java.io.File', 'new File(res.toURI())');
@@ -1884,41 +1912,10 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
             res.needEmptyLine = true;
         }
 
-        $generatorJava.clusterGeneral(cluster, clientNearCfg, res);
-
-        $generatorJava.clusterAtomics(cluster, res);
-
-        $generatorJava.clusterCommunication(cluster, res);
-
-        $generatorJava.clusterConnector(cluster, res);
-
-        $generatorJava.clusterDeployment(cluster, res);
-
-        $generatorJava.clusterEvents(cluster, res);
-
-        $generatorJava.clusterMarshaller(cluster, res);
-
-        $generatorJava.clusterMetrics(cluster, res);
-
-        $generatorJava.clusterSwap(cluster, res);
-
-        $generatorJava.clusterTime(cluster, res);
-
-        $generatorJava.clusterPools(cluster, res);
-
-        $generatorJava.clusterTransactions(cluster, res);
-
-        $generatorJava.clusterCaches(cluster.caches, cluster.igfss, res);
-
-        $generatorJava.clusterSsl(cluster, res);
-
-        $generatorJava.igfss(cluster.igfss, 'cfg', res);
+        resCfg.forEach(res.line);
 
         if (javaClass) {
-            if (clientMode)
-                res.importClass('org.apache.ignite.Ignite');
-
-            res.importClass('org.apache.ignite.Ignition');
+            res.needEmptyLine = true;
 
             res.line('return cfg;');
             res.endBlock('}');

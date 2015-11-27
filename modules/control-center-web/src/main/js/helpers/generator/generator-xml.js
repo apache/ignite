@@ -1402,6 +1402,44 @@ $generatorXml.generateDataSources = function (datasources, res) {
     return res;
 };
 
+$generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
+    if (clientNearCfg) {
+        res.line('<property name="clientMode" value="true" />');
+
+        res.line();
+    }
+
+    $generatorXml.clusterGeneral(cluster, res);
+
+    $generatorXml.clusterAtomics(cluster, res);
+
+    $generatorXml.clusterCommunication(cluster, res);
+
+    $generatorXml.clusterConnector(cluster, res);
+
+    $generatorXml.clusterDeployment(cluster, res);
+
+    $generatorXml.clusterEvents(cluster, res);
+
+    $generatorXml.clusterMarshaller(cluster, res);
+
+    $generatorXml.clusterMetrics(cluster, res);
+
+    $generatorXml.clusterSwap(cluster, res);
+
+    $generatorXml.clusterTime(cluster, res);
+
+    $generatorXml.clusterPools(cluster, res);
+
+    $generatorXml.clusterTransactions(cluster, res);
+
+    $generatorXml.clusterCaches(cluster.caches, cluster.igfss, res);
+
+    $generatorXml.clusterSsl(cluster, res);
+
+    return $generatorXml.igfss(cluster.igfss, res);
+};
+
 $generatorXml.cluster = function (cluster, clientNearCfg) {
     if (cluster) {
         var res = $generatorCommon.builder(1);
@@ -1425,41 +1463,7 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
         // Generate Ignite Configuration.
         res.startBlock('<bean class="org.apache.ignite.configuration.IgniteConfiguration">');
 
-        if (clientNearCfg) {
-            res.line('<property name="clientMode" value="true" />');
-
-            res.line();
-        }
-
-        $generatorXml.clusterGeneral(cluster, res);
-
-        $generatorXml.clusterAtomics(cluster, res);
-
-        $generatorXml.clusterCommunication(cluster, res);
-
-        $generatorXml.clusterConnector(cluster, res);
-
-        $generatorXml.clusterDeployment(cluster, res);
-
-        $generatorXml.clusterEvents(cluster, res);
-
-        $generatorXml.clusterMarshaller(cluster, res);
-
-        $generatorXml.clusterMetrics(cluster, res);
-
-        $generatorXml.clusterSwap(cluster, res);
-
-        $generatorXml.clusterTime(cluster, res);
-
-        $generatorXml.clusterPools(cluster, res);
-
-        $generatorXml.clusterTransactions(cluster, res);
-
-        $generatorXml.clusterCaches(cluster.caches, cluster.igfss, res);
-
-        $generatorXml.clusterSsl(cluster, res);
-
-        $generatorXml.igfss(cluster.igfss, res);
+        $generatorXml.clusterConfiguration(cluster, clientNearCfg, res);
 
         res.endBlock('</bean>');
 
@@ -1477,7 +1481,7 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
         xml += '                           http://www.springframework.org/schema/util/spring-util.xsd">\n';
 
         // 2. Add external property file
-        if (res.datasources.length > 0 || cluster.sslEnabled) {
+        if ($generatorCommon.loadOfPropertiesNeeded(cluster, res)) {
             xml += '    <!-- Load external properties file. -->\n';
             xml += '    <bean id="placeholderConfig" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">\n';
             xml += '        <property name="location" value="classpath:secret.properties"/>\n';
