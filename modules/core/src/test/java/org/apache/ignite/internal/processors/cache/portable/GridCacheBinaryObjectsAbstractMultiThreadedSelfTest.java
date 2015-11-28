@@ -40,6 +40,9 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.LongAdder8;
 
@@ -50,6 +53,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  */
 public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
     private static final int THREAD_CNT = 64;
 
     /** */
@@ -58,6 +64,8 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
