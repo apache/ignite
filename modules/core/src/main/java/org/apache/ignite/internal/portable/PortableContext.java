@@ -402,14 +402,14 @@ public class PortableContext implements Externalizable {
      * @return Class descriptor.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public PortableClassDescriptor descriptorForClass(Class<?> cls)
+    public PortableClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize)
         throws BinaryObjectException {
         assert cls != null;
 
         PortableClassDescriptor desc = descByCls.get(cls);
 
         if (desc == null || !desc.registered())
-            desc = registerClassDescriptor(cls);
+            desc = registerClassDescriptor(cls, deserialize);
 
         return desc;
     }
@@ -420,7 +420,12 @@ public class PortableContext implements Externalizable {
      * @param ldr Class loader.
      * @return Class descriptor.
      */
-    public PortableClassDescriptor descriptorForTypeId(boolean userType, int typeId, ClassLoader ldr) {
+    public PortableClassDescriptor descriptorForTypeId(
+        boolean userType,
+        int typeId,
+        ClassLoader ldr,
+        boolean deserialize
+    ) {
         assert typeId != GridPortableMarshaller.UNREGISTERED_TYPE_ID;
 
         //TODO: As a workaround for IGNITE-1358 we always check the predefined map before without checking 'userType'
@@ -450,21 +455,21 @@ public class PortableContext implements Externalizable {
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(dfltLdr) && (desc = descriptorForTypeId(true, typeId, dfltLdr)) != null)
+            if (userType && !ldr.equals(dfltLdr) && (desc = descriptorForTypeId(true, typeId, dfltLdr, deserialize)) != null)
                 return desc;
 
             throw new BinaryInvalidTypeException(e);
         }
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(dfltLdr) && (desc = descriptorForTypeId(true, typeId, dfltLdr)) != null)
+            if (userType && !ldr.equals(dfltLdr) && (desc = descriptorForTypeId(true, typeId, dfltLdr, deserialize)) != null)
                 return desc;
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
         }
 
         if (desc == null) {
-            desc = registerClassDescriptor(cls);
+            desc = registerClassDescriptor(cls, deserialize);
 
             assert desc.typeId() == typeId;
         }
@@ -478,7 +483,7 @@ public class PortableContext implements Externalizable {
      * @param cls Class.
      * @return Class descriptor.
      */
-    private PortableClassDescriptor registerClassDescriptor(Class<?> cls) {
+    private PortableClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize) {
         PortableClassDescriptor desc;
 
         String clsName = cls.getName();
@@ -503,7 +508,7 @@ public class PortableContext implements Externalizable {
                 desc = old;
         }
         else
-            desc = registerUserClassDescriptor(cls);
+            desc = registerUserClassDescriptor(cls, deserialize);
 
         return desc;
     }
@@ -514,7 +519,7 @@ public class PortableContext implements Externalizable {
      * @param cls Class.
      * @return Class descriptor.
      */
-    private PortableClassDescriptor registerUserClassDescriptor(Class<?> cls) {
+    private PortableClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {
         boolean registered;
 
         String typeName = typeName(cls.getName());
@@ -545,10 +550,12 @@ public class PortableContext implements Externalizable {
             false /* predefined */
         );
 
-        Collection<PortableSchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
+        if (!deserialize) {
+            Collection<PortableSchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
-        metaHnd.addMeta(typeId, 
-            new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas, desc.isEnum()).wrap(this));
+            metaHnd.addMeta(typeId,
+                new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas, desc.isEnum()).wrap(this));
+        }
 
         // perform put() instead of putIfAbsent() because "registered" flag might have been changed or class loader
         // might have reloaded described class.
