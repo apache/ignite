@@ -2105,7 +2105,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             if (id == GridPortableMarshaller.UNREGISTERED_TYPE_ID)
                 continue;
 
-            PortableClassDescriptor desc = pCtx.descriptorForTypeId(false, entry.getValue(), null);
+            PortableClassDescriptor desc = pCtx.descriptorForTypeId(false, entry.getValue(), null, false);
 
             assertEquals(desc.typeId(), pCtx.typeId(desc.describedClass().getName()));
             assertEquals(desc.typeId(), pCtx.typeId(pCtx.typeName(desc.describedClass().getName())));
