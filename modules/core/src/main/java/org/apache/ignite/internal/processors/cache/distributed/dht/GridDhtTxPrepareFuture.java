@@ -80,8 +80,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
@@ -1187,7 +1185,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         assert req.transactionNodes() != null;
 
                         try {
-                            cctx.io().send(nearMapping.node(), req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                            cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
                         }
                         catch (ClusterTopologyCheckedException e) {
                             fut.onNodeLeft(e);
