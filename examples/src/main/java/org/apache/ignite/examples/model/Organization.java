@@ -38,6 +38,13 @@ public class Organization implements Serializable {
     public String name;
 
     /**
+     * Default empty constructor.
+     */
+    public Organization() {
+        // No-op.
+    }
+
+    /**
      * Create organization.
      *
      * @param name Organization name.

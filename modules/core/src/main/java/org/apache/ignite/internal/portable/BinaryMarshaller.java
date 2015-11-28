@@ -33,8 +33,6 @@ import sun.misc.Unsafe;
 /**
  * Implementation of {@link org.apache.ignite.marshaller.Marshaller} that lets to serialize and deserialize all objects
  * in the binary format.
- * <p>
- * {@code PortableMarshaller} is tested only on Java HotSpot VM on other VMs it could yield unexpected results.
  */
 public class BinaryMarshaller extends AbstractMarshaller {
     /** */

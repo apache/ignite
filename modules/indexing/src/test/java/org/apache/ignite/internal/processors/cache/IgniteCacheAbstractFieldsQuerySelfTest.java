@@ -270,7 +270,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     fields = meta.fields("Organization");
 
                     assert fields != null;
-                    assert fields.size() == 4;
+                    assertEquals("Fields: " + fields, 5, fields.size());
                     assert String.class.getName().equals(fields.get("_KEY"));
                     assert Organization.class.getName().equals(fields.get("_VAL"));
                     assert int.class.getName().equals(fields.get("ID"));
@@ -545,7 +545,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         int cnt = 0;
 
         for (List<?> row : res) {
-            assert row.size() == 9;
+            assertEquals(10, row.size());
 
             if (cnt == 0) {
                 assert new AffinityKey<>("p1", "o1").equals(row.get(0));
