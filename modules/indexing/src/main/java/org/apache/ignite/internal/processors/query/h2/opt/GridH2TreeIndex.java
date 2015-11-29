@@ -679,189 +679,16 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
-        final GridH2QueryContext qctx = GridH2QueryContext.get();
+        GridH2QueryContext qctx = GridH2QueryContext.get();
 
         if (qctx == null || !qctx.distributedJoins())
             return null;
 
-        final int affColId = affinityColumn();
-        final boolean unicast = filter.getMasks()[affColId] == IndexCondition.EQUALITY;
-        final GridCacheContext<?,?> cctx = getTable().rowDescriptor().context();
+        int affColId = affinityColumn();
+        boolean unicast = filter.getMasks()[affColId] == IndexCondition.EQUALITY;
+        GridCacheContext<?,?> cctx = getTable().rowDescriptor().context();
 
-        final int batchLookupId = qctx.nextBatchLookupId();
-
-        return new IndexLookupBatch() {
-            /** */
-            Map<ClusterNode, RangeStream> rangeStreams = new HashMap<>();
-
-            /** */
-            Collection<ClusterNode> broadcastNodes = null;
-
-            /** */
-            final List<Future<Cursor>> res = new ArrayList<>();
-
-            /** */
-            boolean batchFull;
-
-            /** */
-            boolean findCalled;
-
-            private Object getAffinityKey(SearchRow firstRow, SearchRow lastRow) {
-                if (firstRow == null || lastRow == null)
-                    return null;
-
-                Value affKeyFirst = firstRow.getValue(affColId);
-                Value affKeyLast = lastRow.getValue(affColId);
-
-                if (affKeyFirst != null && equal(affKeyFirst, affKeyLast))
-                    return affKeyFirst == ValueNull.INSTANCE ? EXPLICIT_NULL : affKeyFirst.getObject();
-
-                if (affColId == KEY_COL)
-                    return null;
-
-                // Try to extract affinity key from primary key.
-                Value pkFirst = firstRow.getValue(KEY_COL);
-                Value pkLast = lastRow.getValue(KEY_COL);
-
-                if (pkFirst == ValueNull.INSTANCE || pkLast == ValueNull.INSTANCE)
-                    return EXPLICIT_NULL;
-
-                if (pkFirst == null || pkLast == null || !equal(pkFirst, pkLast))
-                    return null;
-
-                Object pkAffKeyFirst;
-                Object pkAffKeyLast;
-
-                try {
-                    GridKernalContext ctx = kernalContext();
-                    pkAffKeyFirst = ctx.affinity().affinityKey(cctx.name(), pkFirst.getObject());
-                    pkAffKeyLast = ctx.affinity().affinityKey(cctx.name(), pkFirst.getObject());
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e);
-                }
-
-                if (pkAffKeyFirst == null || pkAffKeyLast == null)
-                    throw new CacheException("Cache key without affinity key.");
-
-                if (pkAffKeyFirst.equals(pkAffKeyLast))
-                    return pkAffKeyFirst;
-
-                return null;
-            }
-
-            @Override public boolean addSearchRows(SearchRow firstRow, SearchRow lastRow) {
-                if (findCalled) {
-                    // If this is a beginning of the new lookup clear old results.
-                    findCalled = false;
-
-                    res.clear();
-                }
-
-                Object affKey = getAffinityKey(firstRow, lastRow);
-
-                Collection<ClusterNode> nodes;
-                Future<Cursor> fut;
-
-                if (affKey != null) {
-                    // Affinity key is provided.
-                    if (affKey == EXPLICIT_NULL) // Affinity key is explicit null, we will not find anything.
-                        return false;
-
-                    nodes = F.asList(rangeNode(cctx, qctx, affKey));
-                }
-                else {
-                    // Affinity key is not provided or is not the same in upper and lower bounds, we have to broadcast.
-                    if (broadcastNodes == null)
-                        broadcastNodes = broadcastNodes(qctx, cctx);
-
-                    nodes = broadcastNodes;
-                }
-
-                assert !F.isEmpty(nodes);
-
-                final int rangeId = res.size();
-
-                // Create messages.
-                GridH2RowMessage first = toSearchRowMessage(firstRow);
-                GridH2RowMessage last = toSearchRowMessage(lastRow);
-
-                // Range containing upper and lower bounds.
-                GridH2RowRangeBounds rangeBounds = rangeBounds(rangeId, first, last);
-
-                // Add range to every message of every participating node.
-                for (ClusterNode node : nodes) {
-                    assert node != null;
-
-                    RangeStream stream = rangeStreams.get(node);
-
-                    List<GridH2RowRangeBounds> bounds;
-
-                    if (stream == null) {
-                        stream = new RangeStream(qctx, node);
-
-                        stream.req = createRequest(qctx, batchLookupId);
-                        stream.req.bounds(bounds = new ArrayList<>());
-
-                        rangeStreams.put(node, stream);
-                    }
-                    else
-                        bounds = stream.req.bounds();
-
-                    bounds.add(rangeBounds);
-
-                    // If at least one node will have a full batch then we are ok.
-                    if (bounds.size() >= qctx.pageSize())
-                        batchFull = true;
-                }
-
-                fut = new DoneFuture<>(nodes.size() == 1 ?
-                    new SimpleCursor(rangeId, nodes, rangeStreams) :
-                    new MergeCursor(rangeId, nodes, rangeStreams));
-
-                res.add(fut);
-
-                return true;
-            }
-
-            @Override public boolean isBatchFull() {
-                return batchFull;
-            }
-
-            private void startStreams() {
-                if (rangeStreams.isEmpty())
-                    return;
-
-                qctx.putStreams(batchLookupId, rangeStreams);
-
-                // Start streaming.
-                for (RangeStream stream : rangeStreams.values())
-                    stream.start();
-
-                rangeStreams = new HashMap<>();
-            }
-
-            @Override public List<Future<Cursor>> find() {
-                batchFull = false;
-                findCalled = true;
-
-                startStreams();
-
-                return res;
-            }
-
-            @Override public void reset() {
-                rangeStreams.clear();
-                res.clear();
-                broadcastNodes = null;
-                batchFull = false;
-                findCalled = false;
-            }
-
-            @Override public String getPlanSQL() {
-                return unicast ? "unicast" : "broadcast";
-            }
-        };
+        return new DistributedLookupBatch(cctx, unicast, affColId);
     }
 
     /**
@@ -893,13 +720,13 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @param cctx Cache context.
      * @return Collection of nodes for broadcasting.
      */
-    private Collection<ClusterNode> broadcastNodes(GridH2QueryContext qctx, GridCacheContext<?,?> cctx) {
+    private List<ClusterNode> broadcastNodes(GridH2QueryContext qctx, GridCacheContext<?,?> cctx) {
         Map<UUID,int[]> partMap = qctx.partitionsMap();
 
-        Collection<ClusterNode> res;
+        List<ClusterNode> res;
 
         if (partMap == null)
-            res = CU.affinityNodes(cctx, qctx.topologyVersion());
+            res = new ArrayList<>(CU.affinityNodes(cctx, qctx.topologyVersion()));
         else {
             res = new ArrayList<>(partMap.size());
 
@@ -1225,6 +1052,227 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         /** {@inheritDoc} */
         @Override public boolean previous() {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * Index lookup batch.
+     */
+    private class DistributedLookupBatch implements IndexLookupBatch {
+        /** */
+        final GridCacheContext<?,?> cctx;
+
+        /** */
+        final boolean unicast;
+
+        /** */
+        final int affColId;
+
+        /** */
+        GridH2QueryContext qctx;
+
+        /** */
+        int batchLookupId;
+
+        /** */
+        Map<ClusterNode, RangeStream> rangeStreams;
+
+        /** */
+        List<ClusterNode> broadcastNodes;
+
+        /** */
+        final List<Future<Cursor>> res = new ArrayList<>();
+
+        /** */
+        boolean batchFull;
+
+        /** */
+        boolean findCalled;
+
+        /**
+         * @param cctx Cache Cache context.
+         * @param unicast Unicast or broadcast query.
+         * @param affColId Affinity column ID.
+         */
+        private DistributedLookupBatch(GridCacheContext<?,?> cctx, boolean unicast, int affColId) {
+            this.cctx = cctx;
+            this.unicast = unicast;
+            this.affColId = affColId;
+        }
+
+        /**
+         * @param firstRow First row.
+         * @param lastRow Last row.
+         * @return Affinity key or {@code null}.
+         */
+        private Object getAffinityKey(SearchRow firstRow, SearchRow lastRow) {
+            if (firstRow == null || lastRow == null)
+                return null;
+
+            Value affKeyFirst = firstRow.getValue(affColId);
+            Value affKeyLast = lastRow.getValue(affColId);
+
+            if (affKeyFirst != null && equal(affKeyFirst, affKeyLast))
+                return affKeyFirst == ValueNull.INSTANCE ? EXPLICIT_NULL : affKeyFirst.getObject();
+
+            if (affColId == KEY_COL)
+                return null;
+
+            // Try to extract affinity key from primary key.
+            Value pkFirst = firstRow.getValue(KEY_COL);
+            Value pkLast = lastRow.getValue(KEY_COL);
+
+            if (pkFirst == ValueNull.INSTANCE || pkLast == ValueNull.INSTANCE)
+                return EXPLICIT_NULL;
+
+            if (pkFirst == null || pkLast == null || !equal(pkFirst, pkLast))
+                return null;
+
+            Object pkAffKeyFirst;
+            Object pkAffKeyLast;
+
+            GridKernalContext ctx = kernalContext();
+
+            try {
+                pkAffKeyFirst = ctx.affinity().affinityKey(cctx.name(), pkFirst.getObject());
+                pkAffKeyLast = ctx.affinity().affinityKey(cctx.name(), pkFirst.getObject());
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException(e);
+            }
+
+            if (pkAffKeyFirst == null || pkAffKeyLast == null)
+                throw new CacheException("Cache key without affinity key.");
+
+            if (pkAffKeyFirst.equals(pkAffKeyLast))
+                return pkAffKeyFirst;
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean addSearchRows(SearchRow firstRow, SearchRow lastRow) {
+            if (findCalled) {
+                // If this is a beginning of the new lookup clear old results.
+                findCalled = false;
+
+                res.clear();
+            }
+
+            Object affKey = getAffinityKey(firstRow, lastRow);
+
+            List<ClusterNode> nodes;
+            Future<Cursor> fut;
+
+            if (affKey != null) {
+                // Affinity key is provided.
+                if (affKey == EXPLICIT_NULL) // Affinity key is explicit null, we will not find anything.
+                    return false;
+
+                nodes = F.asList(rangeNode(cctx, qctx, affKey));
+            }
+            else {
+                // Affinity key is not provided or is not the same in upper and lower bounds, we have to broadcast.
+                if (broadcastNodes == null)
+                    broadcastNodes = broadcastNodes(qctx, cctx);
+
+                nodes = broadcastNodes;
+            }
+
+            assert !F.isEmpty(nodes) : nodes;
+
+            final int rangeId = res.size();
+
+            // Create messages.
+            GridH2RowMessage first = toSearchRowMessage(firstRow);
+            GridH2RowMessage last = toSearchRowMessage(lastRow);
+
+            // Range containing upper and lower bounds.
+            GridH2RowRangeBounds rangeBounds = rangeBounds(rangeId, first, last);
+
+            // Add range to every message of every participating node.
+            for (int i = 0; i < nodes.size(); i++) {
+                ClusterNode node = nodes.get(i);
+                assert node != null;
+
+                RangeStream stream = rangeStreams.get(node);
+
+                List<GridH2RowRangeBounds> bounds;
+
+                if (stream == null) {
+                    stream = new RangeStream(qctx, node);
+
+                    stream.req = createRequest(qctx, batchLookupId);
+                    stream.req.bounds(bounds = new ArrayList<>());
+
+                    rangeStreams.put(node, stream);
+                }
+                else
+                    bounds = stream.req.bounds();
+
+                bounds.add(rangeBounds);
+
+                // If at least one node will have a full batch then we are ok.
+                if (bounds.size() >= qctx.pageSize())
+                    batchFull = true;
+            }
+
+            fut = new DoneFuture<>(nodes.size() == 1 ?
+                new SimpleCursor(rangeId, nodes, rangeStreams) :
+                new MergeCursor(rangeId, nodes, rangeStreams));
+
+            res.add(fut);
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isBatchFull() {
+            return batchFull;
+        }
+
+        private void startStreams() {
+            if (rangeStreams.isEmpty())
+                return;
+
+            qctx.putStreams(batchLookupId, rangeStreams);
+
+            // Start streaming.
+            for (RangeStream stream : rangeStreams.values())
+                stream.start();
+
+            rangeStreams = new HashMap<>();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<Future<Cursor>> find() {
+            batchFull = false;
+            findCalled = true;
+
+            startStreams();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset(boolean beforeQuery) {
+            if (beforeQuery) {
+                qctx = GridH2QueryContext.get();
+                batchLookupId = qctx.nextBatchLookupId();
+                rangeStreams = new HashMap<>();
+            }
+            else {
+                rangeStreams = null;
+                broadcastNodes = null;
+                batchFull = false;
+                findCalled = false;
+                res.clear();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getPlanSQL() {
+            return unicast ? "unicast" : "broadcast";
         }
     }
 
