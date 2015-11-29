@@ -63,6 +63,7 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
+import org.h2.index.IndexCondition;
 import org.h2.index.IndexLookupBatch;
 import org.h2.index.IndexType;
 import org.h2.index.SingleRowCursor;
@@ -684,6 +685,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             return null;
 
         final int affColId = affinityColumn();
+        final boolean unicast = filter.getMasks()[affColId] == IndexCondition.EQUALITY;
         final GridCacheContext<?,?> cctx = getTable().rowDescriptor().context();
 
         final int batchLookupId = qctx.nextBatchLookupId();
@@ -857,7 +859,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             }
 
             @Override public String getPlanSQL() {
-                return "ignite";
+                return unicast ? "unicast" : "broadcast";
             }
         };
     }
