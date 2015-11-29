@@ -18,6 +18,8 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -44,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
     /** POJO methods cache. */
-    private volatile Map<String, Map<String, PojoMethodsCache>> pojosMthds = Collections.emptyMap();
+    private volatile Map<String, Map<String, PojoPropertiesCache>> pojosProps = Collections.emptyMap();
 
     /**
      * Get field value from object for use as query parameter.
@@ -81,23 +83,23 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
     @Nullable private Object extractPojoParameter(@Nullable String cacheName, String typeName, String fldName,
         Object obj) throws CacheException {
         try {
-            Map<String, PojoMethodsCache> cacheMethods = pojosMthds.get(cacheName);
+            Map<String, PojoPropertiesCache> cacheProps = pojosProps.get(cacheName);
 
-            if (cacheMethods == null)
+            if (cacheProps == null)
                 throw new CacheException("Failed to find POJO type metadata for cache: " + U.maskName(cacheName));
 
-            PojoMethodsCache mc = cacheMethods.get(typeName);
+            PojoPropertiesCache ppc = cacheProps.get(typeName);
 
-            if (mc == null)
+            if (ppc == null)
                 throw new CacheException("Failed to find POJO type metadata for type: " + typeName);
 
-            Method getter = mc.getters.get(fldName);
+            ClassProperty prop = ppc.props.get(fldName);
 
-            if (getter == null)
-                throw new CacheLoaderException("Failed to find getter in POJO class [class=" + typeName +
+            if (prop == null)
+                throw new CacheLoaderException("Failed to find property in POJO class [class=" + typeName +
                     ", prop=" + fldName + "]");
 
-            return getter.invoke(obj);
+            return prop.get(obj);
         }
         catch (Exception e) {
             throw new CacheException("Failed to read object of class: " + typeName, e);
@@ -171,26 +173,26 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
         JdbcTypeField[] flds, Map<String, Integer> loadColIdxs, ResultSet rs)
         throws CacheLoaderException {
 
-        Map<String, PojoMethodsCache> cacheMethods = pojosMthds.get(cacheName);
+        Map<String, PojoPropertiesCache> cacheProps = pojosProps.get(cacheName);
 
-        if (cacheMethods == null)
+        if (cacheProps == null)
             throw new CacheLoaderException("Failed to find POJO types metadata for cache: " + U.maskName(cacheName));
 
-        PojoMethodsCache mc = cacheMethods.get(typeName);
+        PojoPropertiesCache ppc = cacheProps.get(typeName);
 
-        if (mc == null)
+        if (ppc == null)
             throw new CacheLoaderException("Failed to find POJO type metadata for type: " + typeName);
 
         try {
-            Object obj = mc.ctor.newInstance();
+            Object obj = ppc.ctor.newInstance();
 
             for (JdbcTypeField fld : flds) {
                 String fldJavaName = fld.getJavaFieldName();
 
-                Method setter = mc.setters.get(fldJavaName);
+                ClassProperty prop = ppc.props.get(fldJavaName);
 
-                if (setter == null)
-                    throw new IllegalStateException("Failed to find setter in POJO class [type=" + typeName +
+                if (prop == null)
+                    throw new IllegalStateException("Failed to find property in POJO class [type=" + typeName +
                         ", prop=" + fldJavaName + "]");
 
                 String fldDbName = fld.getDatabaseFieldName();
@@ -201,7 +203,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                     Object colVal = getColumnValue(rs, colIdx, fld.getJavaFieldType());
 
                     try {
-                        setter.invoke(obj, colVal);
+                        prop.set(obj, colVal);
                     }
                     catch (Exception e) {
                         throw new CacheLoaderException("Failed to set property in POJO class [type=" + typeName +
@@ -298,7 +300,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
      */
     @Override protected void prepareBuilders(@Nullable String cacheName, Collection<JdbcType> types)
         throws CacheException {
-        Map<String, PojoMethodsCache> pojoMethods = U.newHashMap(types.size() * 2);
+        Map<String, PojoPropertiesCache> pojoProps = U.newHashMap(types.size() * 2);
 
         for (JdbcType type : types) {
             String keyTypeName = type.getKeyType();
@@ -306,11 +308,11 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             TypeKind keyKind = kindForName(keyTypeName);
 
             if (keyKind == TypeKind.POJO) {
-                if (pojoMethods.containsKey(keyTypeName))
+                if (pojoProps.containsKey(keyTypeName))
                     throw new CacheException("Found duplicate key type [cache=" + U.maskName(cacheName) +
                         ", keyType=" + keyTypeName + "]");
 
-                pojoMethods.put(keyTypeName, new PojoMethodsCache(keyTypeName, type.getKeyFields()));
+                pojoProps.put(keyTypeName, new PojoPropertiesCache(keyTypeName, type.getKeyFields()));
             }
 
             String valTypeName = type.getValueType();
@@ -318,42 +320,99 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             TypeKind valKind = kindForName(valTypeName);
 
             if (valKind == TypeKind.POJO)
-                pojoMethods.put(valTypeName, new PojoMethodsCache(valTypeName, type.getValueFields()));
+                pojoProps.put(valTypeName, new PojoPropertiesCache(valTypeName, type.getValueFields()));
         }
 
-        if (!pojoMethods.isEmpty()) {
-            Map<String, Map<String, PojoMethodsCache>> newPojosMethods = new HashMap<>(pojosMthds);
+        if (!pojoProps.isEmpty()) {
+            Map<String, Map<String, PojoPropertiesCache>> newPojosProps = new HashMap<>(pojosProps);
 
-            newPojosMethods.put(cacheName, pojoMethods);
+            newPojosProps.put(cacheName, pojoProps);
 
-            pojosMthds = newPojosMethods;
+            pojosProps = newPojosProps;
+        }
+    }
+
+    /**
+     * Description of type property.
+     */
+    private static class ClassProperty {
+        /** */
+        private final Method getter;
+        /** */
+        private final Method setter;
+        /** */
+        private final Field field;
+
+        /**
+         * Property descriptor constructor.
+         *
+         * @param getter Property getter.
+         * @param setter Property setter.
+         * @param field Property field.
+         */
+        private ClassProperty(Method getter, Method setter, Field field) {
+            this.getter = getter;
+            this.setter = setter;
+            this.field = field;
+        }
+
+        /**
+         * Get property value.
+         *
+         * @param obj Object to get property value from.
+         * @return Property value.
+         * @throws IllegalAccessException
+         * @throws InvocationTargetException
+         */
+        private Object get(Object obj) throws IllegalAccessException, InvocationTargetException {
+            if (getter != null)
+                return getter.invoke(obj);
+
+            if (field != null)
+                return field.get(obj);
+
+            throw new IllegalAccessException("Failed to get value from property. Getter and field was not initialized.");
+        }
+
+        /**
+         * Set property value.
+         *
+         * @param obj Object to set property value to.
+         * @param val New property value to set.
+         * @throws IllegalAccessException
+         * @throws InvocationTargetException
+         */
+        private void set(Object obj, Object val) throws IllegalAccessException, InvocationTargetException {
+            if (setter != null)
+                setter.invoke(obj, val);
+            else if (field != null)
+                field.set(obj, val);
+            else
+                throw new IllegalAccessException("Failed to set new value from property.  Setter and field was not initialized.");
         }
     }
 
     /**
      * POJO methods cache.
      */
-    private static class PojoMethodsCache {
+    private static class PojoPropertiesCache {
         /** POJO class. */
         private final Class<?> cls;
 
         /** Constructor for POJO object. */
         private Constructor ctor;
 
-        /** Cached setters for POJO object. */
-        private Map<String, Method> getters;
-
-        /** Cached getters for POJO object. */
-        private Map<String, Method> setters;
+        /** Cached properties for POJO object. */
+        private Map<String, ClassProperty> props;
 
         /**
          * POJO methods cache.
          *
          * @param clsName Class name.
-         * @param fields Fields.
+         * @param jdbcFlds Type fields.
          * @throws CacheException If failed to construct type cache.
          */
-        private PojoMethodsCache(String clsName, JdbcTypeField[] fields) throws CacheException {
+        private PojoPropertiesCache(String clsName, JdbcTypeField[] jdbcFlds) throws CacheException {
             try {
                 cls = Class.forName(clsName);
 
@@ -369,33 +428,35 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                 throw new CacheException("Failed to find default constructor for class: " + clsName, e);
             }
 
-            setters = U.newHashMap(fields.length);
+            props = U.newHashMap(jdbcFlds.length);
 
-            getters = U.newHashMap(fields.length);
+            for (JdbcTypeField jdbcFld : jdbcFlds) {
+                String fldName = jdbcFld.getJavaFieldName();
+                String mthName = capitalFirst(fldName);
 
-            for (JdbcTypeField field : fields) {
-                String prop = capitalFirst(field.getJavaFieldName());
+                Method getter = methodByName(cls, "get" + mthName);
 
-                try {
-                    getters.put(field.getJavaFieldName(), cls.getMethod("get" + prop));
-                }
-                catch (NoSuchMethodException ignored) {
+                if (getter == null)
+                    getter = methodByName(cls, "is" + mthName);
+
+                if (getter == null)
+                    getter = methodByName(cls, fldName);
+
+                Method setter = methodByName(cls, "set" + mthName, jdbcFld.getJavaFieldType());
+
+                if (setter == null)
+                    setter = methodByName(cls, fldName, jdbcFld.getJavaFieldType());
+
+                if (getter != null && setter != null)
+                    props.put(fldName, new ClassProperty(getter, setter, null));
+                else
                     try {
-                        getters.put(field.getJavaFieldName(), cls.getMethod("is" + prop));
+                        props.put(fldName, new ClassProperty(null, null, cls.getDeclaredField(fldName)));
                     }
-                    catch (NoSuchMethodException e) {
-                        throw new CacheException("Failed to find getter in POJO class [class=" + clsName +
-                            ", prop=" + field.getJavaFieldName() + "]", e);
+                    catch (NoSuchFieldException ignored) {
+                        throw new CacheException("Failed to find property in POJO class [class=" + clsName +
+                            ", prop=" + fldName + "]");
                     }
-                }
-
-                try {
-                    setters.put(field.getJavaFieldName(), cls.getMethod("set" + prop, field.getJavaFieldType()));
-                }
-                catch (NoSuchMethodException e) {
-                    throw new CacheException("Failed to find setter in POJO class [class=" + clsName +
-                        ", prop=" + field.getJavaFieldName() + "]", e);
-                }
             }
         }
 
@@ -408,6 +469,23 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
         @Nullable private String capitalFirst(@Nullable String str) {
             return str == null ? null :
                 str.isEmpty() ? "" : Character.toUpperCase(str.charAt(0)) + str.substring(1);
+        }
+
+        /**
+         * Get method by name.
+         *
+         * @param cls Class to take method from.
+         * @param name Method name.
+         * @param paramTypes Method parameters types.
+         * @return Method or {@code null} if method not found.
+         */
+        private Method methodByName(Class<?> cls, String name, Class<?>... paramTypes) {
+            try {
+                return cls.getMethod(name, paramTypes);
+            }
+            catch (NoSuchMethodException ignored) {
+                return null;
+            }
         }
     }
 }
