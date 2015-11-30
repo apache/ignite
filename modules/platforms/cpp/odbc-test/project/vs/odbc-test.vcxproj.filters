@@ -5,6 +5,9 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx;h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="Externals">
+      <UniqueIdentifier>{cc75fc86-c08d-428a-8ae3-f9979e4588ab}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\configuration_test.cpp">
@@ -15,6 +18,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\teamcity_messages.cpp">
       <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc-driver\src\configuration.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc-driver\src\utility.cpp">
+      <Filter>Externals</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
