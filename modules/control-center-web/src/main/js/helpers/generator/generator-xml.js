@@ -603,6 +603,7 @@ $generatorXml.clusterPools = function (cluster, res) {
     $generatorXml.property(res, cluster, 'systemThreadPoolSize');
     $generatorXml.property(res, cluster, 'managementThreadPoolSize');
     $generatorXml.property(res, cluster, 'igfsThreadPoolSize');
+    $generatorXml.property(res, cluster, 'rebalanceThreadPoolSize');
 
     res.needEmptyLine = true;
 
@@ -755,9 +756,10 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
                     _.forEach(metadatas, function (meta) {
                         res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.JdbcType">');
 
+                        $generatorXml.property(res, cache, 'name', 'cacheName');
+
                         $generatorXml.classNameProperty(res, meta, 'keyType');
                         $generatorXml.property(res, meta, 'valueType');
-                        $generatorXml.property(res, meta, 'keepSerialized', null, null, false);
 
                         $generatorXml.metadataStore(meta, res);
 
@@ -1045,7 +1047,6 @@ $generatorXml.metadataStore = function(meta, res) {
 
     $generatorXml.property(res, meta, 'databaseSchema');
     $generatorXml.property(res, meta, 'databaseTable');
-    $generatorXml.property(res, meta, 'keepSerialized');
 
     res.needEmptyLine = true;
 
@@ -1308,6 +1309,7 @@ $generatorXml.igfsGeneral = function(igfs, res) {
         $generatorXml.property(res, igfs, 'name');
         $generatorXml.property(res, igfs, 'dataCacheName');
         $generatorXml.property(res, igfs, 'metaCacheName');
+        $generatorXml.property(res, igfs, 'defaultMode', undefined, "DUAL_ASYNC");
 
         res.needEmptyLine = true;
     }
@@ -1322,7 +1324,6 @@ $generatorXml.igfsMisc = function(igfs, res) {
 
     $generatorXml.property(res, igfs, 'blockSize', undefined, 65536);
     $generatorXml.property(res, igfs, 'streamBufferSize', undefined, 65536);
-    $generatorXml.property(res, igfs, 'defaultMode', undefined, "DUAL_ASYNC");
     $generatorXml.property(res, igfs, 'maxSpaceSize', undefined, 0);
     $generatorXml.property(res, igfs, 'maximumTaskRangeLength', undefined, 0);
     $generatorXml.property(res, igfs, 'managementPort', undefined, 11400);
@@ -1366,11 +1367,17 @@ $generatorXml.generateDataSources = function (datasources, res) {
             res.startBlock('<bean id="' + beanId + '" class="' + item.className + '">');
 
             switch (item.dialect) {
+                case 'Generic':
+                    res.line('<property name="jdbcUrl" value="${' + beanId + '.jdbc.url}" />');
+
+                    break;
+
                 case 'DB2':
                     res.line('<property name="serverName" value="${' + beanId + '.jdbc.server_name}" />');
                     res.line('<property name="portNumber" value="${' + beanId + '.jdbc.port_number}" />');
                     res.line('<property name="databaseName" value="${' + beanId + '.jdbc.database_name}" />');
                     res.line('<property name="driverType" value="${' + beanId + '.jdbc.driver_type}" />');
+
                     break;
 
                 default:
@@ -1393,6 +1400,44 @@ $generatorXml.generateDataSources = function (datasources, res) {
     }
 
     return res;
+};
+
+$generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
+    if (clientNearCfg) {
+        res.line('<property name="clientMode" value="true" />');
+
+        res.line();
+    }
+
+    $generatorXml.clusterGeneral(cluster, res);
+
+    $generatorXml.clusterAtomics(cluster, res);
+
+    $generatorXml.clusterCommunication(cluster, res);
+
+    $generatorXml.clusterConnector(cluster, res);
+
+    $generatorXml.clusterDeployment(cluster, res);
+
+    $generatorXml.clusterEvents(cluster, res);
+
+    $generatorXml.clusterMarshaller(cluster, res);
+
+    $generatorXml.clusterMetrics(cluster, res);
+
+    $generatorXml.clusterSwap(cluster, res);
+
+    $generatorXml.clusterTime(cluster, res);
+
+    $generatorXml.clusterPools(cluster, res);
+
+    $generatorXml.clusterTransactions(cluster, res);
+
+    $generatorXml.clusterCaches(cluster.caches, cluster.igfss, res);
+
+    $generatorXml.clusterSsl(cluster, res);
+
+    return $generatorXml.igfss(cluster.igfss, res);
 };
 
 $generatorXml.cluster = function (cluster, clientNearCfg) {
@@ -1418,41 +1463,7 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
         // Generate Ignite Configuration.
         res.startBlock('<bean class="org.apache.ignite.configuration.IgniteConfiguration">');
 
-        if (clientNearCfg) {
-            res.line('<property name="clientMode" value="true" />');
-
-            res.line();
-        }
-
-        $generatorXml.clusterGeneral(cluster, res);
-
-        $generatorXml.clusterAtomics(cluster, res);
-
-        $generatorXml.clusterCommunication(cluster, res);
-
-        $generatorXml.clusterConnector(cluster, res);
-
-        $generatorXml.clusterDeployment(cluster, res);
-
-        $generatorXml.clusterEvents(cluster, res);
-
-        $generatorXml.clusterMarshaller(cluster, res);
-
-        $generatorXml.clusterMetrics(cluster, res);
-
-        $generatorXml.clusterSwap(cluster, res);
-
-        $generatorXml.clusterTime(cluster, res);
-
-        $generatorXml.clusterPools(cluster, res);
-
-        $generatorXml.clusterTransactions(cluster, res);
-
-        $generatorXml.clusterCaches(cluster.caches, cluster.igfss, res);
-
-        $generatorXml.clusterSsl(cluster, res);
-
-        $generatorXml.igfss(cluster.igfss, res);
+        $generatorXml.clusterConfiguration(cluster, clientNearCfg, res);
 
         res.endBlock('</bean>');
 
@@ -1460,7 +1471,7 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
         // 1. Add header.
         var xml = '<?xml version="1.0" encoding="UTF-8"?>\n\n';
 
-        xml += '<!-- ' + $generatorCommon.mainComment() + ' -->\n';
+        xml += '<!-- ' + $generatorCommon.mainComment() + ' -->\n\n';
         xml += '<beans xmlns="http://www.springframework.org/schema/beans"\n';
         xml += '       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n';
         xml += '       xmlns:util="http://www.springframework.org/schema/util"\n';
@@ -1470,7 +1481,7 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
         xml += '                           http://www.springframework.org/schema/util/spring-util.xsd">\n';
 
         // 2. Add external property file
-        if (res.datasources.length > 0 || cluster.sslEnabled) {
+        if ($generatorCommon.loadOfPropertiesNeeded(cluster, res)) {
             xml += '    <!-- Load external properties file. -->\n';
             xml += '    <bean id="placeholderConfig" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">\n';
             xml += '        <property name="location" value="classpath:secret.properties"/>\n';

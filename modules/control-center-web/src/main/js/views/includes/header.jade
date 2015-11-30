@@ -13,9 +13,6 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-mixin header-item(active, ref, txt)
-    li
-        a(ng-class='{active: isActive("#{active}")}' href='#{ref}') #{txt}
 
 header#header.header
     .viewedUser(ng-show='$root.user.becomeUsed') Currently assuming "
@@ -26,18 +23,18 @@ header#header.header
         h1.navbar-brand
             a(href='/') Apache Ignite Web Console
         .navbar-collapse.collapse(ng-controller='activeLink')
-            ul.nav.navbar-nav(ng-show='$root.user')
+            ul.nav.navbar-nav(ignite-navbar ng-show='$root.user')
                 li
-                    a.dropdown-toggle(ng-class='{active: isActive("/configuration")}' data-toggle='dropdown' bs-dropdown='configurationDropdown' data-placement='bottom-right') Configuration
+                    a.dropdown-toggle(ng-class='{active: isActive("/configuration.*")}' data-toggle='dropdown' bs-dropdown='configurationDropdown' data-placement='bottom-right') Configuration
                         span.caret
-                
+
                 li(ng-controller='notebooks')
                     a.dropdown-toggle(ng-hide='$root.notebooks.length == 0' ng-class='{active: isActive("/sql")}' data-toggle='dropdown' bs-dropdown='notebookDropdown' data-placement='bottom-left') SQL
                         span.caret
                     a(ng-hide='$root.notebooks.length > 0' ng-click='inputNotebookName()') SQL
-            ul.nav.navbar-nav(ignite-navbar='' ng-show='$root.user')
+
                 li(ng-repeat='item in navbar.items')
-                    a(ng-class='{active: isActive(item.href)}' ng-href='{{ item.href }}') {{ item.title }}
+                    a(ng-class='{active: isActive(item.href)}' ng-href='{{::item.href}}') {{::item.title}}
 
             ul.nav.navbar-nav.pull-right
                 li(ng-if='$root.user')

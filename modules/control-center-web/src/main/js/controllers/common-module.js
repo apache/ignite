@@ -17,9 +17,10 @@
 
 var consoleModule = angular.module('ignite-web-console',
     [
-        'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.loading', 'agGrid', 'nvd3', 'dndLists'
+        'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'agGrid', 'nvd3', 'dndLists'
         /* ignite:modules */
         , 'ignite-web-console.navbar'
+        , 'ignite-web-console.configuration.sidebar'
         /* endignite */
         /* ignite:plugins */
         /* endignite */
@@ -234,7 +235,7 @@ consoleModule.service('$common', [
             'void',         'volatile',      'while'
         ];
 
-        var VALID_JAVA_IDENTIFIER = new RegExp('^[a-zA-Z_$][a-zA-Z\d_$]*');
+        var VALID_JAVA_IDENTIFIER = new RegExp('^[a-zA-Z_$][a-zA-Z\\d_$]*$');
 
         function isValidJavaIdentifier(msg, ident, elemId, panels, panelId) {
             if (isEmptyString(ident))
@@ -382,7 +383,7 @@ consoleModule.service('$common', [
             for (nameIx = 0; nameIx < len; nameIx ++) {
                 var s = names[nameIx];
 
-                if (s.length > (nameLength / 2) | 0) {
+                if (s.length > (nameLength / 2 | 0)) {
                     var totalWidth = measureText(s);
 
                     if (totalWidth > widthByName[nameIx]) {
@@ -447,6 +448,50 @@ consoleModule.service('$common', [
         }
 
         /**
+         * Compact any string by max number of pixels.
+         *
+         * @param label String to compact.
+         * @param nameWidth Maximum available width in pixels for simple name.
+         * @returns {*} Compacted string.
+         */
+        function compactLabelByPixels(label, nameWidth) {
+            if (nameWidth <= 0)
+                return label;
+
+            var totalWidth = measureText(label);
+
+            if (totalWidth > nameWidth) {
+                var maxLen = label.length;
+
+                var minLen = Math.min(maxLen, 3);
+
+                var middleLen = (minLen + (maxLen - minLen) / 2 ) | 0;
+
+                var minLenPx = measureText(label.substr(0, minLen) + '...');
+                var maxLenPx = totalWidth;
+
+                while (middleLen != minLen && middleLen != maxLen) {
+                    var middleLenPx = measureText(label.substr(0, middleLen) + '...');
+
+                    if (middleLenPx > nameWidth) {
+                        maxLen = middleLen;
+                        maxLenPx = middleLenPx;
+                    }
+                    else {
+                        minLen = middleLen;
+                        minLenPx = middleLenPx;
+                    }
+
+                    middleLen = (minLen + (maxLen - minLen) / 2 ) | 0;
+                }
+
+                return label.substring(0, middleLen) + '...';
+            }
+
+            return label;
+        }
+
+        /**
          * Calculate available width for text in link to edit element.
          *
          * @param index Showed index of element for calcuraion maximal width in pixel.
@@ -505,7 +550,7 @@ consoleModule.service('$common', [
                     if (!activePanels || activePanels.length < 1)
                         panels.activePanels = [idx];
                     else if (!_.contains(activePanels, idx)) {
-                        var newActivePanels = activePanels.slice();
+                        var newActivePanels = angular.copy(activePanels);
 
                         newActivePanels.push(idx);
 
@@ -532,7 +577,7 @@ consoleModule.service('$common', [
 
             popover = newPopover;
 
-            $timeout(function () { newPopover.$promise.then(newPopover.show); });
+            $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
 
             $timeout(function () { newPopover.hide(); }, 5000);
 
@@ -609,16 +654,14 @@ consoleModule.service('$common', [
         return {
             getModel: getModel,
             joinTip: function (arr) {
-                if (!arr) {
+                if (!arr)
                     return arr;
-                }
 
-                var lines = arr.map(function (line) {
+                var lines = _.map(arr, function (line) {
                     var rtrimmed = line.replace(/\s+$/g, '');
 
-                    if (rtrimmed.indexOf('>', this.length - 1) == -1) {
+                    if (rtrimmed.indexOf('>', this.length - 1) == -1)
                         rtrimmed = rtrimmed + '<br/>';
-                    }
 
                     return rtrimmed;
                 });
@@ -711,8 +754,8 @@ consoleModule.service('$common', [
             /**
              * Cut class name by width in pixel or width in symbol count.
              *
-             * @param id Id of contains link table.
-             * @param index Showed index of element.
+             * @param id Id of parent table.
+             * @param index Row number in table.
              * @param maxLength Maximum length in symbols for all names.
              * @param names Array of class names to compact.
              * @param divider String to visualy divide items.
@@ -744,6 +787,32 @@ consoleModule.service('$common', [
                     result += divider + names[nameIx];
 
                 return result;
+            },
+            /**
+             * Compact text by width in pixels or symbols count.
+             *
+             * @param id Id of parent table.
+             * @param index Row number in table.
+             * @param maxLength Maximum length in symbols for all names.
+             * @param label Text to compact.
+             * @returns Compacted label text.
+             */
+            compactTableLabel: function (id, index, maxLength, label) {
+                label = index + ') ' + label;
+
+                try {
+                    var nameWidth = availableWidth(index, id) | 0;
+
+                    // HTML5 calculation of showed message width.
+                    label = compactLabelByPixels(label, nameWidth);
+                }
+                catch (err) {
+                    var nameLength = maxLength - 3 | 0;
+
+                    label = label.length > maxLength ? label.substr(0, nameLength) + '...' : label;
+                }
+
+                return label;
             },
             widthIsSufficient: function(id, index, text) {
                 try {
@@ -976,7 +1045,6 @@ consoleModule.service('$unsavedChangesGuard', function () {
         }
     }
 });
-
 
 // Service for confirm or skip several steps.
 consoleModule.service('$confirmBatch', function ($rootScope, $modal,  $q) {
@@ -1895,7 +1963,7 @@ consoleModule.factory('$focus', function ($timeout) {
 
                 elem[0].focus();
             }
-        });
+        }, 100);
     };
 });
 
@@ -1950,7 +2018,7 @@ consoleModule.controller('activeLink', [
         ];
 
         $scope.isActive = function (path) {
-            return window.location.pathname.substr(0, path.length) == path;
+            return new RegExp(path).test(window.location.pathname);
         };
     }]);
 

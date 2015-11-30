@@ -16,6 +16,7 @@
  */
 
 var config = require('./helpers/configuration-loader.js');
+var path = require('path');
 
 // Mongoose for mongodb.
 var mongoose = require('mongoose'),
@@ -80,7 +81,6 @@ var CacheTypeMetadataSchema = new Schema({
     valueType: String,
     keyFields: [{databaseFieldName: String, databaseFieldType: String, javaFieldName: String, javaFieldType: String}],
     valueFields: [{databaseFieldName: String, databaseFieldType: String, javaFieldName: String, javaFieldType: String}],
-    keepSerialized: Boolean,
     fields: [{name: String, className: String}],
     aliases: [{field: String, alias: String}],
     indexes: [{name: String, indexType: {type: String, enum: ['SORTED', 'FULLTEXT', 'GEOSPATIAL']}, fields: [{name: String, direction: Boolean}]}]
@@ -437,7 +437,8 @@ var ClusterSchema = new Schema({
         trustStoreFilePath: String,
         trustStoreType: String,
         trustManagers: [String]
-    }
+    },
+    rebalanceThreadPoolSize: Number
 });
 
 // Install deep populate plugin.
@@ -451,6 +452,8 @@ ClusterSchema.plugin(deepPopulate, {
 
 // Define Cluster model.
 exports.Cluster = mongoose.model('Cluster', ClusterSchema);
+
+exports.ClusterDefaultPopulate = '';
 
 // Define Notebook schema.
 var NotebookSchema = new Schema({
@@ -511,5 +514,14 @@ exports.processed = function(err, res) {
 
     return true;
 };
+
+config.findIgniteModules()
+    .filter(function(path) { return path.match(/.+\/db\.js$/); })
+    .forEach(function(db) {
+        var moduleExports = require(db)(mongoose, exports);
+
+        for (var name in moduleExports)
+            exports[name] = moduleExports[name];
+    });
 
 exports.mongoose = mongoose;

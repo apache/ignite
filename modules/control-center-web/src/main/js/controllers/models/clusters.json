@@ -1730,6 +1730,16 @@
           "tip": [
             "Thread pool that is in charge of processing outgoing IGFS messages"
           ]
+        },
+        {
+          "label": "Rebalance",
+          "id": "rebalanceThreadPoolSize",
+          "type": "number",
+          "model": "rebalanceThreadPoolSize",
+          "placeholder": 1,
+          "tip": [
+            "Max count of threads can be used at rebalancing"
+          ]
         }
       ]
     },

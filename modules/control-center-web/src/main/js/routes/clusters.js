@@ -47,7 +47,7 @@ router.post('/list', function (req, res) {
                     db.Igfs.find({space: {$in: space_ids}}).sort('name').exec(function (err, igfss) {
                         if (db.processed(err, res))
                         // Get all clusters for spaces.
-                            db.Cluster.find({space: {$in: space_ids}}).sort('name').exec(function (err, clusters) {
+                            db.Cluster.find({space: {$in: space_ids}}).sort('name').deepPopulate(db.ClusterDefaultPopulate).exec(function (err, clusters) {
                                 if (db.processed(err, res)) {
                                     _.forEach(clusters, function (cluster) {
                                         // Remove deleted caches.

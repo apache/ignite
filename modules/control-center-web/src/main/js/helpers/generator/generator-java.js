@@ -98,6 +98,27 @@ $generatorJava.declareVariable = function (res, varName, varFullType, varFullAct
 };
 
 /**
+ * Add custom variable declaration.
+ *
+ * @param res Resulting output with generated code.
+ * @param varName Variable name.
+ * @param varFullType Variable full class name to be added to imports.
+ * @param varExpr Custom variable creation expression.
+ */
+$generatorJava.declareVariableCustom = function (res, varName, varFullType, varExpr) {
+    var varType = res.importClass(varFullType);
+
+    var varNew = !res.vars[varName];
+
+    if (varNew)
+        res.vars[varName] = true;
+
+    res.line((varNew ? (varType + ' ') : '') + varName + ' = ' + varExpr + ';');
+
+    res.needEmptyLine = true;
+};
+
+/**
  * Clear list of declared variables.
  *
  * @param res
@@ -207,16 +228,13 @@ $generatorJava.multiparamProperty = function (res, varName, obj, propName, dataT
     if (val && val.length > 0) {
         res.emptyLineIfNeeded();
 
-        res.append(varName + '.' + $generatorJava.setterName(propName, setterName) + '(');
+        res.startBlock(varName + '.' + $generatorJava.setterName(propName, setterName) + '(');
 
         _.forEach(val, function(v, ix) {
-            if (ix > 0)
-                res.append(', ');
-
-            res.append($generatorJava.toJavaCode(v, dataType));
+            res.append($generatorJava.toJavaCode(v, dataType) + (ix < val.length - 1 ? ', ' : ''));
         });
 
-        res.line(');');
+        res.endBlock(');');
     }
 };
 
@@ -269,17 +287,19 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                             var val = bean[propName];
 
                             if (val && val.length > 0) {
-                                res.line('Properties ' + descr.propVarName + ' = new Properties();');
+                                $generatorJava.declareVariable(res, descr.propVarName, 'java.util.Properties');
 
                                 _.forEach(val, function(nameAndValue) {
                                     var eqIndex = nameAndValue.indexOf('=');
 
                                     if (eqIndex >= 0) {
-                                        res.line(descr.propVarName + '.setProperty('
-                                            + nameAndValue.substring(0, eqIndex) + ', '
-                                            + nameAndValue.substr(eqIndex + 1) + ');');
+                                        res.line(descr.propVarName + '.setProperty(' +
+                                            '"' + nameAndValue.substring(0, eqIndex) + '", ' +
+                                            '"' + nameAndValue.substr(eqIndex + 1) + '");');
                                     }
                                 });
+
+                                res.needEmptyLine = true;
 
                                 res.line(beanVarName + '.' + $generatorJava.setterName(propName) + '(' + descr.propVarName + ');');
                             }
@@ -732,6 +752,7 @@ $generatorJava.clusterPools = function (cluster, res) {
     $generatorJava.property(res, 'cfg', cluster, 'systemThreadPoolSize');
     $generatorJava.property(res, 'cfg', cluster, 'managementThreadPoolSize');
     $generatorJava.property(res, 'cfg', cluster, 'igfsThreadPoolSize');
+    $generatorJava.property(res, 'cfg', cluster, 'rebalanceThreadPoolSize');
 
     res.needEmptyLine = true;
 
@@ -757,11 +778,8 @@ $generatorJava.cacheGeneral = function (cache, varName, res) {
 
     $generatorJava.property(res, varName, cache, 'name');
 
-    res.importClass('org.apache.ignite.cache.CacheAtomicityMode');
-    res.importClass('org.apache.ignite.cache.CacheMode');
-
-    $generatorJava.property(res, varName, cache, 'cacheMode', 'CacheMode');
-    $generatorJava.property(res, varName, cache, 'atomicityMode', 'CacheAtomicityMode');
+    $generatorJava.property(res, varName, cache, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
+    $generatorJava.property(res, varName, cache, 'atomicityMode', 'org.apache.ignite.cache.CacheAtomicityMode');
 
     if (cache.cacheMode == 'PARTITIONED')
         $generatorJava.property(res, varName, cache, 'backups');
@@ -780,7 +798,7 @@ $generatorJava.cacheMemory = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, varName, cache, 'memoryMode', 'CacheMemoryMode');
+    $generatorJava.property(res, varName, cache, 'memoryMode', 'org.apache.ignite.cache.CacheMemoryMode');
     $generatorJava.property(res, varName, cache, 'offHeapMaxMemory');
 
     res.needEmptyLine = true;
@@ -816,6 +834,8 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
         });
 
         res.endBlock(');');
+
+        res.needEmptyLine = true;
     }
 
     $generatorJava.multiparamProperty(res, varName, cache, 'sqlFunctionClasses', 'class');
@@ -831,6 +851,7 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
  * Generate cache store group.
  *
  * @param cache Cache descriptor.
+ * @param metadatas Metadata descriptors.
  * @param cacheVarName Cache variable name.
  * @param res Resulting output with generated code.
  * @returns {*} Java code for cache store configuration.
@@ -846,6 +867,8 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
 
         if (storeFactory) {
             var storeFactoryDesc = $generatorCommon.STORE_FACTORIES[factoryKind];
+
+            var varName = 'storeFactory' + storeFactoryDesc.suffix;
 
             var dataSourceFound = false;
 
@@ -864,11 +887,17 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
                     $generatorJava.declareVariable(res, 'dataSource', dsClsName);
 
                     switch (storeFactory.dialect) {
+                        case 'Generic':
+                            res.line('dataSource.setJdbcUrl(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
+
+                            break;
+
                         case 'DB2':
                             res.line('dataSource.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
                             res.line('dataSource.setPortNumber(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.port_number")));');
                             res.line('dataSource.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
                             res.line('dataSource.setDriverType(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.driver_type")));');
+
                             break;
 
                         default:
@@ -884,12 +913,12 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
 
             if (factoryKind == 'CacheJdbcPojoStoreFactory') {
                 // Generate POJO store factory.
-                $generatorJava.declareVariable(res, 'storeFactory', 'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory');
+                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory');
 
                 if (dataSourceFound)
-                    res.line('storeFactory.setDataSource(dataSource);');
+                    res.line(varName + '.setDataSource(dataSource);');
 
-                res.line('storeFactory.setDialect(new ' +
+                res.line(varName + '.setDialect(new ' +
                     res.importClass($generatorCommon.jdbcDialectClassName(storeFactory.dialect)) + '());');
 
                 res.needEmptyLine = true;
@@ -904,6 +933,8 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
 
                         res.needEmptyLine = true;
 
+                        $generatorJava.property(res, 'jdbcType', cache, 'name', undefined, 'setCacheName');
+
                         $generatorJava.metadataStore(meta, true, res);
 
                         res.needEmptyLine = true;
@@ -913,23 +944,23 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
                         res.needEmptyLine = true;
                     });
 
-                    res.line('storeFactory.setTypes(jdbcTypes.toArray(new JdbcType[jdbcTypes.size()]));');
+                    res.line(varName + '.setTypes(jdbcTypes.toArray(new JdbcType[jdbcTypes.size()]));');
 
                     res.needEmptyLine = true;
                 }
+
+                res.line(cacheVarName + '.setCacheStoreFactory(' + varName + ');');
             }
             else {
-                $generatorJava.beanProperty(res, cacheVarName, storeFactory, 'cacheStoreFactory', 'storeFactory',
+                $generatorJava.beanProperty(res, cacheVarName, storeFactory, 'cacheStoreFactory', varName,
                     storeFactoryDesc.className, storeFactoryDesc.fields, true);
 
                 if (dataSourceFound)
-                    res.line('storeFactory.setDataSource(dataSource);');
+                    res.line(varName + '.setDataSource(dataSource);');
             }
 
             res.needEmptyLine = true;
         }
-
-        res.line(cacheVarName + '.setCacheStoreFactory(storeFactory);');
 
         res.needEmptyLine = true;
     }
@@ -972,7 +1003,7 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (cache.cacheMode != 'LOCAL') {
-        $generatorJava.property(res, varName, cache, 'rebalanceMode', 'CacheRebalanceMode');
+        $generatorJava.property(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode');
         $generatorJava.property(res, varName, cache, 'rebalanceThreadPoolSize');
         $generatorJava.property(res, varName, cache, 'rebalanceBatchSize');
         $generatorJava.property(res, varName, cache, 'rebalanceOrder');
@@ -1076,30 +1107,41 @@ $generatorJava.metadataQueryIndexes = function (res, meta) {
         $generatorJava.declareVariable(res, 'indexes', 'java.util.List', 'java.util.ArrayList', 'org.apache.ignite.cache.QueryIndex');
 
         _.forEach(indexes, function (index) {
-            res.needEmptyLine = true;
-
-            $generatorJava.declareVariable(res, 'index', 'org.apache.ignite.cache.QueryIndex');
-
-            $generatorJava.property(res, 'index', index, 'name');
-            $generatorJava.property(res, 'index', index, 'indexType', 'org.apache.ignite.cache.QueryIndexType');
-
             var fields = index.fields;
 
-            if (fields && fields.length > 0) {
-                $generatorJava.declareVariable(res, 'indFlds', 'java.util.LinkedHashMap', 'java.util.LinkedHashMap', 'String', 'Boolean');
+            // One row generation for 1 field index.
+            if (fields && fields.length == 1) {
+                var field = index.fields[0];
 
-                _.forEach(fields, function(field) {
-                    res.line('indFlds.put("' + field.name + '", ' + field.direction + ');');
-                });
-
-                res.needEmptyLine = true;
-
-                res.line('index.setFields(indFlds);');
-
-                res.needEmptyLine = true;
+                res.line('indexes.add(new ' + res.importClass('org.apache.ignite.cache.QueryIndex') +
+                    '("' + field.name + '", ' +
+                    res.importClass('org.apache.ignite.cache.QueryIndexType') + '.' + index.indexType + ', ' +
+                    field.direction + ', "' + index.name + '"));');
             }
+            else {
+                res.needEmptyLine = true;
 
-            res.line('indexes.add(index);');
+                $generatorJava.declareVariable(res, 'index', 'org.apache.ignite.cache.QueryIndex');
+
+                $generatorJava.property(res, 'index', index, 'name');
+                $generatorJava.property(res, 'index', index, 'indexType', 'org.apache.ignite.cache.QueryIndexType');
+
+                if (fields && fields.length > 0) {
+                    $generatorJava.declareVariable(res, 'indFlds', 'java.util.LinkedHashMap', 'java.util.LinkedHashMap', 'String', 'Boolean');
+
+                    _.forEach(fields, function(field) {
+                        res.line('indFlds.put("' + field.name + '", ' + field.direction + ');');
+                    });
+
+                    res.needEmptyLine = true;
+
+                    res.line('index.setFields(indFlds);');
+
+                    res.needEmptyLine = true;
+                }
+
+                res.line('indexes.add(index);');
+            }
         });
 
         res.needEmptyLine = true;
@@ -1173,7 +1215,6 @@ $generatorJava.metadataStore = function (meta, withTypes, res) {
 
     $generatorJava.property(res, 'jdbcType', meta, 'databaseSchema');
     $generatorJava.property(res, 'jdbcType', meta, 'databaseTable');
-    $generatorJava.property(res, 'jdbcType', meta, 'keepSerialized', null, null, false);
 
     if (withTypes) {
         $generatorJava.property(res, 'jdbcType', meta, 'keyType');
@@ -1507,8 +1548,6 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
  * @param includeKeyFields If 'true' then include key fields into value POJO.
  */
 $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
-    var metadataNames = [];
-
     var metadatas = [];
 
     _.forEach(caches, function(cache) {
@@ -1741,6 +1780,7 @@ $generatorJava.igfsGeneral = function(igfs, varName, res) {
         $generatorJava.property(res, varName, igfs, 'name');
         $generatorJava.property(res, varName, igfs, 'dataCacheName');
         $generatorJava.property(res, varName, igfs, 'metaCacheName');
+        $generatorJava.property(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', undefined, "DUAL_ASYNC");
 
         res.needEmptyLine = true;
     }
@@ -1762,7 +1802,6 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
 
     $generatorJava.property(res, varName, igfs, 'blockSize', null, null, 65536);
     $generatorJava.property(res, varName, igfs, 'streamBufferSize', null, null, 65536);
-    $generatorJava.property(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', undefined, "DUAL_ASYNC");
     $generatorJava.property(res, varName, igfs, 'maxSpaceSize', null, null, 0);
     $generatorJava.property(res, varName, igfs, 'maximumTaskRangeLength', null, null, 0);
     $generatorJava.property(res, varName, igfs, 'managementPort', null, null, 11400);
@@ -1792,6 +1831,38 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
     return res;
 };
 
+$generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
+    $generatorJava.clusterGeneral(cluster, clientNearCfg, res);
+
+    $generatorJava.clusterAtomics(cluster, res);
+
+    $generatorJava.clusterCommunication(cluster, res);
+
+    $generatorJava.clusterConnector(cluster, res);
+
+    $generatorJava.clusterDeployment(cluster, res);
+
+    $generatorJava.clusterEvents(cluster, res);
+
+    $generatorJava.clusterMarshaller(cluster, res);
+
+    $generatorJava.clusterMetrics(cluster, res);
+
+    $generatorJava.clusterSwap(cluster, res);
+
+    $generatorJava.clusterTime(cluster, res);
+
+    $generatorJava.clusterPools(cluster, res);
+
+    $generatorJava.clusterTransactions(cluster, res);
+
+    $generatorJava.clusterCaches(cluster.caches, cluster.igfss, res);
+
+    $generatorJava.clusterSsl(cluster, res);
+
+    return $generatorJava.igfss(cluster.igfss, 'cfg', res);
+};
+
 /**
  * Function to generate java code for cluster configuration.
  *
@@ -1804,7 +1875,16 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
     var res = $generatorCommon.builder();
 
     if (cluster) {
+        var resCfg = $generatorJava.clusterConfiguration(cluster, clientNearCfg, $generatorCommon.builder());
+
+        res.mergeProps(resCfg);
+
         if (javaClass) {
+            if (clientMode)
+                res.importClass('org.apache.ignite.Ignite');
+
+            res.importClass('org.apache.ignite.Ignition');
+
             res.line('/**');
             res.line(' * ' + $generatorCommon.mainComment());
             res.line(' */');
@@ -1818,27 +1898,12 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
             res.startBlock('public static IgniteConfiguration createConfiguration() throws Exception {');
         }
 
-        var haveDS = _.findIndex(cluster.caches, function(cache) {
-            if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
-                var factory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+        if ($generatorCommon.loadOfPropertiesNeeded(cluster, res)) {
+            $generatorJava.declareVariableCustom(res, 'res', 'java.net.URL', 'IgniteConfiguration.class.getResource("/secret.properties")');
 
-                if (factory && factory.dialect)
-                    return true;
-            }
+            $generatorJava.declareVariableCustom(res, 'propsFile', 'java.io.File', 'new File(res.toURI())');
 
-            return false;
-        }) >= 0;
-
-        if (haveDS || cluster.sslEnabled) {
-            res.line(res.importClass('java.net.URL') + ' res = IgniteConfiguration.class.getResource("/secret.properties");');
-
-            res.needEmptyLine = true;
-
-            res.line(res.importClass('java.io.File') + ' propsFile = new File(res.toURI());');
-
-            res.needEmptyLine = true;
-
-            res.line(res.importClass('java.util.Properties') + ' props = new Properties();');
+            $generatorJava.declareVariable(res, 'props', 'java.util.Properties');
 
             res.needEmptyLine = true;
 
@@ -1849,46 +1914,19 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
             res.needEmptyLine = true;
         }
 
-        $generatorJava.clusterGeneral(cluster, clientNearCfg, res);
-
-        $generatorJava.clusterAtomics(cluster, res);
-
-        $generatorJava.clusterCommunication(cluster, res);
-
-        $generatorJava.clusterConnector(cluster, res);
-
-        $generatorJava.clusterDeployment(cluster, res);
-
-        $generatorJava.clusterEvents(cluster, res);
-
-        $generatorJava.clusterMarshaller(cluster, res);
-
-        $generatorJava.clusterMetrics(cluster, res);
-
-        $generatorJava.clusterSwap(cluster, res);
-
-        $generatorJava.clusterTime(cluster, res);
-
-        $generatorJava.clusterPools(cluster, res);
-
-        $generatorJava.clusterTransactions(cluster, res);
-
-        $generatorJava.clusterCaches(cluster.caches, cluster.igfss, res);
-
-        $generatorJava.clusterSsl(cluster, res);
-
-        $generatorJava.igfss(cluster.igfss, 'cfg', res);
+        res.mergeLines(resCfg);
 
         if (javaClass) {
-            res.importClass('org.apache.ignite.Ignite');
-            res.importClass('org.apache.ignite.Ignition');
+            res.needEmptyLine = true;
 
             res.line('return cfg;');
             res.endBlock('}');
 
             res.needEmptyLine = true;
+        }
 
-            if (clientMode && clientNearCfg) {
+        if (clientMode && clientNearCfg) {
+            if (javaClass) {
                 res.line('/**');
                 res.line(' * Configure client near cache configuration.');
                 res.line(' *');
@@ -1898,21 +1936,28 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
                 res.startBlock('public static NearCacheConfiguration createNearCacheConfiguration() throws Exception {');
 
                 $generatorJava.resetVariables(res);
+            }
 
-                $generatorJava.declareVariable(res, 'nearCfg', 'org.apache.ignite.configuration.NearCacheConfiguration');
+            $generatorJava.declareVariable(res, 'clientNearCfg', 'org.apache.ignite.configuration.NearCacheConfiguration');
 
-                if (clientNearCfg.nearStartSize)
-                    $generatorJava.property(res, 'nearCfg', clientNearCfg, 'nearStartSize');
+            if (clientNearCfg.nearStartSize) {
+                $generatorJava.property(res, 'clientNearCfg', clientNearCfg, 'nearStartSize');
 
-                if (clientNearCfg.nearEvictionPolicy && clientNearCfg.nearEvictionPolicy.kind)
-                    $generatorJava.evictionPolicy(res, 'nearCfg', clientNearCfg.nearEvictionPolicy, 'nearEvictionPolicy');
+                res.needEmptyLine = true;
+            }
 
-                res.line('return nearCfg;');
-                res.endBlock('}')
+            if (clientNearCfg.nearEvictionPolicy && clientNearCfg.nearEvictionPolicy.kind)
+                $generatorJava.evictionPolicy(res, 'clientNearCfg', clientNearCfg.nearEvictionPolicy, 'nearEvictionPolicy');
+
+            if (javaClass) {
+                res.line('return clientNearCfg;');
+                res.endBlock('}');
             }
 
             res.needEmptyLine = true;
+        }
 
+        if (javaClass) {
             res.line('/**');
             res.line(' * Sample usage of ' + javaClass + '.');
             res.line(' *');

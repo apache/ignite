@@ -19,6 +19,7 @@ ul.nav(ng-class='$navClass', role='tablist')
         a.summary-tab(ng-show='$pane.title != "POJO" || pojoAvailable()' ng-switch='$pane.title' role='tab' data-toggle='tab' ng-click='!$pane.disabled && $setActive($pane.name || $index)' data-index='{{ $index }}' aria-controls='$pane.title') {{$pane.title}}
             img(ng-switch-when='XML' src='/images/xml.png')
             img(ng-switch-when='Java' src='/images/java.png')
+            img(ng-switch-when='POM' src='/images/xml.png')
             img(ng-switch-when='POJO' src='/images/java.png')
             img(ng-switch-when='Dockerfile' src='/images/docker.png')
 .tab-content(ng-transclude style='fontSize: 12px; min-height: 25em')

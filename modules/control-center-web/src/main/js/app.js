@@ -142,6 +142,10 @@ app.use('/sql', mustAuthenticated, sqlRouter);
 
 app.use('/agent', mustAuthenticated, agentRouter);
 
+config.findIgniteModules()
+    .filter(function(path) { return path.match(/\/routes\/.+\.js$/); })
+    .forEach(function(route) { require(route)(app); });
+
 // Catch 404 and forward to error handler.
 app.use(function (req, res, next) {
     var err = new Error('Not Found: ' + req.originalUrl);

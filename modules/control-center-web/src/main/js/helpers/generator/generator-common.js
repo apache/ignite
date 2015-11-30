@@ -62,6 +62,26 @@ $generatorCommon.builder = function (deep) {
     res.safeDatasources = [];
     res.safePoint = -1;
 
+    res.mergeProps = function (fromRes) {
+        if ($commonUtils.isDefinedAndNotEmpty(fromRes)) {
+            res.datasources = fromRes.datasources;
+
+            angular.extend(res.imports, fromRes.imports);
+            angular.extend(res.vars, fromRes.vars);
+        }
+    };
+
+    res.mergeLines = function (fromRes) {
+        if ($commonUtils.isDefinedAndNotEmpty(fromRes)) {
+            if (res.needEmptyLine)
+                res.push('');
+
+            _.forEach(fromRes, function (line) {
+                res.append(line);
+            });
+        }
+    };
+
     res.startSafeBlock = function () {
         res.safeDeep = this.deep;
         this.safeNeedEmptyLine = this.needEmptyLine;
@@ -94,18 +114,19 @@ $generatorCommon.builder = function (deep) {
 
     res.line = function (s) {
         if (s) {
-            if (this.needEmptyLine)
-                this.push('');
+            if (res.needEmptyLine)
+                res.push('');
 
-            this.append(s);
+            res.append(s);
         }
 
-        this.needEmptyLine = false;
+        res.needEmptyLine = false;
 
-        this.lineStart = true;
+        res.lineStart = true;
 
-        return this;
+        return res;
     };
+
 
     res.startBlock = function (s) {
         if (s) {
@@ -256,7 +277,7 @@ $generatorCommon.igfsMetaCache = function(igfs) {
 
 // Pairs of supported databases and their data sources.
 $generatorCommon.DATA_SOURCES = {
-    Generic: 'com.mchange.v2.c3p0.jboss.C3P0PooledDataSource',
+    Generic: 'com.mchange.v2.c3p0.ComboPooledDataSource',
     Oracle: 'oracle.jdbc.pool.OracleDataSource',
     DB2: 'com.ibm.db2.jcc.DB2DataSource',
     SQLServer: 'com.microsoft.sqlserver.jdbc.SQLServerDataSource',
@@ -276,12 +297,14 @@ $generatorCommon.dataSourceClassName = function(db) {
 $generatorCommon.STORE_FACTORIES = {
     CacheJdbcPojoStoreFactory: {
         className: 'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory',
+        suffix: 'JdbcPojo',
         fields: {
             configuration: {type: 'bean'}
         }
     },
     CacheJdbcBlobStoreFactory: {
         className: 'org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory',
+        suffix: 'JdbcBlob',
         fields: {
             user: null,
             dataSourceBean: null,
@@ -295,6 +318,7 @@ $generatorCommon.STORE_FACTORIES = {
     },
     CacheHibernateBlobStoreFactory: {
         className: 'org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreFactory',
+        suffix: 'Hibernate',
         fields: {hibernateProperties: {type: 'propertiesAsList', propVarName: 'props'}}
     }
 };
@@ -416,4 +440,8 @@ $generatorCommon.IGFS_IPC_CONFIGURATION = {
         memorySize: {dflt: 262144},
         tokenDirectoryPath: {dflt: 'ipc/shmem'}
     }
+};
+
+$generatorCommon.loadOfPropertiesNeeded = function (cluster, res) {
+    return res.datasources.length > 0 || cluster.sslEnabled;
 };

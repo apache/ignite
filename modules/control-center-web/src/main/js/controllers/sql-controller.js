@@ -128,20 +128,31 @@ consoleModule.controller('sqlController',
         $scope.scrollParagraphs = $scope.notebook.paragraphs.map(function (paragraph) {
             return {
                 "text": paragraph.name,
-                "click": 'scrollToParagraph(' + paragraph.id + ')'
+                "click": 'scrollToParagraph("' + paragraph.id + '")'
             };
         });
     };
 
     $scope.scrollToParagraph = function (paragraphId) {
-        $location.hash('paragraph-' + paragraphId);
+        var idx = _.findIndex($scope.notebook.paragraphs, {id: paragraphId});
+
+        if (idx >= 0) {
+            if (!_.contains($scope.notebook.activePanels, idx)) {
+                var activePanels = angular.copy($scope.notebook.activePanels);
+
+                activePanels.push(idx);
+
+                $scope.notebook.activePanels = activePanels;
+            }
+
+            setTimeout(function () {
+                $scope.notebook.paragraphs[idx].ace.focus();
+            });
+        }
+
+        $location.hash(paragraphId);
 
         $anchorScroll();
-
-        var paragraph = _.find($scope.notebook.paragraphs, {id: paragraphId});
-
-        if (paragraph)
-            paragraph.ace.focus();
     };
 
     var _hideColumn = function (col) {
@@ -237,10 +248,8 @@ consoleModule.controller('sqlController',
 
                 $scope.notebook_name = notebook.name;
 
-                $scope.expandedParagraphs = notebook.expandedParagraphs;
-
                 _.forEach(notebook.paragraphs, function (paragraph) {
-                    paragraph.id = paragraphId++;
+                    paragraph.id = 'paragraph-' + paragraphId++;
 
                     enhanceParagraph(paragraph);
                 });
@@ -265,11 +274,7 @@ consoleModule.controller('sqlController',
     loadNotebook();
 
     var _saveNotebook = function (f) {
-        var note = angular.copy($scope.notebook);
-
-        note.expandedParagraphs = $scope.expandedParagraphs;
-
-        $http.post('/notebooks/save', note)
+        $http.post('/notebooks/save', $scope.notebook)
             .success(f || function() {})
             .error(function (errMsg) {
                 $common.showError(errMsg);
@@ -348,7 +353,7 @@ consoleModule.controller('sqlController',
         var sz = $scope.notebook.paragraphs.length;
 
         var paragraph = {
-            id: paragraphId++,
+            id: 'paragraph-' + paragraphId++,
             name: 'Query' + (sz ==0 ? '' : sz),
             editor: true,
             query: '',
@@ -367,13 +372,13 @@ consoleModule.controller('sqlController',
         if ($scope.caches && $scope.caches.length > 0)
             paragraph.cacheName = $scope.caches[0].name;
 
-        $scope.expandedParagraphs.push($scope.notebook.paragraphs.length);
-
         $scope.notebook.paragraphs.push(paragraph);
+
+        $scope.notebook.activePanels.push($scope.notebook.paragraphs.length);
 
         $scope.rebuildScrollParagraphs();
 
-        $location.hash('paragraph-' + paragraph.id);
+        $location.hash(paragraph.id);
 
         $anchorScroll();
 
@@ -429,7 +434,7 @@ consoleModule.controller('sqlController',
             return paragraph == item;
         });
 
-        var panel_idx = _.findIndex($scope.expandedParagraphs, function (item) {
+        var panel_idx = _.findIndex($scope.notebook.activePanels, function (item) {
             return paragraph_idx == item;
         });
 
@@ -496,7 +501,7 @@ consoleModule.controller('sqlController',
         paragraph.chartKeyCols = _retainColumns(paragraph.chartColumns, paragraph.chartKeyCols, _notObjectType, true);
 
         // We could accept only numeric columns for Y axis.
-        paragraph.chartValCols = _retainColumns(paragraph.chartColumns, paragraph.chartValCols, _numberType, false);
+        paragraph.chartValCols = _retainColumns(paragraph.chartColumns, paragraph.chartValCols, _numberType, false, paragraph.chartKeyCols);
     };
 
     $scope.toggleSystemColumns = function (paragraph) {
@@ -516,7 +521,7 @@ consoleModule.controller('sqlController',
         });
     };
 
-    function _retainColumns(allCols, curCols, acceptableType, xAxis) {
+    function _retainColumns(allCols, curCols, acceptableType, xAxis, unwantedCols) {
         var retainedCols = [];
 
         var availableCols = xAxis ? allCols : _.filter(allCols, function (col) {
@@ -536,9 +541,17 @@ consoleModule.controller('sqlController',
 
             // If nothing was restored, add first acceptable column.
             if ($common.isEmptyArray(retainedCols)) {
-                var col = _.find(availableCols, function (col) {
-                    return acceptableType(col.type);
-                });
+                var col;
+
+                if (unwantedCols)
+                    col = _.find(availableCols, function (col) {
+                        return !_.find(unwantedCols, {label: col.label}) && acceptableType(col.type);
+                    });
+
+                if (!col)
+                    col = _.find(availableCols, function (col) {
+                        return acceptableType(col.type);
+                    });
 
                 if (col)
                     retainedCols.push(col);
@@ -555,6 +568,9 @@ consoleModule.controller('sqlController',
 
     var _processQueryResult = function (paragraph, refreshMode) {
         return function (res) {
+            var prevKeyCols = paragraph.chartKeyCols;
+            var prevValCols = paragraph.chartValCols;
+
             if (res.meta && !refreshMode) {
                 paragraph.meta = [];
 
@@ -635,8 +651,20 @@ consoleModule.controller('sqlController',
 
             if (paragraph.result == 'none' || paragraph.queryArgs.type != "QUERY")
                 paragraph.result = 'table';
-            else if (paragraph.chart())
-                _chartApplySettings(paragraph, queryChanged);
+            else if (paragraph.chart()) {
+                var resetCharts = queryChanged;
+
+                if (!resetCharts) {
+                    var curKeyCols = paragraph.chartKeyCols;
+                    var curValCols = paragraph.chartValCols;
+
+                    resetCharts = !prevKeyCols || !prevValCols ||
+                        prevKeyCols.length != curKeyCols.length ||
+                        prevValCols.length != curValCols.length;
+                }
+
+                _chartApplySettings(paragraph, resetCharts);
+            }
         }
     };
 

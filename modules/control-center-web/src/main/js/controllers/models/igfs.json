@@ -51,6 +51,17 @@
           }
         },
         {
+          "label": "IGFS mode",
+          "id": "defaultMode",
+          "type": "dropdown",
+          "model": "defaultMode",
+          "placeholder": "DUAL_ASYNC",
+          "items": "igfsModes",
+          "tip": [
+            "Mode to specify how IGFS interacts with Hadoop file system"
+          ]
+        },
+        {
           "label": "Group size",
           "id": "affinnityGroupSize",
           "type": "number",
@@ -310,17 +321,6 @@
           "placeholder": 65536,
           "tip": [
             "Read/write buffers size for IGFS stream operations"
-          ]
-        },
-        {
-          "label": "IGFS mode",
-          "id": "defaultMode",
-          "type": "dropdown",
-          "model": "defaultMode",
-          "placeholder": "DUAL_ASYNC",
-          "items": "igfsModes",
-          "tip": [
-            "Mode to specify how IGFS interacts with Hadoop file system"
           ]
         },
         {

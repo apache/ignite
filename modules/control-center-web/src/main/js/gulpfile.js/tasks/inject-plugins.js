@@ -32,7 +32,7 @@ var js_targets = [
 ];
 
 var js_sources = [
-    './build/plugins/**/*.js'
+    './build/ignite_modules/**/main.js'
 ];
 
 gulp.task('inject:plugins:html', function() {
@@ -55,7 +55,7 @@ gulp.task('inject:plugins:js', function() {
             endtag: ' /* endignite */',
                 transform: function (filePath, file, i, length) {
                 // return file contents as string
-                return ", '" + filePath.replace(/.*plugins\/([^\/]+).*/mgi, '$1') + "'";
+                return ", 'ignite-web-console." + filePath.replace(/.*ignite_modules\/([^\/]+).*/mgi, '$1') + "'";
             }
         }))
         .pipe(gulp.dest('./build'));

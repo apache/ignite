@@ -19,6 +19,8 @@
 consoleModule.controller('summaryController', [
     '$scope', '$http', '$common', '$loading', '$message', '$table',
     function ($scope, $http, $common, $loading, $message, $table) {
+    var igniteVersion = '1.5.0-IWC';
+
     $scope.panelExpanded = $common.panelExpanded;
     $scope.tableVisibleRow = $table.tableVisibleRow;
     $scope.joinTip = $common.joinTip;
@@ -181,6 +183,8 @@ consoleModule.controller('summaryController', [
 
         $scope.xmlServer = $generatorXml.cluster(cluster);
 
+        $scope.pom = $generatorPom.pom(cluster, igniteVersion).asString();
+
         $scope.generateJavaServer();
 
         $scope.generateDockerServer();
@@ -202,9 +206,7 @@ consoleModule.controller('summaryController', [
 
         zip.file('Dockerfile', $scope.dockerServer);
 
-        var builder = $generatorProperties.sslProperties(cluster);
-
-        builder = $generatorProperties.dataSourcesProperties(cluster, builder);
+        var builder = $generatorProperties.generateProperties(cluster);
 
         if (builder)
             zip.file('src/main/resources/secret.properties', builder.asString());
@@ -218,7 +220,7 @@ consoleModule.controller('summaryController', [
         zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', clientNearConfiguration, true));
         zip.file(srcPath + 'NodeStartup.java', $generatorJava.nodeStartup(cluster));
 
-        zip.file('pom.xml', $generatorPom.pom(cluster, '1.5.0-IWC').asString());
+        zip.file('pom.xml', $generatorPom.pom(cluster, igniteVersion).asString());
 
         zip.file('README.txt', $generatorReadme.readme().asString());
         zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());

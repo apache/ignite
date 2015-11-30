@@ -30,7 +30,8 @@ consoleModule.controller('metadataController', [
             $scope.ui = $common.formUI();
 
             $scope.$on('user', function($rootScope, user) {
-                $scope.ui.packageName = user.email.replace('@', '.').split('.').reverse().join('.') + '.model';
+                $scope.ui.packageName = $commonUtils.toJavaPackageName(user.email.replace('@', '.').split('.')
+                    .reverse().join('.') + '.model');
             });
 
             $scope.showMoreInfo = $message.message;
@@ -497,7 +498,7 @@ consoleModule.controller('metadataController', [
                         if (dup)
                             dupCnt++;
 
-                        var valType = $scope.ui.packageName + '.' + toJavaClassName(tableName);
+                        var valType = $commonUtils.toJavaPackageName($scope.ui.packageName) + '.' + toJavaClassName(tableName);
 
                         function queryField(name, jdbcType) {
                             return {name: toJavaName(name), className: jdbcType.javaType}

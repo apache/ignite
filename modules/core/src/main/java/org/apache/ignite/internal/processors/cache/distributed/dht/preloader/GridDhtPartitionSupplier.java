@@ -759,6 +759,9 @@ class GridDhtPartitionSupplier {
 
         ClusterNode node = cctx.node(id);
 
+        if (node == null)
+            return;
+
         long preloadThrottle = cctx.config().getRebalanceThrottle();
 
         boolean ack = false;

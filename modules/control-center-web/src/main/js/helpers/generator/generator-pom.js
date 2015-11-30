@@ -18,6 +18,45 @@
 // pom.xml generation entry point.
 $generatorPom = {};
 
+$generatorPom.addProperty = function (res, tag, val) {
+    res.line('<' + tag + '>' + val + '</' + tag + '>');
+};
+
+$generatorPom.dependency = function (groupId, artifactId, version, jar) {
+    return {
+        groupId: groupId,
+        artifactId: artifactId,
+        version: version,
+        jar: jar
+    };
+};
+
+$generatorPom.dependencies = function (res, cluster, deps) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    res.startBlock('<dependencies>');
+
+    _.forEach(deps, function (dep) {
+        res.startBlock('<dependency>');
+
+        $generatorPom.addProperty(res, 'groupId', dep.groupId);
+        $generatorPom.addProperty(res, 'artifactId', dep.artifactId);
+        $generatorPom.addProperty(res, 'version', dep.version);
+
+        if (dep.jar) {
+            $generatorPom.addProperty(res, 'scope', 'system');
+            $generatorPom.addProperty(res, 'systemPath', '${project.basedir}/jdbc-drivers/' + dep.jar);
+        }
+
+        res.endBlock('</dependency>');
+    });
+
+    res.endBlock('</dependencies>');
+
+    return res;
+};
+
 /**
  * Generate pom.xml.
  *
@@ -42,32 +81,25 @@ $generatorPom.pom = function (cluster, igniteVersion, res) {
         }
     });
 
-    function addProperty(tag, val) {
-        res.line('<' + tag + '>' + val + '</' + tag + '>');
-    }
+    var dependencies = [];
 
     function addDependency(groupId, artifactId, version, jar) {
-        res.startBlock('<dependency>');
-        addProperty('groupId', groupId);
-        addProperty('artifactId', artifactId);
-        addProperty('version', version);
-
-        if (jar) {
-            addProperty('scope', 'system');
-            addProperty('systemPath', '${project.basedir}/jdbc-drivers/' + jar);
-        }
-
-        res.endBlock('</dependency>');
+        dependencies.push({
+            groupId: groupId,
+            artifactId: artifactId,
+            version: version,
+            jar: jar
+        });
     }
 
     function addResource(dir, exclude) {
         res.startBlock('<resource>');
         if (dir)
-            addProperty('directory', dir);
+            $generatorPom.addProperty(res, 'directory', dir);
 
         if (exclude) {
             res.startBlock('<excludes>');
-            addProperty('exclude', exclude);
+            $generatorPom.addProperty(res, 'exclude', exclude);
             res.endBlock('</excludes>');
         }
 
@@ -88,27 +120,31 @@ $generatorPom.pom = function (cluster, igniteVersion, res) {
 
     res.needEmptyLine = true;
 
-    addProperty('groupId', 'org.apache.ignite');
-    addProperty('artifactId', 'ignite-generated-model');
-    addProperty('version', igniteVersion);
+    $generatorPom.addProperty(res, 'groupId', 'org.apache.ignite');
+    $generatorPom.addProperty(res, 'artifactId', 'ignite-generated-model');
+    $generatorPom.addProperty(res, 'version', igniteVersion);
 
     res.needEmptyLine = true;
 
     res.startBlock('<repositories>');
     res.startBlock('<repository>');
-    addProperty('id', 'GridGain External Repository');
-    addProperty('url', 'http://www.gridgainsystems.com/nexus/content/repositories/gridgain_staging-1549');
+    $generatorPom.addProperty(res, 'id', 'GridGain External Repository');
+    $generatorPom.addProperty(res, 'url', 'http://www.gridgainsystems.com/nexus/content/repositories/gridgain_staging-1555');
     res.endBlock('</repository>');
     res.endBlock('</repositories>');
 
     res.needEmptyLine = true;
 
-    res.startBlock('<dependencies>');
-
     addDependency('org.apache.ignite', 'ignite-core', igniteVersion);
     addDependency('org.apache.ignite', 'ignite-spring', igniteVersion);
     addDependency('org.apache.ignite', 'ignite-indexing', igniteVersion);
     addDependency('org.apache.ignite', 'ignite-rest-http', igniteVersion);
+
+    if (_.find(cluster.igfss, function (igfs) { return igfs.secondaryFileSystemEnabled; }))
+        addDependency('org.apache.ignite', 'ignite-hadoop', igniteVersion);
+
+    if (_.find(caches, {"cacheStoreFactory" : {"kind" : "CacheHibernateBlobStoreFactory"}}))
+        addDependency('org.apache.ignite', 'ignite-hibernate', igniteVersion);
 
     if (dialect.Generic)
         addDependency('com.mchange', 'c3p0', '0.9.5.1');
@@ -131,10 +167,7 @@ $generatorPom.pom = function (cluster, igniteVersion, res) {
     if (dialect.SQLServer)
         addDependency('microsoft', 'jdbc', '4.1', 'sqljdbc41.jar');
 
-    if (_.findIndex(cluster.igfss, function (igfs) { return igfs.secondaryFileSystemEnabled; }) >= 0)
-        addDependency('org.apache.ignite', 'ignite-hadoop', igniteVersion);
-
-    res.endBlock('</dependencies>');
+    $generatorPom.dependencies(res, cluster, dependencies);
 
     res.needEmptyLine = true;
 
@@ -146,11 +179,11 @@ $generatorPom.pom = function (cluster, igniteVersion, res) {
 
     res.startBlock('<plugins>');
     res.startBlock('<plugin>');
-    addProperty('artifactId', 'maven-compiler-plugin');
-    addProperty('version', '3.1');
+    $generatorPom.addProperty(res, 'artifactId', 'maven-compiler-plugin');
+    $generatorPom.addProperty(res, 'version', '3.1');
     res.startBlock('<configuration>');
-    addProperty('source', '1.7');
-    addProperty('target', '1.7');
+    $generatorPom.addProperty(res, 'source', '1.7');
+    $generatorPom.addProperty(res, 'target', '1.7');
     res.endBlock('</configuration>');
     res.endBlock('</plugin>');
     res.endBlock('</plugins>');
