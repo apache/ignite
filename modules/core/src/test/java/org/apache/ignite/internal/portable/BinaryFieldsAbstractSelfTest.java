@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.math.BigDecimal;
@@ -487,7 +486,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     private TestContext context(BinaryMarshaller marsh, String fieldName) throws Exception {
         TestObject obj = createObject();
 
-        BinaryObjectEx portObj = toPortable(marsh, obj);
+        BinaryObjectExImpl portObj = toPortable(marsh, obj);
 
         BinaryField field = portObj.type().field(fieldName);
 
@@ -507,8 +506,8 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
         TestObject obj = createObject();
         TestOuterObject outObj = new TestOuterObject(obj);
 
-        BinaryObjectEx portOutObj = toPortable(marsh, outObj);
-        BinaryObjectEx portObj = portOutObj.field("fInner");
+        BinaryObjectExImpl portOutObj = toPortable(marsh, outObj);
+        BinaryObjectExImpl portObj = portOutObj.field("fInner");
 
         assert portObj != null;
 
@@ -534,7 +533,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @return Portable object.
      * @throws Exception If failed.
      */
-    protected abstract BinaryObjectEx toPortable(BinaryMarshaller marsh, Object obj) throws Exception;
+    protected abstract BinaryObjectExImpl toPortable(BinaryMarshaller marsh, Object obj) throws Exception;
 
     /**
      * Outer test object.
@@ -698,7 +697,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
         public final TestObject obj;
 
         /** Portable object. */
-        public final BinaryObjectEx portObj;
+        public final BinaryObjectExImpl portObj;
 
         /** Field. */
         public final BinaryField field;
@@ -710,7 +709,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
          * @param portObj Portable object.
          * @param field Field.
          */
-        public TestContext(TestObject obj, BinaryObjectEx portObj, BinaryField field) {
+        public TestContext(TestObject obj, BinaryObjectExImpl portObj, BinaryField field) {
             this.obj = obj;
             this.portObj = portObj;
             this.field = field;

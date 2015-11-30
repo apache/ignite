@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.portable;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -41,7 +45,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
@@ -365,6 +368,23 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testExternalizableHashCode() throws Exception {
+        SimpleExternalizable sim1 = new SimpleExternalizable("Simple");
+        SimpleExternalizable sim2 = new SimpleExternalizable("Simple");
+
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        BinaryObjectImpl sim1Binary = marshal(sim1, marsh);
+        BinaryObjectImpl sim2Binary = marshal(sim2, marsh);
+
+        assertEquals(sim1.hashCode(), sim2.hashCode());
+        assertEquals(sim1.hashCode(), sim1Binary.hashCode());
+        assertEquals(sim2.hashCode(), sim2Binary.hashCode());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testMapEntry() throws Exception {
         Map.Entry<Integer, String> e = new GridMapEntry<>(1, "str1");
 
@@ -488,8 +508,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.objArr, (Object[])po.field("objArr"));
         assertEquals(obj.col, po.field("col"));
         assertEquals(obj.map, po.field("map"));
-        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((Enum<?>)po.field("enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((Enum<?>[])po.field("enumArr")));
+        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
+        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("enumArr")));
         assertNull(po.field("unknown"));
 
         BinaryObject innerPo = po.field("inner");
@@ -524,8 +544,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.inner.col, innerPo.field("col"));
         assertEquals(obj.inner.map, innerPo.field("map"));
         assertEquals(new Integer(obj.inner.enumVal.ordinal()),
-            new Integer(((Enum<?>)innerPo.field("enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.inner.enumArr), ordinals((Enum<?>[])innerPo.field("enumArr")));
+            new Integer(((BinaryObject)innerPo.field("enumVal")).enumOrdinal()));
+        assertArrayEquals(ordinals(obj.inner.enumArr), ordinals((BinaryObject[])innerPo.field("enumArr")));
         assertNull(innerPo.field("inner"));
         assertNull(innerPo.field("unknown"));
     }
@@ -573,8 +593,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.objArr, (Object[])po.field("_objArr"));
         assertEquals(obj.col, po.field("_col"));
         assertEquals(obj.map, po.field("_map"));
-        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((Enum<?>)po.field("_enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((Enum<?>[])po.field("_enumArr")));
+        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("_enumVal")).enumOrdinal()));
+        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("_enumArr")));
         assertNull(po.field("unknown"));
 
         BinaryObject simplePo = po.field("_simple");
@@ -609,8 +629,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.simple.col, simplePo.field("col"));
         assertEquals(obj.simple.map, simplePo.field("map"));
         assertEquals(new Integer(obj.simple.enumVal.ordinal()),
-            new Integer(((Enum<?>)simplePo.field("enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.simple.enumArr), ordinals((Enum<?>[])simplePo.field("enumArr")));
+            new Integer(((BinaryObject)simplePo.field("enumVal")).enumOrdinal()));
+        assertArrayEquals(ordinals(obj.simple.enumArr), ordinals((BinaryObject[])simplePo.field("enumArr")));
         assertNull(simplePo.field("simple"));
         assertNull(simplePo.field("portable"));
         assertNull(simplePo.field("unknown"));
@@ -646,8 +666,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.portable.col, portablePo.field("_col"));
         assertEquals(obj.portable.map, portablePo.field("_map"));
         assertEquals(new Integer(obj.portable.enumVal.ordinal()),
-            new Integer(((Enum<?>)portablePo.field("_enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.portable.enumArr), ordinals((Enum<?>[])portablePo.field("_enumArr")));
+            new Integer(((BinaryObject)portablePo.field("_enumVal")).enumOrdinal()));
+        assertArrayEquals(ordinals(obj.portable.enumArr), ordinals((BinaryObject[])portablePo.field("_enumArr")));
         assertNull(portablePo.field("_simple"));
         assertNull(portablePo.field("_portable"));
         assertNull(portablePo.field("unknown"));
@@ -685,8 +705,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.objArr, (Object[])po.field("objArr"));
         assertEquals(obj.col, po.field("col"));
         assertEquals(obj.map, po.field("map"));
-        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((Enum<?>)po.field("enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((Enum<?>[])po.field("enumArr")));
+        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((BinaryObject)po.field("enumVal")).enumOrdinal()));
+        assertArrayEquals(ordinals(obj.enumArr), ordinals((BinaryObject[])po.field("enumArr")));
         assertNull(po.field("unknown"));
 
         assertEquals(obj, po.deserialize());
@@ -792,9 +812,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str");
 
-        BinaryObjectEx po1 = marshal(obj1, marsh);
+        BinaryObjectExImpl po1 = marshal(obj1, marsh);
 
-        assertEquals(11111, po1.typeId());
+        assertEquals(11111, po1.type().typeId());
         assertEquals((Integer)10, po1.field(22222));
         assertEquals("str", po1.field(33333));
 
@@ -849,9 +869,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str1");
 
-        BinaryObjectEx po1 = marshal(obj1, marsh);
+        BinaryObjectExImpl po1 = marshal(obj1, marsh);
 
-        assertEquals(11111, po1.typeId());
+        assertEquals(11111, po1.type().typeId());
         assertEquals((Integer)10, po1.field(22222));
         assertEquals("str1", po1.field(33333));
 
@@ -860,9 +880,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomMappedObject2 obj2 = new CustomMappedObject2(20, "str2");
 
-        BinaryObjectEx po2 = marshal(obj2, marsh);
+        BinaryObjectExImpl po2 = marshal(obj2, marsh);
 
-        assertEquals(44444, po2.typeId());
+        assertEquals(44444, po2.type().typeId());
         assertEquals((Integer)20, po2.field(55555));
         assertEquals("str2", po2.field(66666));
 
@@ -1774,7 +1794,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             assertTrue(offheapObj.equals(offheapObj1));
             assertTrue(offheapObj1.equals(offheapObj));
 
-            assertEquals(obj.typeId(), offheapObj.typeId());
+            assertEquals(obj.type().typeId(), offheapObj.type().typeId());
             assertEquals(obj.hashCode(), offheapObj.hashCode());
 
             checkSimpleObjectData(simpleObj, offheapObj);
@@ -1787,7 +1807,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             obj = (BinaryObjectImpl)offheapObj.heapCopy();
 
-            assertEquals(obj.typeId(), offheapObj.typeId());
+            assertEquals(obj.type().typeId(), offheapObj.type().typeId());
             assertEquals(obj.hashCode(), offheapObj.hashCode());
 
             checkSimpleObjectData(simpleObj, obj);
@@ -2085,7 +2105,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             if (id == GridPortableMarshaller.UNREGISTERED_TYPE_ID)
                 continue;
 
-            PortableClassDescriptor desc = pCtx.descriptorForTypeId(false, entry.getValue(), null);
+            PortableClassDescriptor desc = pCtx.descriptorForTypeId(false, entry.getValue(), null, false);
 
             assertEquals(desc.typeId(), pCtx.typeId(desc.describedClass().getName()));
             assertEquals(desc.typeId(), pCtx.typeId(pCtx.typeName(desc.describedClass().getName())));
@@ -2199,6 +2219,19 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < enumArr.length; i++)
             ords[i] = enumArr[i].ordinal();
+
+        return ords;
+    }
+
+    /**
+     * @param enumArr Enum array.
+     * @return Ordinals.
+     */
+    private <T extends Enum<?>> Integer[] ordinals(BinaryObject[] enumArr) {
+        Integer[] ords = new Integer[enumArr.length];
+
+        for (int i = 0; i < enumArr.length; i++)
+            ords[i] = enumArr[i].enumOrdinal();
 
         return ords;
     }
@@ -3604,6 +3637,49 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public static class ChildPortable extends ParentPortable {
 
+    }
+
+    /**
+     *
+     */
+    public static class SimpleExternalizable implements Externalizable {
+        /** */
+        private String field;
+
+        /**
+         * @param field Field.
+         */
+        public SimpleExternalizable(String field) {
+            this.field = field;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, field);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            field = U.readString(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SimpleExternalizable that = (SimpleExternalizable)o;
+
+            return field.equals(that.field);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return field.hashCode();
+        }
     }
 
     /**

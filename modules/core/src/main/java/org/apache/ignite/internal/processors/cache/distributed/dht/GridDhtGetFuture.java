@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -80,7 +79,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private GridCacheContext<K, V> cctx;
 
     /** Keys. */
-    private LinkedHashMap<KeyCacheObject, Boolean> keys;
+    private Map<KeyCacheObject, Boolean> keys;
 
     /** Reserved partitions. */
     private Collection<GridDhtLocalPartition> parts = new HashSet<>();
@@ -129,7 +128,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         GridCacheContext<K, V> cctx,
         long msgId,
         UUID reader,
-        LinkedHashMap<KeyCacheObject, Boolean> keys,
+        Map<KeyCacheObject, Boolean> keys,
         boolean readThrough,
         @Nullable IgniteTxLocalEx tx,
         @NotNull AffinityTopologyVersion topVer,
@@ -207,7 +206,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /**
      * @param keys Keys.
      */
-    private void map(final LinkedHashMap<KeyCacheObject, Boolean> keys) {
+    private void map(final Map<KeyCacheObject, Boolean> keys) {
         GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(keys.keySet(), topVer);
 
         if (!F.isEmpty(fut.invalidPartitions())) {
@@ -227,7 +226,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         onDone(e);
                     }
 
-                    LinkedHashMap<KeyCacheObject, Boolean> mappedKeys = U.newLinkedHashMap(keys.size());
+                    Map<KeyCacheObject, Boolean> mappedKeys = null;
 
                     // Assign keys to primary nodes.
                     for (Map.Entry<KeyCacheObject, Boolean> key : keys.entrySet()) {
@@ -239,14 +238,25 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                                     retries = new HashSet<>();
 
                                 retries.add(part);
+
+                                if (mappedKeys == null) {
+                                    mappedKeys = U.newLinkedHashMap(keys.size());
+
+                                    for (Map.Entry<KeyCacheObject, Boolean> key1 : keys.entrySet()) {
+                                        if (key1.getKey() == key.getKey())
+                                            break;
+
+                                        mappedKeys.put(key.getKey(), key1.getValue());
+                                    }
+                                }
                             }
-                            else
+                            else if (mappedKeys != null)
                                 mappedKeys.put(key.getKey(), key.getValue());
                         }
                     }
 
                     // Add new future.
-                    add(getAsync(mappedKeys));
+                    add(getAsync(mappedKeys == null ? keys : mappedKeys));
 
                     // Finish this one.
                     return Collections.emptyList();
@@ -288,8 +298,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      */
     @SuppressWarnings( {"unchecked", "IfMayBeConditional"})
     private IgniteInternalFuture<Collection<GridCacheEntryInfo>> getAsync(
-        final LinkedHashMap<KeyCacheObject, Boolean> keys)
-    {
+        final Map<KeyCacheObject, Boolean> keys
+    ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<Collection<GridCacheEntryInfo>>(
                 Collections.<GridCacheEntryInfo>emptyList());

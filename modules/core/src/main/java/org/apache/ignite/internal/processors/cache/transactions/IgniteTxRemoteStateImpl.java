@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -115,6 +119,26 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     /** {@inheritDoc} */
     @Override public IgniteTxEntry singleWrite() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void invalidPartition(int part) {
+        if (writeMap != null) {
+            for (Iterator<IgniteTxEntry> it = writeMap.values().iterator(); it.hasNext();) {
+                IgniteTxEntry e = it.next();
+
+                GridCacheContext cacheCtx = e.context();
+
+                GridCacheEntryEx cached = e.cached();
+
+                if (cached != null) {
+                    if (cached.partition() == part)
+                        it.remove();
+                }
+                else if (cacheCtx.affinity().partition(e.key()) == part)
+                    it.remove();
+            }
+        }
     }
 
     /** {@inheritDoc} */

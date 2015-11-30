@@ -26,7 +26,7 @@ import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.datagrid.store.Person;
+import org.apache.ignite.examples.model.Person;
 import org.h2.jdbcx.JdbcConnectionPool;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -59,7 +59,7 @@ public class CacheConfig {
         meta.setDatabaseTable("PERSON");
 
         meta.setKeyType("java.lang.Long");
-        meta.setValueType("org.apache.ignite.examples.datagrid.store.Person");
+        meta.setValueType("org.apache.ignite.examples.model.Person");
 
         meta.setKeyFields(Collections.singletonList(new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", Long.class)));
 

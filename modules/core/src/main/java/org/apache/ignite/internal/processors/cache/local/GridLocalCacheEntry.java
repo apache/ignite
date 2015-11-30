@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
@@ -433,5 +434,10 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
     /** {@inheritDoc} */
     @Override protected void offHeapPointer(long valPtr) {
         this.valPtr = valPtr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized String toString() {
+        return S.toString(GridLocalCacheEntry.class, this, super.toString());
     }
 }

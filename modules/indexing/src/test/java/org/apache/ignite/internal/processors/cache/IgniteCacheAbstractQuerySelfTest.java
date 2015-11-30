@@ -156,36 +156,38 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 if (i > 0)
                     cc.setName("c" + i);
 
-            cc.setCacheMode(cacheMode());
-            cc.setAtomicityMode(atomicityMode());
-            cc.setNearConfiguration(nearCacheConfiguration());
-            cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setCacheStoreFactory(new StoreFactory());
-            cc.setReadThrough(true);
-            cc.setWriteThrough(true);
-            cc.setLoadPreviousValue(true);
-            cc.setRebalanceMode(SYNC);
-            cc.setSwapEnabled(true);
-            cc.setSqlFunctionClasses(SqlFunctions.class);
-            cc.setIndexedTypes(
-                BadHashKeyObject.class, Byte.class,
-                ObjectValue.class, Long.class,
-                Integer.class, Integer.class,
-                Integer.class, String.class,
-                Integer.class, ObjectValue.class,
-                String.class, ObjectValueOther.class,
-                Integer.class, ArrayObject.class,
-                Key.class, GridCacheQueryTestValue.class,
-                UUID.class, Person.class,
-                IgniteCacheReplicatedQuerySelfTest.CacheKey.class, IgniteCacheReplicatedQuerySelfTest.CacheValue.class
-            );
+                cc.setCacheMode(cacheMode());
+                cc.setAtomicityMode(atomicityMode());
+                cc.setNearConfiguration(nearCacheConfiguration());
+                cc.setWriteSynchronizationMode(FULL_SYNC);
+                cc.setCacheStoreFactory(new StoreFactory());
+                cc.setReadThrough(true);
+                cc.setWriteThrough(true);
+                cc.setLoadPreviousValue(true);
+                cc.setRebalanceMode(SYNC);
+                cc.setSwapEnabled(true);
+                cc.setSqlFunctionClasses(SqlFunctions.class);
+                cc.setIndexedTypes(
+                    BadHashKeyObject.class, Byte.class,
+                    ObjectValue.class, Long.class,
+                    Integer.class, Integer.class,
+                    Integer.class, String.class,
+                    Integer.class, ObjectValue.class,
+                    String.class, ObjectValueOther.class,
+                    Integer.class, ArrayObject.class,
+                    Key.class, GridCacheQueryTestValue.class,
+                    UUID.class, Person.class,
+                    IgniteCacheReplicatedQuerySelfTest.CacheKey.class, IgniteCacheReplicatedQuerySelfTest.CacheValue.class
+                );
 
-            if (cacheMode() != CacheMode.LOCAL)
-                cc.setAffinity(new RendezvousAffinityFunction());
+                if (cacheMode() != CacheMode.LOCAL)
+                    cc.setAffinity(new RendezvousAffinityFunction());
 
-            // Explicitly set number of backups equal to number of grids.
-            if (cacheMode() == CacheMode.PARTITIONED)
-                cc.setBackups(gridCount());
+                // Explicitly set number of backups equal to number of grids.
+                if (cacheMode() == CacheMode.PARTITIONED)
+                    cc.setBackups(gridCount());
+
+                cc.setSnapshotableIndex(snapshotableIndex());
 
                 ccs[i] = cc;
             }
@@ -196,6 +198,13 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             c.setClientMode(true);
 
         return c;
+    }
+
+    /**
+     * @return {@code True} if index snapshot is enabled.
+     */
+    protected boolean snapshotableIndex() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -1372,7 +1381,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         /**
          * @return Salary.
          */
-        public double salary() {
+        public int salary() {
             return salary;
         }
 

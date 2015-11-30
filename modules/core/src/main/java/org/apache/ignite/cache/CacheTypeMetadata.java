@@ -33,7 +33,9 @@ import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Cache type metadata need for configuration of indexes or automatic persistence.
+ * @deprecated Use {@link org.apache.ignite.cache.QueryEntity} instead.
  */
+@Deprecated
 public class CacheTypeMetadata implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;

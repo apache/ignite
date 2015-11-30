@@ -23,7 +23,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -1318,25 +1320,29 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             throw new BinaryObjectException("Only Int32 underlying type is supported for enums: " +
-                enumType.Name);
+                                            enumType.Name);
         }
 
         /// <summary>
-        /// Read enum.
+        /// Gets the enum value by type id and int representation.
         /// </summary>
-        /// <param name="stream">Stream.</param>
-        /// <returns>Enumeration.</returns>
-        public static T ReadEnum<T>(IBinaryStream stream)
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="value">The value.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="marsh">The marshaller.</param>
+        /// <returns>value in form of enum, if typeId is known; value in for of int, if typeId is -1.</returns>
+        public static T GetEnumValue<T>(int value, int typeId, Marshaller marsh)
         {
-            if (!typeof(T).IsEnum || Enum.GetUnderlyingType(typeof(T)) == TypInt)
-            {
-                stream.ReadInt();
+            if (typeId == ObjTypeId)
+                return TypeCaster<T>.Cast(value);
 
-                return TypeCaster<T>.Cast(stream.ReadInt());
-            }
+            // All enums are user types
+            var desc = marsh.GetDescriptor(true, typeId);
 
-            throw new BinaryObjectException("Only Int32 underlying type is supported for enums: " +
-                                        typeof (T).Name);
+            if (desc == null || desc.Type == null)
+                throw new BinaryObjectException("Unknown enum type id: " + typeId);
+
+            return (T)Enum.ToObject(desc.Type, value);
         }
 
         /**
@@ -1384,52 +1390,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return fieldName.Substring(1, fieldName.IndexOf(">", StringComparison.Ordinal) - 1);
             
             return fieldName;
-        }
-
-        /**
-         * <summary>Check whether this is predefined type.</summary>
-         * <param name="hdr">Header.</param>
-         * <returns>True is this is one of predefined types with special semantics.</returns>
-         */
-        public static bool IsPredefinedType(byte hdr)
-        {
-            switch (hdr)
-            {
-                case TypeByte:
-                case TypeShort:
-                case TypeInt:
-                case TypeLong:
-                case TypeFloat:
-                case TypeDouble:
-                case TypeChar:
-                case TypeBool:
-                case TypeDecimal:
-                case TypeString:
-                case TypeGuid:
-                case TypeTimestamp:
-                case TypeEnum:
-                case TypeArrayByte:
-                case TypeArrayShort:
-                case TypeArrayInt:
-                case TypeArrayLong:
-                case TypeArrayFloat:
-                case TypeArrayDouble:
-                case TypeArrayChar:
-                case TypeArrayBool:
-                case TypeArrayDecimal:
-                case TypeArrayString:
-                case TypeArrayGuid:
-                case TypeArrayTimestamp:
-                case TypeArrayEnum:
-                case TypeArray:
-                case TypeCollection:
-                case TypeDictionary:
-                case TypeMapEntry:
-                case TypeBinary:
-                    return true;
-                default:
-                    return false;
-            }
         }
 
         /**
@@ -1532,6 +1492,23 @@ namespace Apache.Ignite.Core.Impl.Binary
                 id = GetStringHashCode(typeName);
 
             return id;
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>
+        /// Simple type name for non-generic types; simple type name with appended generic arguments for generic types.
+        /// </returns>
+        public static string GetTypeName(Type type)
+        {
+            if (!type.IsGenericType)
+                return type.Name;
+
+            var args = type.GetGenericArguments().Select(GetTypeName).Aggregate((x, y) => x + "," + y);
+
+            return string.Format(CultureInfo.InvariantCulture, "{0}[{1}]", type.Name, args);
         }
 
         /**
@@ -1732,7 +1709,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                             IdMapper = CreateInstance<IBinaryIdMapper>(reader),
                             Serializer = CreateInstance<IBinarySerializer>(reader),
                             AffinityKeyFieldName = reader.ReadString(),
-                            KeepDeserialized = reader.ReadObject<bool?>()
+                            KeepDeserialized = reader.ReadObject<bool?>(),
+                            IsEnum = reader.ReadBoolean()
                         });
                     }
                 }

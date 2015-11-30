@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.binary;
+package org.apache.ignite.examples.model.binary;
+
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 
 /**
  * This class represents key for employee object.
@@ -28,6 +30,7 @@ public class EmployeeKey {
     private int id;
 
     /** Organization ID. */
+    @AffinityKeyMapped
     private int organizationId;
 
     /**

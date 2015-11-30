@@ -30,74 +30,52 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Type.
         /// </summary>
-        Type Type
-        {
-            get;
-        }
+        Type Type { get; }
 
         /// <summary>
         /// Type ID.
         /// </summary>
-        int TypeId
-        {
-            get;
-        }
+        int TypeId { get; }
 
         /// <summary>
         /// Type name.
         /// </summary>
-        string TypeName
-        {
-            get;
-        }
+        string TypeName { get; }
 
         /// <summary>
         /// User type flag.
         /// </summary>
-        bool UserType
-        {
-            get;
-        }
+        bool UserType { get; }
 
         /// <summary>
         /// Whether to cache deserialized value in IBinaryObject
         /// </summary>
-        bool KeepDeserialized
-        {
-            get;
-        }
+        bool KeepDeserialized { get; }
 
         /// <summary>
         /// Name converter.
         /// </summary>
-        IBinaryNameMapper NameMapper
-        {
-            get;
-        }
+        IBinaryNameMapper NameMapper { get; }
 
         /// <summary>
         /// Mapper.
         /// </summary>
-        IBinaryIdMapper IdMapper
-        {
-            get;
-        }
+        IBinaryIdMapper IdMapper { get; }
 
         /// <summary>
         /// Serializer.
         /// </summary>
-        IBinarySerializer Serializer
-        {
-            get;
-        }
+        IBinarySerializer Serializer { get; }
 
         /// <summary>
         /// Affinity key field name.
         /// </summary>
-        string AffinityKeyFieldName
-        {
-            get;
-        }
+        string AffinityKeyFieldName { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether this descriptor represents an enum type.
+        /// </summary>
+        bool IsEnum { get; }
 
         /// <summary>
         /// Write type structure.

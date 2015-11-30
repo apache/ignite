@@ -48,6 +48,7 @@ namespace Apache.Ignite.Core.Binary
         public BinaryTypeConfiguration(Type type)
         {
             TypeName = type.AssemblyQualifiedName;
+            IsEnum = type.IsEnum;
         }
 
         /// <summary>
@@ -62,6 +63,7 @@ namespace Apache.Ignite.Core.Binary
             Serializer = cfg.Serializer;
             TypeName = cfg.TypeName;
             KeepDeserialized = cfg.KeepDeserialized;
+            IsEnum = cfg.IsEnum;
         }
 
         /// <summary>
@@ -101,6 +103,11 @@ namespace Apache.Ignite.Core.Binary
         public bool? KeepDeserialized { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether this instance describes an enum type.
+        /// </summary>
+        public bool IsEnum { get; set; }
+
+        /// <summary>
         /// Returns a string that represents the current object.
         /// </summary>
         /// <returns>
@@ -108,9 +115,12 @@ namespace Apache.Ignite.Core.Binary
         /// </returns>
         public override string ToString()
         {
-            return typeof (BinaryTypeConfiguration).Name + " [TypeName=" + TypeName +
-                   ", NameMapper=" + NameMapper + ", IdMapper=" + IdMapper + ", Serializer=" + Serializer +
-                   ", AffinityKeyFieldName=" + AffinityKeyFieldName + ']';
+            return
+                string.Format(
+                    "{0} [TypeName={1}, NameMapper={2}, IdMapper={3}, Serializer={4}, AffinityKeyFieldName={5}, " +
+                    "KeepDeserialized={6}, IsEnum={7}]",
+                    typeof (BinaryTypeConfiguration).Name, TypeName, NameMapper, IdMapper, Serializer,
+                    AffinityKeyFieldName, KeepDeserialized, IsEnum);
         }
     }
 }

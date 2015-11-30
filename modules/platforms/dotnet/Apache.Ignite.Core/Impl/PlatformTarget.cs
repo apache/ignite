@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
@@ -581,7 +580,7 @@ namespace Apache.Ignite.Core.Impl
         /// Put binary types to Grid.
         /// </summary>
         /// <param name="types">Binary types.</param>
-        internal void PutBinaryTypes(IDictionary<int, IBinaryType> types)
+        internal void PutBinaryTypes(ICollection<BinaryType> types)
         {
             DoOutOp(OpMeta, stream =>
             {
@@ -589,15 +588,15 @@ namespace Apache.Ignite.Core.Impl
 
                 metaWriter.WriteInt(types.Count);
 
-                foreach (var meta in types.Values)
+                foreach (var meta in types)
                 {
-                    BinaryType meta0 = (BinaryType)meta;
+                    BinaryType meta0 = meta;
 
                     metaWriter.WriteInt(meta0.TypeId);
                     metaWriter.WriteString(meta0.TypeName);
                     metaWriter.WriteString(meta0.AffinityKeyFieldName);
 
-                    IDictionary<string, int> fields = meta0.FieldsMap();
+                    IDictionary<string, int> fields = meta0.GetFieldsMap();
 
                     metaWriter.WriteInt(fields.Count);
 
@@ -606,6 +605,8 @@ namespace Apache.Ignite.Core.Impl
                         metaWriter.WriteString(field.Key);
                         metaWriter.WriteInt(field.Value);
                     }
+
+                    metaWriter.WriteBoolean(meta.IsEnum);
                 }
 
                 _marsh.FinishMarshal(metaWriter);

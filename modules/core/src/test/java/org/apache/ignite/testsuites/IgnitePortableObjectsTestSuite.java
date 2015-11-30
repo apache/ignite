@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.portable.BinaryEnumsSelfTest;
 import org.apache.ignite.internal.portable.GridPortableAffinityKeySelfTest;
 import org.apache.ignite.internal.portable.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.portable.BinaryObjectBuilderSelfTest;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.portable.noncompact.BinaryFooterOffsetsOffheap
 import org.apache.ignite.internal.portable.noncompact.BinaryMarshallerNonCompactSelfTest;
 import org.apache.ignite.internal.portable.noncompact.BinaryObjectBuilderAdditionalNonCompactSelfTest;
 import org.apache.ignite.internal.portable.noncompact.BinaryObjectBuilderNonCompactSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetadataUpdateChangingTopologySelfTest;
 import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
 import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodeBinaryObjectMetadataTest;
 import org.apache.ignite.internal.processors.cache.portable.GridCachePortableStoreObjectsSelfTest;
@@ -72,6 +74,7 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryFieldsOffheapSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsHeapSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsOffheapSelfTest.class);
+        suite.addTestSuite(BinaryEnumsSelfTest.class);
         suite.addTestSuite(GridPortableMetaDataSelfTest.class);
         suite.addTestSuite(GridPortableAffinityKeySelfTest.class);
         suite.addTestSuite(GridPortableWildcardsSelfTest.class);
@@ -104,6 +107,7 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);
+        suite.addTestSuite(IgniteBinaryMetadataUpdateChangingTopologySelfTest.class);
 
         return suite;
     }

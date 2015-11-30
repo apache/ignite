@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                     var meta = metaHnd.OnObjectWriteFinished();
 
                     if (meta != null)
-                        writer.SaveMetadata(_desc.TypeId, _desc.TypeName, _desc.AffinityKeyFieldName, meta);
+                        writer.SaveMetadata(_desc, meta);
                 }
             }
         }

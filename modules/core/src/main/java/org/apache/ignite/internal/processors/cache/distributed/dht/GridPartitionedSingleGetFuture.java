@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -198,10 +199,11 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             return;
         }
 
-        if (node.isLocal()) {
-            LinkedHashMap<KeyCacheObject, Boolean> map = U.newLinkedHashMap(1);
+        if (isDone())
+            return;
 
-            map.put(key, false);
+        if (node.isLocal()) {
+            Map<KeyCacheObject, Boolean> map = Collections.singletonMap(key, false);
 
             final GridDhtFuture<Collection<GridCacheEntryInfo>> fut = cctx.dht().getDhtAsync(node.id(),
                 -1,
@@ -259,7 +261,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
             if (node.version().compareTo(SINGLE_GET_MSG_SINCE) >= 0) {
                 req = new GridNearSingleGetRequest(cctx.cacheId(),
-                    futId,
+                    futId.localId(),
                     key,
                     readThrough,
                     topVer,
@@ -272,9 +274,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     cctx.deploymentEnabled());
             }
             else {
-                LinkedHashMap<KeyCacheObject, Boolean> map = U.newLinkedHashMap(1);
-
-                map.put(key, false);
+                Map<KeyCacheObject, Boolean> map = Collections.singletonMap(key, false);
 
                 req = new GridNearGetRequest(
                     cctx.cacheId(),
@@ -323,7 +323,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             GridDhtCacheAdapter colocated = cctx.dht();
 
             while (true) {
-                GridCacheEntryEx entry;
+                GridCacheEntryEx entry = null;
 
                 try {
                     entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :

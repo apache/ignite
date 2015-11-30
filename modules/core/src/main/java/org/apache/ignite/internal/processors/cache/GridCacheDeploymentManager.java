@@ -179,8 +179,12 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @param ignore {@code True} to ignore.
      */
-    public void ignoreOwnership(boolean ignore) {
+    public boolean ignoreOwnership(boolean ignore) {
+        boolean old = ignoreOwnership.get();
+
         ignoreOwnership.set(ignore);
+
+        return old;
     }
 
     /**
