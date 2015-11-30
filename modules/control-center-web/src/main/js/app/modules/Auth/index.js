@@ -47,11 +47,14 @@ angular
                 $http.post('/api/v1/' + action, userInfo)
                     .then(User.read)
                     .then(function (user) {
-                        authorized(true);
+                        if (action != 'password/forgot') {
+                            authorized(true);
 
-                        $state.go('base.configuration.clusters');
+                            $root.$broadcast('user', user);
 
-                        $root.$broadcast('user', user);
+                            $state.go('base.configuration.clusters');
+                        } else
+                            $state.go('password.send');
                     })
                     .catch(function (errMsg) {
                         $common.showPopoverMessage(undefined, undefined, 'user_email', errMsg.data);

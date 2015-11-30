@@ -2032,7 +2032,7 @@ consoleModule.controller('activeLink', [
 consoleModule.controller('resetPassword', [
     '$scope', '$modal', '$http', '$window', '$common', '$focus', 'Auth', '$state',
     function ($scope, $http, $common, $focus, Auth, $state) {
-        if ($state.params.token)
+        if ($state.params && $state.params.token)
             $http.post('/api/v1/password/validate-token', {token: $state.params.token})
                 .success(function (res) {
                     $scope.email = res.email;
