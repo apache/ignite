@@ -150,8 +150,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\odbc-driver\src\configuration.cpp" />
+    <ClCompile Include="..\..\..\odbc-driver\src\connection_info.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\utility.cpp" />
     <ClCompile Include="..\..\src\configuration_test.cpp" />
+    <ClCompile Include="..\..\src\connection_info_test.cpp" />
     <ClCompile Include="..\..\src\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity_messages.cpp" />
   </ItemGroup>
