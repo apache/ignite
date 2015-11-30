@@ -33,7 +33,7 @@ angular
 .directive('igniteUserbar', function() {
     return {
         restrict: 'A',
-        controller: ['$rootScope', 'igniteUserbar', function ($rootScope, igniteUserbar) {
+        controller: ['$rootScope', 'igniteUserbar', function ($root, igniteUserbar) {
             var ctrl = this;
 
             ctrl.items = [{text: 'Profile', href: '/profile'}];
@@ -51,10 +51,10 @@ angular
                     ctrl.items.push({text: 'Log Out', href: '/logout'});
             };
 
-            if ($rootScope.user)
-                _rebuildUserbar(undefined, $rootScope.user);
+            if ($root.user)
+                _rebuildUserbar(undefined, $root.user);
 
-            $rootScope.$on('user', _rebuildUserbar);
+            $root.$on('user', _rebuildUserbar);
         }],
         controllerAs: 'userbar'
     }

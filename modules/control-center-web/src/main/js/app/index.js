@@ -90,11 +90,11 @@ angular
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {
 	// set up the states
 	$stateProvider
-	.state('base', {
-		url: '',
-		abstract: true,
-		templateUrl: '/base.html'
-	});
+		.state('base', {
+			url: '',
+			abstract: true,
+			templateUrl: '/base.html'
+		});
 
 	$urlRouterProvider.when('/', '/configuration/clusters');
 

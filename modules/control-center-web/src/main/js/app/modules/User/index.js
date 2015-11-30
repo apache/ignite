@@ -31,9 +31,8 @@ angular
 	} 
 
 	this.$get = ['$q', '$rootScope', '$http', ($q, $root, $http) => {
-		if (_user) {
+		if (_user)
 			$root.user = _user;
-		}
 
 		return {
 			read() {

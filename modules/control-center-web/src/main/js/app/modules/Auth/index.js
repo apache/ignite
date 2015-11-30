@@ -38,7 +38,7 @@ angular
         }
     }
 
-    this.$get = ['$http', '$rootScope', '$state', '$common', 'User', function($http, $rootScope, $state, $common, User) {
+    this.$get = ['$http', '$rootScope', '$state', '$common', 'User', function($http, $root, $state, $common, User) {
     	return {
     		get authorized () {
     			return _authorized;
@@ -51,7 +51,7 @@ angular
 
                         $state.go('base.configuration.clusters');
 
-                        $rootScope.$broadcast('user', user);
+                        $root.$broadcast('user', user);
                     })
                     .catch(function (errMsg) {
                         $common.showPopoverMessage(undefined, undefined, 'user_email', errMsg.data);

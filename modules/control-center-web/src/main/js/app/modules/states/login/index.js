@@ -31,8 +31,8 @@ angular
 		templateUrl: '/login.html'
 	})
 }])
-.run(['$rootScope', '$state', 'Auth', function($rootScope, $state, Auth) {
-	$rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+.run(['$rootScope', '$state', 'Auth', function($root, $state, Auth) {
+	$root.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
 		if (!Auth.authorized && (toState.name !== 'login' && !_.startsWith(toState.name, 'password.'))) {
 			event.preventDefault();
 
