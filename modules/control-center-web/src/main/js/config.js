@@ -38,7 +38,7 @@ System.config({
     "bootstrap-carousel": "github:twbs/bootstrap@3.3.6",
     "clean-css": "npm:clean-css@3.4.8",
     "core-js": "npm:core-js@1.2.6",
-    "css": "github:systemjs/plugin-css@0.1.19",
+    "css": "github:systemjs/plugin-css@0.1.20",
     "file-saver": "github:eligrey/FileSaver.js@master",
     "font-awesome": "npm:font-awesome@4.4.0",
     "jquery": "github:components/jquery@2.1.4",
@@ -113,7 +113,7 @@ System.config({
     },
     "github:krispo/angular-nvd3@1.0.4": {
       "angular": "github:angular/bower-angular@1.4.8",
-      "d3": "npm:d3@3.5.9",
+      "d3": "npm:d3@3.5.10",
       "nvd3": "npm:nvd3@1.8.1"
     },
     "github:marceljuenemann/angular-drag-and-drop-lists@1.3.0": {
@@ -121,7 +121,7 @@ System.config({
     },
     "github:mgcrea/angular-motion@0.4.3": {
       "angular": "github:angular/bower-angular@1.4.8",
-      "css": "github:systemjs/plugin-css@0.1.19"
+      "css": "github:systemjs/plugin-css@0.1.20"
     },
     "github:twbs/bootstrap@3.3.6": {
       "jquery": "github:components/jquery@2.1.4"
@@ -143,8 +143,11 @@ System.config({
     },
     "npm:buffer@3.5.2": {
       "base64-js": "npm:base64-js@0.0.8",
+      "child_process": "github:jspm/nodelibs-child_process@0.1.0",
+      "fs": "github:jspm/nodelibs-fs@0.1.2",
       "ieee754": "npm:ieee754@1.1.6",
-      "is-array": "npm:is-array@1.0.1"
+      "is-array": "npm:is-array@1.0.1",
+      "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:clean-css@3.4.8": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
@@ -177,7 +180,7 @@ System.config({
       "buffer": "github:jspm/nodelibs-buffer@0.1.0"
     },
     "npm:font-awesome@4.4.0": {
-      "css": "github:systemjs/plugin-css@0.1.19"
+      "css": "github:systemjs/plugin-css@0.1.20"
     },
     "npm:graceful-readlink@1.0.1": {
       "fs": "github:jspm/nodelibs-fs@0.1.2"
@@ -192,7 +195,7 @@ System.config({
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:nvd3@1.8.1": {
-      "d3": "npm:d3@3.5.9"
+      "d3": "npm:d3@3.5.10"
     },
     "npm:os-browserify@0.1.2": {
       "os": "github:jspm/nodelibs-os@0.1.0"
