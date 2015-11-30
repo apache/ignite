@@ -647,6 +647,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
         prepareMarshalCacheObjects(nearVals, cctx);
 
+        prepareMarshalCacheObjects(prevVals, cctx);
+
         if (forceTransformBackups) {
             // force addition of deployment info for entry processors if P2P is enabled globally.
             if (!addDepInfo && ctx.deploymentEnabled())
@@ -673,6 +675,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         finishUnmarshalCacheObjects(nearKeys, cctx, ldr);
 
         finishUnmarshalCacheObjects(nearVals, cctx, ldr);
+
+        finishUnmarshalCacheObjects(prevVals, cctx, ldr);
 
         if (forceTransformBackups) {
             entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
