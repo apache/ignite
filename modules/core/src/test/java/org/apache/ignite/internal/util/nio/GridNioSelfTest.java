@@ -23,14 +23,17 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1005,6 +1008,91 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         }
         finally {
             srvr.stop();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnect() throws Exception {
+        GridNioServerListener<byte[]> noOpLsnr = noOpListener();
+
+        GridNioServer<?> srvr = null;
+        GridNioServer<?> srvr2 = null;
+
+        try {
+            srvr = startServer(PORT, new GridPlainParser(), noOpLsnr);
+
+            // Should connect to the next port.
+            srvr2 = startServer(PORT, new GridPlainParser(), noOpLsnr);
+        }
+        finally {
+            if (srvr != null)
+                srvr.stop();
+
+            if (srvr2 != null)
+                srvr.stop();
+        }
+    }
+
+    private GridNioServerListener<byte[]> noOpListener() {
+        return new GridNioServerListenerAdapter<byte[]>() {
+                @Override public void onConnected(GridNioSession ses) {
+                    // No-op.
+                }
+
+                @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
+                    // No-op.
+                }
+
+                @Override public void onMessage(GridNioSession ses, byte[] msg) {
+                    // No-op.
+                }
+
+                @Override public void onSessionWriteTimeout(GridNioSession ses) {
+                    // No-op.
+                }
+
+                @Override public void onSessionIdleTimeout(GridNioSession ses) {
+                    assert false;
+                }
+            };
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnectNegative() throws Exception {
+        GridNioServerListener<byte[]> noOpLsnr = noOpListener();
+
+        List<GridNioServer> srvrs = new ArrayList<>();
+
+        try {
+            final int portRange = 100;
+
+            for (int i = 0; i < portRange + 1; i++) {
+                GridNioServer<?> srv = startServer(PORT, new GridPlainParser(), noOpLsnr);
+
+                srvrs.add(srv);
+            }
+
+            try {
+                GridNioServer<?> srv = startServer(PORT, new GridPlainParser(), noOpLsnr);
+
+                srvrs.add(srv);
+
+                fail("The port range should be already exhausted.");
+            }
+            catch (IgniteCheckedException e) {
+                if (X.hasCause(e, BindException.class))
+                    log.info("Got expected exception: " + e);
+                else
+                    throw e;
+            }
+        }
+        finally {
+            for (GridNioServer srvr : srvrs)
+                srvr.stop();
         }
     }
 
