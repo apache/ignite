@@ -1875,7 +1875,9 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
     var res = $generatorCommon.builder();
 
     if (cluster) {
-        var resCfg = $generatorJava.clusterConfiguration(cluster, clientNearCfg, $generatorCommon.builder(1));
+        var resCfg = $generatorJava.clusterConfiguration(cluster, clientNearCfg, $generatorCommon.builder());
+
+        res.mergeProps(resCfg);
 
         if (javaClass) {
             if (clientMode)
@@ -1912,7 +1914,7 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
             res.needEmptyLine = true;
         }
 
-        resCfg.forEach(res.line);
+        res.mergeLines(resCfg);
 
         if (javaClass) {
             res.needEmptyLine = true;

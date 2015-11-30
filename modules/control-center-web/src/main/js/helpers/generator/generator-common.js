@@ -62,6 +62,19 @@ $generatorCommon.builder = function (deep) {
     res.safeDatasources = [];
     res.safePoint = -1;
 
+    res.mergeProps = function (fromRes) {
+        res.datasources = fromRes.datasources;
+
+        angular.extend(res.imports, fromRes.imports);
+        angular.extend(res.vars, fromRes.datasources);
+    };
+
+    res.mergeLines = function (fromRes) {
+        _.forEach(fromRes, function (line) {
+            res.append(line);
+        })
+    };
+
     res.startSafeBlock = function () {
         res.safeDeep = this.deep;
         this.safeNeedEmptyLine = this.needEmptyLine;
