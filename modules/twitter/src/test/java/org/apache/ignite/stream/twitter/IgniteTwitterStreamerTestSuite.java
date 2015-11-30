@@ -17,16 +17,21 @@
 
 package org.apache.ignite.stream.twitter;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import junit.framework.TestSuite;
 
 /**
  * Twitter streamer tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgniteTwitterStreamerTest.class
-})
-public class IgniteTwitterStreamerTestSuite {
+public class IgniteTwitterStreamerTestSuite extends TestSuite {
+    /**
+     * @return Twitter streamer tests suite.
+     * @throws Exception If failed.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Twitter streamed Test Suite");
 
+        suite.addTestSuite(IgniteTwitterStreamerTest.class);
+
+        return suite;
+    }
 }
