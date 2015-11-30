@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -101,6 +103,9 @@ public class GridNioServer<T> {
 
     /** SSL write buf limit. */
     private static final int WRITE_BUF_LIMIT = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Port range. */
+    public static final int PORT_RANGE = 100;
 
     /** Accept worker thread. */
     @GridToStringExclude
@@ -274,10 +279,38 @@ public class GridNioServer<T> {
 
         if (port != -1) {
             // Once bind, we will not change the port in future.
-            locAddr = new InetSocketAddress(addr, port);
+            InetSocketAddress locAddr0 = new InetSocketAddress(addr, port);
 
-            // This method will throw exception if address already in use.
-            Selector acceptSelector = createSelector(locAddr);
+            Selector acceptSelector;
+
+            for (int port0 = port;;) {
+                try {
+                    acceptSelector = createSelector(locAddr0);
+
+                    break;
+                }
+                catch (IgniteCheckedException e) {
+                    BindException cause = X.cause(e, BindException.class);
+
+                    if (cause != null && "Address already in use".equals(cause.getMessage())) {
+                        if (port0 < port + PORT_RANGE) {
+                            U.quietAndWarn(log, "Address already in use (will try to bind to the next port) [addr="
+                                + addr + ", port=" + port0 + ", nextPort=" + (port0 + 1) + "]");
+
+                            locAddr0 = new InetSocketAddress(addr, ++port0);
+                        }
+                        else
+                            throw new IgniteCheckedException("Failed to bind to any address in port range: [addr="
+                                + addr + ", port=" + port + ", portRange=" + PORT_RANGE + ']', e);
+                    }
+                    else
+                        throw e;
+                }
+            }
+
+            assert locAddr0 != null;
+
+            locAddr = locAddr0;
 
             acceptThread = new IgniteThread(new GridNioAcceptWorker(gridName, "nio-acceptor", log, acceptSelector));
         }
