@@ -37,6 +37,12 @@
     <ClCompile Include="..\..\src\teamcity_messages.cpp">
       <Filter>Code\teamcity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\application_data_buffer_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc-driver\src\application_data_buffer.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h">

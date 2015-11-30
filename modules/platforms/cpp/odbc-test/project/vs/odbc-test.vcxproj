@@ -149,9 +149,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\odbc-driver\src\application_data_buffer.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\configuration.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\connection_info.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\utility.cpp" />
+    <ClCompile Include="..\..\src\application_data_buffer_test.cpp" />
     <ClCompile Include="..\..\src\configuration_test.cpp" />
     <ClCompile Include="..\..\src\connection_info_test.cpp" />
     <ClCompile Include="..\..\src\parser_test.cpp" />
