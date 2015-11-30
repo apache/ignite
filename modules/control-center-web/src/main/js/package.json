@@ -77,7 +77,7 @@
       "angular-ui-router": "github:angular-ui/ui-router@^0.2.15",
       "blob": "github:eligrey/Blob.js@master",
       "bootstrap-carousel": "github:twbs/bootstrap@^3.3.6",
-      "css": "github:systemjs/plugin-css@^0.1.19",
+      "css": "github:systemjs/plugin-css@^0.1.20",
       "file-saver": "github:eligrey/FileSaver.js@master",
       "font-awesome": "npm:font-awesome@^4.4.0",
       "jquery": "github:components/jquery@^2.1.4",
@@ -104,7 +104,7 @@
         "dependencies": {
           "angular": "^1",
           "nvd3": "npm:nvd3@1.8.1",
-          "d3": "npm:d3@3.5.9"
+          "d3": "npm:d3@3.5.10"
         },
         "shim": {
           "dist/angular-nvd3": {
