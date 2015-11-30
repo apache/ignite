@@ -146,6 +146,22 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public void skipStore(boolean skipStore);
 
     /**
+     * Gets flag indicating that objects should be kept in binary format when passed to the stream receiver.
+     * Default is {@code false}.
+     *
+     * @return Skip store flag.
+     */
+    public boolean keepBinary();
+
+    /**
+     * Sets flag indicating that objects should be kept in binary format when passes to the steam receiver.
+     * Default is {@code false}.
+     *
+     * @param keepBinary Keep binary flag.
+     */
+    public void keepBinary(boolean keepBinary);
+
+    /**
      * Gets size of per node key-value pairs buffer.
      *
      * @return Per node buffer size.

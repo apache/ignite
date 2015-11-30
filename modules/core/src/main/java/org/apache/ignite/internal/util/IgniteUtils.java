@@ -173,6 +173,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
@@ -1336,9 +1337,9 @@ public abstract class IgniteUtils {
      */
     @Nullable public static Class<?> classForName(String cls, @Nullable Class<?> dflt) {
         try {
-            return Class.forName(cls);
+            return cls == null ? dflt : Class.forName(cls);
         }
-        catch (ClassNotFoundException e) {
+        catch (ClassNotFoundException ignore) {
             return dflt;
         }
     }
@@ -4983,6 +4984,31 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Read hash map.
+     *
+     * @param in Input.
+     * @return Read map.
+     * @throws IOException If de-serialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @SuppressWarnings({"unchecked"})
+    @Nullable public static <K, V> HashMap<K, V> readHashMap(ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            return null;
+
+        HashMap<K, V> map = U.newHashMap(size);
+
+        for (int i = 0; i < size; i++)
+            map.put((K)in.readObject(), (V)in.readObject());
+
+        return map;
+    }
+
+    /**
      *
      * @param in Input.
      * @return Read map.
@@ -8098,9 +8124,10 @@ public abstract class IgniteUtils {
         if (cls == null)
             return null;
 
-        Class<?> boxed = boxedClsMap.get(cls);
+        if (!cls.isPrimitive())
+            return cls;
 
-        return boxed != null ? boxed : cls;
+        return boxedClsMap.get(cls);
     }
 
     /**
@@ -9301,5 +9328,35 @@ public abstract class IgniteUtils {
 
             throw new IgniteInterruptedCheckedException(e);
         }
+    }
+
+    /**
+     * Defines which protocol version to use for
+     * communication with the provided node.
+     *
+     * @param ctx Context.
+     * @param nodeId Node ID.
+     * @return Protocol version.
+     * @throws IgniteCheckedException If node doesn't exist.
+     */
+    public static byte directProtocolVersion(GridKernalContext ctx, UUID nodeId) throws IgniteCheckedException {
+        assert nodeId != null;
+
+        ClusterNode node = ctx.discovery().node(nodeId);
+
+        if (node == null)
+            throw new IgniteCheckedException("Failed to define communication protocol version " +
+                "(has node left topology?): " + nodeId);
+
+        assert !node.isLocal();
+
+        Byte attr = node.attribute(GridIoManager.DIRECT_PROTO_VER_ATTR);
+
+        byte rmtProtoVer = attr != null ? attr : 1;
+
+        if (rmtProtoVer < GridIoManager.DIRECT_PROTO_VER)
+            return rmtProtoVer;
+        else
+            return GridIoManager.DIRECT_PROTO_VER;
     }
 }

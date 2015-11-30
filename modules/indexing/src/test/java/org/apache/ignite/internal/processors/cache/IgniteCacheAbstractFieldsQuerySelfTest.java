@@ -143,7 +143,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             }
         }
 
-        cache.setIndexedTypes(indexedTypes.toArray(new Class[indexedTypes.size()]));
+        if (!indexedTypes.isEmpty())
+            cache.setIndexedTypes(indexedTypes.toArray(new Class[indexedTypes.size()]));
 
         if (cacheMode() == PARTITIONED)
             cache.setBackups(1);

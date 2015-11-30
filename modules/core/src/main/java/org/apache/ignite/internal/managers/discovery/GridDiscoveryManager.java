@@ -2136,7 +2136,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         customEvt.node(ctx.discovery().localNode());
                         customEvt.eventNode(node);
                         customEvt.type(type);
-                        customEvt.topologySnapshot(topVer.topologyVersion(), null);
+                        customEvt.topologySnapshot(topVer.topologyVersion(), evt.get4());
                         customEvt.affinityTopologyVersion(topVer);
                         customEvt.customMessage(evt.get5());
 

@@ -414,7 +414,7 @@ public interface GridClientCompute {
     public GridClientFuture<List<GridClientNode>> refreshTopologyAsync(boolean includeAttrs, boolean includeMetrics);
 
     /**
-     * Sets keep portables flag for the next task execution in the current thread.
+     * Sets keep binary flag for the next task execution in the current thread.
      */
     public GridClientCompute withKeepPortables();
 }

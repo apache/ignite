@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -674,5 +675,46 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
         assertTrue(srvLatch.await(1000));
         assertTrue(clientLatch.await(1000));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSemaphoreReconnect() throws Exception {
+        Ignite client = grid(serverCount());
+
+        assertTrue(client.cluster().localNode().isClient());
+
+        Ignite srv = clientRouter(client);
+
+        IgniteSemaphore clientSemaphore = client.semaphore("semaphore1", 3, false, true);
+
+        assertEquals(3, clientSemaphore.availablePermits());
+
+        final IgniteSemaphore srvSemaphore = srv.semaphore("semaphore1", 3, false, false);
+
+        assertEquals(3, srvSemaphore.availablePermits());
+
+        reconnectClientNode(client, srv, new Runnable() {
+            @Override public void run() {
+                srvSemaphore.acquire();
+            }
+        });
+
+        assertEquals(2, srvSemaphore.availablePermits());
+        assertEquals(2, clientSemaphore.availablePermits());
+
+        srvSemaphore.acquire();
+
+        assertEquals(1, srvSemaphore.availablePermits());
+        assertEquals(1, clientSemaphore.availablePermits());
+
+        clientSemaphore.acquire();
+
+        assertEquals(0, srvSemaphore.availablePermits());
+        assertEquals(0, clientSemaphore.availablePermits());
+
+        assertFalse(srvSemaphore.tryAcquire());
+        assertFalse(srvSemaphore.tryAcquire());
     }
 }

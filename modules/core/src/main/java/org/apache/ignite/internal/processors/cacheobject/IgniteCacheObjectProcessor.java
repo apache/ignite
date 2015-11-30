@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cacheobject;
 
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -164,4 +165,9 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return {@code True} if object is of known immutable type.
      */
     public boolean immutable(Object obj);
+
+    /**
+     * @return Ignite binary interface.
+     */
+    public IgniteBinary binary();
 }

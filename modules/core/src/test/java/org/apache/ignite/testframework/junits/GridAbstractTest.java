@@ -61,7 +61,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
-import org.apache.ignite.internal.util.GridEnumCache;
+import org.apache.ignite.internal.portable.BinaryEnumCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -856,7 +856,7 @@ public abstract class GridAbstractTest extends TestCase {
         List<Ignite> ignites = G.allGrids();
 
         for (Ignite g : ignites) {
-            if (g.cluster().localNode().isClient())
+            if (g.configuration().getDiscoverySpi().isClientMode())
                 stopGrid(g.name(), cancel);
         }
     }
@@ -868,7 +868,7 @@ public abstract class GridAbstractTest extends TestCase {
         List<Ignite> ignites = G.allGrids();
 
         for (Ignite g : ignites) {
-            if (!g.cluster().localNode().isClient())
+            if (!g.configuration().getDiscoverySpi().isClientMode())
                 stopGrid(g.name(), cancel);
         }
     }
@@ -1120,16 +1120,31 @@ public abstract class GridAbstractTest extends TestCase {
         if (gridName != null && gridName.matches(".*\\d")) {
             String idStr = UUID.randomUUID().toString();
 
-            char[] chars = idStr.toCharArray();
+            if (gridName.startsWith(getTestGridName())) {
+                String idxStr = String.valueOf(getTestGridIndex(gridName));
 
-            chars[0] = gridName.charAt(gridName.length() - 1);
-            chars[1] = '0';
+                while (idxStr.length() < 5)
+                    idxStr = '0' + idxStr;
 
-            chars[chars.length - 3] = '0';
-            chars[chars.length - 2] = '0';
-            chars[chars.length - 1] = gridName.charAt(gridName.length() - 1);
+                char[] chars = idStr.toCharArray();
 
-            cfg.setNodeId(UUID.fromString(new String(chars)));
+                for (int i = 0; i < idxStr.length(); i++)
+                    chars[chars.length - idxStr.length() + i] = idxStr.charAt(i);
+
+                cfg.setNodeId(UUID.fromString(new String(chars)));
+            }
+            else {
+                char[] chars = idStr.toCharArray();
+
+                chars[0] = gridName.charAt(gridName.length() - 1);
+                chars[1] = '0';
+
+                chars[chars.length - 3] = '0';
+                chars[chars.length - 2] = '0';
+                chars[chars.length - 1] = gridName.charAt(gridName.length() - 1);
+
+                cfg.setNodeId(UUID.fromString(new String(chars)));
+            }
         }
 
         if (isMultiJvm())
@@ -1233,7 +1248,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (isDebug()) {
             discoSpi.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-            cfg.setNetworkTimeout(Long.MAX_VALUE);
+            cfg.setNetworkTimeout(Long.MAX_VALUE / 3);
         }
         else {
             // Set network timeout to 10 sec to avoid unexpected p2p class loading errors.
@@ -1350,7 +1365,7 @@ public abstract class GridAbstractTest extends TestCase {
                 GridClassLoaderCache.clear();
                 U.clearClassCache();
                 MarshallerExclusions.clearCache();
-                GridEnumCache.clear();
+                BinaryEnumCache.clear();
             }
 
             Thread.currentThread().setContextClassLoader(clsLdr);
