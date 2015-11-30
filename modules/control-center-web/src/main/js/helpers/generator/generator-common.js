@@ -63,16 +63,23 @@ $generatorCommon.builder = function (deep) {
     res.safePoint = -1;
 
     res.mergeProps = function (fromRes) {
-        res.datasources = fromRes.datasources;
+        if ($commonUtils.isDefinedAndNotEmpty(fromRes)) {
+            res.datasources = fromRes.datasources;
 
-        angular.extend(res.imports, fromRes.imports);
-        angular.extend(res.vars, fromRes.datasources);
+            angular.extend(res.imports, fromRes.imports);
+            angular.extend(res.vars, fromRes.vars);
+        }
     };
 
     res.mergeLines = function (fromRes) {
-        _.forEach(fromRes, function (line) {
-            res.append(line);
-        })
+        if ($commonUtils.isDefinedAndNotEmpty(fromRes)) {
+            if (res.needEmptyLine)
+                res.push('');
+
+            _.forEach(fromRes, function (line) {
+                res.append(line);
+            });
+        }
     };
 
     res.startSafeBlock = function () {

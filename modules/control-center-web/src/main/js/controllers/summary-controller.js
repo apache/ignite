@@ -206,9 +206,7 @@ consoleModule.controller('summaryController', [
 
         zip.file('Dockerfile', $scope.dockerServer);
 
-        var builder = $generatorProperties.sslProperties(cluster);
-
-        builder = $generatorProperties.dataSourcesProperties(cluster, builder);
+        var builder = $generatorProperties.generateProperties(cluster);
 
         if (builder)
             zip.file('src/main/resources/secret.properties', builder.asString());
