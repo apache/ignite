@@ -62,6 +62,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+        disco.setJoinTimeout(5000);
 
         // Cache config.
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
