@@ -140,7 +140,7 @@ router.post('/password/forgot', function(req, res) {
                 subject: 'Password Reset',
                 text: 'You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n' +
                 'Please click on the following link, or paste this into your browser to complete the process:\n\n' +
-                'http://' + req.headers.host + '/password/reset?token=' + token + '\n\n' +
+                'http://' + req.headers['x-forwarded-for'] || req.headers.host + '/password/reset?token=' + token + '\n\n' +
                 'If you did not request this, please ignore this email and your password will remain unchanged.\n\n' +
                 '--------------\n' +
                 'Apache Ignite Web Console\n'
@@ -194,7 +194,7 @@ router.post('/password/reset', function(req, res) {
                     subject: 'Your password has been changed',
                     text: 'Hello,\n\n' +
                     'This is a confirmation that the password for your account ' + user.email + ' has just been changed.\n\n' +
-                    'Now you can login: http://' + req.headers.host + '\n\n' +
+                    'Now you can login: http://' + req.headers['x-forwarded-for'] || req.headers.host + '\n\n' +
                     '--------------\n' +
                     'Apache Ignite Web Console\n'
                 };
