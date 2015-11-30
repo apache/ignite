@@ -154,12 +154,12 @@
     <ClCompile Include="..\..\..\odbc-driver\src\utility.cpp" />
     <ClCompile Include="..\..\src\configuration_test.cpp" />
     <ClCompile Include="..\..\src\connection_info_test.cpp" />
+    <ClCompile Include="..\..\src\parser_test.cpp" />
     <ClCompile Include="..\..\src\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity_messages.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h" />
-    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">

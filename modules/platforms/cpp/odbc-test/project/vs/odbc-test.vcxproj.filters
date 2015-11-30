@@ -8,15 +8,12 @@
     <Filter Include="Externals">
       <UniqueIdentifier>{cc75fc86-c08d-428a-8ae3-f9979e4588ab}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\teamcity">
+      <UniqueIdentifier>{5438a56d-1009-412a-86e3-ceb1112af275}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\configuration_test.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\teamcity_boost.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\teamcity_messages.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\odbc-driver\src\configuration.cpp">
@@ -31,13 +28,19 @@
     <ClCompile Include="..\..\..\odbc-driver\src\connection_info.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\parser_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\teamcity_boost.cpp">
+      <Filter>Code\teamcity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\teamcity_messages.cpp">
+      <Filter>Code\teamcity</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Code</Filter>
+      <Filter>Code\teamcity</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
