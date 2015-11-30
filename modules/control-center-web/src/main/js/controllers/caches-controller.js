@@ -17,16 +17,14 @@
 
 // Controller for Caches screen.
 consoleModule.controller('cachesController', [
-    '$scope', '$controller', '$filter', '$http', '$timeout', '$common', '$focus', '$confirm', '$message', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
-    function ($scope, $controller, $filter, $http, $timeout, $common, $focus, $confirm, $message, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
+    '$scope', '$controller', '$filter', '$http', '$timeout', '$common', '$focus', '$confirm', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
+    function ($scope, $controller, $filter, $http, $timeout, $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
             $unsavedChangesGuard.install($scope);
 
             // Initialize the super class and extend it.
             angular.extend(this, $controller('save-remove', {$scope: $scope}));
 
             $scope.ui = $common.formUI();
-
-            $scope.showMoreInfo = $message.message;
 
             $scope.joinTip = $common.joinTip;
             $scope.getModel = $common.getModel;
@@ -238,7 +236,7 @@ consoleModule.controller('cachesController', [
             $loading.start('loadingCachesScreen');
 
             // When landing on the page, get caches and show them.
-            $http.post('caches/list')
+            $http.post('/api/v1/configuration/caches/list')
                 .success(function (data) {
                     var validFilter = $filter('metadatasValidation');
 
@@ -483,7 +481,7 @@ consoleModule.controller('cachesController', [
 
             // Save cache into database.
             function save(item) {
-                $http.post('caches/save', item)
+                $http.post('/api/v1/configuration/caches/save', item)
                     .success(function (_id) {
                         $scope.ui.markPristine();
 
@@ -542,7 +540,7 @@ consoleModule.controller('cachesController', [
                     .then(function () {
                             var _id = selectedItem._id;
 
-                            $http.post('caches/remove', {_id: _id})
+                            $http.post('/api/v1/configuration/caches/remove', {_id: _id})
                                 .success(function () {
                                     $common.showInfo('Cache has been removed: ' + selectedItem.name);
 
@@ -573,7 +571,7 @@ consoleModule.controller('cachesController', [
 
                 $confirm.confirm('Are you sure you want to remove all caches?')
                     .then(function () {
-                            $http.post('caches/remove/all')
+                            $http.post('/api/v1/configuration/caches/remove/all')
                                 .success(function () {
                                     $common.showInfo('All caches have been removed');
 

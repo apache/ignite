@@ -17,12 +17,12 @@
 
 // Controller for Admin screen.
 consoleModule.controller('adminController',
-    ['$scope', '$window', '$http', '$common', '$confirm',
-    function ($scope, $window, $http, $common, $confirm) {
+    ['$q', '$rootScope', '$scope', '$http', '$common', '$confirm', '$state', 'User',
+    function ($q, $rootScope, $scope, $http, $common, $confirm, $state, User) {
     $scope.users = null;
 
     function reload() {
-        $http.post('admin/list')
+        $http.post('/api/v1/admin/list')
             .success(function (data) {
                 $scope.users = data;
             })
@@ -34,13 +34,23 @@ consoleModule.controller('adminController',
     reload();
 
     $scope.becomeUser = function (user) {
-        $window.location = '/admin/become?viewedUserId=' + user._id;
+        $http
+        .get('/api/v1/admin/become', { params: {viewedUserId: user._id}})
+        .then(User.read)
+        .then(function (user) {
+            $rootScope.$broadcast('user', user);
+
+            $state.go('base.configuration.clusters')
+        })
+        .catch(function (errMsg) {
+            $common.showError($common.errorMessage(errMsg));
+        });
     };
 
     $scope.removeUser = function (user) {
         $confirm.confirm('Are you sure you want to remove user: "' + user.username + '"?')
             .then(function () {
-                $http.post('admin/remove', {userId: user._id}).success(
+                $http.post('/api/v1/admin/remove', {userId: user._id}).success(
                     function () {
                         var i = _.findIndex($scope.users, function (u) {
                             return u._id == user._id;
@@ -65,7 +75,7 @@ consoleModule.controller('adminController',
 
         user.adminChanging = true;
 
-        $http.post('admin/save', {userId: user._id, adminFlag: user.admin}).success(
+        $http.post('/api/v1/admin/save', {userId: user._id, adminFlag: user.admin}).success(
             function () {
                 $common.showInfo('Admin right was successfully toggled for user: "' + user.username + '"');
 

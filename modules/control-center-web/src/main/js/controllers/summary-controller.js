@@ -17,8 +17,8 @@
 
 // Controller for Summary screen.
 consoleModule.controller('summaryController', [
-    '$scope', '$http', '$common', '$loading', '$message', '$table',
-    function ($scope, $http, $common, $loading, $message, $table) {
+    '$scope', '$http', '$common', '$loading', '$table',
+    function ($scope, $http, $common, $loading, $table) {
     var igniteVersion = '1.5.0-IWC';
 
     $scope.panelExpanded = $common.panelExpanded;
@@ -26,8 +26,6 @@ consoleModule.controller('summaryController', [
     $scope.joinTip = $common.joinTip;
     $scope.getModel = $common.getModel;
     $scope.widthIsSufficient = $common.widthIsSufficient;
-
-    $scope.showMoreInfo = $message.message;
 
     $scope.javaClassItems = [
         {label: 'snippet', value: 1},
@@ -242,7 +240,7 @@ consoleModule.controller('summaryController', [
 
     $loading.start('loadingSummaryScreen');
 
-    $http.post('clusters/list')
+    $http.post('/api/v1/configuration/clusters/list')
         .success(function (data) {
             $scope.clusters = data.clusters;
 

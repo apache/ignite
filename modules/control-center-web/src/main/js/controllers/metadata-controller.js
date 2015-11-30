@@ -17,8 +17,8 @@
 
 // Controller for Metadata screen.
 consoleModule.controller('metadataController', [
-    '$scope', '$controller', '$filter', '$http', '$modal', '$common', '$timeout', '$focus', '$confirm', '$confirmBatch', '$message', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
-    function ($scope, $controller, $filter, $http, $modal, $common, $timeout, $focus, $confirm, $confirmBatch, $message, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
+    '$scope', '$controller', '$filter', '$http', '$modal', '$common', '$timeout', '$focus', '$confirm', '$confirmBatch', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
+    function ($scope, $controller, $filter, $http, $modal, $common, $timeout, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
             $unsavedChangesGuard.install($scope);
 
             // Initialize the super class and extend it.
@@ -29,12 +29,8 @@ consoleModule.controller('metadataController', [
 
             $scope.ui = $common.formUI();
 
-            $scope.$on('user', function($rootScope, user) {
-                $scope.ui.packageName = $commonUtils.toJavaPackageName(user.email.replace('@', '.').split('.')
-                    .reverse().join('.') + '.model');
-            });
-
-            $scope.showMoreInfo = $message.message;
+            $scope.ui.packageName = $commonUtils.toJavaPackageName($scope.$root.user.email.replace('@', '.').split('.')
+                .reverse().join('.') + '.model');
 
             $scope.agentGoal = 'load metadata from database schema';
             $scope.agentTestDriveOption = '--test-drive-metadata';
@@ -242,7 +238,7 @@ consoleModule.controller('metadataController', [
             $scope.$watch('loadMeta.displayedTables', $scope.selectTable);
 
             // Pre-fetch modal dialogs.
-            var loadMetaModal = $modal({scope: $scope, templateUrl: 'metadata/metadata-load', show: false});
+            var loadMetaModal = $modal({scope: $scope, templateUrl: '/configuration/metadata-load.html', show: false});
 
             var hideLoadMetadata = loadMetaModal.hide;
 
@@ -274,7 +270,7 @@ consoleModule.controller('metadataController', [
 
                     // Get available JDBC drivers via agent.
                     if ($scope.loadMeta.action == 'drivers') {
-                        $http.post('/agent/drivers')
+                        $http.post('/api/v1/agent/drivers')
                             .success(function (drivers) {
                                 onSuccess();
 
@@ -326,7 +322,7 @@ consoleModule.controller('metadataController', [
                     preset.password = '';
                 }
 
-                $http.post('/agent/schemas', preset)
+                $http.post('/api/v1/agent/schemas', preset)
                     .success(function (schemas) {
                         $scope.loadMeta.schemas = _.map(schemas, function (schema) { return {use: false, name: schema}});
                         $scope.loadMeta.action = 'schemas';
@@ -360,7 +356,7 @@ consoleModule.controller('metadataController', [
                         $scope.preset.schemas.push(schema.name);
                 });
 
-                $http.post('/agent/metadata', $scope.preset)
+                $http.post('/api/v1/agent/metadata', $scope.preset)
                     .success(function (tables) {
                         $scope.loadMeta.tables = tables;
                         $scope.loadMeta.action = 'tables';
@@ -417,7 +413,7 @@ consoleModule.controller('metadataController', [
                 if (batch && batch.length > 0) {
                     $loading.start('loadingMetadataFromDb');
 
-                    $http.post('metadata/save/batch', batch)
+                    $http.post('/api/v1/configuration/metadata/save/batch', batch)
                         .success(function (savedBatch) {
                             var lastItem = undefined;
                             var newItems = [];
@@ -473,7 +469,7 @@ consoleModule.controller('metadataController', [
 
                 $scope.preset.space = $scope.spaces[0];
 
-                $http.post('presets/save', $scope.preset)
+                $http.post('/api/v1/configuration/presets/save', $scope.preset)
                     .error(function (errMsg) {
                         $common.showError(errMsg);
                     });
@@ -671,7 +667,7 @@ consoleModule.controller('metadataController', [
             // When landing on the page, get metadatas and show them.
             $loading.start('loadingMetadataScreen');
 
-            $http.post('metadata/list')
+            $http.post('/api/v1/configuration/metadata/list')
                 .success(function (data) {
                     $scope.spaces = data.spaces;
                     $scope.caches = data.caches;
@@ -745,7 +741,7 @@ consoleModule.controller('metadataController', [
                     $loading.finish('loadingMetadataScreen');
                 });
 
-            $http.post('presets/list')
+            $http.post('/api/v1/configuration/presets/list')
                 .success(function (data) {
                     _.forEach(data.presets, function (restoredPreset) {
                         var preset = _.find(presets, function (dfltPreset) {
@@ -873,7 +869,7 @@ consoleModule.controller('metadataController', [
                 else if (str)
                     item.kind = 'store';
 
-                $http.post('metadata/save', item)
+                $http.post('/api/v1/configuration/metadata/save', item)
                     .success(function (res) {
                         $scope.ui.markPristine();
 
@@ -932,7 +928,7 @@ consoleModule.controller('metadataController', [
                     .then(function () {
                             var _id = selectedItem._id;
 
-                            $http.post('metadata/remove', {_id: _id})
+                            $http.post('/api/v1/configuration/metadata/remove', {_id: _id})
                                 .success(function () {
                                     $common.showInfo('Cache type metadata has been removed: ' + selectedItem.valueType);
 
@@ -969,7 +965,7 @@ consoleModule.controller('metadataController', [
 
                 $confirm.confirm('Are you sure you want to remove all metadata?')
                     .then(function () {
-                            $http.post('metadata/remove/all')
+                            $http.post('/api/v1/configuration/metadata/remove/all')
                                 .success(function () {
                                     $common.showInfo('All metadata have been removed');
 

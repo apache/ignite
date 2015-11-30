@@ -17,16 +17,14 @@
 
 // Controller for Clusters screen.
 consoleModule.controller('clustersController', [
-    '$scope', '$controller', '$http', '$timeout', '$common', '$focus', '$confirm', '$message', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
-    function ($scope, $controller, $http, $timeout, $common, $focus, $confirm, $message, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
+    '$scope', '$controller', '$http', '$timeout', '$common', '$focus', '$confirm', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
+    function ($scope, $controller, $http, $timeout, $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
         $unsavedChangesGuard.install($scope);
 
         // Initialize the super class and extend it.
         angular.extend(this, $controller('save-remove', {$scope: $scope}));
 
         $scope.ui = $common.formUI();
-
-        $scope.showMoreInfo = $message.message;
 
         $scope.joinTip = $common.joinTip;
         $scope.getModel = $common.getModel;
@@ -179,7 +177,7 @@ consoleModule.controller('clustersController', [
         $loading.start('loadingClustersScreen');
 
         // When landing on the page, get clusters and show them.
-        $http.post('clusters/list')
+        $http.post('/api/v1/configuration/clusters/list')
             .success(function (data) {
                 $scope.spaces = data.spaces;
 
@@ -510,7 +508,7 @@ consoleModule.controller('clustersController', [
 
         // Save cluster in database.
         function save(item) {
-            $http.post('clusters/save', item)
+            $http.post('/api/v1/configuration/clusters/save', item)
                 .success(function (_id) {
                     $scope.ui.markPristine();
 
@@ -569,7 +567,7 @@ consoleModule.controller('clustersController', [
                 .then(function () {
                         var _id = selectedItem._id;
 
-                        $http.post('clusters/remove', {_id: _id})
+                        $http.post('/api/v1/configuration/clusters/remove', {_id: _id})
                             .success(function () {
                                 $common.showInfo('Cluster has been removed: ' + selectedItem.name);
 
@@ -600,7 +598,7 @@ consoleModule.controller('clustersController', [
 
             $confirm.confirm('Are you sure you want to remove all clusters?')
                 .then(function () {
-                        $http.post('clusters/remove/all')
+                        $http.post('/api/v1/configuration/clusters/remove/all')
                             .success(function () {
                                 $common.showInfo('All clusters have been removed');
 

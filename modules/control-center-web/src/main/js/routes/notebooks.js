@@ -20,10 +20,6 @@ var router = require('express').Router();
 var db = require('../db');
 var utils = require('./../helpers/common-utils');
 
-router.get('/new', function (req, res) {
-    res.render('sql/notebook-new', {});
-});
-
 /**
  * Get notebooks names accessed for user account.
  *
@@ -143,7 +139,7 @@ router.post('/new', function (req, res) {
         if (err)
             return res.status(500).send(err.message);
 
-        (new db.Notebook({space: space.id, name: req.body.name, paragraphs: []})).save(function (err, note) {
+        (new db.Notebook({space: space.id, name: req.body.name})).save(function (err, note) {
             if (err)
                 return res.status(500).send(err.message);
 

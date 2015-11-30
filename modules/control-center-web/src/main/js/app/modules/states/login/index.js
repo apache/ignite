@@ -14,16 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var router = require('express').Router();
+ 
+import angular from 'angular'
 
-// GET template for summary tabs.
-router.get('/summary-tabs', function (req, res) {
-    res.render('configuration/summary-tabs', {});
-});
+angular
+.module('ignite-console.states.login', [
+	'ui.router',
+	// services
+	'ignite-console.Auth'
+])
+.config(['$stateProvider', function($stateProvider) {
+	// set up the states
+	$stateProvider
+	.state('login', {
+		url: '/login',
+		templateUrl: '/login.html'
+	})
+}])
+.run(['$rootScope', '$state', 'Auth', function($root, $state, Auth) {
+	$root.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+		if (!Auth.authorized && (toState.name !== 'login' && !_.startsWith(toState.name, 'password.'))) {
+			event.preventDefault();
 
-/* GET summary page. */
-router.get('/', function (req, res) {
-    res.render('configuration/summary');
-});
-
-module.exports = router;
+			$state.go('login');
+		}
+	})
+}]);

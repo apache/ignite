@@ -26,7 +26,7 @@ mixin block-callout(workflowTitle, workflowContent, whatsNextTitle, whatsNextCon
                             li(ng-repeat='item in #{workflowContent}')
                                 div(ng-switch='item')
                                     div(ng-switch-when='more-info')
-                                        a(ng-click='showMoreInfo(moreInfo.title, moreInfo.content)') More info
+                                        a(bs-modal='moreInfo' data-placement='center' data-template-url='/templates/message.html') More info
                                     div(ng-switch-default) {{::item}}
                     td.block-callout-right(width='50%')
                         i.fa.fa-check-square.block-callout-header-right

@@ -38,41 +38,6 @@ router.post('/user', function (req, res) {
     res.json(user);
 });
 
-// GET dropdown-menu template.
-router.get('/select', function (req, res) {
-    res.render('templates/select', {});
-});
-
-// GET dropdown-menu template.
-router.get('/validation-error', function (req, res) {
-    res.render('templates/validation-error', {});
-});
-
-// GET confirmation dialog.
-router.get('/message', function (req, res) {
-    res.render('templates/message', {});
-});
-
-// GET confirmation dialog.
-router.get('/confirm', function (req, res) {
-    res.render('templates/confirm', {});
-});
-
-// GET batch confirmation dialog.
-router.get('/confirm/batch', function (req, res) {
-    res.render('templates/batch-confirm', {});
-});
-
-// GET copy dialog.
-router.get('/clone', function (req, res) {
-    res.render('templates/clone', {});
-});
-
-/* GET login dialog. */
-router.get('/login', function (req, res) {
-    res.render('login');
-});
-
 /**
  * Register new account.
  */
@@ -100,7 +65,7 @@ router.post('/register', function (req, res) {
                 if (err)
                     return res.status(401).send(err.message);
 
-                return res.redirect('/configuration/clusters');
+                return res.sendStatus(200);
             });
         });
     });
@@ -121,7 +86,7 @@ router.post('/login', function (req, res, next) {
             if (err)
                 return res.status(401).send(err.message);
 
-            res.redirect('/configuration/clusters');
+            return res.sendStatus(200);
         });
     })(req, res, next);
 });
@@ -129,10 +94,10 @@ router.post('/login', function (req, res, next) {
 /**
  * Logout.
  */
-router.get('/logout', function (req, res) {
+router.post('/logout', function (req, res) {
     req.logout();
 
-    res.redirect('/');
+    res.sendStatus(200);
 });
 
 /**
@@ -185,7 +150,7 @@ router.post('/password/forgot', function(req, res) {
                 if (err)
                     return res.status(401).send('Failed to send e-mail with reset link!<br />' + err);
 
-                return res.status(403).send('An e-mail has been sent with further instructions.');
+                return res.status(200).send('An e-mail has been sent with further instructions.');
             });
         });
     });
@@ -245,10 +210,6 @@ router.post('/password/reset', function(req, res) {
     });
 });
 
-router.get('/password/reset', function (req, res) {
-    res.render('reset');
-});
-
 /* GET reset password page. */
 router.post('/password/validate-token', function (req, res) {
     var token = req.body.token;
@@ -265,14 +226,6 @@ router.post('/password/validate-token', function (req, res) {
 
         res.json(data);
     });
-});
-
-/* GET home page. */
-router.get('/', function (req, res) {
-    if (req.isAuthenticated())
-        res.redirect('/configuration/clusters');
-    else
-        res.render('login');
 });
 
 module.exports = router;

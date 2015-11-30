@@ -19,19 +19,30 @@ var consoleModule = angular.module('ignite-web-console',
     [
         'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'agGrid', 'nvd3', 'dndLists'
         /* ignite:modules */
-        , 'ignite-web-console.navbar'
-        , 'ignite-web-console.configuration.sidebar'
+        , 'ignite-console'
         /* endignite */
         /* ignite:plugins */
         /* endignite */
     ])
-    .run(function ($rootScope, $http) {
-        $http.post('/user')
-            .success(function (user) {
-                $rootScope.user = user;
-
+    .run(function ($rootScope, $http, $state, $common, Auth, User) {
+        if (Auth.authorized)
+            User.read().then(function (user) {
                 $rootScope.$broadcast('user', user);
             });
+
+        $rootScope.revertIdentity = function () {
+            $http
+                .get('/api/v1/admin/revertIdentity')
+                .then(User.read)
+                .then(function (user) {
+                    $rootScope.$broadcast('user', user);
+
+                    $state.go('base.admin')
+                })
+                .catch(function (errMsg) {
+                    $common.showError($common.errorMessage(errMsg));
+                });
+        }
     });
 
 // Modal popup configuration.
@@ -47,7 +58,7 @@ consoleModule.config(function ($popoverProvider) {
         trigger: 'manual',
         placement: 'right',
         container: 'body',
-        templateUrl: '/validation-error'
+        templateUrl: '/templates/validation-error.html'
     });
 });
 
@@ -69,7 +80,7 @@ consoleModule.config(function ($selectProvider) {
         maxLength: '5',
         allText: 'Select All',
         noneText: 'Clear All',
-        templateUrl: '/select',
+        templateUrl: '/templates/select.html',
         iconCheckmark: 'fa fa-check',
         caretHtml: ''
     });
@@ -988,7 +999,7 @@ consoleModule.service('$confirm', function ($modal, $rootScope, $q) {
 
     var deferred;
 
-    var confirmModal = $modal({templateUrl: '/confirm', scope: scope, placement: 'center', show: false});
+    var confirmModal = $modal({templateUrl: '/templates/confirm.html', scope: scope, placement: 'center', show: false});
 
     scope.confirmOk = function () {
         deferred.resolve(true);
@@ -1015,29 +1026,23 @@ consoleModule.service('$confirm', function ($modal, $rootScope, $q) {
     return confirmModal;
 });
 
-// Show modal message service.
-consoleModule.service('$message', function ($modal, $rootScope) {
-    var scope = $rootScope.$new();
-
-    var messageModal = $modal({templateUrl: '/message', scope: scope, placement: 'center', show: false});
-
-    messageModal.message = function (title, content) {
-        scope.title = title || 'Message';
-        scope.content = content.join('<br/>') || '...';
-
-        messageModal.show();
-    };
-
-    return messageModal;
-});
-
 // Confirm change location.
-consoleModule.service('$unsavedChangesGuard', function () {
+consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
     return {
         install: function ($scope) {
             $scope.$on("$destroy", function() {
                 window.onbeforeunload = null;
             });
+
+            var unbind = $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+                if ($scope.ui && $scope.ui.isDirty()) {
+                    if (!confirm('You have unsaved changes.\n\nAre you sure you want to discard them?')) {
+                        event.preventDefault(); 
+                    } else {
+                        unbind();
+                    }
+                }
+            })
 
             window.onbeforeunload = function(){
                 return $scope.ui && $scope.ui.isDirty()
@@ -1058,7 +1063,7 @@ consoleModule.service('$confirmBatch', function ($rootScope, $modal,  $q) {
 
     var deferred;
 
-    var stepConfirmModal = $modal({templateUrl: '/confirm/batch', scope: scope, placement: 'center', show: false});
+    var stepConfirmModal = $modal({templateUrl: '/template/batch-confirm.html', scope: scope, placement: 'center', show: false});
 
     function _done(cancel) {
         if (cancel)
@@ -1145,7 +1150,7 @@ consoleModule.service('$clone', function ($modal, $rootScope, $q) {
         copyModal.hide();
     };
 
-    var copyModal = $modal({templateUrl: '/clone', scope: scope, placement: 'center', show: false});
+    var copyModal = $modal({templateUrl: '/templates/clone.html', scope: scope, placement: 'center', show: false});
 
     copyModal.confirm = function (oldName) {
         scope.newName = oldName + '(1)';
@@ -2024,77 +2029,55 @@ consoleModule.controller('activeLink', [
         };
     }]);
 
-// Login popup controller.
-consoleModule.controller('auth', [
-    '$scope', '$modal', '$http', '$window', '$common', '$focus',
-    function ($scope, $modal, $http, $window, $common, $focus) {
-        $scope.action = 'login';
-
-        $scope.userDropdown = [{text: 'Profile', href: '/profile'}];
-
-        $scope.$on('user', function($rootScope, user) {
-            if (user && !user.becomeUsed) {
-                if (user && user.admin)
-                    $scope.userDropdown.push({text: 'Admin Panel', href: '/admin'});
-
-                $scope.userDropdown.push({text: 'Log Out', href: '/logout'});
-            }
-        });
-
-        $focus('user_email');
-
-        if ($scope.token && !$scope.error)
-            $focus('user_password');
-
-        // Try to authorize user with provided credentials.
-        $scope.auth = function (action, user_info) {
-            $http.post('/' + action, user_info)
-                .success(function () {
-                    $window.location = '/configuration/clusters';
-                })
-                .error(function (err, status) {
-                    if (status == 403) {
-                        $window.location = '/password/reset';
-                    }
-                    else
-                        $common.showPopoverMessage(undefined, undefined, 'user_email', err);
-                });
-        };
-
-        $scope.validateToken = function () {
-            $http.post('/password/validate-token', {token: $common.getQueryVariable('token')})
+consoleModule.controller('resetPassword', [
+    '$scope', '$modal', '$http', '$window', '$common', '$focus', 'Auth', '$state',
+    function ($scope, $http, $common, $focus, Auth, $state) {
+        if ($state.params.token)
+            $http.post('/api/v1/password/validate-token', {token: $state.params.token})
                 .success(function (res) {
                     $scope.email = res.email;
                     $scope.token = res.token;
                     $scope.error = res.error;
+
+                    if ($scope.token && !$scope.error)
+                        $focus('user_password');
                 });
-        };
 
         // Try to reset user password for provided token.
         $scope.resetPassword = function (reset_info) {
-            $http.post('/password/reset', reset_info)
-                .success(function (data) {
+            $http.post('/api/v1/password/reset', reset_info)
+                .success(function () {
                     $common.showInfo('Password successfully changed');
 
-                    $scope.user_info = {email: data};
-                    $window.location = '/';
+                    $state.go('base.configuration.clusters');
                 })
                 .error(function (data, state) {
                     $common.showError(data);
 
-                    if (state == 503) {
-                        $scope.user_info = {};
-                        $scope.login();
-                    }
+                    if (state == 503)
+                        $state.go('base.configuration.clusters');
                 });
         }
+    }
+]);
+
+// Login popup controller.
+// TODO IGNITE-1936 Refactor this controller.
+consoleModule.controller('auth', [
+    '$scope', '$modal', '$http', '$window', '$common', '$focus', 'Auth', '$state',
+    function ($scope, $modal, $http, $window, $common, $focus, Auth, $state) {
+        $scope.auth = Auth.auth;
+
+        $scope.action = 'login';
+
+        $focus('user_email');
     }]);
 
 // Download agent controller.
 consoleModule.controller('agent-download', [
     '$http', '$common', '$scope', '$interval', '$modal', '$window', function ($http, $common, $scope, $interval, $modal, $window) {
         // Pre-fetch modal dialogs.
-        var _agentDownloadModal = $modal({scope: $scope, templateUrl: '/agent/download', show: false, backdrop: 'static'});
+        var _agentDownloadModal = $modal({scope: $scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
 
         var _agentDownloadHide = _agentDownloadModal.hide;
 
@@ -2122,7 +2105,8 @@ consoleModule.controller('agent-download', [
         $scope.downloadAgent = function () {
             var lnk = document.createElement('a');
 
-            lnk.setAttribute('href', '/agent/download/zip');
+            lnk.setAttribute('href', '/api/v1/agent/download/zip');
+            lnk.setAttribute('target', '_self');
             lnk.style.display = 'none';
 
             document.body.appendChild(lnk);
@@ -2224,7 +2208,7 @@ consoleModule.controller('agent-download', [
         $scope.startTopologyListening = function (checkFn) {
             _agentDownloadModal.skipSingleError = false;
 
-            _agentDownloadModal.checkUrl = '/agent/topology';
+            _agentDownloadModal.checkUrl = '/api/v1/agent/topology';
 
             _agentDownloadModal.checkFn = checkFn;
 
@@ -2244,12 +2228,12 @@ consoleModule.controller('agent-download', [
     }]);
 
 // Navigation bar controller.
-consoleModule.controller('notebooks', ['$scope', '$modal', '$window', '$http', '$common',
-    function ($scope, $modal, $window, $http, $common) {
+consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$common',
+    function ($scope, $modal, $state, $http, $common) {
     $scope.$root.notebooks = [];
 
     // Pre-fetch modal dialogs.
-    var _notebookNewModal = $modal({scope: $scope, templateUrl: '/notebooks/new', show: false});
+    var _notebookNewModal = $modal({scope: $scope, templateUrl: '/sql/notebook-new.html', show: false});
 
     $scope.$root.rebuildDropdown = function() {
         $scope.notebookDropdown = [
@@ -2260,15 +2244,14 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$window', '$http', '
         _.forEach($scope.$root.notebooks, function (notebook) {
             $scope.notebookDropdown.push({
                 text: notebook.name,
-                href: '/sql?id=' + notebook._id,
-                target: '_self'
+                href: '/sql?id=' + notebook._id
             });
         });
     };
 
     $scope.$root.reloadNotebooks = function() {
         // When landing on the page, get clusters and show them.
-        $http.post('/notebooks/list')
+        $http.post('/api/v1/notebooks/list')
             .success(function (data) {
                 $scope.$root.notebooks = data;
 
@@ -2284,11 +2267,11 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$window', '$http', '
     };
 
     $scope.$root.createNewNotebook = function(name) {
-        $http.post('/notebooks/new', {name: name})
+        $http.post('/api/v1/notebooks/new', {name: name})
             .success(function (id) {
                 _notebookNewModal.hide();
 
-                $window.location = '/sql?id=' + id;
+                $state.go('base.sql', {id: id});
             })
             .error(function (message, state) {
                 $common.showError(message);

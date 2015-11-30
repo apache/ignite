@@ -19,11 +19,6 @@ var _ = require('lodash');
 var router = require('express').Router();
 var db = require('../db');
 
-/* GET clusters page. */
-router.get('/', function (req, res) {
-    res.render('configuration/clusters');
-});
-
 /**
  * Get spaces and clusters accessed for user account.
  *

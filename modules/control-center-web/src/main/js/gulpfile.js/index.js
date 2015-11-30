@@ -23,4 +23,4 @@ requireDir('./tasks', { recurse: true });
 
 // Summary tasks
 gulp.task('default', ['build']);
-gulp.task('watch', ['build', 'sass:watch', 'jade:watch', 'copy:watch']);
+gulp.task('watch', ['build', 'bundle:watch', 'sass:watch', 'jade:watch', 'copy:watch']);

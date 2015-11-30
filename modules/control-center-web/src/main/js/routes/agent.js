@@ -40,11 +40,6 @@ function _compact(className) {
 }
 
 /* Get grid topology. */
-router.get('/download', function (req, res) {
-    res.render('templates/agent-download');
-});
-
-/* Get grid topology. */
 router.get('/download/zip', function (req, res) {
     var fs = require('fs');
     var JSZip = require('jszip');

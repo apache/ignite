@@ -18,12 +18,10 @@
 // Controller for Profile screen.
 consoleModule.controller('profileController',
     ['$scope', '$http', '$common', '$focus', '$confirm', function ($scope, $http, $common, $focus, $confirm) {
-    $scope.$on('user', function($rootScope, user) {
-        $scope.profileUser = angular.copy(user);
+    $scope.profileUser = angular.copy($scope.$root.user);
 
-        if ($scope.profileUser && !$scope.profileUser.token)
-            $scope.profileUser.token = 'No security token. Regenerate please.';
-    });
+    if ($scope.profileUser && !$scope.profileUser.token)
+        $scope.profileUser.token = 'No security token. Regenerate please.';
 
     $scope.generateToken = function () {
         $confirm.confirm('Are you sure you want to change security token?')
@@ -65,7 +63,7 @@ consoleModule.controller('profileController',
             var changeToken = token != $scope.$root.user.token;
 
             if (changeUsername || changeEmail || changeToken || profile.changePassword) {
-                $http.post('/profile/save', {
+                $http.post('/api/v1/profile/save', {
                     _id: profile._id,
                     userName: changeUsername ? userName : undefined,
                     email: changeEmail ? email : undefined,

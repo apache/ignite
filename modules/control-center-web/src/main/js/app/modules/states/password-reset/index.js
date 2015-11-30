@@ -14,24 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
+import angular from 'angular'
 
-var router = require('express').Router();
-var db = require('../db');
-
-router.get('/rate', function (req, res) {
-    res.render('sql/paragraph-rate');
-});
-
-router.get('/chart-settings', function (req, res) {
-    res.render('sql/chart-settings');
-});
-
-router.get('/cache-metadata', function (req, res) {
-    res.render('sql/cache-metadata');
-});
-
-router.get('/', function (req, res) {
-    res.render('sql/sql');
-});
-
-module.exports = router;
+angular
+.module('ignite-console.states.password', [
+	'ui.router'
+])
+.config(['$stateProvider', function($stateProvider) {
+	// set up the states
+	$stateProvider
+    .state('password', {
+        url: '/password',
+        abstract: true,
+        template: '<ui-view></ui-view>'
+    })
+	.state('password.reset', {
+		url: '/reset?{token}',
+		templateUrl: '/reset.html'
+	})
+    .state('password.send', {
+        url: '/send',
+        templateUrl: '/reset.html'
+    })
+}]);

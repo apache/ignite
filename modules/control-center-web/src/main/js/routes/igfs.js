@@ -19,11 +19,6 @@ var _ = require('lodash');
 var router = require('express').Router();
 var db = require('../db');
 
-/* GET IGFS page. */
-router.get('/', function (req, res) {
-    res.render('configuration/igfs');
-});
-
 /**
  * Get spaces and IGFSs accessed for user account.
  *

@@ -16,10 +16,8 @@
  */
 
 // Controller for SQL notebook screen.
-consoleModule.controller('sqlController',
-    ['$scope', '$window','$controller', '$http', '$timeout', '$common', '$confirm', '$interval', '$message', '$popover', '$loading',
-        '$location', '$anchorScroll', function ($scope, $window, $controller, $http, $timeout, $common, $confirm,
-        $interval, $message, $popover, $loading, $location, $anchorScroll) {
+consoleModule.controller('sqlController', function ($scope, $controller, $http, $timeout, $common, $confirm,
+    $interval, $modal, $popover, $loading, $location, $anchorScroll, $state) {
     // Initialize the super class and extend it.
     angular.extend(this, $controller('agent-download', {$scope: $scope}));
 
@@ -236,17 +234,23 @@ consoleModule.controller('sqlController',
     };
 
     $scope.goToConfiguration = function () {
-        $window.location = '/';
+        $state.go('/configuration/clusters');
     };
 
     var loadNotebook = function () {
         $loading.start('loadingNotebookScreen');
 
-        $http.post('/notebooks/get', {noteId: $common.getQueryVariable('id')})
+        $http.post('/api/v1/notebooks/get', {noteId: $state.params.id})
             .success(function (notebook) {
                 $scope.notebook = notebook;
 
                 $scope.notebook_name = notebook.name;
+
+                if (!$scope.notebook.activePanels)
+                    $scope.notebook.activePanels = [];
+
+                if (!$scope.notebook.paragraphs)
+                    $scope.notebook.paragraphs = [];
 
                 _.forEach(notebook.paragraphs, function (paragraph) {
                     paragraph.id = 'paragraph-' + paragraphId++;
@@ -274,7 +278,7 @@ consoleModule.controller('sqlController',
     loadNotebook();
 
     var _saveNotebook = function (f) {
-        $http.post('/notebooks/save', $scope.notebook)
+        $http.post('/api/v1/notebooks/save', $scope.notebook)
             .success(f || function() {})
             .error(function (errMsg) {
                 $common.showError(errMsg);
@@ -309,7 +313,7 @@ consoleModule.controller('sqlController',
     $scope.removeNotebook = function () {
         $confirm.confirm('Are you sure you want to remove: "' + $scope.notebook.name + '"?')
             .then(function () {
-                $http.post('/notebooks/remove', {_id: $scope.notebook._id})
+                $http.post('/api/v1/notebooks/remove', {_id: $scope.notebook._id})
                     .success(function () {
                         var idx = _.findIndex($scope.$root.notebooks, function (item) {
                             return item._id == $scope.notebook._id;
@@ -319,10 +323,9 @@ consoleModule.controller('sqlController',
                             $scope.$root.notebooks.splice(idx, 1);
 
                             if ($scope.$root.notebooks.length > 0)
-                                $window.location = '/sql/' +
-                                    $scope.$root.notebooks[Math.min(idx,  $scope.$root.notebooks.length - 1)]._id;
+                                $state.go('/sql', {id: $scope.$root.notebooks[Math.min(idx,  $scope.$root.notebooks.length - 1)]._id});
                             else
-                                $window.location = '/configuration/clusters';
+                                $state.go('/configuration/clusters');
                         }
                     })
                     .error(function (errMsg) {
@@ -347,9 +350,6 @@ consoleModule.controller('sqlController',
     };
 
     $scope.addParagraph = function () {
-        if (!$scope.notebook.paragraphs)
-            $scope.notebook.paragraphs = [];
-
         var sz = $scope.notebook.paragraphs.length;
 
         var paragraph = {
@@ -563,7 +563,7 @@ consoleModule.controller('sqlController',
 
     var _tryCloseQueryResult = function (queryId) {
         if (queryId)
-            $http.post('/agent/query/close', { queryId: queryId });
+            $http.post('/api/v1/agent/query/close', { queryId: queryId });
     };
 
     var _processQueryResult = function (paragraph, refreshMode) {
@@ -671,7 +671,7 @@ consoleModule.controller('sqlController',
     var _executeRefresh = function (paragraph) {
         _tryCloseQueryResult(paragraph.queryId);
 
-        $http.post('/agent/query', paragraph.queryArgs)
+        $http.post('/api/v1/agent/query', paragraph.queryArgs)
             .success(_processQueryResult(paragraph, true))
             .error(function (errMsg) {
                 paragraph.errMsg = errMsg;
@@ -701,7 +701,7 @@ consoleModule.controller('sqlController',
             cacheName: paragraph.cacheName || undefined
         };
 
-        $http.post('/agent/query', paragraph.queryArgs)
+        $http.post('/api/v1/agent/query', paragraph.queryArgs)
             .success(function (res) {
                 _processQueryResult(paragraph)(res);
 
@@ -738,7 +738,7 @@ consoleModule.controller('sqlController',
             cacheName: paragraph.cacheName || undefined
         };
 
-        $http.post('/agent/query', paragraph.queryArgs)
+        $http.post('/api/v1/agent/query', paragraph.queryArgs)
             .success(_processQueryResult(paragraph))
             .error(function (errMsg) {
                 paragraph.errMsg = errMsg;
@@ -764,7 +764,7 @@ consoleModule.controller('sqlController',
             cacheName: paragraph.cacheName || undefined
         };
 
-        $http.post('/agent/scan', paragraph.queryArgs)
+        $http.post('/api/v1/agent/scan', paragraph.queryArgs)
             .success(_processQueryResult(paragraph))
             .error(function (errMsg) {
                 paragraph.errMsg = errMsg;
@@ -778,7 +778,7 @@ consoleModule.controller('sqlController',
     $scope.nextPage = function(paragraph) {
         _showLoading(paragraph, true);
 
-        $http.post('/agent/query/fetch', {queryId: paragraph.queryId, pageSize: paragraph.pageSize, cacheName: paragraph.queryArgs.cacheName})
+        $http.post('/api/v1/agent/query/fetch', {queryId: paragraph.queryId, pageSize: paragraph.pageSize, cacheName: paragraph.queryArgs.cacheName})
             .success(function (res) {
                 paragraph.page++;
 
@@ -859,7 +859,7 @@ consoleModule.controller('sqlController',
     };
 
     $scope.exportAll = function(paragraph) {
-        $http.post('/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
+        $http.post('/api/v1/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
             .success(function (item) {
                 _export(paragraph.name + '-all.csv', item.meta, item.rows);
             })
@@ -1449,7 +1449,7 @@ consoleModule.controller('sqlController',
 
         $scope.metadata = [];
 
-        $http.post('/agent/cache/metadata')
+        $http.post('/api/v1/agent/cache/metadata')
             .success(function (metadata) {
                 $scope.metadata = _.sortBy(metadata, 'name');
             })
@@ -1484,7 +1484,8 @@ consoleModule.controller('sqlController',
                     queryMsg = 'SCAN query for cache <b>' + paragraph.queryArgs.cacheName + '</b>';
             }
 
-            $message.message(title, [queryMsg]);
+            // Show a basic modal from a controller
+            $modal({title: title, content: [queryMsg], template: '/templates/message.html', show: true});
         }
     }
-}]);
+});

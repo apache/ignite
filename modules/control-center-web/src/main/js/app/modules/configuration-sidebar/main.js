@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
+import angular from 'angular'
+
 angular
-.module('ignite-web-console.configuration.sidebar', [
+.module('ignite-console.configuration-sidebar', [
 
 ])
 .provider('igniteConfigurationSidebar', function() {
@@ -39,7 +41,7 @@ angular
         return r;
     }]
 })
-.directive('igniteConfigurationSidebar', function(igniteConfigurationSidebar) {
+.directive('igniteConfigurationSidebar', ['igniteConfigurationSidebar', function(igniteConfigurationSidebar) {
     function controller() {
         var ctrl = this;
 
@@ -51,4 +53,4 @@ angular
         controller: controller,
         controllerAs: 'sidebar'
     }
-});
+}]);

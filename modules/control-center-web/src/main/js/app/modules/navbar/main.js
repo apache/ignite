@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
+import angular from 'angular'
+
 angular
-.module('ignite-web-console.navbar', [
+.module('ignite-console.navbar', [
 
 ])
 .provider('igniteNavbar', function() {
@@ -30,7 +32,7 @@ angular
         return items;
     }]
 })
-.directive('igniteNavbar', function(igniteNavbar) {
+.directive('igniteNavbar', ['igniteNavbar', function(igniteNavbar) {
     function controller() {
         var ctrl = this;
 
@@ -42,4 +44,4 @@ angular
         controller: controller,
         controllerAs: 'navbar'
     }
-});
+}]);

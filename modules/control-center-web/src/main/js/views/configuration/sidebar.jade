@@ -14,8 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-extends ../templates/layout
-
 append scripts
     script(src='/data-structures.js')
     script(src='/generator/generator-common.js')
@@ -38,5 +36,5 @@ block container
                                 a(ng-class='{active: isActive("{{::subItem.href}}")}' href='{{::subItem.href}}') {{::subItem.label}}
 
         .col-xs-9.col-sm-9.col-md-10.border-left.section-right
-            .docs-content
+            .docs-content(ui-view='')
                 block content

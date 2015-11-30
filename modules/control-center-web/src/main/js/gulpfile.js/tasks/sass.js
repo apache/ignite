@@ -16,18 +16,21 @@
  */
 
 var gulp = require('gulp');
+var gulpSequence = require('gulp-sequence');
 var sass = require('gulp-sass');
 
 var paths = [
-    './public/stylesheets/*.scss'
+    './public/stylesheets/style.scss'
 ];
 
 gulp.task('sass', function () {
     return gulp.src(paths)
         .pipe(sass({ outputStyle: 'nested' }).on('error', sass.logError))
-        .pipe(gulp.dest('./build/stylesheets'));
+        .pipe(gulp.dest('./public/stylesheets'));
 });
 
-gulp.task('sass:watch', function () {
-    gulp.watch(paths, ['sass']);
+gulp.task('sass:watch', function (cb) {
+    gulp.watch(paths, function(glob) {
+        gulpSequence('sass', 'bundle')(cb)
+    });
 });

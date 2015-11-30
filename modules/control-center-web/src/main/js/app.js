@@ -19,7 +19,6 @@ var fs = require('fs');
 var express = require('express');
 var compress = require('compression');
 var path = require('path');
-var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
@@ -35,10 +34,8 @@ var cachesRouter = require('./routes/caches');
 var metadataRouter = require('./routes/metadata');
 var presetsRouter = require('./routes/presets');
 var igfsRouter = require('./routes/igfs');
-var summary = require('./routes/summary');
 var adminRouter = require('./routes/admin');
 var profileRouter = require('./routes/profile');
-var sqlRouter = require('./routes/sql');
 var agentRouter = require('./routes/agent');
 
 var passport = require('passport');
@@ -56,9 +53,6 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 app.set('views', path.join(__dirname, 'build'));
 app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
-
-// Site favicon.
-app.use(favicon(__dirname + '/public/favicon.ico'));
 
 app.use(logger('dev', {
     skip: function (req, res) {
@@ -135,12 +129,9 @@ app.use('/configuration/caches', cachesRouter);
 app.use('/configuration/metadata', metadataRouter);
 app.use('/configuration/presets', presetsRouter);
 app.use('/configuration/igfs', igfsRouter);
-app.use('/configuration/summary', summary);
-
-app.use('/notebooks', mustAuthenticated, notebooksRoutes);
-app.use('/sql', mustAuthenticated, sqlRouter);
 
 app.use('/agent', mustAuthenticated, agentRouter);
+app.use('/notebooks', mustAuthenticated, notebooksRoutes);
 
 config.findIgniteModules()
     .filter(function(path) { return path.match(/\/routes\/.+\.js$/); })

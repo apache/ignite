@@ -14,9 +14,27 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-extends templates/layout
+doctype html
+html(ng-app='ignite-web-console')
+    head
+        base(href='/')
+        link(rel="icon" type="image/png" href="favicon.png")
+        meta(http-equiv='content-type' content='text/html; charset=UTF8')
+        title=title
 
-block container
-  h1= message
-  h2= error.status
-  pre #{error.stack}
+        block css
+            link(rel='stylesheet', href='/app.min.css')
+
+        block scripts
+            script(src='/common-utils.js')
+            script(src='/app.min.js')
+
+            // ignite:plugins
+            // endignite
+            
+            script(src='/common-module.js')
+            script(src='/data-structures.js')
+            script(src='/all.js')
+
+    body.theme-line.body-overlap.greedy
+        .wrapper(ui-view='')
