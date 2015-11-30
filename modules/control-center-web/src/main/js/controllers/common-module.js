@@ -654,16 +654,14 @@ consoleModule.service('$common', [
         return {
             getModel: getModel,
             joinTip: function (arr) {
-                if (!arr) {
+                if (!arr)
                     return arr;
-                }
 
-                var lines = arr.map(function (line) {
+                var lines = _.map(arr, function (line) {
                     var rtrimmed = line.replace(/\s+$/g, '');
 
-                    if (rtrimmed.indexOf('>', this.length - 1) == -1) {
+                    if (rtrimmed.indexOf('>', this.length - 1) == -1)
                         rtrimmed = rtrimmed + '<br/>';
-                    }
 
                     return rtrimmed;
                 });
