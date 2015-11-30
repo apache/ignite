@@ -33,7 +33,7 @@ System.config({
     "bootstrap": "github:twbs/bootstrap@3.3.5",
     "clean-css": "npm:clean-css@3.4.8",
     "core-js": "npm:core-js@1.2.6",
-    "css": "github:systemjs/plugin-css@0.1.19",
+    "css": "github:systemjs/plugin-css@0.1.20",
     "font-awesome": "npm:font-awesome@4.4.0",
     "jquery": "github:components/jquery@2.1.4",
     "jszip": "github:Stuk/jszip@2.5.0",
@@ -48,9 +48,6 @@ System.config({
     },
     "github:angular/bower-angular-sanitize@1.4.8": {
       "angular": "github:angular/bower-angular@1.4.8"
-    },
-    "github:angular/bower-angular@1.4.7": {
-      "jquery": "github:components/jquery@2.1.4"
     },
     "github:angular/bower-angular@1.4.8": {
       "jquery": "github:components/jquery@2.1.4"
@@ -110,15 +107,15 @@ System.config({
     },
     "github:krispo/angular-nvd3@1.0.4": {
       "angular": "github:angular/bower-angular@1.4.8",
-      "d3": "npm:d3@3.5.9",
+      "d3": "npm:d3@3.5.10",
       "nvd3": "npm:nvd3@1.8.1"
     },
     "github:marceljuenemann/angular-drag-and-drop-lists@1.3.0": {
-      "angular": "github:angular/bower-angular@1.4.7"
+      "angular": "github:angular/bower-angular@1.4.8"
     },
     "github:mgcrea/angular-motion@0.4.3": {
       "angular": "github:angular/bower-angular@1.4.8",
-      "css": "github:systemjs/plugin-css@0.1.19"
+      "css": "github:systemjs/plugin-css@0.1.20"
     },
     "github:mobilexag/plugin-sass@0.0.10": {
       "fs": "github:jspm/nodelibs-fs@0.1.2",
@@ -135,7 +132,7 @@ System.config({
       "jquery": "github:components/jquery@2.1.4"
     },
     "github:wix/angular-tree-control@0.2.22": {
-      "angular": "github:angular/bower-angular@1.4.7"
+      "angular": "github:angular/bower-angular@1.4.8"
     },
     "npm:amdefine@1.0.0": {
       "fs": "github:jspm/nodelibs-fs@0.1.2",
@@ -143,9 +140,9 @@ System.config({
       "path": "github:jspm/nodelibs-path@0.1.0",
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
-    "npm:asn1.js@4.1.0": {
+    "npm:asn1.js@4.2.0": {
       "assert": "github:jspm/nodelibs-assert@0.1.0",
-      "bn.js": "npm:bn.js@4.3.0",
+      "bn.js": "npm:bn.js@4.4.0",
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "inherits": "npm:inherits@2.0.1",
       "minimalistic-assert": "npm:minimalistic-assert@1.0.0",
@@ -183,14 +180,14 @@ System.config({
       "inherits": "npm:inherits@2.0.1"
     },
     "npm:browserify-rsa@4.0.0": {
-      "bn.js": "npm:bn.js@4.3.0",
+      "bn.js": "npm:bn.js@4.4.0",
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "constants": "github:jspm/nodelibs-constants@0.1.0",
       "crypto": "github:jspm/nodelibs-crypto@0.1.0",
       "randombytes": "npm:randombytes@2.0.1"
     },
     "npm:browserify-sign@4.0.0": {
-      "bn.js": "npm:bn.js@4.3.0",
+      "bn.js": "npm:bn.js@4.4.0",
       "browserify-rsa": "npm:browserify-rsa@4.0.0",
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "create-hash": "npm:create-hash@1.1.2",
@@ -253,7 +250,7 @@ System.config({
       "buffer": "github:jspm/nodelibs-buffer@0.1.0"
     },
     "npm:create-ecdh@4.0.0": {
-      "bn.js": "npm:bn.js@4.3.0",
+      "bn.js": "npm:bn.js@4.4.0",
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "crypto": "github:jspm/nodelibs-crypto@0.1.0",
       "elliptic": "npm:elliptic@6.0.2"
@@ -292,7 +289,7 @@ System.config({
       "minimalistic-assert": "npm:minimalistic-assert@1.0.0"
     },
     "npm:diffie-hellman@5.0.0": {
-      "bn.js": "npm:bn.js@4.3.0",
+      "bn.js": "npm:bn.js@4.4.0",
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "crypto": "github:jspm/nodelibs-crypto@0.1.0",
       "miller-rabin": "npm:miller-rabin@4.0.0",
@@ -300,7 +297,7 @@ System.config({
       "systemjs-json": "github:systemjs/plugin-json@0.1.0"
     },
     "npm:elliptic@6.0.2": {
-      "bn.js": "npm:bn.js@4.3.0",
+      "bn.js": "npm:bn.js@4.4.0",
       "brorand": "npm:brorand@1.0.5",
       "hash.js": "npm:hash.js@1.0.3",
       "inherits": "npm:inherits@2.0.1",
@@ -312,7 +309,7 @@ System.config({
       "crypto": "github:jspm/nodelibs-crypto@0.1.0"
     },
     "npm:font-awesome@4.4.0": {
-      "css": "github:systemjs/plugin-css@0.1.19"
+      "css": "github:systemjs/plugin-css@0.1.20"
     },
     "npm:graceful-readlink@1.0.1": {
       "fs": "github:jspm/nodelibs-fs@0.1.2"
@@ -330,17 +327,17 @@ System.config({
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:miller-rabin@4.0.0": {
-      "bn.js": "npm:bn.js@4.3.0",
+      "bn.js": "npm:bn.js@4.4.0",
       "brorand": "npm:brorand@1.0.5"
     },
     "npm:nvd3@1.8.1": {
-      "d3": "npm:d3@3.5.9"
+      "d3": "npm:d3@3.5.10"
     },
     "npm:os-browserify@0.1.2": {
       "os": "github:jspm/nodelibs-os@0.1.0"
     },
     "npm:parse-asn1@5.0.0": {
-      "asn1.js": "npm:asn1.js@4.1.0",
+      "asn1.js": "npm:asn1.js@4.2.0",
       "browserify-aes": "npm:browserify-aes@1.0.5",
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "create-hash": "npm:create-hash@1.1.2",
@@ -364,7 +361,7 @@ System.config({
       "assert": "github:jspm/nodelibs-assert@0.1.0"
     },
     "npm:public-encrypt@4.0.0": {
-      "bn.js": "npm:bn.js@4.3.0",
+      "bn.js": "npm:bn.js@4.4.0",
       "browserify-rsa": "npm:browserify-rsa@4.0.0",
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "create-hash": "npm:create-hash@1.1.2",

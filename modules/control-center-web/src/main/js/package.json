@@ -22,7 +22,7 @@
   "dependencies": {
     "async": "1.5.0",
     "body-parser": "~1.14.1",
-    "bootstrap-sass": "^3.3.5",
+    "bootstrap-sass": "3.3.5",
     "compression": "1.6.0",
     "connect-mongo": "^0.8.1",
     "cookie-parser": "~1.4.0",
@@ -75,7 +75,7 @@
       "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
       "angular-tree-control": "github:wix/angular-tree-control@^0.2.22",
       "angular-ui-ace": "github:angular-ui/ui-ace@^0.2.3",
-      "css": "github:systemjs/plugin-css@^0.1.19",
+      "css": "github:systemjs/plugin-css@^0.1.20",
       "font-awesome": "npm:font-awesome@^4.4.0",
       "jquery": "github:components/jquery@^2.1.4",
       "jszip": "github:Stuk/jszip@^2.5.0",
@@ -116,7 +116,7 @@
         "dependencies": {
           "angular": "^1",
           "nvd3": "npm:nvd3@1.8.1",
-          "d3": "npm:d3@3.5.9"
+          "d3": "npm:d3@3.5.10"
         },
         "shim": {
           "dist/angular-nvd3": {
