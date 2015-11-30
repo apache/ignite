@@ -71,10 +71,10 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         // Grid config.
         IgniteConfiguration cfg = super.getConfiguration();
 
-        cfg.setLocalHost("localhost");
+        cfg.setLocalHost("127.0.0.1");
 
         ConnectorConfiguration clnCfg = new ConnectorConfiguration();
-        clnCfg.setHost("localhost");
+        clnCfg.setHost("127.0.0.1");
 
         cfg.setConnectorConfiguration(clnCfg);
         cfg.setDiscoverySpi(disco);
