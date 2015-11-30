@@ -27,6 +27,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 /**
  *
  */
+//Can fail as described at https://issues.apache.org/jira/browse/IGNITE-1924
 public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

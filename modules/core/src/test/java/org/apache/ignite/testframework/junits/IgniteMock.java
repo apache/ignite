@@ -42,12 +42,18 @@ import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.portable.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -78,6 +84,12 @@ public class IgniteMock implements Ignite {
 
     /** */
     private IgniteConfiguration staticCfg;
+
+    /** */
+    private IgniteBinary binaryMock;
+
+    /** */
+    private PortableContext ctx;
 
     /**
      * Mock values
@@ -278,12 +290,37 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public IgniteBinary binary() {
-        return null;
+        if (binaryMock != null)
+            return binaryMock;
+
+        if (ctx == null) {
+            /** {@inheritDoc} */
+            ctx = new PortableContext(BinaryCachingMetadataHandler.create(), configuration()) {
+                @Override public int typeId(String typeName) {
+                    return typeName.hashCode();
+                }
+            };
+        }
+
+        binaryMock = new NoOpBinary() {
+            /** {@inheritDoc} */
+            @Override public int typeId(String typeName) {
+                return typeName.hashCode();
+            }
+
+            /** {@inheritDoc} */
+            @Override public BinaryObjectBuilder builder(String typeName) throws BinaryObjectException {
+                return new BinaryObjectBuilderImpl(ctx, typeName);
+            }
+        };
+
+        return binaryMock;
     }
 
     /** {@inheritDoc} */
     @Override public void close() {}
 
+    /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
         return null;
     }

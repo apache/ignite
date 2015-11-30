@@ -724,7 +724,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public <T> EntryProcessorResult<T> invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... args)
         throws IgniteCheckedException {
-        EntryProcessorResult<T> res = invokeAsync(key, entryProcessor, args).get();
+        IgniteInternalFuture<EntryProcessorResult<T>> invokeFut = invokeAsync(key, entryProcessor, args);
+
+        EntryProcessorResult<T> res = invokeFut.get();
 
         return res != null ? res : new CacheInvokeResult<T>();
     }
@@ -750,6 +752,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         Map<? extends K, EntryProcessor> invokeMap =
             Collections.singletonMap(key, (EntryProcessor)entryProcessor);
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+
         IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut = updateAllAsync0(null,
             invokeMap,
             args,
@@ -768,7 +774,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (resMap != null) {
                     assert resMap.isEmpty() || resMap.size() == 1 : resMap.size();
 
-                    return resMap.isEmpty() ? null : resMap.values().iterator().next();
+                    EntryProcessorResult<T> res = resMap.isEmpty() ? null : resMap.values().iterator().next();
+
+                    if (res instanceof CacheInvokeResult) {
+                        CacheInvokeResult invokeRes = (CacheInvokeResult)res;
+
+                        if (invokeRes.result() != null)
+                            res = CacheInvokeResult.fromResult((T)ctx.unwrapPortableIfNeeded(invokeRes.result(),
+                                keepBinary, false));
+                    }
+
+                    return res;
                 }
 
                 return null;
@@ -792,7 +808,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        return updateAllAsync0(null,
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+
+        IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> resFut = updateAllAsync0(null,
             invokeMap,
             args,
             null,
@@ -801,6 +821,30 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             null,
             true);
+
+        return resFut.chain(new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, Map<K, EntryProcessorResult<T>>>() {
+            @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut) throws IgniteCheckedException {
+                Map<K, EntryProcessorResult<T>> resMap = fut.get();
+
+                if (resMap != null) {
+                    return F.viewReadOnly(resMap, new C1<EntryProcessorResult<T>, EntryProcessorResult<T>>() {
+                        @Override public EntryProcessorResult<T> apply(EntryProcessorResult<T> res) {
+                            if (res instanceof CacheInvokeResult) {
+                                CacheInvokeResult invokeRes = (CacheInvokeResult)res;
+
+                                if (invokeRes.result() != null)
+                                    res = CacheInvokeResult.fromResult((T)ctx.unwrapPortableIfNeeded(invokeRes.result(),
+                                        keepBinary, false));
+                            }
+
+                            return res;
+                        }
+                    });
+                }
+
+                return null;
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -1349,7 +1393,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             remap = true;
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
             // an attempt to use cleaned resources.
             U.error(log, "Unexpected exception during cache update", e);
@@ -1357,6 +1401,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             res.addFailedKeys(keys, e);
 
             completionCb.apply(req, res);
+
+            if (e instanceof Error)
+                throw e;
 
             return;
         }

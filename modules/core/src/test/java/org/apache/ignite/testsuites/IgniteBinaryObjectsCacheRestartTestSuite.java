@@ -15,22 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.binary;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Starts up an empty node with example configuration and binary marshaller enabled.
+ *
  */
-public class ExampleBinaryNodeStartup {
-    /**
-     * Start up an empty node with example configuration and binary marshaller enabled.
-     *
-     * @param args Command line arguments, none required.
-     * @throws IgniteException If failed.
-     */
-    public static void main(String[] args) throws IgniteException {
-        Ignition.start("examples/config/binary/example-ignite-binary.xml");
+public class IgniteBinaryObjectsCacheRestartTestSuite {
+    public static TestSuite suite() throws Exception {
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+
+        return IgniteCacheRestartTestSuite.suite();
     }
 }

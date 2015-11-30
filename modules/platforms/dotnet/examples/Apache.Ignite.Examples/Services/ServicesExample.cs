@@ -72,6 +72,10 @@ namespace Apache.Ignite.Examples.Services
 
                 ignite.GetServices().CancelAll();
             }
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Example finished, press any key to exit ...");
+            Console.ReadKey();
         }
     }
 }

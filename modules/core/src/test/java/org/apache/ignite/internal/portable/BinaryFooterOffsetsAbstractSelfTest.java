@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -128,7 +127,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     private void check(int len) throws Exception {
         TestObject obj = new TestObject(len);
 
-        BinaryObjectEx portObj = toPortable(marsh, obj);
+        BinaryObjectExImpl portObj = toPortable(marsh, obj);
 
         // 1. Test portable object content.
         assert portObj.hasField("field1");
@@ -170,7 +169,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      * @return Portable object.
      * @throws Exception If failed.
      */
-    protected abstract BinaryObjectEx toPortable(BinaryMarshaller marsh, Object obj) throws Exception;
+    protected abstract BinaryObjectExImpl toPortable(BinaryMarshaller marsh, Object obj) throws Exception;
 
     /**
      * Test object.

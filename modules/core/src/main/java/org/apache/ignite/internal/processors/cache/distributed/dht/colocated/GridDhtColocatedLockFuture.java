@@ -296,10 +296,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId, txKey);
 
         if (inTx()) {
-            IgniteTxEntry txEntry = tx.entry(txKey);
-
-            txEntry.cached(entry);
-
             if (cand != null) {
                 if (!tx.implicit())
                     throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
@@ -308,6 +304,10 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     return null;
             }
             else {
+                IgniteTxEntry txEntry = tx.entry(txKey);
+
+                txEntry.cached(entry);
+
                 // Check transaction entries (corresponding tx entries must be enlisted in transaction).
                 cand = new GridCacheMvccCandidate(entry,
                     cctx.localNodeId(),
@@ -977,12 +977,27 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     }
 
     /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void proceedMapping() throws IgniteCheckedException {
+        boolean set = tx != null && cctx.shared().tm().setTxTopologyHint(tx);
+
+        try {
+            proceedMapping0();
+        }
+        finally {
+            if (set)
+                cctx.tm().setTxTopologyHint(null);
+        }
+    }
+
+    /**
      * Gets next near lock mapping and either acquires dht locks locally or sends near lock request to
      * remote primary node.
      *
      * @throws IgniteCheckedException If mapping can not be completed.
      */
-    private void proceedMapping()
+    private void proceedMapping0()
         throws IgniteCheckedException {
         GridNearLockMapping map;
 

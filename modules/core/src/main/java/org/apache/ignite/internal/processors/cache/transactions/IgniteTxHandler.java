@@ -413,7 +413,7 @@ public class IgniteTxHandler {
                 req.transactionNodes(),
                 req.last());
 
-            if (tx.isRollbackOnly()) {
+            if (tx.isRollbackOnly() && !tx.commitOnPrepare()) {
                 try {
                     if (tx.state() != TransactionState.ROLLED_BACK && tx.state() != TransactionState.ROLLING_BACK)
                         tx.rollback();
@@ -713,6 +713,10 @@ public class IgniteTxHandler {
             }
         }
         catch (Throwable e) {
+            tx.commitError(e);
+
+            tx.systemInvalidate(true);
+
             U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
 
             IgniteInternalFuture<IgniteInternalTx> res = null;
@@ -838,7 +842,7 @@ public class IgniteTxHandler {
 
         try {
             // Reply back to sender.
-            ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+            ctx.io().send(nodeId, res, req.policy());
         }
         catch (IgniteCheckedException e) {
             if (e instanceof ClusterTopologyCheckedException) {
@@ -1056,7 +1060,7 @@ public class IgniteTxHandler {
             }
 
             try {
-                ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                ctx.io().send(nodeId, res, req.policy());
             }
             catch (Throwable e) {
                 // Double-check.

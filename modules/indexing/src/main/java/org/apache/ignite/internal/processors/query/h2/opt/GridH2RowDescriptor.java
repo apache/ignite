@@ -116,4 +116,9 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return {@code True} if should check swap value before offheap.
      */
     public boolean preferSwapValue();
+
+    /**
+     * @return {@code True} if index should support snapshots.
+     */
+    public boolean snapshotableIndex();
 }

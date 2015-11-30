@@ -30,8 +30,10 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.portable.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.portable.BinaryMetadata;
 import org.apache.ignite.internal.portable.BinaryMetadataHandler;
+import org.apache.ignite.internal.portable.BinaryObjectEx;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryTypeImpl;
@@ -62,14 +64,16 @@ import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
@@ -217,7 +221,16 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onUtilityCacheStarted() throws IgniteCheckedException {
-        metaDataCache = (IgniteCacheProxy)ctx.cache().jcache(CU.UTILITY_CACHE_NAME).withNoRetries();
+        IgniteCacheProxy<Object, Object> proxy = ctx.cache().jcache(CU.UTILITY_CACHE_NAME);
+
+        boolean old = proxy.context().deploy().ignoreOwnership(true);
+
+        try {
+            metaDataCache = (IgniteCacheProxy)proxy.withNoRetries();
+        }
+        finally {
+            proxy.context().deploy().ignoreOwnership(old);
+        }
 
         if (clientNode) {
             assert !metaDataCache.context().affinityNode();
@@ -381,6 +394,15 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return pArr;
         }
 
+        if (obj instanceof IgniteBiTuple) {
+            IgniteBiTuple tup = (IgniteBiTuple)obj;
+
+            if (obj instanceof T2)
+                return new T2<>(marshalToPortable(tup.get1()), marshalToPortable(tup.get2()));
+
+            return new IgniteBiTuple<>(marshalToPortable(tup.get1()), marshalToPortable(tup.get2()));
+        }
+
         if (obj instanceof Collection) {
             Collection<Object> col = (Collection<Object>)obj;
 
@@ -420,9 +442,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         Object obj0 = portableMarsh.unmarshal(arr, null);
 
-        assert obj0 instanceof BinaryObject;
-
-        ((BinaryObjectImpl)obj0).detachAllowed(true);
+        // Possible if a class has writeObject method.
+        if (obj0 instanceof BinaryObject)
+            ((BinaryObjectImpl)obj0).detachAllowed(true);
 
         return obj0;
     }
@@ -446,8 +468,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public void updateMetadata(int typeId, String typeName, @Nullable String affKeyFieldName,
-        Map<String, Integer> fieldTypeIds) throws BinaryObjectException {
-        portableCtx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null));
+        Map<String, Integer> fieldTypeIds, boolean isEnum) throws BinaryObjectException {
+        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null, isEnum);
+
+        portableCtx.updateMetadata(typeId, meta);
     }
 
     /** {@inheritDoc} */
@@ -534,6 +558,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Override public BinaryObject buildEnum(String typeName, int ord) throws IgniteException {
+        typeName = PortableContext.typeName(typeName);
+
+        int typeId = portableCtx.typeId(typeName);
+
+        updateMetadata(typeId, typeName, null, null, true);
+
+        return new BinaryEnumObjectImpl(portableCtx, typeId, null, ord);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteBinary binary() throws IgniteException {
         return portables;
     }
@@ -575,7 +610,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (obj == null)
             return 0;
 
-        return isPortableObject(obj) ? ((BinaryObject)obj).typeId() : typeId(obj.getClass().getSimpleName());
+        return isPortableObject(obj) ? ((BinaryObjectEx)obj).typeId() : typeId(obj.getClass().getSimpleName());
     }
 
     /** {@inheritDoc} */
