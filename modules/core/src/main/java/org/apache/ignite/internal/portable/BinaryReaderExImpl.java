@@ -162,6 +162,20 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     public BinaryReaderExImpl(PortableContext ctx, PortableInputStream in, ClassLoader ldr,
         @Nullable BinaryReaderHandles hnds) {
+        this(ctx, in, ldr, hnds, false);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param hnds Context.
+     * @param skipHdrCheck Whether to skip header check.
+     */
+    public BinaryReaderExImpl(PortableContext ctx, PortableInputStream in, ClassLoader ldr,
+        @Nullable BinaryReaderHandles hnds, boolean skipHdrCheck) {
         // Initialize base members.
         this.ctx = ctx;
         this.in = in;
@@ -170,10 +184,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         start = in.position();
 
-        byte hdr = in.readByte();
-
         // Perform full header parsing in case of portable object.
-        if (hdr == GridPortableMarshaller.OBJ) {
+        if (!skipHdrCheck && (in.readByte() == GridPortableMarshaller.OBJ)) {
             // Ensure protocol is fine.
             PortableUtils.checkProtocolVersion(in.readByte());
 
@@ -222,7 +234,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 int off = in.position();
 
                 // Registers class by type ID, at least locally if the cache is not ready yet.
-                typeId = ctx.descriptorForClass(PortableUtils.doReadClass(in, ctx, ldr, typeId0)).typeId();
+                typeId = ctx.descriptorForClass(PortableUtils.doReadClass(in, ctx, ldr, typeId0), false).typeId();
 
                 int clsNameLen = in.position() - off;
 
@@ -265,7 +277,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return Descriptor.
      */
     PortableClassDescriptor descriptor() {
-        return ctx.descriptorForTypeId(userType, typeId, ldr);
+        return ctx.descriptorForTypeId(userType, typeId, ldr, true);
     }
 
     /**
@@ -1415,7 +1427,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ:
-                PortableClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId, ldr);
+                PortableClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
 
                 streamPosition(dataStart);
 
@@ -1604,7 +1616,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OPTM_MARSH:
-                obj = PortableUtils.doReadOptimized(in, ctx);
+                obj = PortableUtils.doReadOptimized(in, ctx, ldr);
 
                 break;
 

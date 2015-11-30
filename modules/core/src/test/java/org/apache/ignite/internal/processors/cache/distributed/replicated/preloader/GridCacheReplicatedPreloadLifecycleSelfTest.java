@@ -192,46 +192,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
 
                 qry = qry.projection(grid(j).cluster());
 
-                int totalCnt = F.sumInt(qry.execute(new IgniteReducer<Map.Entry<Object, MyValue>, Integer>() {
-                    @IgniteInstanceResource
-                    private Ignite grid;
-
-                    @LoggerResource
-                    private IgniteLogger log0;
-
-                    private int cnt;
-
-                    @Override public boolean collect(Map.Entry<Object, MyValue> e) {
-                        if (!quiet && log0.isInfoEnabled())
-                            log0.info("Collecting entry: " + e);
-
-                        Object key = e.getKey();
-
-                        assertNotNull(e.getValue());
-
-                        try {
-                            Object v1 = e.getValue();
-                            Object v2 = ((IgniteKernal)grid).getCache("one").get(key);
-
-                            assertNotNull("Cache c1 misses value for key [i=" + j0 + ", j=" + i0 + ", missedKey=" +
-                                key + ", cache=" + ((IgniteKernal)grid).getCache("one").values() + ']', v2);
-                            assertEquals(v1, v2);
-                        }
-                        catch (IgniteCheckedException e1) {
-                            e1.printStackTrace();
-
-                            assert false;
-                        }
-
-                        cnt++;
-
-                        return true;
-                    }
-
-                    @Override public Integer reduce() {
-                        return cnt;
-                    }
-                }).get());
+                int totalCnt = F.sumInt(qry.execute(new EntryReducer(j0, i0)).get());
 
                 info("Total entry count [grid=" + j + ", totalCnt=" + totalCnt + ']');
 
@@ -294,5 +255,64 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
      */
     public void testScanQuery4() throws Exception {
         checkScanQuery(keys(false, 500));
+    }
+
+    private static class EntryReducer implements IgniteReducer<Map.Entry<Object, MyValue>, Integer> {
+        /** */
+        private final int j0;
+
+        /** */
+        private final int i0;
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite grid;
+
+        /** */
+        @LoggerResource
+        private IgniteLogger log0;
+
+        /** */
+        private int cnt;
+
+        /**
+         */
+        public EntryReducer(int j0, int i0) {
+            this.j0 = j0;
+            this.i0 = i0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean collect(Map.Entry<Object, MyValue> e) {
+            if (!quiet && log0.isInfoEnabled())
+                log0.info("Collecting entry: " + e);
+
+            Object key = e.getKey();
+
+            assertNotNull(e.getValue());
+
+            try {
+                Object v1 = e.getValue();
+                Object v2 = ((IgniteKernal)grid).getCache("one").get(key);
+
+                assertNotNull("Cache c1 misses value for key [i=" + j0 + ", j=" + i0 + ", missedKey=" +
+                    key + ", cache=" + ((IgniteKernal)grid).getCache("one").values() + ']', v2);
+                assertEquals(v1, v2);
+            }
+            catch (IgniteCheckedException e1) {
+                e1.printStackTrace();
+
+                assert false;
+            }
+
+            cnt++;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer reduce() {
+            return cnt;
+        }
     }
 }

@@ -41,7 +41,7 @@ public class GridNoStorageCacheMap extends GridCacheConcurrentMap {
      * @param ctx Cache context.
      */
     public GridNoStorageCacheMap(GridCacheContext ctx) {
-        super(ctx, 0, 0.75f, 1);
+        super(ctx, 0, null, 0.75f, 1);
     }
 
     /** {@inheritDoc} */

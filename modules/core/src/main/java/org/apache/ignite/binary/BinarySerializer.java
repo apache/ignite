@@ -23,7 +23,7 @@ package org.apache.ignite.binary;
  * cannot be changed directly.
  * <p>
  * Binary serializer can be configured for all binary objects via
- * {@link org.apache.ignite.marshaller.portable.BinaryMarshaller#getSerializer()} method, or for a specific
+ * {@link org.apache.ignite.configuration.BinaryConfiguration#getSerializer()} method, or for a specific
  * binary type via {@link BinaryTypeConfiguration#getSerializer()} method.
  */
 public interface BinarySerializer {

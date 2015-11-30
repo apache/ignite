@@ -69,6 +69,15 @@
     </files>
 
     <fileSets>
+        <!-- Move platforms readme. -->
+        <fileSet>
+            <directory>modules/platforms</directory>
+            <outputDirectory>/platforms</outputDirectory>
+            <includes>
+                <include>README.txt</include>
+            </includes>
+        </fileSet>
+
         <!-- Move .Net readme. -->
         <fileSet>
             <directory>modules/platforms/dotnet</directory>

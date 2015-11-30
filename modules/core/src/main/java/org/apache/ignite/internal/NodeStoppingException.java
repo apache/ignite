@@ -15,18 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.binary;
+package org.apache.ignite.internal;
+
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Organization type enum.
+ *
  */
-public enum OrganizationType {
-    /** Non-profit organization. */
-    NON_PROFIT,
+public class NodeStoppingException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /** Private organization. */
-    PRIVATE,
-
-    /** Government organization. */
-    GOVERNMENT
+    /**
+     * @param msg Exception message.
+     */
+    public NodeStoppingException(String msg) {
+        super(msg);
+    }
 }

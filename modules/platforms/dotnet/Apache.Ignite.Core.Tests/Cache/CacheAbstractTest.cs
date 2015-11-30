@@ -347,17 +347,16 @@ namespace Apache.Ignite.Core.Tests.Cache
             for (int i = 0; i < GridCount(); i++)
             {
                 var cache = Cache(i);
+                var entries = cache.Select(pair => pair.ToString() + GetKeyAffinity(cache, pair.Key)).ToArray();
 
-                if (!cache.IsEmpty())
-                {
-                    var entries = Enumerable.Range(0, 2000)
-                        .Select(x => new KeyValuePair<int, int>(x, cache.LocalPeek(x)))
-                        .Where(x => x.Value != 0)
-                        .Select(pair => pair.ToString() + GetKeyAffinity(cache, pair.Key))
-                        .Aggregate((acc, val) => string.Format("{0}, {1}", acc, val));
+                if (entries.Any())
+                    Assert.Fail("Cache '{0}' is not empty in grid [{1}]: ({2})", CacheName(), i,
+                        entries.Aggregate((acc, val) => string.Format("{0}, {1}", acc, val)));
 
-                    Assert.Fail("Cache '{0}' is not empty in grid [{1}]: ({2})", CacheName(), i, entries);
-                }
+                var size = cache.GetSize();
+                Assert.AreEqual(0, size,
+                    "Cache enumerator returned no entries, but cache '{0}' size is {1} in grid [{2}]",
+                    CacheName(), size, i);
             }
 
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);

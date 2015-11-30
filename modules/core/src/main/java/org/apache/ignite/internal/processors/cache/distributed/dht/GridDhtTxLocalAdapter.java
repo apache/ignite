@@ -822,7 +822,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /**
      * @return {@code True} if transaction is finished on prepare step.
      */
-    protected final boolean commitOnPrepare() {
+    public final boolean commitOnPrepare() {
         return onePhaseCommit() && !near() && !nearOnOriginatingNode;
     }
 
