@@ -37,12 +37,12 @@ var consoleModule = angular.module('ignite-web-console',
                 .then(function (user) {
                     $rootScope.$broadcast('user', user);
 
-                    $state.go('base.admin')
+                    $state.go('base.admin');
                 })
                 .catch(function (errMsg) {
                     $common.showError($common.errorMessage(errMsg));
                 });
-        }
+        };
     });
 
 // Modal popup configuration.
@@ -112,19 +112,19 @@ consoleModule.service('$common', [
 
         function isEmptyArray(arr) {
             if (isDefined(arr))
-                return arr.length == 0;
+                return arr.length === 0;
 
             return true;
         }
 
         function isEmptyString(s) {
             if (isDefined(s))
-                return s.trim().length == 0;
+                return s.trim().length === 0;
 
             return true;
         }
 
-        var msgModal = undefined;
+        var msgModal;
 
         function errorMessage(errMsg) {
             if (errMsg) {
@@ -331,7 +331,7 @@ consoleModule.service('$common', [
                 }
             }
 
-            return names
+            return names;
         }
 
         /**
@@ -432,7 +432,7 @@ consoleModule.service('$common', [
                             var minLenPx = measureText(shortPackage + className.substr(0, minLen) + '...');
                             var maxLenPx = totalWidth;
 
-                            while (middleLen != minLen && middleLen != maxLen) {
+                            while (middleLen !== minLen && middleLen !== maxLen) {
                                 var middleLenPx = measureText(shortPackage + className.substr(0, middleLen) + '...');
 
                                 if (middleLenPx > widthByName[nameIx]) {
@@ -481,7 +481,7 @@ consoleModule.service('$common', [
                 var minLenPx = measureText(label.substr(0, minLen) + '...');
                 var maxLenPx = totalWidth;
 
-                while (middleLen != minLen && middleLen != maxLen) {
+                while (middleLen !== minLen && middleLen !== maxLen) {
                     var middleLenPx = measureText(label.substr(0, middleLen) + '...');
 
                     if (middleLenPx > nameWidth) {
@@ -552,7 +552,7 @@ consoleModule.service('$common', [
         function ensureActivePanel(panels, id, focusId) {
             if (panels) {
                 var idx = _.findIndex($('div.panel-collapse'), function(pnl) {
-                    return pnl.id == id;
+                    return pnl.id === id;
                 });
 
                 if (idx >= 0) {
@@ -570,7 +570,7 @@ consoleModule.service('$common', [
                 }
 
                 if (isDefined(focusId))
-                    $focus(focusId)
+                    $focus(focusId);
             }
         }
 
@@ -625,8 +625,8 @@ consoleModule.service('$common', [
                 var srcModel = getModel(srcItem, field);
 
                 if (field.model) {
-                    if (field.model == 'kind' && isDefined(curModel.kind)) {
-                        if (curModel.kind != srcModel.kind)
+                    if (field.model === 'kind' && isDefined(curModel.kind)) {
+                        if (curModel.kind !== srcModel.kind)
                             return true;
 
                         if (_compareFields(field.details[curModel.kind].fields))
@@ -636,7 +636,7 @@ consoleModule.service('$common', [
                     var curValue = curModel[field.model];
                     var srcValue = srcModel[field.model];
 
-                    if ((_.isArray(curValue) || _.isString(curValue)) && (curValue.length == 0) && (srcValue === undefined))
+                    if ((_.isArray(curValue) || _.isString(curValue)) && (curValue.length === 0) && (srcValue === undefined))
                         curValue = undefined;
 
                     if (_.isBoolean(curValue) && !curValue && srcValue === undefined)
@@ -647,7 +647,7 @@ consoleModule.service('$common', [
 
                     return !!((isCur && !isSrc) || (!isCur && isSrc) || (isCur && isSrc && !angular.equals(curValue, srcValue)));
                 }
-                else if (field.type == 'panel-details' &&  _compareFields(field.details))
+                else if (field.type === 'panel-details' &&  _compareFields(field.details))
                     return true;
 
                 return false;
@@ -672,7 +672,7 @@ consoleModule.service('$common', [
                 var lines = arr.map(function (line) {
                     var rtrimmed = line.replace(/\s+$/g, '');
 
-                    if (rtrimmed.indexOf('>', this.length - 1) == -1) {
+                    if (rtrimmed.indexOf('>', this.length - 1) === -1) {
                         rtrimmed = rtrimmed + '<br/>';
                     }
 
@@ -718,10 +718,10 @@ consoleModule.service('$common', [
             SUPPORTED_JDBC_TYPES: SUPPORTED_JDBC_TYPES,
             findJdbcType: function (jdbcType) {
                 var res =  _.find(ALL_JDBC_TYPES, function (item) {
-                    return item.dbType == jdbcType;
+                    return item.dbType === jdbcType;
                 });
 
-                return res ? res : {dbName: 'Unknown', javaType: 'Unknown'}
+                return res ? res : {dbName: 'Unknown', javaType: 'Unknown'};
             },
             javaBuildInClasses: javaBuildInClasses,
             isJavaBuildInClass: isJavaBuildInClass,
@@ -845,7 +845,7 @@ consoleModule.service('$common', [
             panelExpanded: function (panels, id) {
                 if (panels && panels.activePanels && panels.activePanels.length > 0) {
                     var idx = _.findIndex($('div.panel-collapse'), function(pnl) {
-                        return pnl.id == id;
+                        return pnl.id === id;
                     });
 
                     return idx >= 0 && _.includes(panels.activePanels, idx);
@@ -854,7 +854,7 @@ consoleModule.service('$common', [
                 return false;
             },
             showPopoverMessage: function (panels, panelId, id, message) {
-                return showPopoverMessage(panels, panelId, id, message)
+                return showPopoverMessage(panels, panelId, id, message);
             },
             hidePopover: function () {
                 if (popover)
@@ -917,7 +917,7 @@ consoleModule.service('$common', [
                                     destMdl[field.model] = undefined;
 
                                 // For kind field restore kind value and all configured kinds.
-                                if (field.model == 'kind') {
+                                if (field.model === 'kind') {
                                     var kind = getModel(backupItem, field)[field.model];
 
                                     var details = field.details;
@@ -929,14 +929,14 @@ consoleModule.service('$common', [
                                 }
                             }
                         }
-                        else if (field.type == 'panel-details')
+                        else if (field.type === 'panel-details')
                             restoreFields(field.details);
                     }
                 }
 
                 // Find group metadata to reset group values.
                 for (var grpIx = 0; grpIx < groups.length; grpIx ++) {
-                    if (groups[grpIx].group == group) {
+                    if (groups[grpIx].group === group) {
                         var fields = groups[grpIx].fields;
 
                         restoreFields(fields);
@@ -965,7 +965,7 @@ consoleModule.service('$common', [
                     markPristine: function () {
                         this.groups.forEach(function (group) {
                             group.dirty = false;
-                        })
+                        });
                     },
                     checkDirty: function(curItem, srcItem) {
                         this.groups.forEach(function(group) {
@@ -979,18 +979,18 @@ consoleModule.service('$common', [
                 var attrs = window.location.search.substring(1).split("&");
 
                 var attr = _.find(attrs, function(attr) {
-                    return attr == name || (attr.indexOf('=') >= 0 && attr.substr(0, attr.indexOf('=')) == name)
+                    return attr === name || (attr.indexOf('=') >= 0 && attr.substr(0, attr.indexOf('=')) === name);
                 });
 
                 if (!isDefined(attr))
                     return undefined;
 
-                if (attr == name)
+                if (attr === name)
                     return true;
 
                 return attr.substr(attr.indexOf('=') + 1);
             }
-        }
+        };
     }]);
 
 // Confirm popup service.
@@ -1042,7 +1042,7 @@ consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
                         unbind();
                     }
                 }
-            })
+            });
 
             window.onbeforeunload = function(){
                 return $scope.ui && $scope.ui.isDirty()
@@ -1050,7 +1050,7 @@ consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
                     : undefined;
             };
         }
-    }
+    };
 });
 
 // Service for confirm or skip several steps.
@@ -1217,18 +1217,18 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
 
         var ui = _tableUI(field);
 
-        if (ui == 'table-simple') {
+        if (ui === 'table-simple') {
             field.curValue = val;
 
             _tableFocus(field.focusId, index);
         }
-        else if (ui == 'table-pair') {
+        else if (ui === 'table-pair') {
             field.curKey = val[field.keyName];
             field.curValue = val[field.valueName];
 
             _tableFocus('Key' + field.focusId, index);
         }
-        else if (ui == 'table-db-fields') {
+        else if (ui === 'table-db-fields') {
             field.curDatabaseFieldName = val.databaseFieldName;
             field.curDatabaseFieldType = val.databaseFieldType;
             field.curJavaFieldName = val.javaFieldName;
@@ -1236,7 +1236,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
 
             _tableFocus('DatabaseFieldName' + field.focusId, index);
         }
-        else if (ui == 'table-indexes') {
+        else if (ui === 'table-indexes') {
             field.curIndexName = val.name;
             field.curIndexType = val.indexType;
             field.curIndexFields = val.fields;
@@ -1250,18 +1250,18 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
 
         var ui = _tableUI(field);
 
-        if (ui == 'table-simple') {
+        if (ui === 'table-simple') {
             field.newValue = null;
 
             _tableFocus(field.focusId, -1);
         }
-        else if (ui == 'table-pair') {
+        else if (ui === 'table-pair') {
             field.newKey = null;
             field.newValue = null;
 
             _tableFocus('Key' + field.focusId, -1);
         }
-        else if (ui == 'table-db-fields') {
+        else if (ui === 'table-db-fields') {
             field.newDatabaseFieldName = null;
             field.newDatabaseFieldType = null;
             field.newJavaFieldName = null;
@@ -1269,21 +1269,21 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
 
             _tableFocus('DatabaseFieldName' + field.focusId, -1);
         }
-        else if (ui == 'table-indexes') {
+        else if (ui === 'table-indexes') {
             field.newIndexName = null;
             field.newIndexType = null;
             field.newIndexFields = null;
 
             _tableFocus(field.focusId, -1);
         }
-        else if (ui == 'table-index-fields') {
+        else if (ui === 'table-index-fields') {
             _tableFocus('FieldName' + (field.sorted ? 'S' : '') + field.indexIdx, -1);
         }
     }
 
     return {
         tableVisibleRow: function (rows, row) {
-            return !row || !row._id || _.findIndex(rows, function(item) {return item._id == row._id}) >= 0;
+            return !row || !row._id || _.findIndex(rows, function(item) {return item._id === row._id;}) >= 0;
         },
         tableState: function (name, editIndex) {
             _tableState(name, editIndex);
@@ -1293,10 +1293,10 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
         },
         tableNewItem: _tableNewItem,
         tableNewItemActive: function (field) {
-            return table.name == field.model && table.editIndex < 0;
+            return table.name === field.model && table.editIndex < 0;
         },
         tableEditing: function (field, index) {
-            return table.name == field.model && table.editIndex == index;
+            return table.name === field.model && table.editIndex === index;
         },
         tableStartEdit: _tableStartEdit,
         tableRemove: function (item, field, index) {
@@ -1390,7 +1390,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
         tableFieldId: function (index, id) {
             return (index < 0 ? 'new' : 'cur') + id + (index >= 0 ? index : '');
         }
-    }
+    };
 }]);
 
 // Preview support service.
@@ -1424,7 +1424,7 @@ consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, 
                 'preview-highlight-' + stage, 'line', false);
         });
 
-        if (stage == animation.finalStage) {
+        if (stage === animation.finalStage) {
             editor.animatePromise = null;
 
             if (animation.clearOnFinal)
@@ -1485,7 +1485,7 @@ consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, 
 
         var newContent = content.lines;
 
-        if (content.action == 'remove')
+        if (content.action === 'remove')
             prevContent = newContent;
         else if (prevContent.length > 0 && newContent.length > 0 && editor.attractAttention) {
             if (clearPromise) {
@@ -1499,8 +1499,8 @@ consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, 
             var newIx = 0;
             var prevIx = 0;
 
-            var prevLen = prevContent.length - (prevContent[prevContent.length - 1] == '' ? 1 : 0);
-            var newLen = newContent.length - (newContent[newContent.length - 1] == '' ? 1 : 0);
+            var prevLen = prevContent.length - (prevContent[prevContent.length - 1] === '' ? 1 : 0);
+            var newLen = newContent.length - (newContent[newContent.length - 1] === '' ? 1 : 0);
 
             var removed = newLen < prevLen;
 
@@ -1509,7 +1509,7 @@ consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, 
             var selected = false;
             var scrollTo = -1;
 
-            while (newContent[newLen - 1] == prevContent[prevLen - 1] && newLen > 0 && prevLen > 0) {
+            while (newContent[newLen - 1] === prevContent[prevLen - 1] && newLen > 0 && prevLen > 0) {
                 prevLen -= 1;
                 newLen -= 1;
 
@@ -1522,7 +1522,7 @@ consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, 
 
                 // Find an index of a first line with different text.
                 for (; (newIx < newLen || prevIx < prevLen) && start < 0; newIx++, prevIx++) {
-                    if (newIx >= newLen || prevIx >= prevLen || newContent[newIx] != prevContent[prevIx]) {
+                    if (newIx >= newLen || prevIx >= prevLen || newContent[newIx] !== prevContent[prevIx]) {
                         start = newIx;
 
                         break;
@@ -1533,7 +1533,7 @@ consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, 
                     // Find an index of a last line with different text by checking last string of old and new content in reverse order.
                     for (var i = start; i < newLen && end < 0; i ++) {
                         for (var j = prevIx; j < prevLen && end < 0; j ++) {
-                            if (newContent[i] == prevContent[j] && newContent[i] != '') {
+                            if (newContent[i] === prevContent[j] && newContent[i] !== '') {
                                 end = i;
 
                                 newIx = i;
@@ -1551,11 +1551,11 @@ consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, 
                         prevIx = prevLen;
                     }
 
-                    if (start == end) {
+                    if (start === end) {
                         if (removed)
                             start = Math.max(0, start - 1);
 
-                        end = Math.min(newLen + skipEnd, end + 1)
+                        end = Math.min(newLen + skipEnd, end + 1);
                     }
 
                     if (start <= end) {
@@ -1579,7 +1579,7 @@ consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, 
                     editor.clearPromise = null;
                 }, 2000);
 
-                editor.scrollToRow(scrollTo)
+                editor.scrollToRow(scrollTo);
             }
 
             prevContent = [];
@@ -1606,7 +1606,7 @@ consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, 
             preview.setTheme('ace/theme/chrome');
         },
         previewChanged: previewChanged
-    }
+    };
 }]);
 
 consoleModule.service('ngCopy', ['$window', '$common', function ($window, $common) {
@@ -1636,7 +1636,7 @@ consoleModule.service('ngCopy', ['$window', '$common', function ($window, $commo
         }
 
         textArea.remove();
-    }
+    };
 }]).directive('ngClickCopy', ['ngCopy', function (ngCopy) {
     return {
         restrict: 'A',
@@ -1648,14 +1648,14 @@ consoleModule.service('ngCopy', ['$window', '$common', function ($window, $commo
             if (!document.queryCommandSupported('copy'))
                 element.hide();
         }
-    }
+    };
 }]);
 
 // Filter to decode name using map(value, label).
 consoleModule.filter('displayValue', function () {
     return function (v, m, dflt) {
         var i = _.findIndex(m, function (item) {
-            return item.value == v;
+            return item.value === v;
         });
 
         if (i >= 0) {
@@ -1667,7 +1667,7 @@ consoleModule.filter('displayValue', function () {
         }
 
         return 'Unknown value';
-    }
+    };
 });
 
 consoleModule.filter('clustersSearch', function() {
@@ -1697,7 +1697,7 @@ consoleModule.filter('clustersSearch', function() {
             return filtredArray;
         } else
             return array;
-    }
+    };
 });
 
 consoleModule.filter('cachesSearch', function() {
@@ -1717,7 +1717,7 @@ consoleModule.filter('cachesSearch', function() {
             return filtredArray;
         } else
             return array;
-    }
+    };
 });
 
 consoleModule.filter('metadatasSearch', function() {
@@ -1735,7 +1735,7 @@ consoleModule.filter('metadatasSearch', function() {
             return filtredArray;
         } else
             return array;
-    }
+    };
 });
 
 consoleModule.filter('schemasSearch', function() {
@@ -1755,7 +1755,7 @@ consoleModule.filter('schemasSearch', function() {
             return filtredArray;
         } else
             return array;
-    }
+    };
 });
 
 consoleModule.filter('tablesSearch', function() {
@@ -1775,7 +1775,7 @@ consoleModule.filter('tablesSearch', function() {
             return filtredArray;
         } else
             return array;
-    }
+    };
 });
 
 consoleModule.filter('igfssSearch', function() {
@@ -1795,7 +1795,7 @@ consoleModule.filter('igfssSearch', function() {
             return filtredArray;
         } else
             return array;
-    }
+    };
 });
 
 // Filter metadata with key fields configuration.
@@ -1814,7 +1814,7 @@ consoleModule.filter('metadatasValidation', ['$common', function ($common) {
         });
 
         return out;
-    }
+    };
 }]);
 
 // Directive to enable validation for IP addresses.
@@ -1828,13 +1828,13 @@ consoleModule.directive('ipaddress', function () {
         require: 'ngModel',
         link: function (scope, elem, attrs, ctrl) {
             ctrl.$validators.ipaddress = function (modelValue, viewValue) {
-                if (ctrl.$isEmpty(modelValue) || !attrs['ipaddress'])
+                if (ctrl.$isEmpty(modelValue) || !attrs.ipaddress)
                     return true;
 
                 return viewValue.match(new RegExp('(^' + ip + portRange + '$)|(^' + host + portRange + '$)')) != null;
-            }
+            };
         }
-    }
+    };
 });
 
 // Directive to enable validation to match specified value.
@@ -2030,9 +2030,9 @@ consoleModule.controller('activeLink', [
     }]);
 
 consoleModule.controller('resetPassword', [
-    '$scope', '$modal', '$http', '$window', '$common', '$focus', 'Auth', '$state',
-    function ($scope, $http, $common, $focus, Auth, $state) {
-        if ($state.params && $state.params.token)
+    '$scope', '$modal', '$http', '$common', '$focus', 'Auth', '$state',
+    function ($scope, $modal, $http, $common, $focus, Auth, $state) {
+        if ($state.params.token)
             $http.post('/api/v1/password/validate-token', {token: $state.params.token})
                 .success(function (res) {
                     $scope.email = res.email;
@@ -2054,18 +2054,18 @@ consoleModule.controller('resetPassword', [
                 .error(function (data, state) {
                     $common.showError(data);
 
-                    if (state == 503)
+                    if (state === 503)
                         $state.go('base.configuration.clusters');
                 });
-        }
+        };
     }
 ]);
 
 // Login popup controller.
 // TODO IGNITE-1936 Refactor this controller.
 consoleModule.controller('auth', [
-    '$scope', '$modal', '$http', '$window', '$common', '$focus', 'Auth', '$state',
-    function ($scope, $modal, $http, $window, $common, $focus, Auth, $state) {
+    '$scope', '$focus', 'Auth',
+    function ($scope, $focus, Auth) {
         $scope.auth = Auth.auth;
 
         $scope.action = 'login';
@@ -2099,7 +2099,7 @@ consoleModule.controller('agent-download', [
 
             _stopInterval();
 
-            _agentDownloadModal.hide()
+            _agentDownloadModal.hide();
         };
 
         $scope.downloadAgent = function () {
@@ -2129,9 +2129,9 @@ consoleModule.controller('agent-download', [
             else if (!_agentDownloadModal.$isShown)
                 _agentDownloadModal.$promise.then(_agentDownloadModal.show);
 
-            $scope.nodeFailedConnection = status == 404 || timedOut;
+            $scope.nodeFailedConnection = status === 404 || timedOut;
 
-            if (status == 500)
+            if (status === 500)
                 $common.showError(errMsg, 'top-right', 'body', true);
         };
 

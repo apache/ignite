@@ -15,7 +15,7 @@
  * limitations under the License.
  */
  
-import angular from 'angular'
+import angular from 'angular';
 
 angular
 .module('ignite-console.states.login', [
@@ -29,7 +29,7 @@ angular
 	.state('login', {
 		url: '/login',
 		templateUrl: '/login.html'
-	})
+	});
 }])
 .run(['$rootScope', '$state', 'Auth', function($root, $state, Auth) {
 	$root.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
@@ -38,5 +38,5 @@ angular
 
 			$state.go('login');
 		}
-	})
+	});
 }]);
