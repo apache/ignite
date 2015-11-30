@@ -2305,12 +2305,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     GridNioRecoveryDescriptor recoveryDesc = recoveryDescriptor(node);
 
-                    if (!recoveryDesc.reserve()) {
-                        U.closeQuiet(ch);
-
-                        return null;
-                    }
-
                     if (getSpiContext().node(node.id()) == null) {
                         recoveryDesc.release();
 
@@ -2318,6 +2312,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         throw new ClusterTopologyCheckedException("Failed to send message " +
                             "(node left topology): " + node);
+                    }
+
+                    if (!recoveryDesc.reserve()) {
+                        U.closeQuiet(ch);
+
+                        return null;
                     }
 
                     long rcvCnt = -1;
