@@ -145,9 +145,8 @@ public class GridDhtPartitionDemander {
 
         Map<Integer, Object> tops = new HashMap<>();
 
-        for (int idx = 0; idx < cctx.gridConfig().getRebalanceThreadPoolSize(); idx++) {
+        for (int idx = 0; idx < cctx.gridConfig().getRebalanceThreadPoolSize(); idx++)
             tops.put(idx, GridCachePartitionExchangeManager.rebalanceTopic(idx));
-        }
 
         rebalanceTopics = tops;
     }
@@ -862,9 +861,8 @@ public class GridDhtPartitionDemander {
                 U.log(log, "Cancelled rebalancing from all nodes [cache=" + cctx.name()
                     + ", topology=" + topologyVersion());
 
-                for (UUID nodeId : remaining.keySet()) {
+                for (UUID nodeId : remaining.keySet())
                     cleanupRemoteContexts(nodeId);
-                }
 
                 remaining.clear();
 
@@ -959,9 +957,9 @@ public class GridDhtPartitionDemander {
                 Collection<Integer> parts = remaining.get(nodeId).get2();
 
                 if (parts != null) {
-                    boolean removed = parts.remove(p);
+                    boolean rmvd = parts.remove(p);
 
-                    assert removed;
+                    assert rmvd;
 
                     if (parts.isEmpty()) {
                         U.log(log, "Completed " + ((remaining.size() == 1 ? "(final) " : "") +
@@ -1039,6 +1037,11 @@ public class GridDhtPartitionDemander {
                 onDone(!cancelled);
             }
         }
+
+        /** {@inheritDoc} */
+        public String toString() {
+            return S.toString(RebalanceFuture.class, this);
+        }
     }
 
     /**
@@ -1109,10 +1112,12 @@ public class GridDhtPartitionDemander {
         /** Hide worker logger and use cache logger instead. */
         private IgniteLogger log = GridDhtPartitionDemander.this.log;
 
+        /** */
         private volatile RebalanceFuture fut;
 
         /**
          * @param id Worker ID.
+         * @param fut Rebalance future.
          */
         private DemandWorker(int id, RebalanceFuture fut) {
             assert id >= 0;
