@@ -148,7 +148,7 @@ namespace ignite
             size_t len = 0;
 
             // Getting list length. List is terminated by two '\0'.
-            while (attributes[len] && attributes[len + 1])
+            while (attributes[len] || attributes[len + 1])
                 ++len;
 
             ++len;
@@ -180,6 +180,12 @@ namespace ignite
                 port = atoi(it->second.c_str());
             else
                 port = 0;
+
+            it = config_attributes.find(attrkey::cache);
+            if (it != config_attributes.end())
+                cache = it->second;
+            else
+                cache.clear();
         }
 
         void Configuration::ParseAttributeList(const char * str, size_t len, char delimeter, ArgumentMap & args) const

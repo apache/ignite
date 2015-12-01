@@ -224,6 +224,18 @@ namespace ignite
             PutStrToStrBuffer<CharT>(converter.str());
         }
 
+        template<typename CharT>
+        void ApplicationDataBuffer::PutValToStrBuffer(const int8_t & value)
+        {
+            typedef std::basic_stringstream<CharT> ConverterType;
+
+            ConverterType converter;
+
+            converter << static_cast<int>(value);
+
+            PutStrToStrBuffer<CharT>(converter.str());
+        }
+
         template<typename OutCharT, typename InCharT>
         void ApplicationDataBuffer::PutStrToStrBuffer(const std::basic_string<InCharT>& value)
         {
@@ -406,7 +418,8 @@ namespace ignite
                     guid->Data3 = static_cast<uint16_t>(value.GetMostSignificantBits());
 
                     uint64_t lsb = value.GetLeastSignificantBits();
-                    memcpy(guid->Data4, &lsb, std::min(sizeof(guid->Data4), sizeof(lsb)));
+                    for (size_t i = 0; i < sizeof(guid->Data4); ++i)
+                        guid->Data4[i] = (lsb >> (sizeof(guid->Data4) - i - 1) * 8) & 0xFF;
 
                     break;
                 }

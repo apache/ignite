@@ -124,7 +124,6 @@ namespace ignite
          * @param str String.
          */
         void ReadString(ignite::impl::binary::BinaryReaderImpl& reader, std::string& str);
-
     }
 }
 

@@ -36,6 +36,12 @@ namespace ignite
             typedef unsigned short InfoType;
 
 #ifdef _DEBUG
+            /**
+             * Convert type to string containing its name.
+             * Debug function.
+             * @param type Info type.
+             * @return Null-terminated string containing types name.
+             */
             static const char* InfoTypeToString(InfoType type);
 #endif
 

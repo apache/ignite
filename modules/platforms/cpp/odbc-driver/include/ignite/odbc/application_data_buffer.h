@@ -159,6 +159,14 @@ namespace ignite
             void PutValToStrBuffer(const Tin& value);
 
             /**
+             * Put value to string buffer.
+             * Specialisation for int8_t.
+             * @param value Value that can be converted to string.
+             */
+            template<typename CharT>
+            void PutValToStrBuffer(const int8_t & value);
+
+            /**
              * Put string to string buffer.
              *
              * @param value String value.

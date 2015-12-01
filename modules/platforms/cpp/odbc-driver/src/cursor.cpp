@@ -34,7 +34,7 @@ namespace ignite
 
         bool Cursor::Increment()
         {
-            if (currentPagePos < currentPage->GetSize())
+            if (currentPage.get() && currentPagePos < currentPage->GetSize())
             {
                 ++currentPagePos;
 
@@ -51,20 +51,20 @@ namespace ignite
         bool Cursor::NeedDataUpdate() const
         {
             return !currentPage.get() || (!currentPage->IsLast() &&
-                currentPagePos == currentPage->GetSize() - 1);
+                currentPagePos == currentPage->GetSize());
         }
 
         bool Cursor::HasNext() const
         {
             return !currentPage.get() || !currentPage->IsLast() ||
-                currentPagePos < currentPage->GetSize() - 1;
+                currentPagePos < currentPage->GetSize();
         }
 
         void Cursor::UpdateData(std::auto_ptr<ResultPage>& newPage)
         {
             currentPage = newPage;
 
-            currentPagePos = 0;
+            currentPagePos = 1;
 
             currentRow.reset(new Row(currentPage->GetData()));
         }
