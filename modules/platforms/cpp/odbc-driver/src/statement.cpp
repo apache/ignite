@@ -20,9 +20,6 @@
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/statement.h"
 
-// Default result page size.
-#define DEFAULT_PAGE_SIZE 32
-
 namespace ignite
 {
     namespace odbc
@@ -201,7 +198,7 @@ namespace ignite
         {
             std::auto_ptr<ResultPage> resultPage(new ResultPage());
 
-            QueryFetchRequest req(cursor->GetQueryId(), DEFAULT_PAGE_SIZE);
+            QueryFetchRequest req(cursor->GetQueryId(), ResultPage::DEFAULT_SIZE);
             QueryFetchResponse rsp(*resultPage);
 
             bool success = connection.SyncMessage(req, rsp);

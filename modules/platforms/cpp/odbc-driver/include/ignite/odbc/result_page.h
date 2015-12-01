@@ -37,6 +37,9 @@ namespace ignite
             enum { DEFAULT_ALLOCATED_MEMORY = 1024 };
 
         public:
+            // Default result page size.
+            enum { DEFAULT_SIZE = 32 };
+
             /**
              * Constructor.
              */
