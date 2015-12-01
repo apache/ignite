@@ -65,7 +65,7 @@ import './modules/states/admin/index'
 // ignite:modules
 import './modules/navbar/main'
 import './modules/userbar/main'
-import './modules/configuration-sidebar/main'
+import './modules/configuration/sidebar/main'
 // endignite
 
 angular
@@ -85,7 +85,7 @@ angular
 	//
 	'ignite-console.navbar',
 	'ignite-console.userbar',
-    'ignite-console.configuration-sidebar'
+    'ignite-console.configuration.sidebar'
 ])
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {
 	// set up the states

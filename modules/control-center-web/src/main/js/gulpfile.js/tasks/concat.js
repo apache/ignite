@@ -21,7 +21,9 @@ var concat = require('gulp-concat');
 paths = [
 	'!./controllers/common-module.js',
 	'./controllers/*.js',
-	'./controllers/**/*.js'
+	'./controllers/**/*.js',
+	'./helpers/generator/*.js',
+	'./helpers/generator/**/*.js'
 ];
 
 gulp.task('concat', function() {

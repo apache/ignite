@@ -22,19 +22,17 @@ html(ng-app='ignite-web-console')
         meta(http-equiv='content-type' content='text/html; charset=UTF8')
         title=title
 
-        block css
-            link(rel='stylesheet', href='/app.min.css')
+        link(rel='stylesheet', href='/app.min.css')
 
-        block scripts
-            script(src='/common-utils.js')
-            script(src='/app.min.js')
+        script(src='/common-utils.js')
+        script(src='/app.min.js')
 
-            // ignite:plugins
-            // endignite
-            
-            script(src='/common-module.js')
-            script(src='/data-structures.js')
-            script(src='/all.js')
+        script(src='/common-module.js')
+        script(src='/data-structures.js')
+        script(src='/all.js')
+
+        // ignite:plugins
+        // endignite
 
     body.theme-line.body-overlap.greedy
         .wrapper(ui-view='')
