@@ -121,7 +121,7 @@ consoleModule.controller('clustersController', [
 
         $scope.segmentationPolicy = $common.mkOptions(['RESTART_JVM', 'STOP', 'NOOP']);
 
-        $scope.marshallers = $common.mkOptions(['OptimizedMarshaller', 'JdkMarshaller']);
+        $scope.marshallers = $common.mkOptions(['OptimizedMarshaller', 'JdkMarshaller', undefined]);
 
         $scope.sslKeyAlgorithms = ['SumX509', 'X509'];
 
