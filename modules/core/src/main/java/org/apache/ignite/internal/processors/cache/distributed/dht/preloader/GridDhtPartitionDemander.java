@@ -861,8 +861,10 @@ public class GridDhtPartitionDemander {
                 U.log(log, "Cancelled rebalancing from all nodes [cache=" + cctx.name()
                     + ", topology=" + topologyVersion());
 
-                for (UUID nodeId : remaining.keySet())
-                    cleanupRemoteContexts(nodeId);
+                if (!cctx.kernalContext().isStopping()) {
+                    for (UUID nodeId : remaining.keySet())
+                        cleanupRemoteContexts(nodeId);
+                }
 
                 remaining.clear();
 
@@ -920,7 +922,6 @@ public class GridDhtPartitionDemander {
 
             //Check remote node rebalancing API version.
             if (node.version().compareTo(GridDhtPreloader.REBALANCING_VER_2_SINCE) >= 0) {
-
                 GridDhtPartitionDemandMessage d = new GridDhtPartitionDemandMessage(
                     -1/* remove supply context signal */, this.topologyVersion(), cctx.cacheId());
 
