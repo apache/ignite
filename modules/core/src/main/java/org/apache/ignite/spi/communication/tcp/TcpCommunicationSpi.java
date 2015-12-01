@@ -360,7 +360,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         clients.remove(id, rmv)) {
                         rmv.forceClose();
 
-                        if (!isNodeStopping()) {
+                        if (!stopping) {
                             GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
 
                             if (recoveryData != null) {
@@ -1761,7 +1761,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
-        assert isNodeStopping();
+        assert stopping;
 
         unregisterMBean();
 
@@ -2303,16 +2303,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (sockSndBuf > 0)
                         ch.socket().setSendBufferSize(sockSndBuf);
 
-                    GridNioRecoveryDescriptor recoveryDesc = recoveryDescriptor(node);
-
                     if (getSpiContext().node(node.id()) == null) {
-                        recoveryDesc.release();
-
                         U.closeQuiet(ch);
 
                         throw new ClusterTopologyCheckedException("Failed to send message " +
                             "(node left topology): " + node);
                     }
+
+                    GridNioRecoveryDescriptor recoveryDesc = recoveryDescriptor(node);
 
                     if (!recoveryDesc.reserve()) {
                         U.closeQuiet(ch);

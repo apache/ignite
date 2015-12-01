@@ -64,21 +64,26 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
 
         Ignition.setClientMode(true);
 
-        Ignite ignite = startGrid("client");
+        try {
+            Ignite ignite = startGrid("client");
 
-        ignite.events().remoteListen(
-            new IgniteBiPredicate<UUID, Event>() {
-                @Override public boolean apply(UUID uuid, Event evt) {
-                    return true;
-                }
-            },
-            new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    throw new NoClassDefFoundError("XXX");
-                }
-            },
-            EventType.EVT_CACHE_OBJECT_PUT
-        );
+            ignite.events().remoteListen(
+                new IgniteBiPredicate<UUID, Event>() {
+                    @Override public boolean apply(UUID uuid, Event evt) {
+                        return true;
+                    }
+                },
+                new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        throw new NoClassDefFoundError("XXX");
+                    }
+                },
+                EventType.EVT_CACHE_OBJECT_PUT
+            );
+        }
+        finally {
+            Ignition.setClientMode(false);
+        }
     }
 
     /** {@inheritDoc} */
