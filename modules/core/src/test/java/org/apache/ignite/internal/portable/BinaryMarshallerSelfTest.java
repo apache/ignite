@@ -390,6 +390,18 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testExternalizableInEnclosing() throws Exception {
+        SimpleEnclosingObject obj = new SimpleEnclosingObject();
+        obj.simpl = new SimpleExternalizable("field");
+
+        SimpleEnclosingObject other = marshalUnmarshal(obj);
+
+        assertEquals(((SimpleExternalizable)obj.simpl).field, ((SimpleExternalizable)other.simpl).field);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testMapEntry() throws Exception {
         Map.Entry<Integer, String> e = new GridMapEntry<>(1, "str1");
 
@@ -3747,6 +3759,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public static class ChildPortable extends ParentPortable {
 
+    }
+
+    /**
+     *
+     */
+    public static class SimpleEnclosingObject {
+        /** */
+        private Object simpl;
     }
 
     /**
