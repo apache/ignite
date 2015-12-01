@@ -152,12 +152,14 @@
     <ClCompile Include="..\..\..\odbc-driver\src\application_data_buffer.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\configuration.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\connection_info.cpp" />
+    <ClCompile Include="..\..\..\odbc-driver\src\cursor.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\result_page.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\row.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\utility.cpp" />
     <ClCompile Include="..\..\src\application_data_buffer_test.cpp" />
     <ClCompile Include="..\..\src\configuration_test.cpp" />
     <ClCompile Include="..\..\src\connection_info_test.cpp" />
+    <ClCompile Include="..\..\src\cursor_test.cpp" />
     <ClCompile Include="..\..\src\parser_test.cpp" />
     <ClCompile Include="..\..\src\row_test.cpp" />
     <ClCompile Include="..\..\src\teamcity_boost.cpp" />
