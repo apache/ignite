@@ -45,7 +45,7 @@ task slurp(dependsOn: 'classes', type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
 }
 
-task patchapply(dependsOn: 'classes', type: JavaExec) {
+task patchApply(dependsOn: 'classes', type: JavaExec) {
     args("patchApply,${System.getenv('JIRA_NUM')}")
     main = 'jiraslurp'
     classpath = sourceSets.main.runtimeClasspath
