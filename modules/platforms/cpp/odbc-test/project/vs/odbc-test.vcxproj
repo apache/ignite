@@ -164,6 +164,7 @@
     <ClCompile Include="..\..\src\row_test.cpp" />
     <ClCompile Include="..\..\src\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity_messages.cpp" />
+    <ClCompile Include="..\..\src\utility_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h" />
