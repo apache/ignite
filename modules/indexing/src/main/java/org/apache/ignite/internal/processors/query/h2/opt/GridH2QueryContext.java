@@ -60,7 +60,7 @@ public class GridH2QueryContext {
     private Map<SourceKey, Object> sources;
 
     /** */
-    private byte batchLookupIdGen;
+    private int batchLookupIdGen;
 
     /** */
     private IndexingQueryFilter filter;
@@ -254,10 +254,17 @@ public class GridH2QueryContext {
      * @param streams Range streams.
      */
     public synchronized void putStreams(int batchLookupId, Object streams) {
-        if (this.streams == null)
-            this.streams = new HashMap<>();
+        if (this.streams == null) {
+            if (streams == null)
+                return;
 
-        this.streams.put(batchLookupId, streams);
+            this.streams = new HashMap<>();
+        }
+
+        if (streams == null)
+            this.streams.remove(batchLookupId);
+        else
+            this.streams.put(batchLookupId, streams);
     }
 
     /**
@@ -306,7 +313,7 @@ public class GridH2QueryContext {
     /**
      * @return Next batch ID.
      */
-    public byte nextBatchLookupId() {
+    public int nextBatchLookupId() {
         return ++batchLookupIdGen;
     }
 
@@ -505,7 +512,7 @@ public class GridH2QueryContext {
     /**
      * Key for source.
      */
-    private static class SourceKey {
+    private static final class SourceKey {
         /** */
         UUID ownerId;
 

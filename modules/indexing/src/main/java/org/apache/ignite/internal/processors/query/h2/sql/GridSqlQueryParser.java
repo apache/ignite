@@ -138,7 +138,7 @@ public class GridSqlQueryParser {
     private static final Getter<ConditionAndOr, Expression> ANDOR_RIGHT = getter(ConditionAndOr.class, "right");
 
     /** */
-    public static final Getter<TableView, Query> VIEW_QUERY = getter(TableView.class, "viewQuery");
+    private static final Getter<TableView, Query> VIEW_QUERY = getter(TableView.class, "viewQuery");
 
     /** */
     private static final Getter<TableFilter, String> ALIAS = getter(TableFilter.class, "alias");

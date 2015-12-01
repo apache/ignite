@@ -28,18 +28,19 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
+import org.h2.command.dml.SelectUnion;
 import org.h2.engine.Session;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionColumn;
 import org.h2.index.BaseIndex;
 import org.h2.index.IndexCondition;
+import org.h2.index.ViewIndex;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.Column;
 import org.h2.table.Table;
 import org.h2.table.TableFilter;
-import org.h2.table.TableView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
@@ -49,7 +50,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2TableFilt
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2TableFilterCollocation.PARTITIONED_FIRST;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2TableFilterCollocation.PARTITIONED_NOT_COLLOCATED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2TableFilterCollocation.REPLICATED;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.VIEW_QUERY;
 
 /**
  * Index base.
@@ -149,12 +149,23 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
+     * @param ses Session.
+     */
+    private static void clearViewIndexCache(Session ses) {
+        Map<Object,ViewIndex> viewIndexCache = ses.getViewIndexCache(true);
+
+        if (!viewIndexCache.isEmpty())
+            viewIndexCache.clear();
+    }
+
+    /**
+     * @param ses Session.
      * @param masks Masks.
      * @param filters All joined table filters.
      * @param filter Current filter.
      * @return Multiplier.
      */
-    public int getDistributedMultiplier(int[] masks, TableFilter[] filters, int filter) {
+    public int getDistributedMultiplier(Session ses, int[] masks, TableFilter[] filters, int filter) {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
         // We do complex optimizations with respect to distributed joins only on prepare stage
@@ -162,6 +173,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
         // and thus multiplier will be always the same, so it will not affect choice of index.
         if (qctx == null || qctx.type() != PREPARE || !qctx.distributedJoins())
             return MULTIPLIER_COLLOCATED;
+
+        // We have to clear this cache because normally sub-query plan cost does not depend on things
+        // other than index condition masks and sort order, but in our case it is.
+        clearViewIndexCache(ses);
 
         Map<TableFilter,GridH2TableFilterCollocation> states = qctx.tableFilterStateCache();
 
@@ -232,24 +247,16 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     ExpressionColumn expCol = (ExpressionColumn)exp;
 
                     // This is one of our previous joins.
-                    TableFilter join = expCol.getTableFilter();
+                    TableFilter prevJoin = expCol.getTableFilter();
 
-                    if (join != null) {
-                        GridH2TableFilterCollocation state = states.get(join);
+                    if (prevJoin != null) {
+                        GridH2TableFilterCollocation state = states.get(prevJoin);
 
                         if (state == null)
-                            state = getStateForNonTable(join, states);
+                            state = getStateForNonTable(prevJoin, states);
 
-                        if (state.isPartitioned() && state.isCollocated()) {
-                            Column col = getOriginalColumn(expCol);
-
-                            if (col != null) {
-                                GridH2Table joinTbl = (GridH2Table)col.getTable();
-
-                                if (joinTbl.getAffinityKeyColumn().column.getColumnId() == col.getColumnId())
-                                    return true;
-                            }
-                        }
+                        if (state.isPartitioned() && state.isCollocated() && isAffinityColumn(prevJoin, expCol))
+                            return true;
                     }
                 }
             }
@@ -259,23 +266,49 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
+     * @param f Table filter.
      * @param expCol Expression column.
-     * @return Original column or {@code null} if it is impossible to get it.
+     * @return {@code true} It it is an affinity column.
      */
-    private static Column getOriginalColumn(ExpressionColumn expCol) {
-        Table t = expCol.getColumn().getTable();
+    private static boolean isAffinityColumn(TableFilter f, ExpressionColumn expCol) {
+        Column col = expCol.getColumn();
 
-        if (t instanceof GridH2Table)
-            return expCol.getColumn();
+        if (col == null)
+            return false;
 
-        Query qry = VIEW_QUERY.get((TableView)t);
+        Table t = col.getTable();
+
+        if (t.isView()) {
+            Query qry = ((ViewIndex)f.getIndex()).getQuery();
+
+            return isAffinityColumn(qry, expCol);
+        }
+
+        return t instanceof GridH2Table &&
+            col.getColumnId() == ((GridH2Table)t).getAffinityKeyColumn().column.getColumnId();
+    }
+
+    /**
+     * @param qry Query.
+     * @param expCol Expression column.
+     * @return {@code true} It it is an affinity column.
+     */
+    private static boolean isAffinityColumn(Query qry, ExpressionColumn expCol) {
+        if (qry.isUnion()) {
+            SelectUnion union = (SelectUnion)qry;
+
+            return isAffinityColumn(union.getLeft(), expCol) && isAffinityColumn(union.getRight(), expCol);
+        }
 
         Expression exp = qry.getExpressions().get(expCol.getColumn().getColumnId()).getNonAliasExpression();
 
-        if (exp instanceof ExpressionColumn)
-            return getOriginalColumn((ExpressionColumn)exp);
+        if (exp instanceof ExpressionColumn) {
+            expCol = (ExpressionColumn)exp;
 
-        return null;
+            return isAffinityColumn(expCol.getTableFilter(), expCol);
+        }
+
+        return false;
     }
 
     /**
@@ -289,7 +322,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         for (int i = filter - 1; i >= 0; i--) {
             TableFilter f = filters[i];
 
-            if (f.getTable() instanceof TableView)
+            if (f.getTable().isView())
                 states.put(f, null);
             else
                 break;
@@ -320,47 +353,20 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * @param filter Filter.
+     * @param f Filter.
      * @param states States map.
      * @return Filter collocation.
      */
-    private static GridH2TableFilterCollocation getStateForNonTable(TableFilter filter,
+    private static GridH2TableFilterCollocation getStateForNonTable(TableFilter f,
         Map<TableFilter,GridH2TableFilterCollocation> states) {
-        Table tbl = filter.getTable();
+        Table tbl = f.getTable();
 
-        GridH2TableFilterCollocation res = null;
+        GridH2TableFilterCollocation res;
 
-        if (tbl instanceof TableView) {
-            Select select = (Select)VIEW_QUERY.get((TableView)tbl);
+        if (tbl.isView()) {
+            Query qry = ((ViewIndex)f.getIndex()).getQuery();
 
-            ArrayList<TableFilter> filters = select.getTopFilters();
-
-            int partitioned = -1;
-
-            for (int i = 0; i < filters.size(); i++) {
-                TableFilter f = filters.get(i);
-
-                GridH2TableFilterCollocation state = states.get(f);
-
-                if (state == null)
-                    state = getStateForNonTable(f, states);
-
-                if (!state.isCollocated()) {
-                    res = PARTITIONED_NOT_COLLOCATED;
-
-                    break;
-                }
-
-                if (state.isPartitioned())
-                    partitioned = i;
-            }
-
-            if (res == null) {
-                if (partitioned == -1)
-                    return REPLICATED;
-
-                res = partitioned == 0 ? PARTITIONED_FIRST : PARTITIONED_COLLOCATED;
-            }
+            res = getStateForSubQuery(qry, states);
         }
         else if (tbl instanceof GridH2Table)
             throw new IllegalStateException("Table found: " + ((GridH2Table)tbl).identifier());
@@ -371,9 +377,73 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         assert res != null;
 
-        states.put(filter, res);
+        states.put(f, res);
 
         return res;
+    }
+
+    /**
+     * @param qry Query.
+     * @param states States.
+     * @return Collocation.
+     */
+    private static GridH2TableFilterCollocation getStateForSubQuery(Query qry,
+        Map<TableFilter,GridH2TableFilterCollocation> states) {
+        if (!qry.isUnion())
+            return getStateForSubSelect((Select)qry, states);
+
+        SelectUnion union = (SelectUnion)qry;
+
+        GridH2TableFilterCollocation left = getStateForSubQuery(union.getLeft(), states);
+        GridH2TableFilterCollocation right = getStateForSubQuery(union.getRight(), states);
+
+        if (!left.isCollocated() || !right.isCollocated())
+            return PARTITIONED_NOT_COLLOCATED;
+
+        if (!left.isPartitioned() && !right.isPartitioned())
+            return REPLICATED;
+
+        if (left == PARTITIONED_FIRST && right == PARTITIONED_FIRST)
+            return PARTITIONED_FIRST;
+
+        return PARTITIONED_COLLOCATED;
+    }
+
+    /**
+     * @param select Select.
+     * @param states States.
+     * @return Collocation.
+     */
+    private static GridH2TableFilterCollocation getStateForSubSelect(Select select,
+        Map<TableFilter,GridH2TableFilterCollocation> states) {
+        int partitioned = -1;
+        int i = 0;
+
+        for (TableFilter f = select.getTopTableFilter(); f != null; f = f.getJoin()) {
+            GridH2TableFilterCollocation state = states.get(f);
+
+            if (state == null)
+                state = getStateForNonTable(f, states);
+
+            if (!state.isCollocated())
+                return PARTITIONED_NOT_COLLOCATED;
+
+            if (state.isPartitioned())
+                partitioned = i;
+
+            i++;
+        }
+
+        switch (partitioned) {
+            case -1:
+                return REPLICATED;
+
+            case 0:
+                return PARTITIONED_FIRST;
+
+            default:
+                return PARTITIONED_COLLOCATED;
+        }
     }
 
     /**

@@ -251,8 +251,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             // This is the first request containing all the search rows.
             ConcurrentNavigableMap<GridSearchRowPointer,GridH2Row> snapshot0 = qctx.getSnapshot(idxId);
 
-            assert snapshot0 != null;
-
             src = new RangeSource(msg.bounds(), snapshot0);
         }
         else {
@@ -409,7 +407,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
         long rowCnt = getRowCountApproximation();
         double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder);
-        int mul = getDistributedMultiplier(masks, filters, filter);
+        int mul = getDistributedMultiplier(ses, masks, filters, filter);
 
         return mul * baseCost;
     }
@@ -685,7 +683,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             return null;
 
         int affColId = affinityColumn();
-        boolean unicast = filter.getMasks()[affColId] == IndexCondition.EQUALITY;
+        int[] masks = filter.getMasks();
+        boolean unicast = masks != null && masks[affColId] == IndexCondition.EQUALITY;
+
         GridCacheContext<?,?> cctx = getTable().rowDescriptor().context();
 
         return new DistributedLookupBatch(cctx, unicast, affColId);
@@ -1153,9 +1153,14 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         /** {@inheritDoc} */
         @Override public boolean addSearchRows(SearchRow firstRow, SearchRow lastRow) {
             if (findCalled) {
-                // If this is a beginning of the new lookup clear old results.
                 findCalled = false;
 
+                // Cleanup after the previous phase.
+                qctx.putStreams(batchLookupId, null);
+
+                // Reinitialize for the next lookup phase.
+                batchLookupId = qctx.nextBatchLookupId();
+                rangeStreams = new HashMap<>();
                 res.clear();
             }
 
@@ -1232,16 +1237,17 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         }
 
         private void startStreams() {
-            if (rangeStreams.isEmpty())
+            if (rangeStreams.isEmpty()) {
+                assert res.isEmpty();
+
                 return;
+            }
 
             qctx.putStreams(batchLookupId, rangeStreams);
 
             // Start streaming.
             for (RangeStream stream : rangeStreams.values())
                 stream.start();
-
-            rangeStreams = new HashMap<>();
         }
 
         /** {@inheritDoc} */
@@ -1395,7 +1401,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                     throw new GridH2RetryException("Node left.");
             }
 
-            throw new GridH2RetryException("Attempts exceeded.");
+            // Attempts exceeded.
+            throw new CacheException("Failed to get index range from remote node.");
         }
 
         /**
@@ -1467,13 +1474,13 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         Iterator<GridH2RowRangeBounds> boundsIter;
 
         /** */
-        int curRangeId;
+        int curRangeId = -1;
 
         /** */
         Iterator<GridH2Row> curRange = emptyIterator();
 
         /** */
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
+        final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
         /**
          * @param bounds Bounds.
@@ -1501,6 +1508,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         public GridH2RowRange next(int maxRows) {
             for (;;) {
                 if (curRange.hasNext()) {
+                    // Here we are getting last rows from previously partially fetched range.
                     List<GridH2RowMessage> rows = new ArrayList<>();
 
                     GridH2RowRange nextRange = new GridH2RowRange();
@@ -1536,7 +1544,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 SearchRow first = toSearchRow(bounds.first());
                 SearchRow last = toSearchRow(bounds.last());
 
-                curRange = doFind0(tree, first, true, last);
+                ConcurrentNavigableMap<GridSearchRowPointer,GridH2Row> t = tree != null ? tree : treeForRead();
+
+                curRange = doFind0(t, first, true, last);
 
                 if (!curRange.hasNext()) {
                     // We have to return empty range.
