@@ -1108,6 +1108,18 @@ $generatorXml.cache = function(cache, res) {
 
     res.startBlock('<bean class="org.apache.ignite.configuration.CacheConfiguration">');
 
+    $generatorXml.cacheConfiguration(cache, res);
+
+    res.endBlock('</bean>');
+
+    return res;
+};
+
+// Generate cache configs.
+$generatorXml.cacheConfiguration = function(cache, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
     $generatorXml.cacheGeneral(cache, res);
 
     $generatorXml.cacheMemory(cache, res);
@@ -1125,8 +1137,6 @@ $generatorXml.cache = function(cache, res) {
     $generatorXml.cacheStatistics(cache, res);
 
     $generatorXml.cacheMetadatas(cache.metadatas, res);
-
-    res.endBlock('</bean>');
 
     return res;
 };
