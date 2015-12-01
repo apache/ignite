@@ -446,6 +446,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                                 String name = UUID.randomUUID().toString();
 
                                 try {
+                                    log.info("Start node: " + name);
+
                                     Ignite g = startGrid(name);
 
                                     assert g.semaphore(STRUCTURE_NAME, 10, false, false) != null;
@@ -502,6 +504,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                                 String name = UUID.randomUUID().toString();
 
                                 try {
+                                    log.info("Start node: " + name);
+
                                     Ignite g = startGrid(name);
 
                                     final IgniteSemaphore sem = g.semaphore(STRUCTURE_NAME, TOP_CHANGE_CNT, true, true);
@@ -510,14 +514,12 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                                     sem.acquire();
 
-                                    if (i == TOP_CHANGE_CNT - 1) {
+                                    if (i == TOP_CHANGE_CNT - 1)
                                         sem.release();
-                                    }
                                 }
                                 finally {
-                                    if (i != TOP_CHANGE_CNT - 1) {
+                                    if (i != TOP_CHANGE_CNT - 1)
                                         stopGrid(name);
-                                    }
                                 }
                             }
                         }
@@ -572,6 +574,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                                         names.add(name);
 
+                                        log.info("Start node: " + name);
+
                                         Ignite g = startGrid(name);
 
                                         final IgniteSemaphore sem = g.semaphore(STRUCTURE_NAME, TOP_CHANGE_CNT, true, true);
@@ -580,9 +584,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                                         sem.acquire();
 
-                                        if (i == TOP_CHANGE_CNT - 1) {
+                                        if (i == TOP_CHANGE_CNT - 1)
                                             sem.release();
-                                        }
                                     }
                                 }
                                 finally {
@@ -639,21 +642,20 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                                 String name = UUID.randomUUID().toString();
 
                                 try {
+                                    log.info("Start node: " + name);
+
                                     Ignite g = startGrid(name);
 
                                     final IgniteSemaphore sem = g.semaphore(STRUCTURE_NAME, TOP_CHANGE_CNT, true, true);
 
                                     assertNotNull(sem);
 
-                                    if (i != 1) {
+                                    if (i != 1)
                                         sem.acquire();
-                                    }
-
                                 }
                                 finally {
-                                    if (i != 1) {
+                                    if (i != 1)
                                         stopGrid(name);
-                                    }
                                 }
                             }
 
@@ -846,6 +848,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                 int id = idx.getAndIncrement();
 
                 try {
+                    log.info("Start node: " + id);
+
                     startGrid(id);
 
                     Thread.sleep(1000);
@@ -1008,6 +1012,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             String name = UUID.randomUUID().toString();
 
                             try {
+                                log.info("Start node: " + name);
+
                                 Ignite g = startGrid(name);
 
                                 callback.apply(g);
@@ -1054,6 +1060,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                                         return;
 
                                     String name = UUID.randomUUID().toString();
+
+                                    log.info("Start node: " + name);
 
                                     Ignite g = startGrid(name);
 
@@ -1143,6 +1151,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                                 String name = UUID.randomUUID().toString();
 
                                 startedNodes.add(name);
+
+                                log.info("Start node: " + name);
 
                                 Ignite g = startGrid(name);
 

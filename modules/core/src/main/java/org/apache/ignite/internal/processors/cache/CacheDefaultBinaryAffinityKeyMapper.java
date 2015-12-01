@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
@@ -30,12 +31,11 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private CacheObjectBinaryProcessorImpl proc;
+
     /** {@inheritDoc} */
     @Override public Object affinityKey(Object key) {
-        IgniteKernal kernal = (IgniteKernal)ignite;
-
-        CacheObjectBinaryProcessorImpl proc = (CacheObjectBinaryProcessorImpl)kernal.context().cacheObjects();
-
         try {
             key = proc.toPortable(key);
         }
@@ -47,5 +47,16 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
             return proc.affinityKey((BinaryObject)key);
         else
             return super.affinityKey(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void ignite(Ignite ignite) {
+        super.ignite(ignite);
+
+        if (ignite != null) {
+            IgniteKernal kernal = (IgniteKernal)ignite;
+
+            proc = (CacheObjectBinaryProcessorImpl)kernal.context().cacheObjects();
+        }
     }
 }
