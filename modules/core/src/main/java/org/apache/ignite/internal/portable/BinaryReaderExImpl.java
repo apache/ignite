@@ -1628,6 +1628,17 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     /**
+     * @return Deserialized object.
+     * @throws BinaryObjectException If failed.
+     */
+    @Nullable Object readField(int fieldId) throws BinaryObjectException {
+        if (!findFieldById(fieldId))
+            return null;
+
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds).deserialize();
+    }
+
+    /**
      * @param name Field name.
      * @return Field offset.
      */

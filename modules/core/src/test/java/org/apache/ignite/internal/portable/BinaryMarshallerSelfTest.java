@@ -21,6 +21,33 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.InetSocketAddress;
+import java.sql.Timestamp;
+import java.util.AbstractQueue;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -47,31 +74,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.InetSocketAddress;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 import static org.apache.ignite.internal.portable.streams.PortableMemoryAllocator.INSTANCE;
 import static org.junit.Assert.assertArrayEquals;
@@ -98,7 +103,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testByte() throws Exception {
-        assertEquals((byte) 100, marshalUnmarshal((byte) 100).byteValue());
+        assertEquals((byte) 100, marshalUnmarshal((byte)100).byteValue());
     }
 
     /**
@@ -126,14 +131,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFloat() throws Exception {
-        assertEquals(100.001f, marshalUnmarshal(100.001f).floatValue(), 0);
+        assertEquals(100.001f, marshalUnmarshal(100.001f), 0);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDouble() throws Exception {
-        assertEquals(100.001d, marshalUnmarshal(100.001d).doubleValue(), 0);
+        assertEquals(100.001d, marshalUnmarshal(100.001d), 0);
     }
 
     /**
@@ -280,7 +285,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDecimalArray() throws Exception {
-        BigDecimal[] arr = new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.TEN } ;
+        BigDecimal[] arr = new BigDecimal[] {BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.TEN} ;
 
         assertArrayEquals(arr, marshalUnmarshal(arr));
     }
@@ -348,7 +353,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public void testMap() throws Exception {
         testMap(new HashMap<Integer, String>());
-        testMap(new LinkedHashMap());
+        testMap(new LinkedHashMap<Integer, String>());
         testMap(new TreeMap<Integer, String>());
         testMap(new ConcurrentHashMap8<Integer, String>());
         testMap(new ConcurrentHashMap<Integer, String>());
@@ -380,6 +385,18 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(sim1.hashCode(), sim2.hashCode());
         assertEquals(sim1.hashCode(), sim1Binary.hashCode());
         assertEquals(sim2.hashCode(), sim2Binary.hashCode());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExternalizableInEnclosing() throws Exception {
+        SimpleEnclosingObject obj = new SimpleEnclosingObject();
+        obj.simpl = new SimpleExternalizable("field");
+
+        SimpleEnclosingObject other = marshalUnmarshal(obj);
+
+        assertEquals(((SimpleExternalizable)obj.simpl).field, ((SimpleExternalizable)other.simpl).field);
     }
 
     /**
@@ -671,6 +688,111 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertNull(portablePo.field("_simple"));
         assertNull(portablePo.field("_portable"));
         assertNull(portablePo.field("unknown"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testObjectFieldOfExternalizableCollection() throws Exception {
+        EnclosingObj obj = new EnclosingObj();
+
+        obj.queue = new TestQueue("test");
+
+        assertEquals(obj, marshalUnmarshal(obj));
+    }
+
+    /**
+     *
+     */
+    private static class EnclosingObj implements Serializable {
+        /** Queue. */
+        Queue<Integer> queue = new TestQueue("test");
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            EnclosingObj obj = (EnclosingObj)o;
+
+            return Objects.equals(queue, obj.queue);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(queue);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestQueue extends AbstractQueue<Integer> implements Externalizable {
+        /** Name. */
+        private String name;
+
+        /**
+         * @param name Name.
+         */
+        public TestQueue(String name) {
+            this.name = name;
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<Integer> iterator() {
+            return Collections.emptyIterator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            name = (String)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean offer(Integer integer) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer poll() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer peek() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestQueue integers = (TestQueue)o;
+
+            return Objects.equals(name, integers.name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(name);
+        }
     }
 
     /**
@@ -3637,6 +3759,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public static class ChildPortable extends ParentPortable {
 
+    }
+
+    /**
+     *
+     */
+    public static class SimpleEnclosingObject {
+        /** */
+        private Object simpl;
     }
 
     /**
