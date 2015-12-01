@@ -35,7 +35,7 @@
     </properties>
 
     <artifactId>ignite-schema-import-demo</artifactId>
-    <version>1.5.1-EA-SNAPSHOT</version>
+    <version>1.5.1-EA1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
