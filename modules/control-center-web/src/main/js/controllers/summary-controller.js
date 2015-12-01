@@ -27,11 +27,6 @@ consoleModule.controller('summaryController', [
     $scope.getModel = $common.getModel;
     $scope.widthIsSufficient = $common.widthIsSufficient;
 
-    $scope.javaClassItems = [
-        {label: 'snippet', value: 1},
-        {label: 'factory class', value: 2}
-    ];
-
     $scope.evictionPolicies = [
         {value: 'LRU', label: 'LRU'},
         {value: 'FIFO', label: 'FIFO'},
@@ -176,6 +171,8 @@ consoleModule.controller('summaryController', [
     $scope.selectItem = function (cluster) {
         if (!cluster)
             return;
+
+        $scope.cluster = cluster;
 
         $scope.selectedItem = cluster;
 

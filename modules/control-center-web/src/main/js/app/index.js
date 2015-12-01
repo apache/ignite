@@ -69,6 +69,8 @@ import './modules/configuration-sidebar/main'
 // endignite
 
 import callout from './directives/callout/callout.directive'
+import panel from './directives/panel/panel.directive'
+import uiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive'
 
 angular
 .module('ignite-console', [
@@ -90,6 +92,8 @@ angular
     'ignite-console.configuration-sidebar'
 ])
 .directive(...callout)
+.directive(...panel)
+.directive(...uiAceXml)
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {
 	// set up the states
 	$stateProvider

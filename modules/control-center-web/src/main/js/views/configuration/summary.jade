@@ -48,7 +48,7 @@ block content
     .docs-header
         h1 Configurations Summary
     .docs-body(ng-controller='summaryController' dw-loading='loadingSummaryScreen' dw-loading-options='{text: "Loading summary screen...", className: "page-loading-overlay"}' method='post' action='summary/download')
-        callout
+        ignite-callout
         hr
         .padding-dflt(ng-if='clusters.length == 0')
             | You have no clusters configured. Please configure them &nbsp;
@@ -65,15 +65,8 @@ block content
                         label Server
                     .panel-collapse(id='server' role='tabpanel' bs-collapse-target)
                         .summary-tabs(bs-tabs data-bs-active-pane="tabsServer.activeTab" ng-show='selectedItem' template='configuration/summary-tabs.html')
-                            div(bs-pane title='XML')
-                                div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='xmlServer')
-                            div(bs-pane title='Java')
-                                .details-row
-                                    .col-xs-2.col-sm-2.col-md-1
-                                        label Generate:
-                                    .col-xs-4.col-sm-3.col-md-3
-                                        button.select-toggle.form-control(ng-model='configServer.javaClassServer' bs-select bs-options='item.value as item.label for item in javaClassItems' data-sort='false')
-                                div(ui-ace='{onLoad: aceInit, mode: "java"}' ng-model='javaServer')
+                            ignite-ui-ace-server-xml(ng-model='cluster' server)
+                            ignite-ui-ace-java(ng-model='cluster')
                             div(bs-pane title='POM')
                                 div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='pom')
                             div(bs-pane title='Dockerfile')
@@ -101,15 +94,8 @@ block content
                             .details-row(ng-repeat='field in clientFields')
                                 +form-row-custom(['col-xs-4 col-sm-4 col-md-3'], ['col-xs-4 col-sm-4 col-md-3'], 'backupItem')
                             .summary-tabs(bs-tabs data-bs-active-pane="tabsClient.activeTab" template='configuration/summary-tabs.html')
-                                div(bs-pane title='XML')
-                                    div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='xmlClient')
-                                div(bs-pane title='Java')
-                                    .details-row
-                                        .col-xs-2.col-sm-2.col-md-1
-                                            label Generate:
-                                        .col-xs-4.col-sm-3.col-md-3
-                                            button.select-toggle.form-control(ng-model='backupItem.javaClassClient' bs-select bs-options='item.value as item.label for item in javaClassItems' data-sort='false')
-                                    div(ui-ace='{onLoad: aceInit, mode: "java"}' ng-model='javaClient')
+                                //- ui-ace-xml(ng-model='xmlClient')
+                                //- ui-ace-java(ng-model='javaClient')
                                 div(bs-pane title='POM')
                                     div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='pom')
                                 +pojos('Client')

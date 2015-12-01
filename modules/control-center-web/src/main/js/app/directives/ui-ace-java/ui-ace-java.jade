@@ -1,0 +1,12 @@
+div(bs-pane title='Java')
+    .details-row
+        .col-xs-2.col-sm-2.col-md-1
+            label Generate:
+        .col-xs-4.col-sm-3.col-md-3
+            button.select-toggle.form-control(
+            	data-bs-select 
+            	data-bs-options='item.value as item.label for item in javaClassItems' 
+            	data-sort='false'
+            	ng-model='javaClassServer'
+            )
+    div(ui-ace='{onLoad: onLoad, mode: "java"}' ng-model='ngModel')
