@@ -68,6 +68,8 @@ import './modules/userbar/main'
 import './modules/configuration-sidebar/main'
 // endignite
 
+import callout from './directives/callout/callout.directive'
+
 angular
 .module('ignite-console', [
 	'ui.router',
@@ -87,6 +89,7 @@ angular
 	'ignite-console.userbar',
     'ignite-console.configuration-sidebar'
 ])
+.directive(...callout)
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {
 	// set up the states
 	$stateProvider

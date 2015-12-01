@@ -1,0 +1,18 @@
+.block-callout-parent
+    table
+        tbody
+            tr
+                td.block-callout-left(width='50%')
+                    i.fa.fa-check-square.block-callout-header-left
+                    label.block-callout-header-left {{screenTip.workflowTitle}}
+                    ul
+                        li(ng-repeat='item in screenTip.workflowContent')
+                            div(ng-switch='item')
+                                div(ng-switch-when='more-info')
+                                    a(bs-modal='moreInfo' data-placement='center' data-template-url='/templates/message.html') More info
+                                div(ng-switch-default) {{::item}}
+                td.block-callout-right(width='50%')
+                    i.fa.fa-check-square.block-callout-header-right
+                    label.block-callout-header-right {{screenTip.whatsNextTitle}}
+                    ul
+                        li(ng-repeat='item in screenTip.whatsNextContent' ng-bind-html='item')
