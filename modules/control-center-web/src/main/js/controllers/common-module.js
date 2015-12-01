@@ -20,8 +20,8 @@ var consoleModule = angular.module('ignite-web-console',
         'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'agGrid', 'nvd3', 'dndLists'
         /* ignite:modules */
         , 'ignite-console'
-        , 'ignite-web-console.navbar'
-        , 'ignite-web-console.configuration.sidebar'
+        , 'ignite-console.navbar'
+        , 'ignite-console.configuration.sidebar'
         /* endignite */
         /* ignite:plugins */
         /* endignite */
@@ -34,7 +34,7 @@ var consoleModule = angular.module('ignite-web-console',
 
         $rootScope.revertIdentity = function () {
             $http
-                .get('/api/v1/admin/revertIdentity')
+                .get('/api/v1/admin/revert/identity')
                 .then(User.read)
                 .then(function (user) {
                     $rootScope.$broadcast('user', user);
@@ -2033,7 +2033,7 @@ consoleModule.controller('resetPassword', [
     '$scope', '$modal', '$http', '$common', '$focus', 'Auth', '$state',
     function ($scope, $modal, $http, $common, $focus, Auth, $state) {
         if ($state.params.token)
-            $http.post('/api/v1/password/validate-token', {token: $state.params.token})
+            $http.post('/api/v1/validate/token', {token: $state.params.token})
                 .success(function (res) {
                     $scope.email = res.email;
                     $scope.token = res.token;
@@ -2075,7 +2075,7 @@ consoleModule.controller('auth', [
 
 // Download agent controller.
 consoleModule.controller('agent-download', [
-    '$http', '$common', '$scope', '$interval', '$modal', '$window', function ($http, $common, $scope, $interval, $modal, $window) {
+    '$http', '$common', '$scope', '$interval', '$modal', '$state', function ($http, $common, $scope, $interval, $modal, $state) {
         // Pre-fetch modal dialogs.
         var _agentDownloadModal = $modal({scope: $scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
 
@@ -2095,7 +2095,7 @@ consoleModule.controller('agent-download', [
          */
         $scope.goBack = function () {
             if (_agentDownloadModal.backLink)
-                $window.location = _agentDownloadModal.backLink;
+                $state.go(_agentDownloadModal.backLink);
 
             _stopInterval();
 
