@@ -283,7 +283,7 @@ public class GridDhtPartitionDemander {
      * @param force {@code True} if dummy reassign.
      * @param caches Rebalancing of these caches will be finished before this started.
      * @param cnt Counter.
-     * @throws IgniteCheckedException Exception
+     * @throws IgniteCheckedException If failed.
      */
     Callable<Boolean> addAssignments(final GridDhtPreloaderAssignments assigns, boolean force,
         final Collection<String> caches, int cnt) {
@@ -741,7 +741,7 @@ public class GridDhtPartitionDemander {
         private static final long serialVersionUID = 1L;
 
         /** Should EVT_CACHE_REBALANCE_STOPPED event be sent of not. */
-        private final boolean sendStoppedEvnt;
+        private final boolean sndStoppedEvnt;
 
         /** */
         private final GridCacheContext<?, ?> cctx;
@@ -770,6 +770,7 @@ public class GridDhtPartitionDemander {
          * @param cctx Context.
          * @param log Logger.
          * @param sentStopEvnt Stop event flag.
+         * @param updateSeq Update sequence.
          */
         RebalanceFuture(GridDhtPreloaderAssignments assigns,
             GridCacheContext<?, ?> cctx,
@@ -782,7 +783,7 @@ public class GridDhtPartitionDemander {
             this.topVer = assigns.topologyVersion();
             this.cctx = cctx;
             this.log = log;
-            this.sendStoppedEvnt = sentStopEvnt;
+            this.sndStoppedEvnt = sentStopEvnt;
             this.updateSeq = updateSeq;
         }
 
@@ -794,7 +795,7 @@ public class GridDhtPartitionDemander {
             this.topVer = null;
             this.cctx = null;
             this.log = null;
-            this.sendStoppedEvnt = false;
+            this.sndStoppedEvnt = false;
             this.updateSeq = -1;
         }
 
@@ -1007,7 +1008,7 @@ public class GridDhtPartitionDemander {
          */
         private void checkIsDone(boolean cancelled) {
             if (remaining.isEmpty()) {
-                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED) && (!cctx.isReplicated() || sendStoppedEvnt))
+                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED) && (!cctx.isReplicated() || sndStoppedEvnt))
                     preloadEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());
 
                 if (log.isDebugEnabled())
@@ -1385,6 +1386,7 @@ public class GridDhtPartitionDemander {
         /**
          * @param node Node.
          * @param d D.
+         * @throws IgniteCheckedException If failed.
          */
         public void run(ClusterNode node, GridDhtPartitionDemandMessage d) throws IgniteCheckedException {
             demandLock.readLock().lock();
