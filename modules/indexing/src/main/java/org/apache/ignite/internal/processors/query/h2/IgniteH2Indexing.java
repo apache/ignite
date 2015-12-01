@@ -121,9 +121,11 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
 import org.h2.command.dml.OptimizerHints;
+import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
 import org.h2.index.SpatialIndex;
+import org.h2.jdbc.JdbcConnection;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.message.DbException;
 import org.h2.mvstore.cache.CacheLongKeyLIRS;
@@ -1026,6 +1028,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return !cctx.isReplicated() && !cctx.isLocal();
     }
 
+    /**
+     * @param c Connection.
+     * @return Session.
+     */
+    public static Session session(Connection c) {
+        return (Session)((JdbcConnection)c).getSession();
+    }
+
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) {
         final String space = cctx.name();
@@ -1046,10 +1056,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else {
             final UUID locNodeId = ctx.localNodeId();
+            Session ses = session(c);
 
-            enforceJoinOrder(enforceJoinOrder);
             GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
                 .distributedJoins(isPartitioned(cctx)));
+            enforceJoinOrder(enforceJoinOrder);
+            ses.setJoinBatchEnabled(false);
 
             PreparedStatement stmt;
 
@@ -1060,6 +1072,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new CacheException("Failed to parse query: " + sqlQry, e);
             }
             finally {
+                ses.setJoinBatchEnabled(true);
                 enforceJoinOrder(false);
                 GridH2QueryContext.clear(false);
             }

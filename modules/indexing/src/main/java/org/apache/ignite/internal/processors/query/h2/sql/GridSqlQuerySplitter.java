@@ -30,17 +30,21 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.util.IntArray;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase.isCollocated;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CAST;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.COUNT;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.SUM;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlPlaceholder.EMPTY;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.prepared;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.query;
 
 /**
  * Splits a single SQL query into two step map-reduce query.
@@ -139,13 +143,13 @@ public class GridSqlQuerySplitter {
     /**
      * @param stmt Prepared statement.
      * @param params Parameters.
-     * @param collocated Collocated query.
+     * @param collocatedGroupBy Whether the query has collocated GROUP BY keys.
      * @return Two step query.
      */
     public static GridCacheTwoStepQuery split(
         JdbcPreparedStatement stmt,
         Object[] params,
-        boolean collocated
+        boolean collocatedGroupBy
     ) {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
@@ -153,7 +157,11 @@ public class GridSqlQuerySplitter {
         Set<String> spaces = new HashSet<>();
         Set<String> tbls = new HashSet<>();
 
-        GridSqlQuery qry = collectAllTables(GridSqlQueryParser.parse(stmt), spaces, tbls);
+        final Prepared prepared = prepared(stmt);
+
+        GridSqlQuery qry = new GridSqlQueryParser().parse(prepared);
+
+        qry = collectAllTables(qry, spaces, tbls);
 
         // Build resulting two step query.
         GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(spaces, tbls);
@@ -163,9 +171,14 @@ public class GridSqlQuerySplitter {
         // nullifying or updating things, have to make sure that we will not need them in the original form later.
         final GridSqlSelect mapQry = wrapUnion(qry);
 
-        GridCacheSqlQuery rdc = split(res, 0, mapQry, params, collocated);
+        GridCacheSqlQuery rdc = split(res, 0, mapQry, params, collocatedGroupBy);
 
         res.reduceQuery(rdc);
+
+        // We do not have to look at each map query separately here, because if
+        // the whole initial query is collocated, then all the map sub-queries
+        // will be collocated as well.
+        res.fullCollocation(isCollocated(query(prepared)));
 
         return res;
     }
@@ -258,11 +271,11 @@ public class GridSqlQuerySplitter {
      * @param splitIdx Split index.
      * @param mapQry Map query to be split.
      * @param params Query parameters.
-     * @param collocated Whether the query is forced to be collocated.
+     * @param collocatedGroupBy Whether the query has collocated GROUP BY keys.
      * @return Reduce query for the given map query.
      */
     public static GridCacheSqlQuery split(GridCacheTwoStepQuery res, int splitIdx, final GridSqlSelect mapQry,
-        Object[] params, boolean collocated) {
+        Object[] params, boolean collocatedGroupBy) {
         final boolean explain = mapQry.explain();
 
         mapQry.explain(false);
@@ -280,7 +293,7 @@ public class GridSqlQuerySplitter {
         boolean aggregateFound = false;
 
         for (int i = 0, len = mapExps.size(); i < len; i++) // Remember len because mapExps list can grow.
-            aggregateFound |= splitSelectExpression(mapExps, rdcExps, colNames, i, collocated);
+            aggregateFound |= splitSelectExpression(mapExps, rdcExps, colNames, i, collocatedGroupBy);
 
         // -- SELECT
         mapQry.clearColumns();
@@ -301,11 +314,11 @@ public class GridSqlQuerySplitter {
         findAffinityColumnConditions(mapQry.where());
 
         // -- GROUP BY
-        if (mapQry.groupColumns() != null && !collocated)
+        if (mapQry.groupColumns() != null && !collocatedGroupBy)
             rdcQry.groupColumns(mapQry.groupColumns());
 
         // -- HAVING
-        if (mapQry.havingColumn() >= 0 && !collocated) {
+        if (mapQry.havingColumn() >= 0 && !collocatedGroupBy) {
             // TODO IGNITE-1140 - Find aggregate functions in HAVING clause or rewrite query to put all aggregates to SELECT clause.
             rdcQry.whereAnd(column(columnName(mapQry.havingColumn())));
 

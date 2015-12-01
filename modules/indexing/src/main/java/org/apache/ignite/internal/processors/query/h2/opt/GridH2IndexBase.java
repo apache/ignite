@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -138,14 +139,41 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * @param states States map.
+     * @param qry Query.
      * @return {@code true} If it was proved that the query is fully collocated.
      */
-    public static boolean tryProveCollocated(Map<TableFilter,GridH2TableFilterCollocation> states) {
-        // We can't use values from the state cache because they can be outdated, but the cache
-        // must contain all the filters by the end of optimization.
-        // TODO
-        return false;
+    public static boolean isCollocated(Query qry) {
+        if (qry.isUnion()) {
+            SelectUnion union = (SelectUnion)qry;
+
+            return isCollocated(union.getLeft()) && isCollocated(union.getRight());
+        }
+
+        Select select = (Select)qry;
+
+        ArrayList<TableFilter> list = new ArrayList<>();
+
+        TableFilter f = select.getTopTableFilter();
+
+        assert f != null;
+
+        do {
+            list.add(f);
+
+            f = f.getJoin();
+        }
+        while (f != null);
+
+        TableFilter[] filters = list.toArray(new TableFilter[list.size()]);
+
+        Map<TableFilter,GridH2TableFilterCollocation> states = new HashMap<>();
+
+        for (int i = 0; i < filters.length; i++) {
+            if (getDistributedMultiplier0(filters[i].getMasks(), filters, i, states) != MULTIPLIER_COLLOCATED)
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -180,15 +208,35 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         Map<TableFilter,GridH2TableFilterCollocation> states = qctx.tableFilterStateCache();
 
-        assert states != null;
-
         // Need to do this clean up because subquery states can be outdated here.
         clearPreviousSubQueryStates(filters, filter, states);
 
+        return getDistributedMultiplier0(masks, filters, filter, states);
+    }
+
+    /**
+     * @param masks Masks.
+     * @param filters All joined table filters.
+     * @param filter Current filter.
+     * @param states States map.
+     * @return Multiplier.
+     */
+    private static int getDistributedMultiplier0(int[] masks, TableFilter[] filters, int filter,
+        Map<TableFilter,GridH2TableFilterCollocation> states) {
+        assert states != null;
+
         final TableFilter f = filters[filter];
 
+        if (!(f.getTable() instanceof GridH2Table)) {
+            GridH2TableFilterCollocation state = getStateForNonTable(f, states);
+
+            return state.isCollocated() ? MULTIPLIER_COLLOCATED : MULTIPLIER_BROADCAST;
+        }
+
+        GridH2Table tbl = (GridH2Table)f.getTable();
+
         // Only partitioned tables will do distributed joins.
-        if (!getTable().isPartitioned()) {
+        if (!tbl.isPartitioned()) {
             states.put(f, REPLICATED);
 
             return MULTIPLIER_COLLOCATED;
@@ -204,7 +252,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         }
 
         // If we don't have affinity equality conditions then most probably we will have to broadcast.
-        if (!hasEqualityCondition(masks, affinityColumn())) {
+        if (!hasEqualityCondition(masks, affinityColumn(tbl))) {
             states.put(f, PARTITIONED_NOT_COLLOCATED);
 
             return MULTIPLIER_BROADCAST;
@@ -229,10 +277,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return {@code true} If the given filter is joined with previous partitioned table filter which is
      *      also collocated. Thus the whole join chain will be collocated.
      */
-    private boolean joinedWithCollocated(TableFilter f, Map<TableFilter,GridH2TableFilterCollocation> states) {
+    private static boolean joinedWithCollocated(TableFilter f, Map<TableFilter,GridH2TableFilterCollocation> states) {
         ArrayList<IndexCondition> idxConditions = f.getIndexConditions();
 
-        int affColId = affinityColumn();
+        int affColId = affinityColumn((GridH2Table)f.getTable());
 
         for (int i = 0; i < idxConditions.size(); i++) {
             IndexCondition c = idxConditions.get(i);
@@ -447,10 +495,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
+     * @param tbl Table.
      * @return Affinity column.
      */
-    protected int affinityColumn() {
-        return getTable().getAffinityKeyColumn().column.getColumnId();
+    protected static int affinityColumn(GridH2Table tbl) {
+        return tbl.getAffinityKeyColumn().column.getColumnId();
     }
 
     /**

@@ -127,15 +127,6 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @return {@code true} If it was proved that the query is fully collocated.
-     */
-    public boolean tryProveCollocated() {
-        assert type() == PREPARE : type();
-
-        return GridH2IndexBase.tryProveCollocated(tableFilterStateCache);
-    }
-
-    /**
      * @param distributedJoins Distributed joins can be run in this query.
      * @return {@code this}.
      */

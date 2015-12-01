@@ -232,12 +232,12 @@ public class GridSqlQueryParser {
      * @param stmt Prepared statement.
      * @return Parsed select.
      */
-    public static GridSqlQuery parse(JdbcPreparedStatement stmt) {
+    public static Prepared prepared(JdbcPreparedStatement stmt) {
         Command cmd = COMMAND.get(stmt);
 
         assert cmd instanceof CommandContainer;
 
-        return new GridSqlQueryParser().parse(PREPARED.get(cmd));
+        return PREPARED.get(cmd);
     }
 
     /**
@@ -358,6 +358,20 @@ public class GridSqlQueryParser {
                 (type & SortOrder.NULLS_FIRST) != 0,
                 (type & SortOrder.NULLS_LAST) != 0));
         }
+    }
+
+    /**
+     * @param qry Prepared.
+     * @return Query.
+     */
+    public static Query query(Prepared qry) {
+        if (qry instanceof Query)
+            return (Query)qry;
+
+        if (qry instanceof Explain)
+            return query(EXPLAIN_COMMAND.get((Explain)qry));
+
+        throw new CacheException("Unsupported query: " + qry);
     }
 
     /**

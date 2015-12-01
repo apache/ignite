@@ -682,7 +682,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         if (qctx == null || !qctx.distributedJoins())
             return null;
 
-        int affColId = affinityColumn();
+        int affColId = affinityColumn(getTable());
         int[] masks = filter.getMasks();
         boolean unicast = masks != null && masks[affColId] == IndexCondition.EQUALITY;
 
