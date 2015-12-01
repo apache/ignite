@@ -2188,7 +2188,7 @@ consoleModule.controller('agent-download', [
         $scope.awaitAgent = function (checkFn) {
             _agentDownloadModal.skipSingleError = false;
 
-            _agentDownloadModal.checkUrl = '/agent/ping';
+            _agentDownloadModal.checkUrl = '/api/v1/agent/ping';
 
             _agentDownloadModal.checkFn = checkFn;
 
