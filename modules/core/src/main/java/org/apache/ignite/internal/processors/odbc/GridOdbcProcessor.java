@@ -50,9 +50,6 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
     /** OBCD TCP Server. */
     private GridTcpOdbcServer srv;
 
-    /** Workers count. */
-    private final LongAdder8 workersCnt = new LongAdder8();
-
     /** Busy lock. */
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
 
@@ -65,139 +62,80 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
     /** Protocol handler. */
     private final GridOdbcProtocolHandler protoHnd = new GridOdbcProtocolHandler() {
         @Override public GridOdbcResponse handle(GridOdbcRequest req) throws IgniteCheckedException {
-            return handleAsync(req).get();
+            return handle0(req);
         }
 
         @Override public IgniteInternalFuture<GridOdbcResponse> handleAsync(GridOdbcRequest req) {
-            return handleAsync0(req);
+            return new GridFinishedFuture<>(
+                    new IgniteCheckedException("Failed to handle request (asynchronous handling is not implemented)."));
         }
     };
 
     /**
      * @param req Request.
-     * @return Future.
+     * @return Response.
      */
-    private IgniteInternalFuture<GridOdbcResponse> handleAsync0(final GridOdbcRequest req) {
+    private GridOdbcResponse handle0(final GridOdbcRequest req) throws IgniteCheckedException {
         if (!busyLock.tryReadLock())
-            return new GridFinishedFuture<>(
-                    new IgniteCheckedException("Failed to handle request (received request while stopping grid)."));
+            throw new IgniteCheckedException("Failed to handle request (received request while stopping grid).");
+
+        GridOdbcResponse rsp = null;
 
         try {
-            final GridWorkerFuture<GridOdbcResponse> fut = new GridWorkerFuture<>();
-
-            workersCnt.increment();
-
-            GridWorker w = new GridWorker(ctx.gridName(), "odbc-proc-worker", log) {
-                @Override protected void body() {
-                    try {
-                        IgniteInternalFuture<GridOdbcResponse> res = handleRequest(req);
-
-                        res.listen(new IgniteInClosure<IgniteInternalFuture<GridOdbcResponse>>() {
-                            @Override public void apply(IgniteInternalFuture<GridOdbcResponse> f) {
-                                try {
-                                    fut.onDone(f.get());
-                                }
-                                catch (IgniteCheckedException e) {
-                                    fut.onDone(e);
-                                }
-                            }
-                        });
-                    }
-                    catch (Throwable e) {
-                        if (e instanceof Error)
-                            U.error(log, "Client request execution failed with error.", e);
-
-                        fut.onDone(U.cast(e));
-
-                        if (e instanceof Error)
-                            throw e;
-                    }
-                    finally {
-                        workersCnt.decrement();
-                    }
-                }
-            };
-
-            fut.setWorker(w);
-
-            try {
-                ctx.getRestExecutorService().execute(w);
-            }
-            catch (RejectedExecutionException e) {
-                U.error(log, "Failed to execute worker due to execution rejection " +
-                    "(increase upper bound on ODBC executor service). " +
-                    "Will attempt to process request in the current thread instead.", e);
-
-                w.run();
-            }
-
-            return fut;
+            rsp = handleRequest(req);
         }
         finally {
             busyLock.readUnlock();
         }
+
+        return rsp;
     }
 
     /**
      * @param req Request.
      * @return Future.
      */
-    private IgniteInternalFuture<GridOdbcResponse> handleRequest(final GridOdbcRequest req) {
+    private GridOdbcResponse handleRequest(final GridOdbcRequest req) throws IgniteCheckedException {
         if (startLatch.getCount() > 0) {
             try {
                 startLatch.await();
             }
             catch (InterruptedException e) {
-                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to handle request " +
-                        "(protocol handler was interrupted when awaiting grid start).", e));
+                throw new IgniteCheckedException("Failed to handle request " +
+                        "(protocol handler was interrupted when awaiting grid start).", e);
             }
         }
 
         if (log.isDebugEnabled())
             log.debug("Received request from client: " + req);
 
-        if (ctx.security().enabled()) {
+//        if (ctx.security().enabled()) {
             // TODO: Implement security checks.
-        }
+//        }
 
         GridOdbcCommandHandler hnd = handlers.get(req.command());
 
-        IgniteInternalFuture<GridOdbcResponse> res = hnd == null ? null : hnd.handleAsync(req);
+        GridOdbcResponse rsp;
 
-        if (res == null)
-            return new GridFinishedFuture<>(
-                    new IgniteCheckedException("Failed to find registered handler for command: " + req.command()));
+        try {
+            rsp = hnd == null ? null : hnd.handle(req);
 
-        return res.chain(new C1<IgniteInternalFuture<GridOdbcResponse>, GridOdbcResponse>() {
-            @Override public GridOdbcResponse apply(IgniteInternalFuture<GridOdbcResponse> f) {
-                GridOdbcResponse res;
+            if (rsp == null)
+                throw new IgniteCheckedException("Failed to find registered handler for command: " + req.command());
+        }
+        catch (Exception e) {
+            if (!X.hasCause(e, VisorClusterGroupEmptyException.class))
+                LT.error(log, e, "Failed to handle request: " + req.command());
 
-                boolean failed = false;
+            if (log.isDebugEnabled())
+                log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
 
-                try {
-                    res = f.get();
-                }
-                catch (Exception e) {
-                    failed = true;
+            rsp = new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
+        }
 
-                    if (!X.hasCause(e, VisorClusterGroupEmptyException.class))
-                        LT.error(log, e, "Failed to handle request: " + req.command());
+        assert rsp != null;
 
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
-
-                    res = new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
-                }
-
-                assert res != null;
-
-                if (ctx.security().enabled() && !failed) {
-                    // TODO: implement securinty checks.
-                }
-
-                return res;
-            }
-        });
+        return rsp;
     }
 
     /**
@@ -242,20 +180,6 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
     @Override public void onKernalStop(boolean cancel) {
         if (isOdbcEnabled()) {
             busyLock.writeLock();
-
-            boolean interrupted = Thread.interrupted();
-
-            while (workersCnt.sum() != 0) {
-                try {
-                    Thread.sleep(200);
-                }
-                catch (InterruptedException ignored) {
-                    interrupted = true;
-                }
-            }
-
-            if (interrupted)
-                Thread.currentThread().interrupt();
 
             // Safety.
             startLatch.countDown();

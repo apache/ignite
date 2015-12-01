@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.odbc.handlers;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
@@ -72,29 +73,26 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridOdbcResponse> handleAsync(GridOdbcRequest req) {
+    @Override public GridOdbcResponse handle(GridOdbcRequest req) {
         assert req != null;
 
         assert SUPPORTED_COMMANDS.contains(req.command());
 
         switch (req.command()) {
             case EXECUTE_SQL_QUERY: {
-                return ctx.closure().callLocalSafe(
-                        new ExecuteQueryCallable(ctx, (QueryExecuteRequest)req, qryCurs), false);
+                return ExecuteQuery(ctx, (QueryExecuteRequest) req, qryCurs);
             }
 
             case FETCH_SQL_QUERY: {
-                return ctx.closure().callLocalSafe(
-                        new FetchQueryCallable((QueryFetchRequest)req, qryCurs), false);
+                return FetchQuery((QueryFetchRequest) req, qryCurs);
             }
 
             case CLOSE_SQL_QUERY: {
-                return ctx.closure().callLocalSafe(
-                        new CloseQueryCallable((QueryCloseRequest)req, qryCurs), false);
+                return CloseQuery((QueryCloseRequest) req, qryCurs);
             }
         }
 
-        return new GridFinishedFuture<>();
+        throw null;
     }
 
     /**
@@ -122,167 +120,115 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
     }
 
     /**
-     * Execute query callable.
+     * @param meta Internal query field metadata.
+     * @return Rest query field metadata.
      */
-    private static class ExecuteQueryCallable implements Callable<GridOdbcResponse> {
-        /** Kernal context. */
-        private GridKernalContext ctx;
+    private static Collection<CacheQueryFieldsMetaResult> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
+        List<CacheQueryFieldsMetaResult> res = new ArrayList<>();
 
-        /** Execute query request. */
-        private QueryExecuteRequest req;
-
-        /** Queries cursors. */
-        private ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs;
-
-        /**
-         * @param meta Internal query field metadata.
-         * @return Rest query field metadata.
-         */
-        private Collection<CacheQueryFieldsMetaResult> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
-            List<CacheQueryFieldsMetaResult> res = new ArrayList<>();
-
-            if (meta != null) {
-                for (GridQueryFieldMetadata info : meta)
-                    res.add(new CacheQueryFieldsMetaResult(info));
-            }
-
-            return res;
+        if (meta != null) {
+            for (GridQueryFieldMetadata info : meta)
+                res.add(new CacheQueryFieldsMetaResult(info));
         }
 
-        /**
-         * @param ctx Kernal context.
-         * @param req Execute query request.
-         * @param qryCurs Queries cursors.
-         */
-        public ExecuteQueryCallable(GridKernalContext ctx, QueryExecuteRequest req,
-                                    ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
-            this.ctx = ctx;
-            this.req = req;
-            this.qryCurs = qryCurs;
+        return res;
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param req Execute query request.
+     * @param qryCurs Queries cursors.
+     * @return Response.
+     */
+    private GridOdbcResponse ExecuteQuery(GridKernalContext ctx, QueryExecuteRequest req,
+                                          ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
+        long qryId = qryIdGen.getAndIncrement();
+
+        try {
+            SqlFieldsQuery qry = new SqlFieldsQuery(req.sqlQuery());
+
+            qry.setArgs(req.arguments());
+
+            IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
+
+            if (cache == null)
+                return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
+                        "Failed to find cache with name: " + req.cacheName());
+
+            QueryCursor qryCur = cache.query(qry);
+
+            Iterator cur = qryCur.iterator();
+
+            qryCurs.put(qryId, new IgniteBiTuple<>(qryCur, cur));
+
+            GridOdbcQueryResult res = new GridOdbcQueryResult(qryId);
+
+            List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
+
+            System.out.println("Field meta: " + fieldsMeta);
+
+            res.setFieldsMetadata(convertMetadata(fieldsMeta));
+
+            return new GridOdbcResponse(res);
         }
+        catch (Exception e) {
+            qryCurs.remove(qryId);
 
-        /** {@inheritDoc} */
-        @Override public GridOdbcResponse call() throws Exception {
-            long qryId = qryIdGen.getAndIncrement();
-
-            try {
-                SqlFieldsQuery qry = new SqlFieldsQuery(req.sqlQuery());
-
-                qry.setArgs(req.arguments());
-
-                IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
-
-                if (cache == null)
-                    return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
-                            "Failed to find cache with name: " + req.cacheName());
-
-                QueryCursor qryCur = cache.query(qry);
-
-                Iterator cur = qryCur.iterator();
-
-                qryCurs.put(qryId, new IgniteBiTuple<>(qryCur, cur));
-
-                GridOdbcQueryResult res = new GridOdbcQueryResult(qryId);
-
-                List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
-
-                System.out.println("Field meta: " + fieldsMeta);
-
-                res.setFieldsMetadata(convertMetadata(fieldsMeta));
-
-                return new GridOdbcResponse(res);
-            }
-            catch (Exception e) {
-                qryCurs.remove(qryId);
-
-                return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
-            }
+            return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
 
     /**
-     * Close query callable.
+     * @param req Execute query request.
+     * @param qryCurs Queries cursors.
+     * @return Response.
      */
-    private static class CloseQueryCallable implements Callable<GridOdbcResponse> {
-        /** Queries cursors. */
-        private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs;
+    private GridOdbcResponse CloseQuery(QueryCloseRequest req,
+                                        ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
+        try {
+            QueryCursor cur = qryCurs.get(req.queryId()).get1();
 
-        /** Execute query request. */
-        private QueryCloseRequest req;
+            if (cur == null)
+                return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
+                        "Failed to find query with ID: " + req.queryId());
 
-        /**
-         * @param req Execute query request.
-         * @param qryCurs Queries cursors.
-         */
-        public CloseQueryCallable(QueryCloseRequest req,
-                                  ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
-            this.req = req;
-            this.qryCurs = qryCurs;
+            cur.close();
+
+            qryCurs.remove(req.queryId());
+
+            GridOdbcQueryResult res = new GridOdbcQueryResult(req.queryId());
+
+            return new GridOdbcResponse(res);
         }
+        catch (Exception e) {
+            qryCurs.remove(req.queryId());
 
-        /** {@inheritDoc} */
-        @Override public GridOdbcResponse call() throws Exception {
-            try {
-                QueryCursor cur = qryCurs.get(req.queryId()).get1();
-
-                if (cur == null)
-                    return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
-                            "Failed to find query with ID: " + req.queryId());
-
-                cur.close();
-
-                qryCurs.remove(req.queryId());
-
-                GridOdbcQueryResult res = new GridOdbcQueryResult(req.queryId());
-
-                return new GridOdbcResponse(res);
-            }
-            catch (Exception e) {
-                qryCurs.remove(req.queryId());
-
-                return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
-            }
+            return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
 
     /**
-     * Fetch query callable.
+     * @param req Execute query request.
+     * @param qryCurs Queries cursors.
+     * @return Response.
      */
-    private static class FetchQueryCallable implements Callable<GridOdbcResponse> {
-        /** Queries cursors. */
-        private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs;
+    private GridOdbcResponse FetchQuery(QueryFetchRequest req,
+                                        ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
+        try {
+            Iterator cur = qryCurs.get(req.queryId()).get2();
 
-        /** Execute query request. */
-        private QueryFetchRequest req;
+            if (cur == null)
+                return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
+                        "Failed to find query with ID: " + req.queryId());
 
-        /**
-         * @param req Execute query request.
-         * @param qryCurs Queries cursors.
-         */
-        public FetchQueryCallable(QueryFetchRequest req,
-                                  ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
-            this.req = req;
-            this.qryCurs = qryCurs;
+            GridOdbcQueryResult res = createQueryResult(qryCurs, cur, req, req.queryId());
+
+            return new GridOdbcResponse(res);
         }
+        catch (Exception e) {
+            qryCurs.remove(req.queryId());
 
-        /** {@inheritDoc} */
-        @Override public GridOdbcResponse call() throws Exception {
-            try {
-                Iterator cur = qryCurs.get(req.queryId()).get2();
-
-                if (cur == null)
-                    return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
-                            "Failed to find query with ID: " + req.queryId());
-
-                GridOdbcQueryResult res = createQueryResult(qryCurs, cur, req, req.queryId());
-
-                return new GridOdbcResponse(res);
-            }
-            catch (Exception e) {
-                qryCurs.remove(req.queryId());
-
-                return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
-            }
+            return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
 }

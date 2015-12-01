@@ -77,33 +77,29 @@ public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<GridOdb
 
         System.out.println("Query: " + msg.command());
 
-        hnd.handleAsync(msg).listen(new CI1<IgniteInternalFuture<GridOdbcResponse>>() {
-            @Override public void apply(IgniteInternalFuture<GridOdbcResponse> fut) {
-                GridOdbcResponse res;
+        GridOdbcResponse res;
 
-                try {
-                    res = fut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to process client request: " + msg, e);
+        try {
+            res = hnd.handle(msg);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to process client request: " + msg, e);
 
-                    res = new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
-                        "Failed to process client request: " + e.getMessage());
-                }
+            res = new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
+                    "Failed to process client request: " + e.getMessage());
+        }
 
-                System.out.println("Resulting success status: " + res.getSuccessStatus());
+        System.out.println("Resulting success status: " + res.getSuccessStatus());
 
-                GridNioFuture<?> sf = ses.send(res);
+        GridNioFuture<?> sf = ses.send(res);
 
-                // Check if send failed.
-                if (sf.isDone())
-                    try {
-                        sf.get();
-                    }
-                    catch (Exception e) {
-                        U.error(log, "Failed to process client request [ses=" + ses + ", msg=" + msg + ']', e);
-                    }
+        // Check if send failed.
+        if (sf.isDone()) {
+            try {
+                sf.get();
+            } catch (Exception e) {
+                U.error(log, "Failed to process client request [ses=" + ses + ", msg=" + msg + ']', e);
             }
-        });
+        }
     }
 }

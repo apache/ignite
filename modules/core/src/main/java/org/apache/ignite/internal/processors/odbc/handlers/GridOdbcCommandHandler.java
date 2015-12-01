@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.odbc.handlers;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
 import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
@@ -33,7 +34,7 @@ public interface GridOdbcCommandHandler {
 
     /**
      * @param req Request.
-     * @return Future.
+     * @return Response.
      */
-    IgniteInternalFuture<GridOdbcResponse> handleAsync(GridOdbcRequest req);
+    GridOdbcResponse handle(GridOdbcRequest req);
 }
