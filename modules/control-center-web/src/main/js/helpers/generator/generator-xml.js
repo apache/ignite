@@ -792,9 +792,10 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
         }
     }
 
-    $generatorXml.property(res, cache, 'loadPreviousValue');
-    $generatorXml.property(res, cache, 'readThrough');
-    $generatorXml.property(res, cache, 'writeThrough');
+    $generatorXml.property(res, cache, 'keepBinaryInStore', null, false);
+    $generatorXml.property(res, cache, 'loadPreviousValue', null, false);
+    $generatorXml.property(res, cache, 'readThrough', null, null, false);
+    $generatorXml.property(res, cache, 'writeThrough', null, null, false);
 
     res.needEmptyLine = true;
 
@@ -1107,6 +1108,18 @@ $generatorXml.cache = function(cache, res) {
 
     res.startBlock('<bean class="org.apache.ignite.configuration.CacheConfiguration">');
 
+    $generatorXml.cacheConfiguration(cache, res);
+
+    res.endBlock('</bean>');
+
+    return res;
+};
+
+// Generate cache configs.
+$generatorXml.cacheConfiguration = function(cache, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
     $generatorXml.cacheGeneral(cache, res);
 
     $generatorXml.cacheMemory(cache, res);
@@ -1124,8 +1137,6 @@ $generatorXml.cache = function(cache, res) {
     $generatorXml.cacheStatistics(cache, res);
 
     $generatorXml.cacheMetadatas(cache.metadatas, res);
-
-    res.endBlock('</bean>');
 
     return res;
 };

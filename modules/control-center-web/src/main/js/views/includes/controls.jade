@@ -165,7 +165,7 @@ mixin details-row
     - var detailMdl = 'getModel(backupItem, detail)[detail.model]';
     - var detailCommon = {'ng-model': detailMdl, 'ng-required': 'detail.required'};
     - var detailDisabled = '{{detail.disabled}}'
-    - var dropdownPlaceholder = {'ng-class': '{placeholder: !' + detailMdl + ' || ' + detailMdl + '.length == 0}'}
+    - var dropdownPlaceholder = {'ng-class': '{placeholder: !(' + detailMdl + ' && ' + detailMdl + '.length > 0)}'}
 
     - var customValidators = {'ng-attr-ipaddress': '{{detail.ipaddress}}'}
 
@@ -313,7 +313,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
     - var fieldRequiredClass = '{true: "required"}[field.required || required(field)]'
     - var fieldHide = '{{field.hide}}'
     - var fieldDisabled = {'ng-disabled': '{{field.disabled}}'}
-    - var dropdownPlaceholder = {'ng-class': '{placeholder: !' + fieldMdl + ' || ' + fieldMdl + '.length == 0}'}
+    - var dropdownPlaceholder = {'ng-class': '{placeholder: !(' + fieldMdl + ' && ' + fieldMdl + '.length > 0)}'}
 
     div(ng-switch='field.type')
         div(ng-switch-when='label')

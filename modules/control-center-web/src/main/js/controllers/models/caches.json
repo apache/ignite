@@ -576,6 +576,16 @@
           }
         },
         {
+          "label": "Keep binary in store",
+          "id": "keepBinaryInStore",
+          "type": "check",
+          "model": "keepBinaryInStore",
+          "placeholder": true,
+          "tip": [
+            "Flag indicating that CacheStore implementation is working with binary objects instead of Java objects"
+          ]
+        },
+        {
           "label": "Load previous value",
           "id": "loadPreviousValue",
           "type": "check",
