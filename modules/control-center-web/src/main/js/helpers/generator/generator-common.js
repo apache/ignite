@@ -20,7 +20,7 @@ $generatorCommon = {};
 
 // Add leading zero.
 $generatorCommon.addLeadingZero = function (numberStr, minSize) {
-    if (typeof (numberStr) != 'string')
+    if (typeof (numberStr) !== 'string')
         numberStr = '' + numberStr;
 
     while (numberStr.length < minSize) {

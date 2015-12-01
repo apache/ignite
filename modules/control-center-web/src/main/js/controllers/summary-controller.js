@@ -19,7 +19,7 @@
 consoleModule.controller('summaryController', [
     '$scope', '$http', '$common', '$loading', '$message', '$table',
     function ($scope, $http, $common, $loading, $message, $table) {
-    var igniteVersion = '1.5.0-IWC';
+    var igniteVersion = '1.5.0';
 
     $scope.panelExpanded = $common.panelExpanded;
     $scope.tableVisibleRow = $table.tableVisibleRow;
