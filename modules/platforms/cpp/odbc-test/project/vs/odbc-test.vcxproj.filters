@@ -43,6 +43,15 @@
     <ClCompile Include="..\..\..\odbc-driver\src\application_data_buffer.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\row_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc-driver\src\row.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc-driver\src\result_page.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h">
