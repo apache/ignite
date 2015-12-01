@@ -19,6 +19,8 @@ package org.apache.ignite.thread;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -49,5 +51,27 @@ public class GridThreadTest extends GridCommonAbstractTest {
 
         for (IgniteThread t : ts)
             t.join();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCurrentIgnite() throws Exception {
+        final String LEFT = "LEFT";
+        final String RIGHT = "RIGHT";
+        startGrid(LEFT);
+        startGrid(RIGHT);
+
+        Ignition.ignite(LEFT).compute().run(new IgniteRunnable() {
+            @Override public void run() {
+                assert Ignition.current().name().equals(LEFT);
+            }
+        });
+
+        Ignition.ignite(RIGHT).compute().run(new IgniteRunnable() {
+            @Override public void run() {
+                assert Ignition.current().name().equals(RIGHT);
+            }
+        });
     }
 }

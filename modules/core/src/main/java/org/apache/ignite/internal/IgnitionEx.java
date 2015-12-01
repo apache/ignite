@@ -62,7 +62,6 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.apache.ignite.internal.util.GridByNameRelation;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
@@ -95,6 +94,7 @@ import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -1060,20 +1060,6 @@ public class IgnitionEx {
     }
 
     /**
-     * Gets a name of the grid, which is owner of current thread. An Exception is thrown if
-     * current thread doesn't have a {@link GridByNameRelation}.
-     *
-     * @return The name of the current grid. This method could return {@code null}.
-     * @throws ClassCastException to indicate, that current thread doesn't have a {@link GridByNameRelation}.
-     */
-    public static String gridName() {
-        assert Thread.currentThread() instanceof GridByNameRelation :
-            Thread.currentThread().getClass().getName() + " is not an instance of the " + GridByNameRelation.class.getName();
-
-        return ((GridByNameRelation)Thread.currentThread()).getGridName();
-    }
-
-    /**
      * Gets a list of all grids started so far.
      *
      * @return List of all grids started so far.
@@ -1206,6 +1192,22 @@ public class IgnitionEx {
                 "or was already stopped: " + name);
 
         return res;
+    }
+
+    /**
+     * Gets a name of the grid, which is owner of current thread. An Exception is thrown if
+     * current thread is not an {@link IgniteThread}.
+
+     * @return Grid instance related to current thread
+     * @throws IllegalArgumentException Thrown to indicate, that current thread is not an {@link IgniteThread}.
+     */
+    public static IgniteKernal gridx() throws IllegalArgumentException {
+        if ( Thread.currentThread() instanceof IgniteThread) {
+            return gridx(((IgniteThread)Thread.currentThread()).getGridName());
+        }
+        else {
+            throw new IllegalArgumentException("This method should be accessed under " + IgniteThread.class.getName());
+        }
     }
 
     /**

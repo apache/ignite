@@ -72,6 +72,7 @@ import org.apache.ignite.p2p.GridP2PTestJob;
 import org.apache.ignite.p2p.GridP2PTestTask;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -846,7 +847,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         });
 
         // Any deserialization has to be executed under a thread, that contains the grid name.
-        new GridRelatedThread(f, gridName).start();
+        new IgniteThread(gridName, "unmarshal-thread", f).start();
 
         try {
             return f.get();

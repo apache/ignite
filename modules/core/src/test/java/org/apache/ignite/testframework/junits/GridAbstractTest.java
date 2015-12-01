@@ -37,7 +37,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -62,7 +61,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.portable.BinaryEnumCache;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.apache.ignite.internal.util.GridByNameRelation;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -89,6 +87,7 @@ import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.testframework.junits.multijvm.IgniteCacheProcessProxy;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -1608,7 +1607,7 @@ public abstract class GridAbstractTest extends TestCase {
     @Override protected void runTest() throws Throwable {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-        Thread runner = new GridRelatedThread("test-runner", getTestGridName()) {
+        Thread runner = new IgniteThread(getTestGridName(), "test-runner", new Runnable() {
             @Override public void run() {
                 try {
                     runTestInternal();
@@ -1619,7 +1618,7 @@ public abstract class GridAbstractTest extends TestCase {
                     ex.set(hnd != null ? hnd.apply(e) : e);
                 }
             }
-        };
+        });
 
         runner.start();
 
@@ -2066,34 +2065,5 @@ public abstract class GridAbstractTest extends TestCase {
          * @param cache Cache.
          */
         public abstract void run(Ignite ignite, IgniteCache<K, V> cache) throws Exception;
-    }
-
-    /**
-     * We need this class for deserialization, since any deserialization has to be executed under a thread,
-     * that contains the grid name.
-     */
-    public static class GridRelatedThread extends Thread implements GridByNameRelation {
-
-        /** The name of the grid. */
-        private final String gridName;
-
-        /** {@inheritDoc} */
-        public GridRelatedThread(RunnableFuture future, String gridName) {
-            super(future);
-
-            this.gridName = gridName;
-        }
-
-        /** {@inheritDoc} */
-        public GridRelatedThread(String threadName, String gridName) {
-            super(threadName);
-
-            this.gridName = gridName;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public String getGridName() {
-            return gridName;
-        }
     }
 }

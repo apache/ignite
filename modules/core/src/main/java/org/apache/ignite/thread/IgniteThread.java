@@ -18,7 +18,6 @@
 package org.apache.ignite.thread;
 
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.internal.util.GridByNameRelation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.worker.GridWorker;
 
@@ -29,21 +28,19 @@ import org.apache.ignite.internal.util.worker.GridWorker;
  *      <li>Consistent naming of threads</li>
  *      <li>Dedicated parent thread group</li>
  *      <li>Backing interrupted flag</li>
+ *      <li>Name of the grid this thread belongs to</li>
  * </ul>
  * <b>Note</b>: this class is intended for internal use only.
  */
-public class IgniteThread extends Thread implements GridByNameRelation {
+public class IgniteThread extends Thread {
     /** Default thread's group. */
     private static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite");
 
     /** Number of all grid threads in the system. */
-    private static final AtomicLong threadCntr = new AtomicLong(0);
-
-    /** Boolean flag indicating of this thread is currently processing message. */
-    private boolean procMsg;
+    private static final AtomicLong cntr = new AtomicLong();
 
     /** The name of the grid this thread belongs to. */
-    private final String gridName;
+    protected final String gridName;
 
     /**
      * Creates thread with given worker.
@@ -75,7 +72,13 @@ public class IgniteThread extends Thread implements GridByNameRelation {
      * @param r Runnable to execute.
      */
     public IgniteThread(ThreadGroup grp, String gridName, String threadName, Runnable r) {
-        super(grp, r, createName(threadCntr.incrementAndGet(), threadName, gridName));
+        super(grp, r, createName(cntr.incrementAndGet(), threadName, gridName));
+
+        this.gridName = gridName;
+    }
+
+    protected IgniteThread(String gridName, ThreadGroup threadGroup, String threadName) {
+        super(threadGroup, threadName);
 
         this.gridName = gridName;
     }
@@ -93,22 +96,8 @@ public class IgniteThread extends Thread implements GridByNameRelation {
      * @param gridName Grid name.
      * @return New thread name.
      */
-    private static String createName(long num, String threadName, String gridName) {
+    protected static String createName(long num, String threadName, String gridName) {
         return threadName + "-#" + num + '%' + gridName + '%';
-    }
-
-    /**
-     * @param procMsg Flag indicating whether thread is currently processing message.
-     */
-    public void processingMessage(boolean procMsg) {
-        this.procMsg = procMsg;
-    }
-
-    /**
-     * @return Flag indicating whether thread is currently processing message.
-     */
-    public boolean processingMessage() {
-        return procMsg;
     }
 
     /** {@inheritDoc} */
