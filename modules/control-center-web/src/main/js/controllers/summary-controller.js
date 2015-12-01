@@ -99,10 +99,10 @@ consoleModule.controller('summaryController', [
     function selectPojoClass(config) {
         if ($scope.selectedItem)
             _.forEach($scope.selectedItem.metadatas, function(meta) {
-                if (meta.keyType == config.pojoClass)
+                if (meta.keyType === config.pojoClass)
                     return config.pojoClassBody = meta.keyClass;
 
-                if (meta.valueType == config.pojoClass)
+                if (meta.valueType === config.pojoClass)
                     return config.pojoClassBody = meta.valueClass;
             });
     }
@@ -121,7 +121,7 @@ consoleModule.controller('summaryController', [
 
             function restoreSelected(selected, config, tabs, metadatas) {
                 if (!$common.isDefined(selected) || _.findIndex(metadatas, function (meta) {
-                        return meta.keyType == selected || meta.valueType == selected;
+                        return meta.keyType === selected || meta.valueType === selected;
                     }) < 0) {
                     if (metadatas.length > 0) {
                         if ($common.isDefined(metadatas[0].keyType))
@@ -132,7 +132,7 @@ consoleModule.controller('summaryController', [
                     else {
                         config.pojoClass = undefined;
 
-                        if (tabs.activeTab == 2)
+                        if (tabs.activeTab === 2)
                             tabs.activeTab = 0;
                     }
                 }
@@ -204,9 +204,7 @@ consoleModule.controller('summaryController', [
 
         zip.file('Dockerfile', $scope.dockerServer);
 
-        var builder = $generatorProperties.sslProperties(cluster);
-
-        builder = $generatorProperties.dataSourcesProperties(cluster, builder);
+        var builder = $generatorProperties.generateProperties(cluster);
 
         if (builder)
             zip.file('src/main/resources/secret.properties', builder.asString());
@@ -262,7 +260,7 @@ consoleModule.controller('summaryController', [
 
                 if (restoredId) {
                     var idx = _.findIndex($scope.clusters, function (cluster) {
-                        return cluster._id == restoredId;
+                        return cluster._id === restoredId;
                     });
 
                     if (idx >= 0)

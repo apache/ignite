@@ -30,6 +30,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.schema.model.PojoDescriptor;
 import org.apache.ignite.schema.model.SchemaDescriptor;
 import org.apache.ignite.schema.parser.dialect.DB2MetadataDialect;
@@ -38,14 +39,39 @@ import org.apache.ignite.schema.parser.dialect.JdbcMetadataDialect;
 import org.apache.ignite.schema.parser.dialect.MySQLMetadataDialect;
 import org.apache.ignite.schema.parser.dialect.OracleMetadataDialect;
 
-import java.sql.*;
-import java.util.*;
-import java.util.logging.*;
-
 /**
  * Database metadata parser.
  */
 public class DatabaseMetadataParser {
+    /** Logger. */
+    private static final Logger log = Logger.getLogger(DatabaseMetadataParser.class.getName());
+
+    /**
+     * Get specified dialect object for selected database.
+     *
+     * @param conn Connection to database.
+     * @return Specific dialect object.
+     */
+    private static DatabaseMetadataDialect dialect(Connection conn) {
+        try {
+            String dbProductName = conn.getMetaData().getDatabaseProductName();
+
+            if ("Oracle".equals(dbProductName))
+                return new OracleMetadataDialect();
+            else if (dbProductName.startsWith("DB2/"))
+                return new DB2MetadataDialect();
+            else if ("MySQL".equals(dbProductName))
+                return new MySQLMetadataDialect();
+            else
+                return new JdbcMetadataDialect();
+        }
+        catch (SQLException e) {
+            log.log(Level.SEVERE, "Failed to resolve dialect (JdbcMetaDataDialect will be used.", e);
+
+            return new JdbcMetadataDialect();
+        }
+    }
+
     /**
      * Get list of schemas from database.
      *
@@ -87,8 +113,7 @@ public class DatabaseMetadataParser {
 
             if (parent == null) {
                 parent = new PojoDescriptor(null, new DbTable(schema, "", Collections.<DbColumn>emptyList(),
-                    Collections.<String>emptySet(), Collections.<String>emptySet(),
-                    Collections.<String, Map<String, Boolean>>emptyMap()));
+                    Collections.<QueryIndex>emptyList()));
 
                 children = new ArrayList<>();
 

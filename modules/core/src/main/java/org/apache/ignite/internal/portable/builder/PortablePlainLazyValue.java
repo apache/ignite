@@ -43,7 +43,7 @@ class PortablePlainLazyValue extends PortableAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
         writer.write(reader.array(), valOff, len);
     }
 }

@@ -20,6 +20,8 @@ var consoleModule = angular.module('ignite-web-console',
         'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'agGrid', 'nvd3', 'dndLists'
         /* ignite:modules */
         , 'ignite-console'
+        , 'ignite-web-console.navbar'
+        , 'ignite-web-console.configuration.sidebar'
         /* endignite */
         /* ignite:plugins */
         /* endignite */
@@ -665,16 +667,14 @@ consoleModule.service('$common', [
         return {
             getModel: getModel,
             joinTip: function (arr) {
-                if (!arr) {
+                if (!arr)
                     return arr;
-                }
 
-                var lines = arr.map(function (line) {
+                var lines = _.map(arr, function (line) {
                     var rtrimmed = line.replace(/\s+$/g, '');
 
-                    if (rtrimmed.indexOf('>', this.length - 1) === -1) {
+                    if (rtrimmed.indexOf('>', this.length - 1) === -1)
                         rtrimmed = rtrimmed + '<br/>';
-                    }
 
                     return rtrimmed;
                 });
@@ -1037,7 +1037,7 @@ consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
             var unbind = $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
                 if ($scope.ui && $scope.ui.isDirty()) {
                     if (!confirm('You have unsaved changes.\n\nAre you sure you want to discard them?')) {
-                        event.preventDefault(); 
+                        event.preventDefault();
                     } else {
                         unbind();
                     }

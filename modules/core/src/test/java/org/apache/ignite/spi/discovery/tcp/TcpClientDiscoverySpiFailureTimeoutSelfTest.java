@@ -273,7 +273,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         }
 
         try {
-            assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
+            assertTrue(latch.await(failureThreshold + 3000, TimeUnit.MILLISECONDS));
 
             assertFalse("Unexpected event, see log for details.", err.get());
             assertEquals(nodeId, client.cluster().localNode().id());

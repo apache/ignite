@@ -36,4 +36,11 @@
     <artifactId>ignite-schema-import-db</artifactId>
     <version>1.5.0-SNAPSHOT</version>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 </project>

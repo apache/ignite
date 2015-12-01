@@ -97,3 +97,18 @@ $generatorProperties.sslProperties = function (cluster, res) {
 
     return res;
 };
+
+/**
+ * Generate properties file with all possible properties.
+ *
+ * @param cluster Cluster to get configurations.
+ * @param res Optional configuration presentation builder object.
+ * @returns Configuration presentation builder object
+ */
+$generatorProperties.generateProperties = function (cluster, res) {
+    res = $generatorProperties.dataSourcesProperties(cluster, res);
+
+    res = $generatorProperties.sslProperties(cluster, res);
+
+    return res;
+};

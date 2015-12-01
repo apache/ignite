@@ -182,39 +182,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
 
                 CacheQuery<Map.Entry<Object, MyValue>> qry = c2.context().queries().createScanQuery(null, null, false);
 
-                int totalCnt = F.sumInt(qry.execute(new IgniteReducer<Map.Entry<Object, MyValue>, Integer>() {
-                    @IgniteInstanceResource
-                    private Ignite grid;
-
-                    private int cnt;
-
-                    @Override public boolean collect(Map.Entry<Object, MyValue> e) {
-                        Object key = e.getKey();
-
-                        assertNotNull(e.getValue());
-
-                        try {
-                            Object v1 = e.getValue();
-                            Object v2 = grid.cache("one").get(key);
-
-                            assertNotNull(v2);
-                            assertEquals(v1, v2);
-                        }
-                        catch (CacheException e1) {
-                            e1.printStackTrace();
-
-                            assert false;
-                        }
-
-                        cnt++;
-
-                        return true;
-                    }
-
-                    @Override public Integer reduce() {
-                        return cnt;
-                    }
-                }).get());
+                int totalCnt = F.sumInt(qry.execute(new EntryIntegerIgniteReducer()).get());
 
                 info("Total entry count [grid=" + j + ", totalCnt=" + totalCnt + ']');
 
@@ -277,5 +245,42 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
      */
     public void testScanQuery4() throws Exception {
         checkScanQuery(keys(false, 500));
+    }
+
+    /**
+     *
+     */
+    private static class EntryIntegerIgniteReducer implements IgniteReducer<Map.Entry<Object, MyValue>, Integer> {
+        @IgniteInstanceResource
+        private Ignite grid;
+
+        private int cnt;
+
+        @Override public boolean collect(Map.Entry<Object, MyValue> e) {
+            Object key = e.getKey();
+
+            assertNotNull(e.getValue());
+
+            try {
+                Object v1 = e.getValue();
+                Object v2 = grid.cache("one").get(key);
+
+                assertNotNull(v2);
+                assertEquals(v1, v2);
+            }
+            catch (CacheException e1) {
+                e1.printStackTrace();
+
+                assert false;
+            }
+
+            cnt++;
+
+            return true;
+        }
+
+        @Override public Integer reduce() {
+            return cnt;
+        }
     }
 }

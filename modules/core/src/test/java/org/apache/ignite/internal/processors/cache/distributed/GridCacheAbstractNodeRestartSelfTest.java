@@ -661,6 +661,8 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                     // It is ok if primary node leaves grid.
                                 }
 
+                                cache.get(key);
+
                                 int c = putCntr.incrementAndGet();
 
                                 if (c % logFreq == 0)

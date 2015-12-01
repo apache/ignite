@@ -431,6 +431,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             for (IgniteCacheProxy<?, ?> c : g0.context().cache().jcaches()) {
                 CacheConfiguration cfg = c.context().config();
 
+                if (cfg == null)
+                    continue;
+
                 if (cfg.getCacheMode() == PARTITIONED &&
                     cfg.getRebalanceMode() != NONE &&
                     g.cluster().nodes().size() > 1) {

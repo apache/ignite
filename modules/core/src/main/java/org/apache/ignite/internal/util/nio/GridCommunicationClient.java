@@ -94,7 +94,7 @@ public interface GridCommunicationClient {
     public void sendMessage(byte[] data, int len) throws IgniteCheckedException;
 
     /**
-     * @param nodeId Node ID (provided only if versions of local and remote nodes are different).
+     * @param nodeId Remote node ID. Provided only for sync clients.
      * @param msg Message to send.
      * @param closure Ack closure.
      * @throws IgniteCheckedException If failed.

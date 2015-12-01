@@ -221,22 +221,6 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
     }
 
     /**
-     * Writes value to swap.
-     *
-     * @param spaceName Space name.
-     * @param key Key.
-     * @param val Value.
-     * @param ldr Class loader (optional).
-     * @throws IgniteCheckedException If failed.
-     */
-    public void write(@Nullable String spaceName, Object key, @Nullable Object val, @Nullable ClassLoader ldr)
-        throws IgniteCheckedException {
-        assert key != null;
-
-        write(spaceName, new SwapKey(key), marshal(val), ldr);
-    }
-
-    /**
      * Removes value from swap.
      *
      * @param spaceName Space name.
@@ -281,24 +265,6 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
             throw new IgniteCheckedException("Failed to remove from swap space [space=" + spaceName + ", " +
                 "keysCnt=" + keys.size() + ']', e);
         }
-    }
-
-    /**
-     * Removes value from swap.
-     *
-     * @param spaceName Space name.
-     * @param key Key.
-     * @param c Optional closure that takes removed value and executes after actual
-     *      removing. If there was no value in storage the closure is executed given
-     *      {@code null} value as parameter.
-     * @param ldr Class loader (optional).
-     * @throws IgniteCheckedException If failed.
-     */
-    public void remove(@Nullable String spaceName, Object key, @Nullable IgniteInClosure<byte[]> c,
-        @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        assert key != null;
-
-        remove(spaceName, new SwapKey(key), c, ldr);
     }
 
     /**

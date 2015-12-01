@@ -816,200 +816,218 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
-        injectResources(keyValFilter);
+        try {
+            injectResources(keyValFilter);
 
-        final GridDhtCacheAdapter dht = cctx.isLocal() ? null : (cctx.isNear() ? cctx.near().dht() : cctx.dht());
+            final GridDhtCacheAdapter dht = cctx.isLocal() ? null : (cctx.isNear() ? cctx.near().dht() : cctx.dht());
 
-        final GridCacheAdapter cache = dht != null ? dht : cctx.cache();
+            final GridCacheAdapter cache = dht != null ? dht : cctx.cache();
 
-        final ExpiryPolicy plc = cctx.expiry();
+            final ExpiryPolicy plc = cctx.expiry();
 
-        final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+            final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
-        final boolean backups = qry.includeBackups() || cctx.isReplicated();
+            final boolean backups = qry.includeBackups() || cctx.isReplicated();
 
-        final GridCloseableIteratorAdapter<IgniteBiTuple<K, V>> heapIt =
-            new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
-                private IgniteBiTuple<K, V> next;
+            final GridCloseableIteratorAdapter<IgniteBiTuple<K, V>> heapIt =
+                new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
+                    private IgniteBiTuple<K, V> next;
 
-                private IgniteCacheExpiryPolicy expiryPlc = cctx.cache().expiryPolicy(plc);
+                    private IgniteCacheExpiryPolicy expiryPlc = cctx.cache().expiryPolicy(plc);
 
-                private Iterator<K> iter;
+                    private Iterator<K> iter;
 
-                private GridDhtLocalPartition locPart;
+                    private GridDhtLocalPartition locPart;
 
-                {
-                    Integer part = qry.partition();
+                    {
+                        Integer part = qry.partition();
 
-                    if (part == null || dht == null)
-                        iter = backups ? prj.keySetx().iterator() : prj.primaryKeySet().iterator();
-                    else if (part < 0 || part >= cctx.affinity().partitions())
-                        iter = F.emptyIterator();
-                    else {
-                        locPart = dht.topology().localPartition(part, topVer, false);
+                        if (part == null || dht == null)
+                            iter = backups ? prj.keySetx().iterator() : prj.primaryKeySet().iterator();
+                        else if (part < 0 || part >= cctx.affinity().partitions())
+                            iter = F.emptyIterator();
+                        else {
+                            locPart = dht.topology().localPartition(part, topVer, false);
 
-                        // double check for owning state
-                        if (locPart == null || locPart.state() != OWNING || !locPart.reserve() ||
-                            locPart.state() != OWNING)
-                            throw new GridDhtUnreservedPartitionException(part,
-                                cctx.affinity().affinityTopologyVersion(), "Partition can not be reserved");
+                            // double check for owning state
+                            if (locPart == null || locPart.state() != OWNING || !locPart.reserve() ||
+                                locPart.state() != OWNING)
+                                throw new GridDhtUnreservedPartitionException(part,
+                                    cctx.affinity().affinityTopologyVersion(), "Partition can not be reserved");
 
-                        iter = new Iterator<K>() {
-                            private Iterator<KeyCacheObject> iter0 = locPart.keySet().iterator();
+                            iter = new Iterator<K>() {
+                                private Iterator<KeyCacheObject> iter0 = locPart.keySet().iterator();
 
-                            @Override public boolean hasNext() {
-                                return iter0.hasNext();
-                            }
+                                @Override public boolean hasNext() {
+                                    return iter0.hasNext();
+                                }
 
-                            @Override public K next() {
-                                KeyCacheObject key = iter0.next();
+                                @Override public K next() {
+                                    KeyCacheObject key = iter0.next();
 
-                                return key.value(cctx.cacheObjectContext(), false);
-                            }
+                                    return key.value(cctx.cacheObjectContext(), false);
+                                }
 
-                            @Override public void remove() {
-                                iter0.remove();
-                            }
-                        };
+                                @Override public void remove() {
+                                    iter0.remove();
+                                }
+                            };
+                        }
+
+                        advance();
                     }
 
-                    advance();
-                }
+                    @Override public boolean onHasNext() {
+                        return next != null;
+                    }
 
-                @Override public boolean onHasNext() {
-                    return next != null;
-                }
+                    @Override public IgniteBiTuple<K, V> onNext() {
+                        if (next == null)
+                            throw new NoSuchElementException();
 
-                @Override public IgniteBiTuple<K, V> onNext() {
-                    if (next == null)
-                        throw new NoSuchElementException();
+                        IgniteBiTuple<K, V> next0 = next;
 
-                    IgniteBiTuple<K, V> next0 = next;
+                        advance();
 
-                    advance();
+                        return next0;
+                    }
 
-                    return next0;
-                }
+                    private void advance() {
+                        IgniteBiTuple<K, V> next0 = null;
 
-                private void advance() {
-                    IgniteBiTuple<K, V> next0 = null;
+                        while (iter.hasNext()) {
+                            next0 = null;
 
-                    while (iter.hasNext()) {
-                        next0 = null;
+                            K key = iter.next();
 
-                        K key = iter.next();
+                            V val;
 
-                        V val;
+                            try {
+                                GridCacheEntryEx entry = cache.peekEx(key);
 
-                        try {
-                            GridCacheEntryEx entry = cache.peekEx(key);
+                                CacheObject cacheVal =
+                                    entry != null ? entry.peek(true, false, false, topVer, expiryPlc) : null;
 
-                            CacheObject cacheVal =
-                                entry != null ? entry.peek(true, false, false, topVer, expiryPlc) : null;
+                                // TODO 950 nocopy
+                                val = (V)cctx.cacheObjectContext().unwrapPortableIfNeeded(cacheVal, qry.keepPortable());
+                            }
+                            catch (GridCacheEntryRemovedException e) {
+                                val = null;
+                            }
+                            catch (IgniteCheckedException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to peek value: " + e);
 
-                            val = cacheVal != null ? (V)cacheVal.value(cctx.cacheObjectContext(), false) : null;
+                                val = null;
+                            }
+
+                            if (dht != null && expiryPlc != null && expiryPlc.readyToFlush(100)) {
+                                dht.sendTtlUpdateRequest(expiryPlc);
+
+                                expiryPlc = cctx.cache().expiryPolicy(plc);
+                            }
+
+                            if (val != null) {
+                                next0 = F.t(key, val);
+
+                                if (checkPredicate(next0))
+                                    break;
+                                else
+                                    next0 = null;
+                            }
                         }
-                        catch (GridCacheEntryRemovedException e) {
-                            val = null;
-                        }
-                        catch (IgniteCheckedException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to peek value: " + e);
 
-                            val = null;
-                        }
+                        next = next0 != null ?
+                            new IgniteBiTuple<>(next0.getKey(), next0.getValue()) :
+                            null;
 
-                        if (dht != null && expiryPlc != null && expiryPlc.readyToFlush(100)) {
+                        if (next == null)
+                            sendTtlUpdate();
+                    }
+
+                    @Override protected void onClose() {
+                        sendTtlUpdate();
+
+                        if (locPart != null)
+                            locPart.release();
+                    }
+
+                    private void sendTtlUpdate() {
+                        if (dht != null && expiryPlc != null) {
                             dht.sendTtlUpdateRequest(expiryPlc);
 
-                            expiryPlc = cctx.cache().expiryPolicy(plc);
-                        }
-
-                        if (val != null) {
-                            next0 = F.t(key, val);
-
-                            if (checkPredicate(next0))
-                                break;
-                            else
-                                next0 = null;
+                            expiryPlc = null;
                         }
                     }
 
-                    next = next0 != null ?
-                        new IgniteBiTuple<>(next0.getKey(), next0.getValue()) :
-                        null;
+                    private boolean checkPredicate(Map.Entry<K, V> e) {
+                        if (keyValFilter != null) {
+                            Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(e, qry.keepPortable());
 
-                    if (next == null)
-                        sendTtlUpdate();
-                }
+                            return keyValFilter.apply(e0.getKey(), e0.getValue());
+                        }
 
-                @Override protected void onClose() {
-                    sendTtlUpdate();
-
-                    if (locPart != null)
-                        locPart.release();
-                }
-
-                private void sendTtlUpdate() {
-                    if (dht != null && expiryPlc != null) {
-                        dht.sendTtlUpdateRequest(expiryPlc);
-
-                        expiryPlc = null;
+                        return true;
                     }
+                };
+
+            final GridIterator<IgniteBiTuple<K, V>> it;
+
+            if (cctx.isSwapOrOffheapEnabled()) {
+                List<GridIterator<IgniteBiTuple<K, V>>> iters = new ArrayList<>(3);
+
+                iters.add(heapIt);
+
+                if (cctx.isOffHeapEnabled())
+                    iters.add(offheapIterator(qry, backups));
+
+                if (cctx.swap().swapEnabled())
+                    iters.add(swapIterator(qry, backups));
+
+                it = new CompoundIterator<>(iters);
+            }
+            else
+                it = heapIt;
+
+            return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
+                @Override protected boolean onHasNext() {
+                    return it.hasNext();
                 }
 
-                private boolean checkPredicate(Map.Entry<K, V> e) {
-                    if (keyValFilter != null) {
-                        Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(e, qry.keepPortable());
+                @Override protected IgniteBiTuple<K, V> onNext() {
+                    return it.next();
+                }
 
-                        return keyValFilter.apply(e0.getKey(), e0.getValue());
+                @Override protected void onRemove() {
+                    it.remove();
+                }
+
+                @Override protected void onClose() throws IgniteCheckedException {
+                    try {
+                        heapIt.close();
                     }
-
-                    return true;
+                    finally {
+                        closeScanFilter(keyValFilter);
+                    }
                 }
             };
-
-        final GridIterator<IgniteBiTuple<K, V>> it;
-
-        if (cctx.isSwapOrOffheapEnabled()) {
-            List<GridIterator<IgniteBiTuple<K, V>>> iters = new ArrayList<>(3);
-
-            iters.add(heapIt);
-
-            if (cctx.isOffHeapEnabled())
-                iters.add(offheapIterator(qry, backups));
-
-            if (cctx.swap().swapEnabled())
-                iters.add(swapIterator(qry, backups));
-
-            it = new CompoundIterator<>(iters);
         }
-        else
-            it = heapIt;
+        catch (IgniteCheckedException | RuntimeException e)
+        {
+            closeScanFilter(keyValFilter);
 
-        return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
-            @Override protected boolean onHasNext() {
-                return it.hasNext();
-            }
+            throw e;
+        }
+    }
 
-            @Override protected IgniteBiTuple<K, V> onNext() {
-                return it.next();
-            }
-
-            @Override protected void onRemove() {
-                it.remove();
-            }
-
-            @Override protected void onClose() throws IgniteCheckedException {
-                try {
-                    heapIt.close();
-                }
-                finally {
-                    if (keyValFilter instanceof PlatformCacheEntryFilter)
-                        ((PlatformCacheEntryFilter)keyValFilter).onClose();
-                }
-            }
-        };
+    /**
+     * Closes a filter if it is closeable.
+     *
+     * @param f Filter.
+     */
+    private static void closeScanFilter(Object f) {
+        if (f instanceof PlatformCacheEntryFilter)
+            ((PlatformCacheEntryFilter)f).onClose();
     }
 
     /**
@@ -1093,7 +1111,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 next = null;
 
                 while (it.hasNext()) {
-                    final LazySwapEntry e = new LazySwapEntry(it.next());
+                    final LazySwapEntry e = new LazySwapEntry(it.next(), keepPortable);
 
                     if (filter != null) {
                         K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
@@ -2510,11 +2528,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private final Map.Entry<byte[], byte[]> e;
 
+        /** */
+        private boolean keepBinary;
+
         /**
          * @param e Entry with
          */
-        LazySwapEntry(Map.Entry<byte[], byte[]> e) {
+        LazySwapEntry(Map.Entry<byte[], byte[]> e, boolean keepBinary) {
             this.e = e;
+            this.keepBinary = keepBinary;
         }
 
         /** {@inheritDoc} */
@@ -2529,7 +2551,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             CacheObject obj = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), t.get2(), t.get1());
 
-            return obj.value(cctx.cacheObjectContext(), false);
+            return (V)cctx.cacheObjectContext().unwrapPortableIfNeeded(obj, keepBinary);
         }
 
         /** {@inheritDoc} */
