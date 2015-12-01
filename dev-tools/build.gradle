@@ -25,6 +25,10 @@ dependencies {
     compile 'org.codehaus.groovy:groovy-all:2.2.1'
 }
 
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.4'
+}
+
 task help {
     println '''There are 3 interfaces to work with JIRA attachment validation tool
     - to do the batch validation of all latest patch attachments
