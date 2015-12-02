@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.GridPartitionedCacheJtaFactor
 import org.apache.ignite.internal.processors.cache.GridPartitionedCacheJtaLookupClassNameSelfTest;
 import org.apache.ignite.internal.processors.cache.GridReplicatedCacheJtaFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.GridReplicatedCacheJtaLookupClassNameSelfTest;
-import org.apache.ignite.internal.processors.cache.GridTmLookupLifecycleAwareSelfTest;
+import org.apache.ignite.internal.processors.cache.GridJtaLifecycleAwareSelfTest;
 
 /**
  * JTA integration tests.
@@ -42,7 +42,7 @@ public class IgniteJtaTestSuite extends TestSuite {
         suite.addTestSuite(GridPartitionedCacheJtaLookupClassNameSelfTest.class);
         suite.addTestSuite(GridReplicatedCacheJtaLookupClassNameSelfTest.class);
 
-        suite.addTestSuite(GridTmLookupLifecycleAwareSelfTest.class);
+        suite.addTestSuite(GridJtaLifecycleAwareSelfTest.class);
         suite.addTestSuite(GridCacheJtaConfigurationValidationSelfTest.class);
 
         return suite;
