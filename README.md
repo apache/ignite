@@ -1,6 +1,6 @@
 # Apache Ignite In-Memory Data Fabric
 
-<img src="https://ignite.apache.org/images/logo2.png" hspace="20" />
+<img src="https://ignite.apache.org/images/logo3.png" hspace="20" />
 
 [![Join the chat at https://gitter.im/apacheignite/ignite](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/apacheignite/ignite?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
