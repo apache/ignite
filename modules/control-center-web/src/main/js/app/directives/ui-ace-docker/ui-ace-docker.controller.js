@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+import os from 'app/data/os.json!'
+
+console.log(os)
+
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     var ctrl = this;
 
@@ -24,8 +28,8 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     // watchers definition    
     let clusterWatcher = (value) => {
         if (value) {
-            // TODO IGNITE-2052: need move $generatorXml to services
-            ctrl.data = $generatorXml.cluster($scope.cluster)
+            // TODO IGNITE-2058: need move $generatorDocker to services
+            ctrl.data = $generatorDocker.clusterDocker($scope.selectedItem, os);
         } else {
 
         }

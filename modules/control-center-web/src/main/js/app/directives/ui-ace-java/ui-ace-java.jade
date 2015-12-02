@@ -1,12 +1,12 @@
-div(bs-pane title='Java')
+div
     .details-row
         .col-xs-2.col-sm-2.col-md-1
             label Generate:
         .col-xs-4.col-sm-3.col-md-3
             button.select-toggle.form-control(
             	data-bs-select 
-            	data-bs-options='item.value as item.label for item in javaClassItems' 
+            	data-bs-options='item.value as item.label for item in types' 
             	data-sort='false'
-            	ng-model='javaClassServer'
+            	ng-model='type'
             )
-    div(ui-ace='{onLoad: onLoad, mode: "java"}' ng-model='ngModel')
+    div(ui-ace='{onLoad: onLoad, mode: "java"}' ng-model='ctrl.data')

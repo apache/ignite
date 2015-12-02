@@ -15,22 +15,18 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
-    var ctrl = this;
+import template from './ui-ace-docker.jade!'
+import controller from './ui-ace-docker.controller'
 
-    // scope methods
-    $scope.onLoad = onLoad;
+export default ['igniteUiAceDocker', [() => {
 
-    // watchers definition    
-    let clusterWatcher = (value) => {
-        if (value) {
-            // TODO IGNITE-2052: need move $generatorXml to services
-            ctrl.data = $generatorXml.cluster($scope.cluster)
-        } else {
-
-        }
-    }
-
-    // watches
-    $scope.$watch('cluster', clusterWatcher);
-}]
+	return {
+		restrict: 'E',
+		scope: {
+			cluster: '='
+		},
+		template,
+		controller,
+		controllerAs: 'ctrl'
+	}
+}]]

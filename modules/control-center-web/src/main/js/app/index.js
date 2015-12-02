@@ -68,9 +68,15 @@ import './modules/userbar/main'
 import './modules/configuration-sidebar/main'
 // endignite
 
-import callout from './directives/callout/callout.directive'
-import panel from './directives/panel/panel.directive'
-import uiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive'
+// directives
+import igniteCallout from './directives/callout/callout.directive'
+import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive'
+import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive'
+import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive'
+import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive'
+
+//services 
+import IgniteUiAceOnLoad from './services/UiAceOnLoad/service'
 
 angular
 .module('ignite-console', [
@@ -91,9 +97,14 @@ angular
 	'ignite-console.userbar',
     'ignite-console.configuration-sidebar'
 ])
-.directive(...callout)
-.directive(...panel)
-.directive(...uiAceXml)
+// directives
+.directive(...igniteCallout)
+.directive(...igniteUiAceXml)
+.directive(...igniteUiAceJava)
+.directive(...igniteUiAcePom)
+.directive(...igniteUiAceDocker)
+// services 
+.service(...IgniteUiAceOnLoad)
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {
 	// set up the states
 	$stateProvider

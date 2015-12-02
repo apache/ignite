@@ -18,22 +18,15 @@
 import template from './ui-ace-java.jade!'
 import controller from './ui-ace-java.controller'
 
-export default ['uiAceJava', [() => {
+export default ['igniteUiAceJava', [() => {
 
 	return {
 		restrict: 'E',
 		scope: {
-			ngModel: '='
-		},
-		link: function($scope, $element, $attr, ctrl) {
-
-			if ($attr.server) {
-
-			}
+			cluster: '='
 		},
 		template,
 		controller,
-		controllerAs: 'ctrl',
-		require: '^uiAceJava'
+		controllerAs: 'ctrl'
 	}
 }]]

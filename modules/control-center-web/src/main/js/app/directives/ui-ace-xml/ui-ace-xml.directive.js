@@ -18,12 +18,12 @@
 import template from './ui-ace-xml.jade!'
 import controller from './ui-ace-xml.controller'
 
-export default ['uiAceXml', [() => {
+export default ['igniteUiAceXml', [() => {
 
 	return {
 		restrict: 'E',
 		scope: {
-			ngModel: '='
+			cluster: '='
 		},
 		template,
 		controller,

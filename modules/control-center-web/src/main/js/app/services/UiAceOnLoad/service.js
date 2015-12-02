@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
-    var ctrl = this;
+export default ['IgniteUiAceOnLoad', () => {
+	return (editor) => {
+	    editor.setReadOnly(true);
+	    editor.setOption('highlightActiveLine', false);
+	    editor.setAutoScrollEditorIntoView(true);
+	    editor.$blockScrolling = Infinity;
 
-    // scope methods
-    $scope.onLoad = onLoad;
+	    var renderer = editor.renderer;
 
-    // watchers definition    
-    let clusterWatcher = (value) => {
-        if (value) {
-            // TODO IGNITE-2052: need move $generatorXml to services
-            ctrl.data = $generatorXml.cluster($scope.cluster)
-        } else {
+	    renderer.setHighlightGutterLine(false);
+	    renderer.setShowPrintMargin(false);
+	    renderer.setOption('fontFamily', 'monospace');
+	    renderer.setOption('fontSize', '12px');
+	    renderer.setOption('minLines', '25');
+	    renderer.setOption('maxLines', '25');
 
-        }
-    }
-
-    // watches
-    $scope.$watch('cluster', clusterWatcher);
+	    editor.setTheme('ace/theme/chrome');
+	}
 }]

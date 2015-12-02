@@ -15,34 +15,35 @@
  * limitations under the License.
  */
 
-export default ['$scope', ($scope) => {
-    $scope.javaClassItems = [
-        {label: 'snippet', value: 1},
-        {label: 'factory class', value: 2}
-    ];
+const SNIPPET = 1;
+const FACTORY = 2;
 
-    $scope.onLoad = (editor) => {
-        editor.setReadOnly(true);
-        editor.setOption('highlightActiveLine', false);
-        editor.setAutoScrollEditorIntoView(true);
-        editor.$blockScrolling = Infinity;
+const TYPES = [
+    {value: SNIPPET, label: 'snippet'},
+    {value: FACTORY, label: 'factory class'}
+];
 
-        var renderer = editor.renderer;
+export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
+    var ctrl = this;
 
-        renderer.setHighlightGutterLine(false);
-        renderer.setShowPrintMargin(false);
-        renderer.setOption('fontFamily', 'monospace');
-        renderer.setOption('fontSize', '12px');
-        renderer.setOption('minLines', '25');
-        renderer.setOption('maxLines', '25');
+    // scope values
+    $scope.type = SNIPPET;
+    
+    // scope data
+    $scope.types = TYPES;
+    
+    // scope methods
+    $scope.onLoad = onLoad;
 
-        editor.setTheme('ace/theme/chrome');
-	}
+    // watchers definition
+    let clusterWatcher = (value) => {
+        if (value) {
+            // TODO IGNITE-2054: need move $generatorJava to services
+            ctrl.data = $generatorJava.cluster($scope.cluster, $scope.type === FACTORY ? 'ServerConfigurationFactory' : false, null, false)
+        }
+    }
 
-    $scope.javaClassServer = 1;
-
-    $scope.$watch('javaClassServer', () => {
-        $scope.javaServer = $generatorJava.cluster($scope.selectedItem,
-            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false, null, false);
-    })
+    // watches
+    $scope.$watch('type', clusterWatcher);
+    $scope.$watch('cluster', clusterWatcher);
 }]

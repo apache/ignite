@@ -17,7 +17,7 @@
 
 import template from './callout.jade!'
 
-export default ['callout', [() => {
+export default ['igniteCallout', [() => {
 
 	return {
 		restrict: 'E',

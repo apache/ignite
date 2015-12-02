@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+// TODO IGNITE-2055: use set version
+const igniteVersion = '1.5.0-IWC';
+
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     var ctrl = this;
 
@@ -24,8 +27,8 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     // watchers definition    
     let clusterWatcher = (value) => {
         if (value) {
-            // TODO IGNITE-2052: need move $generatorXml to services
-            ctrl.data = $generatorXml.cluster($scope.cluster)
+            // TODO IGNITE-2053: need move $generatorPom to services
+            ctrl.data = $generatorPom.pom($scope.cluster, igniteVersion).asString();
         } else {
 
         }
