@@ -339,7 +339,11 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param expVal Expected value.
+     * @param newVal New value.
+     * @return Old value.
+     */
     public long compareAndSetAndGet(long expVal, long newVal) {
         checkRemoved();
 

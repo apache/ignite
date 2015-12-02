@@ -38,7 +38,14 @@
                                 <value>Apache.Ignite.ExamplesDll.Binary.Employee</value>
                                 <value>Apache.Ignite.ExamplesDll.Binary.EmployeeKey</value>
                                 <value>Apache.Ignite.ExamplesDll.Binary.Organization</value>
-                                <value>Apache.Ignite.ExamplesDll.Binary.OrganizationType</value>
+                            </list>
+                        </property>
+                        <property name="typesConfiguration">
+                            <list>
+                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration">
+                                    <property name="typeName" value="Apache.Ignite.ExamplesDll.Binary.OrganizationType" />
+                                    <property name="enum" value="true" />
+                                </bean>
                             </list>
                         </property>
                     </bean>

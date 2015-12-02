@@ -838,6 +838,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Context initialization latch. */
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
 
+    /** Stopping flag (set to {@code true} when SPI gets stopping signal). */
+    private volatile boolean stopping;
+
     /** metrics listener. */
     private final GridNioMetricsListener metricsLsnr = new GridNioMetricsListener() {
         @Override public void onBytesSent(int bytesCnt) {
@@ -1794,6 +1797,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override protected void onContextDestroyed0() {
+        stopping = true;
+
         if (ctxInitLatch.getCount() > 0)
             // Safety.
             ctxInitLatch.countDown();
@@ -1976,7 +1981,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             GridCommunicationClient client = clients.get(nodeId);
 
             if (client == null) {
-                if (isNodeStopping())
+                if (stopping)
                     throw new IgniteSpiException("Node is stopping.");
 
                 // Do not allow concurrent connects.
@@ -2311,8 +2316,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         U.closeQuiet(ch);
 
-                        throw new ClusterTopologyCheckedException("Failed to send message, " +
-                            "node left cluster: " + node);
+                        throw new ClusterTopologyCheckedException("Failed to send message " +
+                            "(node left topology): " + node);
                     }
 
                     long rcvCnt = -1;
@@ -2784,18 +2789,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return Node ID message.
      */
     private NodeIdMessage nodeIdMessage() {
-        ClusterNode localNode = getLocalNode();
+        ClusterNode locNode = getLocalNode();
 
         UUID id;
 
-        if (localNode == null) {
+        if (locNode == null) {
             U.warn(log, "Local node is not started or fully initialized [isStopping=" +
                     getSpiContext().isStopping() + ']');
 
             id = new UUID(0, 0);
         }
         else
-            id = localNode.id();
+            id = locNode.id();
 
         return new NodeIdMessage(id);
     }

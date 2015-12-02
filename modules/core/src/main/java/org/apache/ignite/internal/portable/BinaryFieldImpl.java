@@ -66,7 +66,7 @@ public class BinaryFieldImpl implements BinaryField {
 
     /** {@inheritDoc} */
     @Override public boolean exists(BinaryObject obj) {
-        BinaryObjectEx obj0 = (BinaryObjectEx)obj;
+        BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
         return fieldOrder(obj0) != PortableSchema.ORDER_NOT_FOUND;
     }
@@ -74,7 +74,7 @@ public class BinaryFieldImpl implements BinaryField {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T value(BinaryObject obj) {
-        BinaryObjectEx obj0 = (BinaryObjectEx)obj;
+        BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
         int order = fieldOrder(obj0);
 
@@ -87,7 +87,7 @@ public class BinaryFieldImpl implements BinaryField {
      * @param obj Object.
      * @return Field offset.
      */
-    private int fieldOrder(BinaryObjectEx obj) {
+    private int fieldOrder(BinaryObjectExImpl obj) {
         if (typeId != obj.typeId()) {
             throw new BinaryObjectException("Failed to get field because type ID of passed object differs" +
                 " from type ID this " + BinaryField.class.getSimpleName() + " belongs to [expected=" + typeId +

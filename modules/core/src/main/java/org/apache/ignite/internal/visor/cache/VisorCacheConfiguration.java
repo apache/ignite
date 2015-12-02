@@ -138,7 +138,7 @@ public class VisorCacheConfiguration implements Serializable {
         maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
         memoryMode = ccfg.getMemoryMode();
         interceptor = compactClass(ccfg.getInterceptor());
-        typeMeta = VisorCacheTypeMetadata.list(ccfg.getTypeMetadata());
+        typeMeta = VisorCacheTypeMetadata.list(ccfg.getQueryEntities(), ccfg.getCacheStoreFactory(), ccfg.getTypeMetadata());
         statisticsEnabled = ccfg.isStatisticsEnabled();
         mgmtEnabled = ccfg.isManagementEnabled();
         ldrFactory = compactClass(ccfg.getCacheLoaderFactory());

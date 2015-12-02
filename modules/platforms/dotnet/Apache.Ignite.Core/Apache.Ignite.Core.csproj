@@ -134,6 +134,7 @@
     <Compile Include="IgniteConfiguration.cs" />
     <Compile Include="Ignition.cs" />
     <Compile Include="IIgnite.cs" />
+    <Compile Include="Impl\Binary\BinaryEnum.cs" />
     <Compile Include="Impl\Cache\CacheAffinityImpl.cs" />
     <Compile Include="Impl\Cache\CacheEntry.cs" />
     <Compile Include="Impl\Cache\CacheEntryFilterHolder.cs" />
@@ -266,7 +267,7 @@
     <Compile Include="Impl\Binary\BinaryReader.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveActions.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializer.cs" />
-    <Compile Include="Impl\Binary\IgniteBinary.cs" />
+    <Compile Include="Impl\Binary\Binary.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureTracker.cs" />
     <Compile Include="Impl\Binary\BinarySurrogateTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\BinarySystemHandlers.cs" />
@@ -316,7 +317,7 @@
     <Compile Include="Binary\IBinaryRawReader.cs" />
     <Compile Include="Binary\IBinaryRawWriter.cs" />
     <Compile Include="Binary\IBinaryReader.cs" />
-    <Compile Include="Binary\IIgniteBinary.cs" />
+    <Compile Include="Binary\IBinary.cs" />
     <Compile Include="Binary\IBinarySerializer.cs" />
     <Compile Include="Binary\IBinaryWriter.cs" />
     <Compile Include="Binary\BinaryConfiguration.cs" />

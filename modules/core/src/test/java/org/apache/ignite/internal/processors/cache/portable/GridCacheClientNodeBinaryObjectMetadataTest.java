@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -118,8 +118,8 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
                 aff0.mapKeyToPrimaryAndBackups(obj2));
         }
 
-        Collection<BinaryType> meta1 = ignite1.binary().metadata();
-        Collection<BinaryType> meta2 = ignite1.binary().metadata();
+        Collection<BinaryType> meta1 = ignite1.binary().types();
+        Collection<BinaryType> meta2 = ignite1.binary().types();
 
         assertEquals(meta1.size(), meta2.size());
 

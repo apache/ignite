@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.binary.BinaryType;
@@ -87,7 +86,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
     public void testGetAll() throws Exception {
         portables().toBinary(new TestObject2());
 
-        Collection<BinaryType> metas = portables().metadata();
+        Collection<BinaryType> metas = portables().types();
 
         assertEquals(2, metas.size());
 
@@ -153,14 +152,14 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
     public void testNoConfiguration() throws Exception {
         portables().toBinary(new TestObject3());
 
-        assertNotNull(portables().metadata(TestObject3.class));
+        assertNotNull(portables().type(TestObject3.class));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testReflection() throws Exception {
-        BinaryType meta = portables().metadata(TestObject1.class);
+        BinaryType meta = portables().type(TestObject1.class);
 
         assertNotNull(meta);
 
@@ -193,7 +192,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
     public void testPortableMarshalAware() throws Exception {
         portables().toBinary(new TestObject2());
 
-        BinaryType meta = portables().metadata(TestObject2.class);
+        BinaryType meta = portables().type(TestObject2.class);
 
         assertNotNull(meta);
 
@@ -230,7 +229,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
         portables().toBinary(new TestObject2());
 
-        BinaryType meta = portables().metadata(TestObject2.class);
+        BinaryType meta = portables().type(TestObject2.class);
 
         assertNotNull(meta);
 
