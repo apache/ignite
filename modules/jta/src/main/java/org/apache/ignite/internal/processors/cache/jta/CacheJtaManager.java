@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.jta;
 
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.configuration.Factory;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -43,11 +44,28 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
     /** */
     private final AtomicReference<CacheTmLookup> tmLookupRef = new AtomicReference<>();
 
+    /** */
+    private Factory<TransactionManager> tmFactory;
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
         if (cctx.txConfig() != null) {
+            // TODO think about using className and Factory together.
+            tmFactory = cctx.txConfig().getTxManagerFactory();
+
+            if (tmFactory != null) {
+                // TODO factory type checking.
+
+                cctx.kernalContext().resource().injectGeneric(tmFactory);
+
+                if (tmFactory instanceof LifecycleAware)
+                    ((LifecycleAware)tmFactory).start();
+
+                return;
+            }
+
             String txLookupClsName = cctx.txConfig().getTxManagerLookupClassName();
 
             if (txLookupClsName != null)
@@ -61,6 +79,9 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
 
         if (tmLookup instanceof LifecycleAware)
             ((LifecycleAware)tmLookup).stop();
+
+        if (tmFactory instanceof LifecycleAware)
+            ((LifecycleAware)tmFactory).stop();
     }
 
     /**
@@ -88,12 +109,16 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
     @Override public void checkJta() throws IgniteCheckedException {
         if (jtaTm == null) {
             try {
-                CacheTmLookup tmLookup = tmLookupRef.get();
+                if (tmFactory != null) // TODO try to create tm in start0
+                    jtaTm = tmFactory.create();
+                else {
+                    CacheTmLookup tmLookup = tmLookupRef.get();
 
-                if (tmLookup == null)
-                    return;
+                    if (tmLookup == null)
+                        return;
 
-                jtaTm = tmLookup.getTm();
+                    jtaTm = tmLookup.getTm();
+                }
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to get transaction manager: " + e, e);
@@ -146,6 +171,7 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void registerCache(CacheConfiguration<?, ?> cfg) throws IgniteCheckedException {
+        // TODO check this method. Looks like there is no need to support it in factory approach.
         String cacheLookupClsName = cfg.getTransactionManagerLookupClassName();
 
         if (cacheLookupClsName != null) {

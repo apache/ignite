@@ -243,6 +243,7 @@ public class TransactionConfiguration implements Serializable {
      * @param <T> Instance of {@code javax.transaction.TransactionManager}.
      * @return Transaction manager factory.
      */
+    @SuppressWarnings("unchecked")
     public <T> Factory<T> getTxManagerFactory() {
         return txManagerFactory;
     }
@@ -250,6 +251,21 @@ public class TransactionConfiguration implements Serializable {
     /**
      * Sets transaction manager factory for available {@code javax.transaction.TransactionManager} implementation,
      * if any.
+     * <p>
+     * It allows to use different transactional systems. Implement factory that produce native
+     * {@code javax.transaction.TransactionManager} within your environment.
+     * <p>
+     * The following implementations are provided out of the box (jta module must be enabled):
+     * <ul>
+     * <li>
+     *  {@code org.apache.ignite.cache.jta.jndi.CacheJndiTmFactory} utilizes configured JNDI names to look up
+     *  a transaction manager.
+     * </li>
+     * <li>
+     *  {@code org.apache.ignite.cache.jta.reflect.CacheReflectionTmFactory} uses reflection to call a method
+     *  on a given class to get to transaction manager.
+     * </li>
+     * </ul>
      *
      * @param factory Transaction manager factory.
      * @param <T> Instance of {@code javax.transaction.TransactionManager}.
