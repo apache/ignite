@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.portable;
 
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 
@@ -40,7 +41,7 @@ public class CacheObjectPortableContext extends CacheObjectContext {
         boolean storeVal,
         boolean portableEnabled,
         boolean depEnabled) {
-        super(kernalCtx, portableEnabled ? new CacheDefaultPortableAffinityKeyMapper() :
+        super(kernalCtx, portableEnabled ? new CacheDefaultBinaryAffinityKeyMapper() :
             new GridCacheDefaultAffinityKeyMapper(), cpyOnGet, storeVal, depEnabled);
 
         this.portableEnabled = portableEnabled;

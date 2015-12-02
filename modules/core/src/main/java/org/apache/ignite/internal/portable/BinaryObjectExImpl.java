@@ -164,6 +164,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      */
     private String toString(BinaryReaderHandles ctx, IdentityHashMap<BinaryObject, Integer> handles) {
         int idHash = System.identityHashCode(this);
+        int hash = hashCode();
 
         BinaryType meta;
 
@@ -175,14 +176,14 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         }
 
         if (meta == null)
-            return BinaryObject.class.getSimpleName() +  " [hash=" + idHash + ", typeId=" + typeId() + ']';
+            return BinaryObject.class.getSimpleName() +  " [idHash=" + idHash + ", hash=" + hash + ", typeId=" + typeId() + ']';
 
         handles.put(this, idHash);
 
         SB buf = new SB(meta.typeName());
 
         if (meta.fieldNames() != null) {
-            buf.a(" [hash=").a(idHash);
+            buf.a(" [idHash=").a(idHash).a(", hash=").a(hash);
 
             for (String name : meta.fieldNames()) {
                 Object val = field(ctx, name);

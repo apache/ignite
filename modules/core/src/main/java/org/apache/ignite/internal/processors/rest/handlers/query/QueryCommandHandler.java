@@ -90,7 +90,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                     long createTime = qryCurIt.timestamp();
 
-                    if (createTime + idleQryCurTimeout > time && qryCurIt.tryLock()) {
+                    if (time > createTime + idleQryCurTimeout && qryCurIt.tryLock()) {
                         try {
                             qryCurIt.timestamp(-1);
 

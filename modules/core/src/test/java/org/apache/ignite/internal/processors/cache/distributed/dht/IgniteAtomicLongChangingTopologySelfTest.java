@@ -93,6 +93,8 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
 
         cfg.setClientMode(client);
 
+        cfg.setPeerClassLoadingEnabled(false);
+
         return cfg;
     }
 

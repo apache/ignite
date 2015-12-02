@@ -64,7 +64,7 @@ public class PortableBuilderEnum implements PortableBuilderSerializationAware {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
-            this.typeId = reader.portableContext().descriptorForClass(cls).typeId();
+            this.typeId = reader.portableContext().descriptorForClass(cls, false).typeId();
         }
         else {
             this.typeId = typeId;

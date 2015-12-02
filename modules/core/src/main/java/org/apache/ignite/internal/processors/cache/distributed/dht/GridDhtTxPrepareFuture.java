@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -80,8 +81,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
@@ -602,13 +601,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
                     IgniteInternalFuture<IgniteInternalTx> fut = null;
 
-                    if (prepErr == null)
-                        fut = tx.commitAsync();
-                    else if (!cctx.kernalContext().isStopping())
-                        fut = tx.rollbackAsync();
-
-                    if (fut != null) {
-                        fut.listen(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
+                    CIX1<IgniteInternalFuture<IgniteInternalTx>> responseClo =
+                        new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                             @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
                                 try {
                                     if (replied.compareAndSet(false, true))
@@ -618,8 +612,33 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                     U.error(log, "Failed to send prepare response for transaction: " + tx, e);
                                 }
                             }
-                        });
+                        };
+
+                    if (prepErr == null) {
+                        try {
+                            fut = tx.commitAsync();
+                        }
+                        catch (RuntimeException | Error e) {
+                            Exception hEx = new IgniteTxHeuristicCheckedException("Commit produced a runtime " +
+                                "exception: " + CU.txString(tx), e);
+
+                            res.error(hEx);
+
+                            tx.systemInvalidate(true);
+
+                            fut = tx.rollbackAsync();
+
+                            fut.listen(responseClo);
+
+                            throw e;
+                        }
+
                     }
+                    else if (!cctx.kernalContext().isStopping())
+                        fut = tx.rollbackAsync();
+
+                    if (fut != null)
+                        fut.listen(responseClo);
                 }
             }
             else {
@@ -1187,7 +1206,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         assert req.transactionNodes() != null;
 
                         try {
-                            cctx.io().send(nearMapping.node(), req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                            cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
                         }
                         catch (ClusterTopologyCheckedException e) {
                             fut.onNodeLeft(e);

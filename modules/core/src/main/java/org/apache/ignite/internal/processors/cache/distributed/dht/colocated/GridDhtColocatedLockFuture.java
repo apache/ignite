@@ -977,12 +977,27 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     }
 
     /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void proceedMapping() throws IgniteCheckedException {
+        boolean set = tx != null && cctx.shared().tm().setTxTopologyHint(tx);
+
+        try {
+            proceedMapping0();
+        }
+        finally {
+            if (set)
+                cctx.tm().setTxTopologyHint(null);
+        }
+    }
+
+    /**
      * Gets next near lock mapping and either acquires dht locks locally or sends near lock request to
      * remote primary node.
      *
      * @throws IgniteCheckedException If mapping can not be completed.
      */
-    private void proceedMapping()
+    private void proceedMapping0()
         throws IgniteCheckedException {
         GridNearLockMapping map;
 

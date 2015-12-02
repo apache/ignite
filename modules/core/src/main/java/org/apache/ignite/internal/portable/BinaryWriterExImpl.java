@@ -182,7 +182,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         Class<?> cls = obj.getClass();
 
-        PortableClassDescriptor desc = ctx.descriptorForClass(cls);
+        PortableClassDescriptor desc = ctx.descriptorForClass(cls, false);
 
         if (desc == null)
             throw new BinaryObjectException("Object is not portable: [class=" + cls + ']');
@@ -317,7 +317,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 flags |= PortableUtils.FLAG_OFFSET_ONE_BYTE;
             else if (offsetByteCnt == PortableUtils.OFFSET_2)
                 flags |= PortableUtils.FLAG_OFFSET_TWO_BYTES;
-            
+
             // Write raw offset if needed.
             if (rawOffPos != 0) {
                 flags |= PortableUtils.FLAG_HAS_RAW;
@@ -697,7 +697,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             if (tryWriteAsHandle(val))
                 return;
 
-            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType());
+            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType(), false);
 
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(OBJ_ARR);
@@ -785,7 +785,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass());
+            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass(), false);
 
             out.unsafeEnsure(1 + 4);
 
@@ -830,7 +830,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType());
+            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType(), false);
 
             out.unsafeEnsure(1 + 4);
 
@@ -859,7 +859,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            PortableClassDescriptor desc = ctx.descriptorForClass(val);
+            PortableClassDescriptor desc = ctx.descriptorForClass(val, false);
 
             out.unsafeEnsure(1 + 4);
 
@@ -1805,9 +1805,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             out.unsafeWriteByte(GridPortableMarshaller.HANDLE);
             out.unsafeWriteInt(pos - old);
-
-            if (obj.getClass().isArray())
-                System.out.println("CASE!");
 
             return true;
         }

@@ -59,6 +59,13 @@ public class Person implements Serializable {
     private transient AffinityKey<Long> key;
 
     /**
+     * Default empty constructor.
+     */
+    public Person() {
+        // No-op.
+    }
+
+    /**
      * Constructs person record.
      *
      * @param org       Organization.

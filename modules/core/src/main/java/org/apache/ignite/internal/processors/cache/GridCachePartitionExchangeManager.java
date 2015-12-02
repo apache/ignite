@@ -592,18 +592,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Gets maximum node version for the given topology version.
-     *
-     * @param topVer Topology version to get maximum node version for.
-     * @return Maximum node version.
-     */
-    public IgniteProductVersion maximumNodeVersion(AffinityTopologyVersion topVer) {
-        IgnitePair<IgniteProductVersion> vers = nodeVers.get(topVer);
-
-        return vers == null ? cctx.localNode().version() : vers.get2();
-    }
-
-    /**
      * @return {@code true} if entered to busy state.
      */
     private boolean enterBusy() {
@@ -759,7 +747,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
 
                 if (useOldApi) {
-                    locMap = new GridDhtPartitionFullMap(locMap.nodeId(), locMap.nodeOrder(), locMap.updateSequence(), locMap);
+                    locMap = new GridDhtPartitionFullMap(locMap.nodeId(),
+                        locMap.nodeOrder(),
+                        locMap.updateSequence(),
+                        locMap);
                 }
 
                 m.addFullPartitionsMap(cacheCtx.cacheId(), locMap);
@@ -1137,9 +1128,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         dumpPendingObjects();
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+        for (GridCacheContext cacheCtx : cctx.cacheContexts())
             cacheCtx.preloader().dumpDebugInfo();
-        }
     }
 
     /**
@@ -1405,9 +1395,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 List<String> waitList = new ArrayList<>(size - 1);
 
                                 for (List<Integer> cIds : orderMap.headMap(order).values()) {
-                                    for (Integer cId : cIds) {
+                                    for (Integer cId : cIds)
                                         waitList.add(cctx.cacheContext(cId).name());
-                                    }
                                 }
 
                                 Callable<Boolean> r = cacheCtx.preloader().addAssignments(

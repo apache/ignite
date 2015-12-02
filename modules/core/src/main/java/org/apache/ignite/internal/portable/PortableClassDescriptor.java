@@ -249,7 +249,8 @@ public class PortableClassDescriptor {
                             String name = f.getName();
 
                             if (!names.add(name))
-                                throw new BinaryObjectException("Duplicate field name: " + name);
+                                throw new BinaryObjectException("Duplicate field name [fieldName=" + name +
+                                    ", cls=" + cls.getName() + ']');
 
                             int fieldId = idMapper.fieldId(typeId, name);
 
