@@ -31,3 +31,7 @@ gulp.task('concat', function() {
 		.pipe(concat('all.js'))
 		.pipe(gulp.dest('./build'))
 });
+
+gulp.task('concat:watch', function() {
+    gulp.watch(paths, ['concat'])
+});
