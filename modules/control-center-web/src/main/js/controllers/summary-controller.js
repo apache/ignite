@@ -92,8 +92,8 @@ consoleModule.controller('summaryController', [
     };
 
     $scope.generateJavaServer = function () {
-        $scope.javaServer = $generatorJava.cluster($scope.selectedItem,
-            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false, null, false);
+        $scope.javaServer = $generatorJava.cluster($scope.selectedItem, 'factory',
+            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false, null);
     };
 
     function selectPojoClass(config) {
@@ -166,9 +166,9 @@ consoleModule.controller('summaryController', [
 
     $scope.generateClient = function () {
         $scope.xmlClient = $generatorXml.cluster($scope.selectedItem, $scope.backupItem.nearConfiguration);
-        $scope.javaClient = $generatorJava.cluster($scope.selectedItem,
+        $scope.javaClient = $generatorJava.cluster($scope.selectedItem, 'factory',
             $scope.backupItem.javaClassClient === 2 ? 'ClientConfigurationFactory' : false,
-            $scope.backupItem.nearConfiguration, true);
+            $scope.backupItem.nearConfiguration);
     };
 
     $scope.$watch('backupItem', $scope.generateClient, true);
@@ -198,7 +198,7 @@ consoleModule.controller('summaryController', [
 
     $scope.downloadConfiguration = function () {
         var cluster = $scope.selectedItem;
-        var clientNearConfiguration = $scope.backupItem.nearConfiguration;
+        var clientNearCfg = $scope.backupItem.nearConfiguration;
 
         var zip = new JSZip();
 
@@ -211,12 +211,22 @@ consoleModule.controller('summaryController', [
 
         var srcPath = 'src/main/java/';
 
-        zip.file('config/' + cluster.name + '-server.xml', $generatorXml.cluster(cluster));
-        zip.file('config/' + cluster.name + '-client.xml', $generatorXml.cluster(cluster, clientNearConfiguration));
+        var serverXml = 'config/' + cluster.name + '-server.xml';
+        var clientXml = 'config/' + cluster.name + '-client.xml';
 
-        zip.file(srcPath + 'ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'ServerConfigurationFactory', null, false));
-        zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', clientNearConfiguration, true));
-        zip.file(srcPath + 'NodeStartup.java', $generatorJava.nodeStartup(cluster));
+        zip.file(serverXml, $generatorXml.cluster(cluster));
+        zip.file(clientXml , $generatorXml.cluster(cluster, clientNearCfg));
+
+        zip.file(srcPath + '/factory/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ServerConfigurationFactory', null));
+        zip.file(srcPath + '/factory/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ClientConfigurationFactory', clientNearCfg));
+
+        zip.file(srcPath + '/startup/ServerNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeSpringStartup', '"' + serverXml + '"'));
+        zip.file(srcPath + '/startup/ClientNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeSpringStartup', '"' + clientXml + '"'));
+
+        zip.file(srcPath + '/startup/ServerNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeCodeStartup',
+            'ServerConfigurationFactory.createConfiguration()', 'factory.ServerConfigurationFactory'));
+        zip.file(srcPath + '/startup/ClientNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeCodeStartup',
+            'ClientConfigurationFactory.createConfiguration()', 'factory.ClientConfigurationFactory', clientNearCfg));
 
         zip.file('pom.xml', $generatorPom.pom(cluster, igniteVersion).asString());
 
