@@ -311,10 +311,16 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                     String oldFldTypeName = meta == null ? null : meta.fieldTypeName(name);
 
+                    boolean nullObjField = false;
+
                     int newFldTypeId;
 
-                    if (val instanceof PortableValueWithType)
-                        newFldTypeId = ((PortableValueWithType) val).typeId();
+                    if (val instanceof PortableValueWithType) {
+                        newFldTypeId = ((PortableValueWithType)val).typeId();
+
+                        if (newFldTypeId == GridPortableMarshaller.OBJ && ((PortableValueWithType)val).value() == null)
+                            nullObjField = true;
+                    }
                     else
                         newFldTypeId = PortableUtils.typeByClass(val.getClass());
 
@@ -327,7 +333,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                         fieldsMeta.put(name, PortableUtils.fieldTypeId(newFldTypeName));
                     }
-                    else {
+                    else if (!nullObjField) {
                         String objTypeName = PortableUtils.fieldTypeName(GridPortableMarshaller.OBJ);
 
                         if (!objTypeName.equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {

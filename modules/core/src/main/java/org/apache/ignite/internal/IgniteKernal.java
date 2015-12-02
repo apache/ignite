@@ -1192,9 +1192,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (cfg.getIncludeEventTypes() != null && cfg.getIncludeEventTypes().length != 0)
             perf.add("Disable grid events (remove 'includeEventTypes' from configuration)");
 
-        if (BinaryMarshaller.available() && !(cfg.getMarshaller() instanceof BinaryMarshaller))
-            perf.add("Enable binary marshaller (set 'marshaller' to " +
-                BinaryMarshaller.class.getSimpleName() + ')');
+        if (BinaryMarshaller.available() && (cfg.getMarshaller() != null && !(cfg.getMarshaller() instanceof BinaryMarshaller)))
+            perf.add("Use default binary marshaller (do not set 'marshaller' explicitly)");
     }
 
     /**

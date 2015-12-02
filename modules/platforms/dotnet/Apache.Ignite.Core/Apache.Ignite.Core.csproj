@@ -23,6 +23,7 @@
     <OutputPath>bin\x64\Release\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
+    <DocumentationFile>bin\x64\Release\Apache.Ignite.Core.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -371,6 +372,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Apache.Ignite.Core.nuspec" />
+    <None Include="NuGet\Uninstall.ps1" />
+    <None Include="NuGet\PostBuild.ps1" />
+    <None Include="NuGet\Install.ps1" />
     <None Include="Apache.Ignite.Core.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
