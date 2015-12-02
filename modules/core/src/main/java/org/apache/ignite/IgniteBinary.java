@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.TreeMap;
 import java.util.UUID;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
@@ -68,9 +67,7 @@ import org.jetbrains.annotations.Nullable;
  * String field = val.field("myFieldName");
  * </pre>
  * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
- * typed objects at all times. In this case we do incur the deserialization cost. However, if
- * {@link PortableMarshaller#isKeepDeserialized()} is {@code true} then Ignite will only deserialize on the first access
- * and will cache the deserialized object, so it does not have to be deserialized again:
+ * typed objects at all times.
  * <pre name=code class=java>
  * IgniteCache&lt;MyKey.class, MyValue.class&gt; cache = grid.cache(null);
  *
@@ -137,7 +134,7 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Portable Metadata</h1>
  * Even though Ignite portable protocol only works with hash codes for type and field names
  * to achieve better performance, Ignite provides metadata for all portable types which
- * can be queried ar runtime via any of the {@link IgniteBinary#metadata(Class)}
+ * can be queried ar runtime via any of the {@link IgniteBinary#type(Class)}
  * methods. Having metadata also allows for proper formatting of {@code PortableObject#toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  * <h1 class="header">Dynamic Structure Changes</h1>
@@ -151,8 +148,6 @@ import org.jetbrains.annotations.Nullable;
  * automatically.
  * <h1 class="header">Configuration</h1>
  * By default all your objects are considered as binary and no specific configuration is needed.
- * However, in some cases, like when an object is used by both Java and .Net, you may need to specify portable objects
- * explicitly by calling {@link PortableMarshaller#setClassNames(Collection)}.
  * The only requirement Ignite imposes is that your object has an empty
  * constructor. Note, that since server side does not have to know the class definition,
  * you only need to list portable objects in configuration on the client side. However, if you
@@ -236,7 +231,8 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  * Alternatively, if you cannot change class definitions, you can provide custom serialization
- * logic in {@link org.apache.ignite.binary.BinarySerializer} either globally in {@link PortableMarshaller} or
+ * logic in {@link org.apache.ignite.binary.BinarySerializer} either globally in
+ * {@link org.apache.ignite.configuration.BinaryConfiguration} or
  * for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <p>
  * Similar to java serialization you can use {@code writeReplace()} and {@code readResolve()} methods.
@@ -256,7 +252,7 @@ import org.jetbrains.annotations.Nullable;
  * internally. However, in cases when you want to provide your own ID mapping schema,
  * you can provide your own {@link org.apache.ignite.binary.BinaryIdMapper} implementation.
  * <p>
- * ID-mapper may be provided either globally in {@link PortableMarshaller},
+ * ID-mapper may be provided either globally in {@link org.apache.ignite.configuration.BinaryConfiguration},
  * or for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
  * Portable objects can be indexed for querying by specifying index fields in
@@ -328,7 +324,7 @@ public interface IgniteBinary {
      * @return Metadata.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public BinaryType metadata(Class<?> cls) throws BinaryObjectException;
+    public BinaryType type(Class<?> cls) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided class name.
@@ -337,7 +333,7 @@ public interface IgniteBinary {
      * @return Metadata.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public BinaryType metadata(String typeName) throws BinaryObjectException;
+    public BinaryType type(String typeName) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided type ID.
@@ -346,7 +342,7 @@ public interface IgniteBinary {
      * @return Metadata.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public BinaryType metadata(int typeId) throws BinaryObjectException;
+    public BinaryType type(int typeId) throws BinaryObjectException;
 
     /**
      * Gets metadata for all known types.
@@ -354,5 +350,14 @@ public interface IgniteBinary {
      * @return Metadata.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public Collection<BinaryType> metadata() throws BinaryObjectException;
+    public Collection<BinaryType> types() throws BinaryObjectException;
+
+    /**
+     * Create enum object.
+     *
+     * @param typeName Type name.
+     * @param ord Ordinal.
+     * @return Enum object.
+     */
+    public BinaryObject buildEnum(String typeName, int ord);
 }

@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -38,6 +39,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
+import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
+import org.apache.ignite.internal.processors.continuous.GridContinuousBatchAdapter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.util.typedef.F;
@@ -107,23 +110,33 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isForEvents() {
+    @Override public boolean isEvents() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isForMessaging() {
+    @Override public boolean isMessaging() {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isForQuery() {
+    @Override public boolean isQuery() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean keepBinary() {
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public String cacheName() {
         throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateCounters(Map<Integer, Long> cntrs) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -213,8 +226,8 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                                     }
                                                 }
 
-                                                ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null, false,
-                                                    false);
+                                                ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null,
+                                                    false, false);
                                             }
                                             catch (ClusterTopologyCheckedException ignored) {
                                                 // No-op.
@@ -374,6 +387,16 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
             filter = ctx.config().getMarshaller().unmarshal(filterBytes, dep.classLoader());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridContinuousBatch createBatch() {
+        return new GridContinuousBatchAdapter();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

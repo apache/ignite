@@ -17,22 +17,20 @@
 
 package org.apache.ignite.binary;
 
-import java.util.Collection;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 
 /**
  * Defines configuration properties for a specific binary type. Providing per-type
  * configuration is optional, as it is generally enough, and also optional, to provide global binary
- * configuration using {@link PortableMarshaller#setClassNames(Collection)}.
+ * configuration using {@link IgniteConfiguration#setBinaryConfiguration(BinaryConfiguration)}.
  * However, this class allows you to change configuration properties for a specific
  * binary type without affecting configuration for other binary types.
- * <p>
- * Per-type binary configuration can be specified in {@link PortableMarshaller#getTypeConfigurations()} method.
  */
 public class BinaryTypeConfiguration {
     /** Class name. */
-    private String clsName;
+    private String typeName;
 
     /** ID mapper. */
     private BinaryIdMapper idMapper;
@@ -40,8 +38,8 @@ public class BinaryTypeConfiguration {
     /** Serializer. */
     private BinarySerializer serializer;
 
-    /** Keep deserialized flag. */
-    private Boolean keepDeserialized;
+    /** Enum flag. */
+    private boolean isEnum;
 
     /**
      */
@@ -50,10 +48,10 @@ public class BinaryTypeConfiguration {
     }
 
     /**
-     * @param clsName Class name.
+     * @param typeName Class name.
      */
-    public BinaryTypeConfiguration(String clsName) {
-        this.clsName = clsName;
+    public BinaryTypeConfiguration(String typeName) {
+        this.typeName = typeName;
     }
 
     /**
@@ -61,17 +59,17 @@ public class BinaryTypeConfiguration {
      *
      * @return Type name.
      */
-    public String getClassName() {
-        return clsName;
+    public String getTypeName() {
+        return typeName;
     }
 
     /**
      * Sets type name.
      *
-     * @param clsName Type name.
+     * @param typeName Type name.
      */
-    public void setClassName(String clsName) {
-        this.clsName = clsName;
+    public void setTypeName(String typeName) {
+        this.typeName = typeName;
     }
 
     /**
@@ -111,21 +109,21 @@ public class BinaryTypeConfiguration {
     }
 
     /**
-     * Defines whether {@link BinaryObject} should cache deserialized instance. If provided,
-     * this value will override {@link PortableMarshaller#isKeepDeserialized()}
-     * property.
+     * Gets whether this is enum type.
      *
-     * @return Whether deserialized value is kept.
+     * @return {@code True} if enum.
      */
-    public Boolean isKeepDeserialized() {
-        return keepDeserialized;
+    public boolean isEnum() {
+        return isEnum;
     }
 
     /**
-     * @param keepDeserialized Whether deserialized value is kept.
+     * Sets whether this is enum type.
+     *
+     * @param isEnum {@code True} if enum.
      */
-    public void setKeepDeserialized(Boolean keepDeserialized) {
-        this.keepDeserialized = keepDeserialized;
+    public void setEnum(boolean isEnum) {
+        this.isEnum = isEnum;
     }
 
     /** {@inheritDoc} */

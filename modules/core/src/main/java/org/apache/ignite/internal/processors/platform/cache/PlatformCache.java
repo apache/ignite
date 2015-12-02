@@ -36,15 +36,14 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformQueryCursor;
-import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -373,13 +372,13 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Loads cache via localLoadCache or loadCache.
      */
-    private void loadCache0(BinaryRawReaderEx reader, boolean loc) throws IgniteCheckedException {
+    private void loadCache0(BinaryRawReaderEx reader, boolean loc) {
         PlatformCacheEntryFilter filter = null;
 
         Object pred = reader.readObjectDetached();
 
         if (pred != null)
-            filter = platformCtx.createCacheEntryFilter(pred, reader.readLong());
+            filter = platformCtx.createCacheEntryFilter(pred, 0);
 
         Object[] args = reader.readObjectArray();
 
@@ -955,7 +954,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         Object pred = reader.readObjectDetached();
 
         if (pred != null)
-            qry.setFilter(platformCtx.createCacheEntryFilter(pred, reader.readLong()));
+            qry.setFilter(platformCtx.createCacheEntryFilter(pred, 0));
 
         qry.setLocal(loc);
 

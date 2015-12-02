@@ -32,7 +32,7 @@ namespace ignite
     {
         namespace binary
         {
-            /** Operation: Clear. */
+            /** Operation: metadata update. */
             const int32_t OP_METADATA = -1;
 
             BinaryTypeUpdaterImpl::BinaryTypeUpdaterImpl(SharedPointer<IgniteEnvironment> env,
@@ -77,6 +77,8 @@ namespace ignite
                 }
                 else
                     rawWriter.WriteInt32(0);
+
+                rawWriter.WriteBool(false); // Enums are not supported for now.
 
                 out.Synchronize();
 

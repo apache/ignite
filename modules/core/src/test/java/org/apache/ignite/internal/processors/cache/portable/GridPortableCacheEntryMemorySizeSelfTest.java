@@ -19,15 +19,13 @@ package org.apache.ignite.internal.processors.cache.portable;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.portable.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.portable.PortableContext;
-import org.apache.ignite.internal.portable.PortableMetaDataHandler;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 
 /**
  *
@@ -35,21 +33,15 @@ import org.apache.ignite.binary.BinaryType;
 public class GridPortableCacheEntryMemorySizeSelfTest extends GridCacheEntryMemorySizeSelfTest {
     /** {@inheritDoc} */
     @Override protected Marshaller createMarshaller() throws IgniteCheckedException {
-        PortableMarshaller marsh = new PortableMarshaller();
+        BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        PortableContext pCtx = new PortableContext(new PortableMetaDataHandler() {
-            @Override public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException {
-                // No-op
-            }
+        IgniteConfiguration iCfg = new IgniteConfiguration();
 
-            @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
-                return null;
-            }
-        }, new IgniteConfiguration());
+        PortableContext pCtx = new PortableContext(BinaryNoopMetadataHandler.instance(), iCfg);
 
-        IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", pCtx);
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", pCtx, iCfg);
 
         return marsh;
     }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.binary.BinaryObject;
@@ -26,6 +27,9 @@ import org.apache.ignite.binary.BinaryField;
  * Implementation of portable field descriptor.
  */
 public class BinaryFieldImpl implements BinaryField {
+    /** Type ID. */
+    private final int typeId;
+
     /** Well-known object schemas. */
     @GridToStringExclude
     private final PortableSchemaRegistry schemas;
@@ -43,11 +47,13 @@ public class BinaryFieldImpl implements BinaryField {
      * @param fieldName Field name.
      * @param fieldId Field ID.
      */
-    public BinaryFieldImpl(PortableSchemaRegistry schemas, String fieldName, int fieldId) {
+    public BinaryFieldImpl(int typeId, PortableSchemaRegistry schemas, String fieldName, int fieldId) {
+        assert typeId != 0;
         assert schemas != null;
         assert fieldName != null;
         assert fieldId != 0;
 
+        this.typeId = typeId;
         this.schemas = schemas;
         this.fieldName = fieldName;
         this.fieldId = fieldId;
@@ -60,7 +66,7 @@ public class BinaryFieldImpl implements BinaryField {
 
     /** {@inheritDoc} */
     @Override public boolean exists(BinaryObject obj) {
-        BinaryObjectEx obj0 = (BinaryObjectEx)obj;
+        BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
         return fieldOrder(obj0) != PortableSchema.ORDER_NOT_FOUND;
     }
@@ -68,7 +74,7 @@ public class BinaryFieldImpl implements BinaryField {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T value(BinaryObject obj) {
-        BinaryObjectEx obj0 = (BinaryObjectEx)obj;
+        BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
         int order = fieldOrder(obj0);
 
@@ -81,7 +87,13 @@ public class BinaryFieldImpl implements BinaryField {
      * @param obj Object.
      * @return Field offset.
      */
-    private int fieldOrder(BinaryObjectEx obj) {
+    private int fieldOrder(BinaryObjectExImpl obj) {
+        if (typeId != obj.typeId()) {
+            throw new BinaryObjectException("Failed to get field because type ID of passed object differs" +
+                " from type ID this " + BinaryField.class.getSimpleName() + " belongs to [expected=" + typeId +
+                ", actual=" + obj.typeId() + ']');
+        }
+
         int schemaId = obj.schemaId();
 
         PortableSchema schema = schemas.schema(schemaId);

@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -166,7 +167,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             ReadHandlers[BinaryUtils.TypeMapEntry] = new BinarySystemReader(ReadMapEntry);
             
             // 16. Enum.
-            ReadHandlers[BinaryUtils.TypeEnum] = new BinarySystemReader<int>(BinaryUtils.ReadEnum<int>);
             ReadHandlers[BinaryUtils.TypeArrayEnum] = new BinarySystemReader(ReadEnumArray);
         }
 
@@ -212,6 +212,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteGuid;
             if (type == typeof (BinaryObject))
                 return WriteBinary;
+            if (type == typeof (BinaryEnum))
+                return WriteBinaryEnum;
             if (type == typeof (ArrayList))
                 return WriteArrayList;
             if (type == typeof(Hashtable))
@@ -257,11 +259,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (elemType == typeof(Guid?))
                     return WriteGuidArray;
                 // Enums.
-                if (elemType.IsEnum)
+                if (elemType.IsEnum || elemType == typeof(BinaryEnum))
                     return WriteEnumArray;
                 
                 // Object array.
-                if (elemType == typeof (object))
+                if (elemType == typeof (object) || elemType == typeof(IBinaryObject) || elemType == typeof(BinaryObject))
                     return WriteArray;
             }
 
@@ -329,13 +331,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads an object of predefined type.
         /// </summary>
-        public static T ReadSystemType<T>(byte typeId, BinaryReader ctx)
+        public static bool TryReadSystemType<T>(byte typeId, BinaryReader ctx, out T res)
         {
             var handler = ReadHandlers[typeId];
 
-            Debug.Assert(handler != null, "Cannot find predefined read handler: " + typeId);
-            
-            return handler.Read<T>(ctx);
+            if (handler == null)
+            {
+                res = default(T);
+                return false;
+            }
+
+            res = handler.Read<T>(ctx);
+            return true;
         }
         
         /// <summary>
@@ -629,9 +636,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static void WriteEnum(BinaryWriter ctx, object obj)
         {
+            ctx.WriteEnum(obj);
+        }
+
+        /// <summary>
+        /// Write enum.
+        /// </summary>
+        private static void WriteBinaryEnum(BinaryWriter ctx, object obj)
+        {
+            var binEnum = (BinaryEnum) obj;
+
             ctx.Stream.WriteByte(BinaryUtils.TypeEnum);
 
-            BinaryUtils.WriteEnum(ctx.Stream, (Enum)obj);
+            ctx.WriteInt(binEnum.TypeId);
+            ctx.WriteInt(binEnum.EnumValue);
         }
 
         /// <summary>

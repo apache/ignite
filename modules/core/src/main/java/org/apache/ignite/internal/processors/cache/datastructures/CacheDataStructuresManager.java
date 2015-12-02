@@ -383,7 +383,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             if (create) {
                 hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
 
-                GridCacheSetHeader old = retryPutIfAbsent(cache, key, hdr);
+                GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
 
                 if (old != null)
                     hdr = old;
@@ -493,6 +493,12 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                         continue;
                     }
+                    else if (!pingNodes(nodes)) {
+                        if (log.isDebugEnabled())
+                            log.debug("RemoveSetData job failed and set data node left, will retry: " + e);
+
+                        continue;
+                    }
                     else
                         throw e;
                 }
@@ -510,6 +516,12 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                         continue;
                     }
+                    else if (!pingNodes(nodes)) {
+                        if (log.isDebugEnabled())
+                            log.debug("RemoveSetData job failed and set data node left, will retry: " + e);
+
+                        continue;
+                    }
                     else
                         throw e;
                 }
@@ -523,6 +535,20 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO);
         }
+    }
+
+    /**
+     * @param nodes Nodes to ping.
+     * @return {@code True} if was able to ping all nodes.
+     * @throws IgniteCheckedException If failed/
+     */
+    private boolean pingNodes(Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        for (ClusterNode node : nodes) {
+            if (!cctx.discovery().pingNode(node.id()))
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -558,23 +584,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         if (set != null)
             set.blockOnRemove();
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     * @param val Value.
-     * @throws IgniteCheckedException If failed.
-     * @return Previous value.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryPutIfAbsent(final IgniteInternalCache cache, final Object key, final T val)
-        throws IgniteCheckedException {
-        return DataStructuresProcessor.retry(log, new Callable<T>() {
-            @Nullable @Override public T call() throws Exception {
-                return (T)cache.getAndPutIfAbsent(key, val);
-            }
-        });
     }
 
     /**

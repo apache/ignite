@@ -17,28 +17,15 @@
 
 package org.apache.ignite.internal.portable.streams;
 
-import static org.apache.ignite.internal.portable.PortableThreadLocalMemoryAllocator.DFLT_ALLOC;
-import static org.apache.ignite.internal.portable.PortableThreadLocalMemoryAllocator.THREAD_LOCAL_ALLOC;
-
 /**
  * Portable heap output stream.
  */
 public final class PortableHeapOutputStream extends PortableAbstractOutputStream {
-    /** Default capacity. */
-    private static final int DFLT_CAP = 1024;
-
     /** Allocator. */
-    private final PortableMemoryAllocator alloc;
+    private final PortableMemoryAllocatorChunk chunk;
 
     /** Data. */
     private byte[] data;
-
-    /**
-     * Constructor.
-     */
-    public PortableHeapOutputStream() {
-        this(DFLT_CAP, DFLT_ALLOC);
-    }
 
     /**
      * Constructor.
@@ -46,44 +33,24 @@ public final class PortableHeapOutputStream extends PortableAbstractOutputStream
      * @param cap Initial capacity.
      */
     public PortableHeapOutputStream(int cap) {
-        this(cap, THREAD_LOCAL_ALLOC);
+        this(cap, PortableMemoryAllocator.INSTANCE.chunk());
     }
 
     /**
      * Constructor.
      *
-     * @param cap Initial capacity.
-     * @param alloc Allocator.
+     * @param cap Capacity.
+     * @param chunk Chunk.
      */
-    public PortableHeapOutputStream(int cap, PortableMemoryAllocator alloc) {
-        data = alloc.allocate(cap);
+    public PortableHeapOutputStream(int cap, PortableMemoryAllocatorChunk chunk) {
+        this.chunk = chunk;
 
-        this.alloc = alloc;
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param data Data.
-     */
-    public PortableHeapOutputStream(byte[] data) {
-        this(data, DFLT_ALLOC);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param data Data.
-     * @param alloc Allocator.
-     */
-    public PortableHeapOutputStream(byte[] data, PortableMemoryAllocator alloc) {
-        this.data = data;
-        this.alloc = alloc;
+        data = chunk.allocate(cap);
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        alloc.release(data, pos);
+        chunk.release(data, pos);
     }
 
     /** {@inheritDoc} */
@@ -91,7 +58,7 @@ public final class PortableHeapOutputStream extends PortableAbstractOutputStream
         if (cnt > data.length) {
             int newCap = capacity(data.length, cnt);
 
-            data = alloc.reallocate(data, newCap);
+            data = chunk.reallocate(data, newCap);
         }
     }
 
@@ -147,7 +114,22 @@ public final class PortableHeapOutputStream extends PortableAbstractOutputStream
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeShortPositioned(int pos, short val) {
+    @Override public void unsafeWriteByte(byte val) {
+        UNSAFE.putByte(data, BYTE_ARR_OFF + pos++, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteShort(short val) {
+        if (!LITTLE_ENDIAN)
+            val = Short.reverseBytes(val);
+
+        UNSAFE.putShort(data, BYTE_ARR_OFF + pos, val);
+
+        shift(2);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteShort(int pos, short val) {
         if (!LITTLE_ENDIAN)
             val = Short.reverseBytes(val);
 
@@ -155,10 +137,40 @@ public final class PortableHeapOutputStream extends PortableAbstractOutputStream
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeIntPositioned(int pos, int val) {
+    @Override public void unsafeWriteChar(char val) {
+        if (!LITTLE_ENDIAN)
+            val = Character.reverseBytes(val);
+
+        UNSAFE.putChar(data, BYTE_ARR_OFF + pos, val);
+
+        shift(2);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteInt(int val) {
         if (!LITTLE_ENDIAN)
             val = Integer.reverseBytes(val);
 
         UNSAFE.putInt(data, BYTE_ARR_OFF + pos, val);
+
+        shift(4);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteInt(int pos, int val) {
+        if (!LITTLE_ENDIAN)
+            val = Integer.reverseBytes(val);
+
+        UNSAFE.putInt(data, BYTE_ARR_OFF + pos, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteLong(long val) {
+        if (!LITTLE_ENDIAN)
+            val = Long.reverseBytes(val);
+
+        UNSAFE.putLong(data, BYTE_ARR_OFF + pos, val);
+
+        shift(8);
     }
 }

@@ -17,28 +17,30 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.portable.BinaryMetadata;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.PortableSchema;
+import org.apache.ignite.internal.portable.PortableSchemaRegistry;
 import org.apache.ignite.internal.portable.PortableUtils;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLAGS_POS;
@@ -159,7 +161,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsNameToWrite, e);
             }
 
-            this.typeId = ctx.descriptorForClass(cls).typeId();
+            this.typeId = ctx.descriptorForClass(cls, false).typeId();
 
             registeredType = false;
 
@@ -175,7 +177,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
     /** {@inheritDoc} */
     @Override public BinaryObject build() {
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, typeId, false)) {
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+            writer.typeId(typeId);
 
             PortableBuilderSerializer serializationCtx = new PortableBuilderSerializer();
 
@@ -195,51 +198,54 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      */
     void serializeTo(BinaryWriterExImpl writer, PortableBuilderSerializer serializer) {
         try {
-            PortableUtils.writeHeader(writer,
-                true,
-                registeredType ? typeId : UNREGISTERED_TYPE_ID,
-                hashCode,
-                registeredType ? null : clsNameToWrite);
+            writer.preWrite(registeredType ? null : clsNameToWrite);
 
             Set<Integer> remainsFlds = null;
 
             if (reader != null) {
+                PortableSchema schema = reader.schema();
+
                 Map<Integer, Object> assignedFldsById;
 
                 if (assignedVals != null) {
                     assignedFldsById = U.newHashMap(assignedVals.size());
 
                     for (Map.Entry<String, Object> entry : assignedVals.entrySet()) {
-                        int fldId = ctx.fieldId(typeId, entry.getKey());
+                        int fieldId = ctx.fieldId(typeId, entry.getKey());
 
-                        assignedFldsById.put(fldId, entry.getValue());
+                        assignedFldsById.put(fieldId, entry.getValue());
                     }
 
                     remainsFlds = assignedFldsById.keySet();
-                } else
+                }
+                else
                     assignedFldsById = Collections.emptyMap();
 
                 // Get footer details.
-                int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
+                int fieldIdLen = PortableUtils.fieldIdLength(flags);
+                int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
 
-                IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start, fieldOffsetSize);
+                IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start);
 
                 int footerPos = footer.get1();
                 int footerEnd = footer.get2();
 
                 // Get raw position.
-                int rawPos = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
+                int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
 
                 // Position reader on data.
                 reader.position(start + hdrLen);
 
-                while (reader.position() + 4 < rawPos) {
-                    int fieldId = reader.readIntPositioned(footerPos);
-                    int fieldLen = fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldOffsetSize).get2();
+                int idx = 0;
+
+                while (reader.position() < rawPos) {
+                    int fieldId = schema.fieldId(idx++);
+                    int fieldLen =
+                        fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen).get2();
 
                     int postPos = reader.position() + fieldLen; // Position where reader will be placed afterwards.
 
-                    footerPos += 4 + fieldOffsetSize;
+                    footerPos += fieldIdLen + fieldOffsetLen;
 
                     if (assignedFldsById.containsKey(fieldId)) {
                         Object assignedVal = assignedFldsById.remove(fieldId);
@@ -281,11 +287,11 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 }
             }
 
+            BinaryType meta = ctx.metadata(typeId);
+
+            Map<String, Integer> fieldsMeta = null;
+
             if (assignedVals != null && (remainsFlds == null || !remainsFlds.isEmpty())) {
-                BinaryType metadata = ctx.metaData(typeId);
-
-                Map<String, String> newFldsMetadata = null;
-
                 for (Map.Entry<String, Object> entry : assignedVals.entrySet()) {
                     Object val = entry.getValue();
 
@@ -294,43 +300,46 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                     String name = entry.getKey();
 
-                    int fldId = ctx.fieldId(typeId, name);
+                    int fieldId = ctx.fieldId(typeId, name);
 
-                    if (remainsFlds != null && !remainsFlds.contains(fldId))
+                    if (remainsFlds != null && !remainsFlds.contains(fieldId))
                         continue;
 
-                    writer.writeFieldId(fldId);
+                    writer.writeFieldId(fieldId);
 
                     serializer.writeValue(writer, val);
 
-                    String oldFldTypeName = metadata == null ? null : metadata.fieldTypeName(name);
+                    String oldFldTypeName = meta == null ? null : meta.fieldTypeName(name);
 
-                    String newFldTypeName;
+                    boolean nullObjField = false;
 
-                    if (val instanceof PortableValueWithType)
-                        newFldTypeName = ((PortableValueWithType) val).typeName();
-                    else {
-                        byte type = PortableUtils.typeByClass(val.getClass());
+                    int newFldTypeId;
 
-                        newFldTypeName = CacheObjectBinaryProcessorImpl.fieldTypeName(type);
+                    if (val instanceof PortableValueWithType) {
+                        newFldTypeId = ((PortableValueWithType)val).typeId();
+
+                        if (newFldTypeId == GridPortableMarshaller.OBJ && ((PortableValueWithType)val).value() == null)
+                            nullObjField = true;
                     }
+                    else
+                        newFldTypeId = PortableUtils.typeByClass(val.getClass());
+
+                    String newFldTypeName = PortableUtils.fieldTypeName(newFldTypeId);
 
                     if (oldFldTypeName == null) {
                         // It's a new field, we have to add it to metadata.
+                        if (fieldsMeta == null)
+                            fieldsMeta = new HashMap<>();
 
-                        if (newFldsMetadata == null)
-                            newFldsMetadata = new HashMap<>();
-
-                        newFldsMetadata.put(name, newFldTypeName);
+                        fieldsMeta.put(name, PortableUtils.fieldTypeId(newFldTypeName));
                     }
-                    else {
-                        String objTypeName =
-                            CacheObjectBinaryProcessorImpl.FIELD_TYPE_NAMES[GridPortableMarshaller.OBJ];
+                    else if (!nullObjField) {
+                        String objTypeName = PortableUtils.fieldTypeName(GridPortableMarshaller.OBJ);
 
                         if (!objTypeName.equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
                             throw new BinaryObjectException(
                                 "Wrong value has been set [" +
-                                    "typeName=" + (typeName == null ? metadata.typeName() : typeName) +
+                                    "typeName=" + (typeName == null ? meta.typeName() : typeName) +
                                     ", fieldName=" + name +
                                     ", fieldType=" + oldFldTypeName +
                                     ", assignedValueType=" + newFldTypeName + ']'
@@ -338,25 +347,11 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         }
                     }
                 }
-
-                if (newFldsMetadata != null) {
-                    String typeName = this.typeName;
-
-                    if (typeName == null) {
-                        assert metadata != null;
-
-                        typeName = metadata.typeName();
-                    }
-
-                    ctx.updateMetaData(typeId, typeName, newFldsMetadata);
-                }
             }
 
             if (reader != null) {
                 // Write raw data if any.
-                int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
-
-                int rawOff = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
+                int rawOff = PortableUtils.rawOffsetAbsolute(reader, start);
                 int footerStart = PortableUtils.footerStartAbsolute(reader, start);
 
                 if (rawOff < footerStart) {
@@ -369,7 +364,29 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 reader.position(start + PortableUtils.length(reader, start));
             }
 
-            writer.postWrite(true);
+            writer.postWrite(true, registeredType, hashCode);
+
+            // Update metadata if needed.
+            int schemaId = writer.schemaId();
+
+            PortableSchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
+
+            if (schemaReg.schema(schemaId) == null) {
+                String typeName = this.typeName;
+
+                if (typeName == null) {
+                    assert meta != null;
+
+                    typeName = meta.typeName();
+                }
+
+                PortableSchema curSchema = writer.currentSchema();
+
+                ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta,
+                    ctx.affinityKeyFieldName(typeId), Collections.singleton(curSchema), false));
+
+                schemaReg.addSchema(curSchema.schemaId(), curSchema);
+            }
         }
         finally {
             writer.popSchema();
@@ -389,25 +406,26 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param footerPos Field position inside the footer (absolute).
      * @param footerEnd Footer end (absolute).
      * @param rawPos Raw data position (absolute).
-     * @param fieldOffsetSize Size of field's offset.
+     * @param fieldIdLen Field ID length.
+     * @param fieldOffsetLen Field offset length.
      * @return Tuple with field position and length.
      */
     private IgniteBiTuple<Integer, Integer> fieldPositionAndLength(int footerPos, int footerEnd, int rawPos,
-        int fieldOffsetSize) {
+        int fieldIdLen, int fieldOffsetLen) {
         // Get field offset first.
-        int fieldOffset = PortableUtils.fieldOffsetRelative(reader, footerPos + 4, fieldOffsetSize);
+        int fieldOffset = PortableUtils.fieldOffsetRelative(reader, footerPos + fieldIdLen, fieldOffsetLen);
         int fieldPos = start + fieldOffset;
 
         // Get field length.
         int fieldLen;
 
-        if (footerPos + 4 + fieldOffsetSize == footerEnd)
+        if (footerPos + fieldIdLen + fieldOffsetLen == footerEnd)
             // This is the last field, compare to raw offset.
             fieldLen = rawPos - fieldPos;
         else {
             // Field is somewhere in the middle, get difference with the next offset.
-            int nextFieldOffset = PortableUtils.fieldOffsetRelative(reader, footerPos + 4 + fieldOffsetSize + 4,
-                fieldOffsetSize);
+            int nextFieldOffset = PortableUtils.fieldOffsetRelative(reader,
+                footerPos + fieldIdLen + fieldOffsetLen + fieldIdLen, fieldOffsetLen);
 
             fieldLen = nextFieldOffset - fieldOffset;
         }
@@ -419,30 +437,37 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * Initialize read cache if needed.
      */
     private void ensureReadCacheInit() {
+        assert reader != null;
+
         if (readCache == null) {
-            int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
+            int fieldIdLen = PortableUtils.fieldIdLength(flags);
+            int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
+
+            PortableSchema schema = reader.schema();
 
             Map<Integer, Object> readCache = new HashMap<>();
 
-            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start, fieldOffsetSize);
+            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start);
 
             int footerPos = footer.get1();
             int footerEnd = footer.get2();
 
-            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
+            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
 
-            while (footerPos + 4 < footerEnd) {
-                int fieldId = reader.readIntPositioned(footerPos);
+            int idx = 0;
+
+            while (footerPos + fieldIdLen < footerEnd) {
+                int fieldId = schema.fieldId(idx++);
 
                 IgniteBiTuple<Integer, Integer> posAndLen =
-                    fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldOffsetSize);
+                    fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen);
 
                 Object val = reader.getValueQuickly(posAndLen.get1(), posAndLen.get2());
 
                 readCache.put(fieldId, val);
 
                 // Shift current footer position.
-                footerPos += 4 + fieldOffsetSize;
+                footerPos += fieldIdLen + fieldOffsetLen;
             }
 
             this.readCache = readCache;
@@ -472,15 +497,15 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectBuilder setField(String name, Object val) {
-        GridArgumentCheck.notNull(val, name);
+    @Override public BinaryObjectBuilder setField(String name, Object val0) {
+        Object val = val0 == null ? new PortableValueWithType(PortableUtils.typeByClass(Object.class), null) : val0;
 
         if (assignedVals == null)
             assignedVals = new LinkedHashMap<>();
 
         Object oldVal = assignedVals.put(name, val);
 
-        if (oldVal instanceof PortableValueWithType) {
+        if (oldVal instanceof PortableValueWithType && val0 != null) {
             ((PortableValueWithType)oldVal).value(val);
 
             assignedVals.put(name, oldVal);
@@ -493,8 +518,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     @Override public <T> BinaryObjectBuilder setField(String name, @Nullable T val, Class<? super T> type) {
         if (assignedVals == null)
             assignedVals = new LinkedHashMap<>();
-
-        //int fldId = ctx.fieldId(typeId, fldName);
 
         assignedVals.put(name, new PortableValueWithType(PortableUtils.typeByClass(type), val));
 

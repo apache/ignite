@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations =
-                        new List<BinaryTypeConfiguration> { new BinaryTypeConfiguration(typeof(Portable)) }
+                        new List<BinaryTypeConfiguration> { new BinaryTypeConfiguration(typeof(Binarizable)) }
                 }
             });
 
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Tests
 
             TestType(18m); // decimal
 
-            TestType(new Portable { A = 10, B = "foo" });
+            TestType(new Binarizable { A = 10, B = "foo" });
         }
 
         /// <summary>
@@ -123,9 +123,9 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Portable test class.
+        /// Binary test class.
         /// </summary>
-        private class Portable : IBinarizable
+        private class Binarizable : IBinarizable
         {
             public int A;
             public string B;
@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Tests
                 if (obj.GetType() != GetType())
                     return false;
 
-                var other = (Portable)obj;
+                var other = (Binarizable)obj;
 
                 return A == other.A && string.Equals(B, other.B);
             }

@@ -38,16 +38,16 @@ namespace Apache.Ignite.Core.Tests
         {
             var testTypes = new[]
             {
-                typeof (TestGenericPortable<int>),
-                typeof (TestGenericPortable<string>),
-                typeof (TestGenericPortable<TestGenericPortable<int>>),
-                typeof (TestGenericPortable<List<Tuple<int, string>>>),
-                typeof (TestGenericPortable<List<TestGenericPortable<List<Tuple<int, string>>>>>),
-                typeof (List<TestGenericPortable<List<TestGenericPortable<List<Tuple<int, string>>>>>>),
-                typeof (TestGenericPortable<int, string>),
-                typeof (TestGenericPortable<int, TestGenericPortable<string>>),
-                typeof (TestGenericPortable<int, string, Type>),
-                typeof (TestGenericPortable<int, string, TestGenericPortable<int, string, Type>>)
+                typeof (TestGenericBinarizable<int>),
+                typeof (TestGenericBinarizable<string>),
+                typeof (TestGenericBinarizable<TestGenericBinarizable<int>>),
+                typeof (TestGenericBinarizable<List<Tuple<int, string>>>),
+                typeof (TestGenericBinarizable<List<TestGenericBinarizable<List<Tuple<int, string>>>>>),
+                typeof (List<TestGenericBinarizable<List<TestGenericBinarizable<List<Tuple<int, string>>>>>>),
+                typeof (TestGenericBinarizable<int, string>),
+                typeof (TestGenericBinarizable<int, TestGenericBinarizable<string>>),
+                typeof (TestGenericBinarizable<int, string, Type>),
+                typeof (TestGenericBinarizable<int, string, TestGenericBinarizable<int, string, Type>>)
             };
 
             foreach (var type in testTypes)

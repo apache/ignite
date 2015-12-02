@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Mirror of .Net class Configuration.cs
+ * Mirror of .Net class IgniteConfiguration.cs
  */
 public class PlatformDotNetConfiguration implements PlatformConfiguration {
     /** */
