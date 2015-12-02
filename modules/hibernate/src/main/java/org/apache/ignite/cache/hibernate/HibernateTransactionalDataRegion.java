@@ -90,7 +90,9 @@ public class HibernateTransactionalDataRegion extends HibernateRegion implements
 
                 if (cache.configuration().getTransactionManagerLookupClassName() == null) {
                     TransactionConfiguration txCfg = ignite.configuration().getTransactionConfiguration();
-                    
+
+                    // TODO do something here
+
                     if (txCfg == null || txCfg.getTxManagerLookupClassName() == null)
                         throw new CacheException("Hibernate TRANSACTIONAL access strategy must have Ignite with " +
                             "TransactionManagerLookup configured (see IgniteConfiguration." +

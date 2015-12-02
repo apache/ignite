@@ -87,6 +87,7 @@ public class TransactionConfiguration implements Serializable {
         pessimisticTxLogSize = cfg.getPessimisticTxLogSize();
         txSerEnabled = cfg.isTxSerializableEnabled();
         tmLookupClsName = cfg.getTxManagerLookupClassName();
+        txManagerFactory = cfg.getTxManagerFactory();
     }
 
     /**
