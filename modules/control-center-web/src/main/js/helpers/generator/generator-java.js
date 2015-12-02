@@ -1961,8 +1961,6 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
         if (javaClass) {
             res.endBlock('}');
 
-            res.endBlock('}');
-
             return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.asString();
         }
     }
