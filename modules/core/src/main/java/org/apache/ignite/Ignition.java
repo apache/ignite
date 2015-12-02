@@ -517,7 +517,7 @@ public class Ignition {
     }
 
     /**
-     * This method is used to address a current {@link Ignite} instance, principally from closure.
+     * This method is used to address a local {@link Ignite} instance, principally from closure.
      * <p>
      * According to contract this method has to be called only under {@link IgniteThread}.
      * An {@link IllegalArgumentException} will be thrown otherwise.
@@ -528,8 +528,8 @@ public class Ignition {
      *      initialized or grid instance was stopped or was not started
      * @throws IllegalArgumentException Thrown if current thread is not an {@link IgniteThread}.
      */
-    public static Ignite current() throws IgniteIllegalStateException, IllegalArgumentException {
-        return IgnitionEx.gridx();
+    public static Ignite localIgnite() throws IgniteIllegalStateException, IllegalArgumentException {
+        return IgnitionEx.localIgnite();
     }
 
     /**
