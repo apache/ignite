@@ -2094,12 +2094,12 @@ consoleModule.controller('agent-download', [
          * Close dialog and go by specified link.
          */
         $scope.goBack = function () {
-            if (_agentDownloadModal.backLink)
-                $state.go(_agentDownloadModal.backLink);
-
             _stopInterval();
 
             _agentDownloadModal.hide();
+
+            if (_agentDownloadModal.backLink)
+                $state.go(_agentDownloadModal.backLink);
         };
 
         $scope.downloadAgent = function () {
@@ -2212,7 +2212,7 @@ consoleModule.controller('agent-download', [
 
             _agentDownloadModal.checkFn = checkFn;
 
-            _agentDownloadModal.backLink = '/';
+            _agentDownloadModal.backLink = 'base.configuration.clusters';
 
             $scope.agentDownloadBackTo = 'Configuration';
 
