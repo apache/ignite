@@ -1881,11 +1881,6 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
         res.mergeProps(resCfg);
 
         if (javaClass) {
-            if (clientNearCfg)
-                res.importClass('org.apache.ignite.Ignite');
-
-            res.importClass('org.apache.ignite.Ignition');
-
             res.line('/**');
             res.line(' * ' + $generatorCommon.mainComment());
             res.line(' */');
@@ -1984,9 +1979,6 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
     res.importClass('org.apache.ignite.Ignite');
     res.importClass('org.apache.ignite.Ignition');
 
-    if (factoryCls)
-      res.importClass(factoryCls);
-
     res.line('/**');
     res.line(' * ' + $generatorCommon.mainComment());
     res.line(' */');
@@ -2007,7 +1999,8 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
 
         if ($commonUtils.isDefinedAndNotEmpty(cluster.caches)) {
             res.line('// Example of near cache creation on client node.');
-            res.line('ignite.getOrCreateNearCache("' + cluster.caches[0].name + '", ' + factoryCls + '.createNearCacheConfiguration());');
+            res.line('ignite.getOrCreateNearCache("' + cluster.caches[0].name + '", ' +
+                res.importClass(factoryCls) + '.createNearCacheConfiguration());');
 
             res.needEmptyLine = true;
         }
