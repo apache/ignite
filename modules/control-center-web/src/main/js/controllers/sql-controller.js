@@ -1469,29 +1469,28 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
 
     $scope.showResultQuery = function (paragraph) {
         if ($common.isDefined(paragraph)) {
-            var title;
-            var queryMsg;
+            var scope = $scope.$new();
 
             switch (paragraph.queryArgs.type) {
                 case 'QUERY':
-                    title = 'SQL query';
-                    queryMsg = paragraph.queryArgs.query;
+                    scope.title = 'SQL query';
+                    scope.content = [paragraph.queryArgs.query];
 
                     break;
 
                 case 'EXPLAIN':
-                    title = 'Explain query';
-                    queryMsg = paragraph.queryArgs.query;
+                    scope.title = 'Explain query';
+                    scope.content = [paragraph.queryArgs.query];
 
                     break;
 
                 default:
-                    title = 'SCAN query';
-                    queryMsg = 'SCAN query for cache <b>' + paragraph.queryArgs.cacheName + '</b>';
+                    scope.title = 'SCAN query';
+                    scope.content = ['SCAN query for cache <b>' + paragraph.queryArgs.cacheName + '</b>'];
             }
 
             // Show a basic modal from a controller
-            $modal({title: title, content: [queryMsg], template: '/templates/message.html', show: true});
+            $modal({scope: scope, template: '/templates/message.html', show: true});
         }
     }
 });
