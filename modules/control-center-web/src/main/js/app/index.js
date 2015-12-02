@@ -56,7 +56,7 @@ import './modules/Auth/index'
 
 import './modules/states/login/index'
 import './modules/states/logout/index'
-import './modules/states/password-reset/index'
+import './modules/states/password/index'
 import './modules/states/configuration/index'
 import './modules/states/sql/index'
 import './modules/states/profile/index'

@@ -1954,6 +1954,30 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         return new IgniteFutureImpl<>(ctx.preloader().syncFuture());
     }
 
+    /**
+     * Gets value without waiting for toplogy changes.
+     *
+     * @param key Key.
+     * @return Value.
+     */
+    public V getTopologySafe(K key) {
+        try {
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
+
+            try {
+                return delegate.getTopologySafe(key);
+            }
+            finally {
+                onLeave(gate, prev);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteCacheProxy.class, this);
