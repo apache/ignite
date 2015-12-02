@@ -18,9 +18,11 @@
 var gulp = require('gulp');
 var requireDir = require('require-dir');
 
-// Require all tasks in gulpfile.js/tasks, including subfolders
+// Require all tasks in gulpfile.js/tasks, including subfolders.
 requireDir('./tasks', { recurse: true });
 
-// Summary tasks
+// Default no-arg task.
 gulp.task('default', ['build']);
+
+// Build + watch + connect task.
 gulp.task('watch', ['build', 'bundle:watch', 'sass:watch', 'jade:watch', 'copy:watch', 'connect']);
