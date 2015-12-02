@@ -322,10 +322,12 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
                         if (idx >= 0) {
                             $scope.$root.notebooks.splice(idx, 1);
 
+                            $scope.$root.rebuildDropdown();
+
                             if ($scope.$root.notebooks.length > 0)
-                                $state.go('/sql', {id: $scope.$root.notebooks[Math.min(idx,  $scope.$root.notebooks.length - 1)]._id});
+                                $state.go('base.sql', {id: $scope.$root.notebooks[Math.min(idx,  $scope.$root.notebooks.length - 1)]._id});
                             else
-                                $state.go('/configuration/clusters');
+                                $state.go('base.configuration.clusters');
                         }
                     })
                     .error(function (errMsg) {
@@ -374,7 +376,11 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
 
         $scope.notebook.paragraphs.push(paragraph);
 
-        $scope.notebook.activePanels.push($scope.notebook.paragraphs.length);
+        var _activePanels = angular.copy($scope.notebook.activePanels);
+
+        _activePanels.push(sz);
+
+        $scope.notebook.activePanels = _activePanels;
 
         $scope.rebuildScrollParagraphs();
 

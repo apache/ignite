@@ -2271,6 +2271,8 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
             .success(function (id) {
                 _notebookNewModal.hide();
 
+                $scope.$root.reloadNotebooks();
+
                 $state.go('base.sql', {id: id});
             })
             .error(function (message, state) {
