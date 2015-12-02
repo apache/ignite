@@ -217,15 +217,15 @@ consoleModule.controller('summaryController', [
         zip.file(serverXml, $generatorXml.cluster(cluster));
         zip.file(clientXml , $generatorXml.cluster(cluster, clientNearCfg));
 
-        zip.file(srcPath + '/factory/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ServerConfigurationFactory', null));
-        zip.file(srcPath + '/factory/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ClientConfigurationFactory', clientNearCfg));
+        zip.file(srcPath + 'factory/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ServerConfigurationFactory', null));
+        zip.file(srcPath + 'factory/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ClientConfigurationFactory', clientNearCfg));
 
-        zip.file(srcPath + '/startup/ServerNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeSpringStartup', '"' + serverXml + '"'));
-        zip.file(srcPath + '/startup/ClientNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeSpringStartup', '"' + clientXml + '"'));
+        zip.file(srcPath + 'startup/ServerNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeSpringStartup', '"' + serverXml + '"'));
+        zip.file(srcPath + 'startup/ClientNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeSpringStartup', '"' + clientXml + '"'));
 
-        zip.file(srcPath + '/startup/ServerNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeCodeStartup',
+        zip.file(srcPath + 'startup/ServerNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeCodeStartup',
             'ServerConfigurationFactory.createConfiguration()', 'factory.ServerConfigurationFactory'));
-        zip.file(srcPath + '/startup/ClientNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeCodeStartup',
+        zip.file(srcPath + 'startup/ClientNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeCodeStartup',
             'ClientConfigurationFactory.createConfiguration()', 'factory.ClientConfigurationFactory', clientNearCfg));
 
         zip.file('pom.xml', $generatorPom.pom(cluster, igniteVersion).asString());
