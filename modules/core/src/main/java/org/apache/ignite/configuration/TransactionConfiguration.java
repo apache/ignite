@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -64,6 +65,9 @@ public class TransactionConfiguration implements Serializable {
 
     /** Name of class implementing GridCacheTmLookup. */
     private String tmLookupClsName;
+
+    /** {@code javax.transaction.TransactionManager} factory. */
+    private Factory txManagerFactory;
 
     /**
      * Empty constructor.
@@ -214,7 +218,9 @@ public class TransactionConfiguration implements Serializable {
      * Gets class name of transaction manager finder for integration for JEE app servers.
      *
      * @return Transaction manager finder.
+     * @deprecated Use {@link #getTxManagerFactory()} instead.
      */
+    @Deprecated
     public String getTxManagerLookupClassName() {
         return tmLookupClsName;
     }
@@ -224,8 +230,33 @@ public class TransactionConfiguration implements Serializable {
      *
      * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
      *      receive JTA transaction manager.
+     * @deprecated Use {@link #setTxManagerFactory(Factory)} instead.
      */
+    @Deprecated
     public void setTxManagerLookupClassName(String tmLookupClsName) {
         this.tmLookupClsName = tmLookupClsName;
+    }
+
+    /**
+     * Gets transaction manager factory for integration with JEE app servers.
+     *
+     * @param <T> Instance of {@code javax.transaction.TransactionManager}.
+     * @return Transaction manager factory.
+     */
+    public <T> Factory<T> getTxManagerFactory() {
+        return txManagerFactory;
+    }
+
+    /**
+     * Sets transaction manager factory for available {@code javax.transaction.TransactionManager} implementation,
+     * if any.
+     *
+     * @param factory Transaction manager factory.
+     * @param <T> Instance of {@code javax.transaction.TransactionManager}.
+     *
+     * // TODO exception if not TxManager instanse + about jta in classpath
+     */
+    public <T> void setTxManagerFactory(Factory<T> factory) {
+        txManagerFactory = factory;
     }
 }
