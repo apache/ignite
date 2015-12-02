@@ -1976,9 +1976,6 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
 $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clientNearCfg) {
     var res = $generatorCommon.builder();
 
-    res.importClass('org.apache.ignite.Ignite');
-    res.importClass('org.apache.ignite.Ignition');
-
     res.line('/**');
     res.line(' * ' + $generatorCommon.mainComment());
     res.line(' */');
@@ -1994,7 +1991,9 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
     res.startBlock('public static void main(String[] args) throws Exception {');
 
     if (clientNearCfg) {
-        res.line('Ignite ignite = Ignition.start(' + cfg + ');');
+        res.line(res.importClass('org.apache.ignite.Ignite') + ' ignite = ' +
+            res.importClass('org.apache.ignite.Ignition') + ' Ignition.start(' + cfg + ');');
+
         res.needEmptyLine = true;
 
         if ($commonUtils.isDefinedAndNotEmpty(cluster.caches)) {
@@ -2005,8 +2004,12 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
             res.needEmptyLine = true;
         }
     }
-    else
-        res.line('Ignition.start(' + cfg + ');');
+    else {
+        if (factoryCls)
+            res.importClass(factoryCls);
+
+        res.line(res.importClass('org.apache.ignite.Ignition') + ' Ignition.start(' + cfg + ');');
+    }
 
     res.endBlock('}');
 
