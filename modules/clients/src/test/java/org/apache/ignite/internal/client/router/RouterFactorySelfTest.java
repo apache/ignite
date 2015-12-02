@@ -105,6 +105,8 @@ public class RouterFactorySelfTest extends GridCommonAbstractTest {
         }
         finally {
             GridRouterFactory.stopAllRouters();
+
+            stopAllGrids();
         }
     }
 }

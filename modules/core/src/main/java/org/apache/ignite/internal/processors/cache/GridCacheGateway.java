@@ -109,7 +109,6 @@ public class GridCacheGateway<K, V> {
         rwLock.readLock();
 
         return checkState(true, false);
-
     }
 
     /**

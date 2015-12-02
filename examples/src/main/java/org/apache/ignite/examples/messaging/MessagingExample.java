@@ -47,7 +47,7 @@ public final class MessagingExample {
     private static final int MESSAGES_NUM = 10;
 
     /** Message topics. */
-    private enum TOPIC { ORDERED, UNORDERED }
+    private enum EXAMPLE_TOPIC { ORDERED, UNORDERED }
 
     /**
      * Executes example.
@@ -79,13 +79,13 @@ public final class MessagingExample {
 
             // Send unordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                ignite.message(rmts).send(TOPIC.UNORDERED, Integer.toString(i));
+                ignite.message(rmts).send(EXAMPLE_TOPIC.UNORDERED, Integer.toString(i));
 
             System.out.println(">>> Finished sending unordered messages.");
 
             // Send ordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                ignite.message(rmts).sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
+                ignite.message(rmts).sendOrdered(EXAMPLE_TOPIC.ORDERED, Integer.toString(i), 0);
 
             System.out.println(">>> Finished sending ordered messages.");
             System.out.println(">>> Check output on all nodes for message printouts.");
@@ -105,7 +105,7 @@ public final class MessagingExample {
      */
     private static void startListening(IgniteMessaging msg) {
         // Add ordered message listener.
-        msg.remoteListen(TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
+        msg.remoteListen(EXAMPLE_TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
             @IgniteInstanceResource
             private Ignite ignite;
 
@@ -113,7 +113,7 @@ public final class MessagingExample {
                 System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
                 try {
-                    ignite.message(ignite.cluster().forNodeId(nodeId)).send(TOPIC.ORDERED, msg);
+                    ignite.message(ignite.cluster().forNodeId(nodeId)).send(EXAMPLE_TOPIC.ORDERED, msg);
                 }
                 catch (IgniteException e) {
                     e.printStackTrace();
@@ -124,7 +124,7 @@ public final class MessagingExample {
         });
 
         // Add unordered message listener.
-        msg.remoteListen(TOPIC.UNORDERED, new IgniteBiPredicate<UUID, String>() {
+        msg.remoteListen(EXAMPLE_TOPIC.UNORDERED, new IgniteBiPredicate<UUID, String>() {
             @IgniteInstanceResource
             private Ignite ignite;
 
@@ -132,7 +132,7 @@ public final class MessagingExample {
                 System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
                 try {
-                    ignite.message(ignite.cluster().forNodeId(nodeId)).send(TOPIC.UNORDERED, msg);
+                    ignite.message(ignite.cluster().forNodeId(nodeId)).send(EXAMPLE_TOPIC.UNORDERED, msg);
                 }
                 catch (IgniteException e) {
                     e.printStackTrace();
@@ -155,7 +155,7 @@ public final class MessagingExample {
         final CountDownLatch orderedLatch,
         final CountDownLatch unorderedLatch
     ) {
-        msg.localListen(TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
+        msg.localListen(EXAMPLE_TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
             @Override public boolean apply(UUID nodeId, String msg) {
                 orderedLatch.countDown();
 
@@ -164,7 +164,7 @@ public final class MessagingExample {
             }
         });
 
-        msg.localListen(TOPIC.UNORDERED, new IgniteBiPredicate<UUID, String>() {
+        msg.localListen(EXAMPLE_TOPIC.UNORDERED, new IgniteBiPredicate<UUID, String>() {
             @Override public boolean apply(UUID nodeId, String msg) {
                 unorderedLatch.countDown();
 

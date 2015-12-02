@@ -64,6 +64,20 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
     }
 
     /**
+     * @return Result.
+     */
+    public T result() {
+        return res;
+    }
+
+    /**
+     * Entry processor error;
+     */
+    public Exception error() {
+        return err;
+    }
+
+    /**
      * Static constructor.
      *
      * @param err Exception thrown by {@link EntryProcessor#process(MutableEntry, Object...)}.

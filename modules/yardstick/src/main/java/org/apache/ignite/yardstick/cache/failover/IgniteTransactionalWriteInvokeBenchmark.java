@@ -17,14 +17,25 @@
 
 package org.apache.ignite.yardstick.cache.failover;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.util.typedef.F;
+import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -44,11 +55,39 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * </ul>
  */
 public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstractBenchmark<String, Long> {
+    /** */
+    private static final Long INITIAL_VALUE = 1L;
+
+    /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        assert args.keysCount() > 0 : "Count of keys: " + args.keysCount();
+
+        println(cfg, "Populating data...");
+
+        long start = System.nanoTime();
+
+        if (cfg.memberId() == 0) {
+            try (IgniteDataStreamer<String, Long> dataLdr = ignite().dataStreamer(cacheName())) {
+                for (int k = 0; k < args.range() && !Thread.currentThread().isInterrupted(); k++) {
+                    dataLdr.addData("key-" + k + "-master", INITIAL_VALUE);
+
+                    for (int i = 0; i < args.keysCount(); i++)
+                        dataLdr.addData("key-" + k + "-" + i, INITIAL_VALUE);
+
+                    if (k % 100000 == 0)
+                        println(cfg, "Populated accounts: " + k);
+                }
+            }
+        }
+
+        println(cfg, "Finished populating data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
+    }
+
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         final int k = nextRandom(args.range());
-
-        assert args.keysCount() > 0 : "Count of keys: " + args.keysCount();
 
         final String[] keys = new String[args.keysCount()];
 
@@ -59,8 +98,10 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
         final int scenario = nextRandom(2);
 
-        return doInTransaction(ignite().transactions(), PESSIMISTIC, REPEATABLE_READ, new Callable<Boolean>() {
-            @Override public Boolean call() throws Exception {
+        final Set<String> badKeys = new LinkedHashSet<>();
+
+        doInTransaction(ignite().transactions(), PESSIMISTIC, REPEATABLE_READ, new Callable<Void>() {
+            @Override public Void call() throws Exception {
                 final int timeout = args.cacheOperationTimeoutMillis();
 
                 switch (scenario) {
@@ -81,46 +122,40 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
                         Set<Long> values = new HashSet<>(map.values());
 
-                        if (values.size() != 1) {
-                            // Print all usefull information and finish.
-                            println(cfg, "Got different values for keys [map=" + map + "]");
-
-                            println(cfg, "Cache content:");
-
-                            for (int k = 0; k < args.range(); k++) {
-                                for (int i = 0; i < args.keysCount(); i++) {
-                                    String key = "key-" + k + "-" + i;
-
-                                    asyncCache.get(key);
-                                    Long val = asyncCache.<Long>future().get(timeout);
-
-                                    if (val != null)
-                                        println(cfg, "Entry [key=" + key + ", val=" + val + "]");
-                                }
-                            }
-
-                            throw new IllegalStateException("Found different values for keys (see above information).");
-                        }
+                        if (values.size() != 1)
+                            throw new IgniteConsistencyException("Found different values for keys [map="+map+"]");
 
                         break;
                     case 1: // Invoke scenario.
                         asyncCache.get(masterKey);
                         Long val = asyncCache.<Long>future().get(timeout);
 
-                        asyncCache.put(masterKey, val == null ? 0 : val + 1);
+                        if (val == null)
+                            badKeys.add(masterKey);
+
+                        asyncCache.put(masterKey, val == null ? -1 : val + 1);
                         asyncCache.future().get(timeout);
 
                         for (String key : keys) {
-                            asyncCache.invoke(key, new IncrementCacheEntryProcessor());
-                            asyncCache.future().get(timeout);
+                            asyncCache.invoke(key, new IncrementCacheEntryProcessor(), cacheName());
+                            Object o = asyncCache.future().get(timeout);
+
+                            if (o != null)
+                                badKeys.add(key);
                         }
 
                         break;
                 }
 
-                return true;
+                return null;
             }
         });
+
+        if (!F.isEmpty(badKeys))
+            throw new IgniteConsistencyException("Found unexpected null-value(s) for the following " +
+                "key(s) (look for debug information on server nodes): " + badKeys);
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -130,14 +165,52 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
     /**
      */
-    private static class IncrementCacheEntryProcessor implements CacheEntryProcessor<String, Long, Void> {
+    private static class IncrementCacheEntryProcessor implements CacheEntryProcessor<String, Long, Object> {
         /** */
         private static final long serialVersionUID = 0;
 
         /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<String, Long> entry,
+        @Override public Object process(MutableEntry<String, Long> entry,
             Object... arguments) throws EntryProcessorException {
-            entry.setValue(entry.getValue() == null ? 0 : entry.getValue() + 1);
+            if (entry.getValue() == null) {
+                String cacheName = (String)arguments[0];
+
+                IgniteKernal kernal = (IgniteKernal)entry.unwrap(Ignite.class);
+
+                Affinity<String> aff = kernal.affinity(cacheName);
+
+                final int partIdx = aff.partition(entry.getKey());
+
+                final Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(entry.getKey());
+
+                List<GridDhtLocalPartition> locPartitions = kernal.cachex(cacheName).context().topology().
+                    localPartitions();
+
+                GridDhtLocalPartition part = null;
+
+                for (GridDhtLocalPartition p : locPartitions) {
+                    if (p.id() == partIdx) {
+                        part = p;
+
+                        break;
+                    }
+                }
+
+                kernal.log().warning("Found unexpected null-value, debug info:"
+                        + "\n    entry=" + entry
+                        + "\n    key=" + entry.getKey()
+                        + "\n    locNodeId=" + kernal.cluster().localNode().id()
+                        + "\n    primaryAndBackupsNodes=" + nodes
+                        + "\n    part=" + part
+                        + "\n    partIdx=" + partIdx
+                        + "\n    locParts=" + locPartitions
+                        + "\n    allPartMap=" + kernal.cachex(cacheName).context().topology().partitionMap(true)
+                );
+
+                return new Object(); // non-null value.
+            }
+
+            entry.setValue(entry.getValue() + 1);
 
             return null;
         }

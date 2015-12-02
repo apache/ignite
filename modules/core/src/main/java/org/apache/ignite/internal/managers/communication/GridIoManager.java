@@ -17,6 +17,26 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -26,8 +46,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -64,27 +82,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -104,14 +101,17 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
-    /** */
-    public static volatile boolean TURBO_DEBUG_MODE;
-
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
 
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
+
+    /** Direct protocol version attribute name. */
+    public static final String DIRECT_PROTO_VER_ATTR = "comm.direct.proto.ver";
+
+    /** Direct protocol version. */
+    public static final byte DIRECT_PROTO_VER = 2;
 
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap8<>();
@@ -266,6 +266,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         });
 
+        ctx.addNodeAttribute(DIRECT_PROTO_VER_ATTR, DIRECT_PROTO_VER);
+
         MessageFormatter[] formatterExt = ctx.plugins().extensions(MessageFormatter.class);
 
         if (formatterExt != null && formatterExt.length > 0) {
@@ -277,12 +279,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer() {
-                    return new DirectMessageWriter();
+                @Override public MessageWriter writer(UUID rmtNodeId) throws IgniteCheckedException {
+                    assert rmtNodeId != null;
+
+                    return new DirectMessageWriter(U.directProtocolVersion(ctx, rmtNodeId));
                 }
 
-                @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
-                    return new DirectMessageReader(msgFactory, this);
+                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory)
+                    throws IgniteCheckedException {
+                    assert rmtNodeId != null;
+
+                    return new DirectMessageReader(msgFactory, U.directProtocolVersion(ctx, rmtNodeId));
                 }
             };
         }
@@ -763,7 +770,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private void processRegularMessage(
         final UUID nodeId,
         final GridIoMessage msg,
-        byte plc,
+        final byte plc,
         final IgniteRunnable msgC
     ) throws IgniteCheckedException {
         Runnable c = new Runnable() {
@@ -944,7 +951,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (msgC == null) {
             // Message from local node can be processed in sync manner.
-            assert locNodeId.equals(nodeId) || TURBO_DEBUG_MODE;
+            assert locNodeId.equals(nodeId);
 
             unwindMessageSet(set, lsnr);
 
@@ -1066,85 +1073,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).sendMessage(node, ioMsg, ackClosure);
                 else
                     getSpi().sendMessage(node, ioMsg);
-            }
-            catch (IgniteSpiException e) {
-                throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
-                    "TCP connection cannot be established due to firewall issues) " +
-                    "[node=" + node + ", topic=" + topic +
-                    ", msg=" + msg + ", policy=" + plc + ']', e);
-            }
-        }
-    }
-
-    /**
-     * This method can be used for debugging tricky concurrency issues
-     * with multi-nodes in single JVM.
-     * <p>
-     * This method eliminates network between nodes started in single JVM
-     * when {@link #TURBO_DEBUG_MODE} is set to {@code true}.
-     * <p>
-     * How to use it:
-     * <ol>
-     *     <li>Replace {@link #send(ClusterNode, Object, int, Message, byte, boolean, long, boolean, IgniteInClosure)}
-     *          with this method.</li>
-     *     <li>Start all grids for your test, then set {@link #TURBO_DEBUG_MODE} to {@code true}.</li>
-     *     <li>Perform test operations on the topology. No network will be there.</li>
-     *     <li>DO NOT turn on turbo debug before all grids started. This will cause deadlocks.</li>
-     * </ol>
-     *
-     * @param node Destination node.
-     * @param topic Topic to send the message to.
-     * @param topicOrd GridTopic enumeration ordinal.
-     * @param msg Message to send.
-     * @param plc Type of processing.
-     * @param ordered Ordered flag.
-     * @param timeout Timeout.
-     * @param skipOnTimeout Whether message can be skipped on timeout.
-     * @throws IgniteCheckedException Thrown in case of any errors.
-     */
-    private void sendTurboDebug(
-        ClusterNode node,
-        Object topic,
-        int topicOrd,
-        Message msg,
-        byte plc,
-        boolean ordered,
-        long timeout,
-        boolean skipOnTimeout
-    ) throws IgniteCheckedException {
-        assert node != null;
-        assert topic != null;
-        assert msg != null;
-
-        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
-
-        IgniteKernal rmt;
-
-        if (locNodeId.equals(node.id())) {
-            assert plc != P2P_POOL;
-
-            CommunicationListener commLsnr = this.commLsnr;
-
-            if (commLsnr == null)
-                throw new IgniteCheckedException("Trying to send message when grid is not fully started.");
-
-            if (ordered)
-                processOrderedMessage(locNodeId, ioMsg, plc, null);
-            else
-                processRegularMessage0(ioMsg, locNodeId);
-        }
-        else if (TURBO_DEBUG_MODE && (rmt = IgnitionEx.gridxx(locNodeId)) != null) {
-            if (ioMsg.isOrdered())
-                rmt.context().io().processOrderedMessage(locNodeId, ioMsg, ioMsg.policy(), null);
-            else
-                rmt.context().io().processRegularMessage0(ioMsg, locNodeId);
-        }
-        else {
-            if (topicOrd < 0)
-                ioMsg.topicBytes(marsh.marshal(topic));
-
-            try {
-                getSpi().sendMessage(node, ioMsg);
             }
             catch (IgniteSpiException e) {
                 throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +

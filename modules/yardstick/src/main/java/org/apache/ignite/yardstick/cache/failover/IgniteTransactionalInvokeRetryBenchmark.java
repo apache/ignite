@@ -122,7 +122,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                     }
                                 }
 
-                                throw new IllegalStateException("Cache and local map are in inconsistent state.");
+                                throw new IgniteConsistencyException("Cache and local map are in inconsistent state.");
                             }
 
                             println("Cache validation successfully finished in "

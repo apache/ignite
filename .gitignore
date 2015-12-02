@@ -21,3 +21,9 @@ target
 pom-installed.xml
 git-patch-prop-local.sh
 /slurp.sh
+*.vcxproj.user
+*.sdf
+*.opensdf
+**/cpp/**/vs/x64/
+**/cpp/**/vs/Win32/
+**/dotnet/**/obj/

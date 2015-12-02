@@ -100,8 +100,6 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
         boolean addDepInfo
     ) {
         assert futId != null;
-        assert miniId != null;
-        assert ver != null;
 
         this.cacheId = cacheId;
         this.futId = futId;

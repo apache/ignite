@@ -53,8 +53,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -721,15 +723,18 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         TestTcpDiscoverySpi srvSpi = spi(srv);
 
-        assertTrue(joinLatch.await(5000, MILLISECONDS));
+        try {
+            assertTrue(joinLatch.await(5000, MILLISECONDS));
 
-        U.sleep(1000);
+            U.sleep(1000);
 
-        assertNotDone(fut);
+            assertNotDone(fut);
 
-        srvSpi.failNode(clientId, null);
-
-        srvCommSpi.stopBlock(false);
+            srvSpi.failNode(clientId, null);
+        }
+        finally {
+            srvCommSpi.stopBlock(false);
+        }
 
         assertTrue(fut.get());
     }
@@ -762,6 +767,12 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         IgniteInClosure<IgniteCache<Object, Object>> getOp = new CI1<IgniteCache<Object, Object>>() {
             @Override public void apply(IgniteCache<Object, Object> cache) {
                 cache.get(1);
+            }
+        };
+
+        IgniteInClosure<IgniteCache<Object, Object>> getAllOp = new CI1<IgniteCache<Object, Object>>() {
+            @Override public void apply(IgniteCache<Object, Object> cache) {
+                cache.getAll(F.asSet(1, 2));
             }
         };
 
@@ -799,7 +810,9 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
                     log.info("Test cache get [atomicity=" + atomicityMode + ", syncMode=" + syncMode + ']');
 
-                    checkOperationInProgressFails(client, ccfg, GridNearGetResponse.class, getOp);
+                    checkOperationInProgressFails(client, ccfg, GridNearSingleGetResponse.class, getOp);
+
+                    checkOperationInProgressFails(client, ccfg, GridNearGetResponse.class, getAllOp);
 
                     client.destroyCache(ccfg.getName());
                 }
@@ -1276,12 +1289,21 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         srvSpi.failNode(client.localNode().id(), null);
 
-        fut.get();
-
-        for (int i = 0; i < SRV_CNT; i++)
-            ((TestCommunicationSpi)grid(i).configuration().getCommunicationSpi()).stopBlock(false);
+        try {
+            fut.get();
+        }
+        finally {
+            for (int i = 0; i < SRV_CNT; i++)
+                ((TestCommunicationSpi)grid(i).configuration().getCommunicationSpi()).stopBlock(false);
+        }
 
         cache.put(1, 1);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cache.get(1) != null;
+            }
+        }, 5000);
 
         assertEquals(1, cache.get(1));
     }
