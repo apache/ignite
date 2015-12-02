@@ -264,11 +264,13 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 if (!success) {
                     GridCacheVersion obsolete = cctx.versions().next(topVer);
 
-                    for (GridNearCacheEntry reserved : savedEntries.values()) {
-                        reserved.releaseEviction();
+                    if (savedEntries != null) {
+                        for (GridNearCacheEntry reserved : savedEntries.values()) {
+                            reserved.releaseEviction();
 
-                        if (reserved.markObsolete(obsolete))
-                            reserved.context().cache().removeEntry(reserved);
+                            if (reserved.markObsolete(obsolete))
+                                reserved.context().cache().removeEntry(reserved);
+                        }
                     }
                 }
             }
@@ -543,7 +545,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         }
                         else {
                             K key0 = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable, false);
-                            V val0 = !skipVals ? 
+                            V val0 = !skipVals ?
                                 (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable, false) :
                                 (V)Boolean.TRUE;
 

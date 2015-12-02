@@ -9,6 +9,8 @@ Apache Ignite In-Memory Data Fabric 1.5
 * Added new binary cache object marshalling implementation.
 * Added IgniteSemaphore data structure.
 * Added MQTT Streamer.
+* Added Twitter Streamer.
+* Added Ignite Sink (integration with Apache Flume).
 * Fixed failover for continuous queries.
 * Fixed compilation and runtime errors under OpenJDK and IBM JDK.
 * Fixed Integer.size limitation for cache.

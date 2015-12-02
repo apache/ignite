@@ -434,7 +434,7 @@ public class IgniteTxHandler {
                         tx0.setRollbackOnly(); // Just in case.
 
                         if (!X.hasCause(e, IgniteTxOptimisticCheckedException.class) &&
-                            !X.hasCause(e, IgniteFutureCancelledException.class))
+                            !X.hasCause(e, IgniteFutureCancelledException.class) && !ctx.kernalContext().isStopping())
                             U.error(log, "Failed to prepare DHT transaction: " + tx0, e);
                     }
                 }

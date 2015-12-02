@@ -25,6 +25,10 @@ import org.apache.ignite.testframework.config.GridTestProperties;
  *
  */
 public class IgniteBinaryObjectsCacheTestSuite3 {
+    /**
+     * @return Test suite.
+     * @throws Exception If failed.
+     */
     public static TestSuite suite() throws Exception {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
