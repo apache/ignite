@@ -26,7 +26,7 @@ import javax.sql.DataSource;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
-import org.apache.ignite.examples.datagrid.store.Person;
+import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -92,11 +92,11 @@ public class CacheSpringPersonStore extends CacheStoreAdapter<Long, Person> {
         System.out.println(">>> Store write [key=" + key + ", val=" + val + ']');
 
         int updated = jdbcTemplate.update("update PERSONS set firstName = ?, lastName = ? where id = ?",
-            val.getFirstName(), val.getLastName(), val.getId());
+            val.firstName, val.lastName, val.id);
 
         if (updated == 0) {
             jdbcTemplate.update("insert into PERSONS (id, firstName, lastName) values (?, ?, ?)",
-                val.getId(), val.getFirstName(), val.getLastName());
+                val.id, val.firstName, val.lastName);
         }
     }
 
@@ -120,7 +120,7 @@ public class CacheSpringPersonStore extends CacheStoreAdapter<Long, Person> {
             @Override public void processRow(ResultSet rs) throws SQLException {
                 Person person = new Person(rs.getLong(1), rs.getString(2), rs.getString(3));
 
-                clo.apply(person.getId(), person);
+                clo.apply(person.id, person);
 
                 cnt.incrementAndGet();
             }

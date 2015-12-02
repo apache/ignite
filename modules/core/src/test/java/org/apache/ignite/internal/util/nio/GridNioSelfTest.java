@@ -58,9 +58,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Tests for new NIO server.
  */
 public class GridNioSelfTest extends GridCommonAbstractTest {
-    /** Test port. */
-    private static final int PORT = 55443;
-
     /** Message count in test without reconnect. */
     private static final int MSG_CNT = 2000;
 
@@ -82,6 +79,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /** Marshaller. */
     private static volatile Marshaller marsh;
 
+    /** Test port. */
+    private int port = 55443;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         getTestResources().startThreads(true);
@@ -92,6 +92,13 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         getTestResources().stopThreads();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        port++;
     }
 
     /**
@@ -120,7 +127,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridNioServer<?> srvr = startServer(PORT, new GridPlainParser(), lsnr);
+        GridNioServer<?> srvr = startServer(port, new GridPlainParser(), lsnr);
 
         try {
             IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
@@ -170,11 +177,11 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridNioServer<?> srvr = startServer(PORT, new GridPlainParser(), lsnr);
+        GridNioServer<?> srvr = startServer(port, new GridPlainParser(), lsnr);
 
         Socket s = createSocket();
 
-        s.connect(new InetSocketAddress(U.getLocalHost(), PORT), 1000);
+        s.connect(new InetSocketAddress(U.getLocalHost(), port), 1000);
 
         try {
             byte[] msg = new byte[MSG_SIZE];
@@ -228,12 +235,12 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridNioServer<?> srvr = startServer(PORT, new GridPlainParser(), lsnr);
+        GridNioServer<?> srvr = startServer(port, new GridPlainParser(), lsnr);
 
         try {
             Socket s = createSocket();
 
-            s.connect(new InetSocketAddress(U.getLocalHost(), PORT), 1000);
+            s.connect(new InetSocketAddress(U.getLocalHost(), port), 1000);
 
             if (!(s instanceof SSLSocket)) {
                 // These methods are not supported by SSL sockets.
@@ -270,7 +277,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridNioServer<?> srvr = startServer(PORT, new GridPlainParser(), lsnr);
+        GridNioServer<?> srvr = startServer(port, new GridPlainParser(), lsnr);
 
         final AtomicLong cnt = new AtomicLong();
 
@@ -287,7 +294,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                             msg[i] = (byte) (i ^ (i * i - 1)); // Some data
 
                         try (Socket s = createSocket()) {
-                            s.connect(new InetSocketAddress(U.getLocalHost(), PORT), 1000);
+                            s.connect(new InetSocketAddress(U.getLocalHost(), port), 1000);
 
                             OutputStream out = s.getOutputStream();
 
@@ -362,12 +369,12 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridNioServer<?> srvr = startServer(PORT, new GridPlainParser(), lsnr);
+        GridNioServer<?> srvr = startServer(port, new GridPlainParser(), lsnr);
 
         try {
             Socket s = createSocket();
 
-            s.connect(new InetSocketAddress(U.getLocalHost(), PORT), 1000);
+            s.connect(new InetSocketAddress(U.getLocalHost(), port), 1000);
 
             // This is needed for SSL to begin handshake.
             s.getOutputStream().write(new byte[1]);
@@ -432,7 +439,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridNioServer.Builder<?> builder = serverBuilder(PORT, new GridPlainParser(), lsnr);
+        GridNioServer.Builder<?> builder = serverBuilder(port, new GridPlainParser(), lsnr);
 
         GridNioServer<?> srvr = builder.sendQueueLimit(5).build();
 
@@ -441,7 +448,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         try {
             Socket s = createSocket();
 
-            s.connect(new InetSocketAddress(U.getLocalHost(), PORT), 1000);
+            s.connect(new InetSocketAddress(U.getLocalHost(), port), 1000);
 
             s.getOutputStream().write(new byte[1]);
 
@@ -472,7 +479,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         try {
             Socket s = createSocket();
 
-            s.connect(new InetSocketAddress(U.getLocalHost(), PORT), 1000);
+            s.connect(new InetSocketAddress(U.getLocalHost(), port), 1000);
 
             try {
                 s.getOutputStream().write(msg);
@@ -597,13 +604,13 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
         NioListener lsnr = new NioListener(latch);
 
-        GridNioServer<?> srvr = startServer(PORT, new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr);
+        GridNioServer<?> srvr = startServer(port, new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr);
 
         TestClient client = null;
 
         try {
             for (int i = 0; i < 5; i++) {
-                client = createClient(U.getLocalHost(), PORT, U.getLocalHost());
+                client = createClient(U.getLocalHost(), port, U.getLocalHost());
 
                 client.sendMessage(createMessage(), MSG_SIZE);
                 client.sendMessage(createMessage(), MSG_SIZE);
@@ -631,13 +638,13 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
         NioListener lsnr = new NioListener(latch);
 
-        GridNioServer<?> srvr1 = startServer(PORT, new BufferedParser(false), lsnr);
-        GridNioServer<?> srvr2 = startServer(PORT + 1, new BufferedParser(false), lsnr);
+        GridNioServer<?> srvr1 = startServer(port, new BufferedParser(false), lsnr);
+        GridNioServer<?> srvr2 = startServer(port + 1, new BufferedParser(false), lsnr);
 
         GridNioSession ses = null;
 
         try {
-            SocketChannel ch = SocketChannel.open(new InetSocketAddress(U.getLocalHost(), PORT + 1));
+            SocketChannel ch = SocketChannel.open(new InetSocketAddress(U.getLocalHost(), port + 1));
 
             GridNioFuture<GridNioSession> fut = srvr1.createSession(ch, null);
 
@@ -669,7 +676,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
         NioListener lsnr = new NioListener(latch);
 
-        GridNioServer<?> srvr = startServer(PORT, new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr);
+        GridNioServer<?> srvr = startServer(port, new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr);
 
         try {
             final byte[] data = createMessage();
@@ -679,7 +686,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     TestClient client = null;
 
                     try {
-                        client = createClient(U.getLocalHost(), PORT, U.getLocalHost());
+                        client = createClient(U.getLocalHost(), port, U.getLocalHost());
 
                         for (int i = 0; i < MSG_CNT; i++)
                             client.sendMessage(data, data.length);
@@ -715,7 +722,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
         final AtomicReference<Exception> err = new AtomicReference<>();
 
-        GridNioServer<?> srvr = startServer(PORT, new GridBufferedParser(true, ByteOrder.nativeOrder()),
+        GridNioServer<?> srvr = startServer(port, new GridBufferedParser(true, ByteOrder.nativeOrder()),
             new EchoListener());
 
         try {
@@ -727,7 +734,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                             TestClient client = null;
 
                             try {
-                                client = createClient(U.getLocalHost(), PORT, U.getLocalHost());
+                                client = createClient(U.getLocalHost(), port, U.getLocalHost());
 
                                 MessageWithId msg = new MessageWithId(idProvider.getAndIncrement());
 
@@ -820,7 +827,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
         final AtomicLong cntr = new AtomicLong();
 
-        GridNioServer<?> srvr = startServer(PORT, new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr);
+        GridNioServer<?> srvr = startServer(port, new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr);
 
         try {
             multithreaded(new Runnable() {
@@ -828,7 +835,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     TestClient client = null;
 
                     try {
-                        client = createClient(U.getLocalHost(), PORT, U.getLocalHost());
+                        client = createClient(U.getLocalHost(), port, U.getLocalHost());
 
                         while (cntr.getAndIncrement() < MSG_CNT * THREAD_CNT) {
                             MessageWithId msg = new MessageWithId(idProvider.getAndIncrement());
@@ -901,14 +908,14 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridNioServer<?> srvr = startServer(PORT, new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr);
+        GridNioServer<?> srvr = startServer(port, new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr);
 
         srvr.idleTimeout(1000);
 
         try {
             multithreaded(new Runnable() {
                 @Override public void run() {
-                    try (TestClient ignored = createClient(U.getLocalHost(), PORT, U.getLocalHost())) {
+                    try (TestClient ignored = createClient(U.getLocalHost(), port, U.getLocalHost())) {
                         info("Before sleep.");
 
                         U.sleep(4000);
@@ -969,7 +976,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridNioServer<?> srvr = startServer(PORT, new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr);
+        GridNioServer<?> srvr = startServer(port, new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr);
 
         // Set flag using reflection.
         Field f = srvr.getClass().getDeclaredField("skipWrite");
@@ -983,7 +990,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         try {
             multithreaded(new Runnable() {
                 @Override public void run() {
-                    try (TestClient ignored = createClient(U.getLocalHost(), PORT, U.getLocalHost())) {
+                    try (TestClient ignored = createClient(U.getLocalHost(), port, U.getLocalHost())) {
                         info("Before sleep.");
 
                         U.sleep(4000);

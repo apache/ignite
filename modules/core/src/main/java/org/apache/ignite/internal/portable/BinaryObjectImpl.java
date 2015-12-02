@@ -127,7 +127,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
         Object obj0 = obj;
 
-        if (obj0 == null || cpy)
+        if (obj0 == null || (cpy && needCopy(ctx)))
             obj0 = deserializeValue(ctx);
 
         return (T)obj0;
@@ -558,6 +558,14 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             obj = obj0;
 
         return obj0;
+    }
+
+    /**
+     * @param ctx Context.
+     * @return {@code True} need to copy value returned to user.
+     */
+    private boolean needCopy(CacheObjectContext ctx) {
+        return ctx.copyOnGet() && obj != null && !ctx.processor().immutable(obj);
     }
 
     /**

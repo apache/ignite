@@ -65,15 +65,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Set<IgniteTxKey> writeSet() {
-        if (entry != null) {
-            HashSet<IgniteTxKey> set = new HashSet<>(3, 0.75f);
-
-            set.add(entry.txKey());
-
-            return set;
-        }
-        else
-            return Collections.<IgniteTxKey>emptySet();
+        return entry != null ? Collections.singleton(entry.txKey()) : Collections.<IgniteTxKey>emptySet();
     }
 
     /** {@inheritDoc} */
@@ -110,6 +102,12 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public IgniteTxEntry singleWrite() {
         return entry;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void invalidPartition(int part) {
+        if (entry != null && entry.context().affinity().partition(entry.key()) == part)
+            entry = null;
     }
 
     /** {@inheritDoc} */

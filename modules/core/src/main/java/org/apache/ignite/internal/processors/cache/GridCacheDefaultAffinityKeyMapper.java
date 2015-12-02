@@ -51,7 +51,6 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
     private static final long serialVersionUID = 0L;
 
     /** Injected ignite instance. */
-    @IgniteInstanceResource
     protected transient Ignite ignite;
 
     /** Reflection cache. */
@@ -118,6 +117,14 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
         }
 
         return key;
+    }
+
+    /**
+     * @param ignite Ignite.
+     */
+    @IgniteInstanceResource
+    public void ignite(Ignite ignite) {
+        this.ignite = ignite;
     }
 
     /** {@inheritDoc} */

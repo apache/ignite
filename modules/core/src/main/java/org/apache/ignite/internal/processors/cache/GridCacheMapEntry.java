@@ -1546,7 +1546,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (expiryPlc != null && !readFromStore && !cctx.putIfAbsentFilter(filter) && hasValueUnlocked())
                         updateTtl(expiryPlc);
 
-                    return new T3<>(false, retval ? CU.value(old, cctx, false) : null, null);
+                    Object val = retval ?
+                        cctx.cacheObjectContext().unwrapPortableIfNeeded(CU.value(old, cctx, false), keepBinary, false)
+                        : null;
+
+                    return new T3<>(false, val, null);
                 }
             }
 
