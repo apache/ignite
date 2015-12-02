@@ -75,11 +75,11 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
     public static class TestTxFactory extends GridAbstractLifecycleAwareSelfTest.TestLifecycleAware
         implements Factory<TransactionManager> {
         /** */
-        @IgniteInstanceResource
-        private Ignite ignite;
+        private static final long serialVersionUID = 0L;
 
         /** */
-        private static final long serialVersionUID = 0L;
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public void start() {

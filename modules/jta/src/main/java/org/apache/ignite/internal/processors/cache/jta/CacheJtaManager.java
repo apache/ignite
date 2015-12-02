@@ -56,12 +56,25 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
             tmFactory = cctx.txConfig().getTxManagerFactory();
 
             if (tmFactory != null) {
-                // TODO factory type checking.
-
                 cctx.kernalContext().resource().injectGeneric(tmFactory);
 
                 if (tmFactory instanceof LifecycleAware)
                     ((LifecycleAware)tmFactory).start();
+
+                TransactionManager txMgr;
+
+                try {
+                    // TODO class cast exception processing
+                    txMgr = tmFactory.create();
+                }
+                catch (Exception e) {
+                    throw new IgniteCheckedException("Failed to create transaction manager [tmFactory="
+                        + tmFactory + "]", e);
+                }
+
+                if (txMgr == null)
+                    throw new IgniteCheckedException("Provided transaction manager factory that creating null-value " +
+                        "transaction manager [tmFactory=" + tmFactory + "]");
 
                 return;
             }
