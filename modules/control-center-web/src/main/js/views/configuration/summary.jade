@@ -47,10 +47,10 @@ mixin pojos(side)
         | You have no clusters configured. Please configure them &nbsp;
         a(href='/configuration/clusters') here.
     +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
-    .padding-top-dflt(ng-if='clusters.length > 0' bs-affix)
-        button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip data-title='Download configuration' data-placement='bottom') Download
-        hr
     div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)' role='tab')
+        .padding-top-dflt(ng-if='clusters.length > 0' bs-affix)
+            button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip data-title='Download configuration' data-placement='bottom') Download
+            hr
         .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
             .panel.panel-default
                 .panel-heading(role='tab' bs-collapse-toggle)
