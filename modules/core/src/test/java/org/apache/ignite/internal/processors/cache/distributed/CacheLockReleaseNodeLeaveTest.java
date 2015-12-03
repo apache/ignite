@@ -29,9 +29,12 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
@@ -94,6 +97,54 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
                 lock.lock();
 
                 log.info("Locked.");
+
+                return null;
+            }
+        }, "lock-thread2");
+
+        U.sleep(1000);
+
+        log.info("Stop node.");
+
+        ignite0.close();
+
+        fut2.get(5, SECONDS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxLockRelease() throws Exception {
+        startGrids(2);
+
+        final Ignite ignite0 = ignite(0);
+        final Ignite ignite1 = ignite(1);
+
+        final Integer key = primaryKey(ignite1.cache(null));
+
+        IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+
+                ignite0.cache(null).get(key);
+
+                return null;
+            }
+        }, "lock-thread1");
+
+        fut1.get();
+
+        IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try (Transaction tx = ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    log.info("Start tx lock.");
+
+                    ignite1.cache(null).get(key);
+
+                    log.info("Tx locked key.");
+
+                    tx.commit();
+                }
 
                 return null;
             }
