@@ -7667,6 +7667,14 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param cls Class to check.
+     * @return {@code True} if class is final.
+     */
+    public static boolean isFinal(Class<?> cls) {
+        return Modifier.isFinal(cls.getModifiers());
+    }
+
+    /**
      * Gets field value.
      *
      * @param cls Class.

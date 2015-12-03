@@ -73,20 +73,20 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
     public class DelayableCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(final ClusterNode node, final Message msg,
-            final IgniteInClosure<IgniteException> ackClosure) throws IgniteSpiException {
+            final IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
             final Object msg0 = ((GridIoMessage)msg).message();
 
             if (msg0 instanceof GridDhtPartitionsFullMessage && record &&
                 ((GridDhtPartitionsFullMessage)msg0).exchangeId() == null) {
                 rs.putIfAbsent(node.id(), new Runnable() {
                     @Override public void run() {
-                        DelayableCommunicationSpi.super.sendMessage(node, msg, ackClosure);
+                        DelayableCommunicationSpi.super.sendMessage(node, msg, ackC);
                     }
                 });
             }
             else
                 try {
-                    super.sendMessage(node, msg, ackClosure);
+                    super.sendMessage(node, msg, ackC);
                 }
                 catch (Exception e) {
                     U.log(null, e);
@@ -144,9 +144,8 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
 
         awaitPartitionMapExchange();
 
-        for (Runnable r : rs.values()) {
+        for (Runnable r : rs.values())
             r.run();
-        }
 
         U.sleep(10000); // Enough time to process delayed GridDhtPartitionsFullMessages.
 
