@@ -92,7 +92,11 @@ public class RandomEvictionPolicySelfTest extends
                     info("Stats [cntr=" + i + ", total=" + runs + ']');
             }
 
-            assert g.cache(null).size() <= max;
+            int size = g.cache(null).size();
+
+            info("Cache size: " + size);
+
+            assert size <= (max * 1.2) : size; // Add 20% room for random evictions.
 
             info(policy(0));
         }

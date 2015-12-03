@@ -1366,7 +1366,7 @@ public class PortableUtils {
             return Object.class;
 
         if (typeId != UNREGISTERED_TYPE_ID)
-            cls = ctx.descriptorForTypeId(true, typeId, ldr).describedClass();
+            cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
         else {
             String clsName = doReadClassName(in);
 
@@ -1378,7 +1378,7 @@ public class PortableUtils {
             }
 
             // forces registering of class by type id, at least locally
-            ctx.descriptorForClass(cls);
+            ctx.descriptorForClass(cls, true);
         }
 
         return cls;
@@ -1394,14 +1394,14 @@ public class PortableUtils {
      * @return Resovled class.
      */
     public static Class resolveClass(PortableContext ctx, int typeId, @Nullable String clsName,
-        @Nullable ClassLoader ldr) {
+        @Nullable ClassLoader ldr, boolean deserialize) {
         Class cls;
 
         if (typeId == OBJECT_TYPE_ID)
             return Object.class;
 
         if (typeId != UNREGISTERED_TYPE_ID)
-            cls = ctx.descriptorForTypeId(true, typeId, ldr).describedClass();
+            cls = ctx.descriptorForTypeId(true, typeId, ldr, deserialize).describedClass();
         else {
             try {
                 cls = U.forName(clsName, ldr);
@@ -1411,7 +1411,7 @@ public class PortableUtils {
             }
 
             // forces registering of class by type id, at least locally
-            ctx.descriptorForClass(cls);
+            ctx.descriptorForClass(cls, true);
         }
 
         return cls;

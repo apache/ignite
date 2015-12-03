@@ -119,7 +119,12 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> rebalanceFuture() {
-        return new GridFinishedFuture<>(true);
+        return finFut;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> initialRebalanceFuture() {
+        return finFut;
     }
 
     /** {@inheritDoc} */

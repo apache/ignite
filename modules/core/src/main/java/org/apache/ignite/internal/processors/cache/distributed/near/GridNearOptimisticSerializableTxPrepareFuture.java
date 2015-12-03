@@ -304,9 +304,17 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             return;
         }
 
-        prepare(tx.readEntries(), tx.writeEntries(), remap, topLocked);
+        boolean set = cctx.tm().setTxTopologyHint(tx);
 
-        markInitialized();
+        try {
+            prepare(tx.readEntries(), tx.writeEntries(), remap, topLocked);
+
+            markInitialized();
+        }
+        finally {
+            if (set)
+                cctx.tm().setTxTopologyHint(null);
+        }
     }
 
     /**
