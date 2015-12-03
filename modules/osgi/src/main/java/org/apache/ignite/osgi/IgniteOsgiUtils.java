@@ -19,9 +19,7 @@ package org.apache.ignite.osgi;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
-
 import org.apache.ignite.Ignite;
-
 import org.jsr166.ConcurrentHashMap8;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -30,7 +28,6 @@ import org.osgi.framework.FrameworkUtil;
  * Helper class for OSGi.
  */
 public class IgniteOsgiUtils {
-
     /** Whether we are running in an OSGi container. */
     private static boolean osgi = FrameworkUtil.getBundle(IgniteOsgiUtils.class) != null;
 
@@ -69,5 +66,4 @@ public class IgniteOsgiUtils {
     public static int gridCount() {
         return CLASSLOADERS.size();
     }
-
 }

@@ -21,10 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.inject.Inject;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.osgi.activators.BasicIgniteTestActivator;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -48,13 +46,12 @@ import static org.ops4j.pax.tinybundles.core.TinyBundles.withBnd;
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerMethod.class)
 public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
-
     /** Injects the Ignite OSGi service. */
     @Inject @Filter("(ignite.name=testGrid)")
     private Ignite ignite;
 
     /**
-     * @return
+     * @return Config.
      */
     @Configuration
     public Option[] bundleDelegatingConfig() {
@@ -73,7 +70,7 @@ public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
     }
 
     /**
-     * @throws Exception
+     * @throws Exception If failed.
      */
     @Test
     public void testServiceExposed() throws Exception {
@@ -82,10 +79,9 @@ public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
     }
 
     /**
-     * @return
+     * @return Features.
      */
     @Override protected List<String> featuresToInstall() {
         return Arrays.asList("ignite-core");
     }
-
 }

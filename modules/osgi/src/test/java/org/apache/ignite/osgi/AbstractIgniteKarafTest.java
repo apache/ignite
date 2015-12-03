@@ -50,7 +50,6 @@ import static org.ops4j.pax.exam.karaf.options.KarafDistributionOption.logLevel;
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerMethod.class)
 public abstract class AbstractIgniteKarafTest {
-
     /** Features we do not expect to be installed. */
     protected static final Set<String> IGNORED_FEATURES = new HashSet<>(
         Arrays.asList("ignite-log4j", "ignite-scalar-2.10"));
@@ -107,5 +106,4 @@ public abstract class AbstractIgniteKarafTest {
     }
 
     protected abstract List<String> featuresToInstall();
-
 }

@@ -20,9 +20,7 @@ package org.apache.ignite.osgi;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.karaf.features.Feature;
-
 import org.junit.Test;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
@@ -39,7 +37,6 @@ import static org.junit.Assert.assertTrue;
  * Pax Exam test class to check if all features could be resolved and installed.
  */
 public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest {
-
     /** Number of features expected to exist. */
     private static final int EXPECTED_FEATURES = 25;
 
@@ -95,10 +92,9 @@ public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest
     }
 
     /**
-     * @return
+     * @return Features list.
      */
-    @Override
-    protected List<String> featuresToInstall() {
+    @Override protected List<String> featuresToInstall() {
         return Arrays.asList("ignite-all");
     }
 }

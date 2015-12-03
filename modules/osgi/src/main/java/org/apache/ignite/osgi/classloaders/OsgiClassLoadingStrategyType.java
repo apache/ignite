@@ -21,11 +21,9 @@ package org.apache.ignite.osgi.classloaders;
  * Enum for the user to indicate which type of {@link ClassLoader} Ignite should use.
  */
 public enum OsgiClassLoadingStrategyType {
-
     /** Use this value for {@link BundleDelegatingClassLoader}. */
     BUNDLE_DELEGATING,
 
     /** Use this value for {@link ContainerSweepClassLoader}. */
     CONTAINER_SWEEP
-
 }

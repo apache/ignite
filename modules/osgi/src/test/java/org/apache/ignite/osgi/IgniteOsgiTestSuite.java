@@ -28,5 +28,5 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({IgniteOsgiServiceTest.class, IgniteKarafFeaturesInstallationTest.class})
 public class IgniteOsgiTestSuite {
-
+    // No-op.
 }

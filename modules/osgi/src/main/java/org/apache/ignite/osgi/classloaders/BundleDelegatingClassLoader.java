@@ -20,9 +20,8 @@ package org.apache.ignite.osgi.classloaders;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
-
-import org.apache.ignite.internal.util.typedef.internal.SB;
-
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.osgi.framework.Bundle;
 
 /**
@@ -30,11 +29,11 @@ import org.osgi.framework.Bundle;
  * as a fallback.
  */
 public class BundleDelegatingClassLoader extends ClassLoader {
-
     /** The bundle which loaded Ignite. */
     protected final Bundle bundle;
 
     /** The fallback classloader, expected to be the ignite-core classloader. */
+    @GridToStringExclude
     protected final ClassLoader clsLdr;
 
     /**
@@ -57,19 +56,13 @@ public class BundleDelegatingClassLoader extends ClassLoader {
         this.clsLdr = classLoader;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected Class<?> findClass(String name) throws ClassNotFoundException {
+    /** {@inheritDoc} */
+    @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
         return bundle.loadClass(name);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected URL findResource(String name) {
+    /** {@inheritDoc} */
+    @Override protected URL findResource(String name) {
         URL resource = bundle.getResource(name);
 
         if (resource == null && clsLdr != null)
@@ -98,8 +91,7 @@ public class BundleDelegatingClassLoader extends ClassLoader {
      * @return The Class.
      * @throws ClassNotFoundException
      */
-    @Override
-    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+    @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         Class<?> cls;
 
         try {
@@ -133,12 +125,9 @@ public class BundleDelegatingClassLoader extends ClassLoader {
         return bundle;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString() {
-        return String.format("%s[%s]", getClass().getSimpleName(), bundle);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BundleDelegatingClassLoader.class, this);
     }
 
     /**
@@ -148,10 +137,10 @@ public class BundleDelegatingClassLoader extends ClassLoader {
      * @return The exception.
      */
     protected ClassNotFoundException classNotFoundException(String clsName) {
-        String s = new SB("Failed to resolve class [name=").a(clsName)
-            .a(", bundleId=").a(bundle.getBundleId())
-            .a(", symbolicName=").a(bundle.getSymbolicName())
-            .a(", fallbackClsLdr=").a(clsLdr).a("]").toString();
+        String s = "Failed to resolve class [name=" + clsName +
+            ", bundleId=" + bundle.getBundleId() +
+            ", symbolicName=" + bundle.getSymbolicName() +
+            ", fallbackClsLdr=" + clsLdr + ']';
 
         return new ClassNotFoundException(s);
     }

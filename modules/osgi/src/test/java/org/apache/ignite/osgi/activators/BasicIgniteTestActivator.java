@@ -27,7 +27,7 @@ import org.apache.ignite.osgi.classloaders.OsgiClassLoadingStrategyType;
 public class BasicIgniteTestActivator extends IgniteAbstractOsgiContextActivator {
 
     /**
-     * @return
+     * @return Ignite config.
      */
     @Override public IgniteConfiguration igniteConfiguration() {
         IgniteConfiguration config = new IgniteConfiguration();
@@ -38,7 +38,7 @@ public class BasicIgniteTestActivator extends IgniteAbstractOsgiContextActivator
     }
 
     /**
-     * @return
+     * @return Strategy.
      */
     @Override public OsgiClassLoadingStrategyType classLoadingStrategy() {
         return OsgiClassLoadingStrategyType.BUNDLE_DELEGATING;
