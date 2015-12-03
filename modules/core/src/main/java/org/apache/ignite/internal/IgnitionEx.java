@@ -2080,7 +2080,7 @@ public class IgnitionEx {
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new RendezvousAffinityFunction(false, 100));
             cache.setNodeFilter(CacheConfiguration.ALL_NODES);
-            cache.setRebalanceOrder(-1);//Prior to user caches.
+            cache.setRebalanceOrder(-2); //Prior to user caches.
 
             return cache;
         }
@@ -2101,7 +2101,7 @@ public class IgnitionEx {
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setCacheMode(cfg.getCacheMode());
             ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
-            ccfg.setRebalanceOrder(-1);//Prior to user caches.
+            ccfg.setRebalanceOrder(-1); //Prior to user caches.
 
             if (cfg.getCacheMode() == PARTITIONED)
                 ccfg.setBackups(cfg.getBackups());

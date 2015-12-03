@@ -1020,8 +1020,8 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of marshaller to use in grid. If not provided,
-     * {@link OptimizedMarshaller} will be used on Java HotSpot VM, and
-     * {@link JdkMarshaller} will be used on other VMs.
+     * default marshaller implementation that allows to read object field values
+     * without deserialization will be used.
      *
      * @return Marshaller to use in grid.
      */

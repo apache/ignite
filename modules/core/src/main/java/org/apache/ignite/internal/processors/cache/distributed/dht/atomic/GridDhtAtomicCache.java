@@ -824,25 +824,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         return resFut.chain(new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, Map<K, EntryProcessorResult<T>>>() {
             @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut) throws IgniteCheckedException {
-                Map<K, EntryProcessorResult<T>> resMap = fut.get();
+                Map<Object, EntryProcessorResult> resMap = (Map)fut.get();
 
-                if (resMap != null) {
-                    return F.viewReadOnly(resMap, new C1<EntryProcessorResult<T>, EntryProcessorResult<T>>() {
-                        @Override public EntryProcessorResult<T> apply(EntryProcessorResult<T> res) {
-                            if (res instanceof CacheInvokeResult) {
-                                CacheInvokeResult invokeRes = (CacheInvokeResult)res;
-
-                                if (invokeRes.result() != null)
-                                    res = CacheInvokeResult.fromResult((T)ctx.unwrapPortableIfNeeded(invokeRes.result(),
-                                        keepBinary, false));
-                            }
-
-                            return res;
-                        }
-                    });
-                }
-
-                return null;
+                return ctx.unwrapInvokeResult(resMap, keepBinary);
             }
         });
     }
@@ -1378,7 +1362,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 // Enqueue if necessary after locks release.
                 if (deleted != null) {
                     assert !deleted.isEmpty();
-                    assert ctx.deferredDelete(this) : this;
+                    assert ctx.deferredDelete() : this;
 
                     for (IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion> e : deleted)
                         ctx.onDeferredDelete(e.get1(), e.get2());
@@ -2430,7 +2414,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private void unlockEntries(Collection<GridDhtCacheEntry> locked, AffinityTopologyVersion topVer) {
         // Process deleted entries before locks release.
-        assert ctx.deferredDelete(this) : this;
+        assert ctx.deferredDelete() : this;
 
         // Entries to skip eviction manager notification for.
         // Enqueue entries while holding locks.

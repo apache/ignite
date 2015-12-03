@@ -244,15 +244,27 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     }
 
     /**
-     * JUnit.
-     *
      * @throws Exception If failed.
      */
     public void testIterator() throws Exception {
+        checkIterator(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIteratorCollocated() throws Exception {
+        checkIterator(true);
+    }
+
+    /**
+     * @param collocated Collocated flag.
+     */
+    private void checkIterator(boolean collocated) {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(collocated));
 
         for (int i = 0; i < 100; i++)
             assert queue.add(Integer.toString(i));

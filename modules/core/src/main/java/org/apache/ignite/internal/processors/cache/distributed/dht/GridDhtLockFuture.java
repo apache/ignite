@@ -738,11 +738,22 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         if (!success && !stopping)
             undoLocks(true);
 
-        if (tx != null)
+        boolean set = false;
+
+        if (tx != null) {
             cctx.tm().txContext(tx);
 
-        if (err == null && !stopping)
-            loadMissingFromStore();
+            set = cctx.tm().setTxTopologyHint(tx);
+        }
+
+        try {
+            if (err == null && !stopping)
+                loadMissingFromStore();
+        }
+        finally {
+            if (set)
+                cctx.tm().setTxTopologyHint(null);
+        }
 
         if (super.onDone(success, err)) {
             if (log.isDebugEnabled())
