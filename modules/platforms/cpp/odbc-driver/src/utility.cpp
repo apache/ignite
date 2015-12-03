@@ -17,6 +17,10 @@
 
 #include "ignite/odbc/utility.h"
 
+#ifdef min
+#   undef min
+#endif
+
 namespace ignite
 {
     namespace utility
@@ -45,6 +49,11 @@ namespace ignite
 
                 reader.ReadString(&str[0], static_cast<int32_t>(str.size()));
             }
+        }
+
+        void WriteString(ignite::impl::binary::BinaryWriterImpl& writer, const std::string & str)
+        {
+            writer.WriteString(str.data(), static_cast<int32_t>(str.size()));
         }
     }
 }

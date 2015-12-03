@@ -74,8 +74,6 @@ namespace ignite
             if (!success)
                 return false;
 
-            opened = true;
-
             return true;
         }
 

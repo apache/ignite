@@ -82,8 +82,8 @@ namespace ignite
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
                 writer.WriteInt8(REQUEST_TYPE_EXECUTE_SQL_QUERY);
-                writer.WriteString(cache.c_str(), static_cast<int32_t>(cache.size()));
-                writer.WriteString(sql.c_str(), static_cast<int32_t>(sql.size()));
+                utility::WriteString(writer, cache);
+                utility::WriteString(writer, sql);
                 writer.WriteInt32(0);
             }
 
@@ -213,10 +213,10 @@ namespace ignite
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
                 writer.WriteInt8(REQUEST_TYPE_FETCH_SQL_QUERY);
-
-                writer.WriteString(cache.data(), cache.size());
-                writer.WriteString(table.data(), table.size());
-                writer.WriteString(column.data(), column.size());
+                
+                utility::WriteString(writer, cache);
+                utility::WriteString(writer, table);
+                utility::WriteString(writer, column);
             }
 
         private:

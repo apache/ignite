@@ -30,6 +30,7 @@
 #include <ignite/common/utils.h>
 
 #include "ignite/impl/binary/binary_reader_impl.h"
+#include "ignite/impl/binary/binary_writer_impl.h"
 
 extern FILE* log_file;
 void logInit(const char*);
@@ -124,6 +125,13 @@ namespace ignite
          * @param str String.
          */
         void ReadString(ignite::impl::binary::BinaryReaderImpl& reader, std::string& str);
+
+        /**
+         * Write string using writer.
+         * @param writer Writer.
+         * @param str String.
+         */
+        void WriteString(ignite::impl::binary::BinaryWriterImpl& writer, const std::string& str);
     }
 }
 

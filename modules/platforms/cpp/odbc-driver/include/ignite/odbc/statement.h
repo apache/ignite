@@ -161,11 +161,8 @@ namespace ignite
             /** SQL Query. */
             std::string sql;
 
-            /** Statement is in opened state. */
-            bool opened;
-
-            /** Column metadata. */
-            std::vector<ColumnMeta> resultMeta;
+            /** Columns metadata. */
+            ColumnMetaVector resultMeta;
 
             /** Cursor. */
             std::auto_ptr<Cursor> cursor;
