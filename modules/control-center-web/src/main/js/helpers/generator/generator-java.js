@@ -148,8 +148,8 @@ $generatorJava.property = function (res, varName, obj, propName, dataType, sette
         if (!hasDflt || (hasDflt && val != dflt)) {
             res.emptyLineIfNeeded();
 
-            res.line(varName + '.' + $generatorJava.setterName(propName, setterName)
-                + '(' + $generatorJava.toJavaCode(val, dataType ? res.importClass(dataType) : null) + ');');
+            res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
+                '(' + $generatorJava.toJavaCode(val, dataType ? res.importClass(dataType) : null) + ');');
 
             return true;
         }
@@ -1992,7 +1992,7 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
 
     if (clientNearCfg) {
         res.line(res.importClass('org.apache.ignite.Ignite') + ' ignite = ' +
-            res.importClass('org.apache.ignite.Ignition') + ' Ignition.start(' + cfg + ');');
+            res.importClass('org.apache.ignite.Ignition') + '.start(' + cfg + ');');
 
         res.needEmptyLine = true;
 
@@ -2008,7 +2008,7 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
         if (factoryCls)
             res.importClass(factoryCls);
 
-        res.line(res.importClass('org.apache.ignite.Ignition') + ' Ignition.start(' + cfg + ');');
+        res.line(res.importClass('org.apache.ignite.Ignition') + '.start(' + cfg + ');');
     }
 
     res.endBlock('}');
