@@ -271,7 +271,7 @@ consoleModule.controller('igfsController', [
                 if (!item.secondaryFileSystemEnabled && (item.defaultMode === 'PROXY')) {
                     $scope.ui.expanded = true;
 
-                    showPopoverMessage($scope.panels, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for not "PRIMARY" IGFS mode');
+                    showPopoverMessage($scope.panels, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for "PROXY" IGFS mode');
 
                     return false;
                 }
@@ -281,7 +281,7 @@ consoleModule.controller('igfsController', [
                         if (!item.secondaryFileSystemEnabled && item.pathModes[pathIx].mode === 'PROXY') {
                             $scope.ui.expanded = true;
 
-                            showPopoverMessage($scope.panels, 'misc', 'secondaryFileSystem-title', 'Secondary file system should be configured for not "PRIMARY" path mode');
+                            showPopoverMessage($scope.panels, 'misc', 'secondaryFileSystem-title', 'Secondary file system should be configured for "PROXY" path mode');
 
                             return false;
                         }

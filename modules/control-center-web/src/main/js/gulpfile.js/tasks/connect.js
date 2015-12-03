@@ -31,6 +31,7 @@ var options = {
     fallback: './build/index.html'
 };
 
+// task run static server to local development
 gulp.task('connect', function() {
 	connect.server(options);
 });
