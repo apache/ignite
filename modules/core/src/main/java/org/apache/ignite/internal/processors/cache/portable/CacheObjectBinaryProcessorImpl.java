@@ -602,6 +602,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 if (affKeyFieldName != null)
                     return po.field(affKeyFieldName);
             }
+            else if (po instanceof BinaryObjectEx) {
+                int id = ((BinaryObjectEx)po).typeId();
+
+                String affKeyFieldName = portableCtx.affinityKeyFieldName(id);
+
+                if (affKeyFieldName != null)
+                    return po.field(affKeyFieldName);
+            }
         }
         catch (BinaryObjectException e) {
             U.error(log, "Failed to get affinity field from portable object: " + po, e);

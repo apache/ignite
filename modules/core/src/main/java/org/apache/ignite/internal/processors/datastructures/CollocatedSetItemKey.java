@@ -17,22 +17,15 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Set item key.
+ *
  */
-public class GridCacheSetItemKey implements SetItemKey, Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class CollocatedSetItemKey implements SetItemKey {
     /** */
     private IgniteUuid setId;
 
@@ -40,18 +33,17 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
     @GridToStringInclude
     private Object item;
 
-    /**
-     * Required by {@link Externalizable}.
-     */
-    public GridCacheSetItemKey() {
-        // No-op.
-    }
+    /** */
+    @AffinityKeyMapped
+    private int setNameHash;
 
     /**
+     * @param setName Set name.
      * @param setId Set unique ID.
      * @param item Set item.
      */
-    GridCacheSetItemKey(IgniteUuid setId, Object item) {
+    public CollocatedSetItemKey(String setName, IgniteUuid setId, Object item) {
+        this.setNameHash = setName.hashCode();
         this.setId = setId;
         this.item = item;
     }
@@ -83,25 +75,13 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridCacheSetItemKey that = (GridCacheSetItemKey)o;
+        CollocatedSetItemKey that = (CollocatedSetItemKey)o;
 
         return setId.equals(that.setId) && item.equals(that.item);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, setId);
-        out.writeObject(item);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        setId = U.readGridUuid(in);
-        item = in.readObject();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheSetItemKey.class, this);
+        return S.toString(CollocatedSetItemKey.class, this);
     }
 }
