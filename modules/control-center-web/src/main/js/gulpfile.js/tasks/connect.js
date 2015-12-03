@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-// task run static server to local development
-
 var gulp = require('gulp');
 var connect = require('gulp-connect');
 var modrewrite = require('connect-modrewrite');
@@ -31,6 +29,7 @@ var options = {
     fallback: './build/index.html'
 };
 
+// task run static server to local development
 gulp.task('connect', function() {
 	connect.server(options);
 });
