@@ -287,15 +287,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         AffinityInfo affInfo = affinityCache(cacheName, topVer);
 
-        if (affInfo == null) {
-            log.error("+++AffinityInfo was null");
-        }
-
         Map<ClusterNode, Collection<K>> result = affInfo != null ? affinityMap(affInfo, keys) : Collections.<ClusterNode, Collection<K>>emptyMap();
-
-        if (result == null || F.first(result.keySet()) == null) {
-            log.error("+++Affinity mapping was null, result.size=" + (result == null ? "null" : result.size()));
-        }
 
         return result;
     }
@@ -313,8 +305,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         IgniteInternalFuture<AffinityInfo> fut = affMap.get(key);
 
-        if (fut != null)
-            return fut.get();
+        if (fut != null) {
+            AffinityInfo res = fut.get();
+            if (res == null) {
+                log.error("+++ fut.get() was null");
+            }
+            return res;
+        }
 
         ClusterNode loc = ctx.discovery().localNode();
 
@@ -325,8 +322,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 
             // Cache is being stopped.
-            if (cache == null)
+            if (cache == null) {
+                log.error("+++ cache was null");
                 return null;
+            }
 
             GridCacheContext<Object,Object> cctx = cache.context();
 
@@ -336,6 +335,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                 cctx.gate().enter();
             }
             catch (IllegalStateException ignored) {
+                log.error("+++ IllegalStateException was thrown", ignored);
                 return null;
             }
 
@@ -351,6 +351,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                 if (old != null)
                     info = old.get();
 
+                if (info == null) {
+                    log.error("+++ old.get() was null (1)");
+                }
+
                 return info;
             }
             finally {
@@ -358,15 +362,20 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (F.isEmpty(cacheNodes))
+        if (F.isEmpty(cacheNodes)) {
+            log.error("+++ cacheNodes was empty");
             return null;
+        }
 
         GridFutureAdapter<AffinityInfo> fut0 = new GridFutureAdapter<>();
 
         IgniteInternalFuture<AffinityInfo> old = affMap.putIfAbsent(key, fut0);
 
-        if (old != null)
-            return old.get();
+        if (old != null) {
+            AffinityInfo res = old.get();
+            if (res == null) log.error("+++ old.get() was null (2)");
+            return res;
+        }
 
         int max = ERROR_RETRIES;
         int cnt = 0;
@@ -430,7 +439,11 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
         }
 
-        return fut0.get();
+        AffinityInfo res = fut0.get();
+        if (res == null) {
+            log.error("+++ fut0.get() was null");
+        }
+        return res;
     }
 
     /**
