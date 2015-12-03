@@ -499,6 +499,7 @@ SQLRETURN SQL_API SQLFetchScroll(SQLHSTMT       stmt,
                                  SQLLEN         offset)
 {
     LOG_MSG("SQLFetchScroll called\n");
+    LOG_MSG("Orientation: %d, Offset: %d\n", orientation, offset);
 
     if (orientation != SQL_FETCH_NEXT)
         return SQL_ERROR;

@@ -28,7 +28,6 @@
 #include "ignite/odbc/column_meta.h"
 #include "ignite/odbc/result_page.h"
 
-
 namespace ignite
 {
     namespace odbc
@@ -57,6 +56,10 @@ namespace ignite
         public:
             /**
              * Constructor.
+             *
+             * @param cache Cache name.
+             * @param sql SQL query.
+             * @param argsNum Number of arguments.
              */
             QueryExecuteRequest(const std::string& cache, const std::string& sql, size_t argsNum = 0) :
                 cache(cache), sql(sql) 
@@ -100,6 +103,8 @@ namespace ignite
         public:
             /**
              * Constructor.
+             *
+             * @param queryId Query ID.
              */
             QueryCloseRequest(int64_t queryId) : queryId(queryId)
             {
@@ -137,6 +142,9 @@ namespace ignite
         public:
             /**
              * Constructor.
+             *
+             * @param queryId Query ID.
+             * @param pageSize Required page size.
              */
             QueryFetchRequest(int64_t queryId, int32_t pageSize) :
                 queryId(queryId), pageSize(pageSize)
@@ -169,6 +177,57 @@ namespace ignite
 
             /** SQL query. */
             int32_t pageSize;
+        };
+
+        /**
+         * Query get columns metadata request.
+         */
+        class QueryGetColumnsMetaRequest
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param cache Cache name.
+             * @param table Table name.
+             * @param column Column name.
+             */
+            QueryGetColumnsMetaRequest(const std::string& cache, const std::string& table, const std::string& column) :
+                cache(cache), table(table), column(column)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryGetColumnsMetaRequest()
+            {
+                // No-op.
+            }
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+            {
+                writer.WriteInt8(REQUEST_TYPE_FETCH_SQL_QUERY);
+
+                writer.WriteString(cache.data(), cache.size());
+                writer.WriteString(table.data(), table.size());
+                writer.WriteString(column.data(), column.size());
+            }
+
+        private:
+            /** Cache name. */
+            std::string cache;
+
+            /** Table name. */
+            std::string table;
+
+            /** Column name. */
+            std::string column;
         };
 
         /**
@@ -342,24 +401,14 @@ namespace ignite
             {
                 queryId = reader.ReadInt64();
 
-                int32_t metaNum = reader.ReadInt32();
-
-                meta.clear();
-                meta.reserve(static_cast<size_t>(metaNum));
-
-                for (int32_t i = 0; i < metaNum; ++i)
-                {
-                    meta.push_back(ColumnMeta());
-
-                    meta.back().Read(reader);
-                }
+                ReadColumnMetaVector(reader, meta);
             }
 
             /** Query ID. */
             int64_t queryId;
 
             /** Columns metadata. */
-            std::vector<ColumnMeta> meta;
+            ColumnMetaVector meta;
         };
 
         /**
@@ -411,6 +460,51 @@ namespace ignite
 
             /** Result page. */
             ResultPage& resultPage;
+        };
+
+        /**
+         * Query get column metadata response.
+         */
+        class QueryGetColumnsMetaResponse : public QueryResponse
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            QueryGetColumnsMetaResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryGetColumnsMetaResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Get column metadata.
+             * @return Column metadata.
+             */
+            const std::vector<ColumnMeta>& GetMeta() const
+            {
+                return meta;
+            }
+
+        private:
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                ReadColumnMetaVector(reader, meta);
+            }
+
+            /** Columns metadata. */
+            ColumnMetaVector meta;
         };
     }
 }

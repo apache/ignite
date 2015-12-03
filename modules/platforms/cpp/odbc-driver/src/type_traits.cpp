@@ -96,7 +96,7 @@ namespace ignite
                 case SQL_C_GUID:
                     return IGNITE_SQL_TYPE_GUID;
 
-                case SQL_DEFAULT:
+                case SQL_C_DEFAULT:
                     return IGNITE_SQL_TYPE_DEFAULT;
 
                 default:

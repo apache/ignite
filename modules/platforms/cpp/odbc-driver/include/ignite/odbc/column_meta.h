@@ -52,13 +52,7 @@ namespace ignite
              * Read using reader.
              * @param reader Reader.
              */
-            void Read(ignite::impl::binary::BinaryReaderImpl& reader)
-            {
-                utility::ReadString(reader, schemaName);
-                utility::ReadString(reader, typeName);
-                utility::ReadString(reader, fieldName);
-                utility::ReadString(reader, fieldTypeName);
-            }
+            void Read(ignite::impl::binary::BinaryReaderImpl& reader);
 
             /**
              * Get schema name.
@@ -75,7 +69,7 @@ namespace ignite
              */
             const std::string& GetTypeName() const
             {
-                return typeName;
+                return tableName;
             }
 
             /**
@@ -84,7 +78,7 @@ namespace ignite
              */
             const std::string& GetFieldName() const
             {
-                return fieldName;
+                return columnName;
             }
 
             /**
@@ -93,22 +87,44 @@ namespace ignite
              */
             const std::string& GetFieldTypeName() const
             {
-                return fieldTypeName;
+                return typeName;
+            }
+
+            /**
+             * Get data type.
+             * @return Data type.
+             */
+            int8_t GetDataType() const 
+            {
+                return dataType;
             }
 
         private:
             /** Schema name. */
             std::string schemaName;
 
+            /** Table name. */
+            std::string tableName;
+
+            /** Column name. */
+            std::string columnName;
+
             /** Type name. */
             std::string typeName;
 
-            /** Name. */
-            std::string fieldName;
-
-            /** Type. */
-            std::string fieldTypeName;
+            /** Data type. */
+            int8_t dataType;
         };
+
+        /** Column metadata vector alias. */
+        typedef std::vector<ColumnMeta> ColumnMetaVector;
+
+        /**
+         * Read columns metadata collection.
+         * @param reader Reader.
+         * @param meta Collection.
+         */
+        void ReadColumnMetaVector(ignite::impl::binary::BinaryReaderImpl& reader, ColumnMetaVector& meta);
     }
 }
 
