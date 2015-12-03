@@ -363,7 +363,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         }
 
         if (F.isEmpty(cacheNodes)) {
-            log.error("+++ cacheNodes was empty");
+            log.error("+++ cacheNodes was empty [cacheName = " + cacheName + ", topVer = " + topVer + "]");
             return null;
         }
 
