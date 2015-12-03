@@ -80,6 +80,9 @@
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
         <module>modules/camel</module>
+        <module>modules/osgi-paxlogging</module>
+        <module>modules/osgi-karaf</module>
+        <module>modules/osgi</module>
     </modules>
 
     <profiles>
@@ -774,20 +777,37 @@
                                     <target>
                                         <script language="javascript">
                                             function setClientVersion(ggVer, clientVer) {
-                                            var p = project.getProperty(ggVer);
+                                                var p = project.getProperty(ggVer);
 
-                                            if (java.util.regex.Pattern.matches(".*-p\\d+", p))
-                                            project.setProperty(clientVer, p.replace("-p", "."));
-                                            else
-                                            if (java.util.regex.Pattern.matches(".*-[a-zA-Z]+\\d+.*", p))
-                                            project.setProperty(clientVer, p.replaceAll("-[a-zA-Z]+(\\d+)?.*", ".$1"));
-                                            else
-                                            project.setProperty(clientVer, p);
+                                                var pos = p.search("-");
+
+                                                if (pos > 0)
+                                                {
+                                                    var suffix = p.substring(pos);
+
+                                                    var ver = 0;
+
+                                                    var beta = /-b([0-9]+)/.exec(suffix);
+                                                    if (beta !== null)
+                                                        ver += parseInt(beta[1]);
+
+                                                    var patch = /-p([0-9]+)/.exec(suffix);
+                                                    if (patch !== null)
+                                                        ver += parseInt(patch[1]) * 100;
+
+                                                    if (suffix.search("final") > 0)
+                                                        ver += 10000;
+
+                                                    var resVer = p.substring(0, pos) +"." + ver;
+                                                    project.setProperty(clientVer, resVer);
+                                                }
+                                                else
+                                                    project.setProperty(clientVer, p);
                                             }
 
                                             function fix(dest, source) {
-                                            project.setProperty(dest, project.getProperty(source).replace("-SNAPSHOT",
-                                            ""));
+                                                project.setProperty(dest, project.getProperty(source).replace("-SNAPSHOT",
+                                                ""));
                                             }
 
                                             fix('ignite.version.fixed', 'project.version');
@@ -810,8 +830,8 @@
 
                                         <echo message="Update ignite.version in cpp client" />
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(AC_INIT.+\[)\d.\d.\d(.\d)?(\].+)" />
-                                            <substitution expression="\1${new.client.version}\3" />
+                                            <regexp pattern="(AC_INIT.+\[)\d.\d.\d.*?(\].+)" />
+                                            <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/configure.ac" />
                                             </fileset>
