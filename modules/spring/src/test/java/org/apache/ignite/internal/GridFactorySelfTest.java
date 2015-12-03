@@ -863,20 +863,26 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     public void testCurrentIgnite() throws Exception {
         final String LEFT = "LEFT";
         final String RIGHT = "RIGHT";
-        startGrid(LEFT);
-        startGrid(RIGHT);
+        try {
+            Ignite iLEFT = startGrid(LEFT);
+            Ignite iRIGHT = startGrid(RIGHT);
+            waitForDiscovery(iLEFT, iRIGHT);
 
-        Ignition.ignite(LEFT).compute().run(new IgniteRunnable() {
-            @Override public void run() {
-                assert Ignition.localIgnite().name().equals(LEFT);
-            }
-        });
+            iLEFT.compute(iLEFT.cluster().forRemotes()).run(new IgniteRunnable() {
+                @Override public void run() {
+                    assert Ignition.localIgnite().name().equals(RIGHT);
+                }
+            });
 
-        Ignition.ignite(RIGHT).compute().run(new IgniteRunnable() {
-            @Override public void run() {
-                assert Ignition.localIgnite().name().equals(RIGHT);
-            }
-        });
+            iRIGHT.compute(iRIGHT.cluster().forRemotes()).run(new IgniteRunnable() {
+                @Override public void run() {
+                    assert Ignition.localIgnite().name().equals(LEFT);
+                }
+            });
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
