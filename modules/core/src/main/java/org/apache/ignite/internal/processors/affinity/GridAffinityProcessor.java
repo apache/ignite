@@ -287,10 +287,14 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         AffinityInfo affInfo = affinityCache(cacheName, topVer);
 
+        if (affInfo == null) {
+            log.error("+++AffinityInfo was null");
+        }
+
         Map<ClusterNode, Collection<K>> result = affInfo != null ? affinityMap(affInfo, keys) : Collections.<ClusterNode, Collection<K>>emptyMap();
 
         if (result == null || F.first(result.keySet()) == null) {
-            log.error("+++Affinity mapping was null, result was " + (result == null ? "null" : "empty"));
+            log.error("+++Affinity mapping was null, result.size=" + (result == null ? "null" : result.size()));
         }
 
         return result;
