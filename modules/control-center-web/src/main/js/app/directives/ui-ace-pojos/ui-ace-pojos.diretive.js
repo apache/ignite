@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-java.jade!'
-import controller from './ui-ace-java.controller'
+import template from './ui-ace-pojos.jade!'
+import controller from './ui-ace-pojos.controller'
 
-export default ['igniteUiAceJava', [() => {
+export default ['igniteUiAcePojos', [() => {
 
 	return {
 		restrict: 'E',
 		scope: {
-			cluster: '=',
-			cfg: '=clusterCfg'
+			cluster: '='
 		},
 		template,
 		controller,

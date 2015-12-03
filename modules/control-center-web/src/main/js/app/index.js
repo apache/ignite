@@ -74,6 +74,7 @@ import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive'
 import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive'
 import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive'
 import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive'
+import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive'
 
 //services 
 import IgniteUiAceOnLoad from './services/UiAceOnLoad/service'
@@ -103,6 +104,7 @@ angular
 .directive(...igniteUiAceJava)
 .directive(...igniteUiAcePom)
 .directive(...igniteUiAceDocker)
+.directive(...igniteUiAcePojos)
 // services 
 .service(...IgniteUiAceOnLoad)
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {

@@ -15,44 +15,44 @@
  * limitations under the License.
  */
 
-const SNIPPET = 1;
-const FACTORY = 2;
-
-const SERVER_CFG = 'ServerConfigurationFactory';
-const CLIENT_CFG = 'ClientConfigurationFactory';
-
-const TYPES = [
-    {value: SNIPPET, label: 'snippet'},
-    {value: FACTORY, label: 'factory class'}
-];
-
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     var ctrl = this;
 
     // scope values
-    $scope.type = SNIPPET;
-    
+
     // scope data
-    $scope.types = TYPES;
     
     // scope methods
-    $scope.onLoad = onLoad;
 
     // watchers definition
-    let clusterWatcher = (value) => {
+    let metadatasWatcher = (value) => {
         delete ctrl.data;
 
         if (!value) {
             return;
         }
-
-        let type = $scope.type === FACTORY ? (!$scope.cfg ? SERVER_CFG : CLIENT_CFG) : false;
+     
         // TODO IGNITE-2054: need move $generatorJava to services
-        ctrl.data = $generatorJava.cluster($scope.cluster, 'factory', type, $scope.cfg);
+        var ctrl.metadatas = $generatorJava.pojos($scope.cluster.caches, $scope.useConstructor, $scope.includeKeyFields);
     }
 
+    let classesWatcher = (value) => {
+        delete ctrl.classes;
+
+        if (!value) {
+            return;
+        }
+
+        let classes = ctrl.classes = []
+
+        _.forEach(ctrl.metadatas, (meta) => {
+            classes.push(meta.keyType);
+            classes.push(meta.valueType);
+        });
+    };
+
     // watches
-    $scope.$watch('cfg', clusterWatcher, true);
-    $scope.$watch('type', clusterWatcher);
-    $scope.$watch('cluster', clusterWatcher);
+    $scope.$watch('cluster.caches', metadatasWatcher);
+    $scope.$watch('ctrl.metadatas', classesWatcher);
+    $scope.$watch('ctrl.metadatas', )
 }]
