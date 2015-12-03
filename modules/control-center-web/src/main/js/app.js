@@ -56,7 +56,7 @@ app.set('view engine', 'html');
 
 app.use(logger('dev', {
     skip: function (req, res) {
-        return res.statusCode < 400
+        return res.statusCode < 400;
     }
 }));
 
@@ -140,7 +140,9 @@ config.findIgniteModules()
 // Catch 404 and forward to error handler.
 app.use(function (req, res, next) {
     var err = new Error('Not Found: ' + req.originalUrl);
+
     err.status = 404;
+
     next(err);
 });
 
@@ -150,6 +152,7 @@ app.use(function (req, res, next) {
 if (app.get('env') === 'development') {
     app.use(function (err, req, res) {
         res.status(err.status || 500);
+
         res.render('error', {
             message: err.message,
             error: err
@@ -160,6 +163,7 @@ if (app.get('env') === 'development') {
 // Production error handler: no stacktraces leaked to user.
 app.use(function (err, req, res) {
     res.status(err.status || 500);
+
     res.render('error', {
         message: err.message,
         error: {}
