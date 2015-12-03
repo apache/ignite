@@ -54,9 +54,9 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheQueueProxy;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetItemKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.processors.datastructures.GridTransactionalCacheQueueImpl;
+import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -79,7 +79,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     private final ConcurrentMap<IgniteUuid, GridCacheSetProxy> setsMap;
 
     /** Set keys used for set iteration. */
-    private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<GridCacheSetItemKey>> setDataMap =
+    private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<SetItemKey>> setDataMap =
         new ConcurrentHashMap8<>();
 
     /** Queues map. */
@@ -311,12 +311,13 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      *
      * @param key Key.
      * @param rmv {@code True} if entry was removed.
+     * @param keepPortable Keep portable flag.
      */
     public void onEntryUpdated(KeyCacheObject key, boolean rmv, boolean keepPortable) {
         Object key0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepPortable, false);
 
-        if (key0 instanceof GridCacheSetItemKey)
-            onSetItemUpdated((GridCacheSetItemKey)key0, rmv);
+        if (key0 instanceof SetItemKey)
+            onSetItemUpdated((SetItemKey)key0, rmv);
     }
 
     /**
@@ -327,11 +328,11 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     public void onPartitionEvicted(int part) {
         GridCacheAffinityManager aff = cctx.affinity();
 
-        for (GridConcurrentHashSet<GridCacheSetItemKey> set : setDataMap.values()) {
-            Iterator<GridCacheSetItemKey> iter = set.iterator();
+        for (GridConcurrentHashSet<SetItemKey> set : setDataMap.values()) {
+            Iterator<SetItemKey> iter = set.iterator();
 
             while (iter.hasNext()) {
-                GridCacheSetItemKey key = iter.next();
+                SetItemKey key = iter.next();
 
                 if (aff.partition(key) == part)
                     iter.remove();
@@ -415,7 +416,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param id Set ID.
      * @return Data for given set.
      */
-    @Nullable public GridConcurrentHashSet<GridCacheSetItemKey> setData(IgniteUuid id) {
+    @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
         return setDataMap.get(id);
     }
 
@@ -436,7 +437,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             cctx.preloader().syncFuture().get();
         }
 
-        GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(setId);
+        GridConcurrentHashSet<SetItemKey> set = setDataMap.get(setId);
 
         if (set == null)
             return;
@@ -445,9 +446,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         final int BATCH_SIZE = 100;
 
-        Collection<GridCacheSetItemKey> keys = new ArrayList<>(BATCH_SIZE);
+        Collection<SetItemKey> keys = new ArrayList<>(BATCH_SIZE);
 
-        for (GridCacheSetItemKey key : set) {
+        for (SetItemKey key : set) {
             if (!loc && !aff.primary(cctx.localNode(), key, topVer))
                 continue;
 
@@ -555,14 +556,14 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param key Set item key.
      * @param rmv {@code True} if item was removed.
      */
-    private void onSetItemUpdated(GridCacheSetItemKey key, boolean rmv) {
-        GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(key.setId());
+    private void onSetItemUpdated(SetItemKey key, boolean rmv) {
+        GridConcurrentHashSet<SetItemKey> set = setDataMap.get(key.setId());
 
         if (set == null) {
             if (rmv)
                 return;
 
-            GridConcurrentHashSet<GridCacheSetItemKey> old = setDataMap.putIfAbsent(key.setId(),
+            GridConcurrentHashSet<SetItemKey> old = setDataMap.putIfAbsent(key.setId(),
                 set = new GridConcurrentHashSet<>());
 
             if (old != null)
@@ -592,7 +593,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void retryRemoveAll(final IgniteInternalCache cache, final Collection<GridCacheSetItemKey> keys)
+    private void retryRemoveAll(final IgniteInternalCache cache, final Collection<SetItemKey> keys)
         throws IgniteCheckedException {
         DataStructuresProcessor.retry(log, new Callable<Void>() {
             @Override public Void call() throws Exception {

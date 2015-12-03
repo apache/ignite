@@ -246,7 +246,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 dataStart = start + DFLT_HDR_LEN;
             }
 
-            idMapper = userType ? ctx.userTypeIdMapper(typeId) : null;
+            idMapper = userType ? ctx.userTypeIdMapper(typeId) : BinaryInternalIdMapper.defaultInstance();
             schema = PortableUtils.hasSchema(flags) ? getOrCreateSchema() : null;
         }
         else {

@@ -17,81 +17,33 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Queue item key.
+ *
  */
-class GridCacheQueueItemKey implements Externalizable, QueueItemKey {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class CollocatedQueueItemKey implements QueueItemKey {
     /** */
     private IgniteUuid queueId;
 
     /** */
-    private String queueName;
+    @AffinityKeyMapped
+    private int queueNameHash;
 
     /** */
     private long idx;
-
-    /**
-     * Required by {@link Externalizable}.
-     */
-    public GridCacheQueueItemKey() {
-        // No-op.
-    }
 
     /**
      * @param queueId Queue unique ID.
      * @param queueName Queue name.
      * @param idx Item index.
      */
-    GridCacheQueueItemKey(IgniteUuid queueId, String queueName, long idx) {
+    public CollocatedQueueItemKey(IgniteUuid queueId, String queueName, long idx) {
         this.queueId = queueId;
-        this.queueName = queueName;
+        this.queueNameHash = queueName.hashCode();
         this.idx = idx;
-    }
-
-    /**
-     * @return Item index.
-     */
-    public Long index() {
-        return idx;
-    }
-
-    /**
-     * @return Queue UUID.
-     */
-    public IgniteUuid queueId() {
-        return queueId;
-    }
-
-    /**
-     * @return Queue name.
-     */
-    public String queueName() {
-        return queueName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, queueId);
-        U.writeString(out, queueName);
-        out.writeLong(idx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        queueId = U.readGridUuid(in);
-        queueName = U.readString(in);
-        idx = in.readLong();
     }
 
     /** {@inheritDoc} */
@@ -102,7 +54,7 @@ class GridCacheQueueItemKey implements Externalizable, QueueItemKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridCacheQueueItemKey itemKey = (GridCacheQueueItemKey)o;
+        CollocatedQueueItemKey itemKey = (CollocatedQueueItemKey)o;
 
         return idx == itemKey.idx && queueId.equals(itemKey.queueId);
     }
@@ -118,6 +70,6 @@ class GridCacheQueueItemKey implements Externalizable, QueueItemKey {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheQueueItemKey.class, this);
+        return S.toString(CollocatedQueueItemKey.class, this);
     }
 }
