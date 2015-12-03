@@ -32,6 +32,10 @@ var js_targets = [
 ];
 
 var js_sources = [
+    './build/ignite_modules/**/main.js'
+];
+
+var html_sources = [
     './build/ignite_modules/**/main.js',
     './build/ignite_modules/**/app/modules/*.js',
     './build/ignite_modules/**/app/modules/*.js',
@@ -40,7 +44,7 @@ var js_sources = [
 
 gulp.task('inject:plugins:html', function() {
     gulp.src(html_targets)
-        .pipe(inject(gulp.src(js_sources, common_options), {
+        .pipe(inject(gulp.src(html_sources, common_options), {
             starttag: '<!-- ignite:plugins-->',
             endtag: '<!-- endignite-->',
             transform: function (filePath, file, i, length) {
