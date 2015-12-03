@@ -17,8 +17,8 @@
 
 // Controller for Clusters screen.
 consoleModule.controller('clustersController', [
-    '$scope', '$controller', '$http', '$timeout', '$common', '$focus', '$confirm', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
-    function ($scope, $controller, $http, $timeout, $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
+    '$scope', '$state', '$controller', '$http', '$timeout', '$common', '$focus', '$confirm', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
+    function ($scope, $state, $controller, $http, $timeout, $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
         $unsavedChangesGuard.install($scope);
 
         // Initialize the super class and extend it.
@@ -341,6 +341,9 @@ consoleModule.controller('clustersController', [
                     $scope.backupItem = angular.copy(item);
                 else
                     $scope.backupItem = undefined;
+
+                if ($common.getQueryVariable('new'))
+                    $state.go('base.configuration.clusters');
             }
 
             $common.confirmUnsavedChanges($scope.ui.isDirty(), selectItem);
@@ -349,27 +352,28 @@ consoleModule.controller('clustersController', [
                 'Selected cluster: ' + $scope.backupItem.name : 'New cluster';
         };
 
-        function prepareNewItem(cacheId) {
+        function prepareNewItem(id) {
             var newItem = {
                 discovery: {kind: 'Multicast', Vm: {addresses: ['127.0.0.1:47500..47510']}, Multicast: {}},
                 deploymentMode: 'SHARED'
             };
 
-            newItem.caches = cacheId && _.find($scope.caches, {value: cacheId}) ? [cacheId] : [];
+            newItem.caches = id && _.find($scope.caches, {value: id}) ? [id] : [];
+            newItem.igfss = id && _.find($scope.igfss, {value: id}) ? [id] : [];
             newItem.space = $scope.spaces[0]._id;
 
             return newItem;
         }
 
         // Add new cluster.
-        $scope.createItem = function(cacheId) {
+        $scope.createItem = function(id) {
             $table.tableReset();
 
             $timeout(function () {
                 $common.ensureActivePanel($scope.panels, "general", 'clusterName');
             });
 
-            $scope.selectItem(undefined, prepareNewItem(cacheId));
+            $scope.selectItem(undefined, prepareNewItem(id));
         };
 
         $scope.indexOfCache = function (cacheId) {

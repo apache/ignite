@@ -17,8 +17,8 @@
 
 // Controller for IGFS screen.
 consoleModule.controller('igfsController', [
-    '$scope', '$controller', '$filter', '$http', '$timeout', '$common', '$focus', '$confirm', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
-    function ($scope, $controller, $filter, $http, $timeout, $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
+    '$scope', '$state', '$controller', '$filter', '$http', '$timeout', '$common', '$focus', '$confirm', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
+    function ($scope, $state, $controller, $filter, $http, $timeout, $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
             $unsavedChangesGuard.install($scope);
 
             // Initialize the super class and extend it.
@@ -228,6 +228,9 @@ consoleModule.controller('igfsController', [
                         $scope.backupItem = angular.copy(item);
                     else
                         $scope.backupItem = undefined;
+
+                    if ($common.getQueryVariable('new'))
+                        $state.go('base.configuration.igfs');
                 }
 
                 $common.confirmUnsavedChanges($scope.ui.isDirty(), selectItem);

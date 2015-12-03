@@ -17,8 +17,8 @@
 
 // Controller for Metadata screen.
 consoleModule.controller('metadataController', [
-    '$scope', '$controller', '$filter', '$http', '$modal', '$common', '$timeout', '$focus', '$confirm', '$confirmBatch', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
-    function ($scope, $controller, $filter, $http, $modal, $common, $timeout, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
+    '$scope', '$state', '$controller', '$filter', '$http', '$modal', '$common', '$timeout', '$focus', '$confirm', '$confirmBatch', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
+    function ($scope, $state, $controller, $filter, $http, $modal, $common, $timeout, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
             $unsavedChangesGuard.install($scope);
 
             // Initialize the super class and extend it.
@@ -782,6 +782,9 @@ consoleModule.controller('metadataController', [
                         $scope.backupItem = angular.copy(item);
                     else
                         $scope.backupItem = undefined;
+
+                    if ($common.getQueryVariable('new'))
+                        $state.go('base.configuration.metadata');
                 }
 
                 $common.confirmUnsavedChanges($scope.ui.isDirty(), selectItem);
