@@ -123,7 +123,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
                         Set<Long> values = new HashSet<>(map.values());
 
                         if (values.size() != 1)
-                            throw new IgniteConsistencyException("Found different values for keys [map="+map+"]");
+                            throw new IgniteConsistencyException("Found different values for keys [map=" + map + "]");
 
                         break;
                     case 1: // Invoke scenario.
@@ -137,7 +137,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
                         asyncCache.future().get(timeout);
 
                         for (String key : keys) {
-                            asyncCache.invoke(key, new IncrementCacheEntryProcessor(), cacheName());
+                            asyncCache.invoke(key, new IncrementWriteInvokeCacheEntryProcessor(), cacheName());
                             Object o = asyncCache.future().get(timeout);
 
                             if (o != null)
@@ -165,7 +165,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
     /**
      */
-    private static class IncrementCacheEntryProcessor implements CacheEntryProcessor<String, Long, Object> {
+    private static class IncrementWriteInvokeCacheEntryProcessor implements CacheEntryProcessor<String, Long, Object> {
         /** */
         private static final long serialVersionUID = 0;
 

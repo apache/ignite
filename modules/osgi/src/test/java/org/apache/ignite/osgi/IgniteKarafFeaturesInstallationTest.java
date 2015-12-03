@@ -87,7 +87,7 @@ public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest
                 f.getName(), installed));
 
             assertTrue(installed);
-            assertEquals(PROJECT_VERSION.replaceAll("-", "."), f.getVersion());
+            assertEquals(PROJECT_VERSION.replaceAll("-", "."), f.getVersion().replaceAll("-", "."));
         }
     }
 
