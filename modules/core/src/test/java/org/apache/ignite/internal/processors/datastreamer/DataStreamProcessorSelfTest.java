@@ -225,20 +225,25 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> f1 = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
+                    try {
+                        Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
 
-                    for (int i = 0; i < cnt; i++) {
-                        int idx = idxGen.getAndIncrement();
+                        for (int i = 0; i < cnt; i++) {
+                            int idx = idxGen.getAndIncrement();
 
-                        futs.add(ldr.addData(idx, idx));
+                            futs.add(ldr.addData(idx, idx));
+                        }
+
+                        l1.countDown();
+
+                        for (IgniteFuture<?> fut : futs)
+                            fut.get();
+
+                        return null;
+                    } catch (Exception e) {
+                        log.error(e.getMessage(), e);
+                        throw e;
                     }
-
-                    l1.countDown();
-
-                    for (IgniteFuture<?> fut : futs)
-                        fut.get();
-
-                    return null;
                 }
             }, threads);
 
@@ -263,20 +268,25 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> f2 = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
+                    try {
+                        Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
 
-                    for (int i = 0; i < cnt; i++) {
-                        final int key = idxGen.decrementAndGet();
+                        for (int i = 0; i < cnt; i++) {
+                            final int key = idxGen.decrementAndGet();
 
-                        futs.add(rmvLdr.removeData(key));
+                            futs.add(rmvLdr.removeData(key));
+                        }
+
+                        l2.countDown();
+
+                        for (IgniteFuture<?> fut : futs)
+                            fut.get();
+
+                        return null;
+                    } catch (Exception e) {
+                        log.error(e.getMessage(), e);
+                        throw e;
                     }
-
-                    l2.countDown();
-
-                    for (IgniteFuture<?> fut : futs)
-                        fut.get();
-
-                    return null;
                 }
             }, threads);
 
