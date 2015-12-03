@@ -24,7 +24,7 @@ var options = {
 	middleware: function (connect, opt) {
 		return [modrewrite([
 			'^/api/v1/(.*)$ http://localhost:3000/$1 [P]' 
-		])]
+		])];
     },
     fallback: './build/index.html'
 };

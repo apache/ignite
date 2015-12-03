@@ -41,7 +41,7 @@ gulp.task('bundle', function(cb) {
 	return sequence('bundle:ignite', 'bundle:legacy', cb);
 });
 
-// Package all external dependencies and ignite-console
+// Package all external dependencies and ignite-console.
 gulp.task('bundle:ignite', function() {
 	if (util.env.debug) {
 		delete options.minify;
@@ -58,13 +58,13 @@ gulp.task('bundle:ignite', function() {
 gulp.task('bundle:legacy', function() {
 	return gulp.src(legacy_paths)
 		.pipe(concat('all.js'))
-		.pipe(gulp.dest('./build'))
+		.pipe(gulp.dest('./build'));
 });
 
 gulp.task('bundle:ignite:watch', function() {
-	return gulp.watch(paths, ['bundle:ignite'])
+	return gulp.watch(paths, ['bundle:ignite']);
 });
 
 gulp.task('bundle:legacy:watch', function() {
-    return gulp.watch(legacy_paths, ['bundle:legacy'])
+    return gulp.watch(legacy_paths, ['bundle:legacy']);
 });
