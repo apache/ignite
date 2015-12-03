@@ -23,15 +23,9 @@ import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
 import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
 import org.apache.ignite.internal.portable.streams.PortableInputStream;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
-import org.apache.ignite.internal.processors.odbc.response.GridOdbcResponse;
-import org.apache.ignite.internal.processors.odbc.response.QueryCloseResult;
-import org.apache.ignite.internal.processors.odbc.request.QueryCloseRequest;
-import org.apache.ignite.internal.processors.odbc.request.QueryExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.request.QueryFetchRequest;
-import org.apache.ignite.internal.processors.odbc.response.QueryExecuteResult;
-import org.apache.ignite.internal.processors.odbc.response.QueryFetchResult;
-import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryFieldsMetaResult;
+import org.apache.ignite.internal.processors.odbc.GridOdbcColumnMeta;
+import org.apache.ignite.internal.processors.odbc.request.*;
+import org.apache.ignite.internal.processors.odbc.response.*;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
@@ -39,6 +33,8 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.*;
 
 /**
  * ODBC protocol parser.
@@ -176,6 +172,8 @@ public class GridOdbcParser implements GridNioParser {
                 String sql = reader.readString();
                 int argsNum = reader.readInt();
 
+                //TODO: Implement parameters reading.
+
                 System.out.println("Message EXECUTE_SQL_QUERY:");
                 System.out.println("cache: " + cache);
                 System.out.println("query: " + sql);
@@ -204,6 +202,20 @@ public class GridOdbcParser implements GridNioParser {
                 System.out.println("queryId: " + queryId);
 
                 res = new QueryCloseRequest(queryId);
+                break;
+            }
+
+            case GridOdbcRequest.GET_COLUMNS_META: {
+                String cache = reader.readString();
+                String table = reader.readString();
+                String column = reader.readString();
+
+                System.out.println("Message GET_COLUMNS_META:");
+                System.out.println("cache: " + cache);
+                System.out.println("table: " + table);
+                System.out.println("column: " + column);
+
+                res = new QueryGetColumnsMetaRequest(cache, table, column);
                 break;
             }
 
@@ -241,20 +253,14 @@ public class GridOdbcParser implements GridNioParser {
 
             writer.writeLong(res.getQueryId());
 
-            Collection<?> metadata = res.getFieldsMetadata();
+            Collection<GridOdbcColumnMeta> metas = res.getColumnsMetadata();
 
-            assert  metadata != null;
-
-            Collection<CacheQueryFieldsMetaResult> metas = (Collection<CacheQueryFieldsMetaResult>)metadata;
+            assert metas != null;
 
             writer.writeInt(metas.size());
 
-            for (CacheQueryFieldsMetaResult meta : metas) {
-                writer.writeString(meta.getSchemaName());
-                writer.writeString(meta.getTypeName());
-                writer.writeString(meta.getFieldName());
-                writer.writeString(meta.getFieldTypeName());
-            }
+            for (GridOdbcColumnMeta meta : metas)
+                meta.writeBinary(writer, marsh.context());
 
         } else if (res0 instanceof QueryFetchResult) {
             QueryFetchResult res = (QueryFetchResult) res0;
@@ -289,6 +295,18 @@ public class GridOdbcParser implements GridNioParser {
             System.out.println("Resulting query ID: " + res.getQueryId());
 
             writer.writeLong(res.getQueryId());
+
+        } else if (res0 instanceof QueryGetColumnsMetaResult) {
+            QueryGetColumnsMetaResult res = (QueryGetColumnsMetaResult) res0;
+
+            Collection<GridOdbcColumnMeta> columnsMeta = res.getMeta();
+
+            assert columnsMeta != null;
+
+            writer.writeInt(columnsMeta.size());
+
+            for (GridOdbcColumnMeta columnMeta : columnsMeta)
+                columnMeta.writeBinary(writer, marsh.context());
 
         } else {
             throw new IOException("Failed to serialize response packet (unknown response type) [ses=" + ses + "]");

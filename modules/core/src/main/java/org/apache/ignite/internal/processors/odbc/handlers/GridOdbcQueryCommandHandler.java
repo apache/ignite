@@ -21,11 +21,9 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.odbc.GridOdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.request.*;
-import org.apache.ignite.internal.processors.odbc.response.QueryCloseResult;
-import org.apache.ignite.internal.processors.odbc.response.GridOdbcResponse;
-import org.apache.ignite.internal.processors.odbc.response.QueryExecuteResult;
-import org.apache.ignite.internal.processors.odbc.response.QueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.response.*;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryFieldsMetaResult;
@@ -39,6 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest.EXECUTE_SQL_QUERY;
 import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest.FETCH_SQL_QUERY;
 import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest.CLOSE_SQL_QUERY;
+import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest.GET_COLUMNS_META;
 
 /**
  * SQL query handler.
@@ -46,7 +45,7 @@ import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest
 public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
     /** Supported commands. */
     private static final Collection<Integer> SUPPORTED_COMMANDS =
-            U.sealList(EXECUTE_SQL_QUERY, FETCH_SQL_QUERY, CLOSE_SQL_QUERY);
+            U.sealList(EXECUTE_SQL_QUERY, FETCH_SQL_QUERY, CLOSE_SQL_QUERY, GET_COLUMNS_META);
 
     /** Query ID sequence. */
     private static final AtomicLong qryIdGen = new AtomicLong();
@@ -74,15 +73,19 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
 
         switch (req.command()) {
             case EXECUTE_SQL_QUERY: {
-                return ExecuteQuery((QueryExecuteRequest) req, qryCurs);
+                return ExecuteQuery((QueryExecuteRequest)req, qryCurs);
             }
 
             case FETCH_SQL_QUERY: {
-                return FetchQuery((QueryFetchRequest) req, qryCurs);
+                return FetchQuery((QueryFetchRequest)req, qryCurs);
             }
 
             case CLOSE_SQL_QUERY: {
-                return CloseQuery((QueryCloseRequest) req, qryCurs);
+                return CloseQuery((QueryCloseRequest)req, qryCurs);
+            }
+
+            case GET_COLUMNS_META: {
+                return  GetColumnsMeta((QueryGetColumnsMetaRequest) req);
             }
         }
 
@@ -117,12 +120,12 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
      * @param meta Internal query field metadata.
      * @return Rest query field metadata.
      */
-    private static Collection<CacheQueryFieldsMetaResult> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
-        List<CacheQueryFieldsMetaResult> res = new ArrayList<>();
+    private static Collection<GridOdbcColumnMeta> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
+        List<GridOdbcColumnMeta> res = new ArrayList<>();
 
         if (meta != null) {
             for (GridQueryFieldMetadata info : meta)
-                res.add(new CacheQueryFieldsMetaResult(info));
+                res.add(new GridOdbcColumnMeta(info));
         }
 
         return res;
@@ -219,6 +222,39 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
         catch (Exception e) {
             qryCurs.remove(req.queryId());
 
+            return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
+        }
+    }
+
+    /**
+     * @param req Get columns metadata request.
+     * @return Response.
+     */
+    private GridOdbcResponse GetColumnsMeta(QueryGetColumnsMetaRequest req) {
+        try {
+            List<GridOdbcColumnMeta> meta = new ArrayList<>();
+
+            Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(req.cacheName());
+
+            for (GridQueryTypeDescriptor table : tablesMeta) {
+                if (!req.tableName().isEmpty() && !table.name().equals(req.tableName()))
+                    continue;
+
+                for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
+                    if (!req.columnName().isEmpty() && !field.getKey().equals(req.columnName()))
+                        continue;
+
+                    GridOdbcColumnMeta columnMeta = new GridOdbcColumnMeta(req.cacheName(),
+                            table.name(), field.getKey(), field.getValue());
+
+                    meta.add(columnMeta);
+                }
+            }
+            QueryGetColumnsMetaResult res = new QueryGetColumnsMetaResult(meta);
+
+            return new GridOdbcResponse(res);
+        }
+        catch (Exception e) {
             return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }

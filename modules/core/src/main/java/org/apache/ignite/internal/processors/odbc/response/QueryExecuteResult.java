@@ -1,5 +1,7 @@
 package org.apache.ignite.internal.processors.odbc.response;
 
+import org.apache.ignite.internal.processors.odbc.GridOdbcColumnMeta;
+
 import java.util.Collection;
 
 /**
@@ -10,14 +12,15 @@ public class QueryExecuteResult {
     private long queryId;
 
     /** Fields metadata. */
-    private Collection<?> fieldsMeta;
+    private Collection<GridOdbcColumnMeta> columnsMeta;
 
     /**
      * @param queryId Query ID.
+     * @param columnsMeta Columns metadata.
      */
-    public QueryExecuteResult(long queryId, Collection<?> fieldsMeta){
+    public QueryExecuteResult(long queryId,Collection<GridOdbcColumnMeta> columnsMeta){
         this.queryId = queryId;
-        this.fieldsMeta = fieldsMeta;
+        this.columnsMeta = columnsMeta;
     }
 
     /**
@@ -28,9 +31,9 @@ public class QueryExecuteResult {
     }
 
     /**
-     * @return Fields metadata.
+     * @return Columns metadata.
      */
-    public Collection<?> getFieldsMetadata() {
-        return fieldsMeta;
+    public Collection<GridOdbcColumnMeta> getColumnsMetadata() {
+        return columnsMeta;
     }
 }

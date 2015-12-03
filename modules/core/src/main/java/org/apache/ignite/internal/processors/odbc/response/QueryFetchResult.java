@@ -1,7 +1,6 @@
 package org.apache.ignite.internal.processors.odbc.response;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Query fetch result.
@@ -12,9 +11,6 @@ public class QueryFetchResult {
 
     /** Query result rows. */
     private Collection<?> items = null;
-
-    /** Fields metadata. */
-    private Collection<?> fieldsMeta;
 
     /** Flag indicating the query has no unfetched results. */
     private boolean last = false;
