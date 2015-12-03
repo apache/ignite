@@ -287,7 +287,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         AffinityInfo affInfo = affinityCache(cacheName, topVer);
 
-        return affInfo != null ? affinityMap(affInfo, keys) : Collections.<ClusterNode, Collection<K>>emptyMap();
+        Map<ClusterNode, Collection<K>> result = affInfo != null ? affinityMap(affInfo, keys) : Collections.<ClusterNode, Collection<K>>emptyMap();
+
+        if (result == null || F.first(result.keySet()) == null) {
+            log.error("+++Affinity mapping was null, result was " + (result == null ? "null" : "empty"));
+        }
+
+        return result;
     }
 
     /**
@@ -410,12 +416,12 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                 affMap.remove(maskNull(cacheName), fut0);
 
                 fut0.onDone(new IgniteCheckedException("Failed to get affinity mapping from node: " + n, e));
-                log.error(e.getMessage(), e);
+                log.error("+++" + e.getMessage(), e);
                 break;
             }
             catch (RuntimeException | Error e) {
                 fut0.onDone(new IgniteCheckedException("Failed to get affinity mapping from node: " + n, e));
-                log.error(e.getMessage(), e);
+                log.error("+++" + e.getMessage(), e);
                 break;
             }
         }
@@ -472,6 +478,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             for (K k : keys) {
                 ClusterNode n = primary(aff, k);
+                if (n == null) {
+                    log.error("+++ClusterNode was null");
+                }
 
                 Collection<K> mapped = map.get(n);
 
