@@ -23,7 +23,8 @@ export default ['igniteUiAceXml', [() => {
 	return {
 		restrict: 'E',
 		scope: {
-			cluster: '='
+			cluster: '=',
+			cfg: '=clusterCfg'
 		},
 		template,
 		controller,

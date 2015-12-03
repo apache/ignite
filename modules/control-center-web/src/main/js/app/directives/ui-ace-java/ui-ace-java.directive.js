@@ -23,8 +23,8 @@ export default ['igniteUiAceJava', [() => {
 	return {
 		restrict: 'E',
 		scope: {
-			cluster: '='
-		},
+			cluster: '=',
+			cfg: '=clusterCfg'
 		template,
 		controller,
 		controllerAs: 'ctrl'

@@ -18,6 +18,9 @@
 const SNIPPET = 1;
 const FACTORY = 2;
 
+const SERVER_CFG = 'ServerConfigurationFactory';
+const CLIENT_CFG = 'ClientConfigurationFactory';
+
 const TYPES = [
     {value: SNIPPET, label: 'snippet'},
     {value: FACTORY, label: 'factory class'}
@@ -39,7 +42,8 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     let clusterWatcher = (value) => {
         if (value) {
             // TODO IGNITE-2054: need move $generatorJava to services
-            ctrl.data = $generatorJava.cluster($scope.cluster, $scope.type === FACTORY ? 'ServerConfigurationFactory' : false, null, false)
+            ctrl.data = $generatorJava.cluster($scope.cluster, $scope.type === FACTORY ? SERVER_CFG : false, null);
+                        $generatorJava.cluster($scope.cluster, $scope.type === FACTORY ? CLIENT_CFG : false, $scope.cfg);
         }
     }
 

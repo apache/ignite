@@ -14,19 +14,22 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+mixin hard-link(ref, txt)
+    a(style='color:#ec1c24' href=ref target='_blank') #{txt}
+
 div
     .details-row
         p
-            //- +hard-link('https://docs.docker.com/reference/builder', 'Docker')
-            //- | &nbsp;file is a text file with instructions to create Docker image.<br/>
-            //- | To build image you have to store following Docker file with your Ignite XML configuration to the same directory.<br>
-            //- | Also you could use predefined&nbsp;
-            //- +hard-link('https://ignite.apache.org/download.html#docker', 'Apache Ignite docker image')
-            //- | . For more information about using Ignite with Docker please read&nbsp;
-            //- +hard-link('http://apacheignite.readme.io/docs/docker-deployment', 'documentation')
-            //- |.
+            +hard-link('https://docs.docker.com/reference/builder', 'Docker')
+            | &nbsp;file is a text file with instructions to create Docker image.<br/>
+            | To build image you have to store following Docker file with your Ignite XML configuration to the same directory.<br>
+            | Also you could use predefined&nbsp;
+            +hard-link('https://ignite.apache.org/download.html#docker', 'Apache Ignite docker image')
+            | . For more information about using Ignite with Docker please read&nbsp;
+            +hard-link('http://apacheignite.readme.io/docs/docker-deployment', 'documentation')
+            |.
         .col-xs-3.col-sm-2
             label(for='os') Operation System:
         .col-xs-5.col-sm-4
-            input#os.form-control(type='text' ng-model='configServer.os' placeholder='debian:8' data-min-length='0' data-html='1' data-auto-select='true' bs-typeahead retain-selection bs-options='os for os in oss')
-    div(ui-ace='{onLoad: aceInit, mode: "dockerfile"}' ng-model='dockerServer')
+            input#os.form-control(type='text' ng-model='type' placeholder='debian:8' data-min-length='0' data-html='1' data-auto-select='true' bs-typeahead retain-selection bs-options='os for os in types')
+    div(ui-ace='{onLoad: onLoad, mode: "dockerfile"}' ng-model='ctrl.data')
