@@ -16,10 +16,8 @@
  */
 package org.apache.ignite.internal.processors.odbc.handlers;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
-import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
+import org.apache.ignite.internal.processors.odbc.response.GridOdbcResponse;
 
 import java.util.Collection;
 

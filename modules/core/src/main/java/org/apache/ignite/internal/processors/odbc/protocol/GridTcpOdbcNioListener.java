@@ -20,14 +20,12 @@ package org.apache.ignite.internal.processors.odbc.protocol;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.odbc.GridOdbcProtocolHandler;
 import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
-import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
+import org.apache.ignite.internal.processors.odbc.response.GridOdbcResponse;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 

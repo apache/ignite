@@ -17,28 +17,22 @@
 package org.apache.ignite.internal.processors.odbc.handlers;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
-import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
-import org.apache.ignite.internal.processors.odbc.request.QueryCloseRequest;
-import org.apache.ignite.internal.processors.odbc.request.QueryExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.request.QueryFetchRequest;
+import org.apache.ignite.internal.processors.odbc.request.*;
+import org.apache.ignite.internal.processors.odbc.response.QueryCloseResult;
+import org.apache.ignite.internal.processors.odbc.response.GridOdbcResponse;
+import org.apache.ignite.internal.processors.odbc.response.QueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.response.QueryFetchResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryFieldsMetaResult;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -80,7 +74,7 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
 
         switch (req.command()) {
             case EXECUTE_SQL_QUERY: {
-                return ExecuteQuery(ctx, (QueryExecuteRequest) req, qryCurs);
+                return ExecuteQuery((QueryExecuteRequest) req, qryCurs);
             }
 
             case FETCH_SQL_QUERY: {
@@ -102,10 +96,10 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
      * @param qryId Query id.
      * @return Query result with items.
      */
-    private static GridOdbcQueryResult createQueryResult(
+    private static QueryFetchResult createQueryResult(
             ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs,
             Iterator cur, QueryFetchRequest req, Long qryId) {
-        GridOdbcQueryResult res = new GridOdbcQueryResult(qryId);
+        QueryFetchResult res = new QueryFetchResult(qryId);
 
         List<Object> items = new ArrayList<>();
 
@@ -135,12 +129,11 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
     }
 
     /**
-     * @param ctx Kernal context.
      * @param req Execute query request.
      * @param qryCurs Queries cursors.
      * @return Response.
      */
-    private GridOdbcResponse ExecuteQuery(GridKernalContext ctx, QueryExecuteRequest req,
+    private GridOdbcResponse ExecuteQuery(QueryExecuteRequest req,
                                           ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
         long qryId = qryIdGen.getAndIncrement();
 
@@ -161,13 +154,11 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
 
             qryCurs.put(qryId, new IgniteBiTuple<>(qryCur, cur));
 
-            GridOdbcQueryResult res = new GridOdbcQueryResult(qryId);
-
             List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
             System.out.println("Field meta: " + fieldsMeta);
 
-            res.setFieldsMetadata(convertMetadata(fieldsMeta));
+            QueryExecuteResult res = new QueryExecuteResult(qryId, convertMetadata(fieldsMeta));
 
             return new GridOdbcResponse(res);
         }
@@ -196,7 +187,7 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
 
             qryCurs.remove(req.queryId());
 
-            GridOdbcQueryResult res = new GridOdbcQueryResult(req.queryId());
+            QueryCloseResult res = new QueryCloseResult(req.queryId());
 
             return new GridOdbcResponse(res);
         }
@@ -221,7 +212,7 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
                 return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
                         "Failed to find query with ID: " + req.queryId());
 
-            GridOdbcQueryResult res = createQueryResult(qryCurs, cur, req, req.queryId());
+            QueryFetchResult res = createQueryResult(qryCurs, cur, req, req.queryId());
 
             return new GridOdbcResponse(res);
         }

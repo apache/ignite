@@ -17,26 +17,23 @@
 package org.apache.ignite.internal.processors.odbc.protocol;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
 import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
 import org.apache.ignite.internal.portable.streams.PortableInputStream;
-import org.apache.ignite.internal.portable.streams.PortableOffheapInputStream;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
-import org.apache.ignite.internal.processors.odbc.GridOdbcResponse;
-import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcQueryResult;
+import org.apache.ignite.internal.processors.odbc.response.GridOdbcResponse;
+import org.apache.ignite.internal.processors.odbc.response.QueryCloseResult;
 import org.apache.ignite.internal.processors.odbc.request.QueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.request.QueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.request.QueryFetchRequest;
-import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.memory.*;
+import org.apache.ignite.internal.processors.odbc.response.QueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.response.QueryFetchResult;
 import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryFieldsMetaResult;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -237,48 +234,62 @@ public class GridOdbcParser implements GridNioParser {
 
         Object res0 = rsp.getResponse();
 
-        if (res0 instanceof GridOdbcQueryResult) {
-            GridOdbcQueryResult res = (GridOdbcQueryResult) res0;
+        if (res0 instanceof QueryExecuteResult) {
+            QueryExecuteResult res = (QueryExecuteResult) res0;
 
             System.out.println("Resulting query ID: " + res.getQueryId());
 
             writer.writeLong(res.getQueryId());
 
             Collection<?> metadata = res.getFieldsMetadata();
-            if (metadata != null) {
-                Collection<CacheQueryFieldsMetaResult> metas = (Collection<CacheQueryFieldsMetaResult>)metadata;
 
-                writer.writeInt(metas.size());
+            assert  metadata != null;
 
-                for (CacheQueryFieldsMetaResult meta : metas) {
-                    writer.writeString(meta.getSchemaName());
-                    writer.writeString(meta.getTypeName());
-                    writer.writeString(meta.getFieldName());
-                    writer.writeString(meta.getFieldTypeName());
-                }
+            Collection<CacheQueryFieldsMetaResult> metas = (Collection<CacheQueryFieldsMetaResult>)metadata;
+
+            writer.writeInt(metas.size());
+
+            for (CacheQueryFieldsMetaResult meta : metas) {
+                writer.writeString(meta.getSchemaName());
+                writer.writeString(meta.getTypeName());
+                writer.writeString(meta.getFieldName());
+                writer.writeString(meta.getFieldTypeName());
             }
+
+        } else if (res0 instanceof QueryFetchResult) {
+            QueryFetchResult res = (QueryFetchResult) res0;
+
+            System.out.println("Resulting query ID: " + res.getQueryId());
+
+            writer.writeLong(res.getQueryId());
 
             Collection<?> items0 = res.getItems();
 
-            if (items0 != null) {
-                Collection<Collection<Object>> items = (Collection<Collection<Object>>)items0;
+            assert items0 != null;
 
-                writer.writeBoolean(res.getLast());
+            Collection<Collection<Object>> items = (Collection<Collection<Object>>)items0;
 
-                writer.writeInt(items.size());
+            writer.writeBoolean(res.getLast());
 
-                for (Collection<Object> row : items) {
-                    if (row != null) {
-                        writer.writeInt(row.size());
+            writer.writeInt(items.size());
 
-                        for (Object obj : row) {
-                            if (obj != null) {
-                                writer.writeObjectDetached(obj);
-                            }
-                        }
+            for (Collection<Object> row : items) {
+                if (row != null) {
+                    writer.writeInt(row.size());
+
+                    for (Object obj : row) {
+                        if (obj != null)
+                            writer.writeObjectDetached(obj);
                     }
                 }
             }
+        } else if (res0 instanceof QueryCloseResult) {
+            QueryCloseResult res = (QueryCloseResult) res0;
+
+            System.out.println("Resulting query ID: " + res.getQueryId());
+
+            writer.writeLong(res.getQueryId());
+
         } else {
             throw new IOException("Failed to serialize response packet (unknown response type) [ses=" + ses + "]");
         }

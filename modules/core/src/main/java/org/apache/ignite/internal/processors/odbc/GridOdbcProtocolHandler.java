@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
+import org.apache.ignite.internal.processors.odbc.response.GridOdbcResponse;
 
 /**
  * ODBC command protocol handler.

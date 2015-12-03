@@ -1,12 +1,12 @@
-package org.apache.ignite.internal.processors.odbc.handlers;
+package org.apache.ignite.internal.processors.odbc.response;
 
 import java.util.Collection;
 import java.util.List;
 
 /**
- * Query result.
+ * Query fetch result.
  */
-public class GridOdbcQueryResult {
+public class QueryFetchResult {
     /** Query ID. */
     private long queryId;
 
@@ -22,7 +22,7 @@ public class GridOdbcQueryResult {
     /**
      * @param queryId Query ID.
      */
-    public GridOdbcQueryResult(long queryId){
+    public QueryFetchResult(long queryId){
         this.queryId = queryId;
     }
 
@@ -36,22 +36,8 @@ public class GridOdbcQueryResult {
     /**
      * @param items Query result rows.
      */
-    public void setItems(List<Object> items) {
+    public void setItems(Collection<?> items) {
         this.items = items;
-    }
-
-    /**
-     * @param fieldsMeta Fields metadata.
-     */
-    public void setFieldsMetadata(Collection<?> fieldsMeta) {
-        this.fieldsMeta = fieldsMeta;
-    }
-
-    /**
-     * @return Fields metadata.
-     */
-    public Collection<?> getFieldsMetadata() {
-        return fieldsMeta;
     }
 
     /**
@@ -62,16 +48,16 @@ public class GridOdbcQueryResult {
     }
 
     /**
-     * @return Flag indicating the query has no unfetched results.
-     */
-    public boolean getLast() {
-        return last;
-    }
-
-    /**
      * @param last Flag indicating the query has no unfetched results.
      */
     public void setLast(boolean last) {
         this.last = last;
+    }
+
+    /**
+     * @return Flag indicating the query has no unfetched results.
+     */
+    public boolean getLast() {
+        return last;
     }
 }

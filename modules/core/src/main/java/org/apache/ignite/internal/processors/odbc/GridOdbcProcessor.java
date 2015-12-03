@@ -24,23 +24,16 @@ import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcCommandHandle
 import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcQueryCommandHandler;
 import org.apache.ignite.internal.processors.odbc.protocol.GridTcpOdbcServer;
 import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
+import org.apache.ignite.internal.processors.odbc.response.GridOdbcResponse;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.jsr166.LongAdder8;
 
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.RejectedExecutionException;
 
 /**
  * ODBC processor.

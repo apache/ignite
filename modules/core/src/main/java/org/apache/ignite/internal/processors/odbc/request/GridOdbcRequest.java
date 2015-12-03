@@ -29,6 +29,9 @@ public class GridOdbcRequest {
     /** Close query. */
     public static final int CLOSE_SQL_QUERY = 3;
 
+    /** Get columns meta query. */
+    public static final int GET_COLUMNS_META = 4;
+
     /** Command. */
     private int cmd;
 
