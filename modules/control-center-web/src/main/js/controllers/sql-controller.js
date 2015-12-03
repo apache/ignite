@@ -135,13 +135,8 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
         var idx = _.findIndex($scope.notebook.paragraphs, {id: paragraphId});
 
         if (idx >= 0) {
-            if (!_.contains($scope.notebook.activePanels, idx)) {
-                var activePanels = angular.copy($scope.notebook.activePanels);
-
-                activePanels.push(idx);
-
-                $scope.notebook.activePanels = activePanels;
-            }
+            if (!_.contains($scope.notebook.expandedParagraphs, idx))
+                $scope.notebook.expandedParagraphs.push(idx);
 
             setTimeout(function () {
                 $scope.notebook.paragraphs[idx].ace.focus();
@@ -246,8 +241,8 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
 
                 $scope.notebook_name = notebook.name;
 
-                if (!$scope.notebook.activePanels)
-                    $scope.notebook.activePanels = [];
+                if (!$scope.notebook.expandedParagraphs)
+                    $scope.notebook.expandedParagraphs = [];
 
                 if (!$scope.notebook.paragraphs)
                     $scope.notebook.paragraphs = [];
@@ -376,11 +371,7 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
 
         $scope.notebook.paragraphs.push(paragraph);
 
-        var _activePanels = angular.copy($scope.notebook.activePanels);
-
-        _activePanels.push(sz);
-
-        $scope.notebook.activePanels = _activePanels;
+        $scope.notebook.expandedParagraphs.push(sz);
 
         $scope.rebuildScrollParagraphs();
 
@@ -440,7 +431,7 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
             return paragraph == item;
         });
 
-        var panel_idx = _.findIndex($scope.notebook.activePanels, function (item) {
+        var panel_idx = _.findIndex($scope.notebook.expandedParagraphs, function (item) {
             return paragraph_idx == item;
         });
 

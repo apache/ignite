@@ -25,7 +25,7 @@ angular
     // set up the states
     $stateProvider
     .state('base.sql', {
-        url: '/sql?{id}',
+        url: '/sql/{id}',
 		templateUrl: '/sql/sql.html'
 	});
 }]);

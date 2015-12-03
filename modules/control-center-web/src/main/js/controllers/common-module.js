@@ -2244,7 +2244,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
         _.forEach($scope.$root.notebooks, function (notebook) {
             $scope.notebookDropdown.push({
                 text: notebook.name,
-                href: '/sql?id=' + notebook._id
+                href: '/sql/' + notebook._id
             });
         });
     };
