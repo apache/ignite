@@ -86,7 +86,7 @@ mixin chart-settings(mdl)
                             .btn-group(style='margin-top: 2px')
                                 +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
             .docs-body.paragraphs
-                .panel-group(bs-collapse ng-model='notebook.activePanels' data-allow-multiple='true' data-start-collapsed='false')
+                .panel-group(bs-collapse ng-model='notebook.expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
                     .panel.panel-default(ng-repeat='paragraph in notebook.paragraphs')
                         .panel-heading(id='{{paragraph.id}}' bs-collapse-toggle)
                             .row
