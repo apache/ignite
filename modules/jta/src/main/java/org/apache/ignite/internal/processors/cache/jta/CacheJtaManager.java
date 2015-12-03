@@ -52,7 +52,6 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
         super.start0();
 
         if (cctx.txConfig() != null) {
-            // TODO think about using className and Factory together.
             tmFactory = cctx.txConfig().getTxManagerFactory();
 
             if (tmFactory != null) {
@@ -61,10 +60,9 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                 if (tmFactory instanceof LifecycleAware)
                     ((LifecycleAware)tmFactory).start();
 
-                TransactionManager txMgr;
+                Object txMgr;
 
                 try {
-                    // TODO class cast exception processing
                     txMgr = tmFactory.create();
                 }
                 catch (Exception e) {
@@ -73,8 +71,15 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                 }
 
                 if (txMgr == null)
-                    throw new IgniteCheckedException("Provided transaction manager factory that creating null-value " +
-                        "transaction manager [tmFactory=" + tmFactory + "]");
+                    throw new IgniteCheckedException("Failed to create transaction manager (transaction manager " +
+                        "factory created null-value transaction manager) [tmFactory=" + tmFactory + "]");
+
+                if (!(txMgr instanceof TransactionManager))
+                    throw new IgniteCheckedException("Failed to create transaction manager (transaction manager " +
+                        "factory created object that is not an instance of TransactionManager) [tmFactory="
+                        + tmFactory + ", txMgr=" + txMgr + "]");
+
+                jtaTm = (TransactionManager)txMgr;
 
                 return;
             }
@@ -122,16 +127,12 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
     @Override public void checkJta() throws IgniteCheckedException {
         if (jtaTm == null) {
             try {
-                if (tmFactory != null) // TODO try to create tm in start0
-                    jtaTm = tmFactory.create();
-                else {
-                    CacheTmLookup tmLookup = tmLookupRef.get();
+                CacheTmLookup tmLookup = tmLookupRef.get();
 
-                    if (tmLookup == null)
-                        return;
+                if (tmLookup == null)
+                    return;
 
-                    jtaTm = tmLookup.getTm();
-                }
+                jtaTm = tmLookup.getTm();
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to get transaction manager: " + e, e);

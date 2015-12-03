@@ -42,9 +42,9 @@ public abstract class AbstarctCacheJtaSelfTest extends GridCacheAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         jotm = new Jotm(true, false);
+
+        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
