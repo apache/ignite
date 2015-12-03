@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// task run static server to local development
+
 var gulp = require('gulp');
 var connect = require('gulp-connect');
 var modrewrite = require('connect-modrewrite');
