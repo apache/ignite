@@ -20,4 +20,5 @@ How to run:
  1.2 Run "mongod".
 2. In new terminal change directory '$IGNITE_HOME/modules/control-center-web/src/main/js'.
 3. Start application by executing "npm start".
-4. In browser open: http://localhost:3000
+4. Start "gulp connect" to run virtual server
+5. In browser open: http://localhost:8080

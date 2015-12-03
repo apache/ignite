@@ -18,16 +18,31 @@
 var gulp = require('gulp');
 var jspm = require('jspm');
 var util = require('gulp-util');
+var concat = require('gulp-concat');
+var sequence = require('gulp-sequence');
 
 var paths = [
     './app/**/*.js'
+];
+
+var legacy_paths = [
+	'!./controllers/common-module.js',
+	'./controllers/*.js',
+	'./controllers/**/*.js',
+	'./helpers/generator/*.js',
+	'./helpers/generator/**/*.js'
 ];
 
 var options = {
 	minify: true
 };
 
-gulp.task('bundle', function() {
+gulp.task('bundle', function(cb) {
+	return sequence('bundle:ignite', 'bundle:legacy', cb);
+});
+
+// Package all external dependencies and ignite-console
+gulp.task('bundle:ignite', function() {
 	if (util.env.debug) {
 		delete options.minify;
 	}
@@ -39,6 +54,17 @@ gulp.task('bundle', function() {
 	return jspm.bundleSFX('app/index', 'build/app.min.js', options);
 });
 
-gulp.task('bundle:watch', function() {
-	gulp.watch(paths, ['bundle'])
+// Package controllers and generators.
+gulp.task('bundle:legacy', function() {
+	return gulp.src(legacy_paths)
+		.pipe(concat('all.js'))
+		.pipe(gulp.dest('./build'))
+});
+
+gulp.task('bundle:ignite:watch', function() {
+	return gulp.watch(paths, ['bundle:ignite'])
+});
+
+gulp.task('bundle:legacy:watch', function() {
+    return gulp.watch(legacy_paths, ['bundle:legacy'])
 });
