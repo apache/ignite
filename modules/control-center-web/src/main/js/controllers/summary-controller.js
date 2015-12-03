@@ -19,7 +19,7 @@
 consoleModule.controller('summaryController', [
     '$scope', '$http', '$common', '$loading', '$table',
     function ($scope, $http, $common, $loading, $table) {
-    var igniteVersion = '1.5.0-IWC';
+    var igniteVersion = '1.5.0';
 
     $scope.panelExpanded = $common.panelExpanded;
     $scope.tableVisibleRow = $table.tableVisibleRow;
@@ -87,17 +87,17 @@ consoleModule.controller('summaryController', [
     };
 
     $scope.generateJavaServer = function () {
-        $scope.javaServer = $generatorJava.cluster($scope.selectedItem,
-            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false, null, false);
+        $scope.javaServer = $generatorJava.cluster($scope.selectedItem, 'factory',
+            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false, null);
     };
 
     function selectPojoClass(config) {
         if ($scope.selectedItem)
             _.forEach($scope.selectedItem.metadatas, function(meta) {
-                if (meta.keyType == config.pojoClass)
+                if (meta.keyType === config.pojoClass)
                     return config.pojoClassBody = meta.keyClass;
 
-                if (meta.valueType == config.pojoClass)
+                if (meta.valueType === config.pojoClass)
                     return config.pojoClassBody = meta.valueClass;
             });
     }
@@ -116,7 +116,7 @@ consoleModule.controller('summaryController', [
 
             function restoreSelected(selected, config, tabs, metadatas) {
                 if (!$common.isDefined(selected) || _.findIndex(metadatas, function (meta) {
-                        return meta.keyType == selected || meta.valueType == selected;
+                        return meta.keyType === selected || meta.valueType === selected;
                     }) < 0) {
                     if (metadatas.length > 0) {
                         if ($common.isDefined(metadatas[0].keyType))
@@ -127,7 +127,7 @@ consoleModule.controller('summaryController', [
                     else {
                         config.pojoClass = undefined;
 
-                        if (tabs.activeTab == 2)
+                        if (tabs.activeTab === 2)
                             tabs.activeTab = 0;
                     }
                 }
@@ -161,9 +161,9 @@ consoleModule.controller('summaryController', [
 
     $scope.generateClient = function () {
         $scope.xmlClient = $generatorXml.cluster($scope.selectedItem, $scope.backupItem.nearConfiguration);
-        $scope.javaClient = $generatorJava.cluster($scope.selectedItem,
+        $scope.javaClient = $generatorJava.cluster($scope.selectedItem, 'factory',
             $scope.backupItem.javaClassClient === 2 ? 'ClientConfigurationFactory' : false,
-            $scope.backupItem.nearConfiguration, true);
+            $scope.backupItem.nearConfiguration);
     };
 
     $scope.$watch('backupItem', $scope.generateClient, true);
@@ -195,27 +195,35 @@ consoleModule.controller('summaryController', [
 
     $scope.downloadConfiguration = function () {
         var cluster = $scope.selectedItem;
-        var clientNearConfiguration = $scope.backupItem.nearConfiguration;
+        var clientNearCfg = $scope.backupItem.nearConfiguration;
 
         var zip = new JSZip();
 
         zip.file('Dockerfile', $scope.dockerServer);
 
-        var builder = $generatorProperties.sslProperties(cluster);
-
-        builder = $generatorProperties.dataSourcesProperties(cluster, builder);
+        var builder = $generatorProperties.generateProperties(cluster);
 
         if (builder)
             zip.file('src/main/resources/secret.properties', builder.asString());
 
         var srcPath = 'src/main/java/';
 
-        zip.file('config/' + cluster.name + '-server.xml', $generatorXml.cluster(cluster));
-        zip.file('config/' + cluster.name + '-client.xml', $generatorXml.cluster(cluster, clientNearConfiguration));
+        var serverXml = 'config/' + cluster.name + '-server.xml';
+        var clientXml = 'config/' + cluster.name + '-client.xml';
 
-        zip.file(srcPath + 'ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'ServerConfigurationFactory', null, false));
-        zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', clientNearConfiguration, true));
-        zip.file(srcPath + 'NodeStartup.java', $generatorJava.nodeStartup(cluster));
+        zip.file(serverXml, $generatorXml.cluster(cluster));
+        zip.file(clientXml , $generatorXml.cluster(cluster, clientNearCfg));
+
+        zip.file(srcPath + 'factory/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ServerConfigurationFactory', null));
+        zip.file(srcPath + 'factory/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ClientConfigurationFactory', clientNearCfg));
+
+        zip.file(srcPath + 'startup/ServerNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeSpringStartup', '"' + serverXml + '"'));
+        zip.file(srcPath + 'startup/ClientNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeSpringStartup', '"' + clientXml + '"'));
+
+        zip.file(srcPath + 'startup/ServerNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeCodeStartup',
+            'ServerConfigurationFactory.createConfiguration()', 'factory.ServerConfigurationFactory'));
+        zip.file(srcPath + 'startup/ClientNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeCodeStartup',
+            'ClientConfigurationFactory.createConfiguration()', 'factory.ClientConfigurationFactory', clientNearCfg));
 
         zip.file('pom.xml', $generatorPom.pom(cluster, igniteVersion).asString());
 
@@ -259,7 +267,7 @@ consoleModule.controller('summaryController', [
 
                 if (restoredId) {
                     var idx = _.findIndex($scope.clusters, function (cluster) {
-                        return cluster._id == restoredId;
+                        return cluster._id === restoredId;
                     });
 
                     if (idx >= 0)

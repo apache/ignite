@@ -72,7 +72,7 @@ public class GridCacheConcurrentMap {
     private static final float DFLT_LOAD_FACTOR = 0.75f;
 
     /** The default concurrency level for this map. */
-    private static final int DFLT_CONCUR_LEVEL = 2048;
+    private static final int DFLT_CONCUR_LEVEL = Runtime.getRuntime().availableProcessors() * 2;
 
     /**
      * The maximum capacity, used if a higher value is implicitly specified by either
@@ -237,6 +237,7 @@ public class GridCacheConcurrentMap {
      * @param ctx Cache context.
      * @param initCap the initial capacity. The implementation
      *      performs internal sizing to accommodate this many elements.
+     * @param factory Entry factory.
      * @param loadFactor  the load factor threshold, used to control resizing.
      *      Resizing may be performed when the average number of elements per
      *      bin exceeds this threshold.
@@ -248,8 +249,13 @@ public class GridCacheConcurrentMap {
      *      non-positive.
      */
     @SuppressWarnings({"unchecked"})
-    protected GridCacheConcurrentMap(GridCacheContext ctx, int initCap, float loadFactor,
-        int concurrencyLevel) {
+    protected GridCacheConcurrentMap(
+        GridCacheContext ctx,
+        int initCap,
+        GridCacheMapEntryFactory factory,
+        float loadFactor,
+        int concurrencyLevel
+    ) {
         this.ctx = ctx;
 
         if (!(loadFactor > 0) || initCap < 0 || concurrencyLevel <= 0)
@@ -289,6 +295,8 @@ public class GridCacheConcurrentMap {
 
         for (int i = 0; i < segs.length; ++i)
             segs[i] = new Segment(cap, loadFactor);
+
+        this.factory = factory;
     }
 
     /**
@@ -298,34 +306,16 @@ public class GridCacheConcurrentMap {
      * @param ctx Cache context.
      * @param initCap The implementation performs internal
      *      sizing to accommodate this many elements.
-     * @param loadFactor  the load factor threshold, used to control resizing.
-     *      Resizing may be performed when the average number of elements per
-     *      bin exceeds this threshold.
      * @param factory Entries factory.
      * @throws IllegalArgumentException if the initial capacity of
      *      elements is negative or the load factor is non-positive.
      */
-    public GridCacheConcurrentMap(GridCacheContext ctx,
+    public GridCacheConcurrentMap(
+        GridCacheContext ctx,
         int initCap,
-        float loadFactor,
-        @Nullable GridCacheMapEntryFactory factory) {
-        this(ctx, initCap, loadFactor, DFLT_CONCUR_LEVEL);
-
-        this.factory = factory;
-    }
-
-    /**
-     * Creates a new, empty map with the specified initial capacity,
-     * and with default load factor (0.75) and concurrencyLevel (16).
-     *
-     * @param ctx Cache context.
-     * @param initCap the initial capacity. The implementation
-     *      performs internal sizing to accommodate this many elements.
-     * @throws IllegalArgumentException if the initial capacity of
-     *      elements is negative.
-     */
-    public GridCacheConcurrentMap(GridCacheContext ctx, int initCap) {
-        this(ctx, initCap, DFLT_LOAD_FACTOR, DFLT_CONCUR_LEVEL);
+        @Nullable GridCacheMapEntryFactory factory
+    ) {
+        this(ctx, initCap, factory, DFLT_LOAD_FACTOR, DFLT_CONCUR_LEVEL);
     }
 
     /**
@@ -1439,32 +1429,10 @@ public class GridCacheConcurrentMap {
         }
 
         /**
-         * @return Number of reads.
-         */
-        long reads() {
-            return reads.sum();
-        }
-
-        /**
          * @return Header ID.
          */
         int id() {
             return id;
-        }
-
-        /**
-         * @return {@code True} if {@code ID} is even.
-         */
-        boolean even() {
-            return id % 2 == 0;
-        }
-
-        /**
-         * @return {@code True} if {@code ID} is odd.
-         */
-        @SuppressWarnings("BadOddness")
-        boolean odd() {
-            return id % 2 == 1;
         }
 
         /**
@@ -1878,7 +1846,7 @@ public class GridCacheConcurrentMap {
          * @return Key iterator.
          */
         Iterator<K> keyIterator() {
-            return new KeyIterator<>(map, filter);
+            return new KeyIterator<>(map, opCtxPerCall != null && opCtxPerCall.isKeepBinary(), filter);
         }
 
         /**
@@ -2122,9 +2090,7 @@ public class GridCacheConcurrentMap {
             it.next();
 
             // Cached value.
-            V val = it.currentValue();
-
-            return val;
+            return it.currentValue();
         }
 
         /** {@inheritDoc} */
@@ -2156,6 +2122,9 @@ public class GridCacheConcurrentMap {
         /** Hash table iterator. */
         private Iterator0<K, V> it;
 
+        /** Keep binary flag. */
+        private boolean keepBinary;
+
         /**
          * Empty constructor required for {@link Externalizable}.
          */
@@ -2167,8 +2136,9 @@ public class GridCacheConcurrentMap {
          * @param map Cache map.
          * @param filter Filter.
          */
-        private KeyIterator(GridCacheConcurrentMap map, CacheEntryPredicate[] filter) {
+        private KeyIterator(GridCacheConcurrentMap map, boolean keepBinary, CacheEntryPredicate[] filter) {
             it = new Iterator0<>(map, false, filter, -1, -1);
+            this.keepBinary = keepBinary;
         }
 
         /** {@inheritDoc} */
@@ -2178,7 +2148,7 @@ public class GridCacheConcurrentMap {
 
         /** {@inheritDoc} */
         @Override public K next() {
-            return it.next().key().value(it.ctx.cacheObjectContext(), true);
+            return (K)it.ctx.cacheObjectContext().unwrapPortableIfNeeded(it.next().key(), keepBinary, true);
         }
 
         /** {@inheritDoc} */

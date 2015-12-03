@@ -45,14 +45,30 @@ public class VisorCacheTypeFieldMetadata implements Serializable {
      * @return Data transfer object for given cache field metadata.
      */
     public static VisorCacheTypeFieldMetadata from(CacheTypeFieldMetadata f) {
-        VisorCacheTypeFieldMetadata fieldMetadata = new VisorCacheTypeFieldMetadata();
+        return new VisorCacheTypeFieldMetadata(f.getDatabaseName(), f.getDatabaseType(),
+            f.getJavaName(), U.compact(f.getJavaType().getName()));
+    }
 
-        fieldMetadata.dbName = f.getDatabaseName();
-        fieldMetadata.dbType = f.getDatabaseType();
-        fieldMetadata.javaName = f.getJavaName();
-        fieldMetadata.javaType = U.compact(f.getJavaType().getName());
+    /**
+     * Empty constructor.
+     */
+    public VisorCacheTypeFieldMetadata() {
+        // No-op.
+    }
 
-        return fieldMetadata;
+    /**
+     * Full constructor.
+     *
+     * @param dbName Column name in database.
+     * @param dbType Column JDBC type in database.
+     * @param javaName Field name in java object.
+     * @param javaType Corresponding java type.
+     */
+    public VisorCacheTypeFieldMetadata(String dbName, int dbType, String javaName, String javaType) {
+        this.dbName = dbName;
+        this.dbType = dbType;
+        this.javaName = javaName;
+        this.javaType = javaType;
     }
 
     /**

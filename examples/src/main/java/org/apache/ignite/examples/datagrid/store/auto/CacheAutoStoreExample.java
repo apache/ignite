@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
 import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.examples.datagrid.store.Person;
+import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.transactions.Transaction;
 
 /**

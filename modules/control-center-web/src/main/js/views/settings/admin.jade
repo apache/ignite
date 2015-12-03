@@ -12,41 +12,39 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-block container
-    .row(ng-controller='adminController')
-        .docs-content
-            .docs-header
-                h1 List of registered users
-                hr
-            .docs-body
-                table.table.table-striped.admin(st-table='displayedUsers' st-safe-src='users')
-                    thead
-                        tr
-                            th.header(colspan='5')
-                                .col-sm-2.pull-right
-                                    input.form-control(type='text' st-search='' placeholder='Filter users...')
-                        tr
-                            th(st-sort='username') User name
-                            th(st-sort='email') Email
-                            th.col-sm-2(st-sort='lastLogin') Last login
-                            th(width='1%'  st-sort='admin') Admin
-                            th(width='1%') Actions
-                    tbody
-                        tr(ng-repeat='row in displayedUsers')
-                            td {{row.username}}
-                            td
-                                a(ng-href='mailto:{{row.email}}') {{row.email}}
-                            td
-                                span {{row.lastLogin | date:'medium'}}
-                            td(style='text-align: center;')
-                                input(type='checkbox' ng-disabled='row.adminChanging || row._id == user._id'
-                                    ng-model='row.admin' ng-change='toggleAdmin(row)')
-                            td(style='text-align: center;')
-                                div(ng-show='row._id != user._id')
-                                    i.fa.fa-remove(ng-click='removeUser(row)' bs-tooltip data-title='Remove user')
-                                    i.fa.fa-eye(ng-click='becomeUser(row)' style='margin-left: 5px'  bs-tooltip data-title='Become this user')
-                    tfoot
-                        tr
-                            td.text-right(colspan='5')
-                                div(st-pagination st-items-by-page='15' st-displayed-pages='5')
-
+.row(ng-controller='adminController')
+    .docs-content
+        .docs-header
+            h1 List of registered users
+            hr
+        .docs-body
+            table.table.table-striped.admin(st-table='displayedUsers' st-safe-src='users')
+                thead
+                    tr
+                        th.header(colspan='5')
+                            .col-sm-2.pull-right
+                                input.form-control(type='text' st-search='' placeholder='Filter users...')
+                    tr
+                        th(st-sort='username') User name
+                        th(st-sort='email') Email
+                        th.col-sm-2(st-sort='lastLogin') Last login
+                        th(width='1%'  st-sort='admin') Admin
+                        th(width='1%') Actions
+                tbody
+                    tr(ng-repeat='row in displayedUsers')
+                        td {{row.username}}
+                        td
+                            a(ng-href='mailto:{{row.email}}') {{row.email}}
+                        td
+                            span {{row.lastLogin | date:'medium'}}
+                        td(style='text-align: center;')
+                            input(type='checkbox' ng-disabled='row.adminChanging || row._id == user._id'
+                                ng-model='row.admin' ng-change='toggleAdmin(row)')
+                        td(style='text-align: center;')
+                            div(ng-show='row._id != user._id')
+                                i.fa.fa-remove(ng-click='removeUser(row)' bs-tooltip data-title='Remove user')
+                                i.fa.fa-eye(ng-click='becomeUser(row)' style='margin-left: 5px'  bs-tooltip data-title='Become this user')
+                tfoot
+                    tr
+                        td.text-right(colspan='5')
+                            div(st-pagination st-items-by-page='15' st-displayed-pages='5')

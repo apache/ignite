@@ -239,6 +239,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Deployment enabled flag for this specific cache */
     private boolean depEnabled;
 
+    /** */
+    private boolean deferredDelete;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -506,6 +509,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void cache(GridCacheAdapter<K, V> cache) {
         this.cache = cache;
+
+        deferredDelete = cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
+            (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC);
     }
 
     /**
@@ -568,21 +574,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if entries should not be deleted from cache immediately.
      */
     public boolean deferredDelete() {
-        GridCacheAdapter<K, V> cache = this.cache;
-
-        if (cache == null)
-            throw new IllegalStateException("Cache stopped: " + cacheName);
-
-        return deferredDelete(cache);
-    }
-
-    /**
-     * @param cache Cache.
-     * @return {@code True} if entries should not be deleted from cache immediately.
-     */
-    public boolean deferredDelete(GridCacheAdapter<?, ?> cache) {
-        return cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
-            (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC);
+        return deferredDelete;
     }
 
     /**
@@ -1695,7 +1687,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean keepPortable() {
         CacheOperationContext opCtx = operationContextPerCall();
 
-        return opCtx != null && opCtx.isKeepPortable();
+        return opCtx != null && opCtx.isKeepBinary();
     }
 
     /**
@@ -1737,15 +1729,26 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Unwraps object for portables.
+     * Unwraps object for binary.
      *
      * @param o Object to unwrap.
      * @param keepPortable Keep portable flag.
      * @return Unwrapped object.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
         return cacheObjCtx.unwrapPortableIfNeeded(o, keepPortable);
+    }
+
+    /**
+     * Unwraps object for binary.
+     *
+     * @param o Object to unwrap.
+     * @param keepPortable Keep portable flag.
+     * @param cpy Copy value flag.
+     * @return Unwrapped object.
+     */
+    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable, boolean cpy) {
+        return cacheObjCtx.unwrapPortableIfNeeded(o, keepPortable, cpy);
     }
 
     /**
@@ -1760,6 +1763,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache object.
      */
     @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
+        assert validObjectForCache(obj) : obj;
+
         return cacheObjects().toCacheObject(cacheObjCtx, obj, true);
     }
 
@@ -1768,7 +1773,19 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
+        assert validObjectForCache(obj) : obj;
+
         return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
+    }
+
+    /**
+     * @param obj Object.
+     * @return {@code False} if objects is not expected for cache.
+     */
+    private boolean validObjectForCache(Object obj) {
+        return obj == null ||
+            !CU.isUtilityCache(cacheName) ||
+            ctx.marshallerContext().isSystemType(obj.getClass().getName());
     }
 
     /**
@@ -1840,15 +1857,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert val != null || skipVals;
 
         if (!keepCacheObjects) {
-            Object key0 = key.value(cacheObjCtx, false);
-            Object val0 = skipVals ? true : val.value(cacheObjCtx, cpy);
+            Object key0 = unwrapPortableIfNeeded(key, !deserializePortable);
 
-            if (deserializePortable) {
-                key0 = unwrapPortableIfNeeded(key0, false);
-
-                if (!skipVals)
-                    val0 = unwrapPortableIfNeeded(val0, false);
-            }
+            Object val0 = skipVals ? true : unwrapPortableIfNeeded(val, !deserializePortable);
 
             assert key0 != null : key;
             assert val0 != null : val;

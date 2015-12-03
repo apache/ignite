@@ -25,6 +25,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -53,7 +54,11 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
         AtomicIntegerFieldUpdater.newUpdater(GridCompoundFuture.class, "lsnrCalls");
 
     /** Futures. */
-    private final Collection<IgniteInternalFuture<T>> futs = new ArrayList<>();
+    protected final ArrayList<IgniteInternalFuture<T>> futs = new ArrayList<>();
+
+    /** */
+    @GridToStringExclude
+    private final Listener lsnr = new Listener();
 
     /** Reducer. */
     @GridToStringInclude
@@ -166,8 +171,19 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *
      * @return {@code True} if there are pending futures.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public boolean hasPending() {
-        return !pending().isEmpty();
+        synchronized (futs) {
+            // Avoid iterator creation and collection copy.
+            for (int i = 0; i < futs.size(); i++) {
+                IgniteInternalFuture<T> fut = futs.get(i);
+
+                if (!fut.isDone())
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -190,7 +206,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
             futs.add(fut);
         }
 
-        fut.listen(new Listener());
+        fut.listen(lsnr);
 
         if (isCancelled()) {
             try {
@@ -407,7 +423,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "Compound future listener: " + GridCompoundFuture.this;
+            return "Compound future listener []";
         }
     }
 }

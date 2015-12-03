@@ -145,9 +145,8 @@ public class GridDhtPartitionDemander {
 
         Map<Integer, Object> tops = new HashMap<>();
 
-        for (int idx = 0; idx < cctx.gridConfig().getRebalanceThreadPoolSize(); idx++) {
+        for (int idx = 0; idx < cctx.gridConfig().getRebalanceThreadPoolSize(); idx++)
             tops.put(idx, GridCachePartitionExchangeManager.rebalanceTopic(idx));
-        }
 
         rebalanceTopics = tops;
     }
@@ -284,7 +283,7 @@ public class GridDhtPartitionDemander {
      * @param force {@code True} if dummy reassign.
      * @param caches Rebalancing of these caches will be finished before this started.
      * @param cnt Counter.
-     * @throws IgniteCheckedException Exception
+     * @throws IgniteCheckedException If failed.
      */
     Callable<Boolean> addAssignments(final GridDhtPreloaderAssignments assigns, boolean force,
         final Collection<String> caches, int cnt) {
@@ -688,7 +687,7 @@ public class GridDhtPartitionDemander {
                         if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
                             cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
                                 (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
-                                false, null, null, null);
+                                false, null, null, null, true);
                     }
                     else if (log.isDebugEnabled())
                         log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
@@ -742,7 +741,7 @@ public class GridDhtPartitionDemander {
         private static final long serialVersionUID = 1L;
 
         /** Should EVT_CACHE_REBALANCE_STOPPED event be sent of not. */
-        private final boolean sendStoppedEvnt;
+        private final boolean sndStoppedEvnt;
 
         /** */
         private final GridCacheContext<?, ?> cctx;
@@ -771,6 +770,7 @@ public class GridDhtPartitionDemander {
          * @param cctx Context.
          * @param log Logger.
          * @param sentStopEvnt Stop event flag.
+         * @param updateSeq Update sequence.
          */
         RebalanceFuture(GridDhtPreloaderAssignments assigns,
             GridCacheContext<?, ?> cctx,
@@ -783,7 +783,7 @@ public class GridDhtPartitionDemander {
             this.topVer = assigns.topologyVersion();
             this.cctx = cctx;
             this.log = log;
-            this.sendStoppedEvnt = sentStopEvnt;
+            this.sndStoppedEvnt = sentStopEvnt;
             this.updateSeq = updateSeq;
         }
 
@@ -795,7 +795,7 @@ public class GridDhtPartitionDemander {
             this.topVer = null;
             this.cctx = null;
             this.log = null;
-            this.sendStoppedEvnt = false;
+            this.sndStoppedEvnt = false;
             this.updateSeq = -1;
         }
 
@@ -862,8 +862,9 @@ public class GridDhtPartitionDemander {
                 U.log(log, "Cancelled rebalancing from all nodes [cache=" + cctx.name()
                     + ", topology=" + topologyVersion());
 
-                for (UUID nodeId : remaining.keySet()) {
-                    cleanupRemoteContexts(nodeId);
+                if (!cctx.kernalContext().isStopping()) {
+                    for (UUID nodeId : remaining.keySet())
+                        cleanupRemoteContexts(nodeId);
                 }
 
                 remaining.clear();
@@ -922,7 +923,6 @@ public class GridDhtPartitionDemander {
 
             //Check remote node rebalancing API version.
             if (node.version().compareTo(GridDhtPreloader.REBALANCING_VER_2_SINCE) >= 0) {
-
                 GridDhtPartitionDemandMessage d = new GridDhtPartitionDemandMessage(
                     -1/* remove supply context signal */, this.topologyVersion(), cctx.cacheId());
 
@@ -959,9 +959,9 @@ public class GridDhtPartitionDemander {
                 Collection<Integer> parts = remaining.get(nodeId).get2();
 
                 if (parts != null) {
-                    boolean removed = parts.remove(p);
+                    boolean rmvd = parts.remove(p);
 
-                    assert removed;
+                    assert rmvd;
 
                     if (parts.isEmpty()) {
                         U.log(log, "Completed " + ((remaining.size() == 1 ? "(final) " : "") +
@@ -1008,7 +1008,7 @@ public class GridDhtPartitionDemander {
          */
         private void checkIsDone(boolean cancelled) {
             if (remaining.isEmpty()) {
-                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED) && (!cctx.isReplicated() || sendStoppedEvnt))
+                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED) && (!cctx.isReplicated() || sndStoppedEvnt))
                     preloadEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());
 
                 if (log.isDebugEnabled())
@@ -1038,6 +1038,11 @@ public class GridDhtPartitionDemander {
 
                 onDone(!cancelled);
             }
+        }
+
+        /** {@inheritDoc} */
+        public String toString() {
+            return S.toString(RebalanceFuture.class, this);
         }
     }
 
@@ -1109,10 +1114,12 @@ public class GridDhtPartitionDemander {
         /** Hide worker logger and use cache logger instead. */
         private IgniteLogger log = GridDhtPartitionDemander.this.log;
 
+        /** */
         private volatile RebalanceFuture fut;
 
         /**
          * @param id Worker ID.
+         * @param fut Rebalance future.
          */
         private DemandWorker(int id, RebalanceFuture fut) {
             assert id >= 0;
@@ -1379,6 +1386,7 @@ public class GridDhtPartitionDemander {
         /**
          * @param node Node.
          * @param d D.
+         * @throws IgniteCheckedException If failed.
          */
         public void run(ClusterNode node, GridDhtPartitionDemandMessage d) throws IgniteCheckedException {
             demandLock.readLock().lock();

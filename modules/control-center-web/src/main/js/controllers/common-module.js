@@ -20,6 +20,8 @@ var consoleModule = angular.module('ignite-web-console',
         'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'agGrid', 'nvd3', 'dndLists'
         /* ignite:modules */
         , 'ignite-console'
+        , 'ignite-console.navbar'
+        , 'ignite-console.configuration.sidebar'
         /* endignite */
         /* ignite:plugins */
         /* endignite */
@@ -32,7 +34,7 @@ var consoleModule = angular.module('ignite-web-console',
 
         $rootScope.revertIdentity = function () {
             $http
-                .get('/api/v1/admin/revertIdentity')
+                .get('/api/v1/admin/revert/identity')
                 .then(User.read)
                 .then(function (user) {
                     $rootScope.$broadcast('user', user);
@@ -665,16 +667,14 @@ consoleModule.service('$common', [
         return {
             getModel: getModel,
             joinTip: function (arr) {
-                if (!arr) {
+                if (!arr)
                     return arr;
-                }
 
-                var lines = arr.map(function (line) {
+                var lines = _.map(arr, function (line) {
                     var rtrimmed = line.replace(/\s+$/g, '');
 
-                    if (rtrimmed.indexOf('>', this.length - 1) === -1) {
+                    if (rtrimmed.indexOf('>', this.length - 1) === -1)
                         rtrimmed = rtrimmed + '<br/>';
-                    }
 
                     return rtrimmed;
                 });
@@ -1037,7 +1037,7 @@ consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
             var unbind = $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
                 if ($scope.ui && $scope.ui.isDirty()) {
                     if (!confirm('You have unsaved changes.\n\nAre you sure you want to discard them?')) {
-                        event.preventDefault(); 
+                        event.preventDefault();
                     } else {
                         unbind();
                     }
@@ -2033,7 +2033,7 @@ consoleModule.controller('resetPassword', [
     '$scope', '$modal', '$http', '$common', '$focus', 'Auth', '$state',
     function ($scope, $modal, $http, $common, $focus, Auth, $state) {
         if ($state.params.token)
-            $http.post('/api/v1/password/validate-token', {token: $state.params.token})
+            $http.post('/api/v1/validate/token', {token: $state.params.token})
                 .success(function (res) {
                     $scope.email = res.email;
                     $scope.token = res.token;
@@ -2075,7 +2075,7 @@ consoleModule.controller('auth', [
 
 // Download agent controller.
 consoleModule.controller('agent-download', [
-    '$http', '$common', '$scope', '$interval', '$modal', '$window', function ($http, $common, $scope, $interval, $modal, $window) {
+    '$http', '$common', '$scope', '$interval', '$modal', '$state', function ($http, $common, $scope, $interval, $modal, $state) {
         // Pre-fetch modal dialogs.
         var _agentDownloadModal = $modal({scope: $scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
 
@@ -2094,12 +2094,12 @@ consoleModule.controller('agent-download', [
          * Close dialog and go by specified link.
          */
         $scope.goBack = function () {
-            if (_agentDownloadModal.backLink)
-                $window.location = _agentDownloadModal.backLink;
-
             _stopInterval();
 
             _agentDownloadModal.hide();
+
+            if (_agentDownloadModal.backLink)
+                $state.go(_agentDownloadModal.backLink);
         };
 
         $scope.downloadAgent = function () {
@@ -2188,7 +2188,7 @@ consoleModule.controller('agent-download', [
         $scope.awaitAgent = function (checkFn) {
             _agentDownloadModal.skipSingleError = false;
 
-            _agentDownloadModal.checkUrl = '/agent/ping';
+            _agentDownloadModal.checkUrl = '/api/v1/agent/ping';
 
             _agentDownloadModal.checkFn = checkFn;
 
@@ -2212,7 +2212,7 @@ consoleModule.controller('agent-download', [
 
             _agentDownloadModal.checkFn = checkFn;
 
-            _agentDownloadModal.backLink = '/';
+            _agentDownloadModal.backLink = 'base.configuration.clusters';
 
             $scope.agentDownloadBackTo = 'Configuration';
 
@@ -2270,6 +2270,8 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
         $http.post('/api/v1/notebooks/new', {name: name})
             .success(function (id) {
                 _notebookNewModal.hide();
+
+                $scope.$root.reloadNotebooks();
 
                 $state.go('base.sql', {id: id});
             })

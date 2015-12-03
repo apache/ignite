@@ -17,8 +17,7 @@
 
 package org.apache.ignite.schema;
 
-import javax.cache.configuration.Factory;
-import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
@@ -31,7 +30,7 @@ public class CacheConfig {
      * @param name Cache name.
      * @param storeFactory Cache store factory.
      */
-    public static <K, V> CacheConfiguration<K, V> cache(String name, Factory<CacheStore<K, V>> storeFactory) {
+    public static <K, V> CacheConfiguration<K, V> cache(String name, CacheJdbcPojoStoreFactory<K, V> storeFactory) {
         throw new IllegalStateException("Please run Ignite Schema Import Utility as described in README.txt");
     }
 }

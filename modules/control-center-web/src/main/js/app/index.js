@@ -56,7 +56,7 @@ import './modules/Auth/index'
 
 import './modules/states/login/index'
 import './modules/states/logout/index'
-import './modules/states/password-reset/index'
+import './modules/states/password/index'
 import './modules/states/configuration/index'
 import './modules/states/sql/index'
 import './modules/states/profile/index'
@@ -65,7 +65,7 @@ import './modules/states/admin/index'
 // ignite:modules
 import './modules/navbar/main'
 import './modules/userbar/main'
-import './modules/configuration-sidebar/main'
+import './modules/configuration/sidebar/main'
 // endignite
 
 // directives
@@ -95,7 +95,7 @@ angular
 	//
 	'ignite-console.navbar',
 	'ignite-console.userbar',
-    'ignite-console.configuration-sidebar'
+    'ignite-console.configuration.sidebar'
 ])
 // directives
 .directive(...igniteCallout)

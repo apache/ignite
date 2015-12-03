@@ -76,7 +76,9 @@ import org.apache.ignite.internal.util.nio.GridConnectionBytesVerifyFilter;
 import org.apache.ignite.internal.util.nio.GridDirectParser;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
+import org.apache.ignite.internal.util.nio.GridNioMessageReaderFactory;
 import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
+import org.apache.ignite.internal.util.nio.GridNioMessageWriterFactory;
 import org.apache.ignite.internal.util.nio.GridNioMetricsListener;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -358,7 +360,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         clients.remove(id, rmv)) {
                         rmv.forceClose();
 
-                        if (!isNodeStopping()) {
+                        if (!stopping) {
                             GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
 
                             if (recoveryData != null) {
@@ -835,6 +837,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** Context initialization latch. */
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
+
+    /** Stopping flag (set to {@code true} when SPI gets stopping signal). */
+    private volatile boolean stopping;
 
     /** metrics listener. */
     private final GridNioMetricsListener metricsLsnr = new GridNioMetricsListener() {
@@ -1575,29 +1580,38 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 };
 
-                MessageFormatter msgFormatter = new MessageFormatter() {
-                    private MessageFormatter impl;
+                GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
+                    private MessageFormatter formatter;
 
-                    @Override public MessageWriter writer() {
-                        if (impl == null)
-                            impl = getSpiContext().messageFormatter();
+                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
+                        throws IgniteCheckedException {
+                        if (formatter == null)
+                            formatter = getSpiContext().messageFormatter();
 
-                        assert impl != null;
+                        assert formatter != null;
 
-                        return impl.writer();
-                    }
+                        UUID rmtNodeId = ses.meta(NODE_ID_META);
 
-                    @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
-                        if (impl == null)
-                            impl = getSpiContext().messageFormatter();
-
-                        assert impl != null;
-
-                        return impl.reader(factory, msgCls);
+                        return rmtNodeId != null ? formatter.reader(rmtNodeId, msgFactory) : null;
                     }
                 };
 
-                GridDirectParser parser = new GridDirectParser(msgFactory, msgFormatter);
+                GridNioMessageWriterFactory writerFactory = new GridNioMessageWriterFactory() {
+                    private MessageFormatter formatter;
+
+                    @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
+                        if (formatter == null)
+                            formatter = getSpiContext().messageFormatter();
+
+                        assert formatter != null;
+
+                        UUID rmtNodeId = ses.meta(NODE_ID_META);
+
+                        return rmtNodeId != null ? formatter.writer(rmtNodeId) : null;
+                    }
+                };
+
+                GridDirectParser parser = new GridDirectParser(msgFactory, readerFactory);
 
                 IgnitePredicate<Message> skipRecoveryPred = new IgnitePredicate<Message>() {
                     @Override public boolean apply(Message msg) {
@@ -1658,7 +1672,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .metricsListener(metricsLsnr)
                         .writeTimeout(sockWriteTimeout)
                         .filters(filters)
-                        .messageFormatter(msgFormatter)
+                        .writerFactory(writerFactory)
                         .skipRecoveryPredicate(skipRecoveryPred)
                         .messageQueueSizeListener(queueSizeMonitor)
                         .build();
@@ -1747,7 +1761,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
-        assert isNodeStopping();
+        assert stopping;
 
         unregisterMBean();
 
@@ -1783,6 +1797,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override protected void onContextDestroyed0() {
+        stopping = true;
+
         if (ctxInitLatch.getCount() > 0)
             // Safety.
             ctxInitLatch.countDown();
@@ -1918,7 +1934,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     UUID nodeId = null;
 
-                    if (!client.async() && !locNode.version().equals(node.version()))
+                    if (!client.async())
                         nodeId = node.id();
 
                     retry = client.sendMessage(nodeId, msg, ackC);
@@ -1965,7 +1981,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             GridCommunicationClient client = clients.get(nodeId);
 
             if (client == null) {
-                if (isNodeStopping())
+                if (stopping)
                     throw new IgniteSpiException("Node is stopping.");
 
                 // Do not allow concurrent connects.
@@ -2287,21 +2303,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (sockSndBuf > 0)
                         ch.socket().setSendBufferSize(sockSndBuf);
 
+                    if (getSpiContext().node(node.id()) == null) {
+                        U.closeQuiet(ch);
+
+                        throw new ClusterTopologyCheckedException("Failed to send message " +
+                            "(node left topology): " + node);
+                    }
+
                     GridNioRecoveryDescriptor recoveryDesc = recoveryDescriptor(node);
 
                     if (!recoveryDesc.reserve()) {
                         U.closeQuiet(ch);
 
                         return null;
-                    }
-
-                    if (getSpiContext().node(node.id()) == null) {
-                        recoveryDesc.release();
-
-                        U.closeQuiet(ch);
-
-                        throw new ClusterTopologyCheckedException("Failed to send message, " +
-                            "node left cluster: " + node);
                     }
 
                     long rcvCnt = -1;
@@ -2591,7 +2605,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         buf.order(ByteOrder.nativeOrder());
 
-                        boolean written = msg.writeTo(buf, getSpiContext().messageFormatter().writer());
+                        boolean written = msg.writeTo(buf, null);
 
                         assert written;
 
@@ -2773,18 +2787,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return Node ID message.
      */
     private NodeIdMessage nodeIdMessage() {
-        ClusterNode localNode = getLocalNode();
+        ClusterNode locNode = getLocalNode();
 
         UUID id;
 
-        if (localNode == null) {
+        if (locNode == null) {
             U.warn(log, "Local node is not started or fully initialized [isStopping=" +
                     getSpiContext().isStopping() + ']');
 
             id = new UUID(0, 0);
         }
         else
-            id = localNode.id();
+            id = locNode.id();
 
         return new NodeIdMessage(id);
     }
@@ -2932,25 +2946,34 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 };
 
-                MessageFormatter msgFormatter = new MessageFormatter() {
-                    private MessageFormatter impl;
+                GridNioMessageWriterFactory writerFactory = new GridNioMessageWriterFactory() {
+                    private MessageFormatter formatter;
 
-                    @Override public MessageWriter writer() {
-                        if (impl == null)
-                            impl = getSpiContext().messageFormatter();
+                    @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
+                        if (formatter == null)
+                            formatter = getSpiContext().messageFormatter();
 
-                        assert impl != null;
+                        assert formatter != null;
 
-                        return impl.writer();
+                        UUID rmtNodeId = ses.meta(NODE_ID_META);
+
+                        return rmtNodeId != null ? formatter.writer(rmtNodeId) : null;
                     }
+                };
 
-                    @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
-                        if (impl == null)
-                            impl = getSpiContext().messageFormatter();
+                GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
+                    private MessageFormatter formatter;
 
-                        assert impl != null;
+                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
+                        throws IgniteCheckedException {
+                        if (formatter == null)
+                            formatter = getSpiContext().messageFormatter();
 
-                        return impl.reader(factory, msgCls);
+                        assert formatter != null;
+
+                        UUID rmtNodeId = ses.meta(NODE_ID_META);
+
+                        return rmtNodeId != null ? formatter.reader(rmtNodeId, msgFactory) : null;
                     }
                 };
 
@@ -2959,8 +2982,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     log,
                     endpoint,
                     srvLsnr,
-                    msgFormatter,
-                    new GridNioCodecFilter(new GridDirectParser(msgFactory, msgFormatter), log, true),
+                    writerFactory,
+                    new GridNioCodecFilter(new GridDirectParser(msgFactory, readerFactory), log, true),
                     new GridConnectionBytesVerifyFilter(log)
                 );
 

@@ -334,7 +334,7 @@ public class SchemaImportApp extends Application {
             if (schema.selected().getValue())
                 selSchemas.add(schema.schema());
 
-        if (selSchemas.size() == 0)
+        if (selSchemas.isEmpty())
             if (!MessageBox.confirmDialog(owner, "No schemas selected.\nExtract tables for all available schemas?"))
                 return;
 
@@ -809,6 +809,7 @@ public class SchemaImportApp extends Application {
         schemaPnl.wrap();
 
         schemaPnl.add(Controls.button("Load schemas", "Load schemas for specified database", new EventHandler<ActionEvent>() {
+            /** {@inheritDoc} */
             @Override public void handle(ActionEvent evt) {
                 loadSchemas();
             }

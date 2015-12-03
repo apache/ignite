@@ -20,7 +20,7 @@ $generatorCommon = {};
 
 // Add leading zero.
 $generatorCommon.addLeadingZero = function (numberStr, minSize) {
-    if (typeof (numberStr) != 'string')
+    if (typeof (numberStr) !== 'string')
         numberStr = '' + numberStr;
 
     while (numberStr.length < minSize) {
@@ -63,16 +63,23 @@ $generatorCommon.builder = function (deep) {
     res.safePoint = -1;
 
     res.mergeProps = function (fromRes) {
-        res.datasources = fromRes.datasources;
+        if ($commonUtils.isDefinedAndNotEmpty(fromRes)) {
+            res.datasources = fromRes.datasources;
 
-        angular.extend(res.imports, fromRes.imports);
-        angular.extend(res.vars, fromRes.datasources);
+            angular.extend(res.imports, fromRes.imports);
+            angular.extend(res.vars, fromRes.vars);
+        }
     };
 
     res.mergeLines = function (fromRes) {
-        _.forEach(fromRes, function (line) {
-            res.append(line);
-        })
+        if ($commonUtils.isDefinedAndNotEmpty(fromRes)) {
+            if (res.needEmptyLine)
+                res.push('');
+
+            _.forEach(fromRes, function (line) {
+                res.append(line);
+            });
+        }
     };
 
     res.startSafeBlock = function () {
@@ -119,7 +126,6 @@ $generatorCommon.builder = function (deep) {
 
         return res;
     };
-
 
     res.startBlock = function (s) {
         if (s) {
@@ -172,7 +178,7 @@ $generatorCommon.builder = function (deep) {
         var shortName = dotIdx > 0 ? fullClassName.substr(dotIdx + 1) : fullClassName;
 
         if (this.imports[shortName]) {
-            if (this.imports[shortName] != fullClassName)
+            if (this.imports[shortName] !== fullClassName)
                 return fullClassName; // Short class names conflict. Return full name.
         }
         else
@@ -188,13 +194,13 @@ $generatorCommon.builder = function (deep) {
         var res = [];
 
         for (var clsName in this.imports) {
-            if (this.imports.hasOwnProperty(clsName) && this.imports[clsName].lastIndexOf('java.lang.', 0) != 0)
+            if (this.imports.hasOwnProperty(clsName) && this.imports[clsName].lastIndexOf('java.lang.', 0) !== 0)
                 res.push('import ' + this.imports[clsName] + ';');
         }
 
         res.sort();
 
-        return res.join('\n')
+        return res.join('\n');
     };
 
     return res;

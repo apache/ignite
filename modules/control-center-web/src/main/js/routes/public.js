@@ -211,7 +211,7 @@ router.post('/password/reset', function(req, res) {
 });
 
 /* GET reset password page. */
-router.post('/password/validate-token', function (req, res) {
+router.post('/validate/token', function (req, res) {
     var token = req.body.token;
 
     var data = {token: token};

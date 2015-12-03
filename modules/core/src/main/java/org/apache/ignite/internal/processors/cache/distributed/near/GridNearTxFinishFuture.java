@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -48,11 +48,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
@@ -78,7 +76,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     private GridCacheSharedContext<K, V> cctx;
 
     /** Future ID. */
-    private IgniteUuid futId;
+    private final IgniteUuid futId;
 
     /** Transaction. */
     @GridToStringInclude
@@ -88,7 +86,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     private boolean commit;
 
     /** Node mappings. */
-    private Map<UUID, GridDistributedTxMapping> mappings;
+    private IgniteTxMappings mappings;
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -121,26 +119,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
         return futId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
-        return tx.xidVersion();
-    }
-
-    /**
-     * @return Involved nodes.
-     */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return
-            F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<?>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(IgniteInternalFuture<?> f) {
-                    if (isMini(f))
-                        return ((MiniFuture)f).node();
-
-                    return cctx.discovery().localNode();
-                }
-            });
     }
 
     /** {@inheritDoc} */
@@ -226,6 +204,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 boolean marked = tx.setRollbackOnly();
 
+                if (err instanceof NodeStoppingException)
+                    return super.onDone(null, err);
+
                 if (err instanceof IgniteTxRollbackCheckedException) {
                     if (marked) {
                         try {
@@ -264,13 +245,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     }
                 }
 
-            if (tx.onePhaseCommit()) {
-                boolean commit = this.commit && err == null;
+                if (tx.onePhaseCommit()) {
+                    boolean commit = this.commit && err == null;
 
-                finishOnePhase(commit);
+                    finishOnePhase(commit);
 
-                tx.tmFinish(commit);
-            }
+                    tx.tmFinish(commit);
+                }
 
                 if (super.onDone(tx0, err)) {
                     if (error() instanceof IgniteTxHeuristicCheckedException) {
@@ -297,7 +278,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     }
 
                     // Don't forget to clean up.
-                    cctx.mvcc().removeFuture(this);
+                    cctx.mvcc().removeFuture(futId);
 
                     return true;
                 }
@@ -332,6 +313,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /**
      * Initializes future.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     void finish() {
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
@@ -347,18 +329,34 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         try {
             if (tx.finish(commit) || (!commit && tx.state() == UNKNOWN)) {
-                if ((tx.onePhaseCommit() && needFinishOnePhase()) || (!tx.onePhaseCommit() && mappings != null))
-                    finish(mappings.values());
+                if ((tx.onePhaseCommit() && needFinishOnePhase()) || (!tx.onePhaseCommit() && mappings != null)) {
+                    if (mappings.single()) {
+                        GridDistributedTxMapping mapping = mappings.singleMapping();
+
+                        if (mapping != null)
+                            finish(mapping);
+                    }
+                    else
+                        finish(mappings.mappings());
+                }
 
                 markInitialized();
 
                 if (!isSync() && !isDone()) {
                     boolean complete = true;
 
-                    for (IgniteInternalFuture<?> f : pending())
-                        // Mini-future in non-sync mode gets done when message gets sent.
-                        if (isMini(f) && !f.isDone())
-                            complete = false;
+                    synchronized (futs) {
+                        // Avoid collection copy and iterator creation.
+                        for (int i = 0; i < futs.size(); i++) {
+                            IgniteInternalFuture<IgniteInternalTx> f = futs.get(i);
+
+                            if (isMini(f) && !f.isDone()) {
+                                complete = false;
+
+                                break;
+                            }
+                        }
+                    }
 
                     if (complete)
                         onComplete();
@@ -381,11 +379,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      *
      */
     private void checkBackup() {
-        assert mappings.size() <= 1;
+        GridDistributedTxMapping mapping = mappings.singleMapping();
 
-        for (Map.Entry<UUID, GridDistributedTxMapping> entry : mappings.entrySet()) {
-            UUID nodeId = entry.getKey();
-            GridDistributedTxMapping mapping = entry.getValue();
+        if (mapping != null) {
+            UUID nodeId = mapping.node().id();
 
             Collection<UUID> backups = tx.transactionNodes().get(nodeId);
 
@@ -482,25 +479,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      *
      */
     private boolean needFinishOnePhase() {
-        if (F.isEmpty(tx.mappings()))
+        if (tx.mappings().empty())
             return false;
 
-        assert tx.mappings().size() == 1;
-
-        boolean finish = false;
-
-        for (Integer cacheId : tx.activeCacheIds()) {
-            GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
-
-            if (cacheCtx.isNear()) {
-                finish = true;
-
-                break;
-            }
-        }
+        boolean finish = tx.txState().hasNearCache(cctx);
 
         if (finish) {
-            GridDistributedTxMapping mapping = F.first(tx.mappings().values());
+            GridDistributedTxMapping mapping = tx.mappings().singleMapping();
 
             if (FINISH_NEAR_ONE_PHASE_SINCE.compareTo(mapping.node().version()) > 0)
                 finish = false;
@@ -520,18 +505,16 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         finishOnePhaseCalled = true;
 
-        // No need to send messages as transaction was already committed on remote node.
-        // Finish local mapping only as we need send commit message to backups.
-        for (GridDistributedTxMapping m : mappings.values()) {
-            if (m.node().isLocal()) {
-                IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
+        GridDistributedTxMapping locMapping = mappings.localMapping();
 
-                // Add new future.
-                if (fut != null)
-                    add(fut);
+        if (locMapping != null) {
+            // No need to send messages as transaction was already committed on remote node.
+            // Finish local mapping only as we need send commit message to backups.
+            IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
 
-                break;
-            }
+            // Add new future.
+            if (fut != null)
+                add(fut);
         }
     }
 
@@ -544,7 +527,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
             mapping.dhtVersion(xidVer, xidVer);
 
-            tx.readyNearLocks(mapping, Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList(),
+            tx.readyNearLocks(mapping,
+                Collections.<GridCacheVersion>emptyList(),
+                Collections.<GridCacheVersion>emptyList(),
                 Collections.<GridCacheVersion>emptyList());
         }
     }

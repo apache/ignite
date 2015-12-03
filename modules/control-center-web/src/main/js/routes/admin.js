@@ -111,7 +111,7 @@ router.get('/become', function (req, res) {
 });
 
 // Become user.
-router.get('/revertIdentity', function (req, res) {
+router.get('/revert/identity', function (req, res) {
     req.session.viewedUser = null;
 
     return res.sendStatus(200);

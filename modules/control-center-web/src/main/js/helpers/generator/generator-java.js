@@ -965,9 +965,10 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
         res.needEmptyLine = true;
     }
 
-    $generatorJava.property(res, cacheVarName, cache, 'loadPreviousValue');
-    $generatorJava.property(res, cacheVarName, cache, 'readThrough');
-    $generatorJava.property(res, cacheVarName, cache, 'writeThrough');
+    $generatorJava.property(res, cacheVarName, cache, 'keepBinaryInStore', null, null, false);
+    $generatorJava.property(res, cacheVarName, cache, 'loadPreviousValue', null, null, false);
+    $generatorJava.property(res, cacheVarName, cache, 'readThrough', null, null, false);
+    $generatorJava.property(res, cacheVarName, cache, 'writeThrough', null, null, false);
 
     res.needEmptyLine = true;
 
@@ -1867,11 +1868,11 @@ $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
  * Function to generate java code for cluster configuration.
  *
  * @param cluster Cluster to process.
+ * @param pkg Package name.
  * @param javaClass Class name for generate factory class otherwise generate code snippet.
- * @param clientNearCfg Near cache configuration for client node.
- * @param clientMode If `true` generates code for client mode or server mode otherwise.
+ * @param clientNearCfg Optional near cache configuration for client node.
  */
-$generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode) {
+$generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
     var res = $generatorCommon.builder();
 
     if (cluster) {
@@ -1880,11 +1881,6 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
         res.mergeProps(resCfg);
 
         if (javaClass) {
-            if (clientMode)
-                res.importClass('org.apache.ignite.Ignite');
-
-            res.importClass('org.apache.ignite.Ignition');
-
             res.line('/**');
             res.line(' * ' + $generatorCommon.mainComment());
             res.line(' */');
@@ -1925,7 +1921,7 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
             res.needEmptyLine = true;
         }
 
-        if (clientMode && clientNearCfg) {
+        if (clientNearCfg) {
             if (javaClass) {
                 res.line('/**');
                 res.line(' * Configure client near cache configuration.');
@@ -1958,37 +1954,9 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
         }
 
         if (javaClass) {
-            res.line('/**');
-            res.line(' * Sample usage of ' + javaClass + '.');
-            res.line(' *');
-            res.line(' * @param args Command line arguments, none required.');
-            res.line(' * @throws Exception If sample execution failed.');
-            res.line(' */');
-
-            res.startBlock('public static void main(String[] args) throws Exception {');
-
-            if (clientMode) {
-                res.startBlock('try (Ignite ignite = Ignition.start(' + javaClass + '.createConfiguration())) {');
-
-                if ($commonUtils.isDefinedAndNotEmpty(cluster.caches)) {
-                    res.line('// Example of near cache creation on client node.');
-                    res.line('ignite.getOrCreateNearCache("' + cluster.caches[0].name + '", ' + javaClass + '.createNearCacheConfiguration());');
-
-                    res.needEmptyLine = true;
-                }
-
-                res.line('System.out.println("Write some code here...");');
-
-                res.endBlock('}');
-            }
-            else
-                res.line('Ignition.start(' + javaClass + '.createConfiguration());');
-
             res.endBlock('}');
 
-            res.endBlock('}');
-
-            return res.generateImports() + '\n\n' + res.asString();
+            return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.asString();
         }
     }
 
@@ -1996,32 +1964,56 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg, clientMode
 };
 
 /**
- * Function to generate java code for cluster configuration.
+ * Function to generate java class for node startup with cluster configuration.
+ *
  * @param cluster Cluster to process.
+ * @param pkg Class package name.
+ * @param cls Class name.
+ * @param cfg Config.
+ * @param factoryCls Optional fully qualified class name of configuration factory.
+ * @param clientNearCfg Optional near cache configuration for client node.
  */
-$generatorJava.nodeStartup = function (cluster) {
+$generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clientNearCfg) {
     var res = $generatorCommon.builder();
-
-    res.importClass('org.apache.ignite.IgniteException');
-    res.importClass('org.apache.ignite.Ignition');
 
     res.line('/**');
     res.line(' * ' + $generatorCommon.mainComment());
     res.line(' */');
-    res.startBlock('public class NodeStartup {');
+    res.startBlock('public class ' + cls + ' {');
 
     res.line('/**');
-    res.line(' * Start up an server node.');
+    res.line(' * Start up node with specified configuration.');
     res.line(' *');
     res.line(' * @param args Command line arguments, none required.');
-    res.line(' * @throws IgniteException If failed.');
+    res.line(' * @throws Exception If failed.');
     res.line(' */');
 
-    res.startBlock('public static void main(String[] args) throws IgniteException {');
-    res.line('Ignition.start("config/' + cluster.name + '-server.xml");');
-    res.endBlock('}');
+    res.startBlock('public static void main(String[] args) throws Exception {');
+
+    if (clientNearCfg) {
+        res.line(res.importClass('org.apache.ignite.Ignite') + ' ignite = ' +
+            res.importClass('org.apache.ignite.Ignition') + ' Ignition.start(' + cfg + ');');
+
+        res.needEmptyLine = true;
+
+        if ($commonUtils.isDefinedAndNotEmpty(cluster.caches)) {
+            res.line('// Example of near cache creation on client node.');
+            res.line('ignite.getOrCreateNearCache("' + cluster.caches[0].name + '", ' +
+                res.importClass(factoryCls) + '.createNearCacheConfiguration());');
+
+            res.needEmptyLine = true;
+        }
+    }
+    else {
+        if (factoryCls)
+            res.importClass(factoryCls);
+
+        res.line(res.importClass('org.apache.ignite.Ignition') + ' Ignition.start(' + cfg + ');');
+    }
 
     res.endBlock('}');
 
-    return res.generateImports() + '\n\n' + res.asString();
+    res.endBlock('}');
+
+    return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.asString();
 };

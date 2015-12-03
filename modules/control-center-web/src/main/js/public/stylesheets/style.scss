@@ -415,7 +415,7 @@ h1, h2, h3, h4, h5, h6 {
     }
 
     .checkbox label {
-        line-height: 20px;
+        line-height: 20px !important;
         vertical-align: middle;
     }
 }
@@ -947,16 +947,6 @@ button.form-control {
     border: thin dotted $ignite-border-color;
 }
 
-.table-details {
-    border-radius: 5px;
-    border: thin dotted $table-border-color;
-
-    margin-top: 10px;
-
-    padding-left: 10px;
-    padding-right: 5px;
-}
-
 .group-section {
     margin-top: 30px;
 }
@@ -988,6 +978,10 @@ button.form-control {
 
 .group-content {
     margin: 0 10px 10px 10px;
+
+    table {
+        width: 100%;
+    }
 }
 
 .group-content-empty {

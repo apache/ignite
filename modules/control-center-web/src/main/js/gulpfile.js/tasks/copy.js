@@ -45,8 +45,9 @@ var legacyPaths = [
 
 var igniteModulePaths = [
     igniteModules + '/**/main.js',
+    igniteModules + '/**/app/modules/*.js',
+    igniteModules + '/**/app/modules/**/*.js',
     igniteModules + '/**/controllers/*.js',
-    igniteModules + '/**/generator/*.js',
     igniteModules + '/**/controllers/models/*.json'
 ];
 

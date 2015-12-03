@@ -100,11 +100,11 @@ consoleModule.controller('igfsController', [
 
                 if ($common.isDefined(model)) {
                     var idx = _.findIndex(model, function (pair) {
-                        return pair.path == pairValue.key
+                        return pair.path === pairValue.key;
                     });
 
                     // Found duplicate.
-                    if (idx >= 0 && idx != index)
+                    if (idx >= 0 && idx !== index)
                         return showPopoverMessage($scope.panels, 'misc', $table.tableFieldId(index, 'KeyPathMode'), 'Such path already exists!');
                 }
 
@@ -142,7 +142,7 @@ consoleModule.controller('igfsController', [
 
                                 if (lastSelectedIgfs) {
                                     var idx = _.findIndex($scope.igfss, function (igfs) {
-                                        return igfs._id == lastSelectedIgfs;
+                                        return igfs._id === lastSelectedIgfs;
                                     });
 
                                     if (idx >= 0)
@@ -242,7 +242,7 @@ consoleModule.controller('igfsController', [
                     ipcEndpointEnabled: true,
                     fragmentizerEnabled: true,
                     clusters: id && _.find($scope.clusters, {value: id}) ? [id] : []
-                }
+                };
             }
 
             // Add new IGFS.
@@ -268,7 +268,7 @@ consoleModule.controller('igfsController', [
                     return false;
                 }
 
-                if (!item.secondaryFileSystemEnabled && (!item.defaultMode || item.defaultMode != 'PRIMARY')) {
+                if (!item.secondaryFileSystemEnabled && (item.defaultMode === 'PROXY')) {
                     $scope.ui.expanded = true;
 
                     showPopoverMessage($scope.panels, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for not "PRIMARY" IGFS mode');
@@ -278,7 +278,7 @@ consoleModule.controller('igfsController', [
 
                 if (item.pathModes) {
                     for (var pathIx = 0; pathIx < item.pathModes.length; pathIx ++) {
-                        if (!item.secondaryFileSystemEnabled && item.pathModes[pathIx].mode != 'PRIMARY') {
+                        if (!item.secondaryFileSystemEnabled && item.pathModes[pathIx].mode === 'PROXY') {
                             $scope.ui.expanded = true;
 
                             showPopoverMessage($scope.panels, 'misc', 'secondaryFileSystem-title', 'Secondary file system should be configured for not "PRIMARY" path mode');
@@ -298,7 +298,7 @@ consoleModule.controller('igfsController', [
                         $scope.ui.markPristine();
 
                         var idx = _.findIndex($scope.igfss, function (igfs) {
-                            return igfs._id == _id;
+                            return igfs._id === _id;
                         });
 
                         if (idx >= 0)
@@ -359,7 +359,7 @@ consoleModule.controller('igfsController', [
                                 var igfss = $scope.igfss;
 
                                 var idx = _.findIndex(igfss, function (igfs) {
-                                    return igfs._id == _id;
+                                    return igfs._id === _id;
                                 });
 
                                 if (idx >= 0) {
