@@ -23,25 +23,32 @@ import java.util.List;
 import javax.inject.Inject;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.osgi.activators.BasicIgniteTestActivator;
+import org.apache.ignite.osgi.activators.TestOsgiFlags;
+import org.apache.ignite.osgi.activators.TestOsgiFlagsImpl;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.ProbeBuilder;
+import org.ops4j.pax.exam.TestProbeBuilder;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerMethod;
 import org.ops4j.pax.exam.util.Filter;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.ops4j.pax.exam.CoreOptions.streamBundle;
 import static org.ops4j.pax.tinybundles.core.TinyBundles.bundle;
 import static org.ops4j.pax.tinybundles.core.TinyBundles.withBnd;
 
 /**
- * Pax Exam test class to check whether the Ignite service is exposed properly.
+ * Pax Exam test class to check whether the Ignite service is exposed properly and whether lifecycle callbacks
+ * are invoked.
  */
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerMethod.class)
@@ -49,6 +56,9 @@ public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
     /** Injects the Ignite OSGi service. */
     @Inject @Filter("(ignite.name=testGrid)")
     private Ignite ignite;
+
+    @Inject
+    private BundleContext bundleCtx;
 
     /**
      * @return Config.
@@ -60,22 +70,56 @@ public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
         // Add bundles we require.
         options.add(
             streamBundle(bundle()
-            .add(BasicIgniteTestActivator.class)
-            .set(Constants.BUNDLE_SYMBOLICNAME, BasicIgniteTestActivator.class.getSimpleName())
-            .set(Constants.BUNDLE_ACTIVATOR, BasicIgniteTestActivator.class.getName())
-            .set(Constants.DYNAMICIMPORT_PACKAGE, "*")
-            .build(withBnd())));
+                .add(BasicIgniteTestActivator.class)
+                .add(TestOsgiFlags.class)
+                .add(TestOsgiFlagsImpl.class)
+                .set(Constants.BUNDLE_SYMBOLICNAME, BasicIgniteTestActivator.class.getSimpleName())
+                .set(Constants.BUNDLE_ACTIVATOR, BasicIgniteTestActivator.class.getName())
+                .set(Constants.EXPORT_PACKAGE, "org.apache.ignite.osgi.activators")
+                .set(Constants.DYNAMICIMPORT_PACKAGE, "*")
+                .build(withBnd())));
+
+        // Uncomment this if you'd like to debug inside the container.
+        // options.add(KarafDistributionOption.debugConfiguration());
 
         return CoreOptions.options(options.toArray(new Option[0]));
+    }
+
+    /**
+     * Builds the probe.
+     *
+     * @param probe The probe builder.
+     * @return The probe builder.
+     */
+    @ProbeBuilder
+    public TestProbeBuilder probeConfiguration(TestProbeBuilder probe) {
+        probe.setHeader(Constants.IMPORT_PACKAGE, "*,org.apache.ignite.osgi.activators");
+
+        return probe;
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testServiceExposed() throws Exception {
+    public void testServiceExposedAndCallbacksInvoked() throws Exception {
         assertNotNull(ignite);
         assertEquals("testGrid", ignite.name());
+
+        TestOsgiFlags flags = (TestOsgiFlags) bundleCtx.getService(
+            bundleCtx.getAllServiceReferences(TestOsgiFlags.class.getName(), null)[0]);
+
+        assertNotNull(flags);
+        assertEquals(Boolean.TRUE, flags.getOnBeforeStartInvoked());
+        assertEquals(Boolean.TRUE, flags.getOnAfterStartInvoked());
+
+        // The bundle is still not stopped, therefore these callbacks cannot be tested.
+        assertNull(flags.getOnBeforeStopInvoked());
+        assertNull(flags.getOnAfterStopInvoked());
+
+        // No exceptions.
+        assertNull(flags.getOnAfterStartThrowable());
+        assertNull(flags.getOnAfterStopThrowable());
     }
 
     /**

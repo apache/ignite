@@ -17,14 +17,19 @@
 
 package org.apache.ignite.osgi.activators;
 
+import java.util.Hashtable;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.osgi.IgniteAbstractOsgiContextActivator;
 import org.apache.ignite.osgi.classloaders.OsgiClassLoadingStrategyType;
+import org.jetbrains.annotations.Nullable;
+import org.osgi.framework.BundleContext;
 
 /**
  * Basic Ignite Activator for testing.
  */
 public class BasicIgniteTestActivator extends IgniteAbstractOsgiContextActivator {
+    /** Flags to report our state to a watcher. */
+    private TestOsgiFlagsImpl flags = new TestOsgiFlagsImpl();
 
     /**
      * @return Ignite config.
@@ -42,5 +47,30 @@ public class BasicIgniteTestActivator extends IgniteAbstractOsgiContextActivator
      */
     @Override public OsgiClassLoadingStrategyType classLoadingStrategy() {
         return OsgiClassLoadingStrategyType.BUNDLE_DELEGATING;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onBeforeStart(BundleContext ctx) {
+        flags.onBeforeStartInvoked = Boolean.TRUE;
+
+        // Export the flags as an OSGi service.
+        ctx.registerService(TestOsgiFlags.class, flags, new Hashtable<String, Object>());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onAfterStart(BundleContext ctx, @Nullable Throwable t) {
+        flags.onAfterStartInvoked = Boolean.TRUE;
+        flags.onAfterStartThrowable = t;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onBeforeStop(BundleContext ctx) {
+        flags.onBeforeStopInvoked = Boolean.TRUE;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onAfterStop(BundleContext ctx, @Nullable Throwable t) {
+        flags.onAfterStopInvoked = Boolean.TRUE;
+        flags.onAfterStopThrowable = t;
     }
 }

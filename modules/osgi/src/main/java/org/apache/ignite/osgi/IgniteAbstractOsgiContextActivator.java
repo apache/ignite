@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.osgi.classloaders.BundleDelegatingClassLoader;
 import org.apache.ignite.osgi.classloaders.ContainerSweepClassLoader;
 import org.apache.ignite.osgi.classloaders.OsgiClassLoadingStrategyType;
+import org.jetbrains.annotations.Nullable;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -100,10 +101,19 @@ public abstract class IgniteAbstractOsgiContextActivator implements BundleActiva
 
         cfg.setClassLoader(clsLdr);
 
-        preStart(ctx);
+        onBeforeStart(ctx);
 
         // Start Ignite.
-        ignite = Ignition.start(cfg);
+        try {
+            ignite = Ignition.start(cfg);
+        }
+        catch (Throwable t) {
+            U.error(log, "Failed to start Ignite via OSGi Activator [errMsg=" + t.getMessage() + ']', t);
+
+            onAfterStart(ctx, t);
+
+            return;
+        }
 
         log = ignite.log();
 
@@ -115,23 +125,25 @@ public abstract class IgniteAbstractOsgiContextActivator implements BundleActiva
         // Export Ignite as a service.
         exportOsgiService(ignite);
 
-        postStart(ctx);
+        onAfterStart(ctx, null);
     }
 
     /**
      * Stops Ignite when the bundle is stopping.
      *
-     * @param context Bundle context.
+     * @param ctx Bundle context.
      * @throws Exception If failed.
      */
-    @Override public final void stop(BundleContext context) throws Exception {
-        preStop(context);
+    @Override public final void stop(BundleContext ctx) throws Exception {
+        onBeforeStop(ctx);
 
         try {
             ignite.close();
         }
-        catch (Exception e) {
-            U.error(log, "Failed to stop Ignite via OSGi Activator [errMsg=" + e.getMessage() + ']', e);
+        catch (Throwable t) {
+            U.error(log, "Failed to stop Ignite via OSGi Activator [errMsg=" + t.getMessage() + ']', t);
+
+            onAfterStop(ctx, t);
 
             return;
         }
@@ -141,7 +153,7 @@ public abstract class IgniteAbstractOsgiContextActivator implements BundleActiva
 
         IgniteOsgiUtils.classloaders().remove(ignite);
 
-        postStop(context);
+        onAfterStop(ctx, null);
     }
 
     /**
@@ -151,7 +163,7 @@ public abstract class IgniteAbstractOsgiContextActivator implements BundleActiva
      *
      * @param ctx The {@link BundleContext}.
      */
-    private void preStart(BundleContext ctx) {
+    protected void onBeforeStart(BundleContext ctx) {
         // No-op.
     }
 
@@ -161,8 +173,9 @@ public abstract class IgniteAbstractOsgiContextActivator implements BundleActiva
      * The default implementation is empty. Override it to introduce custom logic.
      *
      * @param ctx The {@link BundleContext}.
+     * @param t Throwable in case an error occurred when starting. {@code null} otherwise.
      */
-    private void postStart(BundleContext ctx) {
+    protected void onAfterStart(BundleContext ctx, @Nullable Throwable t) {
         // No-op.
     }
 
@@ -173,7 +186,7 @@ public abstract class IgniteAbstractOsgiContextActivator implements BundleActiva
      *
      * @param ctx The {@link BundleContext}.
      */
-    private void preStop(BundleContext ctx) {
+    protected void onBeforeStop(BundleContext ctx) {
         // No-op.
     }
 
@@ -183,8 +196,9 @@ public abstract class IgniteAbstractOsgiContextActivator implements BundleActiva
      * The default implementation is empty. Override it to introduce custom logic.
      *
      * @param ctx The {@link BundleContext}.
+     * @param t Throwable in case an error occurred when stopping. {@code null} otherwise.
      */
-    private void postStop(BundleContext ctx) {
+    protected void onAfterStop(BundleContext ctx, @Nullable Throwable t) {
         // No-op.
     }
 
