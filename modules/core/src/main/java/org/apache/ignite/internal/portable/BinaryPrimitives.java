@@ -25,7 +25,7 @@ import java.nio.ByteOrder;
 /**
  * Primitives writer.
  */
-public abstract class PortablePrimitives {
+public abstract class BinaryPrimitives {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 

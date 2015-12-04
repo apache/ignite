@@ -167,7 +167,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public int length() {
-        return PortablePrimitives.readInt(arr, start + GridPortableMarshaller.TOTAL_LEN_POS);
+        return BinaryPrimitives.readInt(arr, start + GridPortableMarshaller.TOTAL_LEN_POS);
     }
 
     /**
@@ -236,7 +236,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return PortablePrimitives.readInt(arr, start + GridPortableMarshaller.TYPE_ID_POS);
+        return BinaryPrimitives.readInt(arr, start + GridPortableMarshaller.TYPE_ID_POS);
     }
 
     /** {@inheritDoc} */
@@ -265,9 +265,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         Object val;
 
         // Calculate field position.
-        int schemaOffset = PortablePrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        int schemaOffset = BinaryPrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
-        short flags = PortablePrimitives.readShort(arr, start + GridPortableMarshaller.FLAGS_POS);
+        short flags = BinaryPrimitives.readShort(arr, start + GridPortableMarshaller.FLAGS_POS);
 
         int fieldIdLen = PortableUtils.isCompactFooter(flags) ? 0 : PortableUtils.FIELD_ID_LEN;
         int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
@@ -277,58 +277,58 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         int fieldPos;
 
         if (fieldOffsetLen == PortableUtils.OFFSET_1)
-            fieldPos = start + ((int)PortablePrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
+            fieldPos = start + ((int)BinaryPrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
         else if (fieldOffsetLen == PortableUtils.OFFSET_2)
-            fieldPos = start + ((int)PortablePrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
+            fieldPos = start + ((int)BinaryPrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
         else
-            fieldPos = start + PortablePrimitives.readInt(arr, fieldOffsetPos);
+            fieldPos = start + BinaryPrimitives.readInt(arr, fieldOffsetPos);
 
         // Read header and try performing fast lookup for well-known types (the most common types go first).
-        byte hdr = PortablePrimitives.readByte(arr, fieldPos);
+        byte hdr = BinaryPrimitives.readByte(arr, fieldPos);
 
         switch (hdr) {
             case INT:
-                val = PortablePrimitives.readInt(arr, fieldPos + 1);
+                val = BinaryPrimitives.readInt(arr, fieldPos + 1);
 
                 break;
 
             case LONG:
-                val = PortablePrimitives.readLong(arr, fieldPos + 1);
+                val = BinaryPrimitives.readLong(arr, fieldPos + 1);
 
                 break;
 
             case BOOLEAN:
-                val = PortablePrimitives.readBoolean(arr, fieldPos + 1);
+                val = BinaryPrimitives.readBoolean(arr, fieldPos + 1);
 
                 break;
 
             case SHORT:
-                val = PortablePrimitives.readShort(arr, fieldPos + 1);
+                val = BinaryPrimitives.readShort(arr, fieldPos + 1);
 
                 break;
 
             case BYTE:
-                val = PortablePrimitives.readByte(arr, fieldPos + 1);
+                val = BinaryPrimitives.readByte(arr, fieldPos + 1);
 
                 break;
 
             case CHAR:
-                val = PortablePrimitives.readChar(arr, fieldPos + 1);
+                val = BinaryPrimitives.readChar(arr, fieldPos + 1);
 
                 break;
 
             case FLOAT:
-                val = PortablePrimitives.readFloat(arr, fieldPos + 1);
+                val = BinaryPrimitives.readFloat(arr, fieldPos + 1);
 
                 break;
 
             case DOUBLE:
-                val = PortablePrimitives.readDouble(arr, fieldPos + 1);
+                val = BinaryPrimitives.readDouble(arr, fieldPos + 1);
 
                 break;
 
             case STRING: {
-                int dataLen = PortablePrimitives.readInt(arr, fieldPos + 1);
+                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
 
                 val = new String(arr, fieldPos + 5, dataLen, UTF_8);
 
@@ -336,7 +336,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             }
 
             case DATE: {
-                long time = PortablePrimitives.readLong(arr, fieldPos + 1);
+                long time = BinaryPrimitives.readLong(arr, fieldPos + 1);
 
                 val = new Date(time);
 
@@ -344,8 +344,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             }
 
             case TIMESTAMP: {
-                long time = PortablePrimitives.readLong(arr, fieldPos + 1);
-                int nanos = PortablePrimitives.readInt(arr, fieldPos + 1 + 8);
+                long time = BinaryPrimitives.readLong(arr, fieldPos + 1);
+                int nanos = BinaryPrimitives.readInt(arr, fieldPos + 1 + 8);
 
                 Timestamp ts = new Timestamp(time);
 
@@ -357,8 +357,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             }
 
             case UUID: {
-                long most = PortablePrimitives.readLong(arr, fieldPos + 1);
-                long least = PortablePrimitives.readLong(arr, fieldPos + 1 + 8);
+                long most = BinaryPrimitives.readLong(arr, fieldPos + 1);
+                long least = BinaryPrimitives.readLong(arr, fieldPos + 1 + 8);
 
                 val = new UUID(most, least);
 
@@ -366,10 +366,10 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             }
 
             case DECIMAL: {
-                int scale = PortablePrimitives.readInt(arr, fieldPos + 1);
+                int scale = BinaryPrimitives.readInt(arr, fieldPos + 1);
 
-                int dataLen = PortablePrimitives.readInt(arr, fieldPos + 5);
-                byte[] data = PortablePrimitives.readByteArray(arr, fieldPos + 9, dataLen);
+                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 5);
+                byte[] data = BinaryPrimitives.readByteArray(arr, fieldPos + 9, dataLen);
 
                 BigInteger intVal = new BigInteger(data);
 
@@ -427,12 +427,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return PortablePrimitives.readInt(arr, start + GridPortableMarshaller.HASH_CODE_POS);
+        return BinaryPrimitives.readInt(arr, start + GridPortableMarshaller.HASH_CODE_POS);
     }
 
     /** {@inheritDoc} */
     @Override protected int schemaId() {
-        return PortablePrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_ID_POS);
+        return BinaryPrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_ID_POS);
     }
 
     /** {@inheritDoc} */

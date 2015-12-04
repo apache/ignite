@@ -24,7 +24,7 @@ import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.BinaryContext;
 import org.apache.ignite.internal.portable.BinaryPositionReadable;
-import org.apache.ignite.internal.portable.PortablePrimitives;
+import org.apache.ignite.internal.portable.BinaryPrimitives;
 import org.apache.ignite.internal.portable.PortableSchema;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.portable.streams.BinaryHeapInputStream;
@@ -149,7 +149,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
      * @return Read int value.
      */
     public int readInt(int off) {
-        return PortablePrimitives.readInt(arr, pos + off);
+        return BinaryPrimitives.readInt(arr, pos + off);
     }
 
     /**
@@ -157,24 +157,24 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
      * @return Read byte value.
      */
     public byte readBytePositioned(int pos) {
-        return PortablePrimitives.readByte(arr, pos);
+        return BinaryPrimitives.readByte(arr, pos);
     }
 
     /** {@inheritDoc} */
     @Override public short readShortPositioned(int pos) {
-        return PortablePrimitives.readShort(arr, pos);
+        return BinaryPrimitives.readShort(arr, pos);
     }
 
     /** {@inheritDoc} */
     @Override public int readIntPositioned(int pos) {
-        return PortablePrimitives.readInt(arr, pos);
+        return BinaryPrimitives.readInt(arr, pos);
     }
 
     /**
      * @return Read length of array.
      */
     public int readLength() {
-        return PortablePrimitives.readInt(arr, pos);
+        return BinaryPrimitives.readInt(arr, pos);
     }
 
     /**
@@ -183,7 +183,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
      * @return String length.
      */
     public int readStringLength() {
-        return PortablePrimitives.readInt(arr, pos);
+        return BinaryPrimitives.readInt(arr, pos);
     }
 
     /**
@@ -404,22 +404,22 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return arr[pos + 1];
 
             case GridPortableMarshaller.SHORT:
-                return PortablePrimitives.readShort(arr, pos + 1);
+                return BinaryPrimitives.readShort(arr, pos + 1);
 
             case GridPortableMarshaller.INT:
-                return PortablePrimitives.readInt(arr, pos + 1);
+                return BinaryPrimitives.readInt(arr, pos + 1);
 
             case GridPortableMarshaller.LONG:
-                return PortablePrimitives.readLong(arr, pos + 1);
+                return BinaryPrimitives.readLong(arr, pos + 1);
 
             case GridPortableMarshaller.FLOAT:
-                return PortablePrimitives.readFloat(arr, pos + 1);
+                return BinaryPrimitives.readFloat(arr, pos + 1);
 
             case GridPortableMarshaller.DOUBLE:
-                return PortablePrimitives.readDouble(arr, pos + 1);
+                return BinaryPrimitives.readDouble(arr, pos + 1);
 
             case GridPortableMarshaller.CHAR:
-                return PortablePrimitives.readChar(arr, pos + 1);
+                return BinaryPrimitives.readChar(arr, pos + 1);
 
             case GridPortableMarshaller.BOOLEAN:
                 return arr[pos + 1] != 0;
@@ -533,7 +533,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return arr[pos++];
 
             case GridPortableMarshaller.SHORT: {
-                Object res = PortablePrimitives.readShort(arr, pos);
+                Object res = BinaryPrimitives.readShort(arr, pos);
                 pos += 2;
                 return res;
             }
@@ -653,7 +653,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                     if (flag != GridPortableMarshaller.DATE)
                         throw new BinaryObjectException("Invalid flag value: " + flag);
 
-                    long time = PortablePrimitives.readLong(arr, pos);
+                    long time = BinaryPrimitives.readLong(arr, pos);
 
                     pos += 8;
 
@@ -677,11 +677,11 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                     if (flag != GridPortableMarshaller.TIMESTAMP)
                         throw new BinaryObjectException("Invalid flag value: " + flag);
 
-                    long time = PortablePrimitives.readLong(arr, pos);
+                    long time = BinaryPrimitives.readLong(arr, pos);
 
                     pos += 8;
 
-                    int nano = PortablePrimitives.readInt(arr, pos);
+                    int nano = BinaryPrimitives.readInt(arr, pos);
 
                     pos += 4;
 

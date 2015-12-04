@@ -178,9 +178,9 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         Object val;
 
         // Calculate field position.
-        int schemaOffset = PortablePrimitives.readInt(ptr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        int schemaOffset = BinaryPrimitives.readInt(ptr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
-        short flags = PortablePrimitives.readShort(ptr, start + GridPortableMarshaller.FLAGS_POS);
+        short flags = BinaryPrimitives.readShort(ptr, start + GridPortableMarshaller.FLAGS_POS);
 
         int fieldIdLen = PortableUtils.isCompactFooter(flags) ? 0 : PortableUtils.FIELD_ID_LEN;
         int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
@@ -190,59 +190,59 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         int fieldPos;
 
         if (fieldOffsetLen == PortableUtils.OFFSET_1)
-            fieldPos = start + ((int)PortablePrimitives.readByte(ptr, fieldOffsetPos) & 0xFF);
+            fieldPos = start + ((int)BinaryPrimitives.readByte(ptr, fieldOffsetPos) & 0xFF);
         else if (fieldOffsetLen == PortableUtils.OFFSET_2)
-            fieldPos = start + ((int)PortablePrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
+            fieldPos = start + ((int)BinaryPrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
         else
-            fieldPos = start + PortablePrimitives.readInt(ptr, fieldOffsetPos);
+            fieldPos = start + BinaryPrimitives.readInt(ptr, fieldOffsetPos);
 
         // Read header and try performing fast lookup for well-known types (the most common types go first).
-        byte hdr = PortablePrimitives.readByte(ptr, fieldPos);
+        byte hdr = BinaryPrimitives.readByte(ptr, fieldPos);
 
         switch (hdr) {
             case INT:
-                val = PortablePrimitives.readInt(ptr, fieldPos + 1);
+                val = BinaryPrimitives.readInt(ptr, fieldPos + 1);
 
                 break;
 
             case LONG:
-                val = PortablePrimitives.readLong(ptr, fieldPos + 1);
+                val = BinaryPrimitives.readLong(ptr, fieldPos + 1);
 
                 break;
 
             case BOOLEAN:
-                val = PortablePrimitives.readBoolean(ptr, fieldPos + 1);
+                val = BinaryPrimitives.readBoolean(ptr, fieldPos + 1);
 
                 break;
 
             case SHORT:
-                val = PortablePrimitives.readShort(ptr, fieldPos + 1);
+                val = BinaryPrimitives.readShort(ptr, fieldPos + 1);
 
                 break;
 
             case BYTE:
-                val = PortablePrimitives.readByte(ptr, fieldPos + 1);
+                val = BinaryPrimitives.readByte(ptr, fieldPos + 1);
 
                 break;
 
             case CHAR:
-                val = PortablePrimitives.readChar(ptr, fieldPos + 1);
+                val = BinaryPrimitives.readChar(ptr, fieldPos + 1);
 
                 break;
 
             case FLOAT:
-                val = PortablePrimitives.readFloat(ptr, fieldPos + 1);
+                val = BinaryPrimitives.readFloat(ptr, fieldPos + 1);
 
                 break;
 
             case DOUBLE:
-                val = PortablePrimitives.readDouble(ptr, fieldPos + 1);
+                val = BinaryPrimitives.readDouble(ptr, fieldPos + 1);
 
                 break;
 
             case STRING: {
-                int dataLen = PortablePrimitives.readInt(ptr, fieldPos + 1);
-                byte[] data = PortablePrimitives.readByteArray(ptr, fieldPos + 5, dataLen);
+                int dataLen = BinaryPrimitives.readInt(ptr, fieldPos + 1);
+                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 5, dataLen);
 
                 val = new String(data, UTF_8);
 
@@ -250,7 +250,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
             }
 
             case DATE: {
-                long time = PortablePrimitives.readLong(ptr, fieldPos + 1);
+                long time = BinaryPrimitives.readLong(ptr, fieldPos + 1);
 
                 val = new Date(time);
 
@@ -258,8 +258,8 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
             }
 
             case TIMESTAMP: {
-                long time = PortablePrimitives.readLong(ptr, fieldPos + 1);
-                int nanos = PortablePrimitives.readInt(ptr, fieldPos + 1 + 8);
+                long time = BinaryPrimitives.readLong(ptr, fieldPos + 1);
+                int nanos = BinaryPrimitives.readInt(ptr, fieldPos + 1 + 8);
 
                 Timestamp ts = new Timestamp(time);
 
@@ -271,8 +271,8 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
             }
 
             case UUID: {
-                long most = PortablePrimitives.readLong(ptr, fieldPos + 1);
-                long least = PortablePrimitives.readLong(ptr, fieldPos + 1 + 8);
+                long most = BinaryPrimitives.readLong(ptr, fieldPos + 1);
+                long least = BinaryPrimitives.readLong(ptr, fieldPos + 1 + 8);
 
                 val = new UUID(most, least);
 
@@ -280,10 +280,10 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
             }
 
             case DECIMAL: {
-                int scale = PortablePrimitives.readInt(ptr, fieldPos + 1);
+                int scale = BinaryPrimitives.readInt(ptr, fieldPos + 1);
 
-                int dataLen = PortablePrimitives.readInt(ptr, fieldPos + 5);
-                byte[] data = PortablePrimitives.readByteArray(ptr, fieldPos + 9, dataLen);
+                int dataLen = BinaryPrimitives.readInt(ptr, fieldPos + 5);
+                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 9, dataLen);
 
                 BigInteger intVal = new BigInteger(data);
 
