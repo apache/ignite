@@ -50,7 +50,7 @@ public class BinaryMetadata implements Externalizable {
     private String affKeyFieldName;
 
     /** Schemas associated with type. */
-    private Collection<PortableSchema> schemas;
+    private Collection<BinarySchema> schemas;
 
     /** Whether this is enum type. */
     private boolean isEnum;
@@ -73,7 +73,7 @@ public class BinaryMetadata implements Externalizable {
      * @param isEnum Enum flag.
      */
     public BinaryMetadata(int typeId, String typeName, @Nullable Map<String, Integer> fields,
-        @Nullable String affKeyFieldName, @Nullable Collection<PortableSchema> schemas, boolean isEnum) {
+        @Nullable String affKeyFieldName, @Nullable Collection<BinarySchema> schemas, boolean isEnum) {
         assert typeName != null;
 
         this.typeId = typeId;
@@ -132,8 +132,8 @@ public class BinaryMetadata implements Externalizable {
     /**
      * @return Schemas.
      */
-    public Collection<PortableSchema> schemas() {
-        return schemas != null ? schemas : Collections.<PortableSchema>emptyList();
+    public Collection<BinarySchema> schemas() {
+        return schemas != null ? schemas : Collections.<BinarySchema>emptyList();
     }
 
     /**

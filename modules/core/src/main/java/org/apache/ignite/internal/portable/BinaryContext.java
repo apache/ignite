@@ -567,7 +567,7 @@ public class BinaryContext implements Externalizable {
         );
 
         if (!deserialize) {
-            Collection<PortableSchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
+            Collection<BinarySchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
             metaHnd.addMeta(typeId,
                 new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas, desc.isEnum()).wrap(this));
@@ -777,7 +777,7 @@ public class BinaryContext implements Externalizable {
         typeMappers.put(typeName, idMapper);
 
         Map<String, Integer> fieldsMeta = null;
-        Collection<PortableSchema> schemas = null;
+        Collection<BinarySchema> schemas = null;
 
         if (cls != null) {
             BinaryClassDescriptor desc = new BinaryClassDescriptor(

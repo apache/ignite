@@ -51,7 +51,7 @@ class BinaryMetadataCollector implements BinaryWriter {
     private final Map<String, Integer> meta = new HashMap<>();
 
     /** Schema builder. */
-    private PortableSchema.Builder schemaBuilder = PortableSchema.Builder.newBuilder();
+    private BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
 
     /**
      * Constructor.
@@ -76,7 +76,7 @@ class BinaryMetadataCollector implements BinaryWriter {
     /**
      * @return Schemas.
      */
-    PortableSchema schema() {
+    BinarySchema schema() {
         return schemaBuilder.build();
     }
 

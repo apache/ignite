@@ -98,7 +98,7 @@ public class BinaryClassDescriptor {
     private final Map<String, Integer> stableFieldsMeta;
 
     /** Object schemas. Initialized only for serializable classes and contains only 1 entry. */
-    private final PortableSchema stableSchema;
+    private final BinarySchema stableSchema;
 
     /** Schema registry. */
     private final PortableSchemaRegistry schemaReg;
@@ -234,7 +234,7 @@ public class BinaryClassDescriptor {
                 ArrayList<BinaryFieldAccessor> fields0 = new ArrayList<>();
                 stableFieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
 
-                PortableSchema.Builder schemaBuilder = PortableSchema.Builder.newBuilder();
+                BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
 
                 Collection<String> names = new HashSet<>();
                 Collection<Integer> ids = new HashSet<>();
@@ -329,7 +329,7 @@ public class BinaryClassDescriptor {
     /**
      * @return Schema.
      */
-    PortableSchema schema() {
+    BinarySchema schema() {
         return stableSchema;
     }
 
@@ -591,7 +591,7 @@ public class BinaryClassDescriptor {
                                 else
                                     ((Binarylizable)obj).writeBinary(collector);
 
-                                PortableSchema newSchema = collector.schema();
+                                BinarySchema newSchema = collector.schema();
 
                                 BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
                                     affKeyFieldName, Collections.singleton(newSchema), false);

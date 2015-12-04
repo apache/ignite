@@ -128,7 +128,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override protected PortableSchema createSchema() {
+    @Override protected BinarySchema createSchema() {
         return reader(null).getOrCreateSchema();
     }
 

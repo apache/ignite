@@ -436,7 +436,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Override protected PortableSchema createSchema() {
+    @Override protected BinarySchema createSchema() {
         return reader(null).getOrCreateSchema();
     }
 

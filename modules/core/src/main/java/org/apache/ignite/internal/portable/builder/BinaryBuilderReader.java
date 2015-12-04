@@ -25,7 +25,7 @@ import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.BinaryContext;
 import org.apache.ignite.internal.portable.BinaryPositionReadable;
 import org.apache.ignite.internal.portable.BinaryPrimitives;
-import org.apache.ignite.internal.portable.PortableSchema;
+import org.apache.ignite.internal.portable.BinarySchema;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.portable.streams.BinaryHeapInputStream;
 
@@ -108,7 +108,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
      *
      * @return Object's schema.
      */
-    public PortableSchema schema() {
+    public BinarySchema schema() {
         return reader.getOrCreateSchema();
     }
 

@@ -28,7 +28,7 @@ import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.BinaryContext;
-import org.apache.ignite.internal.portable.PortableSchema;
+import org.apache.ignite.internal.portable.BinarySchema;
 import org.apache.ignite.internal.portable.PortableSchemaRegistry;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -203,7 +203,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             Set<Integer> remainsFlds = null;
 
             if (reader != null) {
-                PortableSchema schema = reader.schema();
+                BinarySchema schema = reader.schema();
 
                 Map<Integer, Object> assignedFldsById;
 
@@ -380,7 +380,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     typeName = meta.typeName();
                 }
 
-                PortableSchema curSchema = writer.currentSchema();
+                BinarySchema curSchema = writer.currentSchema();
 
                 ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta,
                     ctx.affinityKeyFieldName(typeId), Collections.singleton(curSchema), false));
@@ -443,7 +443,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             int fieldIdLen = PortableUtils.fieldIdLength(flags);
             int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
 
-            PortableSchema schema = reader.schema();
+            BinarySchema schema = reader.schema();
 
             Map<Integer, Object> readCache = new HashMap<>();
 

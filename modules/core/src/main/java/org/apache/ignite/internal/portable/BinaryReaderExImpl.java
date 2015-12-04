@@ -130,7 +130,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private final int fieldOffsetLen;
 
     /** Object schema. */
-    private final PortableSchema schema;
+    private final BinarySchema schema;
 
     /** Whether passed IDs matches schema order. Reset to false as soon as a single mismatch detected. */
     private boolean matching = true;
@@ -1653,8 +1653,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      *
      * @return Schema.
      */
-    public PortableSchema getOrCreateSchema() {
-        PortableSchema schema = ctx.schemaRegistry(typeId).schema(schemaId);
+    public BinarySchema getOrCreateSchema() {
+        BinarySchema schema = ctx.schemaRegistry(typeId).schema(schemaId);
 
         if (schema == null) {
             if (fieldIdLen != PortableUtils.FIELD_ID_LEN) {
@@ -1664,7 +1664,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                     throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
                         typeId);
 
-                for (PortableSchema typeSchema : type.metadata().schemas()) {
+                for (BinarySchema typeSchema : type.metadata().schemas()) {
                     if (schemaId == typeSchema.schemaId()) {
                         schema = typeSchema;
 
@@ -1692,10 +1692,10 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      *
      * @return Schema.
      */
-    private PortableSchema createSchema() {
+    private BinarySchema createSchema() {
         assert fieldIdLen == PortableUtils.FIELD_ID_LEN;
 
-        PortableSchema.Builder builder = PortableSchema.Builder.newBuilder();
+        BinarySchema.Builder builder = BinarySchema.Builder.newBuilder();
 
         int searchPos = footerStart;
         int searchEnd = searchPos + footerLen;
@@ -1732,7 +1732,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (matching) {
                 int expOrder = matchingOrder++;
 
-                PortableSchema.Confirmation confirm = schema.confirmOrder(expOrder, name);
+                BinarySchema.Confirmation confirm = schema.confirmOrder(expOrder, name);
 
                 switch (confirm) {
                     case CONFIRMED:
@@ -1753,7 +1753,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                     default:
                         // Field name is not know for this order. Need to calculate ID and repeat speculation.
-                        assert confirm == PortableSchema.Confirmation.CLARIFY;
+                        assert confirm == BinarySchema.Confirmation.CLARIFY;
 
                         int id = fieldId(name);
                         int realId = schema.fieldId(expOrder);
@@ -1838,7 +1838,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return {@code True} if field was found and stream was positioned accordingly.
      */
     private boolean trySetUserFieldPosition(int order) {
-        if (order != PortableSchema.ORDER_NOT_FOUND) {
+        if (order != BinarySchema.ORDER_NOT_FOUND) {
             int offsetPos = footerStart + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
 
             int pos = start + PortableUtils.fieldOffsetRelative(in, offsetPos, fieldOffsetLen);

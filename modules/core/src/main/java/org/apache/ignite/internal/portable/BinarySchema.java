@@ -31,7 +31,7 @@ import java.util.List;
  * for quick comparisons performed within already fetched L1 cache line.
  * - When there are more fields, we store them inside a hash map.
  */
-public class PortableSchema implements Externalizable {
+public class BinarySchema implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -74,7 +74,7 @@ public class PortableSchema implements Externalizable {
     /**
      * {@link Externalizable} support.
      */
-    public PortableSchema() {
+    public BinarySchema() {
         // No-op.
     }
 
@@ -84,7 +84,7 @@ public class PortableSchema implements Externalizable {
      * @param schemaId Schema ID.
      * @param fieldIds Field IDs.
      */
-    private PortableSchema(int schemaId, List<Integer> fieldIds) {
+    private BinarySchema(int schemaId, List<Integer> fieldIds) {
         assert fieldIds != null;
 
         this.schemaId = schemaId;
@@ -205,7 +205,7 @@ public class PortableSchema implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        return o != null && o instanceof PortableSchema && schemaId == ((PortableSchema)o).schemaId;
+        return o != null && o instanceof BinarySchema && schemaId == ((BinarySchema)o).schemaId;
     }
 
     /** {@inheritDoc} */
@@ -423,8 +423,8 @@ public class PortableSchema implements Externalizable {
          *
          * @return Schema.
          */
-        public PortableSchema build() {
-            return new PortableSchema(schemaId, fields);
+        public BinarySchema build() {
+            return new BinarySchema(schemaId, fields);
         }
     }
 

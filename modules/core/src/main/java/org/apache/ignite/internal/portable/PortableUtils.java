@@ -909,9 +909,9 @@ public class PortableUtils {
             }
 
             // Check and merge schemas.
-            Collection<PortableSchema> mergedSchemas = new HashSet<>(oldMeta.schemas());
+            Collection<BinarySchema> mergedSchemas = new HashSet<>(oldMeta.schemas());
 
-            for (PortableSchema newSchema : newMeta.schemas()) {
+            for (BinarySchema newSchema : newMeta.schemas()) {
                 if (mergedSchemas.add(newSchema))
                     changed = true;
             }

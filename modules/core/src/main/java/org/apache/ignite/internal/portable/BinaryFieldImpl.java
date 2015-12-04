@@ -68,7 +68,7 @@ public class BinaryFieldImpl implements BinaryField {
     @Override public boolean exists(BinaryObject obj) {
         BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
-        return fieldOrder(obj0) != PortableSchema.ORDER_NOT_FOUND;
+        return fieldOrder(obj0) != BinarySchema.ORDER_NOT_FOUND;
     }
 
     /** {@inheritDoc} */
@@ -78,7 +78,7 @@ public class BinaryFieldImpl implements BinaryField {
 
         int order = fieldOrder(obj0);
 
-        return order != PortableSchema.ORDER_NOT_FOUND ? (T)obj0.fieldByOrder(order) : null;
+        return order != BinarySchema.ORDER_NOT_FOUND ? (T)obj0.fieldByOrder(order) : null;
     }
 
     /**
@@ -96,7 +96,7 @@ public class BinaryFieldImpl implements BinaryField {
 
         int schemaId = obj.schemaId();
 
-        PortableSchema schema = schemas.schema(schemaId);
+        BinarySchema schema = schemas.schema(schemaId);
 
         if (schema == null) {
             schema = obj.createSchema();

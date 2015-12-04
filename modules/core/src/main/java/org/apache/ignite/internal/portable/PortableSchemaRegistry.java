@@ -48,19 +48,19 @@ public class PortableSchemaRegistry {
     private int schemaId4;
 
     /** First schema. */
-    private PortableSchema schema1;
+    private BinarySchema schema1;
 
     /** Second schema. */
-    private PortableSchema schema2;
+    private BinarySchema schema2;
 
     /** Third schema. */
-    private PortableSchema schema3;
+    private BinarySchema schema3;
 
     /** Fourth schema. */
-    private PortableSchema schema4;
+    private BinarySchema schema4;
 
     /** Schemas with COW semantics. */
-    private volatile HashMap<Integer, PortableSchema> schemas;
+    private volatile HashMap<Integer, BinarySchema> schemas;
 
     /**
      * Get schema for the given ID. We rely on very relaxed memory semantics here assuming that it is not critical
@@ -69,7 +69,7 @@ public class PortableSchemaRegistry {
      * @param schemaId Schema ID.
      * @return Schema or {@code null}.
      */
-    @Nullable public PortableSchema schema(int schemaId) {
+    @Nullable public BinarySchema schema(int schemaId) {
         if (inline) {
             if (schemaId == schemaId1)
                 return schema1;
@@ -81,7 +81,7 @@ public class PortableSchemaRegistry {
                 return schema4;
         }
         else {
-            HashMap<Integer, PortableSchema> schemas0 = schemas;
+            HashMap<Integer, BinarySchema> schemas0 = schemas;
 
             // Null can be observed here due to either data race or race condition when switching to non-inlined mode.
             // Both of them are benign for us because they lead only to unnecessary schema re-calc.
@@ -98,7 +98,7 @@ public class PortableSchemaRegistry {
      * @param schemaId Schema ID.
      * @param schema Schema.
      */
-    public void addSchema(int schemaId, PortableSchema schema) {
+    public void addSchema(int schemaId, BinarySchema schema) {
         synchronized (this) {
             if (inline) {
                 // Check if this is already known schema.
@@ -147,7 +147,7 @@ public class PortableSchemaRegistry {
                 }
 
                 // No luck, switching to hash map mode.
-                HashMap<Integer, PortableSchema> newSchemas = new HashMap<>();
+                HashMap<Integer, BinarySchema> newSchemas = new HashMap<>();
 
                 newSchemas.put(schemaId1, schema1);
                 newSchemas.put(schemaId2, schema2);
@@ -161,7 +161,7 @@ public class PortableSchemaRegistry {
                 inline = false;
             }
             else {
-                HashMap<Integer, PortableSchema> newSchemas = new HashMap<>(schemas);
+                HashMap<Integer, BinarySchema> newSchemas = new HashMap<>(schemas);
 
                 newSchemas.put(schemaId, schema);
 

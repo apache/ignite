@@ -1761,8 +1761,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @return Current writer's schema.
      */
-    public PortableSchema currentSchema() {
-        PortableSchema.Builder builder = PortableSchema.Builder.newBuilder();
+    public BinarySchema currentSchema() {
+        BinarySchema.Builder builder = BinarySchema.Builder.newBuilder();
 
         if (schema != null)
             schema.build(builder, fieldCnt);
