@@ -503,9 +503,9 @@ namespace ignite
                 c_Throwable = FindClass(env, C_THROWABLE);
                 m_Throwable_getMessage = FindMethod(env, c_Throwable, M_THROWABLE_GET_MESSAGE);
                 m_Throwable_printStackTrace = FindMethod(env, c_Throwable, M_THROWABLE_PRINT_STACK_TRACE);
-				
-				c_X = FindClass(env, C_X);
-				m_X_getFullStackTrace = FindMethod(env, c_X, M_X_GET_FULL_STACK_TRACE);
+
+                c_X = FindClass(env, C_X);
+                m_X_getFullStackTrace = FindMethod(env, c_X, M_X_GET_FULL_STACK_TRACE);
             }
 
             void JniJavaMembers::Destroy(JNIEnv* env) {
@@ -529,9 +529,9 @@ namespace ignite
 
                         jstring msg = static_cast<jstring>(env->CallObjectMethod(err, m_Throwable_getMessage));
                         *errMsg = StringToChars(env, msg, errMsgLen);
-
-						jstring trace = static_cast<jstring>(env->CallStaticObjectMethod(c_X, m_X_getFullStackTrace, err));
-						*stackTrace = StringToChars(env, trace, stackTraceLen);
+						
+                        jstring trace = static_cast<jstring>(env->CallStaticObjectMethod(c_X, m_X_getFullStackTrace, err));						
+                        *stackTrace = StringToChars(env, trace, stackTraceLen);
 
                         if (errCls)
                             env->DeleteLocalRef(errCls);
@@ -925,12 +925,12 @@ namespace ignite
                         delete[] errMsgChars;
                     }
 
-					if (stackTraceChars)
-					{
-						stackTrace = stackTraceChars;
+                    if (stackTraceChars)
+                    {
+                        stackTrace = stackTraceChars;
 
-						delete[] stackTraceChars;
-					}
+                        delete[] stackTraceChars;
+                    }
 
                     // Destroy mmebers.
                     if (env) {
