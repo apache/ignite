@@ -317,7 +317,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 flags |= PortableUtils.FLAG_OFFSET_ONE_BYTE;
             else if (offsetByteCnt == PortableUtils.OFFSET_2)
                 flags |= PortableUtils.FLAG_OFFSET_TWO_BYTES;
-            
+
             // Write raw offset if needed.
             if (rawOffPos != 0) {
                 flags |= PortableUtils.FLAG_HAS_RAW;
@@ -1805,9 +1805,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             out.unsafeWriteByte(GridPortableMarshaller.HANDLE);
             out.unsafeWriteInt(pos - old);
-
-            if (obj.getClass().isArray())
-                System.out.println("CASE!");
 
             return true;
         }

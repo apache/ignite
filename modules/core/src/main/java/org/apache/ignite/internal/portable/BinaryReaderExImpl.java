@@ -246,7 +246,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 dataStart = start + DFLT_HDR_LEN;
             }
 
-            idMapper = userType ? ctx.userTypeIdMapper(typeId) : null;
+            idMapper = userType ? ctx.userTypeIdMapper(typeId) : BinaryInternalIdMapper.defaultInstance();
             schema = PortableUtils.hasSchema(flags) ? getOrCreateSchema() : null;
         }
         else {
@@ -1625,6 +1625,17 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         }
 
         return obj;
+    }
+
+    /**
+     * @return Deserialized object.
+     * @throws BinaryObjectException If failed.
+     */
+    @Nullable Object readField(int fieldId) throws BinaryObjectException {
+        if (!findFieldById(fieldId))
+            return null;
+
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds).deserialize();
     }
 
     /**

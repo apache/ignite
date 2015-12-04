@@ -251,6 +251,7 @@ public class GridDhtPartitionDemander {
     /**
      * @param name Cache name.
      * @param fut Future.
+     * @throws IgniteCheckedException If failed.
      */
     private boolean waitForCacheRebalancing(String name, RebalanceFuture fut) throws IgniteCheckedException {
         if (log.isDebugEnabled())
@@ -283,7 +284,7 @@ public class GridDhtPartitionDemander {
      * @param force {@code True} if dummy reassign.
      * @param caches Rebalancing of these caches will be finished before this started.
      * @param cnt Counter.
-     * @throws IgniteCheckedException If failed.
+     * @return Rebalancing closure.
      */
     Callable<Boolean> addAssignments(final GridDhtPreloaderAssignments assigns, boolean force,
         final Collection<String> caches, int cnt) {
@@ -293,25 +294,24 @@ public class GridDhtPartitionDemander {
         long delay = cctx.config().getRebalanceDelay();
 
         if (delay == 0 || force) {
-            assert assigns != null;
-
             final RebalanceFuture oldFut = rebalanceFut;
 
             final RebalanceFuture fut = new RebalanceFuture(assigns, cctx, log, oldFut.isInitial(), cnt);
 
             if (!oldFut.isInitial())
                 oldFut.cancel();
-            else
+            else {
                 fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                    @Override public void apply(IgniteInternalFuture<Boolean> future) {
+                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
                         oldFut.onDone(fut.result());
                     }
                 });
+            }
 
             rebalanceFut = fut;
 
             if (assigns.isEmpty()) {
-                fut.doneIfEmpty();
+                fut.doneIfEmpty(assigns.cancelled());
 
                 return null;
             }
@@ -357,6 +357,9 @@ public class GridDhtPartitionDemander {
 
     /**
      * @param fut Future.
+     * @param assigns Assignments.
+     * @throws IgniteCheckedException If failed.
+     * @return
      */
     private boolean requestPartitions(
         RebalanceFuture fut,
@@ -370,7 +373,7 @@ public class GridDhtPartitionDemander {
 
             GridDhtPartitionDemandMessage d = e.getValue();
 
-            fut.appendPartitions(node.id(), d.partitions());//Future preparation.
+            fut.appendPartitions(node.id(), d.partitions()); //Future preparation.
         }
 
         for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
@@ -413,7 +416,8 @@ public class GridDhtPartitionDemander {
                         initD.timeout(cctx.config().getRebalanceTimeout());
 
                         synchronized (fut) {
-                            if (!fut.isDone())// Future can be already cancelled at this moment and all failovers happened.
+                            if (!fut.isDone())
+                                // Future can be already cancelled at this moment and all failovers happened.
                                 // New requests will not be covered by failovers.
                                 cctx.io().sendOrderedMessage(node,
                                     rebalanceTopics.get(cnt), initD, cctx.ioPolicy(), initD.timeout());
@@ -427,9 +431,12 @@ public class GridDhtPartitionDemander {
                 }
             }
             else {
-                U.log(log, "Starting rebalancing (old api) [cache=" + cctx.name() + ", mode=" + cfg.getRebalanceMode() +
-                    ", fromNode=" + node.id() + ", partitionsCount=" + parts.size() +
-                    ", topology=" + fut.topologyVersion() + ", updateSeq=" + fut.updateSeq + "]");
+                U.log(log, "Starting rebalancing (old api) [cache=" + cctx.name() +
+                    ", mode=" + cfg.getRebalanceMode() +
+                    ", fromNode=" + node.id() +
+                    ", partitionsCount=" + parts.size() +
+                    ", topology=" + fut.topologyVersion() +
+                    ", updateSeq=" + fut.updateSeq + "]");
 
                 d.timeout(cctx.config().getRebalanceTimeout());
                 d.workerId(0);//old api support.
@@ -832,9 +839,9 @@ public class GridDhtPartitionDemander {
         }
 
         /**
-         *
+         * @param cancelled Is cancelled.
          */
-        private void doneIfEmpty() {
+        private void doneIfEmpty(boolean cancelled) {
             synchronized (this) {
                 if (isDone())
                     return;
@@ -845,14 +852,14 @@ public class GridDhtPartitionDemander {
                     log.debug("Rebalancing is not required [cache=" + cctx.name() +
                         ", topology=" + topVer + "]");
 
-                checkIsDone();
+                checkIsDone(cancelled);
             }
         }
 
         /**
          * Cancels this future.
          *
-         * @return {@code true}.
+         * @return {@code True}.
          */
         @Override public boolean cancel() {
             synchronized (this) {
@@ -860,7 +867,7 @@ public class GridDhtPartitionDemander {
                     return true;
 
                 U.log(log, "Cancelled rebalancing from all nodes [cache=" + cctx.name()
-                    + ", topology=" + topologyVersion());
+                    + ", topology=" + topologyVersion() + ']');
 
                 if (!cctx.kernalContext().isStopping()) {
                     for (UUID nodeId : remaining.keySet())
@@ -1012,7 +1019,7 @@ public class GridDhtPartitionDemander {
                     preloadEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());
 
                 if (log.isDebugEnabled())
-                    log.debug("Completed rebalance future.");
+                    log.debug("Completed rebalance future: " + this);
 
                 cctx.shared().exchange().scheduleResendPartitions();
 
