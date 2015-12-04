@@ -54,15 +54,15 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.Address;
-import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.AddressBook;
-import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.Company;
-import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectAllTypes;
-import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectArrayList;
-import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectContainer;
-import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectEnum;
-import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectInner;
-import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectOuter;
+import static org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.Address;
+import static org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.AddressBook;
+import static org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.Company;
+import static org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
+import static org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectArrayList;
+import static org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectContainer;
+import static org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectEnum;
+import static org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectInner;
+import static org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectOuter;
 
 /**
  *

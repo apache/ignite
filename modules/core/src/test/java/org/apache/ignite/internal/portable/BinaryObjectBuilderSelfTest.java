@@ -36,11 +36,11 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectAllTypes;
-import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectContainer;
-import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectInner;
-import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectOuter;
-import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectPlainPortable;
+import org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
+import org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectContainer;
+import org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectInner;
+import org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectOuter;
+import org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectPlainPortable;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -77,7 +77,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         });
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
-        
+
         bCfg.setCompactFooter(compactFooter());
 
         bCfg.setTypeConfigurations(Arrays.asList(

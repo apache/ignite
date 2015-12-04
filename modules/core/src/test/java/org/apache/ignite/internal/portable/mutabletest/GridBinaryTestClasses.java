@@ -38,7 +38,7 @@ import org.apache.ignite.binary.BinaryObject;
  *
  */
 @SuppressWarnings({"PublicInnerClass", "PublicField"})
-public class GridPortableTestClasses {
+public class GridBinaryTestClasses {
     /**
      *
      */
