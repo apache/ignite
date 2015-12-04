@@ -177,8 +177,6 @@ namespace ignite
             const char* C_THROWABLE = "java/lang/Throwable";
             JniMethod M_THROWABLE_GET_MESSAGE = JniMethod("getMessage", "()Ljava/lang/String;", false);
             JniMethod M_THROWABLE_PRINT_STACK_TRACE = JniMethod("printStackTrace", "()V", false);
-            JniMethod M_THROWABLE_GET_CAUSE = JniMethod("getCause", "()Ljava/lang/Throwable;", false);
-            JniMethod M_THROWABLE_GET_STACK_TRACE = JniMethod("getStackTrace", "()[Ljava/lang/StackTraceElement;", false);
 
             const char* C_CLASS = "java/lang/Class";
             JniMethod M_CLASS_GET_NAME = JniMethod("getName", "()Ljava/lang/String;", false);
@@ -505,8 +503,6 @@ namespace ignite
                 c_Throwable = FindClass(env, C_THROWABLE);
                 m_Throwable_getMessage = FindMethod(env, c_Throwable, M_THROWABLE_GET_MESSAGE);
                 m_Throwable_printStackTrace = FindMethod(env, c_Throwable, M_THROWABLE_PRINT_STACK_TRACE);
-				m_Throwable_getCause = FindMethod(env, c_Throwable, M_THROWABLE_GET_CAUSE);
-				m_Throwable_getStackTrace = FindMethod(env, c_Throwable, M_THROWABLE_GET_STACK_TRACE);
 				
 				c_X = FindClass(env, C_X);
 				m_X_getFullStackTrace = FindMethod(env, c_X, M_X_GET_FULL_STACK_TRACE);

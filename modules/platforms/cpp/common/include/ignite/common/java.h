@@ -189,8 +189,6 @@ namespace ignite
                 jclass c_Throwable;
                 jmethodID m_Throwable_getMessage;
                 jmethodID m_Throwable_printStackTrace;
-                jmethodID m_Throwable_getCause;
-                jmethodID m_Throwable_getStackTrace;
 				
 				jclass c_X;
 				jmethodID m_X_getFullStackTrace;
