@@ -534,7 +534,7 @@ namespace ignite
                         jstring msg = static_cast<jstring>(env->CallObjectMethod(err, m_Throwable_getMessage));
                         *errMsg = StringToChars(env, msg, errMsgLen);
 
-						jstring trace = static_cast<jstring>(env->CallStaticObjectMethod(c_X, m_X_getFullStackTrace));
+						jstring trace = static_cast<jstring>(env->CallStaticObjectMethod(c_X, m_X_getFullStackTrace, err));
 						*stackTrace = StringToChars(env, trace, stackTraceLen);
 
                         if (errCls)
@@ -2150,6 +2150,7 @@ namespace ignite
 
                     jstring clsName = static_cast<jstring>(env->CallObjectMethod(cls, jvm->GetJavaMembers().m_Class_getName));
                     jstring msg = static_cast<jstring>(env->CallObjectMethod(err, jvm->GetJavaMembers().m_Throwable_getMessage));
+                    jstring trace = static_cast<jstring>(env->CallStaticObjectMethod(jvm->GetJavaMembers().c_X, jvm->GetJavaMembers().m_X_getFullStackTrace, err));
 
                     env->DeleteLocalRef(cls);
 
@@ -2158,6 +2159,9 @@ namespace ignite
 
                     int msgLen;
                     std::string msg0 = JavaStringToCString(env, msg, &msgLen);
+
+                    int traceLen;
+                    std::string trace0 = JavaStringToCString(env, trace, &traceLen);
 
                     if (errInfo)
                     {
@@ -2177,16 +2181,16 @@ namespace ignite
                         int errBytesLen = env->GetArrayLength(errData);
 
                         if (hnds.error)
-                            hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(), msgLen,
-                                errBytesNative, errBytesLen);
+                            hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(), 
+								msgLen, trace0.c_str(), traceLen, errBytesNative, errBytesLen);
 
                         env->ReleaseByteArrayElements(errData, errBytesNative, JNI_ABORT);
                     }
                     else
                     {
                         if (hnds.error)
-                            hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(), msgLen,
-                                NULL, 0);
+                            hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(), 
+								msgLen, trace0.c_str(), traceLen, NULL, 0);
                     }
 
                     env->DeleteLocalRef(err);
