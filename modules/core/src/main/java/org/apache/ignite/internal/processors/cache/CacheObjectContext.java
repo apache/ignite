@@ -150,8 +150,8 @@ import org.apache.ignite.internal.util.typedef.F;
      * @param keepBinary Keep binary flag.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepBinary) {
-        return unwrapPortablesIfNeeded(col, keepBinary, true);
+    public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary) {
+        return unwrapBinariesIfNeeded(col, keepBinary, true);
     }
 
     /**
@@ -160,12 +160,12 @@ import org.apache.ignite.internal.util.typedef.F;
      * @param cpy Copy value flag.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepBinary, boolean cpy) {
+    public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary, boolean cpy) {
         if (col instanceof ArrayList)
-            return unwrapPortables((ArrayList<Object>)col, keepBinary, cpy);
+            return unwrapBinaries((ArrayList<Object>)col, keepBinary, cpy);
 
         if (col instanceof Set)
-            return unwrapPortables((Set<Object>)col, keepBinary, cpy);
+            return unwrapBinaries((Set<Object>)col, keepBinary, cpy);
 
         Collection<Object> col0 = new ArrayList<>(col.size());
 
@@ -183,7 +183,7 @@ import org.apache.ignite.internal.util.typedef.F;
      * @param cpy Copy.
      * @return Result.
      */
-    public Object[] unwrapPortablesInArrayIfNeeded(Object[] arr, boolean keepBinary, boolean cpy) {
+    public Object[] unwrapBinariesInArrayIfNeeded(Object[] arr, boolean keepBinary, boolean cpy) {
         Object[] res = new Object[arr.length];
 
         for (int i = 0; i < arr.length; i++)
@@ -199,7 +199,7 @@ import org.apache.ignite.internal.util.typedef.F;
      * @param keepBinary Keep portable flag.
      * @return Unwrapped collection.
      */
-    private Map<Object, Object> unwrapPortablesIfNeeded(Map<Object, Object> map, boolean keepBinary, boolean cpy) {
+    private Map<Object, Object> unwrapBinariesIfNeeded(Map<Object, Object> map, boolean keepBinary, boolean cpy) {
         if (keepBinary)
             return map;
 
@@ -217,7 +217,7 @@ import org.apache.ignite.internal.util.typedef.F;
      * @param col List to unwrap.
      * @return Unwrapped list.
      */
-    private Collection<Object> unwrapPortables(ArrayList<Object> col, boolean keepBinary, boolean cpy) {
+    private Collection<Object> unwrapBinaries(ArrayList<Object> col, boolean keepBinary, boolean cpy) {
         int size = col.size();
 
         col = new ArrayList<>(col);
@@ -240,7 +240,7 @@ import org.apache.ignite.internal.util.typedef.F;
      * @param set Set to unwrap.
      * @return Unwrapped set.
      */
-    private Set<Object> unwrapPortables(Set<Object> set, boolean keepBinary, boolean cpy) {
+    private Set<Object> unwrapBinaries(Set<Object> set, boolean keepBinary, boolean cpy) {
         Set<Object> set0 = BinaryUtils.newSet(set);
 
         for (Object obj : set)
@@ -268,11 +268,11 @@ import org.apache.ignite.internal.util.typedef.F;
             return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
         }
         else if (o instanceof Collection)
-            return unwrapPortablesIfNeeded((Collection<Object>)o, keepBinary, cpy);
+            return unwrapBinariesIfNeeded((Collection<Object>)o, keepBinary, cpy);
         else if (o instanceof Map)
-            return unwrapPortablesIfNeeded((Map<Object, Object>)o, keepBinary, cpy);
+            return unwrapBinariesIfNeeded((Map<Object, Object>)o, keepBinary, cpy);
         else if (o instanceof Object[])
-            return unwrapPortablesInArrayIfNeeded((Object[])o, keepBinary, cpy);
+            return unwrapBinariesInArrayIfNeeded((Object[])o, keepBinary, cpy);
         else if (o instanceof CacheObject) {
             CacheObject co = (CacheObject)o;
 

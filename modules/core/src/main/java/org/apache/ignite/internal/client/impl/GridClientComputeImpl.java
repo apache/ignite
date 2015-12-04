@@ -254,7 +254,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientCompute withKeepPortables() {
+    @Override public GridClientCompute withKeepBinaries() {
         KEEP_PORTABLES.set(true);
 
         return this;

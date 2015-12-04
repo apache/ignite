@@ -1733,8 +1733,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param keepBinary Keep portable flag.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepBinary) {
-        return cacheObjCtx.unwrapPortablesIfNeeded(col, keepBinary);
+    public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary) {
+        return cacheObjCtx.unwrapBinariesIfNeeded(col, keepBinary);
     }
 
     /**

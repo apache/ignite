@@ -3493,7 +3493,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param cacheCtx Cache context.
      * @return {@code True} if binary should be deserialized, {@code false} otherwise.
      */
-    private boolean deserializePortables(GridCacheContext cacheCtx) {
+    private boolean deserializeBinaries(GridCacheContext cacheCtx) {
         CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
         return opCtx == null || !opCtx.isKeepBinary();
