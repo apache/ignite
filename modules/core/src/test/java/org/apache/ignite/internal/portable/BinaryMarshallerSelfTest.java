@@ -2227,7 +2227,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             if (id == GridPortableMarshaller.UNREGISTERED_TYPE_ID)
                 continue;
 
-            PortableClassDescriptor desc = pCtx.descriptorForTypeId(false, entry.getValue(), null, false);
+            BinaryClassDescriptor desc = pCtx.descriptorForTypeId(false, entry.getValue(), null, false);
 
             assertEquals(desc.typeId(), pCtx.typeId(desc.describedClass().getName()));
             assertEquals(desc.typeId(), pCtx.typeId(pCtx.typeName(desc.describedClass().getName())));
@@ -2406,7 +2406,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     protected boolean compactFooter() {
         return true;
     }
-    
+
     /**
      * @param marsh Marshaller.
      * @return Portable context.

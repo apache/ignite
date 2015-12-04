@@ -90,13 +90,13 @@ public class PortableContext implements Externalizable {
     private static final ClassLoader dfltLdr = U.gridClassLoader();
 
     /** */
-    private final ConcurrentMap<Class<?>, PortableClassDescriptor> descByCls = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
 
     /** Holds classes loaded by default class loader only. */
-    private final ConcurrentMap<Integer, PortableClassDescriptor> userTypes = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Integer, BinaryClassDescriptor> userTypes = new ConcurrentHashMap8<>();
 
     /** */
-    private final Map<Integer, PortableClassDescriptor> predefinedTypes = new HashMap<>();
+    private final Map<Integer, BinaryClassDescriptor> predefinedTypes = new HashMap<>();
 
     /** */
     private final Map<String, Integer> predefinedTypeNames = new HashMap<>();
@@ -418,11 +418,11 @@ public class PortableContext implements Externalizable {
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    public PortableClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize)
+    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize)
         throws BinaryObjectException {
         assert cls != null;
 
-        PortableClassDescriptor desc = descByCls.get(cls);
+        BinaryClassDescriptor desc = descByCls.get(cls);
 
         if (desc == null || !desc.registered())
             desc = registerClassDescriptor(cls, deserialize);
@@ -436,7 +436,7 @@ public class PortableContext implements Externalizable {
      * @param ldr Class loader.
      * @return Class descriptor.
      */
-    public PortableClassDescriptor descriptorForTypeId(
+    public BinaryClassDescriptor descriptorForTypeId(
         boolean userType,
         int typeId,
         ClassLoader ldr,
@@ -445,7 +445,7 @@ public class PortableContext implements Externalizable {
         assert typeId != GridPortableMarshaller.UNREGISTERED_TYPE_ID;
 
         //TODO: As a workaround for IGNITE-1358 we always check the predefined map before without checking 'userType'
-        PortableClassDescriptor desc = predefinedTypes.get(typeId);
+        BinaryClassDescriptor desc = predefinedTypes.get(typeId);
 
         if (desc != null)
             return desc;
@@ -494,18 +494,18 @@ public class PortableContext implements Externalizable {
     }
 
     /**
-     * Creates and registers {@link PortableClassDescriptor} for the given {@code class}.
+     * Creates and registers {@link BinaryClassDescriptor} for the given {@code class}.
      *
      * @param cls Class.
      * @return Class descriptor.
      */
-    private PortableClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize) {
-        PortableClassDescriptor desc;
+    private BinaryClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize) {
+        BinaryClassDescriptor desc;
 
         String clsName = cls.getName();
 
         if (marshCtx.isSystemType(clsName)) {
-            desc = new PortableClassDescriptor(this,
+            desc = new BinaryClassDescriptor(this,
                 cls,
                 false,
                 clsName.hashCode(),
@@ -518,7 +518,7 @@ public class PortableContext implements Externalizable {
                 false /* predefined */
             );
 
-            PortableClassDescriptor old = descByCls.putIfAbsent(cls, desc);
+            BinaryClassDescriptor old = descByCls.putIfAbsent(cls, desc);
 
             if (old != null)
                 desc = old;
@@ -530,12 +530,12 @@ public class PortableContext implements Externalizable {
     }
 
     /**
-     * Creates and registers {@link PortableClassDescriptor} for the given user {@code class}.
+     * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
      *
      * @param cls Class.
      * @return Class descriptor.
      */
-    private PortableClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {
+    private BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {
         boolean registered;
 
         String typeName = typeName(cls.getName());
@@ -553,7 +553,7 @@ public class PortableContext implements Externalizable {
 
         String affFieldName = affinityFieldName(cls);
 
-        PortableClassDescriptor desc = new PortableClassDescriptor(this,
+        BinaryClassDescriptor desc = new BinaryClassDescriptor(this,
             cls,
             true,
             typeId,
@@ -707,10 +707,10 @@ public class PortableContext implements Externalizable {
      * @param id Type ID.
      * @return GridPortableClassDescriptor.
      */
-    public PortableClassDescriptor registerPredefinedType(Class<?> cls, int id) {
+    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id) {
         String typeName = typeName(cls.getName());
 
-        PortableClassDescriptor desc = new PortableClassDescriptor(
+        BinaryClassDescriptor desc = new BinaryClassDescriptor(
             this,
             cls,
             false,
@@ -780,7 +780,7 @@ public class PortableContext implements Externalizable {
         Collection<PortableSchema> schemas = null;
 
         if (cls != null) {
-            PortableClassDescriptor desc = new PortableClassDescriptor(
+            BinaryClassDescriptor desc = new BinaryClassDescriptor(
                 this,
                 cls,
                 true,

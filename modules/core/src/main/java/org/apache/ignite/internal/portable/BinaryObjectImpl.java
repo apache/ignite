@@ -550,7 +550,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         Object obj0 = reader.deserialize();
 
-        PortableClassDescriptor desc = reader.descriptor();
+        BinaryClassDescriptor desc = reader.descriptor();
 
         assert desc != null;
 

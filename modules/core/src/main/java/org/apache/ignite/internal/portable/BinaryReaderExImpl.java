@@ -276,7 +276,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /**
      * @return Descriptor.
      */
-    PortableClassDescriptor descriptor() {
+    BinaryClassDescriptor descriptor() {
         return ctx.descriptorForTypeId(userType, typeId, ldr, true);
     }
 
@@ -1427,7 +1427,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ:
-                PortableClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+                BinaryClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
 
                 streamPosition(dataStart);
 

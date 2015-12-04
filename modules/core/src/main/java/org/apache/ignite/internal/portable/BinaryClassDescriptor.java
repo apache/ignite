@@ -54,7 +54,7 @@ import static java.lang.reflect.Modifier.isTransient;
 /**
  * Portable class descriptor.
  */
-public class PortableClassDescriptor {
+public class BinaryClassDescriptor {
     /** */
     private final PortableContext ctx;
 
@@ -126,7 +126,7 @@ public class PortableClassDescriptor {
      * @param predefined Whether the class is predefined or not.
      * @throws BinaryObjectException In case of error.
      */
-    PortableClassDescriptor(
+    BinaryClassDescriptor(
         PortableContext ctx,
         Class<?> cls,
         boolean userType,
@@ -268,11 +268,11 @@ public class PortableClassDescriptor {
                         }
                     }
                 }
-                
+
                 fields = fields0.toArray(new BinaryFieldAccessor[fields0.size()]);
-                
+
                 stableSchema = schemaBuilder.build();
-                
+
                 break;
 
             default:

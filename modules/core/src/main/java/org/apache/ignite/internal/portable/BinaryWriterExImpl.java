@@ -182,7 +182,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         Class<?> cls = obj.getClass();
 
-        PortableClassDescriptor desc = ctx.descriptorForClass(cls, false);
+        BinaryClassDescriptor desc = ctx.descriptorForClass(cls, false);
 
         if (desc == null)
             throw new BinaryObjectException("Object is not portable: [class=" + cls + ']');
@@ -697,7 +697,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             if (tryWriteAsHandle(val))
                 return;
 
-            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType(), false);
+            BinaryClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType(), false);
 
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(OBJ_ARR);
@@ -785,7 +785,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass(), false);
+            BinaryClassDescriptor desc = ctx.descriptorForClass(val.getClass(), false);
 
             out.unsafeEnsure(1 + 4);
 
@@ -830,7 +830,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType(), false);
+            BinaryClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType(), false);
 
             out.unsafeEnsure(1 + 4);
 
@@ -859,7 +859,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(NULL);
         else {
-            PortableClassDescriptor desc = ctx.descriptorForClass(val, false);
+            BinaryClassDescriptor desc = ctx.descriptorForClass(val, false);
 
             out.unsafeEnsure(1 + 4);
 
