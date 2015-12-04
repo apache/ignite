@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid.store.auto;
+package org.apache.ignite.examples.binary.datagrid.store.auto;
 
 import java.sql.Types;
 import java.util.UUID;
@@ -30,10 +30,9 @@ import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.examples.util.DbH2ServerStartup;
+import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.transactions.Transaction;
-import org.h2.jdbcx.JdbcConnectionPool;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -45,63 +44,59 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  * To start the example, you should:
  * <ul>
  *     <li>Start H2 database TCP server using {@link DbH2ServerStartup}.</li>
- *     <li>Start a few nodes using {@link ExampleNodeStartup}.</li>
- *     <li>Start example using {@link CacheAutoStoreExample}.</li>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
+ *     <li>Start example using {@link CacheBinaryAutoStoreExample}.</li>
  * </ul>
  * <p>
- * Remote nodes can be started with {@link ExampleNodeStartup} in another JVM which will
+ * Remote nodes should always be started with special configuration file which
+ * contains H2 data source bean descriptor: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
+ * <p>
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
-public class CacheAutoStoreExample {
+public class CacheBinaryAutoStoreExample {
     /** Global person ID to use across entire example. */
     private static final Long id = Math.abs(UUID.randomUUID().getLeastSignificantBits());
 
     /** Cache name. */
-    public static final String CACHE_NAME = CacheAutoStoreExample.class.getSimpleName();
-
-    /**
-     * Example store factory.
-     */
-    private static final class CacheJdbcPojoStoreExampleFactory extends CacheJdbcPojoStoreFactory<Long, Person> {
-        /** {@inheritDoc} */
-        @Override public CacheJdbcPojoStore<Long, Person> create() {
-            JdbcType jdbcType = new JdbcType();
-
-            jdbcType.setCacheName(CACHE_NAME);
-            jdbcType.setDatabaseSchema("PUBLIC");
-            jdbcType.setDatabaseTable("PERSON");
-
-            jdbcType.setKeyType("java.lang.Long");
-            jdbcType.setKeyFields(new JdbcTypeField(Types.BIGINT, "ID", Long.class, "id"));
-
-            jdbcType.setValueType("org.apache.ignite.examples.model.Person");
-            jdbcType.setValueFields(
-                    new JdbcTypeField(Types.BIGINT, "ID", Long.class, "id"),
-                    new JdbcTypeField(Types.VARCHAR, "FIRST_NAME", String.class, "firstName"),
-                    new JdbcTypeField(Types.VARCHAR, "LAST_NAME", String.class, "lastName")
-            );
-
-            CacheJdbcPojoStore<Long, Person> store = new CacheJdbcPojoStore<>();
-
-            store.setDataSource(JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:ExampleDb", "sa", ""));
-            store.setDialect(new H2Dialect());
-
-            store.setTypes(jdbcType);
-
-            return store;
-        }
-    }
+    public static final String CACHE_NAME = CacheBinaryAutoStoreExample.class.getSimpleName();
 
     /**
      * Configure cache with store.
      */
     private static CacheConfiguration<Long, Person> cacheConfiguration() {
+        CacheJdbcPojoStoreFactory<Long, Person> storeFactory = new CacheJdbcPojoStoreFactory<>();
+
+        storeFactory.setDataSourceBean("h2-example-db");
+        storeFactory.setDialect(new H2Dialect());
+
+        JdbcType jdbcType = new JdbcType();
+
+        jdbcType.setCacheName(CACHE_NAME);
+        jdbcType.setDatabaseSchema("PUBLIC");
+        jdbcType.setDatabaseTable("PERSON");
+
+        jdbcType.setKeyType("java.lang.Long");
+        jdbcType.setKeyFields(new JdbcTypeField(Types.BIGINT, "ID", Long.class, "id"));
+
+        jdbcType.setValueType("org.apache.ignite.examples.model.Person");
+        jdbcType.setValueFields(
+                new JdbcTypeField(Types.BIGINT, "ID", Long.class, "id"),
+                new JdbcTypeField(Types.VARCHAR, "FIRST_NAME", String.class, "firstName"),
+                new JdbcTypeField(Types.VARCHAR, "LAST_NAME", String.class, "lastName")
+        );
+
+        storeFactory.setTypes(jdbcType);
+
         CacheConfiguration<Long, Person> cfg = new CacheConfiguration<>(CACHE_NAME);
 
-        cfg.setCacheStoreFactory(new CacheJdbcPojoStoreExampleFactory());
+        cfg.setCacheStoreFactory(storeFactory);
 
         // Set atomicity as transaction, since we are showing transactions in the example.
         cfg.setAtomicityMode(TRANSACTIONAL);
+
+        // This option will allow to start remote nodes without having user classes in classpath.
+        cfg.setKeepBinaryInStore(true);
 
         cfg.setReadThrough(true);
         cfg.setWriteThrough(true);
