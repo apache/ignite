@@ -184,7 +184,7 @@ namespace ignite
             JniMethod M_CLASS_GET_NAME = JniMethod("getName", "()Ljava/lang/String;", false);
 
             const char* C_X = "org/apache/ignite/internal/util/typedef/X";
-            JniMethod M_X_GET_FULL_STACK_TRACE = JniMethod("getFullStackTrace", "(Ljava/lang/Throwable;)Ljava/lang/String;", false);
+            JniMethod M_X_GET_FULL_STACK_TRACE = JniMethod("getFullStackTrace", "(Ljava/lang/Throwable;)Ljava/lang/String;", true);
 
             const char* C_IGNITE_EXCEPTION = "org/apache/ignite/IgniteException";
 
