@@ -354,6 +354,15 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             this.getter = getter;
             this.setter = setter;
             this.field = field;
+
+            if (getter != null)
+                getter.setAccessible(true);
+
+            if (setter != null)
+                setter.setAccessible(true);
+
+            if (field != null)
+                field.setAccessible(true);
         }
 
         /**
