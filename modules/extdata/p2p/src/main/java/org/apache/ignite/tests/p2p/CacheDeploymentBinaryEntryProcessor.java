@@ -24,7 +24,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 /**
  * Entry processor used by {@code GridCacheEntryProcessorDeploymentSelfTest}.
  */
-public class CacheDeploymentPortableEntryProcessor implements CacheEntryProcessor<String, String, Boolean> {
+public class CacheDeploymentBinaryEntryProcessor implements CacheEntryProcessor<String, String, Boolean> {
     /** {@inheritDoc} */
     @Override public Boolean process(MutableEntry<String, String> entry, Object... arguments)
         throws EntryProcessorException {
