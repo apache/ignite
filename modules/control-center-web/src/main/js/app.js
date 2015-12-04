@@ -17,7 +17,6 @@
 
 var fs = require('fs');
 var express = require('express');
-var compress = require('compression');
 var path = require('path');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
@@ -44,15 +43,10 @@ var db = require('./db');
 
 var app = express();
 
-app.use(compress());
+app.use(cookieParser('keyboard cat'));
 
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
-
-// Views engine setup.
-app.set('views', path.join(__dirname, 'build'));
-app.engine('html', require('ejs').renderFile);
-app.set('view engine', 'html');
 
 app.use(logger('dev', {
     skip: function (req, res) {
@@ -60,17 +54,16 @@ app.use(logger('dev', {
     }
 }));
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: false}));
-
-app.use(express.static(path.join(__dirname, 'build')));
-
-app.use(cookieParser('keyboard cat'));
+var month = 3600000 * 24 * 30;
 
 app.use(session({
     secret: 'keyboard cat',
     resave: false,
     saveUninitialized: true,
+    cookie: {
+        expires: new Date(Date.now() + month),
+        maxAge: month
+    },
     store: new mongoStore({
         mongooseConnection: db.mongoose.connection
     })
