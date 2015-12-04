@@ -28,7 +28,7 @@ import java.util.HashMap;
  * of them with optional fallback to normal hash map lookup.
  *
  */
-public class PortableSchemaRegistry {
+public class BinarySchemaRegistry {
     /** Empty schema ID. */
     private static final int EMPTY = 0;
 

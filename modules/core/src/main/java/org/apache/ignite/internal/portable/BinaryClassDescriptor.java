@@ -101,7 +101,7 @@ public class BinaryClassDescriptor {
     private final BinarySchema stableSchema;
 
     /** Schema registry. */
-    private final PortableSchemaRegistry schemaReg;
+    private final BinarySchemaRegistry schemaReg;
 
     /** */
     private final boolean registered;

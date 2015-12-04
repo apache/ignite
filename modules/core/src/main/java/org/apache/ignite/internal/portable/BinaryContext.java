@@ -138,7 +138,7 @@ public class BinaryContext implements Externalizable {
     private boolean compactFooter;
 
     /** Object schemas. */
-    private volatile Map<Integer, PortableSchemaRegistry> schemas;
+    private volatile Map<Integer, BinarySchemaRegistry> schemas;
 
     /**
      * For {@link Externalizable}.
@@ -814,7 +814,7 @@ public class BinaryContext implements Externalizable {
      * @return Binary field.
      */
     public BinaryFieldImpl createField(int typeId, String fieldName) {
-        PortableSchemaRegistry schemaReg = schemaRegistry(typeId);
+        BinarySchemaRegistry schemaReg = schemaRegistry(typeId);
 
         int fieldId = userTypeIdMapper(typeId).fieldId(typeId, fieldName);
 
@@ -860,8 +860,8 @@ public class BinaryContext implements Externalizable {
      * @param typeId Type ID.
      * @return Schema registry for type ID.
      */
-    public PortableSchemaRegistry schemaRegistry(int typeId) {
-        Map<Integer, PortableSchemaRegistry> schemas0 = schemas;
+    public BinarySchemaRegistry schemaRegistry(int typeId) {
+        Map<Integer, BinarySchemaRegistry> schemas0 = schemas;
 
         if (schemas0 == null) {
             synchronized (this) {
@@ -870,7 +870,7 @@ public class BinaryContext implements Externalizable {
                 if (schemas0 == null) {
                     schemas0 = new HashMap<>();
 
-                    PortableSchemaRegistry reg = new PortableSchemaRegistry();
+                    BinarySchemaRegistry reg = new BinarySchemaRegistry();
 
                     schemas0.put(typeId, reg);
 
@@ -881,14 +881,14 @@ public class BinaryContext implements Externalizable {
             }
         }
 
-        PortableSchemaRegistry reg = schemas0.get(typeId);
+        BinarySchemaRegistry reg = schemas0.get(typeId);
 
         if (reg == null) {
             synchronized (this) {
                 reg = schemas.get(typeId);
 
                 if (reg == null) {
-                    reg = new PortableSchemaRegistry();
+                    reg = new BinarySchemaRegistry();
 
                     schemas0 = new HashMap<>(schemas);
 

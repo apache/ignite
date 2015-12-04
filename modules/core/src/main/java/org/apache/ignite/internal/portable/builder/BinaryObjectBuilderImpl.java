@@ -29,7 +29,7 @@ import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.BinaryContext;
 import org.apache.ignite.internal.portable.BinarySchema;
-import org.apache.ignite.internal.portable.PortableSchemaRegistry;
+import org.apache.ignite.internal.portable.BinarySchemaRegistry;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -369,7 +369,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             // Update metadata if needed.
             int schemaId = writer.schemaId();
 
-            PortableSchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
+            BinarySchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
 
             if (schemaReg.schema(schemaId) == null) {
                 String typeName = this.typeName;

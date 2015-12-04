@@ -32,7 +32,7 @@ public class BinaryFieldImpl implements BinaryField {
 
     /** Well-known object schemas. */
     @GridToStringExclude
-    private final PortableSchemaRegistry schemas;
+    private final BinarySchemaRegistry schemas;
 
     /** Field name. */
     private final String fieldName;
@@ -47,7 +47,7 @@ public class BinaryFieldImpl implements BinaryField {
      * @param fieldName Field name.
      * @param fieldId Field ID.
      */
-    public BinaryFieldImpl(int typeId, PortableSchemaRegistry schemas, String fieldName, int fieldId) {
+    public BinaryFieldImpl(int typeId, BinarySchemaRegistry schemas, String fieldName, int fieldId) {
         assert typeId != 0;
         assert schemas != null;
         assert fieldName != null;
