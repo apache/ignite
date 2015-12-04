@@ -15,17 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
-
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
 /**
- *
+ * <!-- Package description. -->
+ * Contains utility classes for examples.
  */
-public class GridNearCacheTxNodeFailureSelfTest extends GridCacheTxNodeFailureSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) {
-        return super.cacheConfiguration(gridName).setNearConfiguration(new NearCacheConfiguration());
-    }
-}
+package org.apache.ignite.examples.util;
