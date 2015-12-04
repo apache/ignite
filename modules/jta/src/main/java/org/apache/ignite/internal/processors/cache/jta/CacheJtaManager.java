@@ -185,7 +185,6 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void registerCache(CacheConfiguration<?, ?> cfg) throws IgniteCheckedException {
-        // TODO check this method. Looks like there is no need to support it in factory approach.
         String cacheLookupClsName = cfg.getTransactionManagerLookupClassName();
 
         if (cacheLookupClsName != null) {
