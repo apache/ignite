@@ -23,9 +23,9 @@ header#header.header
         h1.navbar-brand
             a(href='/') Apache Ignite Web Console
         .navbar-collapse.collapse(ng-if='$root.user' ng-controller='activeLink' )
-            ul.nav.navbar-nav(ignite-navbar)
+            ul.nav.navbar-nav
                 li
-                    a.dropdown-toggle(ng-class='{active: isActive("/configuration.*")}' data-toggle='dropdown' bs-dropdown='configurationDropdown' data-placement='bottom-right') Configuration
+                    a.dropdown-toggle(ignite-configuration-sidebar ng-class='{active: isActive("/configuration.*")}' data-toggle='dropdown' bs-dropdown='sidebar.items' data-placement='bottom-right') Configuration
                         span.caret
 
                 li(ng-controller='notebooks')
@@ -33,7 +33,7 @@ header#header.header
                         span.caret
                     a(ng-hide='$root.notebooks.length > 0' ng-click='inputNotebookName()') SQL
 
-                li(ng-repeat='item in navbar.items')
+                li(ignite-navbar ng-repeat='item in navbar.items')
                     a(ng-class='{active: isActive(item.href)}' ng-href='{{::item.href}}') {{::item.title}}
 
             ul.nav.navbar-nav.pull-right(ignite-userbar)
