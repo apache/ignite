@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetad
 import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
 import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodeBinaryObjectMetadataTest;
 import org.apache.ignite.internal.processors.cache.portable.GridCacheBinaryStoreObjectsSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.GridCachePortableStoreBinariesSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.GridCacheBinaryStoreBinariesSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsAtomicOffheapTieredSelfTest;
@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.cache.portable.local.GridCacheBinar
 /**
  * Test for portable objects stored in cache.
  */
-public class IgnitePortableObjectsTestSuite extends TestSuite {
+public class IgniteBinaryObjectsTestSuite extends TestSuite {
     /**
      * @return Suite.
      * @throws Exception If failed.
@@ -103,7 +103,7 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledOffheapTieredSelfTest.class);
 
         suite.addTestSuite(GridCacheBinaryStoreObjectsSelfTest.class);
-        suite.addTestSuite(GridCachePortableStoreBinariesSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryStoreBinariesSelfTest.class);
 
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);

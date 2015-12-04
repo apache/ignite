@@ -24,7 +24,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 /**
  * Cache full API suite with portable marshaller.
  */
-public class IgnitePortableCacheFullApiTestSuite extends TestSuite {
+public class IgniteBinaryCacheFullApiTestSuite extends TestSuite {
     /**
      * @return Suite.
      * @throws Exception In case of error.
