@@ -39,7 +39,7 @@ import org.jsr166.ConcurrentHashMap8;
 /**
  * Tests for cache store with binary.
  */
-public abstract class GridCachePortableStoreAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

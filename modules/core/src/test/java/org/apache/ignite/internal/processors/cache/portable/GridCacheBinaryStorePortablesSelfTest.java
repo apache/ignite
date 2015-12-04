@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.cache.portable;
 
 import java.util.Map;
+import org.apache.ignite.binary.BinaryObject;
 
 /**
  * Tests for cache store with binary.
  */
-public class GridCachePortableStoreObjectsSelfTest extends GridCachePortableStoreAbstractSelfTest {
+public class GridCacheBinaryStorePortablesSelfTest extends GridCacheBinaryStoreAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean keepBinaryInStore() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -34,7 +34,7 @@ public class GridCachePortableStoreObjectsSelfTest extends GridCachePortableStor
         assert idxs != null;
 
         for (int idx : idxs)
-            map.put(new Key(idx), new Value(idx));
+            map.put(portable(new Key(idx)), portable(new Value(idx)));
     }
 
     /** {@inheritDoc} */
@@ -45,11 +45,22 @@ public class GridCachePortableStoreObjectsSelfTest extends GridCachePortableStor
         assertEquals(idxs.length, map.size());
 
         for (int idx : idxs) {
-            Object val = map.get(new Key(idx));
+            Object val = map.get(portable(new Key(idx)));
 
-            assertTrue(String.valueOf(val), val instanceof Value);
+            assertTrue(String.valueOf(val), val instanceof BinaryObject);
 
-            assertEquals(idx, ((Value)val).index());
+            BinaryObject po = (BinaryObject)val;
+
+            assertEquals("Value", po.type().typeName());
+            assertEquals(new Integer(idx), po.field("idx"));
         }
+    }
+
+    /**
+     * @param obj Object.
+     * @return Portable object.
+     */
+    private Object portable(Object obj) {
+        return grid().binary().toBinary(obj);
     }
 }
