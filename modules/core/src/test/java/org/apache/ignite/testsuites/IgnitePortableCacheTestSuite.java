@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.cache.portable.distributed.dht.Grid
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryMultithreadedSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheMemoryModePortableSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheMemoryModeBinarySelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheOffHeapTieredAtomicPortableSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheOffHeapTieredEvictionAtomicPortableSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheOffHeapTieredEvictionPortableSelfTest;
@@ -76,7 +76,7 @@ public class IgnitePortableCacheTestSuite extends TestSuite {
 
         suite.addTest(IgniteCacheTestSuite.suite(ignoredTests));
 
-        suite.addTestSuite(GridCacheMemoryModePortableSelfTest.class);
+        suite.addTestSuite(GridCacheMemoryModeBinarySelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicPortableSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredEvictionPortableSelfTest.class);
 

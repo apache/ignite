@@ -14,24 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.binary.computegrid.ComputeClientBinaryTaskExecutionExample;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheMemoryModeSelfTest;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 
 /**
- *
+ * Memory models test.
  */
-public class ComputeClientPortableExampleTest extends GridAbstractExamplesTest {
+public class GridCacheMemoryModeBinarySelfTest extends GridCacheMemoryModeSelfTest {
     /** {@inheritDoc} */
-    @Override protected String defaultConfig() {
-        return "examples/config/portable/example-ignite-portable.xml";
-    }
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPortableTaskExecutionExample() throws Exception {
-        ComputeClientBinaryTaskExecutionExample.main(new String[] {});
+        cfg.setMarshaller(new BinaryMarshaller());
+
+        return cfg;
     }
 }
