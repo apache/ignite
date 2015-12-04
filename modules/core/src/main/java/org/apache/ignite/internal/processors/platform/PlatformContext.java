@@ -21,8 +21,8 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryProcessor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
@@ -260,7 +260,7 @@ public interface PlatformContext {
      *
      * @param rcv Native receiver.
      * @param ptr Pointer.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Stream receiver.
      */
     public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepBinary);

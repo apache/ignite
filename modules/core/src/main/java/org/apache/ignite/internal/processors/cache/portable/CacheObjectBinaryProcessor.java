@@ -38,7 +38,7 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
     public BinaryObjectBuilder builder(String clsName);
 
     /**
-     * Creates builder initialized by existing portable object.
+     * Creates builder initialized by existing binary object.
      *
      * @param portableObj Portable object to edit.
      * @return Portable builder.
@@ -99,7 +99,7 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
 
     /**
      * @param obj Original object.
-     * @return Portable object (in case portable marshaller is used).
+     * @return Portable object (in case binary marshaller is used).
      * @throws IgniteException If failed.
      */
     public Object marshalToBinary(Object obj) throws IgniteException;

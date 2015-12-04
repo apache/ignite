@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.binary.BinaryObject;
@@ -143,7 +143,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Data streamer should add portable object that weren't registered explicitly.
+     * Data streamer should add binary object that weren't registered explicitly.
      *
      * @throws Exception If failed.
      */
@@ -177,7 +177,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Data streamer should correctly load portable entries from HashMap in case of grids with more than one node
+     * Data streamer should correctly load binary entries from HashMap in case of grids with more than one node
      *  and with GridOptimizedMarshaller that requires serializable.
      *
      * @throws Exception If failed.

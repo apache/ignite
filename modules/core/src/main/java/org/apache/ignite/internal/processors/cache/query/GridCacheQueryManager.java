@@ -1069,7 +1069,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * @param it Lazy swap or offheap iterator.
      * @param filter Scan filter.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Iterator.
      */
     private GridIteratorAdapter<IgniteBiTuple<K, V>> scanIterator(
@@ -2640,7 +2640,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /**
          * @param filter Filter.
-         * @param keepBinary Keep portable flag.
+         * @param keepBinary Keep binary flag.
          */
         private OffheapIteratorClosure(
             @Nullable IgniteBiPredicate<K, V> filter,
@@ -3042,7 +3042,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * Query for {@link IndexingSpi}.
      *
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Query.
      */
     public <R> CacheQuery<R> createSpiQuery(boolean keepBinary) {
@@ -3061,7 +3061,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param filter Scan filter.
      * @param part Partition.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Created query.
      */
     public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
@@ -3083,7 +3083,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param clsName Query class name.
      * @param search Search clause.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Created query.
      */
     public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
@@ -3106,7 +3106,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * documentation.
      *
      * @param qry Query.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Created query.
      */
     public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean keepBinary) {

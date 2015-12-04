@@ -157,7 +157,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     @GridDirectTransient
     private List<CacheObject> localPrevVals;
 
-    /** Keep portable flag. */
+    /** Keep binary flag. */
     private boolean keepBinary;
 
     /**
@@ -486,7 +486,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     }
 
     /**
-     * @return Keep portable flag.
+     * @return Keep binary flag.
      */
     public boolean keepBinary() {
         return keepBinary;

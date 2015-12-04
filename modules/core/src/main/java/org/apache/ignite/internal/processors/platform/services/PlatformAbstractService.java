@@ -23,8 +23,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -41,10 +41,10 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** .Net portable service. */
+    /** .Net binary service. */
     protected Object svc;
 
-    /** Whether to keep objects portable on server if possible. */
+    /** Whether to keep objects binary on server if possible. */
     protected boolean srvKeepBinary;
 
     /** Pointer to deployed service. */
@@ -65,7 +65,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
      *
      * @param svc Service.
      * @param ctx Context.
-     * @param srvKeepPortable Whether to keep objects portable on server if possible.
+     * @param srvKeepPortable Whether to keep objects binary on server if possible.
      */
     public PlatformAbstractService(Object svc, PlatformContext ctx, boolean srvKeepBinary) {
         assert svc != null;

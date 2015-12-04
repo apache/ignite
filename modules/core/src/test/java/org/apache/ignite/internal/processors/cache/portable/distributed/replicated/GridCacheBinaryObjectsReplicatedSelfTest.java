@@ -26,7 +26,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- * Test for portable objects stored in cache.
+ * Test for binary objects stored in cache.
  */
 public class GridCacheBinaryObjectsReplicatedSelfTest extends GridCacheBinaryObjectsAbstractSelfTest {
     /** {@inheritDoc} */

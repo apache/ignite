@@ -85,7 +85,7 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
     }
 
     /**
-     * @return {@code True} if portable marshaller is configured.
+     * @return {@code True} if binary marshaller is configured.
      */
     private boolean portableMarshaller() {
         IgniteEx kernal = (IgniteEx)ignite(0);

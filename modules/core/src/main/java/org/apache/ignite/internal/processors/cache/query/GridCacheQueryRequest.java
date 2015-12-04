@@ -215,7 +215,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @param incBackups {@code true} if need to include backups.
      * @param args Query arguments.
      * @param incMeta Include meta data or not.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.

@@ -54,7 +54,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -1691,7 +1691,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Keep portable flag.
+     * @return Keep binary flag.
      */
     public boolean keepBinary() {
         CacheOperationContext opCtx = operationContextPerCall();
@@ -1730,7 +1730,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Unwraps collection.
      *
      * @param col Collection to unwrap.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Unwrapped collection.
      */
     public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary) {
@@ -1741,7 +1741,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Unwraps object for binary.
      *
      * @param o Object to unwrap.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Unwrapped object.
      */
     public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary) {
@@ -1752,7 +1752,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Unwraps object for binary.
      *
      * @param o Object to unwrap.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @param cpy Copy value flag.
      * @return Unwrapped object.
      */
@@ -1872,7 +1872,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param val Value.
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects flag.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializePortable Deserialize binary flag.
      * @param cpy Copy flag.
      */
     @SuppressWarnings("unchecked")

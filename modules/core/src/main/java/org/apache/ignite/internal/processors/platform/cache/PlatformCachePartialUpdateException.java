@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
@@ -32,7 +32,7 @@ public class PlatformCachePartialUpdateException extends PlatformExtendedExcepti
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Keep portable flag. */
+    /** Keep binary flag. */
     private final boolean keepBinary;
 
     /**
@@ -40,7 +40,7 @@ public class PlatformCachePartialUpdateException extends PlatformExtendedExcepti
      *
      * @param cause Root cause.
      * @param ctx Context.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
     public PlatformCachePartialUpdateException(CachePartialUpdateCheckedException cause, PlatformContext ctx,
         boolean keepBinary) {

@@ -28,7 +28,7 @@ public interface PlatformService extends Service {
      * Invokes native service method.
      *
      * @param mthdName Method name.
-     * @param srvKeepPortable Server keep portable flag.
+     * @param srvKeepPortable Server keep binary flag.
      * @param args Arguments.
      * @return Resulting data.
      * @throws org.apache.ignite.IgniteCheckedException If failed.

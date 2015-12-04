@@ -6324,7 +6324,7 @@ func_mode_link ()
 	  case $linkmode in
 	  lib)
 	    # Linking convenience modules into shared libraries is allowed,
-	    # but linking other static libraries is non-portable.
+	    # but linking other static libraries is non-binary.
 	    case " $dlpreconveniencelibs " in
 	    *" $deplib "*) ;;
 	    *)

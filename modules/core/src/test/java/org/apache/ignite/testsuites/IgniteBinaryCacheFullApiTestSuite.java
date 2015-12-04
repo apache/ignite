@@ -18,11 +18,11 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Cache full API suite with portable marshaller.
+ * Cache full API suite with binary marshaller.
  */
 public class IgniteBinaryCacheFullApiTestSuite extends TestSuite {
     /**

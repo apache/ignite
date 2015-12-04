@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -179,7 +179,7 @@ import org.apache.ignite.internal.util.typedef.F;
      * Unwrap array of portables if needed.
      *
      * @param arr Array.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @param cpy Copy.
      * @return Result.
      */
@@ -196,7 +196,7 @@ import org.apache.ignite.internal.util.typedef.F;
      * Unwraps map.
      *
      * @param map Map to unwrap.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Unwrapped collection.
      */
     private Map<Object, Object> unwrapBinariesIfNeeded(Map<Object, Object> map, boolean keepBinary, boolean cpy) {

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.datastreamer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
@@ -56,7 +56,7 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
     /**
      * Constructor.
      *
-     * @param pred .Net portable receiver.
+     * @param pred .Net binary receiver.
      * @param ptr Pointer to receiver in the native platform.
      * @param ctx Kernal context.
      */

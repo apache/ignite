@@ -311,7 +311,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      *
      * @param key Key.
      * @param rmv {@code True} if entry was removed.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
     public void onEntryUpdated(KeyCacheObject key, boolean rmv, boolean keepBinary) {
         Object key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);

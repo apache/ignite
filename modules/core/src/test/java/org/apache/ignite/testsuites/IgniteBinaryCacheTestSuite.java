@@ -43,11 +43,11 @@ import org.apache.ignite.internal.processors.cache.portable.distributed.dht.Grid
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryNearPartitionedByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryPartitionedOnlyByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Cache suite with portable marshaller.
+ * Cache suite with binary marshaller.
  */
 public class IgniteBinaryCacheTestSuite extends TestSuite {
     /**

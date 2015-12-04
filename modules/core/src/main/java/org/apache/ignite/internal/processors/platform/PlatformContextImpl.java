@@ -34,11 +34,11 @@ import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.SwapSpaceEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
-import org.apache.ignite.internal.portable.BinaryReaderExImpl;
-import org.apache.ignite.internal.portable.BinaryTypeImpl;
-import org.apache.ignite.internal.portable.InternalBinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.InternalBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilterImpl;
@@ -381,7 +381,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /**
-     * Write portable metadata.
+     * Write binary metadata.
      *
      * @param writer Writer.
      * @param typeId Type id.

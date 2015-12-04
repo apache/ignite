@@ -166,7 +166,7 @@ public interface PlatformProcessor extends GridProcessor {
      * Register cache store.
      *
      * @param store Store.
-     * @param convertPortable Convert portable flag.
+     * @param convertPortable Convert binary flag.
      * @throws IgniteCheckedException If failed.
      */
     public void registerStore(PlatformCacheStore store, boolean convertBinary) throws IgniteCheckedException;

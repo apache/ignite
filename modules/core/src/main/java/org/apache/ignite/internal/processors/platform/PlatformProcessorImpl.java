@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
@@ -337,7 +337,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      * Internal store initialization routine.
      *
      * @param store Store.
-     * @param convertPortable Convert portable flag.
+     * @param convertPortable Convert binary flag.
      * @throws IgniteCheckedException If failed.
      */
     private void registerStore0(PlatformCacheStore store, boolean convertBinary) throws IgniteCheckedException {
@@ -357,14 +357,14 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         /** Store. */
         private final PlatformCacheStore store;
 
-        /** Convert portable flag. */
+        /** Convert binary flag. */
         private final boolean convertBinary;
 
         /**
          * Constructor.
          *
          * @param store Store.
-         * @param convertPortable Convert portable flag.
+         * @param convertPortable Convert binary flag.
          */
         private StoreInfo(PlatformCacheStore store, boolean convertBinary) {
             this.store = store;

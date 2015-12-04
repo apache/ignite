@@ -28,8 +28,8 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -202,7 +202,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      *
      * @param platformCtx Context.
      * @param cache Underlying cache.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
     public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepBinary) {
         super(platformCtx);
@@ -224,9 +224,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /**
-     * Gets cache with "keep portable" flag.
+     * Gets cache with "keep binary" flag.
      *
-     * @return Cache with "keep portable" flag set.
+     * @return Cache with "keep binary" flag set.
      */
     public PlatformCache withKeepBinary() {
         if (keepBinary)

@@ -74,16 +74,16 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
     /** Type: map. */
     private static final int TYPE_MAP = 11;
 
-    /** Type: portable object which exists in all platforms. */
+    /** Type: binary object which exists in all platforms. */
     private static final int TYPE_PORTABLE = 12;
 
-    /** Type: portable object which exists only in Java. */
+    /** Type: binary object which exists only in Java. */
     private static final int TYPE_PORTABLE_JAVA = 13;
 
     /** Type: object array. */
     private static final int TYPE_OBJ_ARRAY = 14;
 
-    /** Type: portable object array. */
+    /** Type: binary object array. */
     private static final int TYPE_PORTABLE_ARRAY = 15;
 
     /** Type: enum. */

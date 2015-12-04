@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -96,7 +96,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
         IgniteInternalFuture<?> fut;
 
         try {
-            // Update portable metadata concurrently with client nodes start.
+            // Update binary metadata concurrently with client nodes start.
             fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     IgniteBinary binaries = ignite(0).binary();
@@ -108,7 +108,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
                     for (int i = 0; i < 1000; i++) {
                         log.info("Iteration: " + i);
 
-                        String type = "portable-type-" + i;
+                        String type = "binary-type-" + i;
 
                         allTypes.add(type);
 
@@ -145,7 +145,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
         assertFalse(allTypes.isEmpty());
 
-        log.info("Expected portable types: " + allTypes.size());
+        log.info("Expected binary types: " + allTypes.size());
 
         assertEquals(7, ignite(0).cluster().nodes().size());
 

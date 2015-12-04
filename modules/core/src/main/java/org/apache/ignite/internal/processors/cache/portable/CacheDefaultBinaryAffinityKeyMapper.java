@@ -40,7 +40,7 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
             key = proc.toBinary(key);
         }
         catch (IgniteException e) {
-            U.error(log, "Failed to marshal key to portable: " + key, e);
+            U.error(log, "Failed to marshal key to binary: " + key, e);
         }
 
         if (key instanceof BinaryObject)

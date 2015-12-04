@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains portable marshaller API classes.
+ * Contains binary marshaller API classes.
  */
 package org.apache.ignite.marshaller.portable;

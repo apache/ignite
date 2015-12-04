@@ -519,7 +519,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * @param o Object.
-     * @return {@code true} If it is a portable object.
+     * @return {@code true} If it is a binary object.
      */
     private boolean isBinary(CacheObject o) {
         if (ctx == null)
