@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-class PortableLazySet extends PortableAbstractLazyValue {
+class BinaryLazySet extends BinaryAbstractLazyValue {
     /** */
     private final int off;
 
@@ -35,7 +35,7 @@ class PortableLazySet extends PortableAbstractLazyValue {
      * @param reader Reader.
      * @param size Size.
      */
-    PortableLazySet(PortableBuilderReader reader, int size) {
+    BinaryLazySet(PortableBuilderReader reader, int size) {
         super(reader, reader.position() - 1);
 
         off = reader.position() - 1/* flag */ - 4/* size */ - 1/* col type */;

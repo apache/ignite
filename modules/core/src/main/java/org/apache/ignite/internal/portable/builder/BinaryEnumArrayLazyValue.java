@@ -26,7 +26,7 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 /**
  *
  */
-class PortableEnumArrayLazyValue extends PortableAbstractLazyValue {
+class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
     /** */
     private final int len;
 
@@ -39,7 +39,7 @@ class PortableEnumArrayLazyValue extends PortableAbstractLazyValue {
     /**
      * @param reader Reader.
      */
-    protected PortableEnumArrayLazyValue(PortableBuilderReader reader) {
+    protected BinaryEnumArrayLazyValue(PortableBuilderReader reader) {
         super(reader, reader.position() - 1);
 
         int typeId = reader.readInt();
@@ -81,7 +81,7 @@ class PortableEnumArrayLazyValue extends PortableAbstractLazyValue {
 
         int size = reader.readInt();
 
-        PortableBuilderEnum[] res = new PortableBuilderEnum[size];
+        BinaryBuilderEnum[] res = new BinaryBuilderEnum[size];
 
         for (int i = 0; i < size; i++) {
             byte flag = reader.readByte();
@@ -92,7 +92,7 @@ class PortableEnumArrayLazyValue extends PortableAbstractLazyValue {
             if (flag != GridPortableMarshaller.ENUM)
                 throw new BinaryObjectException("Invalid flag value: " + flag);
 
-            res[i] = new PortableBuilderEnum(reader);
+            res[i] = new BinaryBuilderEnum(reader);
         }
 
         return res;

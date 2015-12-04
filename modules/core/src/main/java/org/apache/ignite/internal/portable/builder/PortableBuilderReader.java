@@ -429,7 +429,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
             case GridPortableMarshaller.UUID:
             case GridPortableMarshaller.DATE:
             case GridPortableMarshaller.TIMESTAMP:
-                return new PortablePlainLazyValue(this, pos, len);
+                return new BinaryPlainLazyValue(this, pos, len);
 
             case GridPortableMarshaller.BYTE_ARR:
             case GridPortableMarshaller.SHORT_ARR:
@@ -461,7 +461,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 int mark = position();
                 position(pos + 1);
 
-                PortableBuilderEnum builderEnum = new PortableBuilderEnum(this);
+                BinaryBuilderEnum builderEnum = new BinaryBuilderEnum(this);
 
                 position(mark);
 
@@ -475,7 +475,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
 
                 BinaryObjectImpl portableObj = new BinaryObjectImpl(ctx, arr, pos + 4 + start);
 
-                return new PortablePlainPortableObject(portableObj);
+                return new PortablePlainBinaryObject(portableObj);
             }
 
             default:
@@ -638,7 +638,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 break;
 
             case GridPortableMarshaller.OBJ_ARR:
-                return new PortableObjectArrayLazyValue(this);
+                return new BinaryObjectArrayLazyValue(this);
 
             case GridPortableMarshaller.DATE_ARR: {
                 int size = readInt();
@@ -715,7 +715,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                         assert flag == GridPortableMarshaller.NULL;
                 }
 
-                return new PortableModifiableLazyValue(this, valPos, pos - valPos);
+                return new BinaryModifiableLazyValue(this, valPos, pos - valPos);
             }
 
             case GridPortableMarshaller.COL: {
@@ -725,32 +725,32 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 switch (colType) {
                     case GridPortableMarshaller.USER_COL:
                     case GridPortableMarshaller.ARR_LIST:
-                        return new PortableLazyArrayList(this, size);
+                        return new BinaryLazyArrayList(this, size);
 
                     case GridPortableMarshaller.LINKED_LIST:
-                        return new PortableLazyLinkedList(this, size);
+                        return new BinaryLazyLinkedList(this, size);
 
                     case GridPortableMarshaller.HASH_SET:
                     case GridPortableMarshaller.LINKED_HASH_SET:
                     case GridPortableMarshaller.TREE_SET:
                     case GridPortableMarshaller.CONC_SKIP_LIST_SET:
-                        return new PortableLazySet(this, size);
+                        return new BinaryLazySet(this, size);
                 }
 
                 throw new BinaryObjectException("Unknown collection type: " + colType);
             }
 
             case GridPortableMarshaller.MAP:
-                return PortableLazyMap.parseMap(this);
+                return BinaryLazyMap.parseMap(this);
 
             case GridPortableMarshaller.ENUM:
-                return new PortableBuilderEnum(this);
+                return new BinaryBuilderEnum(this);
 
             case GridPortableMarshaller.ENUM_ARR:
-                return new PortableEnumArrayLazyValue(this);
+                return new BinaryEnumArrayLazyValue(this);
 
             case GridPortableMarshaller.MAP_ENTRY:
-                return new PortableLazyMapEntry(this);
+                return new BinaryLazyMapEntry(this);
 
             case GridPortableMarshaller.PORTABLE_OBJ: {
                 int size = readInt();
@@ -762,19 +762,19 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 BinaryObjectImpl portableObj = new BinaryObjectImpl(ctx, arr,
                     pos - 4 - size + start);
 
-                return new PortablePlainPortableObject(portableObj);
+                return new PortablePlainBinaryObject(portableObj);
             }
 
             default:
                 throw new BinaryObjectException("Invalid flag value: " + type);
         }
 
-        PortableAbstractLazyValue res;
+        BinaryAbstractLazyValue res;
 
         if (modifiableLazyVal)
-            res = new PortableModifiableLazyValue(this, valPos, 1 + plainLazyValLen);
+            res = new BinaryModifiableLazyValue(this, valPos, 1 + plainLazyValLen);
         else
-            res = new PortablePlainLazyValue(this, valPos, 1 + plainLazyValLen);
+            res = new BinaryPlainLazyValue(this, valPos, 1 + plainLazyValLen);
 
         pos += plainLazyValLen;
 
@@ -819,7 +819,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
     /**
      *
      */
-    private class LazyCollection implements PortableLazyValue {
+    private class LazyCollection implements BinaryLazyValue {
         /** */
         private final int valOff;
 

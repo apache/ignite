@@ -17,37 +17,41 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import org.apache.ignite.internal.portable.BinaryObjectImpl;
-import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
-import org.apache.ignite.internal.portable.BinaryWriterExImpl;
-import org.apache.ignite.binary.BinaryObject;
-
 /**
  *
  */
-public class PortablePlainPortableObject implements PortableLazyValue {
+abstract class BinaryAbstractLazyValue implements BinaryLazyValue {
     /** */
-    private final BinaryObject portableObj;
+    protected Object val;
+
+    /** */
+    protected final PortableBuilderReader reader;
+
+    /** */
+    protected final int valOff;
 
     /**
-     * @param portableObj Portable object.
+     * @param reader Reader.
+     * @param valOff Value.
      */
-    public PortablePlainPortableObject(BinaryObject portableObj) {
-        this.portableObj = portableObj;
+    protected BinaryAbstractLazyValue(PortableBuilderReader reader, int valOff) {
+        this.reader = reader;
+        this.valOff = valOff;
     }
+
+    /**
+     * @return Value.
+     */
+    protected abstract Object init();
 
     /** {@inheritDoc} */
     @Override public Object value() {
-        return portableObj;
-    }
+        if (val == null) {
+            val = init();
 
-    /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
-        BinaryObject val = portableObj;
+            assert val != null;
+        }
 
-        if (val instanceof BinaryObjectOffheapImpl)
-            val = ((BinaryObjectOffheapImpl)val).heapCopy();
-
-        writer.doWritePortableObject((BinaryObjectImpl)val);
+        return val;
     }
 }

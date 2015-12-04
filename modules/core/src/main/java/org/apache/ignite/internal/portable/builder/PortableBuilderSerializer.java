@@ -57,8 +57,8 @@ class PortableBuilderSerializer {
             return;
         }
 
-        if (val instanceof PortableBuilderSerializationAware) {
-            ((PortableBuilderSerializationAware)val).writeTo(writer, this);
+        if (val instanceof BinaryBuilderSerializationAware) {
+            ((BinaryBuilderSerializationAware)val).writeTo(writer, this);
 
             return;
         }
@@ -161,7 +161,7 @@ class PortableBuilderSerializer {
         if (val instanceof Object[]) {
             int compTypeId = writer.context().typeId(((Object[])val).getClass().getComponentType().getName());
 
-            if (val instanceof PortableBuilderEnum[]) {
+            if (val instanceof BinaryBuilderEnum[]) {
                 writeArray(writer, GridPortableMarshaller.ENUM_ARR, (Object[])val, compTypeId);
 
                 return;

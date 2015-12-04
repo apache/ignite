@@ -315,10 +315,10 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                     int newFldTypeId;
 
-                    if (val instanceof PortableValueWithType) {
-                        newFldTypeId = ((PortableValueWithType)val).typeId();
+                    if (val instanceof BinaryValueWithType) {
+                        newFldTypeId = ((BinaryValueWithType)val).typeId();
 
-                        if (newFldTypeId == GridPortableMarshaller.OBJ && ((PortableValueWithType)val).value() == null)
+                        if (newFldTypeId == GridPortableMarshaller.OBJ && ((BinaryValueWithType)val).value() == null)
                             nullObjField = true;
                     }
                     else
@@ -498,15 +498,15 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder setField(String name, Object val0) {
-        Object val = val0 == null ? new PortableValueWithType(PortableUtils.typeByClass(Object.class), null) : val0;
+        Object val = val0 == null ? new BinaryValueWithType(PortableUtils.typeByClass(Object.class), null) : val0;
 
         if (assignedVals == null)
             assignedVals = new LinkedHashMap<>();
 
         Object oldVal = assignedVals.put(name, val);
 
-        if (oldVal instanceof PortableValueWithType && val0 != null) {
-            ((PortableValueWithType)oldVal).value(val);
+        if (oldVal instanceof BinaryValueWithType && val0 != null) {
+            ((BinaryValueWithType)oldVal).value(val);
 
             assignedVals.put(name, oldVal);
         }
@@ -519,7 +519,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         if (assignedVals == null)
             assignedVals = new LinkedHashMap<>();
 
-        assignedVals.put(name, new PortableValueWithType(PortableUtils.typeByClass(type), val));
+        assignedVals.put(name, new BinaryValueWithType(PortableUtils.typeByClass(type), val));
 
         return this;
     }

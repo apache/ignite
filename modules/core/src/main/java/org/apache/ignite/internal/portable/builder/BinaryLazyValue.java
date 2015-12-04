@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import org.apache.ignite.internal.portable.*;
-
 /**
  *
  */
-interface PortableBuilderSerializationAware {
+public interface BinaryLazyValue extends BinaryBuilderSerializationAware {
     /**
-     * @param writer Writer.
-     * @param ctx Context.
+     * @return Value.
      */
-    public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx);
+    public Object value();
 }

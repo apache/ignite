@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-class PortableLazyMap extends AbstractMap<Object, Object> implements PortableBuilderSerializationAware {
+class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilderSerializationAware {
     /** */
     private final PortableBuilderReader reader;
 
@@ -44,7 +44,7 @@ class PortableLazyMap extends AbstractMap<Object, Object> implements PortableBui
      * @param reader Reader.
      * @param off Offset.
      */
-    private PortableLazyMap(PortableBuilderReader reader, int off) {
+    private BinaryLazyMap(PortableBuilderReader reader, int off) {
         this.reader = reader;
         this.off = off;
     }
@@ -53,7 +53,7 @@ class PortableLazyMap extends AbstractMap<Object, Object> implements PortableBui
      * @param reader Reader.
      * @return PortableLazyMap.
      */
-    @Nullable public static PortableLazyMap parseMap(PortableBuilderReader reader) {
+    @Nullable public static BinaryLazyMap parseMap(PortableBuilderReader reader) {
         int off = reader.position() - 1;
 
         int size = reader.readInt();
@@ -65,7 +65,7 @@ class PortableLazyMap extends AbstractMap<Object, Object> implements PortableBui
             reader.skipValue(); // skip value
         }
 
-        return new PortableLazyMap(reader, off);
+        return new BinaryLazyMap(reader, off);
     }
 
     /**
@@ -193,12 +193,12 @@ class PortableLazyMap extends AbstractMap<Object, Object> implements PortableBui
 
                         final Object val = res.getValue();
 
-                        if (val instanceof PortableLazyValue) {
+                        if (val instanceof BinaryLazyValue) {
                             return new SimpleEntry<Object, Object>(res.getKey(), val) {
                                 private static final long serialVersionUID = 0L;
 
                                 @Override public Object getValue() {
-                                    return ((PortableLazyValue)val).value();
+                                    return ((BinaryLazyValue)val).value();
                                 }
                             };
                         }

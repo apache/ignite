@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  *
  */
-class PortableValueWithType implements PortableLazyValue {
+class BinaryValueWithType implements BinaryLazyValue {
     /** */
     private byte type;
 
@@ -34,15 +34,15 @@ class PortableValueWithType implements PortableLazyValue {
      * @param type Type
      * @param val Value.
      */
-    PortableValueWithType(byte type, Object val) {
+    BinaryValueWithType(byte type, Object val) {
         this.type = type;
         this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
-        if (val instanceof PortableBuilderSerializationAware)
-            ((PortableBuilderSerializationAware)val).writeTo(writer, ctx);
+        if (val instanceof BinaryBuilderSerializationAware)
+            ((BinaryBuilderSerializationAware)val).writeTo(writer, ctx);
         else
             ctx.writeValue(writer, val);
     }
@@ -56,8 +56,8 @@ class PortableValueWithType implements PortableLazyValue {
 
     /** {@inheritDoc} */
     @Override public Object value() {
-        if (val instanceof PortableLazyValue)
-            return ((PortableLazyValue)val).value();
+        if (val instanceof BinaryLazyValue)
+            return ((BinaryLazyValue)val).value();
 
         return val;
     }
@@ -71,6 +71,6 @@ class PortableValueWithType implements PortableLazyValue {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PortableValueWithType.class, this);
+        return S.toString(BinaryValueWithType.class, this);
     }
 }

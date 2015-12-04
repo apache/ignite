@@ -40,7 +40,7 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.portable.builder.PortableBuilderEnum;
+import org.apache.ignite.internal.portable.builder.BinaryBuilderEnum;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.portable.mutabletest.GridBinaryMarshalerAwareTestClass;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
@@ -81,7 +81,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setCompactFooter(compactFooter());
-        
+
         bCfg.setClassNames(Arrays.asList("org.apache.ignite.internal.portable.mutabletest.*"));
 
         cfg.setMarshaller(new BinaryMarshaller());
@@ -134,11 +134,11 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
             switch (field.getName()) {
                 case "anEnum":
-                    assertEquals(((PortableBuilderEnum)actVal).getOrdinal(), ((Enum)expVal).ordinal());
+                    assertEquals(((BinaryBuilderEnum)actVal).getOrdinal(), ((Enum)expVal).ordinal());
                     break;
 
                 case "enumArr": {
-                    PortableBuilderEnum[] actArr = (PortableBuilderEnum[])actVal;
+                    BinaryBuilderEnum[] actArr = (BinaryBuilderEnum[])actVal;
                     Enum[] expArr = (Enum[])expVal;
 
                     assertEquals(expArr.length, actArr.length);
@@ -862,8 +862,8 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         BinaryObjectBuilderImpl mutObj = wrap(obj);
 
-        PortableBuilderEnum[] arr = mutObj.getField("enumArr");
-        arr[0] = new PortableBuilderEnum(mutObj.typeId(), TestObjectEnum.B);
+        BinaryBuilderEnum[] arr = mutObj.getField("enumArr");
+        arr[0] = new BinaryBuilderEnum(mutObj.typeId(), TestObjectEnum.B);
 
         TestObjectAllTypes res = mutObj.build().deserialize();
 

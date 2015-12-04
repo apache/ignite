@@ -23,7 +23,7 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.portable.builder.PortableLazyValue;
+import org.apache.ignite.internal.portable.builder.BinaryLazyValue;
 import org.apache.ignite.internal.portable.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
@@ -561,8 +561,8 @@ public class PortableUtils {
      * @return Unwrapped value.
      */
     public static Object unwrapLazy(@Nullable Object obj) {
-        if (obj instanceof PortableLazyValue)
-            return ((PortableLazyValue)obj).value();
+        if (obj instanceof BinaryLazyValue)
+            return ((BinaryLazyValue)obj).value();
 
         return obj;
     }

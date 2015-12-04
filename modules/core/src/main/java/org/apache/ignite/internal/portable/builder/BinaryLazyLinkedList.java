@@ -29,7 +29,7 @@ import java.util.ListIterator;
 /**
  *
  */
-class PortableLazyLinkedList extends AbstractList<Object> implements PortableBuilderSerializationAware {
+class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilderSerializationAware {
     /** */
     private final PortableBuilderReader reader;
 
@@ -43,7 +43,7 @@ class PortableLazyLinkedList extends AbstractList<Object> implements PortableBui
      * @param reader Reader.
      * @param size Size,
      */
-    PortableLazyLinkedList(PortableBuilderReader reader, int size) {
+    BinaryLazyLinkedList(PortableBuilderReader reader, int size) {
         this.reader = reader;
         off = reader.position() - 1/* flag */ - 4/* size */ - 1/* col type */;
 
@@ -140,7 +140,7 @@ class PortableLazyLinkedList extends AbstractList<Object> implements PortableBui
 
         return new ListIterator<Object>() {
             /** */
-            private final ListIterator<Object> delegate = PortableLazyLinkedList.super.listIterator(idx);
+            private final ListIterator<Object> delegate = BinaryLazyLinkedList.super.listIterator(idx);
 
             @Override public boolean hasNext() {
                 return delegate.hasNext();

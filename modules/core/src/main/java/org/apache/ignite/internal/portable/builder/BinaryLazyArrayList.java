@@ -27,7 +27,7 @@ import java.util.List;
 /**
  *
  */
-class PortableLazyArrayList extends AbstractList<Object> implements PortableBuilderSerializationAware {
+class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderSerializationAware {
     /** */
     private final PortableBuilderReader reader;
 
@@ -41,7 +41,7 @@ class PortableLazyArrayList extends AbstractList<Object> implements PortableBuil
      * @param reader Reader.
      * @param size Size,
      */
-    PortableLazyArrayList(PortableBuilderReader reader, int size) {
+    BinaryLazyArrayList(PortableBuilderReader reader, int size) {
         this.reader = reader;
         off = reader.position() - 1/* flag */ - 4/* size */ - 1/* col type */;
 

@@ -25,7 +25,7 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 /**
  *
  */
-public class PortableBuilderEnum implements PortableBuilderSerializationAware {
+public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
     /** */
     private final int ordinal;
 
@@ -39,7 +39,7 @@ public class PortableBuilderEnum implements PortableBuilderSerializationAware {
      * @param typeId Type ID.
      * @param anEnum Enum instance.
      */
-    public PortableBuilderEnum(int typeId, Enum anEnum) {
+    public BinaryBuilderEnum(int typeId, Enum anEnum) {
         ordinal = anEnum.ordinal();
         this.typeId = typeId;
         clsName = null;
@@ -48,7 +48,7 @@ public class PortableBuilderEnum implements PortableBuilderSerializationAware {
     /**
      * @param reader PortableBuilderReader.
      */
-    public PortableBuilderEnum(PortableBuilderReader reader) {
+    public BinaryBuilderEnum(PortableBuilderReader reader) {
         int typeId = reader.readInt();
 
         if (typeId == GridPortableMarshaller.UNREGISTERED_TYPE_ID) {
@@ -100,7 +100,7 @@ public class PortableBuilderEnum implements PortableBuilderSerializationAware {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        PortableBuilderEnum that = (PortableBuilderEnum)o;
+        BinaryBuilderEnum that = (BinaryBuilderEnum)o;
 
         return ordinal == that.ordinal && typeId == that.typeId;
     }

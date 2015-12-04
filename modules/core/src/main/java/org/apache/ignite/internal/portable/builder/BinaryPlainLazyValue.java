@@ -17,41 +17,33 @@
 
 package org.apache.ignite.internal.portable.builder;
 
+import org.apache.ignite.internal.portable.*;
+
 /**
  *
  */
-abstract class PortableAbstractLazyValue implements PortableLazyValue {
+class BinaryPlainLazyValue extends BinaryAbstractLazyValue {
     /** */
-    protected Object val;
-
-    /** */
-    protected final PortableBuilderReader reader;
-
-    /** */
-    protected final int valOff;
+    protected final int len;
 
     /**
-     * @param reader Reader.
-     * @param valOff Value.
+     * @param reader Reader
+     * @param valOff Offset
+     * @param len Length.
      */
-    protected PortableAbstractLazyValue(PortableBuilderReader reader, int valOff) {
-        this.reader = reader;
-        this.valOff = valOff;
+    protected BinaryPlainLazyValue(PortableBuilderReader reader, int valOff, int len) {
+        super(reader, valOff);
+
+        this.len = len;
     }
 
-    /**
-     * @return Value.
-     */
-    protected abstract Object init();
+    /** {@inheritDoc} */
+    @Override protected Object init() {
+        return reader.reader().unmarshal(valOff);
+    }
 
     /** {@inheritDoc} */
-    @Override public Object value() {
-        if (val == null) {
-            val = init();
-
-            assert val != null;
-        }
-
-        return val;
+    @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
+        writer.write(reader.array(), valOff, len);
     }
 }

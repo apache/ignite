@@ -25,7 +25,7 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 /**
  *
  */
-class PortableObjectArrayLazyValue extends PortableAbstractLazyValue {
+class BinaryObjectArrayLazyValue extends BinaryAbstractLazyValue {
     /** */
     private Object[] lazyValsArr;
 
@@ -38,7 +38,7 @@ class PortableObjectArrayLazyValue extends PortableAbstractLazyValue {
     /**
      * @param reader Reader.
      */
-    protected PortableObjectArrayLazyValue(PortableBuilderReader reader) {
+    protected BinaryObjectArrayLazyValue(PortableBuilderReader reader) {
         super(reader, reader.position() - 1);
 
         int typeId = reader.readInt();
@@ -74,8 +74,8 @@ class PortableObjectArrayLazyValue extends PortableAbstractLazyValue {
     /** {@inheritDoc} */
     @Override protected Object init() {
         for (int i = 0; i < lazyValsArr.length; i++) {
-            if (lazyValsArr[i] instanceof PortableLazyValue)
-                lazyValsArr[i] = ((PortableLazyValue)lazyValsArr[i]).value();
+            if (lazyValsArr[i] instanceof BinaryLazyValue)
+                lazyValsArr[i] = ((BinaryLazyValue)lazyValsArr[i]).value();
         }
 
         return lazyValsArr;

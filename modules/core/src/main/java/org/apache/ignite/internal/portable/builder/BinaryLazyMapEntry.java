@@ -19,34 +19,50 @@ package org.apache.ignite.internal.portable.builder;
 
 import org.apache.ignite.internal.portable.*;
 
+import java.util.Map;
+
 /**
  *
  */
-public class PortableModifiableLazyValue extends PortableAbstractLazyValue {
+class BinaryLazyMapEntry implements Map.Entry<Object, Object>, BinaryBuilderSerializationAware {
     /** */
-    protected final int len;
+    private final Object key;
+
+    /** */
+    private Object val;
 
     /**
-     * @param reader
-     * @param valOff
-     * @param len
+     * @param reader GridMutablePortableReader
      */
-    public PortableModifiableLazyValue(PortableBuilderReader reader, int valOff, int len) {
-        super(reader, valOff);
-
-        this.len = len;
+    BinaryLazyMapEntry(PortableBuilderReader reader) {
+        key = reader.parseValue();
+        val = reader.parseValue();
     }
 
     /** {@inheritDoc} */
-    @Override protected Object init() {
-        return reader.reader().unmarshal(valOff);
+    @Override public Object getKey() {
+        return PortableUtils.unwrapLazy(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object getValue() {
+        return PortableUtils.unwrapLazy(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object setValue(Object val) {
+        Object res = getValue();
+
+        this.val = val;
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
-        if (val == null)
-            writer.write(reader.array(), valOff, len);
-        else
-            writer.writeObject(val);
+        writer.writeByte(GridPortableMarshaller.MAP_ENTRY);
+
+        ctx.writeValue(writer, key);
+        ctx.writeValue(writer, val);
     }
 }
