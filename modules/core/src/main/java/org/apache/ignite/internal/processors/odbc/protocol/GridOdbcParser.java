@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.*;
 
 /**
  * ODBC protocol parser.

@@ -74,6 +74,13 @@ namespace ignite
                  */
                 virtual bool Close();
 
+                /**
+                 * Check if data is available.
+                 *
+                 * @return True if data is available.
+                 */
+                virtual bool DataAvailable() const;
+
             private:
                 /**
                  * Make query execute request and use response to set internal

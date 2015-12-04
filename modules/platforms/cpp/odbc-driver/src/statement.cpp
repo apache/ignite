@@ -16,6 +16,7 @@
  */
 
 #include "ignite/odbc/query/data_query.h"
+#include "ignite/odbc/query/metadata_query.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
@@ -80,8 +81,12 @@ namespace ignite
 
         bool Statement::ExecuteGetColumnsMetaQuery(const std::string& cache, const std::string& table, const std::string& column)
         {
-            // TODO: implement me.
-            return false;
+            if (currentQuery.get())
+                currentQuery->Close();
+
+            currentQuery.reset(new query::MetadataQuery(connection, cache, table, column));
+
+            return currentQuery->Execute();
         }
 
         bool Statement::Close()
@@ -112,28 +117,9 @@ namespace ignite
             return &currentQuery->GetMeta();
         }
 
-        bool Statement::MakeRequestGetColumnsMeta(const std::string& cache, const std::string& table, const std::string& column)
+        bool Statement::DataAvailable() const
         {
-            //std::auto_ptr<ResultPage> resultPage(new ResultPage());
-
-            QueryGetColumnsMetaRequest req(cache, table, column);
-            QueryGetColumnsMetaResponse rsp;
-
-            bool success = connection.SyncMessage(req, rsp);
-
-            if (!success)
-                return false;
-
-            if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
-            {
-                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
-
-                return false;
-            }
-
-            //cursor->UpdateData(resultPage);
-
-            return true;
+            return currentQuery.get() && currentQuery->DataAvailable();
         }
     }
 }

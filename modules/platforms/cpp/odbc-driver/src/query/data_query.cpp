@@ -104,6 +104,11 @@ namespace ignite
                 return false;
             }
 
+            bool DataQuery::DataAvailable() const
+            {
+                return cursor.get() && cursor->HasNext();
+            }
+
             bool DataQuery::MakeRequestExecute()
             {
                 const std::string& cacheName = connection.GetCache();
@@ -131,10 +136,10 @@ namespace ignite
 
                 for (int i = 0; i < rsp.GetMeta().size(); ++i)
                 {
-                    LOG_MSG("[%d] SchemaName:    %s\n", i, rsp.GetMeta()[i].GetSchemaName().c_str());
-                    LOG_MSG("[%d] TypeName:      %s\n", i, rsp.GetMeta()[i].GetTypeName().c_str());
-                    LOG_MSG("[%d] FieldName:     %s\n", i, rsp.GetMeta()[i].GetFieldName().c_str());
-                    LOG_MSG("[%d] FieldTypeName: %s\n", i, rsp.GetMeta()[i].GetFieldTypeName().c_str());
+                    LOG_MSG("[%d] SchemaName:     %s\n", i, rsp.GetMeta()[i].GetSchemaName().c_str());
+                    LOG_MSG("[%d] TypeName:       %s\n", i, rsp.GetMeta()[i].GetTableName().c_str());
+                    LOG_MSG("[%d] ColumnName:     %s\n", i, rsp.GetMeta()[i].GetColumnName().c_str());
+                    LOG_MSG("[%d] ColumnTypeName: %s\n", i, rsp.GetMeta()[i].GetColumnTypeName().c_str());
                     LOG_MSG("\n");
                 }
 

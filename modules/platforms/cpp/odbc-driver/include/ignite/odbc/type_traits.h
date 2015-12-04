@@ -112,6 +112,25 @@ namespace ignite
              * @return Internal driver type.
              */
             IgniteSqlType ToDriverType(int16_t type);
+
+            /**
+             * Convert binary data type to SQL data type.
+             *
+             * @param binaryType Binary data type.
+             * @return SQL data type.
+             */
+            int16_t BinaryToSqlType(int8_t binaryType);
+
+            /**
+             * Get binary type SQL nullability.
+             *
+             * @param binaryType Binary data type.
+             * @return SQL_NO_NULLS if the column could not include NULL values.
+             *         SQL_NULLABLE if the column accepts NULL values.
+             *         SQL_NULLABLE_UNKNOWN if it is not known whether the 
+             *         column accepts NULL values.
+             */
+            int16_t BinaryTypeNullability(int8_t binaryType);
         }
     }
 }

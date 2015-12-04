@@ -39,6 +39,23 @@ namespace ignite
             {
                 // No-op.
             }
+            
+            /**
+             * Constructor.
+             *
+             * @param schemaName Schema name.
+             * @param tableName Table name.
+             * @param columnName Column name.
+             * @param typeName Type name.
+             * @param dataType Data type.
+             */
+            ColumnMeta(const std::string& schemaName, const std::string& tableName,
+                       const std::string& columnName, const std::string& typeName, int8_t dataType) :
+                schemaName(schemaName), tableName(tableName), columnName(columnName), 
+                typeName(typeName), dataType(dataType)
+            {
+                // No-op.
+            }
 
             /**
              * Destructor.
@@ -64,28 +81,28 @@ namespace ignite
             }
 
             /**
-             * Get type name.
-             * @return Type name.
+             * Get table name.
+             * @return Table name.
              */
-            const std::string& GetTypeName() const
+            const std::string& GetTableName() const
             {
                 return tableName;
             }
 
             /**
-             * Get field name.
-             * @return Field name.
+             * Get column name.
+             * @return Column name.
              */
-            const std::string& GetFieldName() const
+            const std::string& GetColumnName() const
             {
                 return columnName;
             }
 
             /**
-             * Get field type name.
-             * @return Field type name.
+             * Get column type name.
+             * @return Column type name.
              */
-            const std::string& GetFieldTypeName() const
+            const std::string& GetColumnTypeName() const
             {
                 return typeName;
             }

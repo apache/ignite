@@ -15,79 +15,104 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_QUERY
-#define _IGNITE_ODBC_DRIVER_QUERY
+#ifndef _IGNITE_ODBC_DRIVER_METADATA_QUERY
+#define _IGNITE_ODBC_DRIVER_METADATA_QUERY
 
-#include <stdint.h>
-
-#include <map>
-
-#include "ignite/odbc/column_meta.h"
-#include "ignite/odbc/common_types.h"
-#include "ignite/odbc/row.h"
+#include "ignite/odbc/query/query.h"
+#include "ignite/odbc/cursor.h"
 
 namespace ignite
 {
     namespace odbc
     {
+        /** Connection forward-declaration. */
+        class Connection;
+
         namespace query
         {
             /**
              * Query.
              */
-            class Query
+            class MetadataQuery : public Query
             {
             public:
                 /**
                  * Constructor.
                  */
-                Query() 
-                {
-                    // No-op.
-                }
+                MetadataQuery(Connection& connection, const std::string& cache, 
+                    const std::string& table, const std::string& column);
 
                 /**
                  * Destructor.
                  */
-                virtual ~Query()
-                {
-                    // No-op.
-                }
+                virtual ~MetadataQuery();
 
                 /**
                  * Execute query.
                  *
                  * @return True on success.
                  */
-                virtual bool Execute() = 0;
+                virtual bool Execute();
 
                 /**
                  * Get column metadata.
                  *
                  * @return Column metadata.
                  */
-                virtual const ColumnMetaVector& GetMeta() const = 0;
+                virtual const ColumnMetaVector& GetMeta() const;
 
                 /**
                  * Fetch next result row to application buffers.
                  *
                  * @return Operation result.
                  */
-                virtual SqlResult FetchNextRow(ColumnBindingMap& columnBindings) = 0;
+                virtual SqlResult FetchNextRow(ColumnBindingMap& columnBindings);
 
                 /**
                  * Close query.
                  *
                  * @return True on success.
                  */
-                virtual bool Close() = 0;
-
+                virtual bool Close();
+                
                 /**
                  * Check if data is available.
                  *
                  * @return True if data is available.
                  */
-                virtual bool DataAvailable() const = 0;
+                virtual bool DataAvailable() const;
+
+            private:
+                /**
+                 * Make get columns metadata requets and use response to set internal state.
+                 *
+                 * @return True on success.
+                 */
+                bool MakeRequestGetColumnsMeta();
+
+                /** Connection associated with the statement. */
+                Connection& connection;
+
+                /** Cache search pattern. */
+                std::string cache;
+
+                /** Table search pattern. */
+                std::string table;
+
+                /** Column search pattern. */
+                std::string column;
+
+                /** Query executed. */
+                bool executed;
+
+                /** Fetched metadata. */
+                ColumnMetaVector meta;
+
+                /** Metadata cursor. */
+                ColumnMetaVector::iterator cursor;
+
+                /** Columns metadata. */
+                ColumnMetaVector columnsMeta;
             };
         }
     }

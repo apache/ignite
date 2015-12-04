@@ -135,6 +135,11 @@ namespace ignite
              */
             void PutBinaryData(void* data, size_t len);
 
+            /**
+             * Put NULL.
+             */
+            void PutNull();
+
         private:
             /**
              * Put value of numeric type in the buffer.

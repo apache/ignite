@@ -453,6 +453,12 @@ namespace ignite
                 }
             }
         }
+
+        void ApplicationDataBuffer::PutNull()
+        {
+            if (reslen)
+                *reslen = SQL_NULL_DATA;
+        }
     }
 }
 

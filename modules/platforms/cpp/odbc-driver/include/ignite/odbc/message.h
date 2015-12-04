@@ -38,7 +38,9 @@ namespace ignite
 
             REQUEST_TYPE_FETCH_SQL_QUERY = 2,
 
-            REQUEST_TYPE_CLOSE_SQL_QUERY = 3
+            REQUEST_TYPE_CLOSE_SQL_QUERY = 3,
+
+            REQUEST_TYPE_GET_COLUMNS_METADATA = 4
         };
 
         enum ResponseStatus
@@ -212,7 +214,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_FETCH_SQL_QUERY);
+                writer.WriteInt8(REQUEST_TYPE_GET_COLUMNS_METADATA);
                 
                 utility::WriteString(writer, cache);
                 utility::WriteString(writer, table);

@@ -604,7 +604,36 @@ SQLRETURN SQL_API SQLColumns(SQLHSTMT       stmt,
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-    return SQL_SUCCESS;
+    std::string schema;
+    std::string table;
+    std::string column;
+
+    if (schemaName)
+        schema.assign(reinterpret_cast<char*>(schemaName), schemaNameLen);
+
+    if (tableName)
+        table.assign(reinterpret_cast<char*>(tableName), tableNameLen);
+
+    if (columnName)
+        column.assign(reinterpret_cast<char*>(columnName), columnNameLen);
+
+    bool success = statement->ExecuteGetColumnsMetaQuery(schema, table, column);
+
+    return success ? SQL_SUCCESS : SQL_ERROR;
+}
+
+SQLRETURN SQL_API SQLMoreResults(SQLHSTMT stmt)
+{
+    using ignite::odbc::Statement;
+
+    LOG_MSG("SQLMoreResults called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    return statement->DataAvailable() ? SQL_SUCCESS : SQL_NO_DATA;
 }
 
 // ==== Not implemented ====
@@ -800,12 +829,6 @@ SQLRETURN SQL_API SQLBrowseConnect(SQLHDBC      conn,
                                    SQLSMALLINT* outConnectionStrResLen)
 {
     LOG_MSG("SQLBrowseConnect called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLMoreResults(SQLHSTMT stmt)
-{
-    LOG_MSG("SQLMoreResults called\n");
     return SQL_SUCCESS;
 }
 

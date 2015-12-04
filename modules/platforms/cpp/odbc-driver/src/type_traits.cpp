@@ -22,6 +22,8 @@
 #include <sqlext.h>
 #include <odbcinst.h>
 
+#include <ignite/impl/binary/binary_common.h>
+
 #include "ignite/odbc/type_traits.h"
 
 namespace ignite
@@ -104,6 +106,72 @@ namespace ignite
                 }
             }
 
+            int16_t BinaryToSqlType(int8_t binaryType)
+            {
+                using namespace ignite::impl::binary;
+                switch (binaryType)
+                {
+                    case IGNITE_TYPE_BYTE:
+                    case IGNITE_TYPE_CHAR:
+                        return SQL_TINYINT;
+
+                    case IGNITE_TYPE_SHORT:
+                        return SQL_SMALLINT;
+
+                    case IGNITE_TYPE_INT:
+                        return SQL_INTEGER;
+
+                    case IGNITE_TYPE_LONG:
+                        return SQL_BIGINT;
+
+                    case IGNITE_TYPE_FLOAT:
+                        return SQL_FLOAT;
+
+                    case IGNITE_TYPE_DOUBLE:
+                        return SQL_DOUBLE;
+
+                    case IGNITE_TYPE_BOOL:
+                        return SQL_BIT;
+
+                    case IGNITE_TYPE_DECIMAL:
+                        return SQL_DECIMAL;
+
+                    case IGNITE_TYPE_STRING:
+                        return SQL_VARCHAR;
+
+                    case IGNITE_TYPE_UUID:
+                        return SQL_GUID;
+
+                    case IGNITE_TYPE_DATE:
+                        return SQL_TYPE_DATE;
+
+                    case IGNITE_TYPE_ARRAY_BYTE:
+                    case IGNITE_TYPE_ARRAY_SHORT:
+                    case IGNITE_TYPE_ARRAY_INT:
+                    case IGNITE_TYPE_ARRAY_LONG:
+                    case IGNITE_TYPE_ARRAY_FLOAT:
+                    case IGNITE_TYPE_ARRAY_DOUBLE:
+                    case IGNITE_TYPE_ARRAY_CHAR:
+                    case IGNITE_TYPE_ARRAY_BOOL:
+                    case IGNITE_TYPE_ARRAY_DECIMAL:
+                    case IGNITE_TYPE_ARRAY_STRING:
+                    case IGNITE_TYPE_ARRAY_UUID:
+                    case IGNITE_TYPE_ARRAY_DATE:
+                    case IGNITE_TYPE_ARRAY:
+                    case IGNITE_TYPE_COLLECTION:
+                    case IGNITE_TYPE_MAP:
+                    case IGNITE_TYPE_MAP_ENTRY:
+                    case IGNITE_TYPE_BINARY:
+                    case IGNITE_TYPE_OBJECT:
+                    default:
+                        return SQL_BINARY;
+                }
+            }
+
+            int16_t BinaryTypeNullability(int8_t binaryType)
+            {
+                return SQL_NULLABLE_UNKNOWN;
+            }
         }
     }
 }

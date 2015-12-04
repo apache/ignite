@@ -133,6 +133,13 @@ namespace ignite
              */
             const ColumnMetaVector* GetMeta() const;
 
+            /**
+             * Check if data is available.
+             *
+             * @return True if data is available.
+             */
+            bool DataAvailable() const;
+
         private:
             /**
              * Constructor.
@@ -141,13 +148,6 @@ namespace ignite
              * @param parent Connection associated with the statement.
              */
             Statement(Connection& parent);
-
-            /**
-             * Make get columns metadata requets and use response to set internal state.
-             *
-             * @return True on success.
-             */
-            bool MakeRequestGetColumnsMeta(const std::string& cache, const std::string& table, const std::string& column);
 
             /** Connection associated with the statement. */
             Connection& connection;
