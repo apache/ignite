@@ -183,7 +183,7 @@ namespace ignite
             const char* C_CLASS = "java/lang/Class";
             JniMethod M_CLASS_GET_NAME = JniMethod("getName", "()Ljava/lang/String;", false);
 
-            const char* C_X = "org/apache/ignite/internal/util/typedef";
+            const char* C_X = "org/apache/ignite/internal/util/typedef/X";
             JniMethod M_X_GET_FULL_STACK_TRACE = JniMethod("getFullStackTrace", "(Ljava/lang/Throwable;)Ljava/lang/String;", false);
 
             const char* C_IGNITE_EXCEPTION = "org/apache/ignite/IgniteException";
@@ -509,7 +509,7 @@ namespace ignite
 				m_Throwable_getStackTrace = FindMethod(env, c_Throwable, M_THROWABLE_GET_STACK_TRACE);
 				
 				c_X = FindClass(env, C_X);
-				m_Throwable_getStackTrace = FindMethod(env, c_Throwable, M_X_GET_FULL_STACK_TRACE);
+				m_Throwable_getStackTrace = FindMethod(env, c_X, M_X_GET_FULL_STACK_TRACE);
             }
 
             void JniJavaMembers::Destroy(JNIEnv* env) {
