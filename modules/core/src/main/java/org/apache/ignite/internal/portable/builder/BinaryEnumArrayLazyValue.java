@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.InternalBinaryMarshaller;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -44,7 +44,7 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
 
         int typeId = reader.readInt();
 
-        if (typeId == GridPortableMarshaller.UNREGISTERED_TYPE_ID) {
+        if (typeId == InternalBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             clsName = reader.readString();
 
             Class cls;
@@ -86,10 +86,10 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
         for (int i = 0; i < size; i++) {
             byte flag = reader.readByte();
 
-            if (flag == GridPortableMarshaller.NULL)
+            if (flag == InternalBinaryMarshaller.NULL)
                 continue;
 
-            if (flag != GridPortableMarshaller.ENUM)
+            if (flag != InternalBinaryMarshaller.ENUM)
                 throw new BinaryObjectException("Invalid flag value: " + flag);
 
             res[i] = new BinaryBuilderEnum(reader);
@@ -102,9 +102,9 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
     @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         if (val != null) {
             if (clsName != null)
-                ctx.writeArray(writer, GridPortableMarshaller.ENUM_ARR, (Object[])val, clsName);
+                ctx.writeArray(writer, InternalBinaryMarshaller.ENUM_ARR, (Object[])val, clsName);
             else
-                ctx.writeArray(writer, GridPortableMarshaller.ENUM_ARR, (Object[])val, compTypeId);
+                ctx.writeArray(writer, InternalBinaryMarshaller.ENUM_ARR, (Object[])val, compTypeId);
 
             return;
         }

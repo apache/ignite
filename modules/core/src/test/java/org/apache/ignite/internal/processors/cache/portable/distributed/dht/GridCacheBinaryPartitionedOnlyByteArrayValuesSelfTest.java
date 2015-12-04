@@ -17,29 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
-import java.util.Arrays;
-import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest;
 import org.apache.ignite.internal.portable.BinaryMarshaller;
 
 /**
  *
  */
-public class GridCacheOffHeapTieredPortableSelfTest extends GridCacheOffHeapTieredSelfTest {
+public class GridCacheBinaryPartitionedOnlyByteArrayValuesSelfTest
+    extends GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean portableEnabled() {
-        return true;
+    @Override protected boolean peerClassLoading() {
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        // Enable binary.
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        BinaryConfiguration bCfg = new BinaryConfiguration();
-
-        bCfg.setClassNames(Arrays.asList(TestValue.class.getName()));
 
         cfg.setMarshaller(new BinaryMarshaller());
 

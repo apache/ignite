@@ -19,7 +19,7 @@ package org.apache.ignite.internal.portable.builder;
 
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.portable.BinaryMetadata;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.InternalBinaryMarshaller;
 import org.apache.ignite.internal.portable.BinaryObjectExImpl;
 import org.apache.ignite.internal.portable.BinaryContext;
 import org.apache.ignite.internal.portable.BinaryUtils;
@@ -52,7 +52,7 @@ class BinaryBuilderSerializer {
      */
     public void writeValue(BinaryWriterExImpl writer, Object val) {
         if (val == null) {
-            writer.writeByte(GridPortableMarshaller.NULL);
+            writer.writeByte(InternalBinaryMarshaller.NULL);
 
             return;
         }
@@ -91,7 +91,7 @@ class BinaryBuilderSerializer {
             else {
                 int handle = writer.out().position() - posInResArr;
 
-                writer.writeByte(GridPortableMarshaller.HANDLE);
+                writer.writeByte(InternalBinaryMarshaller.HANDLE);
                 writer.writeInt(handle);
             }
 
@@ -105,7 +105,7 @@ class BinaryBuilderSerializer {
             BinaryMetadata meta = new BinaryMetadata(typeId, typeName, null, null, null, true);
             writer.context().updateMetadata(typeId, meta);
 
-            writer.writeByte(GridPortableMarshaller.ENUM);
+            writer.writeByte(InternalBinaryMarshaller.ENUM);
             writer.writeInt(typeId);
             writer.writeInt(((Enum)val).ordinal());
 
@@ -115,13 +115,13 @@ class BinaryBuilderSerializer {
         if (val instanceof Collection) {
             Collection<?> c = (Collection<?>)val;
 
-            writer.writeByte(GridPortableMarshaller.COL);
+            writer.writeByte(InternalBinaryMarshaller.COL);
             writer.writeInt(c.size());
 
             byte colType;
 
             if (c instanceof GridConcurrentSkipListSet)
-                colType = GridPortableMarshaller.CONC_SKIP_LIST_SET;
+                colType = InternalBinaryMarshaller.CONC_SKIP_LIST_SET;
             else
                 colType = writer.context().collectionType(c.getClass());
 
@@ -137,7 +137,7 @@ class BinaryBuilderSerializer {
         if (val instanceof Map) {
             Map<?, ?> map = (Map<?, ?>)val;
 
-            writer.writeByte(GridPortableMarshaller.MAP);
+            writer.writeByte(InternalBinaryMarshaller.MAP);
             writer.writeInt(map.size());
 
             writer.writeByte(writer.context().mapType(map.getClass()));
@@ -162,7 +162,7 @@ class BinaryBuilderSerializer {
             int compTypeId = writer.context().typeId(((Object[])val).getClass().getComponentType().getName());
 
             if (val instanceof BinaryBuilderEnum[]) {
-                writeArray(writer, GridPortableMarshaller.ENUM_ARR, (Object[])val, compTypeId);
+                writeArray(writer, InternalBinaryMarshaller.ENUM_ARR, (Object[])val, compTypeId);
 
                 return;
             }
@@ -170,7 +170,7 @@ class BinaryBuilderSerializer {
             if (((Object[])val).getClass().getComponentType().isEnum()) {
                 Enum[] enumArr = (Enum[])val;
 
-                writer.writeByte(GridPortableMarshaller.ENUM_ARR);
+                writer.writeByte(InternalBinaryMarshaller.ENUM_ARR);
                 writer.writeInt(compTypeId);
                 writer.writeInt(enumArr.length);
 
@@ -180,7 +180,7 @@ class BinaryBuilderSerializer {
                 return;
             }
 
-            writeArray(writer, GridPortableMarshaller.OBJ_ARR, (Object[])val, compTypeId);
+            writeArray(writer, InternalBinaryMarshaller.OBJ_ARR, (Object[])val, compTypeId);
 
             return;
         }
@@ -211,7 +211,7 @@ class BinaryBuilderSerializer {
      */
     public void writeArray(BinaryWriterExImpl writer, byte elementType, Object[] arr, String clsName) {
         writer.writeByte(elementType);
-        writer.writeInt(GridPortableMarshaller.UNREGISTERED_TYPE_ID);
+        writer.writeInt(InternalBinaryMarshaller.UNREGISTERED_TYPE_ID);
         writer.writeString(clsName);
         writer.writeInt(arr.length);
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.InternalBinaryMarshaller;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
@@ -43,7 +43,7 @@ class BinaryObjectArrayLazyValue extends BinaryAbstractLazyValue {
 
         int typeId = reader.readInt();
 
-        if (typeId == GridPortableMarshaller.UNREGISTERED_TYPE_ID) {
+        if (typeId == InternalBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             clsName = reader.readString();
 
             Class cls;
@@ -84,8 +84,8 @@ class BinaryObjectArrayLazyValue extends BinaryAbstractLazyValue {
     /** {@inheritDoc} */
     @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         if (clsName == null)
-            ctx.writeArray(writer, GridPortableMarshaller.OBJ_ARR, lazyValsArr, compTypeId);
+            ctx.writeArray(writer, InternalBinaryMarshaller.OBJ_ARR, lazyValsArr, compTypeId);
         else
-            ctx.writeArray(writer, GridPortableMarshaller.OBJ_ARR, lazyValsArr, clsName);
+            ctx.writeArray(writer, InternalBinaryMarshaller.OBJ_ARR, lazyValsArr, clsName);
     }
 }

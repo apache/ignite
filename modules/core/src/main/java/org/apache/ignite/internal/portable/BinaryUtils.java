@@ -59,61 +59,61 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.ARR_LIST;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_HASH_MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_LINKED_QUEUE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_SKIP_LIST_SET;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.HANDLE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_SET;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.LINKED_HASH_MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.LINKED_HASH_SET;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.LINKED_LIST;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJECT_TYPE_ID;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROPERTIES_MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TREE_MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TREE_SET;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.USER_COL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.USER_SET;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.ARR_LIST;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.BOOLEAN;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.BOOLEAN_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.BYTE;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.BYTE_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.CHAR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.CHAR_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.CLASS;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.COL;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.CONC_HASH_MAP;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.CONC_LINKED_QUEUE;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.CONC_SKIP_LIST_SET;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DATE;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DATE_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DECIMAL;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DECIMAL_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DOUBLE;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DOUBLE_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.ENUM;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.ENUM_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.FLOAT;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.FLOAT_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.HANDLE;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.HASH_MAP;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.HASH_SET;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.INT;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.INT_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.LINKED_HASH_MAP;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.LINKED_HASH_SET;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.LINKED_LIST;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.LONG;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.LONG_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.MAP;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.MAP_ENTRY;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.NULL;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.OBJ;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.OBJECT_TYPE_ID;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.OBJ_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.OPTM_MARSH;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.PORTABLE_OBJ;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.PROPERTIES_MAP;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.PROTO_VER;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.SHORT;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.SHORT_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.STRING;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.STRING_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.TIMESTAMP;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.TIMESTAMP_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.TREE_MAP;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.TREE_SET;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.UNREGISTERED_TYPE_ID;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.USER_COL;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.USER_SET;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.UUID;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.UUID_ARR;
 
 /**
  * Portable utils.
@@ -174,45 +174,45 @@ public class BinaryUtils {
      * Static class initializer.
      */
     static {
-        PLAIN_CLASS_TO_FLAG.put(Byte.class, GridPortableMarshaller.BYTE);
-        PLAIN_CLASS_TO_FLAG.put(Short.class, GridPortableMarshaller.SHORT);
-        PLAIN_CLASS_TO_FLAG.put(Integer.class, GridPortableMarshaller.INT);
-        PLAIN_CLASS_TO_FLAG.put(Long.class, GridPortableMarshaller.LONG);
-        PLAIN_CLASS_TO_FLAG.put(Float.class, GridPortableMarshaller.FLOAT);
-        PLAIN_CLASS_TO_FLAG.put(Double.class, GridPortableMarshaller.DOUBLE);
-        PLAIN_CLASS_TO_FLAG.put(Character.class, GridPortableMarshaller.CHAR);
-        PLAIN_CLASS_TO_FLAG.put(Boolean.class, GridPortableMarshaller.BOOLEAN);
-        PLAIN_CLASS_TO_FLAG.put(BigDecimal.class, GridPortableMarshaller.DECIMAL);
-        PLAIN_CLASS_TO_FLAG.put(String.class, GridPortableMarshaller.STRING);
-        PLAIN_CLASS_TO_FLAG.put(UUID.class, GridPortableMarshaller.UUID);
-        PLAIN_CLASS_TO_FLAG.put(Date.class, GridPortableMarshaller.DATE);
-        PLAIN_CLASS_TO_FLAG.put(Timestamp.class, GridPortableMarshaller.TIMESTAMP);
+        PLAIN_CLASS_TO_FLAG.put(Byte.class, InternalBinaryMarshaller.BYTE);
+        PLAIN_CLASS_TO_FLAG.put(Short.class, InternalBinaryMarshaller.SHORT);
+        PLAIN_CLASS_TO_FLAG.put(Integer.class, InternalBinaryMarshaller.INT);
+        PLAIN_CLASS_TO_FLAG.put(Long.class, InternalBinaryMarshaller.LONG);
+        PLAIN_CLASS_TO_FLAG.put(Float.class, InternalBinaryMarshaller.FLOAT);
+        PLAIN_CLASS_TO_FLAG.put(Double.class, InternalBinaryMarshaller.DOUBLE);
+        PLAIN_CLASS_TO_FLAG.put(Character.class, InternalBinaryMarshaller.CHAR);
+        PLAIN_CLASS_TO_FLAG.put(Boolean.class, InternalBinaryMarshaller.BOOLEAN);
+        PLAIN_CLASS_TO_FLAG.put(BigDecimal.class, InternalBinaryMarshaller.DECIMAL);
+        PLAIN_CLASS_TO_FLAG.put(String.class, InternalBinaryMarshaller.STRING);
+        PLAIN_CLASS_TO_FLAG.put(UUID.class, InternalBinaryMarshaller.UUID);
+        PLAIN_CLASS_TO_FLAG.put(Date.class, InternalBinaryMarshaller.DATE);
+        PLAIN_CLASS_TO_FLAG.put(Timestamp.class, InternalBinaryMarshaller.TIMESTAMP);
 
-        PLAIN_CLASS_TO_FLAG.put(byte[].class, GridPortableMarshaller.BYTE_ARR);
-        PLAIN_CLASS_TO_FLAG.put(short[].class, GridPortableMarshaller.SHORT_ARR);
-        PLAIN_CLASS_TO_FLAG.put(int[].class, GridPortableMarshaller.INT_ARR);
-        PLAIN_CLASS_TO_FLAG.put(long[].class, GridPortableMarshaller.LONG_ARR);
-        PLAIN_CLASS_TO_FLAG.put(float[].class, GridPortableMarshaller.FLOAT_ARR);
-        PLAIN_CLASS_TO_FLAG.put(double[].class, GridPortableMarshaller.DOUBLE_ARR);
-        PLAIN_CLASS_TO_FLAG.put(char[].class, GridPortableMarshaller.CHAR_ARR);
-        PLAIN_CLASS_TO_FLAG.put(boolean[].class, GridPortableMarshaller.BOOLEAN_ARR);
-        PLAIN_CLASS_TO_FLAG.put(BigDecimal[].class, GridPortableMarshaller.DECIMAL_ARR);
-        PLAIN_CLASS_TO_FLAG.put(String[].class, GridPortableMarshaller.STRING_ARR);
-        PLAIN_CLASS_TO_FLAG.put(UUID[].class, GridPortableMarshaller.UUID_ARR);
-        PLAIN_CLASS_TO_FLAG.put(Date[].class, GridPortableMarshaller.DATE_ARR);
-        PLAIN_CLASS_TO_FLAG.put(Timestamp[].class, GridPortableMarshaller.TIMESTAMP_ARR);
+        PLAIN_CLASS_TO_FLAG.put(byte[].class, InternalBinaryMarshaller.BYTE_ARR);
+        PLAIN_CLASS_TO_FLAG.put(short[].class, InternalBinaryMarshaller.SHORT_ARR);
+        PLAIN_CLASS_TO_FLAG.put(int[].class, InternalBinaryMarshaller.INT_ARR);
+        PLAIN_CLASS_TO_FLAG.put(long[].class, InternalBinaryMarshaller.LONG_ARR);
+        PLAIN_CLASS_TO_FLAG.put(float[].class, InternalBinaryMarshaller.FLOAT_ARR);
+        PLAIN_CLASS_TO_FLAG.put(double[].class, InternalBinaryMarshaller.DOUBLE_ARR);
+        PLAIN_CLASS_TO_FLAG.put(char[].class, InternalBinaryMarshaller.CHAR_ARR);
+        PLAIN_CLASS_TO_FLAG.put(boolean[].class, InternalBinaryMarshaller.BOOLEAN_ARR);
+        PLAIN_CLASS_TO_FLAG.put(BigDecimal[].class, InternalBinaryMarshaller.DECIMAL_ARR);
+        PLAIN_CLASS_TO_FLAG.put(String[].class, InternalBinaryMarshaller.STRING_ARR);
+        PLAIN_CLASS_TO_FLAG.put(UUID[].class, InternalBinaryMarshaller.UUID_ARR);
+        PLAIN_CLASS_TO_FLAG.put(Date[].class, InternalBinaryMarshaller.DATE_ARR);
+        PLAIN_CLASS_TO_FLAG.put(Timestamp[].class, InternalBinaryMarshaller.TIMESTAMP_ARR);
 
         for (Map.Entry<Class<?>, Byte> entry : PLAIN_CLASS_TO_FLAG.entrySet())
             FLAG_TO_CLASS.put(entry.getValue(), entry.getKey());
 
-        PLAIN_CLASS_TO_FLAG.put(byte.class, GridPortableMarshaller.BYTE);
-        PLAIN_CLASS_TO_FLAG.put(short.class, GridPortableMarshaller.SHORT);
-        PLAIN_CLASS_TO_FLAG.put(int.class, GridPortableMarshaller.INT);
-        PLAIN_CLASS_TO_FLAG.put(long.class, GridPortableMarshaller.LONG);
-        PLAIN_CLASS_TO_FLAG.put(float.class, GridPortableMarshaller.FLOAT);
-        PLAIN_CLASS_TO_FLAG.put(double.class, GridPortableMarshaller.DOUBLE);
-        PLAIN_CLASS_TO_FLAG.put(char.class, GridPortableMarshaller.CHAR);
-        PLAIN_CLASS_TO_FLAG.put(boolean.class, GridPortableMarshaller.BOOLEAN);
+        PLAIN_CLASS_TO_FLAG.put(byte.class, InternalBinaryMarshaller.BYTE);
+        PLAIN_CLASS_TO_FLAG.put(short.class, InternalBinaryMarshaller.SHORT);
+        PLAIN_CLASS_TO_FLAG.put(int.class, InternalBinaryMarshaller.INT);
+        PLAIN_CLASS_TO_FLAG.put(long.class, InternalBinaryMarshaller.LONG);
+        PLAIN_CLASS_TO_FLAG.put(float.class, InternalBinaryMarshaller.FLOAT);
+        PLAIN_CLASS_TO_FLAG.put(double.class, InternalBinaryMarshaller.DOUBLE);
+        PLAIN_CLASS_TO_FLAG.put(char.class, InternalBinaryMarshaller.CHAR);
+        PLAIN_CLASS_TO_FLAG.put(boolean.class, InternalBinaryMarshaller.BOOLEAN);
 
         for (byte b : new byte[] {
             BYTE, SHORT, INT, LONG, FLOAT, DOUBLE,
@@ -701,7 +701,7 @@ public class BinaryUtils {
      * @return Length.
      */
     public static int length(BinaryPositionReadable in, int start) {
-        return in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
+        return in.readIntPositioned(start + InternalBinaryMarshaller.TOTAL_LEN_POS);
     }
 
     /**
@@ -712,11 +712,11 @@ public class BinaryUtils {
      * @return Footer start.
      */
     public static int footerStartRelative(BinaryPositionReadable in, int start) {
-        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
+        short flags = in.readShortPositioned(start + InternalBinaryMarshaller.FLAGS_POS);
 
         if (hasSchema(flags))
             // Schema exists, use offset.
-            return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+            return in.readIntPositioned(start + InternalBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
         else
             // No schema, footer start equals to object end.
             return length(in, start);
@@ -741,13 +741,13 @@ public class BinaryUtils {
      * @return Footer.
      */
     public static IgniteBiTuple<Integer, Integer> footerAbsolute(BinaryPositionReadable in, int start) {
-        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
+        short flags = in.readShortPositioned(start + InternalBinaryMarshaller.FLAGS_POS);
 
         int footerEnd = length(in, start);
 
         if (hasSchema(flags)) {
             // Schema exists.
-            int footerStart = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+            int footerStart = in.readIntPositioned(start + InternalBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
             if (hasRaw(flags))
                 footerEnd -= 4;
@@ -769,7 +769,7 @@ public class BinaryUtils {
      * @return Raw offset.
      */
     public static int rawOffsetRelative(BinaryPositionReadable in, int start) {
-        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
+        short flags = in.readShortPositioned(start + InternalBinaryMarshaller.FLAGS_POS);
 
         int len = length(in, start);
 
@@ -780,11 +780,11 @@ public class BinaryUtils {
                 return in.readIntPositioned(start + len - 4);
             else
                 // Raw offset is not set, so just return schema offset.
-                return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+                return in.readIntPositioned(start + InternalBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
         }
         else
             // No schema, raw offset is located on schema offset position.
-            return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+            return in.readIntPositioned(start + InternalBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
     }
 
     /**

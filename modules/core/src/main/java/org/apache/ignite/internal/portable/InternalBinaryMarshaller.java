@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Portable objects marshaller.
  */
-public class GridPortableMarshaller {
+public class InternalBinaryMarshaller {
     /** */
     public static final ThreadLocal<Boolean> KEEP_PORTABLES = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
@@ -229,7 +229,7 @@ public class GridPortableMarshaller {
     /**
      * @param ctx Context.
      */
-    public GridPortableMarshaller(BinaryContext ctx) {
+    public InternalBinaryMarshaller(BinaryContext ctx) {
         this.ctx = ctx;
     }
 

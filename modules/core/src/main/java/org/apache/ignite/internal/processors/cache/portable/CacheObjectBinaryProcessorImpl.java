@@ -37,7 +37,7 @@ import org.apache.ignite.internal.portable.BinaryObjectEx;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryTypeImpl;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.InternalBinaryMarshaller;
 import org.apache.ignite.internal.portable.BinaryContext;
 import org.apache.ignite.internal.portable.BinaryUtils;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
@@ -134,7 +134,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     private Marshaller marsh;
 
     /** */
-    private GridPortableMarshaller portableMarsh;
+    private InternalBinaryMarshaller portableMarsh;
 
     /** */
     @GridToStringExclude
@@ -212,7 +212,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             IgniteUtils.invoke(BinaryMarshaller.class, pMarh0, "setPortableContext", portableCtx,
                 ctx.config());
 
-            portableMarsh = new GridPortableMarshaller(portableCtx);
+            portableMarsh = new InternalBinaryMarshaller(portableCtx);
 
             portables = new IgniteBinaryImpl(ctx, this);
         }
@@ -452,7 +452,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /**
      * @return Marshaller.
      */
-    public GridPortableMarshaller marshaller() {
+    public InternalBinaryMarshaller marshaller() {
         return portableMarsh;
     }
 

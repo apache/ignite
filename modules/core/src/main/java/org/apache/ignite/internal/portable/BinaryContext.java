@@ -160,51 +160,51 @@ public class BinaryContext implements Externalizable {
 
         gridName = igniteCfg.getGridName();
 
-        colTypes.put(ArrayList.class, GridPortableMarshaller.ARR_LIST);
-        colTypes.put(LinkedList.class, GridPortableMarshaller.LINKED_LIST);
-        colTypes.put(HashSet.class, GridPortableMarshaller.HASH_SET);
-        colTypes.put(LinkedHashSet.class, GridPortableMarshaller.LINKED_HASH_SET);
-        colTypes.put(TreeSet.class, GridPortableMarshaller.TREE_SET);
-        colTypes.put(ConcurrentSkipListSet.class, GridPortableMarshaller.CONC_SKIP_LIST_SET);
-        colTypes.put(ConcurrentLinkedQueue.class, GridPortableMarshaller.CONC_LINKED_QUEUE);
+        colTypes.put(ArrayList.class, InternalBinaryMarshaller.ARR_LIST);
+        colTypes.put(LinkedList.class, InternalBinaryMarshaller.LINKED_LIST);
+        colTypes.put(HashSet.class, InternalBinaryMarshaller.HASH_SET);
+        colTypes.put(LinkedHashSet.class, InternalBinaryMarshaller.LINKED_HASH_SET);
+        colTypes.put(TreeSet.class, InternalBinaryMarshaller.TREE_SET);
+        colTypes.put(ConcurrentSkipListSet.class, InternalBinaryMarshaller.CONC_SKIP_LIST_SET);
+        colTypes.put(ConcurrentLinkedQueue.class, InternalBinaryMarshaller.CONC_LINKED_QUEUE);
 
-        mapTypes.put(HashMap.class, GridPortableMarshaller.HASH_MAP);
-        mapTypes.put(LinkedHashMap.class, GridPortableMarshaller.LINKED_HASH_MAP);
-        mapTypes.put(TreeMap.class, GridPortableMarshaller.TREE_MAP);
-        mapTypes.put(ConcurrentHashMap.class, GridPortableMarshaller.CONC_HASH_MAP);
-        mapTypes.put(ConcurrentHashMap8.class, GridPortableMarshaller.CONC_HASH_MAP);
-        mapTypes.put(Properties.class, GridPortableMarshaller.PROPERTIES_MAP);
+        mapTypes.put(HashMap.class, InternalBinaryMarshaller.HASH_MAP);
+        mapTypes.put(LinkedHashMap.class, InternalBinaryMarshaller.LINKED_HASH_MAP);
+        mapTypes.put(TreeMap.class, InternalBinaryMarshaller.TREE_MAP);
+        mapTypes.put(ConcurrentHashMap.class, InternalBinaryMarshaller.CONC_HASH_MAP);
+        mapTypes.put(ConcurrentHashMap8.class, InternalBinaryMarshaller.CONC_HASH_MAP);
+        mapTypes.put(Properties.class, InternalBinaryMarshaller.PROPERTIES_MAP);
 
         // IDs range from [0..200] is used by Java SDK API and GridGain legacy API
 
-        registerPredefinedType(Byte.class, GridPortableMarshaller.BYTE);
-        registerPredefinedType(Boolean.class, GridPortableMarshaller.BOOLEAN);
-        registerPredefinedType(Short.class, GridPortableMarshaller.SHORT);
-        registerPredefinedType(Character.class, GridPortableMarshaller.CHAR);
-        registerPredefinedType(Integer.class, GridPortableMarshaller.INT);
-        registerPredefinedType(Long.class, GridPortableMarshaller.LONG);
-        registerPredefinedType(Float.class, GridPortableMarshaller.FLOAT);
-        registerPredefinedType(Double.class, GridPortableMarshaller.DOUBLE);
-        registerPredefinedType(String.class, GridPortableMarshaller.STRING);
-        registerPredefinedType(BigDecimal.class, GridPortableMarshaller.DECIMAL);
-        registerPredefinedType(Date.class, GridPortableMarshaller.DATE);
-        registerPredefinedType(Timestamp.class, GridPortableMarshaller.TIMESTAMP);
-        registerPredefinedType(UUID.class, GridPortableMarshaller.UUID);
+        registerPredefinedType(Byte.class, InternalBinaryMarshaller.BYTE);
+        registerPredefinedType(Boolean.class, InternalBinaryMarshaller.BOOLEAN);
+        registerPredefinedType(Short.class, InternalBinaryMarshaller.SHORT);
+        registerPredefinedType(Character.class, InternalBinaryMarshaller.CHAR);
+        registerPredefinedType(Integer.class, InternalBinaryMarshaller.INT);
+        registerPredefinedType(Long.class, InternalBinaryMarshaller.LONG);
+        registerPredefinedType(Float.class, InternalBinaryMarshaller.FLOAT);
+        registerPredefinedType(Double.class, InternalBinaryMarshaller.DOUBLE);
+        registerPredefinedType(String.class, InternalBinaryMarshaller.STRING);
+        registerPredefinedType(BigDecimal.class, InternalBinaryMarshaller.DECIMAL);
+        registerPredefinedType(Date.class, InternalBinaryMarshaller.DATE);
+        registerPredefinedType(Timestamp.class, InternalBinaryMarshaller.TIMESTAMP);
+        registerPredefinedType(UUID.class, InternalBinaryMarshaller.UUID);
 
-        registerPredefinedType(byte[].class, GridPortableMarshaller.BYTE_ARR);
-        registerPredefinedType(short[].class, GridPortableMarshaller.SHORT_ARR);
-        registerPredefinedType(int[].class, GridPortableMarshaller.INT_ARR);
-        registerPredefinedType(long[].class, GridPortableMarshaller.LONG_ARR);
-        registerPredefinedType(float[].class, GridPortableMarshaller.FLOAT_ARR);
-        registerPredefinedType(double[].class, GridPortableMarshaller.DOUBLE_ARR);
-        registerPredefinedType(char[].class, GridPortableMarshaller.CHAR_ARR);
-        registerPredefinedType(boolean[].class, GridPortableMarshaller.BOOLEAN_ARR);
-        registerPredefinedType(BigDecimal[].class, GridPortableMarshaller.DECIMAL_ARR);
-        registerPredefinedType(String[].class, GridPortableMarshaller.STRING_ARR);
-        registerPredefinedType(UUID[].class, GridPortableMarshaller.UUID_ARR);
-        registerPredefinedType(Date[].class, GridPortableMarshaller.DATE_ARR);
-        registerPredefinedType(Timestamp[].class, GridPortableMarshaller.TIMESTAMP_ARR);
-        registerPredefinedType(Object[].class, GridPortableMarshaller.OBJ_ARR);
+        registerPredefinedType(byte[].class, InternalBinaryMarshaller.BYTE_ARR);
+        registerPredefinedType(short[].class, InternalBinaryMarshaller.SHORT_ARR);
+        registerPredefinedType(int[].class, InternalBinaryMarshaller.INT_ARR);
+        registerPredefinedType(long[].class, InternalBinaryMarshaller.LONG_ARR);
+        registerPredefinedType(float[].class, InternalBinaryMarshaller.FLOAT_ARR);
+        registerPredefinedType(double[].class, InternalBinaryMarshaller.DOUBLE_ARR);
+        registerPredefinedType(char[].class, InternalBinaryMarshaller.CHAR_ARR);
+        registerPredefinedType(boolean[].class, InternalBinaryMarshaller.BOOLEAN_ARR);
+        registerPredefinedType(BigDecimal[].class, InternalBinaryMarshaller.DECIMAL_ARR);
+        registerPredefinedType(String[].class, InternalBinaryMarshaller.STRING_ARR);
+        registerPredefinedType(UUID[].class, InternalBinaryMarshaller.UUID_ARR);
+        registerPredefinedType(Date[].class, InternalBinaryMarshaller.DATE_ARR);
+        registerPredefinedType(Timestamp[].class, InternalBinaryMarshaller.TIMESTAMP_ARR);
+        registerPredefinedType(Object[].class, InternalBinaryMarshaller.OBJ_ARR);
 
         registerPredefinedType(ArrayList.class, 0);
         registerPredefinedType(LinkedList.class, 0);
@@ -442,7 +442,7 @@ public class BinaryContext implements Externalizable {
         ClassLoader ldr,
         boolean deserialize
     ) {
-        assert typeId != GridPortableMarshaller.UNREGISTERED_TYPE_ID;
+        assert typeId != InternalBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
         //TODO: As a workaround for IGNITE-1358 we always check the predefined map before without checking 'userType'
         BinaryClassDescriptor desc = predefinedTypes.get(typeId);
@@ -597,7 +597,7 @@ public class BinaryContext implements Externalizable {
         if (type != null)
             return type;
 
-        return Set.class.isAssignableFrom(cls) ? GridPortableMarshaller.USER_SET : GridPortableMarshaller.USER_COL;
+        return Set.class.isAssignableFrom(cls) ? InternalBinaryMarshaller.USER_SET : InternalBinaryMarshaller.USER_COL;
     }
 
     /**
@@ -609,7 +609,7 @@ public class BinaryContext implements Externalizable {
 
         Byte type = mapTypes.get(cls);
 
-        return type != null ? type : GridPortableMarshaller.USER_COL;
+        return type != null ? type : InternalBinaryMarshaller.USER_COL;
     }
 
     /**

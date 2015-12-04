@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.portable.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.InternalBinaryMarshaller;
 import org.apache.ignite.internal.portable.BinaryContext;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
@@ -239,7 +239,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      * @return Marshaller.
      */
     @SuppressWarnings("deprecation")
-    private static GridPortableMarshaller marshaller() {
+    private static InternalBinaryMarshaller marshaller() {
         try {
             BinaryContext ctx = new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration());
 
@@ -249,7 +249,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
             ctx.configure(marsh, new IgniteConfiguration());
 
-            return new GridPortableMarshaller(ctx);
+            return new InternalBinaryMarshaller(ctx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

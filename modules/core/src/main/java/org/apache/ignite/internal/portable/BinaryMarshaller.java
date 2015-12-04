@@ -36,7 +36,7 @@ import sun.misc.Unsafe;
  */
 public class BinaryMarshaller extends AbstractMarshaller {
     /** */
-    private GridPortableMarshaller impl;
+    private InternalBinaryMarshaller impl;
 
     /**
      * Checks whether {@code BinaryMarshaller} is able to work on the current JVM.
@@ -87,7 +87,7 @@ public class BinaryMarshaller extends AbstractMarshaller {
     private void setPortableContext(BinaryContext ctx, IgniteConfiguration cfg) {
         ctx.configure(this, cfg);
 
-        impl = new GridPortableMarshaller(ctx);
+        impl = new InternalBinaryMarshaller(ctx);
     }
 
     /** {@inheritDoc} */

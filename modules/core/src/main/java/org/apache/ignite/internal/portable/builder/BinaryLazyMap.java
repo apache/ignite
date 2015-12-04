@@ -100,7 +100,7 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
             }
         }
         else {
-            writer.writeByte(GridPortableMarshaller.MAP);
+            writer.writeByte(InternalBinaryMarshaller.MAP);
             writer.writeInt(delegate.size());
 
             byte colType = reader.array()[off + 1 /* flag */ + 4 /* size */];

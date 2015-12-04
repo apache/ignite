@@ -26,7 +26,7 @@ import org.apache.ignite.internal.portable.BinaryMetadata;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.InternalBinaryMarshaller;
 import org.apache.ignite.internal.portable.BinaryContext;
 import org.apache.ignite.internal.portable.BinarySchema;
 import org.apache.ignite.internal.portable.BinarySchemaRegistry;
@@ -42,12 +42,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLAGS_POS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_CODE_POS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER_POS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TYPE_ID_POS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DFLT_HDR_LEN;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.FLAGS_POS;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.HASH_CODE_POS;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.PROTO_VER_POS;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.TYPE_ID_POS;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
 /**
  *
@@ -318,7 +318,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     if (val instanceof BinaryValueWithType) {
                         newFldTypeId = ((BinaryValueWithType)val).typeId();
 
-                        if (newFldTypeId == GridPortableMarshaller.OBJ && ((BinaryValueWithType)val).value() == null)
+                        if (newFldTypeId == InternalBinaryMarshaller.OBJ && ((BinaryValueWithType)val).value() == null)
                             nullObjField = true;
                     }
                     else
@@ -334,7 +334,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         fieldsMeta.put(name, BinaryUtils.fieldTypeId(newFldTypeName));
                     }
                     else if (!nullObjField) {
-                        String objTypeName = BinaryUtils.fieldTypeName(GridPortableMarshaller.OBJ);
+                        String objTypeName = BinaryUtils.fieldTypeName(InternalBinaryMarshaller.OBJ);
 
                         if (!objTypeName.equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
                             throw new BinaryObjectException(

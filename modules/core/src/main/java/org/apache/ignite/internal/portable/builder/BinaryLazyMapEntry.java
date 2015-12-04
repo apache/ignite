@@ -60,7 +60,7 @@ class BinaryLazyMapEntry implements Map.Entry<Object, Object>, BinaryBuilderSeri
 
     /** {@inheritDoc} */
     @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
-        writer.writeByte(GridPortableMarshaller.MAP_ENTRY);
+        writer.writeByte(InternalBinaryMarshaller.MAP_ENTRY);
 
         ctx.writeValue(writer, key);
         ctx.writeValue(writer, val);

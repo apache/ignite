@@ -38,46 +38,46 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.HANDLE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.BOOLEAN;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.BOOLEAN_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.BYTE;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.BYTE_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.CHAR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.CHAR_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.CLASS;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.COL;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DATE;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DATE_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DECIMAL;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DECIMAL_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DFLT_HDR_LEN;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DOUBLE;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DOUBLE_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.ENUM;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.ENUM_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.FLOAT;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.FLOAT_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.HANDLE;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.INT;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.INT_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.LONG;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.LONG_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.MAP;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.MAP_ENTRY;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.NULL;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.OBJ;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.OBJ_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.OPTM_MARSH;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.PORTABLE_OBJ;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.SHORT;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.SHORT_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.STRING;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.STRING_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.TIMESTAMP;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.TIMESTAMP_ARR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.UNREGISTERED_TYPE_ID;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.UUID;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.UUID_ARR;
 
 /**
  * Portable reader implementation.
@@ -185,7 +185,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         start = in.position();
 
         // Perform full header parsing in case of portable object.
-        if (!skipHdrCheck && (in.readByte() == GridPortableMarshaller.OBJ)) {
+        if (!skipHdrCheck && (in.readByte() == InternalBinaryMarshaller.OBJ)) {
             // Ensure protocol is fine.
             BinaryUtils.checkProtocolVersion(in.readByte());
 
@@ -1595,7 +1595,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 ((BinaryObjectImpl)obj).context(ctx);
 
-                if (!GridPortableMarshaller.KEEP_PORTABLES.get())
+                if (!InternalBinaryMarshaller.KEEP_PORTABLES.get())
                     obj = ((BinaryObject)obj).deserialize();
 
                 break;

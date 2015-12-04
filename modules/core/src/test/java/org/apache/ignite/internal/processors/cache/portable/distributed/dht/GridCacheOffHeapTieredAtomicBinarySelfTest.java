@@ -14,25 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
+import java.util.Arrays;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAbstractNearPartitionedByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredAtomicSelfTest;
 import org.apache.ignite.internal.portable.BinaryMarshaller;
 
 /**
  *
  */
-public class GridCachePortablesNearPartitionedByteArrayValuesSelfTest
-    extends GridCacheAbstractNearPartitionedByteArrayValuesSelfTest {
+public class GridCacheOffHeapTieredAtomicBinarySelfTest extends GridCacheOffHeapTieredAtomicSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean peerClassLoading() {
-        return false;
+    @Override protected boolean portableEnabled() {
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        // Enable binary.
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        BinaryConfiguration bCfg = new BinaryConfiguration();
+
+        bCfg.setClassNames(Arrays.asList(TestValue.class.getName()));
 
         cfg.setMarshaller(new BinaryMarshaller());
 

@@ -22,145 +22,145 @@ package org.apache.ignite.internal.portable;
  */
 public enum BinaryWriteMode {
     /** Primitive byte. */
-    P_BYTE(GridPortableMarshaller.BYTE),
+    P_BYTE(InternalBinaryMarshaller.BYTE),
 
     /** Primitive boolean. */
-    P_BOOLEAN(GridPortableMarshaller.BOOLEAN),
+    P_BOOLEAN(InternalBinaryMarshaller.BOOLEAN),
 
     /** Primitive short. */
-    P_SHORT(GridPortableMarshaller.SHORT),
+    P_SHORT(InternalBinaryMarshaller.SHORT),
 
     /** Primitive char. */
-    P_CHAR(GridPortableMarshaller.CHAR),
+    P_CHAR(InternalBinaryMarshaller.CHAR),
 
     /** Primitive int. */
-    P_INT(GridPortableMarshaller.INT),
+    P_INT(InternalBinaryMarshaller.INT),
 
     /** Primitive long. */
-    P_LONG(GridPortableMarshaller.LONG),
+    P_LONG(InternalBinaryMarshaller.LONG),
 
     /** Primitive float. */
-    P_FLOAT(GridPortableMarshaller.FLOAT),
+    P_FLOAT(InternalBinaryMarshaller.FLOAT),
 
     /** Primitive int. */
-    P_DOUBLE(GridPortableMarshaller.DOUBLE),
+    P_DOUBLE(InternalBinaryMarshaller.DOUBLE),
 
     /** */
-    BYTE(GridPortableMarshaller.BYTE),
+    BYTE(InternalBinaryMarshaller.BYTE),
 
     /** */
-    SHORT(GridPortableMarshaller.SHORT),
+    SHORT(InternalBinaryMarshaller.SHORT),
 
     /** */
-    INT(GridPortableMarshaller.INT),
+    INT(InternalBinaryMarshaller.INT),
 
     /** */
-    LONG(GridPortableMarshaller.LONG),
+    LONG(InternalBinaryMarshaller.LONG),
 
     /** */
-    FLOAT(GridPortableMarshaller.FLOAT),
+    FLOAT(InternalBinaryMarshaller.FLOAT),
 
     /** */
-    DOUBLE(GridPortableMarshaller.DOUBLE),
+    DOUBLE(InternalBinaryMarshaller.DOUBLE),
 
     /** */
-    CHAR(GridPortableMarshaller.CHAR),
+    CHAR(InternalBinaryMarshaller.CHAR),
 
     /** */
-    BOOLEAN(GridPortableMarshaller.BOOLEAN),
+    BOOLEAN(InternalBinaryMarshaller.BOOLEAN),
 
     /** */
-    DECIMAL(GridPortableMarshaller.DECIMAL),
+    DECIMAL(InternalBinaryMarshaller.DECIMAL),
 
     /** */
-    STRING(GridPortableMarshaller.STRING),
+    STRING(InternalBinaryMarshaller.STRING),
 
     /** */
-    UUID(GridPortableMarshaller.UUID),
+    UUID(InternalBinaryMarshaller.UUID),
 
     /** */
-    DATE(GridPortableMarshaller.DATE),
+    DATE(InternalBinaryMarshaller.DATE),
 
     /** */
-    TIMESTAMP(GridPortableMarshaller.TIMESTAMP),
+    TIMESTAMP(InternalBinaryMarshaller.TIMESTAMP),
 
     /** */
-    BYTE_ARR(GridPortableMarshaller.BYTE_ARR),
+    BYTE_ARR(InternalBinaryMarshaller.BYTE_ARR),
 
     /** */
-    SHORT_ARR(GridPortableMarshaller.SHORT_ARR),
+    SHORT_ARR(InternalBinaryMarshaller.SHORT_ARR),
 
     /** */
-    INT_ARR(GridPortableMarshaller.INT_ARR),
+    INT_ARR(InternalBinaryMarshaller.INT_ARR),
 
     /** */
-    LONG_ARR(GridPortableMarshaller.LONG_ARR),
+    LONG_ARR(InternalBinaryMarshaller.LONG_ARR),
 
     /** */
-    FLOAT_ARR(GridPortableMarshaller.FLOAT_ARR),
+    FLOAT_ARR(InternalBinaryMarshaller.FLOAT_ARR),
 
     /** */
-    DOUBLE_ARR(GridPortableMarshaller.DOUBLE_ARR),
+    DOUBLE_ARR(InternalBinaryMarshaller.DOUBLE_ARR),
 
     /** */
-    CHAR_ARR(GridPortableMarshaller.CHAR_ARR),
+    CHAR_ARR(InternalBinaryMarshaller.CHAR_ARR),
 
     /** */
-    BOOLEAN_ARR(GridPortableMarshaller.BOOLEAN_ARR),
+    BOOLEAN_ARR(InternalBinaryMarshaller.BOOLEAN_ARR),
 
     /** */
-    DECIMAL_ARR(GridPortableMarshaller.DECIMAL_ARR),
+    DECIMAL_ARR(InternalBinaryMarshaller.DECIMAL_ARR),
 
     /** */
-    STRING_ARR(GridPortableMarshaller.STRING_ARR),
+    STRING_ARR(InternalBinaryMarshaller.STRING_ARR),
 
     /** */
-    UUID_ARR(GridPortableMarshaller.UUID_ARR),
+    UUID_ARR(InternalBinaryMarshaller.UUID_ARR),
 
     /** */
-    DATE_ARR(GridPortableMarshaller.DATE_ARR),
+    DATE_ARR(InternalBinaryMarshaller.DATE_ARR),
 
     /** */
-    TIMESTAMP_ARR(GridPortableMarshaller.TIMESTAMP_ARR),
+    TIMESTAMP_ARR(InternalBinaryMarshaller.TIMESTAMP_ARR),
 
     /** */
-    OBJECT_ARR(GridPortableMarshaller.OBJ_ARR),
+    OBJECT_ARR(InternalBinaryMarshaller.OBJ_ARR),
 
     /** */
-    COL(GridPortableMarshaller.COL),
+    COL(InternalBinaryMarshaller.COL),
 
     /** */
-    MAP(GridPortableMarshaller.MAP),
+    MAP(InternalBinaryMarshaller.MAP),
 
     /** */
-    MAP_ENTRY(GridPortableMarshaller.MAP_ENTRY),
+    MAP_ENTRY(InternalBinaryMarshaller.MAP_ENTRY),
 
     /** */
-    PORTABLE_OBJ(GridPortableMarshaller.OBJ),
+    PORTABLE_OBJ(InternalBinaryMarshaller.OBJ),
 
     /** */
-    ENUM(GridPortableMarshaller.ENUM),
+    ENUM(InternalBinaryMarshaller.ENUM),
 
     /** Portable enum. */
-    PORTABLE_ENUM(GridPortableMarshaller.ENUM),
+    PORTABLE_ENUM(InternalBinaryMarshaller.ENUM),
 
     /** */
-    ENUM_ARR(GridPortableMarshaller.ENUM_ARR),
+    ENUM_ARR(InternalBinaryMarshaller.ENUM_ARR),
 
     /** */
-    CLASS(GridPortableMarshaller.CLASS),
+    CLASS(InternalBinaryMarshaller.CLASS),
 
     /** */
-    PORTABLE(GridPortableMarshaller.PORTABLE_OBJ),
+    PORTABLE(InternalBinaryMarshaller.PORTABLE_OBJ),
 
     /** */
-    EXTERNALIZABLE(GridPortableMarshaller.OBJ),
+    EXTERNALIZABLE(InternalBinaryMarshaller.OBJ),
 
     /** */
-    OBJECT(GridPortableMarshaller.OBJ),
+    OBJECT(InternalBinaryMarshaller.OBJ),
 
     /** */
-    EXCLUSION(GridPortableMarshaller.OBJ);
+    EXCLUSION(InternalBinaryMarshaller.OBJ);
 
     /** Type ID. */
     private final int typeId;

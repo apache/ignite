@@ -2224,7 +2224,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         for (Map.Entry<String, Integer> entry : map.entrySet()) {
             int id = entry.getValue();
 
-            if (id == GridPortableMarshaller.UNREGISTERED_TYPE_ID)
+            if (id == InternalBinaryMarshaller.UNREGISTERED_TYPE_ID)
                 continue;
 
             BinaryClassDescriptor desc = pCtx.descriptorForTypeId(false, entry.getValue(), null, false);
@@ -2396,7 +2396,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     private <T> BinaryObjectImpl marshal(T obj, BinaryMarshaller marsh) throws IgniteCheckedException {
         byte[] bytes = marsh.marshal(obj);
 
-        return new BinaryObjectImpl(U.<GridPortableMarshaller>field(marsh, "impl").context(),
+        return new BinaryObjectImpl(U.<InternalBinaryMarshaller>field(marsh, "impl").context(),
             bytes, 0);
     }
 
@@ -2412,7 +2412,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @return Portable context.
      */
     protected BinaryContext portableContext(BinaryMarshaller marsh) {
-        GridPortableMarshaller impl = U.field(marsh, "impl");
+        InternalBinaryMarshaller impl = U.field(marsh, "impl");
 
         return impl.context();
     }

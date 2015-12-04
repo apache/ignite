@@ -86,7 +86,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @return Portable context.
      */
     protected static BinaryContext portableContext(BinaryMarshaller marsh) {
-        GridPortableMarshaller impl = U.field(marsh, "impl");
+        InternalBinaryMarshaller impl = U.field(marsh, "impl");
 
         return impl.context();
     }

@@ -38,7 +38,7 @@ import org.apache.ignite.internal.portable.BinaryRawReaderEx;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.portable.BinaryReaderExImpl;
 import org.apache.ignite.internal.portable.BinaryTypeImpl;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.InternalBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilterImpl;
@@ -94,7 +94,7 @@ public class PlatformContextImpl implements PlatformContext {
     private final GridKernalContext ctx;
 
     /** Marshaller. */
-    private final GridPortableMarshaller marsh;
+    private final InternalBinaryMarshaller marsh;
 
     /** Memory manager. */
     private final PlatformMemoryManagerImpl mem;

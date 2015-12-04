@@ -148,7 +148,7 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
             }
         }
         else {
-            writer.writeByte(GridPortableMarshaller.COL);
+            writer.writeByte(InternalBinaryMarshaller.COL);
             writer.writeInt(delegate.size());
 
             byte colType = reader.array()[off + 1 /* flag */ + 4 /* size */];

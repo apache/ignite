@@ -167,7 +167,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
             return type.typeName() + "[ordinal=" + ord  + ']';
         }
         else {
-            if (typeId == GridPortableMarshaller.UNREGISTERED_TYPE_ID)
+            if (typeId == InternalBinaryMarshaller.UNREGISTERED_TYPE_ID)
                 return "BinaryEnum[clsName=" + clsName + ", ordinal=" + ord + ']';
             else
                 return "BinaryEnum[typeId=" + typeId + ", ordinal=" + ord + ']';

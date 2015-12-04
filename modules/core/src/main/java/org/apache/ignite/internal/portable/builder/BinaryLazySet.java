@@ -19,7 +19,7 @@ package org.apache.ignite.internal.portable.builder;
 
 import java.util.Collection;
 import java.util.Set;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.InternalBinaryMarshaller;
 import org.apache.ignite.internal.portable.BinaryUtils;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -65,7 +65,7 @@ class BinaryLazySet extends BinaryAbstractLazyValue {
         else {
             Collection<Object> c = (Collection<Object>)val;
 
-            writer.writeByte(GridPortableMarshaller.COL);
+            writer.writeByte(InternalBinaryMarshaller.COL);
             writer.writeInt(c.size());
 
             byte colType = reader.array()[off + 1 /* flag */ + 4 /* size */];

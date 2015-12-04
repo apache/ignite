@@ -21,7 +21,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryReaderExImpl;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.InternalBinaryMarshaller;
 import org.apache.ignite.internal.portable.BinaryContext;
 import org.apache.ignite.internal.portable.BinaryPositionReadable;
 import org.apache.ignite.internal.portable.BinaryPrimitives;
@@ -35,8 +35,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.NULL;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.STRING;
 
 /**
  *
@@ -218,100 +218,100 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
         int len;
 
         switch (type) {
-            case GridPortableMarshaller.NULL:
+            case InternalBinaryMarshaller.NULL:
                 return;
 
-            case GridPortableMarshaller.OBJ:
-                pos += readInt(GridPortableMarshaller.TOTAL_LEN_POS - 1) - 1;
+            case InternalBinaryMarshaller.OBJ:
+                pos += readInt(InternalBinaryMarshaller.TOTAL_LEN_POS - 1) - 1;
 
                 return;
 
-            case GridPortableMarshaller.BOOLEAN:
-            case GridPortableMarshaller.BYTE:
+            case InternalBinaryMarshaller.BOOLEAN:
+            case InternalBinaryMarshaller.BYTE:
                 len = 1;
                 break;
 
-            case GridPortableMarshaller.CHAR:
-            case GridPortableMarshaller.SHORT:
+            case InternalBinaryMarshaller.CHAR:
+            case InternalBinaryMarshaller.SHORT:
                 len = 2;
 
                 break;
 
-            case GridPortableMarshaller.HANDLE:
-            case GridPortableMarshaller.FLOAT:
-            case GridPortableMarshaller.INT:
+            case InternalBinaryMarshaller.HANDLE:
+            case InternalBinaryMarshaller.FLOAT:
+            case InternalBinaryMarshaller.INT:
                 len = 4;
 
                 break;
 
-            case GridPortableMarshaller.ENUM:
+            case InternalBinaryMarshaller.ENUM:
                 //skipping type id and ordinal value
                 len = 8;
 
                 break;
 
-            case GridPortableMarshaller.LONG:
-            case GridPortableMarshaller.DOUBLE:
+            case InternalBinaryMarshaller.LONG:
+            case InternalBinaryMarshaller.DOUBLE:
                 len = 8;
 
                 break;
 
-            case GridPortableMarshaller.BYTE_ARR:
-            case GridPortableMarshaller.BOOLEAN_ARR:
+            case InternalBinaryMarshaller.BYTE_ARR:
+            case InternalBinaryMarshaller.BOOLEAN_ARR:
                 len = 4 + readLength();
 
                 break;
 
-            case GridPortableMarshaller.STRING:
+            case InternalBinaryMarshaller.STRING:
                 len = 4 + readStringLength();
 
                 break;
 
-            case GridPortableMarshaller.DECIMAL:
+            case InternalBinaryMarshaller.DECIMAL:
                 len = /** scale */ 4  + /** mag len */ 4  + /** mag bytes count */ readInt(4);
 
                 break;
 
-            case GridPortableMarshaller.UUID:
+            case InternalBinaryMarshaller.UUID:
                 len = 8 + 8;
 
                 break;
 
-            case GridPortableMarshaller.DATE:
+            case InternalBinaryMarshaller.DATE:
                 len = 8;
 
                 break;
 
-            case GridPortableMarshaller.TIMESTAMP:
+            case InternalBinaryMarshaller.TIMESTAMP:
                 len = 8 + 4;
 
                 break;
 
-            case GridPortableMarshaller.CHAR_ARR:
-            case GridPortableMarshaller.SHORT_ARR:
+            case InternalBinaryMarshaller.CHAR_ARR:
+            case InternalBinaryMarshaller.SHORT_ARR:
                 len = 4 + readLength() * 2;
 
                 break;
 
-            case GridPortableMarshaller.INT_ARR:
-            case GridPortableMarshaller.FLOAT_ARR:
+            case InternalBinaryMarshaller.INT_ARR:
+            case InternalBinaryMarshaller.FLOAT_ARR:
                 len = 4 + readLength() * 4;
 
                 break;
 
-            case GridPortableMarshaller.LONG_ARR:
-            case GridPortableMarshaller.DOUBLE_ARR:
+            case InternalBinaryMarshaller.LONG_ARR:
+            case InternalBinaryMarshaller.DOUBLE_ARR:
                 len = 4 + readLength() * 8;
 
                 break;
 
-            case GridPortableMarshaller.DECIMAL_ARR:
-            case GridPortableMarshaller.DATE_ARR:
-            case GridPortableMarshaller.TIMESTAMP_ARR:
-            case GridPortableMarshaller.OBJ_ARR:
-            case GridPortableMarshaller.ENUM_ARR:
-            case GridPortableMarshaller.UUID_ARR:
-            case GridPortableMarshaller.STRING_ARR: {
+            case InternalBinaryMarshaller.DECIMAL_ARR:
+            case InternalBinaryMarshaller.DATE_ARR:
+            case InternalBinaryMarshaller.TIMESTAMP_ARR:
+            case InternalBinaryMarshaller.OBJ_ARR:
+            case InternalBinaryMarshaller.ENUM_ARR:
+            case InternalBinaryMarshaller.UUID_ARR:
+            case InternalBinaryMarshaller.STRING_ARR: {
                 int size = readInt();
 
                 for (int i = 0; i < size; i++)
@@ -320,7 +320,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return;
             }
 
-            case GridPortableMarshaller.COL: {
+            case InternalBinaryMarshaller.COL: {
                 int size = readInt();
 
                 pos++; // skip collection type
@@ -331,7 +331,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return;
             }
 
-            case GridPortableMarshaller.MAP: {
+            case InternalBinaryMarshaller.MAP: {
                 int size = readInt();
 
                 pos++; // skip collection type
@@ -344,13 +344,13 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return;
             }
 
-            case GridPortableMarshaller.MAP_ENTRY:
+            case InternalBinaryMarshaller.MAP_ENTRY:
                 skipValue();
                 skipValue();
 
                 return;
 
-            case GridPortableMarshaller.PORTABLE_OBJ:
+            case InternalBinaryMarshaller.PORTABLE_OBJ:
                 len = readInt() + 4;
 
                 break;
@@ -371,10 +371,10 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
         byte type = arr[pos];
 
         switch (type) {
-            case GridPortableMarshaller.NULL:
+            case InternalBinaryMarshaller.NULL:
                 return null;
 
-            case GridPortableMarshaller.HANDLE: {
+            case InternalBinaryMarshaller.HANDLE: {
                 int objStart = pos - readIntPositioned(pos + 1);
 
                 BinaryObjectBuilderImpl res = objMap.get(objStart);
@@ -388,7 +388,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return res;
             }
 
-            case GridPortableMarshaller.OBJ: {
+            case InternalBinaryMarshaller.OBJ: {
                 BinaryObjectBuilderImpl res = objMap.get(pos);
 
                 if (res == null) {
@@ -400,60 +400,60 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return res;
             }
 
-            case GridPortableMarshaller.BYTE:
+            case InternalBinaryMarshaller.BYTE:
                 return arr[pos + 1];
 
-            case GridPortableMarshaller.SHORT:
+            case InternalBinaryMarshaller.SHORT:
                 return BinaryPrimitives.readShort(arr, pos + 1);
 
-            case GridPortableMarshaller.INT:
+            case InternalBinaryMarshaller.INT:
                 return BinaryPrimitives.readInt(arr, pos + 1);
 
-            case GridPortableMarshaller.LONG:
+            case InternalBinaryMarshaller.LONG:
                 return BinaryPrimitives.readLong(arr, pos + 1);
 
-            case GridPortableMarshaller.FLOAT:
+            case InternalBinaryMarshaller.FLOAT:
                 return BinaryPrimitives.readFloat(arr, pos + 1);
 
-            case GridPortableMarshaller.DOUBLE:
+            case InternalBinaryMarshaller.DOUBLE:
                 return BinaryPrimitives.readDouble(arr, pos + 1);
 
-            case GridPortableMarshaller.CHAR:
+            case InternalBinaryMarshaller.CHAR:
                 return BinaryPrimitives.readChar(arr, pos + 1);
 
-            case GridPortableMarshaller.BOOLEAN:
+            case InternalBinaryMarshaller.BOOLEAN:
                 return arr[pos + 1] != 0;
 
-            case GridPortableMarshaller.DECIMAL:
-            case GridPortableMarshaller.STRING:
-            case GridPortableMarshaller.UUID:
-            case GridPortableMarshaller.DATE:
-            case GridPortableMarshaller.TIMESTAMP:
+            case InternalBinaryMarshaller.DECIMAL:
+            case InternalBinaryMarshaller.STRING:
+            case InternalBinaryMarshaller.UUID:
+            case InternalBinaryMarshaller.DATE:
+            case InternalBinaryMarshaller.TIMESTAMP:
                 return new BinaryPlainLazyValue(this, pos, len);
 
-            case GridPortableMarshaller.BYTE_ARR:
-            case GridPortableMarshaller.SHORT_ARR:
-            case GridPortableMarshaller.INT_ARR:
-            case GridPortableMarshaller.LONG_ARR:
-            case GridPortableMarshaller.FLOAT_ARR:
-            case GridPortableMarshaller.DOUBLE_ARR:
-            case GridPortableMarshaller.CHAR_ARR:
-            case GridPortableMarshaller.BOOLEAN_ARR:
-            case GridPortableMarshaller.DECIMAL_ARR:
-            case GridPortableMarshaller.DATE_ARR:
-            case GridPortableMarshaller.TIMESTAMP_ARR:
-            case GridPortableMarshaller.UUID_ARR:
-            case GridPortableMarshaller.STRING_ARR:
-            case GridPortableMarshaller.ENUM_ARR:
-            case GridPortableMarshaller.OBJ_ARR:
-            case GridPortableMarshaller.COL:
-            case GridPortableMarshaller.MAP:
-            case GridPortableMarshaller.MAP_ENTRY:
+            case InternalBinaryMarshaller.BYTE_ARR:
+            case InternalBinaryMarshaller.SHORT_ARR:
+            case InternalBinaryMarshaller.INT_ARR:
+            case InternalBinaryMarshaller.LONG_ARR:
+            case InternalBinaryMarshaller.FLOAT_ARR:
+            case InternalBinaryMarshaller.DOUBLE_ARR:
+            case InternalBinaryMarshaller.CHAR_ARR:
+            case InternalBinaryMarshaller.BOOLEAN_ARR:
+            case InternalBinaryMarshaller.DECIMAL_ARR:
+            case InternalBinaryMarshaller.DATE_ARR:
+            case InternalBinaryMarshaller.TIMESTAMP_ARR:
+            case InternalBinaryMarshaller.UUID_ARR:
+            case InternalBinaryMarshaller.STRING_ARR:
+            case InternalBinaryMarshaller.ENUM_ARR:
+            case InternalBinaryMarshaller.OBJ_ARR:
+            case InternalBinaryMarshaller.COL:
+            case InternalBinaryMarshaller.MAP:
+            case InternalBinaryMarshaller.MAP_ENTRY:
                 return new LazyCollection(pos);
 
-            case GridPortableMarshaller.ENUM: {
+            case InternalBinaryMarshaller.ENUM: {
                 if (len == 1) {
-                    assert readByte(pos) == GridPortableMarshaller.NULL;
+                    assert readByte(pos) == InternalBinaryMarshaller.NULL;
 
                     return null;
                 }
@@ -468,7 +468,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return builderEnum;
             }
 
-            case GridPortableMarshaller.PORTABLE_OBJ: {
+            case InternalBinaryMarshaller.PORTABLE_OBJ: {
                 int size = readIntPositioned(pos + 1);
 
                 int start = readIntPositioned(pos + 4 + size);
@@ -496,10 +496,10 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
         boolean modifiableLazyVal = false;
 
         switch (type) {
-            case GridPortableMarshaller.NULL:
+            case InternalBinaryMarshaller.NULL:
                 return null;
 
-            case GridPortableMarshaller.HANDLE: {
+            case InternalBinaryMarshaller.HANDLE: {
                 int objStart = pos - 1 - readInt();
 
                 BinaryObjectBuilderImpl res = objMap.get(objStart);
@@ -513,7 +513,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return res;
             }
 
-            case GridPortableMarshaller.OBJ: {
+            case InternalBinaryMarshaller.OBJ: {
                 pos--;
 
                 BinaryObjectBuilderImpl res = objMap.get(pos);
@@ -524,123 +524,123 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                     objMap.put(pos, res);
                 }
 
-                pos += readInt(GridPortableMarshaller.TOTAL_LEN_POS);
+                pos += readInt(InternalBinaryMarshaller.TOTAL_LEN_POS);
 
                 return res;
             }
 
-            case GridPortableMarshaller.BYTE:
+            case InternalBinaryMarshaller.BYTE:
                 return arr[pos++];
 
-            case GridPortableMarshaller.SHORT: {
+            case InternalBinaryMarshaller.SHORT: {
                 Object res = BinaryPrimitives.readShort(arr, pos);
                 pos += 2;
                 return res;
             }
 
-            case GridPortableMarshaller.INT:
+            case InternalBinaryMarshaller.INT:
                 return readInt();
 
-            case GridPortableMarshaller.LONG:
+            case InternalBinaryMarshaller.LONG:
                 plainLazyValLen = 8;
 
                 break;
 
-            case GridPortableMarshaller.FLOAT:
+            case InternalBinaryMarshaller.FLOAT:
                 plainLazyValLen = 4;
 
                 break;
 
-            case GridPortableMarshaller.DOUBLE:
+            case InternalBinaryMarshaller.DOUBLE:
                 plainLazyValLen = 8;
 
                 break;
 
-            case GridPortableMarshaller.CHAR:
+            case InternalBinaryMarshaller.CHAR:
                 plainLazyValLen = 2;
 
                 break;
 
-            case GridPortableMarshaller.BOOLEAN:
+            case InternalBinaryMarshaller.BOOLEAN:
                 return arr[pos++] != 0;
 
-            case GridPortableMarshaller.DECIMAL:
+            case InternalBinaryMarshaller.DECIMAL:
                 plainLazyValLen = /** scale */ 4  + /** mag len */ 4  + /** mag bytes count */ readInt(4);
 
                 break;
 
-            case GridPortableMarshaller.STRING:
+            case InternalBinaryMarshaller.STRING:
                 plainLazyValLen = 4 + readStringLength();
 
                 break;
 
-            case GridPortableMarshaller.UUID:
+            case InternalBinaryMarshaller.UUID:
                 plainLazyValLen = 8 + 8;
 
                 break;
 
-            case GridPortableMarshaller.DATE:
+            case InternalBinaryMarshaller.DATE:
                 plainLazyValLen = 8;
 
                 break;
 
-            case GridPortableMarshaller.TIMESTAMP:
+            case InternalBinaryMarshaller.TIMESTAMP:
                 plainLazyValLen = 8 + 4;
 
                 break;
 
-            case GridPortableMarshaller.BYTE_ARR:
+            case InternalBinaryMarshaller.BYTE_ARR:
                 plainLazyValLen = 4 + readLength();
                 modifiableLazyVal = true;
 
                 break;
 
-            case GridPortableMarshaller.SHORT_ARR:
+            case InternalBinaryMarshaller.SHORT_ARR:
                 plainLazyValLen = 4 + readLength() * 2;
                 modifiableLazyVal = true;
 
                 break;
 
-            case GridPortableMarshaller.INT_ARR:
+            case InternalBinaryMarshaller.INT_ARR:
                 plainLazyValLen = 4 + readLength() * 4;
                 modifiableLazyVal = true;
 
                 break;
 
-            case GridPortableMarshaller.LONG_ARR:
+            case InternalBinaryMarshaller.LONG_ARR:
                 plainLazyValLen = 4 + readLength() * 8;
                 modifiableLazyVal = true;
 
                 break;
 
-            case GridPortableMarshaller.FLOAT_ARR:
+            case InternalBinaryMarshaller.FLOAT_ARR:
                 plainLazyValLen = 4 + readLength() * 4;
                 modifiableLazyVal = true;
 
                 break;
 
-            case GridPortableMarshaller.DOUBLE_ARR:
+            case InternalBinaryMarshaller.DOUBLE_ARR:
                 plainLazyValLen = 4 + readLength() * 8;
                 modifiableLazyVal = true;
 
                 break;
 
-            case GridPortableMarshaller.CHAR_ARR:
+            case InternalBinaryMarshaller.CHAR_ARR:
                 plainLazyValLen = 4 + readLength() * 2;
                 modifiableLazyVal = true;
 
                 break;
 
-            case GridPortableMarshaller.BOOLEAN_ARR:
+            case InternalBinaryMarshaller.BOOLEAN_ARR:
                 plainLazyValLen = 4 + readLength();
                 modifiableLazyVal = true;
 
                 break;
 
-            case GridPortableMarshaller.OBJ_ARR:
+            case InternalBinaryMarshaller.OBJ_ARR:
                 return new BinaryObjectArrayLazyValue(this);
 
-            case GridPortableMarshaller.DATE_ARR: {
+            case InternalBinaryMarshaller.DATE_ARR: {
                 int size = readInt();
 
                 Date[] res = new Date[size];
@@ -648,9 +648,9 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 for (int i = 0; i < res.length; i++) {
                     byte flag = arr[pos++];
 
-                    if (flag == GridPortableMarshaller.NULL) continue;
+                    if (flag == InternalBinaryMarshaller.NULL) continue;
 
-                    if (flag != GridPortableMarshaller.DATE)
+                    if (flag != InternalBinaryMarshaller.DATE)
                         throw new BinaryObjectException("Invalid flag value: " + flag);
 
                     long time = BinaryPrimitives.readLong(arr, pos);
@@ -663,7 +663,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return res;
             }
 
-            case GridPortableMarshaller.TIMESTAMP_ARR: {
+            case InternalBinaryMarshaller.TIMESTAMP_ARR: {
                 int size = readInt();
 
                 Timestamp[] res = new Timestamp[size];
@@ -671,10 +671,10 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 for (int i = 0; i < res.length; i++) {
                     byte flag = arr[pos++];
 
-                    if (flag == GridPortableMarshaller.NULL)
+                    if (flag == InternalBinaryMarshaller.NULL)
                         continue;
 
-                    if (flag != GridPortableMarshaller.TIMESTAMP)
+                    if (flag != InternalBinaryMarshaller.TIMESTAMP)
                         throw new BinaryObjectException("Invalid flag value: " + flag);
 
                     long time = BinaryPrimitives.readLong(arr, pos);
@@ -695,64 +695,64 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return res;
             }
 
-            case GridPortableMarshaller.UUID_ARR:
-            case GridPortableMarshaller.STRING_ARR:
-            case GridPortableMarshaller.DECIMAL_ARR: {
+            case InternalBinaryMarshaller.UUID_ARR:
+            case InternalBinaryMarshaller.STRING_ARR:
+            case InternalBinaryMarshaller.DECIMAL_ARR: {
                 int size = readInt();
 
                 for (int i = 0; i < size; i++) {
                     byte flag = arr[pos++];
 
-                    if (flag == GridPortableMarshaller.UUID)
+                    if (flag == InternalBinaryMarshaller.UUID)
                         pos += 8 + 8;
-                    else if (flag == GridPortableMarshaller.STRING)
+                    else if (flag == InternalBinaryMarshaller.STRING)
                         pos += 4 + readStringLength();
-                    else if (flag == GridPortableMarshaller.DECIMAL) {
+                    else if (flag == InternalBinaryMarshaller.DECIMAL) {
                         pos += 4; // scale value
                         pos += 4 + readLength();
                     }
                     else
-                        assert flag == GridPortableMarshaller.NULL;
+                        assert flag == InternalBinaryMarshaller.NULL;
                 }
 
                 return new BinaryModifiableLazyValue(this, valPos, pos - valPos);
             }
 
-            case GridPortableMarshaller.COL: {
+            case InternalBinaryMarshaller.COL: {
                 int size = readInt();
                 byte colType = arr[pos++];
 
                 switch (colType) {
-                    case GridPortableMarshaller.USER_COL:
-                    case GridPortableMarshaller.ARR_LIST:
+                    case InternalBinaryMarshaller.USER_COL:
+                    case InternalBinaryMarshaller.ARR_LIST:
                         return new BinaryLazyArrayList(this, size);
 
-                    case GridPortableMarshaller.LINKED_LIST:
+                    case InternalBinaryMarshaller.LINKED_LIST:
                         return new BinaryLazyLinkedList(this, size);
 
-                    case GridPortableMarshaller.HASH_SET:
-                    case GridPortableMarshaller.LINKED_HASH_SET:
-                    case GridPortableMarshaller.TREE_SET:
-                    case GridPortableMarshaller.CONC_SKIP_LIST_SET:
+                    case InternalBinaryMarshaller.HASH_SET:
+                    case InternalBinaryMarshaller.LINKED_HASH_SET:
+                    case InternalBinaryMarshaller.TREE_SET:
+                    case InternalBinaryMarshaller.CONC_SKIP_LIST_SET:
                         return new BinaryLazySet(this, size);
                 }
 
                 throw new BinaryObjectException("Unknown collection type: " + colType);
             }
 
-            case GridPortableMarshaller.MAP:
+            case InternalBinaryMarshaller.MAP:
                 return BinaryLazyMap.parseMap(this);
 
-            case GridPortableMarshaller.ENUM:
+            case InternalBinaryMarshaller.ENUM:
                 return new BinaryBuilderEnum(this);
 
-            case GridPortableMarshaller.ENUM_ARR:
+            case InternalBinaryMarshaller.ENUM_ARR:
                 return new BinaryEnumArrayLazyValue(this);
 
-            case GridPortableMarshaller.MAP_ENTRY:
+            case InternalBinaryMarshaller.MAP_ENTRY:
                 return new BinaryLazyMapEntry(this);
 
-            case GridPortableMarshaller.PORTABLE_OBJ: {
+            case InternalBinaryMarshaller.PORTABLE_OBJ: {
                 int size = readInt();
 
                 pos += size;

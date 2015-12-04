@@ -20,14 +20,14 @@ package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 import java.util.Arrays;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionSelfTest;
 import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObject;
 
 /**
  *
  */
-public class GridCacheOffHeapTieredEvictionAtomicPortableSelfTest extends GridCacheOffHeapTieredEvictionAtomicSelfTest {
+public class GridCacheOffHeapTieredEvictionBinarySelfTest extends GridCacheOffHeapTieredEvictionSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         // Enable binary.

@@ -45,20 +45,20 @@ import java.util.Date;
 import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.BOOLEAN;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.BYTE;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.CHAR;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DATE;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DECIMAL;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.DOUBLE;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.FLOAT;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.INT;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.LONG;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.NULL;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.SHORT;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.STRING;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.TIMESTAMP;
+import static org.apache.ignite.internal.portable.InternalBinaryMarshaller.UUID;
 
 /**
  * Portable object implementation.
@@ -167,7 +167,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public int length() {
-        return BinaryPrimitives.readInt(arr, start + GridPortableMarshaller.TOTAL_LEN_POS);
+        return BinaryPrimitives.readInt(arr, start + InternalBinaryMarshaller.TOTAL_LEN_POS);
     }
 
     /**
@@ -236,7 +236,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return BinaryPrimitives.readInt(arr, start + GridPortableMarshaller.TYPE_ID_POS);
+        return BinaryPrimitives.readInt(arr, start + InternalBinaryMarshaller.TYPE_ID_POS);
     }
 
     /** {@inheritDoc} */
@@ -265,9 +265,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         Object val;
 
         // Calculate field position.
-        int schemaOffset = BinaryPrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        int schemaOffset = BinaryPrimitives.readInt(arr, start + InternalBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
-        short flags = BinaryPrimitives.readShort(arr, start + GridPortableMarshaller.FLAGS_POS);
+        short flags = BinaryPrimitives.readShort(arr, start + InternalBinaryMarshaller.FLAGS_POS);
 
         int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
         int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
@@ -427,12 +427,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return BinaryPrimitives.readInt(arr, start + GridPortableMarshaller.HASH_CODE_POS);
+        return BinaryPrimitives.readInt(arr, start + InternalBinaryMarshaller.HASH_CODE_POS);
     }
 
     /** {@inheritDoc} */
     @Override protected int schemaId() {
-        return BinaryPrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_ID_POS);
+        return BinaryPrimitives.readInt(arr, start + InternalBinaryMarshaller.SCHEMA_ID_POS);
     }
 
     /** {@inheritDoc} */

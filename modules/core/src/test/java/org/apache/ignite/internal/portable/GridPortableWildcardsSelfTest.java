@@ -398,7 +398,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @return Portable context.
      */
     protected BinaryContext portableContext(BinaryMarshaller marsh) {
-        GridPortableMarshaller impl = U.field(marsh, "impl");
+        InternalBinaryMarshaller impl = U.field(marsh, "impl");
 
         return impl.context();
     }
