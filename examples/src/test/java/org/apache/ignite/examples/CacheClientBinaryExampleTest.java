@@ -24,7 +24,7 @@ import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 /**
  *
  */
-public class CacheClientPortableExampleTest extends GridAbstractExamplesTest {
+public class CacheClientBinaryExampleTest extends GridAbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected String defaultConfig() {
         return "examples/config/portable/example-ignite-portable.xml";
