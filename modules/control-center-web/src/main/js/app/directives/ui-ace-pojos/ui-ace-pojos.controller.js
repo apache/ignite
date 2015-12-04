@@ -18,25 +18,31 @@
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     var ctrl = this;
 
-    // scope values
+    // Scope methods.
+    $scope.onLoad = onLoad;
 
-    // scope data
-    
-    // scope methods
+    // Watchers definition.
+    // Watcher clean instance data if instance to cluster caches was change
+    let cleanMetadatas = (value) => {
+        delete ctrl.class;
+        delete ctrl.metadatas;
+        delete ctrl.classes;
+    }
 
-    // watchers definition
-    let metadatasWatcher = (value) => {
-        delete ctrl.data;
+    // Watcher updata metadata when changes caches and checkers useConstructor and includeKeyFields
+    let updateMetadatas = (value) => {
+        delete ctrl.metadatas;
 
-        if (!value) {
+        if (!ctrl.cluster || !ctrl.cluster.caches) {
             return;
         }
      
-        // TODO IGNITE-2054: need move $generatorJava to services
-        var ctrl.metadatas = $generatorJava.pojos($scope.cluster.caches, $scope.useConstructor, $scope.includeKeyFields);
+        // TODO IGNITE-2054: need move $generatorJava to services.
+        ctrl.metadatas = $generatorJava.pojos(ctrl.cluster.caches, ctrl.useConstructor, ctrl.includeKeyFields);
     }
 
-    let classesWatcher = (value) => {
+    // Watcher update classes after
+    let updateClasses = (value) => {
         delete ctrl.classes;
 
         if (!value) {
@@ -51,8 +57,41 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
         });
     };
 
-    // watches
-    $scope.$watch('cluster.caches', metadatasWatcher);
-    $scope.$watch('ctrl.metadatas', classesWatcher);
-    $scope.$watch('ctrl.metadatas', )
-}]
+    // Update pojos class.
+    let updateClass = (value) => {
+        if (!value) {
+            return;
+        }
+
+        if (!ctrl.metadatas.length) {
+            return;
+        } 
+
+        ctrl.class = ctrl.class || ctrl.metadatas[0].keyType || ctrl.metadatas[0].valueType;
+    }
+
+    // Update pojos data.
+    let updatePojosData = (value) => {    
+        if (!value) {
+            return;
+        }
+
+        _.forEach(ctrl.metadatas, (meta) => {
+            if (meta.keyType === ctrl.class)
+                return ctrl.data = meta.keyClass;
+
+            if (meta.valueType === ctrl.class)
+                return ctrl.data = meta.valueClass;
+        })
+    }
+
+    // Setup watchers. Watchers order is important. 
+    $scope.$watch('ctrl.cluster.caches', cleanMetadatas);
+    $scope.$watch('ctrl.cluster.caches', updateMetadatas);
+    $scope.$watch('ctrl.cluster.caches', updateClasses);
+    $scope.$watch('ctrl.useConstructor', updateMetadatas);
+    $scope.$watch('ctrl.includeKeyFields', updateMetadatas);
+    $scope.$watch('ctrl.metadatas', updateClass);
+    $scope.$watch('ctrl.metadatas', updatePojosData);
+    $scope.$watch('ctrl.class', updatePojosData);
+}];

@@ -29,13 +29,13 @@ const TYPES = [
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     var ctrl = this;
 
-    // scope values
+    // Scope values.
     $scope.type = SNIPPET;
     
-    // scope data
+    // Scope data.
     $scope.types = TYPES;
     
-    // scope methods
+    // Scope methods.
     $scope.onLoad = onLoad;
 
     // watchers definition
@@ -47,11 +47,11 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
         }
 
         let type = $scope.type === FACTORY ? (!$scope.cfg ? SERVER_CFG : CLIENT_CFG) : false;
-        // TODO IGNITE-2054: need move $generatorJava to services
+        // TODO IGNITE-2054: need move $generatorJava to services.
         ctrl.data = $generatorJava.cluster($scope.cluster, 'factory', type, $scope.cfg);
     }
 
-    // watches
+    // Setup watchers. 
     $scope.$watch('cfg', clusterWatcher, true);
     $scope.$watch('type', clusterWatcher);
     $scope.$watch('cluster', clusterWatcher);

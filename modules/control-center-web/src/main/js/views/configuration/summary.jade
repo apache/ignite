@@ -21,7 +21,7 @@ mixin hard-link(ref, txt)
 
 .docs-header
     h1 Configurations Summary
-.docs-body(ng-controller='summaryController' dw-loading='loadingSummaryScreen' dw-loading-options='{text: "Loading summary screen...", className: "page-loading-overlay"}' method='post' action='summary/download')
+.docs-body(dw-loading='loadingSummaryScreen' dw-loading-options='{text: "Loading summary screen...", className: "page-loading-overlay"}' method='post' action='summary/download')
     ignite-callout
     hr
     .padding-dflt(ng-if='clusters.length == 0')

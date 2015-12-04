@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-// Controller for Summary screen.
-consoleModule.controller('summaryController', [
-    '$scope', '$http', '$common', '$loading', '$table',
-    function ($scope, $http, $common, $loading, $table) {
+export default ['$scope', '$http', '$common', '$loading', '$table', function($scope, $http, $common, $loading, $table) {
+    var ctrl = this;
+
     var igniteVersion = '1.5.0';
 
     $scope.panelExpanded = $common.panelExpanded;
@@ -37,23 +36,6 @@ consoleModule.controller('summaryController', [
     $scope.tabsServer = { activeTab: 0 };
     $scope.tabsClient = { activeTab: 0 };
 
-    $scope.pojoClasses = function() {
-        var classes = [];
-
-        if ($scope.selectedItem)
-            _.forEach($scope.selectedItem.metadatas, function(meta) {
-                classes.push(meta.keyType);
-                classes.push(meta.valueType);
-            });
-
-        return classes;
-    };
-
-    $scope.oss = ['debian:8', 'ubuntu:14.10'];
-
-    $scope.configServer = {javaClassServer: 1, os: undefined};
-    $scope.configClient = {};
-
     $scope.backupItem = {javaClassClient: 1};
 
     $http.get('/models/summary.json')
@@ -68,106 +50,6 @@ consoleModule.controller('summaryController', [
 
     $scope.clusters = [];
 
-    $scope.aceInit = function (editor) {
-        editor.setReadOnly(true);
-        editor.setOption('highlightActiveLine', false);
-        editor.setAutoScrollEditorIntoView(true);
-        editor.$blockScrolling = Infinity;
-
-        var renderer = editor.renderer;
-
-        renderer.setHighlightGutterLine(false);
-        renderer.setShowPrintMargin(false);
-        renderer.setOption('fontFamily', 'monospace');
-        renderer.setOption('fontSize', '12px');
-        renderer.setOption('minLines', '25');
-        renderer.setOption('maxLines', '25');
-
-        editor.setTheme('ace/theme/chrome');
-    };
-
-    $scope.generateJavaServer = function () {
-        $scope.javaServer = $generatorJava.cluster($scope.selectedItem, 'factory',
-            $scope.configServer.javaClassServer === 2 ? 'ServerConfigurationFactory' : false, null);
-    };
-
-    function selectPojoClass(config) {
-        if ($scope.selectedItem)
-            _.forEach($scope.selectedItem.metadatas, function(meta) {
-                if (meta.keyType === config.pojoClass)
-                    return config.pojoClassBody = meta.keyClass;
-
-                if (meta.valueType === config.pojoClass)
-                    return config.pojoClassBody = meta.valueClass;
-            });
-    }
-
-    function pojoClsListener(config) {
-        return function () {
-             (config);
-        };
-    }
-
-    $scope.updatePojos = function() {
-        if ($common.isDefined($scope.selectedItem)) {
-            var metadatas = $generatorJava.pojos($scope.selectedItem.caches, $scope.configServer.useConstructor, $scope.configServer.includeKeyFields);
-
-            $scope.selectedItem.metadatas = metadatas;
-
-            function restoreSelected(selected, config, tabs, metadatas) {
-                if (!$common.isDefined(selected) || _.findIndex(metadatas, function (meta) {
-                        return meta.keyType === selected || meta.valueType === selected;
-                    }) < 0) {
-                    if (metadatas.length > 0) {
-                        if ($common.isDefined(metadatas[0].keyType))
-                            config.pojoClass = metadatas[0].keyType;
-                        else
-                            config.pojoClass = metadatas[0].valueType;
-                    }
-                    else {
-                        config.pojoClass = undefined;
-
-                        if (tabs.activeTab === 2)
-                            tabs.activeTab = 0;
-                    }
-                }
-                else
-                    config.pojoClass = selected;
-
-                selectPojoClass(config);
-            }
-
-            restoreSelected($scope.configServer.pojoClass, $scope.configServer, $scope.tabsServer, metadatas);
-            restoreSelected($scope.configClient.pojoClass, $scope.configClient, $scope.tabsClient, metadatas);
-        }
-    };
-
-    $scope.$watch('configServer.javaClassServer', $scope.generateJavaServer, true);
-
-    $scope.$watch('configServer.pojoClass', pojoClsListener($scope.configServer), true);
-    $scope.$watch('configClient.pojoClass', pojoClsListener($scope.configClient), true);
-
-    $scope.$watch('configServer.useConstructor', $scope.updatePojos, true);
-
-    $scope.$watch('configServer.includeKeyFields', $scope.updatePojos, true);
-
-    $scope.generateDockerServer = function() {
-        var os = $scope.configServer.os ? $scope.configServer.os : $scope.oss[0];
-
-        $scope.dockerServer = $generatorDocker.clusterDocker($scope.selectedItem, os);
-    };
-
-    $scope.$watch('configServer.os', $scope.generateDockerServer, true);
-
-    $scope.generateClient = function () {
-        $scope.xmlClient = $generatorXml.cluster($scope.selectedItem, $scope.backupItem.nearConfiguration);
-        $scope.javaClient = $generatorJava.cluster($scope.selectedItem, 'factory',
-            $scope.backupItem.javaClassClient === 2 ? 'ClientConfigurationFactory' : false,
-            $scope.backupItem.nearConfiguration);
-    };
-
-    $scope.$watch('backupItem', $scope.generateClient, true);
-
     $scope.selectItem = function (cluster) {
         if (!cluster)
             return;
@@ -175,23 +57,21 @@ consoleModule.controller('summaryController', [
         $scope.cluster = cluster;
 
         $scope.selectedItem = cluster;
-
-        $scope.xmlServer = $generatorXml.cluster(cluster);
-
-        $scope.pom = $generatorPom.pom(cluster, igniteVersion).asString();
-
-        $scope.generateJavaServer();
-
-        $scope.generateDockerServer();
-
-        $scope.generateClient();
-
-        $scope.updatePojos();
     };
 
     $scope.pojoAvailable = function() {
-        return $scope.selectedItem && $common.isDefined($scope.selectedItem.metadatas) && $scope.selectedItem.metadatas.length > 0;
+        let cachesFilter = (cache) => {
+            return cache.metadatas && cache.metadatas.length;
+        }
+
+        return $scope.cluster && $scope.cluster.caches && _.chain($scope.cluster.caches).filter(cachesFilter).first().value();
     };
+
+    $scope.$watch('cluster', function() {
+        if (!$scope.pojoAvailable() &&  $scope.tabsClient.activeTab === 3) {
+             $scope.tabsClient.activeTab = 0;
+        }
+    })
 
     $scope.downloadConfiguration = function () {
         var cluster = $scope.selectedItem;
@@ -287,4 +167,4 @@ consoleModule.controller('summaryController', [
         .finally(function () {
             $loading.finish('loadingSummaryScreen');
         });
-}]);
+}]

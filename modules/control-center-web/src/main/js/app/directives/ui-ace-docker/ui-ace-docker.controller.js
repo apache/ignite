@@ -20,23 +20,23 @@ import types from 'app/data/os.json!'
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     var ctrl = this;
 
-    // scope values
+    // Scope values.
     $scope.types = types;
 
-    // scope methods
+    // Scope methods.
     $scope.onLoad = onLoad;
 
-    // watchers definition    
+    // Watchers definition.    
     let clusterWatcher = (value) => {
         if (value) {
-            // TODO IGNITE-2058: need move $generatorDocker to services
+            // TODO IGNITE-2058: need move $generatorDocker to services.
             ctrl.data = $generatorDocker.clusterDocker($scope.cluster, $scope.type);
         } else {
 
         }
     }
 
-    // watches
+    // Setup watchers. 
     $scope.$watch('type', clusterWatcher);
     $scope.$watch('cluster', clusterWatcher);
 }]

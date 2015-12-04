@@ -17,6 +17,8 @@
  
 import angular from 'angular'
 
+import summaryCtrl from './summary/summary.controller'
+
 angular
 .module('ignite-console.states.configuration', [
 	'ui.router'
@@ -46,6 +48,7 @@ angular
 	})
 	.state('base.configuration.summary', {
 		url: '/summary',
-		templateUrl: '/configuration/summary.html'	
+		templateUrl: '/configuration/summary.html',
+		controller: summaryCtrl
 	})	
 }]);

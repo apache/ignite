@@ -25,6 +25,9 @@ export default ['igniteUiAcePojos', [() => {
 		scope: {
 			cluster: '='
 		},
+		bindToController: {
+			cluster: '='
+		},
 		template,
 		controller,
 		controllerAs: 'ctrl'

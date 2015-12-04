@@ -15,25 +15,25 @@
  * limitations under the License.
  */
 
-// TODO IGNITE-2055: use set version
-const igniteVersion = '1.5.0-IWC';
+// TODO IGNITE-2055: use set version.
+const igniteVersion = '1.5.0';
 
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     var ctrl = this;
 
-    // scope methods
+    // Scope methods.
     $scope.onLoad = onLoad;
 
-    // watchers definition    
+    // Watchers definition.    
     let clusterWatcher = (value) => {
         if (value) {
-            // TODO IGNITE-2053: need move $generatorPom to services
+            // TODO IGNITE-2053: need move $generatorPom to services.
             ctrl.data = $generatorPom.pom($scope.cluster, igniteVersion).asString();
         } else {
 
         }
     }
 
-    // watches
+    // Setup watchers. 
     $scope.$watch('cluster', clusterWatcher);
 }]
