@@ -398,9 +398,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Assign field value
             var targetParam = Expression.Parameter(typeof(object));
-            var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
-            var assignExpr = Expression.Call(DelegateConverter.GetWriteFieldMethod(field), targetParamConverted, 
-                readExpr);
+            var assignExpr = Expression.Call(DelegateConverter.GetWriteFieldMethod(field), targetParam, readExpr);
 
             // Compile and return
             return Expression.Lambda<BinaryReflectiveReadAction>(assignExpr, targetParam, readerParam).Compile();
