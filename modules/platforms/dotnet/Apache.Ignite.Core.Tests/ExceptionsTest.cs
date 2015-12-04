@@ -60,40 +60,15 @@ namespace Apache.Ignite.Core.Tests
         {
             var grid = StartGrid();
 
-            try
-            {
-                grid.GetCache<object, object>("invalidCacheName");
+            Assert.Throws<ArgumentException>(() => grid.GetCache<object, object>("invalidCacheName"));
 
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.IsTrue(e is ArgumentException);
-            }
+            var e = Assert.Throws<ClusterGroupEmptyException>(() => grid.GetCluster().ForRemotes().GetMetrics());
 
-            try
-            {
-                grid.GetCluster().ForRemotes().GetMetrics();
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.IsTrue(e is ClusterGroupEmptyException);
-            }
+            Assert.IsNotNullOrEmpty(e.JavaStackTrace);
 
             grid.Dispose();
 
-            try
-            {
-                grid.GetCache<object, object>("cache1");
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.IsTrue(e is InvalidOperationException);
-            }
+            Assert.Throws<InvalidOperationException>(() => grid.GetCache<object, object>("cache1"));
         }
 
         /// <summary>

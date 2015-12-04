@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Common
         /** <inheritdoc /> */
         public override string ToString()
         {
-            return string.Format("{0}, JavaStackTrace: {1}", base.ToString(), JavaStackTrace);
+            return string.Format("{0}, \nJavaStackTrace: {1}", base.ToString(), JavaStackTrace);
         }
     }
 }
