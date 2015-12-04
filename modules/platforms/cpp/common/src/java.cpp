@@ -509,7 +509,7 @@ namespace ignite
 				m_Throwable_getStackTrace = FindMethod(env, c_Throwable, M_THROWABLE_GET_STACK_TRACE);
 				
 				c_X = FindClass(env, C_X);
-				m_Throwable_getStackTrace = FindMethod(env, c_X, M_X_GET_FULL_STACK_TRACE);
+				m_X_getFullStackTrace = FindMethod(env, c_X, M_X_GET_FULL_STACK_TRACE);
             }
 
             void JniJavaMembers::Destroy(JNIEnv* env) {
