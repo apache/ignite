@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import javax.cache.configuration.Factory;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -270,8 +271,8 @@ public class TransactionConfiguration implements Serializable {
      *
      * @param factory Transaction manager factory.
      * @param <T> Instance of {@code javax.transaction.TransactionManager}.
-     *
-     * // TODO exception if not TxManager instanse + about jta in classpath
+     * @throws IgniteCheckedException If {@link Factory#create()} method throws any exception,
+     *      returns {@code null}-value or returns non-{@code TransactionManager} instance.
      */
     public <T> void setTxManagerFactory(Factory<T> factory) {
         txManagerFactory = factory;
