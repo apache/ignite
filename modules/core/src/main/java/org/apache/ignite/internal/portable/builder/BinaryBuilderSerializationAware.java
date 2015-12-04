@@ -27,5 +27,5 @@ interface BinaryBuilderSerializationAware {
      * @param writer Writer.
      * @param ctx Context.
      */
-    public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx);
+    public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx);
 }

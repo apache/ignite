@@ -82,7 +82,7 @@ public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         writer.writeByte(GridPortableMarshaller.ENUM);
 
         if (typeId == GridPortableMarshaller.UNREGISTERED_TYPE_ID) {

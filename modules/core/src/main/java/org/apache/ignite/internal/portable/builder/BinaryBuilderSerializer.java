@@ -31,7 +31,7 @@ import java.util.*;
 /**
  *
  */
-class PortableBuilderSerializer {
+class BinaryBuilderSerializer {
     /** */
     private final Map<BinaryObjectBuilderImpl, Integer> objToPos = new IdentityHashMap<>();
 

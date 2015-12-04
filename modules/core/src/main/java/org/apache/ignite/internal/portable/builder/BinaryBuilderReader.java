@@ -847,7 +847,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
         }
 
         /** {@inheritDoc} */
-        @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
+        @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
             ctx.writeValue(writer, wrappedCollection());
         }
 

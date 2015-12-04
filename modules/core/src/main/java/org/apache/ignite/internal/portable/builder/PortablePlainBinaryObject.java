@@ -42,7 +42,7 @@ public class PortablePlainBinaryObject implements BinaryLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         BinaryObject val = portableObj;
 
         if (val instanceof BinaryObjectOffheapImpl)

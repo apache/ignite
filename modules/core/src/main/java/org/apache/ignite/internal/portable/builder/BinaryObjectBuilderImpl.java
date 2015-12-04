@@ -180,7 +180,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
             writer.typeId(typeId);
 
-            PortableBuilderSerializer serializationCtx = new PortableBuilderSerializer();
+            BinaryBuilderSerializer serializationCtx = new BinaryBuilderSerializer();
 
             serializationCtx.registerObjectWriting(this, 0);
 
@@ -196,7 +196,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param writer Writer.
      * @param serializer Serializer.
      */
-    void serializeTo(BinaryWriterExImpl writer, PortableBuilderSerializer serializer) {
+    void serializeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer serializer) {
         try {
             writer.preWrite(registeredType ? null : clsNameToWrite);
 
