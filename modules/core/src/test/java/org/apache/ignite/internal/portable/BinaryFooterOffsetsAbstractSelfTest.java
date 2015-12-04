@@ -40,13 +40,13 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     protected BinaryMarshaller marsh;
 
     /** Portable context. */
-    protected PortableContext ctx;
+    protected BinaryContext ctx;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ctx = new PortableContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
+        ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
 
         marsh = new BinaryMarshaller();
 
@@ -55,7 +55,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(TestObject.class.getName())));
-        
+
         bCfg.setCompactFooter(compactFooter());
 
         iCfg.setBinaryConfiguration(bCfg);
@@ -71,7 +71,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     protected boolean compactFooter() {
         return true;
     }
-    
+
     /**
      * Test 1 byte.
      *

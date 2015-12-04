@@ -27,7 +27,7 @@ import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.BinaryContext;
 import org.apache.ignite.internal.portable.PortableSchema;
 import org.apache.ignite.internal.portable.PortableSchemaRegistry;
 import org.apache.ignite.internal.portable.PortableUtils;
@@ -57,7 +57,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     private static final Object REMOVED_FIELD_MARKER = new Object();
 
     /** */
-    private final PortableContext ctx;
+    private final BinaryContext ctx;
 
     /** */
     private final int typeId;
@@ -96,8 +96,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param clsName Class name.
      * @param ctx Portable context.
      */
-    public BinaryObjectBuilderImpl(PortableContext ctx, String clsName) {
-        this(ctx, ctx.typeId(clsName), PortableContext.typeName(clsName));
+    public BinaryObjectBuilderImpl(BinaryContext ctx, String clsName) {
+        this(ctx, ctx.typeId(clsName), BinaryContext.typeName(clsName));
     }
 
     /**
@@ -105,7 +105,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param ctx Context.
      * @param typeId Type id.
      */
-    public BinaryObjectBuilderImpl(PortableContext ctx, int typeId, String typeName) {
+    public BinaryObjectBuilderImpl(BinaryContext ctx, int typeId, String typeName) {
         this.typeId = typeId;
         this.typeName = typeName;
         this.ctx = ctx;

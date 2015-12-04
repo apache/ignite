@@ -79,12 +79,12 @@ public class BinaryMarshaller extends AbstractMarshaller {
     }
 
     /**
-     * Sets {@link PortableContext}.
+     * Sets {@link BinaryContext}.
      * <p/>
      * @param ctx Portable context.
      */
     @SuppressWarnings("UnusedDeclaration")
-    private void setPortableContext(PortableContext ctx, IgniteConfiguration cfg) {
+    private void setPortableContext(BinaryContext ctx, IgniteConfiguration cfg) {
         ctx.configure(this, cfg);
 
         impl = new GridPortableMarshaller(ctx);

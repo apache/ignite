@@ -69,7 +69,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
-    private final PortableContext ctx;
+    private final BinaryContext ctx;
 
     /** */
     private final long ptr;
@@ -93,7 +93,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @param start Object start.
      * @param size Memory size.
      */
-    public BinaryObjectOffheapImpl(PortableContext ctx, long ptr, int start, int size) {
+    public BinaryObjectOffheapImpl(BinaryContext ctx, long ptr, int start, int size) {
         this.ctx = ctx;
         this.ptr = ptr;
         this.start = start;

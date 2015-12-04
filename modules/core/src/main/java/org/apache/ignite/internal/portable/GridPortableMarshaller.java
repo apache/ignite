@@ -224,12 +224,12 @@ public class GridPortableMarshaller {
     public static final byte DFLT_HDR_LEN = 24;
 
     /** */
-    private final PortableContext ctx;
+    private final BinaryContext ctx;
 
     /**
      * @param ctx Context.
      */
-    public GridPortableMarshaller(PortableContext ctx) {
+    public GridPortableMarshaller(BinaryContext ctx) {
         this.ctx = ctx;
     }
 
@@ -301,7 +301,7 @@ public class GridPortableMarshaller {
     /**
      * @return Context.
      */
-    public PortableContext context() {
+    public BinaryContext context() {
         return ctx;
     }
 }

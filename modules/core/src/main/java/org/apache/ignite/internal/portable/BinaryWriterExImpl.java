@@ -91,7 +91,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     private static final int INIT_CAP = 1024;
 
     /** */
-    private final PortableContext ctx;
+    private final BinaryContext ctx;
 
     /** Output stream. */
     private final BinaryOutputStream out;
@@ -123,7 +123,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param ctx Context.
      */
-    public BinaryWriterExImpl(PortableContext ctx) {
+    public BinaryWriterExImpl(BinaryContext ctx) {
         this(ctx, BinaryThreadLocalContext.get());
     }
 
@@ -131,7 +131,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param ctx Context.
      * @param tlsCtx TLS context.
      */
-    public BinaryWriterExImpl(PortableContext ctx, BinaryThreadLocalContext tlsCtx) {
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryThreadLocalContext tlsCtx) {
         this(ctx, new BinaryHeapOutputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
     }
 
@@ -140,7 +140,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param out Output stream.
      * @param handles Handles.
      */
-    public BinaryWriterExImpl(PortableContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema,
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema,
         BinaryWriterHandles handles) {
         this.ctx = ctx;
         this.out = out;
@@ -1827,7 +1827,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @return Portable context.
      */
-    public PortableContext context() {
+    public BinaryContext context() {
         return ctx;
     }
 }

@@ -45,7 +45,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** Context. */
     @GridDirectTransient
-    private PortableContext ctx;
+    private BinaryContext ctx;
 
     /** Type ID. */
     private int typeId;
@@ -71,7 +71,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
      * @param clsName Class name.
      * @param ord Ordinal.
      */
-    public BinaryEnumObjectImpl(PortableContext ctx, int typeId, @Nullable String clsName, int ord) {
+    public BinaryEnumObjectImpl(BinaryContext ctx, int typeId, @Nullable String clsName, int ord) {
         assert ctx != null;
 
         this.ctx = ctx;
@@ -185,7 +185,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ctx = (PortableContext)in.readObject();
+        ctx = (BinaryContext)in.readObject();
 
         typeId = in.readInt();
         clsName = (String)in.readObject();

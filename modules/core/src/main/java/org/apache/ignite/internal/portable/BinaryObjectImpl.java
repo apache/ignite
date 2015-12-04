@@ -70,7 +70,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** */
     @GridDirectTransient
-    private PortableContext ctx;
+    private BinaryContext ctx;
 
     /** */
     private byte[] arr;
@@ -98,7 +98,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param arr Array.
      * @param start Start.
      */
-    public BinaryObjectImpl(PortableContext ctx, byte[] arr, int start) {
+    public BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start) {
         assert ctx != null;
         assert arr != null;
 
@@ -203,14 +203,14 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /**
      * @return Context.
      */
-    public PortableContext context() {
+    public BinaryContext context() {
         return ctx;
     }
 
     /**
      * @param ctx Context.
      */
-    public void context(PortableContext ctx) {
+    public void context(BinaryContext ctx) {
         this.ctx = ctx;
     }
 
@@ -460,7 +460,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ctx = (PortableContext)in.readObject();
+        ctx = (BinaryContext)in.readObject();
 
         arr = new byte[in.readInt()];
 

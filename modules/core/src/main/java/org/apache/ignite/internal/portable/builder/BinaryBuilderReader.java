@@ -22,7 +22,7 @@ import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryReaderExImpl;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.BinaryContext;
 import org.apache.ignite.internal.portable.BinaryPositionReadable;
 import org.apache.ignite.internal.portable.PortablePrimitives;
 import org.apache.ignite.internal.portable.PortableSchema;
@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
  */
 public class BinaryBuilderReader implements BinaryPositionReadable {
     /** */
-    private final PortableContext ctx;
+    private final BinaryContext ctx;
 
     /** */
     private final byte[] arr;
@@ -92,7 +92,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
     /**
      * @return Portable context.
      */
-    public PortableContext portableContext() {
+    public BinaryContext portableContext() {
         return ctx;
     }
 

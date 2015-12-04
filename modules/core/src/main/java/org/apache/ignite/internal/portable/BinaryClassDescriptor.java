@@ -56,7 +56,7 @@ import static java.lang.reflect.Modifier.isTransient;
  */
 public class BinaryClassDescriptor {
     /** */
-    private final PortableContext ctx;
+    private final BinaryContext ctx;
 
     /** */
     private final Class<?> cls;
@@ -127,7 +127,7 @@ public class BinaryClassDescriptor {
      * @throws BinaryObjectException In case of error.
      */
     BinaryClassDescriptor(
-        PortableContext ctx,
+        BinaryContext ctx,
         Class<?> cls,
         boolean userType,
         int typeId,

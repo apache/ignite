@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.portable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.BinaryNoopMetadataHandler;
-import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.BinaryContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.Marshaller;
@@ -39,7 +39,7 @@ public class GridPortableCacheEntryMemorySizeSelfTest extends GridCacheEntryMemo
 
         IgniteConfiguration iCfg = new IgniteConfiguration();
 
-        PortableContext pCtx = new PortableContext(BinaryNoopMetadataHandler.instance(), iCfg);
+        BinaryContext pCtx = new BinaryContext(BinaryNoopMetadataHandler.instance(), iCfg);
 
         IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", pCtx, iCfg);
 

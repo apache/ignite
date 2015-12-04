@@ -1182,7 +1182,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
                 String typeName;
 
                 try {
-                    Method mtd = PortableContext.class.getDeclaredMethod("typeName", String.class);
+                    Method mtd = BinaryContext.class.getDeclaredMethod("typeName", String.class);
 
                     mtd.setAccessible(true);
 
@@ -1281,7 +1281,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             customType4
         ));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         assertEquals("notconfiguredclass".hashCode(), ctx.typeId("NotConfiguredClass"));
         assertEquals("key".hashCode(), ctx.typeId("Key"));
@@ -1344,7 +1344,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             customType1,
             customType2));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         assertEquals("val".hashCode(), ctx.fieldId("key".hashCode(), "val"));
         assertEquals("val".hashCode(), ctx.fieldId("nonexistentclass2".hashCode(), "val"));
@@ -1880,7 +1880,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testOffheapPortable() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         SimpleObject simpleObj = simpleObject();
 
@@ -2211,7 +2211,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testPredefinedTypeIds() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
-        PortableContext pCtx = portableContext(marsh);
+        BinaryContext pCtx = portableContext(marsh);
 
         Field field = pCtx.getClass().getDeclaredField("predefinedTypeNames");
 
@@ -2411,7 +2411,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param marsh Marshaller.
      * @return Portable context.
      */
-    protected PortableContext portableContext(BinaryMarshaller marsh) {
+    protected BinaryContext portableContext(BinaryMarshaller marsh) {
         GridPortableMarshaller impl = U.field(marsh, "impl");
 
         return impl.context();
@@ -2469,7 +2469,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         iCfg.setBinaryConfiguration(bCfg);
 
-        PortableContext ctx = new PortableContext(BinaryCachingMetadataHandler.create(), iCfg);
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

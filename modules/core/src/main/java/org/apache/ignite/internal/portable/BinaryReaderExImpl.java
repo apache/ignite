@@ -85,7 +85,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_AR
 @SuppressWarnings("unchecked")
 public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, BinaryReaderHandlesHolder, ObjectInput {
     /** Portable context. */
-    private final PortableContext ctx;
+    private final BinaryContext ctx;
 
     /** Input stream. */
     private final BinaryInputStream in;
@@ -148,7 +148,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param in Input stream.
      * @param ldr Class loader.
      */
-    public BinaryReaderExImpl(PortableContext ctx, BinaryInputStream in, ClassLoader ldr) {
+    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr) {
         this(ctx, in, ldr, null);
     }
 
@@ -160,7 +160,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param ldr Class loader.
      * @param hnds Context.
      */
-    public BinaryReaderExImpl(PortableContext ctx, BinaryInputStream in, ClassLoader ldr,
+    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr,
         @Nullable BinaryReaderHandles hnds) {
         this(ctx, in, ldr, hnds, false);
     }
@@ -174,7 +174,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param hnds Context.
      * @param skipHdrCheck Whether to skip header check.
      */
-    public BinaryReaderExImpl(PortableContext ctx, BinaryInputStream in, ClassLoader ldr,
+    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr,
         @Nullable BinaryReaderHandles hnds, boolean skipHdrCheck) {
         // Initialize base members.
         this.ctx = ctx;

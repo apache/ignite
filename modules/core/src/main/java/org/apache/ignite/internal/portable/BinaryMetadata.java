@@ -149,7 +149,7 @@ public class BinaryMetadata implements Externalizable {
      * @param ctx Portable context.
      * @return Binary type.
      */
-    public BinaryTypeImpl wrap(PortableContext ctx) {
+    public BinaryTypeImpl wrap(BinaryContext ctx) {
         return new BinaryTypeImpl(ctx, this);
     }
 

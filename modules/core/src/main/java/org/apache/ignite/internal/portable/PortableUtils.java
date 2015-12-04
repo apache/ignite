@@ -1293,7 +1293,7 @@ public class PortableUtils {
     /**
      * @return Value.
      */
-    public static BinaryObject doReadPortableObject(BinaryInputStream in, PortableContext ctx) {
+    public static BinaryObject doReadPortableObject(BinaryInputStream in, BinaryContext ctx) {
         if (in.offheapPointer() > 0) {
             int len = in.readInt();
 
@@ -1316,7 +1316,7 @@ public class PortableUtils {
     /**
      * @return Value.
      */
-    public static Class doReadClass(BinaryInputStream in, PortableContext ctx, ClassLoader ldr)
+    public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
         throws BinaryObjectException {
         int typeId = in.readInt();
 
@@ -1358,7 +1358,7 @@ public class PortableUtils {
      * @param typeId Type id.
      * @return Value.
      */
-    public static Class doReadClass(BinaryInputStream in, PortableContext ctx, ClassLoader ldr, int typeId)
+    public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, int typeId)
         throws BinaryObjectException {
         Class cls;
 
@@ -1393,7 +1393,7 @@ public class PortableUtils {
      * @param ldr Class loaded.
      * @return Resovled class.
      */
-    public static Class resolveClass(PortableContext ctx, int typeId, @Nullable String clsName,
+    public static Class resolveClass(BinaryContext ctx, int typeId, @Nullable String clsName,
         @Nullable ClassLoader ldr, boolean deserialize) {
         Class cls;
 
@@ -1425,7 +1425,7 @@ public class PortableUtils {
      * @param type Plain type.
      * @return Enum.
      */
-    private static BinaryEnumObjectImpl doReadPortableEnum(BinaryInputStream in, PortableContext ctx,
+    private static BinaryEnumObjectImpl doReadPortableEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
         return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
     }
@@ -1437,7 +1437,7 @@ public class PortableUtils {
      * @param ctx Portable context.
      * @return Enum array.
      */
-    private static Object[] doReadPortableEnumArray(BinaryInputStream in, PortableContext ctx) {
+    private static Object[] doReadPortableEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
         Object[] arr = (Object[]) Array.newInstance(BinaryObject.class, len);
@@ -1475,7 +1475,7 @@ public class PortableUtils {
      * @param cls Enum class.
      * @return Value.
      */
-    public static Object[] doReadEnumArray(BinaryInputStream in, PortableContext ctx, ClassLoader ldr, Class<?> cls)
+    public static Object[] doReadEnumArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, Class<?> cls)
         throws BinaryObjectException {
         int len = in.readInt();
 
@@ -1498,7 +1498,7 @@ public class PortableUtils {
      *
      * @return Result.
      */
-    public static Object doReadOptimized(BinaryInputStream in, PortableContext ctx, @Nullable ClassLoader clsLdr) {
+    public static Object doReadOptimized(BinaryInputStream in, BinaryContext ctx, @Nullable ClassLoader clsLdr) {
         int len = in.readInt();
 
         ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
@@ -1518,7 +1518,7 @@ public class PortableUtils {
      * @return Object.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object doReadObject(BinaryInputStream in, PortableContext ctx, ClassLoader ldr,
+    @Nullable public static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
         return new BinaryReaderExImpl(ctx, in, ldr, handles.handles()).deserialize();
     }
@@ -1527,7 +1527,7 @@ public class PortableUtils {
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object unmarshal(BinaryInputStream in, PortableContext ctx, ClassLoader ldr)
+    @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
         throws BinaryObjectException {
         return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolderImpl());
     }
@@ -1536,7 +1536,7 @@ public class PortableUtils {
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object unmarshal(BinaryInputStream in, PortableContext ctx, ClassLoader ldr,
+    @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
         return unmarshal(in, ctx, ldr, handles, false);
     }
@@ -1545,7 +1545,7 @@ public class PortableUtils {
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object unmarshal(BinaryInputStream in, PortableContext ctx, ClassLoader ldr,
+    @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach) throws BinaryObjectException {
         int start = in.position();
 
@@ -1718,7 +1718,7 @@ public class PortableUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static Object[] doReadObjectArray(BinaryInputStream in, PortableContext ctx, ClassLoader ldr,
+    public static Object[] doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
@@ -1743,7 +1743,7 @@ public class PortableUtils {
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public static Collection<?> doReadCollection(BinaryInputStream in, PortableContext ctx, ClassLoader ldr,
+    public static Collection<?> doReadCollection(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean deserialize, @Nullable Class<? extends Collection> cls)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
@@ -1837,7 +1837,7 @@ public class PortableUtils {
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public static Map<?, ?> doReadMap(BinaryInputStream in, PortableContext ctx, ClassLoader ldr,
+    public static Map<?, ?> doReadMap(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean deserialize, @Nullable Class<? extends Map> cls)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
@@ -1918,7 +1918,7 @@ public class PortableUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static Map.Entry<?, ?> doReadMapEntry(BinaryInputStream in, PortableContext ctx, ClassLoader ldr,
+    public static Map.Entry<?, ?> doReadMapEntry(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
@@ -1938,7 +1938,7 @@ public class PortableUtils {
      * @param deserialize Deserialize.
      * @return Result.
      */
-    private static Object deserializeOrUnmarshal(BinaryInputStream in, PortableContext ctx, ClassLoader ldr,
+    private static Object deserializeOrUnmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean deserialize) {
         return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles);
     }

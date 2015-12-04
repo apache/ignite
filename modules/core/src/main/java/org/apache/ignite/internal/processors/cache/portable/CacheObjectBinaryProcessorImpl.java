@@ -38,7 +38,7 @@ import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryTypeImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.BinaryContext;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.portable.streams.BinaryInputStream;
@@ -128,7 +128,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     };
 
     /** */
-    private PortableContext portableCtx;
+    private BinaryContext portableCtx;
 
     /** */
     private Marshaller marsh;
@@ -207,7 +207,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             BinaryMarshaller pMarh0 = (BinaryMarshaller)marsh;
 
-            portableCtx = new PortableContext(metaHnd, ctx.config());
+            portableCtx = new BinaryContext(metaHnd, ctx.config());
 
             IgniteUtils.invoke(BinaryMarshaller.class, pMarh0, "setPortableContext", portableCtx,
                 ctx.config());
@@ -564,7 +564,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public BinaryObject buildEnum(String typeName, int ord) throws IgniteException {
-        typeName = PortableContext.typeName(typeName);
+        typeName = BinaryContext.typeName(typeName);
 
         int typeId = portableCtx.typeId(typeName);
 
@@ -642,7 +642,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /**
      * @return Portable context.
      */
-    public PortableContext portableContext() {
+    public BinaryContext portableContext() {
         return portableCtx;
     }
 

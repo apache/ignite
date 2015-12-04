@@ -82,7 +82,7 @@ import org.jsr166.ConcurrentHashMap8;
 /**
  * Portable context.
  */
-public class PortableContext implements Externalizable {
+public class BinaryContext implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -143,7 +143,7 @@ public class PortableContext implements Externalizable {
     /**
      * For {@link Externalizable}.
      */
-    public PortableContext() {
+    public BinaryContext() {
         // No-op.
     }
 
@@ -151,7 +151,7 @@ public class PortableContext implements Externalizable {
      * @param metaHnd Meta data handler.
      * @param igniteCfg Ignite configuration.
      */
-    public PortableContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg) {
+    public BinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg) {
         assert metaHnd != null;
         assert igniteCfg != null;
 
