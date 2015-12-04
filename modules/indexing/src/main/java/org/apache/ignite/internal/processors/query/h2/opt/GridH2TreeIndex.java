@@ -407,7 +407,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
         long rowCnt = getRowCountApproximation();
         double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder);
-        int mul = getDistributedMultiplier(ses, masks, filters, filter);
+        int mul = getDistributedMultiplier(ses, filters, filter);
 
         return mul * baseCost;
     }

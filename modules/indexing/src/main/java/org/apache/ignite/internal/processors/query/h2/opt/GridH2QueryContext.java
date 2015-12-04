@@ -28,13 +28,11 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.h2.table.TableFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
 
 /**
  * Thread local SQL query context which is intended to be accessible from everywhere.
@@ -81,7 +79,7 @@ public class GridH2QueryContext {
     private int pageSize;
 
     /** */
-    private Map<TableFilter, GridH2TableFilterCollocation>  tableFilterStateCache;
+    private GridH2Collocation qryCollocation;
 
     /**
      * @param locNodeId Local node ID.
@@ -115,15 +113,17 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @return Cache for table filter collocation states.
+     * @return Query collocation model.
      */
-    public Map<TableFilter, GridH2TableFilterCollocation> tableFilterStateCache() {
-        assert type() == PREPARE : type();
+    public GridH2Collocation queryCollocation() {
+        return qryCollocation;
+    }
 
-        if (tableFilterStateCache == null)
-            tableFilterStateCache = new HashMap<>();
-
-        return tableFilterStateCache;
+    /**
+     * @param qryCollocation Query collocation model.
+     */
+    public void queryCollocation(GridH2Collocation qryCollocation) {
+        this.qryCollocation = qryCollocation;
     }
 
     /**

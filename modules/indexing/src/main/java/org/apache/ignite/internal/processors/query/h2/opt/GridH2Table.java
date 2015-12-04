@@ -152,6 +152,13 @@ public class GridH2Table extends TableBase {
         return affKeyCol;
     }
 
+    /**
+     * @return Affinity key column ID.
+     */
+    public int getAffinityKeyColumnId() {
+        return affKeyCol.column.getColumnId();
+    }
+
     /** {@inheritDoc} */
     @Override public long getDiskSpaceUsed() {
         return 0;
@@ -907,7 +914,7 @@ public class GridH2Table extends TableBase {
         @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
             SortOrder sortOrder) {
             long rows = getRowCountApproximation();
-            int mul = delegate.getDistributedMultiplier(ses, masks, filters, filter);
+            int mul = delegate.getDistributedMultiplier(ses, filters, filter);
 
             return  mul * (rows + Constants.COST_ROW_OFFSET);
         }
