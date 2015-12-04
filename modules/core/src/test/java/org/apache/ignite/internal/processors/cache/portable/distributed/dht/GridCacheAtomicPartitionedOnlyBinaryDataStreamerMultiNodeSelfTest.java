@@ -17,31 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.portable.GridCacheBinaryObjectsAbstractDataStreamerSelfTest;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-
 /**
  *
  */
-public class GridCacheAtomicPartitionedOnlyPortableDataStreamerMultithreadedSelfTest extends
-    GridCacheBinaryObjectsAbstractDataStreamerSelfTest {
+public class GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultiNodeSelfTest extends
+    GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultithreadedSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+    @Override protected int gridCount() {
+        return 4;
     }
 }

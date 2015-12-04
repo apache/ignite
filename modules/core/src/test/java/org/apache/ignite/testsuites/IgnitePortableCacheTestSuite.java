@@ -30,9 +30,9 @@ import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocal
 import org.apache.ignite.internal.processors.cache.portable.GridPortableCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.datastreaming.DataStreamProcessorBinarySelfTest;
 import org.apache.ignite.internal.processors.cache.portable.datastreaming.GridDataStreamerImplSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAffinityRoutingPortableSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyPortableDataStreamerMultiNodeSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyPortableDataStreamerMultithreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAffinityRoutingBinarySelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultiNodeSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyPortableMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyPortableMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheMemoryModePortableSelfTest;
@@ -87,13 +87,13 @@ public class IgnitePortableCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(GridDataStreamerImplSelfTest.class);
         suite.addTestSuite(DataStreamProcessorBinarySelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedOnlyPortableDataStreamerMultiNodeSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedOnlyPortableDataStreamerMultithreadedSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultiNodeSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultithreadedSelfTest.class);
 
         suite.addTestSuite(GridCacheAtomicPartitionedOnlyPortableMultiNodeSelfTest.class);
         suite.addTestSuite(GridCacheAtomicPartitionedOnlyPortableMultithreadedSelfTest.class);
 
-        suite.addTestSuite(GridCacheAffinityRoutingPortableSelfTest.class);
+        suite.addTestSuite(GridCacheAffinityRoutingBinarySelfTest.class);
         suite.addTestSuite(GridPortableCacheEntryMemorySizeSelfTest.class);
 
         return suite;

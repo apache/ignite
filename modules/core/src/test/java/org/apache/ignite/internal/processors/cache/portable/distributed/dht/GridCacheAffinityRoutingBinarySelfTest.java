@@ -28,7 +28,7 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 /**
  *
  */
-public class GridCacheAffinityRoutingPortableSelfTest extends GridCacheAffinityRoutingSelfTest {
+public class GridCacheAffinityRoutingBinarySelfTest extends GridCacheAffinityRoutingSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
