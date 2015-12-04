@@ -41,12 +41,12 @@ class BinaryLazyMapEntry implements Map.Entry<Object, Object>, BinaryBuilderSeri
 
     /** {@inheritDoc} */
     @Override public Object getKey() {
-        return PortableUtils.unwrapLazy(key);
+        return BinaryUtils.unwrapLazy(key);
     }
 
     /** {@inheritDoc} */
     @Override public Object getValue() {
-        return PortableUtils.unwrapLazy(val);
+        return BinaryUtils.unwrapLazy(val);
     }
 
     /** {@inheritDoc} */

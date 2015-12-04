@@ -39,7 +39,7 @@ import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryTypeImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.BinaryContext;
-import org.apache.ignite.internal.portable.PortableUtils;
+import org.apache.ignite.internal.portable.BinaryUtils;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.portable.streams.BinaryInputStream;
 import org.apache.ignite.internal.portable.streams.BinaryOffheapInputStream;
@@ -171,11 +171,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                     if (metaDataCache == null) {
                         BinaryMetadata oldMeta = metaBuf.get(typeId);
-                        BinaryMetadata mergedMeta = PortableUtils.mergeMetadata(oldMeta, newMeta0);
+                        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
 
                         if (oldMeta != mergedMeta) {
                             synchronized (this) {
-                                mergedMeta = PortableUtils.mergeMetadata(oldMeta, newMeta0);
+                                mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
 
                                 if (oldMeta != mergedMeta)
                                     metaBuf.put(typeId, mergedMeta);
@@ -316,7 +316,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 BinaryMetadata oldMeta0 = oldMeta != null ? oldMeta.metadata() : null;
 
                 try {
-                    res = PortableUtils.mergeMetadata(oldMeta0, newMeta);
+                    res = BinaryUtils.mergeMetadata(oldMeta0, newMeta);
                 }
                 catch (BinaryObjectException e) {
                     res = oldMeta0;
@@ -380,7 +380,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (obj == null)
             return null;
 
-        if (PortableUtils.isPortableType(obj.getClass()))
+        if (BinaryUtils.isPortableType(obj.getClass()))
             return obj;
 
         if (obj instanceof Object[]) {
@@ -409,7 +409,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             Collection<Object> pCol;
 
             if (col instanceof Set)
-                pCol = (Collection<Object>)PortableUtils.newSet((Set<?>)col);
+                pCol = (Collection<Object>)BinaryUtils.newSet((Set<?>)col);
             else
                 pCol = new ArrayList<>(col.size());
 
@@ -422,7 +422,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (obj instanceof Map) {
             Map<?, ?> map = (Map<?, ?>)obj;
 
-            Map<Object, Object> pMap = PortableUtils.newMap((Map<Object, Object>)obj);
+            Map<Object, Object> pMap = BinaryUtils.newMap((Map<Object, Object>)obj);
 
             for (Map.Entry<?, ?> e : map.entrySet())
                 pMap.put(marshalToPortable(e.getKey()), marshalToPortable(e.getValue()));
@@ -485,7 +485,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         try {
             BinaryMetadata oldMeta = metaDataCache.localPeek(key);
-            BinaryMetadata mergedMeta = PortableUtils.mergeMetadata(oldMeta, newMeta0);
+            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
 
             BinaryObjectException err = metaDataCache.invoke(key, new MetadataProcessor(mergedMeta));
 
@@ -803,7 +803,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             try {
                 BinaryMetadata oldMeta = entry.getValue();
 
-                BinaryMetadata mergedMeta = PortableUtils.mergeMetadata(oldMeta, newMeta);
+                BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta);
 
                 if (mergedMeta != oldMeta)
                     entry.setValue(mergedMeta);

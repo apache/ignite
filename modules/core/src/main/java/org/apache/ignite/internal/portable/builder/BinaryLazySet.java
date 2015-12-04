@@ -20,7 +20,7 @@ package org.apache.ignite.internal.portable.builder;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableUtils;
+import org.apache.ignite.internal.portable.BinaryUtils;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -85,7 +85,7 @@ class BinaryLazySet extends BinaryAbstractLazyValue {
         Set<Object> res = U.newLinkedHashSet(size);
 
         for (int i = 0; i < size; i++)
-            res.add(PortableUtils.unwrapLazy(reader.parseValue()));
+            res.add(BinaryUtils.unwrapLazy(reader.parseValue()));
 
         return res;
     }

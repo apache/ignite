@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.PortableUtils;
+import org.apache.ignite.internal.portable.BinaryUtils;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -203,7 +203,7 @@ import org.apache.ignite.internal.util.typedef.F;
         if (keepPortable)
             return map;
 
-        Map<Object, Object> map0 = PortableUtils.newMap(map);
+        Map<Object, Object> map0 = BinaryUtils.newMap(map);
 
         for (Map.Entry<Object, Object> e : map.entrySet())
             map0.put(unwrapPortable(e.getKey(), keepPortable, cpy), unwrapPortable(e.getValue(), keepPortable, cpy));
@@ -241,7 +241,7 @@ import org.apache.ignite.internal.util.typedef.F;
      * @return Unwrapped set.
      */
     private Set<Object> unwrapPortables(Set<Object> set, boolean keepPortable, boolean cpy) {
-        Set<Object> set0 = PortableUtils.newSet(set);
+        Set<Object> set0 = BinaryUtils.newSet(set);
 
         for (Object obj : set)
             set0.add(unwrapPortable(obj, keepPortable, cpy));

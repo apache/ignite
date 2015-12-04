@@ -73,7 +73,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
     @Override public Object get(int idx) {
         ensureDelegateInit();
 
-        return PortableUtils.unwrapLazy(delegate.get(idx));
+        return BinaryUtils.unwrapLazy(delegate.get(idx));
     }
 
     /** {@inheritDoc} */
@@ -94,14 +94,14 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
     @Override public Object set(int idx, Object element) {
         ensureDelegateInit();
 
-        return PortableUtils.unwrapLazy(delegate.set(idx, element));
+        return BinaryUtils.unwrapLazy(delegate.set(idx, element));
     }
 
     /** {@inheritDoc} */
     @Override public Object remove(int idx) {
         ensureDelegateInit();
 
-        return PortableUtils.unwrapLazy(delegate.remove(idx));
+        return BinaryUtils.unwrapLazy(delegate.remove(idx));
     }
 
     /** {@inheritDoc} */
@@ -147,7 +147,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
             }
 
             @Override public Object next() {
-                return PortableUtils.unwrapLazy(delegate.next());
+                return BinaryUtils.unwrapLazy(delegate.next());
             }
 
             @Override public boolean hasPrevious() {
@@ -155,7 +155,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
             }
 
             @Override public Object previous() {
-                return PortableUtils.unwrapLazy(delegate.previous());
+                return BinaryUtils.unwrapLazy(delegate.previous());
             }
 
             @Override public int nextIndex() {
@@ -184,7 +184,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
     @Override public Iterator<Object> iterator() {
         ensureDelegateInit();
 
-        return PortableUtils.unwrapLazyIterator(super.iterator());
+        return BinaryUtils.unwrapLazyIterator(super.iterator());
     }
 
     /** {@inheritDoc} */

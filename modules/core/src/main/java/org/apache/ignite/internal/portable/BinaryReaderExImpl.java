@@ -187,7 +187,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         // Perform full header parsing in case of portable object.
         if (!skipHdrCheck && (in.readByte() == GridPortableMarshaller.OBJ)) {
             // Ensure protocol is fine.
-            PortableUtils.checkProtocolVersion(in.readByte());
+            BinaryUtils.checkProtocolVersion(in.readByte());
 
             // Read header content.
             short flags = in.readShort();
@@ -200,16 +200,16 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             int offset = in.readInt();
 
             // Get trivial flag values.
-            userType = PortableUtils.isUserType(flags);
-            fieldIdLen = PortableUtils.fieldIdLength(flags);
-            fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
+            userType = BinaryUtils.isUserType(flags);
+            fieldIdLen = BinaryUtils.fieldIdLength(flags);
+            fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
 
             // Calculate footer borders and raw offset.
-            if (PortableUtils.hasSchema(flags)) {
+            if (BinaryUtils.hasSchema(flags)) {
                 // Schema exists.
                 footerStart = start + offset;
 
-                if (PortableUtils.hasRaw(flags)) {
+                if (BinaryUtils.hasRaw(flags)) {
                     footerLen = len - offset - 4;
                     rawOff = start + in.readIntPositioned(start + len - 4);
                 }
@@ -223,7 +223,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 footerStart = start + len;
                 footerLen = 0;
 
-                if (PortableUtils.hasRaw(flags))
+                if (BinaryUtils.hasRaw(flags))
                     rawOff = start + offset;
                 else
                     rawOff = start + len;
@@ -234,7 +234,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 int off = in.position();
 
                 // Registers class by type ID, at least locally if the cache is not ready yet.
-                typeId = ctx.descriptorForClass(PortableUtils.doReadClass(in, ctx, ldr, typeId0), false).typeId();
+                typeId = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false).typeId();
 
                 int clsNameLen = in.position() - off;
 
@@ -247,7 +247,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             }
 
             idMapper = userType ? ctx.userTypeIdMapper(typeId) : BinaryInternalIdMapper.defaultInstance();
-            schema = PortableUtils.hasSchema(flags) ? getOrCreateSchema() : null;
+            schema = BinaryUtils.hasSchema(flags) ? getOrCreateSchema() : null;
         }
         else {
             dataStart = 0;
@@ -288,7 +288,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     public Object unmarshal(int offset) throws BinaryObjectException {
         streamPosition(offset);
 
-        return in.position() >= 0 ? PortableUtils.unmarshal(in, ctx, ldr, this) : null;
+        return in.position() >= 0 ? BinaryUtils.unmarshal(in, ctx, ldr, this) : null;
     }
 
     /**
@@ -297,7 +297,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException In case of error.
      */
     @Nullable Object unmarshalField(String fieldName) throws BinaryObjectException {
-        return findFieldByName(fieldName) ? PortableUtils.unmarshal(in, ctx, ldr, this) : null;
+        return findFieldByName(fieldName) ? BinaryUtils.unmarshal(in, ctx, ldr, this) : null;
     }
 
     /**
@@ -306,7 +306,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException In case of error.
      */
     @Nullable Object unmarshalField(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) ? PortableUtils.unmarshal(in, ctx, ldr, this) : null;
+        return findFieldById(fieldId) ? BinaryUtils.unmarshal(in, ctx, ldr, this) : null;
     }
 
     /**
@@ -319,7 +319,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             Flag flag = checkFlag(MAP_ENTRY);
 
             if (flag == Flag.NORMAL)
-                return PortableUtils.doReadMapEntry(in, ctx, ldr, this, true);
+                return BinaryUtils.doReadMapEntry(in, ctx, ldr, this, true);
             else if (flag == Flag.HANDLE)
                 return readHandleField();
         }
@@ -337,7 +337,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (checkFlag(PORTABLE_OBJ) == Flag.NULL)
                 return null;
 
-            return new BinaryObjectImpl(ctx, PortableUtils.doReadByteArray(in), in.readInt());
+            return new BinaryObjectImpl(ctx, BinaryUtils.doReadByteArray(in), in.readInt());
         }
         else
             return null;
@@ -353,7 +353,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (checkFlag(CLASS) == Flag.NULL)
                 return null;
 
-            return PortableUtils.doReadClass(in, ctx, ldr);
+            return BinaryUtils.doReadClass(in, ctx, ldr);
         }
 
         return null;
@@ -391,7 +391,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return Field.
      */
     private <T> T readHandleField() {
-        int handlePos = PortableUtils.positionForHandle(in) - in.readInt();
+        int handlePos = BinaryUtils.positionForHandle(in) - in.readInt();
 
         Object obj = getHandle(handlePos);
 
@@ -400,7 +400,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             streamPosition(handlePos);
 
-            obj = PortableUtils.doReadObject(in, ctx, ldr, this);
+            obj = BinaryUtils.doReadObject(in, ctx, ldr, this);
 
             streamPosition(retPos);
         }
@@ -453,7 +453,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public byte[] readByteArray() throws BinaryObjectException {
         switch (checkFlag(BYTE_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadByteArray(in);
+                return BinaryUtils.doReadByteArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -509,7 +509,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public boolean[] readBooleanArray() throws BinaryObjectException {
         switch (checkFlag(BOOLEAN_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadBooleanArray(in);
+                return BinaryUtils.doReadBooleanArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -565,7 +565,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public short[] readShortArray() throws BinaryObjectException {
         switch (checkFlag(SHORT_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadShortArray(in);
+                return BinaryUtils.doReadShortArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -621,7 +621,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public char[] readCharArray() throws BinaryObjectException {
         switch (checkFlag(CHAR_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadCharArray(in);
+                return BinaryUtils.doReadCharArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -677,7 +677,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public int[] readIntArray() throws BinaryObjectException {
         switch (checkFlag(INT_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadIntArray(in);
+                return BinaryUtils.doReadIntArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -733,7 +733,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public long[] readLongArray() throws BinaryObjectException {
         switch (checkFlag(LONG_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadLongArray(in);
+                return BinaryUtils.doReadLongArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -789,7 +789,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public float[] readFloatArray() throws BinaryObjectException {
         switch (checkFlag(FLOAT_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadFloatArray(in);
+                return BinaryUtils.doReadFloatArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -845,7 +845,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public double[] readDoubleArray() throws BinaryObjectException {
         switch (checkFlag(DOUBLE_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadDoubleArray(in);
+                return BinaryUtils.doReadDoubleArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -871,7 +871,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override @Nullable public BigDecimal readDecimal() throws BinaryObjectException {
-        return checkFlagNoHandles(DECIMAL) == Flag.NORMAL ? PortableUtils.doReadDecimal(in) : null;
+        return checkFlagNoHandles(DECIMAL) == Flag.NORMAL ? BinaryUtils.doReadDecimal(in) : null;
     }
 
     /** {@inheritDoc} */
@@ -892,7 +892,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Override @Nullable public BigDecimal[] readDecimalArray() throws BinaryObjectException {
         switch (checkFlag(DECIMAL_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadDecimalArray(in);
+                return BinaryUtils.doReadDecimalArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -918,7 +918,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override @Nullable public String readString() throws BinaryObjectException {
-        return checkFlagNoHandles(STRING) == Flag.NORMAL ? PortableUtils.doReadString(in) : null;
+        return checkFlagNoHandles(STRING) == Flag.NORMAL ? BinaryUtils.doReadString(in) : null;
     }
 
     /** {@inheritDoc} */
@@ -939,7 +939,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Override @Nullable public String[] readStringArray() throws BinaryObjectException {
         switch (checkFlag(STRING_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadStringArray(in);
+                return BinaryUtils.doReadStringArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -965,7 +965,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override @Nullable public UUID readUuid() throws BinaryObjectException {
-        return checkFlagNoHandles(UUID) == Flag.NORMAL ? PortableUtils.doReadUuid(in) : null;
+        return checkFlagNoHandles(UUID) == Flag.NORMAL ? BinaryUtils.doReadUuid(in) : null;
     }
 
     /** {@inheritDoc} */
@@ -986,7 +986,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Override @Nullable public UUID[] readUuidArray() throws BinaryObjectException {
         switch (checkFlag(UUID_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadUuidArray(in);
+                return BinaryUtils.doReadUuidArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -1012,7 +1012,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override @Nullable public Date readDate() throws BinaryObjectException {
-        return checkFlagNoHandles(DATE) == Flag.NORMAL ? PortableUtils.doReadDate(in) : null;
+        return checkFlagNoHandles(DATE) == Flag.NORMAL ? BinaryUtils.doReadDate(in) : null;
     }
 
     /** {@inheritDoc} */
@@ -1033,7 +1033,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Override @Nullable public Date[] readDateArray() throws BinaryObjectException {
         switch (checkFlag(DATE_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadDateArray(in);
+                return BinaryUtils.doReadDateArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -1059,7 +1059,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override @Nullable public Timestamp readTimestamp() throws BinaryObjectException {
-        return checkFlagNoHandles(TIMESTAMP) == Flag.NORMAL ? PortableUtils.doReadTimestamp(in) : null;
+        return checkFlagNoHandles(TIMESTAMP) == Flag.NORMAL ? BinaryUtils.doReadTimestamp(in) : null;
     }
 
     /** {@inheritDoc} */
@@ -1080,7 +1080,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Override @Nullable public Timestamp[] readTimestampArray() throws BinaryObjectException {
         switch (checkFlag(TIMESTAMP_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadTimestampArray(in);
+                return BinaryUtils.doReadTimestampArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -1093,7 +1093,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T readObject(String fieldName) throws BinaryObjectException {
-        return findFieldByName(fieldName) ? (T)PortableUtils.doReadObject(in, ctx, ldr, this) : null;
+        return findFieldByName(fieldName) ? (T)BinaryUtils.doReadObject(in, ctx, ldr, this) : null;
     }
 
     /**
@@ -1102,17 +1102,17 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException In case of error.
      */
     @Nullable Object readObject(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) ? PortableUtils.doReadObject(in, ctx, ldr, this) : null;
+        return findFieldById(fieldId) ? BinaryUtils.doReadObject(in, ctx, ldr, this) : null;
     }
 
     /** {@inheritDoc} */
     @Override public Object readObject() throws BinaryObjectException {
-        return PortableUtils.doReadObject(in, ctx, ldr, this);
+        return BinaryUtils.doReadObject(in, ctx, ldr, this);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached() throws BinaryObjectException {
-        return PortableUtils.unmarshal(in, ctx, ldr, this, true);
+        return BinaryUtils.unmarshal(in, ctx, ldr, this, true);
     }
 
     /** {@inheritDoc} */
@@ -1133,7 +1133,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public Object[] readObjectArray() throws BinaryObjectException {
         switch (checkFlag(OBJ_ARR)) {
             case NORMAL:
-                return PortableUtils.doReadObjectArray(in, ctx, ldr, this, true);
+                return BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
 
             case HANDLE:
                 return readHandleField();
@@ -1173,12 +1173,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private Enum<?> readEnum0(@Nullable Class<?> cls) throws BinaryObjectException {
         if (checkFlagNoHandles(ENUM) == Flag.NORMAL) {
             // Read class even if we know it in advance to set correct stream position.
-            Class<?> cls0 = PortableUtils.doReadClass(in, ctx, ldr);
+            Class<?> cls0 = BinaryUtils.doReadClass(in, ctx, ldr);
 
             if (cls == null)
                 cls = cls0;
 
-            return PortableUtils.doReadEnum(in, cls);
+            return BinaryUtils.doReadEnum(in, cls);
         }
         else
             return null;
@@ -1216,12 +1216,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         switch (checkFlag(ENUM_ARR)) {
             case NORMAL:
                 // Read class even if we know it in advance to set correct stream position.
-                Class<?> cls0 = PortableUtils.doReadClass(in, ctx, ldr);
+                Class<?> cls0 = BinaryUtils.doReadClass(in, ctx, ldr);
 
                 if (cls == null)
                     cls = cls0;
 
-                return PortableUtils.doReadEnumArray(in, ctx, ldr, cls);
+                return BinaryUtils.doReadEnumArray(in, ctx, ldr, cls);
 
             case HANDLE:
                 return readHandleField();
@@ -1275,7 +1275,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         throws BinaryObjectException {
         switch (checkFlag(COL)) {
             case NORMAL:
-                return (Collection)PortableUtils.doReadCollection(in, ctx, ldr, this, true, cls);
+                return (Collection)BinaryUtils.doReadCollection(in, ctx, ldr, this, true, cls);
 
             case HANDLE:
                 return readHandleField();
@@ -1327,7 +1327,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private Map readMap0(@Nullable Class<? extends Map> cls) throws BinaryObjectException {
         switch (checkFlag(MAP)) {
             case NORMAL:
-                return (Map)PortableUtils.doReadMap(in, ctx, ldr, this, true, cls);
+                return (Map)BinaryUtils.doReadMap(in, ctx, ldr, this, true, cls);
 
             case HANDLE:
                 return readHandleField();
@@ -1354,7 +1354,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         else if (flag == HANDLE)
             return Flag.HANDLE;
 
-        int pos = PortableUtils.positionForHandle(in);
+        int pos = BinaryUtils.positionForHandle(in);
 
         throw new BinaryObjectException("Unexpected flag value [pos=" + pos + ", expected=" + expFlag +
             ", actual=" + flag + ']');
@@ -1375,7 +1375,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         else if (flag == NULL)
             return Flag.NULL;
 
-        int pos = PortableUtils.positionForHandle(in);
+        int pos = BinaryUtils.positionForHandle(in);
 
         throw new BinaryObjectException("Unexpected flag value [pos=" + pos + ", expected=" + expFlag +
             ", actual=" + flag + ']');
@@ -1419,7 +1419,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                     streamPosition(handlePos);
 
-                    obj = PortableUtils.doReadObject(in, ctx, ldr, this);
+                    obj = BinaryUtils.doReadObject(in, ctx, ldr, this);
 
                     streamPosition(retPos);
                 }
@@ -1481,117 +1481,117 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case DECIMAL:
-                obj = PortableUtils.doReadDecimal(in);
+                obj = BinaryUtils.doReadDecimal(in);
 
                 break;
 
             case STRING:
-                obj = PortableUtils.doReadString(in);
+                obj = BinaryUtils.doReadString(in);
 
                 break;
 
             case UUID:
-                obj = PortableUtils.doReadUuid(in);
+                obj = BinaryUtils.doReadUuid(in);
 
                 break;
 
             case DATE:
-                obj = PortableUtils.doReadDate(in);
+                obj = BinaryUtils.doReadDate(in);
 
                 break;
 
             case TIMESTAMP:
-                obj = PortableUtils.doReadTimestamp(in);
+                obj = BinaryUtils.doReadTimestamp(in);
 
                 break;
 
             case BYTE_ARR:
-                obj = PortableUtils.doReadByteArray(in);
+                obj = BinaryUtils.doReadByteArray(in);
 
                 break;
 
             case SHORT_ARR:
-                obj = PortableUtils.doReadShortArray(in);
+                obj = BinaryUtils.doReadShortArray(in);
 
                 break;
 
             case INT_ARR:
-                obj = PortableUtils.doReadIntArray(in);
+                obj = BinaryUtils.doReadIntArray(in);
 
                 break;
 
             case LONG_ARR:
-                obj = PortableUtils.doReadLongArray(in);
+                obj = BinaryUtils.doReadLongArray(in);
 
                 break;
 
             case FLOAT_ARR:
-                obj = PortableUtils.doReadFloatArray(in);
+                obj = BinaryUtils.doReadFloatArray(in);
 
                 break;
 
             case DOUBLE_ARR:
-                obj = PortableUtils.doReadDoubleArray(in);
+                obj = BinaryUtils.doReadDoubleArray(in);
 
                 break;
 
             case CHAR_ARR:
-                obj = PortableUtils.doReadCharArray(in);
+                obj = BinaryUtils.doReadCharArray(in);
 
                 break;
 
             case BOOLEAN_ARR:
-                obj = PortableUtils.doReadBooleanArray(in);
+                obj = BinaryUtils.doReadBooleanArray(in);
 
                 break;
 
             case DECIMAL_ARR:
-                obj = PortableUtils.doReadDecimalArray(in);
+                obj = BinaryUtils.doReadDecimalArray(in);
 
                 break;
 
             case STRING_ARR:
-                obj = PortableUtils.doReadStringArray(in);
+                obj = BinaryUtils.doReadStringArray(in);
 
                 break;
 
             case UUID_ARR:
-                obj = PortableUtils.doReadUuidArray(in);
+                obj = BinaryUtils.doReadUuidArray(in);
 
                 break;
 
             case DATE_ARR:
-                obj = PortableUtils.doReadDateArray(in);
+                obj = BinaryUtils.doReadDateArray(in);
 
                 break;
 
             case TIMESTAMP_ARR:
-                obj = PortableUtils.doReadTimestampArray(in);
+                obj = BinaryUtils.doReadTimestampArray(in);
 
                 break;
 
             case OBJ_ARR:
-                obj = PortableUtils.doReadObjectArray(in, ctx, ldr, this, true);
+                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
 
                 break;
 
             case COL:
-                obj = PortableUtils.doReadCollection(in, ctx, ldr, this, true, null);
+                obj = BinaryUtils.doReadCollection(in, ctx, ldr, this, true, null);
 
                 break;
 
             case MAP:
-                obj = PortableUtils.doReadMap(in, ctx, ldr, this, true, null);
+                obj = BinaryUtils.doReadMap(in, ctx, ldr, this, true, null);
 
                 break;
 
             case MAP_ENTRY:
-                obj = PortableUtils.doReadMapEntry(in, ctx, ldr, this, true);
+                obj = BinaryUtils.doReadMapEntry(in, ctx, ldr, this, true);
 
                 break;
 
             case PORTABLE_OBJ:
-                obj = PortableUtils.doReadPortableObject(in, ctx);
+                obj = BinaryUtils.doReadPortableObject(in, ctx);
 
                 ((BinaryObjectImpl)obj).context(ctx);
 
@@ -1601,22 +1601,22 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case ENUM:
-                obj = PortableUtils.doReadEnum(in, PortableUtils.doReadClass(in, ctx, ldr));
+                obj = BinaryUtils.doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
 
                 break;
 
             case ENUM_ARR:
-                obj = PortableUtils.doReadEnumArray(in, ctx, ldr, PortableUtils.doReadClass(in, ctx, ldr));
+                obj = BinaryUtils.doReadEnumArray(in, ctx, ldr, BinaryUtils.doReadClass(in, ctx, ldr));
 
                 break;
 
             case CLASS:
-                obj = PortableUtils.doReadClass(in, ctx, ldr);
+                obj = BinaryUtils.doReadClass(in, ctx, ldr);
 
                 break;
 
             case OPTM_MARSH:
-                obj = PortableUtils.doReadOptimized(in, ctx, ldr);
+                obj = BinaryUtils.doReadOptimized(in, ctx, ldr);
 
                 break;
 
@@ -1657,7 +1657,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         BinarySchema schema = ctx.schemaRegistry(typeId).schema(schemaId);
 
         if (schema == null) {
-            if (fieldIdLen != PortableUtils.FIELD_ID_LEN) {
+            if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
                 BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId);
 
                 if (type == null || type.metadata() == null)
@@ -1693,7 +1693,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return Schema.
      */
     private BinarySchema createSchema() {
-        assert fieldIdLen == PortableUtils.FIELD_ID_LEN;
+        assert fieldIdLen == BinaryUtils.FIELD_ID_LEN;
 
         BinarySchema.Builder builder = BinarySchema.Builder.newBuilder();
 
@@ -1705,7 +1705,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             builder.addField(fieldId);
 
-            searchPos += PortableUtils.FIELD_ID_LEN + fieldOffsetLen;
+            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffsetLen;
         }
 
         return builder.build();
@@ -1841,7 +1841,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         if (order != BinarySchema.ORDER_NOT_FOUND) {
             int offsetPos = footerStart + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
 
-            int pos = start + PortableUtils.fieldOffsetRelative(in, offsetPos, fieldOffsetLen);
+            int pos = start + BinaryUtils.fieldOffsetRelative(in, offsetPos, fieldOffsetLen);
 
             streamPosition(pos);
 
@@ -1859,7 +1859,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     private boolean trySetSystemFieldPosition(int id) {
         // System types are never written with compact footers because they do not have metadata.
-        assert fieldIdLen == PortableUtils.FIELD_ID_LEN;
+        assert fieldIdLen == BinaryUtils.FIELD_ID_LEN;
 
         int searchPos = footerStart;
         int searchTail = searchPos + footerLen;
@@ -1871,7 +1871,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             int id0 = in.readIntPositioned(searchPos);
 
             if (id0 == id) {
-                int pos = start + PortableUtils.fieldOffsetRelative(in, searchPos + PortableUtils.FIELD_ID_LEN,
+                int pos = start + BinaryUtils.fieldOffsetRelative(in, searchPos + BinaryUtils.FIELD_ID_LEN,
                     fieldOffsetLen);
 
                 streamPosition(pos);
@@ -1879,7 +1879,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 return true;
             }
 
-            searchPos += PortableUtils.FIELD_ID_LEN + fieldOffsetLen;
+            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffsetLen;
         }
     }
 

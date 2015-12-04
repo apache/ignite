@@ -118,7 +118,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_AR
 /**
  * Portable utils.
  */
-public class PortableUtils {
+public class BinaryUtils {
     /** */
     public static final Map<Class<?>, Byte> PLAIN_CLASS_TO_FLAG = new HashMap<>();
 

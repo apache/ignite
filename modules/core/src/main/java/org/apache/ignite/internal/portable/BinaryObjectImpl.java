@@ -269,16 +269,16 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         short flags = BinaryPrimitives.readShort(arr, start + GridPortableMarshaller.FLAGS_POS);
 
-        int fieldIdLen = PortableUtils.isCompactFooter(flags) ? 0 : PortableUtils.FIELD_ID_LEN;
-        int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
+        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
+        int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
 
         int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
 
         int fieldPos;
 
-        if (fieldOffsetLen == PortableUtils.OFFSET_1)
+        if (fieldOffsetLen == BinaryUtils.OFFSET_1)
             fieldPos = start + ((int)BinaryPrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffsetLen == PortableUtils.OFFSET_2)
+        else if (fieldOffsetLen == BinaryUtils.OFFSET_2)
             fieldPos = start + ((int)BinaryPrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + BinaryPrimitives.readInt(arr, fieldOffsetPos);
@@ -390,7 +390,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             default:
-                val = PortableUtils.unmarshal(BinaryHeapInputStream.create(arr, fieldPos), ctx, null);
+                val = BinaryUtils.unmarshal(BinaryHeapInputStream.create(arr, fieldPos), ctx, null);
 
                 break;
         }

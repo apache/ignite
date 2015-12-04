@@ -48,7 +48,7 @@ public abstract class BinaryFieldAccessor {
      * @return Accessor.
      */
     public static BinaryFieldAccessor create(Field field, int id) {
-        BinaryWriteMode mode = PortableUtils.mode(field.getType());
+        BinaryWriteMode mode = BinaryUtils.mode(field.getType());
 
         switch (mode) {
             case P_BYTE:
@@ -859,7 +859,7 @@ public abstract class BinaryFieldAccessor {
          */
         protected BinaryWriteMode mode(Object val) {
             return dynamic ?
-                val == null ? BinaryWriteMode.OBJECT : PortableUtils.mode(val.getClass()) :
+                val == null ? BinaryWriteMode.OBJECT : BinaryUtils.mode(val.getClass()) :
                 mode;
         }
     }

@@ -71,7 +71,7 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
     @Override public Object get(int idx) {
         ensureDelegateInit();
 
-        return PortableUtils.unwrapLazy(delegate.get(idx));
+        return BinaryUtils.unwrapLazy(delegate.get(idx));
     }
 
     /** {@inheritDoc} */
@@ -92,14 +92,14 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
     @Override public Object set(int idx, Object element) {
         ensureDelegateInit();
 
-        return PortableUtils.unwrapLazy(delegate.set(idx, element));
+        return BinaryUtils.unwrapLazy(delegate.set(idx, element));
     }
 
     /** {@inheritDoc} */
     @Override public Object remove(int idx) {
         ensureDelegateInit();
 
-        return PortableUtils.unwrapLazy(delegate.remove(idx));
+        return BinaryUtils.unwrapLazy(delegate.remove(idx));
     }
 
     /** {@inheritDoc} */

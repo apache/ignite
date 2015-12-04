@@ -80,7 +80,7 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
             delegate = new LinkedHashMap<>();
 
             for (int i = 0; i < size; i++)
-                delegate.put(PortableUtils.unwrapLazy(reader.parseValue()), reader.parseValue());
+                delegate.put(BinaryUtils.unwrapLazy(reader.parseValue()), reader.parseValue());
         }
     }
 
@@ -153,21 +153,21 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
     @Override public Object get(Object key) {
         ensureDelegateInit();
 
-        return PortableUtils.unwrapLazy(delegate.get(key));
+        return BinaryUtils.unwrapLazy(delegate.get(key));
     }
 
     /** {@inheritDoc} */
     @Override public Object put(Object key, Object val) {
         ensureDelegateInit();
 
-        return PortableUtils.unwrapLazy(delegate.put(key, val));
+        return BinaryUtils.unwrapLazy(delegate.put(key, val));
     }
 
     /** {@inheritDoc} */
     @Override public Object remove(Object key) {
         ensureDelegateInit();
 
-        return PortableUtils.unwrapLazy(delegate.remove(key));
+        return BinaryUtils.unwrapLazy(delegate.remove(key));
     }
 
     /** {@inheritDoc} */

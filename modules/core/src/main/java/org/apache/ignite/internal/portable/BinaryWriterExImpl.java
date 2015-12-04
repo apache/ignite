@@ -112,7 +112,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     private BinaryWriterHandles handles;
 
     /** Schema ID. */
-    private int schemaId = PortableUtils.schemaInitialId();
+    private int schemaId = BinaryUtils.schemaInitialId();
 
     /** Amount of written fields. */
     private int fieldCnt;
@@ -288,11 +288,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         if (userType) {
             if (ctx.isCompactFooter()) {
-                flags = PortableUtils.FLAG_USR_TYP | PortableUtils.FLAG_COMPACT_FOOTER;
+                flags = BinaryUtils.FLAG_USR_TYP | BinaryUtils.FLAG_COMPACT_FOOTER;
                 useCompactFooter = true;
             }
             else {
-                flags = PortableUtils.FLAG_USR_TYP;
+                flags = BinaryUtils.FLAG_USR_TYP;
                 useCompactFooter = false;
             }
         }
@@ -309,18 +309,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             offset = out.position() - start;
 
             // Write the schema.
-            flags |= PortableUtils.FLAG_HAS_SCHEMA;
+            flags |= BinaryUtils.FLAG_HAS_SCHEMA;
 
             int offsetByteCnt = schema.write(out, fieldCnt, useCompactFooter);
 
-            if (offsetByteCnt == PortableUtils.OFFSET_1)
-                flags |= PortableUtils.FLAG_OFFSET_ONE_BYTE;
-            else if (offsetByteCnt == PortableUtils.OFFSET_2)
-                flags |= PortableUtils.FLAG_OFFSET_TWO_BYTES;
+            if (offsetByteCnt == BinaryUtils.OFFSET_1)
+                flags |= BinaryUtils.FLAG_OFFSET_ONE_BYTE;
+            else if (offsetByteCnt == BinaryUtils.OFFSET_2)
+                flags |= BinaryUtils.FLAG_OFFSET_TWO_BYTES;
 
             // Write raw offset if needed.
             if (rawOffPos != 0) {
-                flags |= PortableUtils.FLAG_HAS_RAW;
+                flags |= BinaryUtils.FLAG_HAS_RAW;
 
                 out.writeInt(rawOffPos - start);
             }
@@ -331,7 +331,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 offset = rawOffPos - start;
 
                 // If there is no schema, we are free to write raw offset to schema offset.
-                flags |= PortableUtils.FLAG_HAS_RAW;
+                flags |= BinaryUtils.FLAG_HAS_RAW;
             }
             else {
                 finalSchemaId = 0;
@@ -1723,7 +1723,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         int fieldOff = out.position() - start;
 
         // Advance schema hash.
-        schemaId = PortableUtils.updateSchemaId(schemaId, fieldId);
+        schemaId = BinaryUtils.updateSchemaId(schemaId, fieldId);
 
         schema.push(fieldId, fieldOff);
 

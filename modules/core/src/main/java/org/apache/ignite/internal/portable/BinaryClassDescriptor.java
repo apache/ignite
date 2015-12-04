@@ -165,7 +165,7 @@ public class BinaryClassDescriptor {
             if (cls == BinaryEnumObjectImpl.class)
                 mode = BinaryWriteMode.PORTABLE_ENUM;
             else
-                mode = serializer != null ? BinaryWriteMode.PORTABLE : PortableUtils.mode(cls);
+                mode = serializer != null ? BinaryWriteMode.PORTABLE : BinaryUtils.mode(cls);
         }
 
         switch (mode) {
