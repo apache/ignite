@@ -26,7 +26,7 @@ import org.apache.ignite.binary.BinaryObject;
 /**
  *
  */
-public class CacheDefaultPortableAffinityKeyMapper extends GridCacheDefaultAffinityKeyMapper {
+public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinityKeyMapper {
     /** */
     private static final long serialVersionUID = 0L;
 
