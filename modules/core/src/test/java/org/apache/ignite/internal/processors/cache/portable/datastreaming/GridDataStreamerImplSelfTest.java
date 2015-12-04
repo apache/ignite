@@ -55,7 +55,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     private static final int KEYS_COUNT = 1000;
 
     /** Flag indicating should be cache configured with binary or not.  */
-    private static boolean portables;
+    private static boolean binaries;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -66,7 +66,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        if (portables) {
+        if (binaries) {
             BinaryMarshaller marsh = new BinaryMarshaller();
 
             cfg.setMarshaller(marsh);
@@ -101,7 +101,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      */
     public void testAddDataFromMap() throws Exception {
         try {
-            portables = false;
+            binaries = false;
 
             startGrids(2);
 
@@ -149,7 +149,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      */
     public void testAddMissingBinary() throws Exception {
         try {
-            portables = true;
+            binaries = true;
 
             startGrids(2);
 
@@ -184,7 +184,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      */
     public void testAddBinaryDataFromMap() throws Exception {
         try {
-            portables = true;
+            binaries = true;
 
             startGrids(2);
 

@@ -1003,7 +1003,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @return Portables.
      */
-    private IgniteBinary portables() {
+    private IgniteBinary binaries() {
         return grid(0).binary();
     }
 
@@ -1012,21 +1012,21 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
      * @return Portable object.
      */
     private BinaryObject toBinary(Object obj) {
-        return portables().toBinary(obj);
+        return binaries().toBinary(obj);
     }
 
     /**
      * @return Builder.
      */
     private BinaryObjectBuilder builder(String clsName) {
-        return portables().builder(clsName);
+        return binaries().builder(clsName);
     }
 
     /**
      * @return Builder.
      */
     private BinaryObjectBuilderImpl builder(BinaryObject obj) {
-        return (BinaryObjectBuilderImpl)portables().builder(obj);
+        return (BinaryObjectBuilderImpl)binaries().builder(obj);
     }
 
     /**

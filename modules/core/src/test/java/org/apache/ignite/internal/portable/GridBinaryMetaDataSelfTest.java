@@ -76,7 +76,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
     /**
      * @return Portables API.
      */
-    protected IgniteBinary portables() {
+    protected IgniteBinary binaries() {
         return grid().binary();
     }
 
@@ -84,9 +84,9 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetAll() throws Exception {
-        portables().toBinary(new TestObject2());
+        binaries().toBinary(new TestObject2());
 
-        Collection<BinaryType> metas = portables().types();
+        Collection<BinaryType> metas = binaries().types();
 
         assertEquals(2, metas.size());
 
@@ -150,16 +150,16 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoConfiguration() throws Exception {
-        portables().toBinary(new TestObject3());
+        binaries().toBinary(new TestObject3());
 
-        assertNotNull(portables().type(TestObject3.class));
+        assertNotNull(binaries().type(TestObject3.class));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testReflection() throws Exception {
-        BinaryType meta = portables().type(TestObject1.class);
+        BinaryType meta = binaries().type(TestObject1.class);
 
         assertNotNull(meta);
 
@@ -190,9 +190,9 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryMarshalAware() throws Exception {
-        portables().toBinary(new TestObject2());
+        binaries().toBinary(new TestObject2());
 
-        BinaryType meta = portables().type(TestObject2.class);
+        BinaryType meta = binaries().type(TestObject2.class);
 
         assertNotNull(meta);
 
@@ -223,13 +223,13 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMerge() throws Exception {
-        portables().toBinary(new TestObject2());
+        binaries().toBinary(new TestObject2());
 
         idx = 1;
 
-        portables().toBinary(new TestObject2());
+        binaries().toBinary(new TestObject2());
 
-        BinaryType meta = portables().type(TestObject2.class);
+        BinaryType meta = binaries().type(TestObject2.class);
 
         assertNotNull(meta);
 
@@ -274,7 +274,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
         obj.decVal = BigDecimal.ZERO;
         obj.decArrVal = new BigDecimal[] { BigDecimal.ONE };
 
-        BinaryObject po = portables().toBinary(obj);
+        BinaryObject po = binaries().toBinary(obj);
 
         info(po.toString());
 

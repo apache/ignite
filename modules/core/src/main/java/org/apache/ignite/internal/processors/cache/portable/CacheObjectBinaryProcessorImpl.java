@@ -138,7 +138,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** */
     @GridToStringExclude
-    private IgniteBinary portables;
+    private IgniteBinary binaries;
 
     /** Metadata updates collected before metadata cache is initialized. */
     private final Map<Integer, BinaryMetadata> metaBuf = new ConcurrentHashMap<>();
@@ -214,7 +214,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             portableMarsh = new InternalBinaryMarshaller(portableCtx);
 
-            portables = new IgniteBinaryImpl(ctx, this);
+            binaries = new IgniteBinaryImpl(ctx, this);
         }
     }
 
@@ -575,7 +575,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public IgniteBinary binary() throws IgniteException {
-        return portables;
+        return binaries;
     }
 
     /** {@inheritDoc} */
