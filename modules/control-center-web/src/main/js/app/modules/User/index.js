@@ -30,13 +30,21 @@ angular
 		// No-op.
 	} 
 
-	this.$get = ['$q', '$rootScope', '$http', ($q, $root, $http) => {
+	this.$get = ['$q', '$injector', '$rootScope', '$state', '$http', ($q, $injector, $root, $state, $http) => {
 		if (_user)
 			$root.user = _user;
 
 		return {
 			read() {
 				return $http.post('/api/v1/user').then(({data}) => {
+					if (_.isEmpty(data)) {
+						var Auth = $injector.get('Auth');
+
+						Auth.authorized = false;
+
+						$state.go('login');
+					}
+
 					try {
 						localStorage.user = JSON.stringify(data);
 					} catch(ignore) {

@@ -22,33 +22,36 @@ angular
 	
 ])
 .provider('Auth', function () {
-	var _authorized = false;
+	var _auth = false;
 
     try {
-        _authorized = localStorage.authorized === 'true';
+        _auth = localStorage.authorized === 'true';
     } catch (ignore) {
         // No-op.
     }
 
-    function authorized (value) {
+    function _authorized (value) {
         try {
-            return _authorized = localStorage.authorized = !!value;
+            return _auth = localStorage.authorized = !!value;
         } catch (ignore) {
-            return _authorized = !!value;
+            return _auth = !!value;
         }
     }
 
     this.$get = ['$http', '$rootScope', '$state', '$common', 'User', function($http, $root, $state, $common, User) {
     	return {
     		get authorized () {
-    			return _authorized;
+    			return _auth;
     		},
+            set authorized (auth) {
+                _authorized(auth);
+            },
             auth(action, userInfo) {
                 $http.post('/api/v1/' + action, userInfo)
                     .then(User.read)
                     .then(function (user) {
                         if (action != 'password/forgot') {
-                            authorized(true);
+                            _authorized(true);
 
                             $root.$broadcast('user', user);
 
@@ -65,7 +68,7 @@ angular
 					.then(function () {
                         User.clean();
 
-                        authorized(false);
+                        _authorized(false);
 
 						$state.go('login');
 					})
