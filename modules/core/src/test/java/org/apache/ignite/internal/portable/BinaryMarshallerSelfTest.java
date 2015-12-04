@@ -78,7 +78,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
 
-import static org.apache.ignite.internal.portable.streams.PortableMemoryAllocator.INSTANCE;
+import static org.apache.ignite.internal.portable.streams.BinaryMemoryAllocator.INSTANCE;
 import static org.junit.Assert.assertArrayEquals;
 
 /**

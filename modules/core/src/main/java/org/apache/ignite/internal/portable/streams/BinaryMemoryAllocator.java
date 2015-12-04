@@ -20,9 +20,9 @@ package org.apache.ignite.internal.portable.streams;
 /**
  * Thread-local memory allocator.
  */
-public final class PortableMemoryAllocator {
+public final class BinaryMemoryAllocator {
     /** Memory allocator instance. */
-    public static final PortableMemoryAllocator INSTANCE = new PortableMemoryAllocator();
+    public static final BinaryMemoryAllocator INSTANCE = new BinaryMemoryAllocator();
 
     /** Holders. */
     private static final ThreadLocal<PortableMemoryAllocatorChunk> holders = new ThreadLocal<>();
@@ -30,7 +30,7 @@ public final class PortableMemoryAllocator {
     /**
      * Ensures singleton.
      */
-    private PortableMemoryAllocator() {
+    private BinaryMemoryAllocator() {
         // No-op.
     }
 
