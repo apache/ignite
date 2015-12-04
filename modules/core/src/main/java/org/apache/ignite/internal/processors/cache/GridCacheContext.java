@@ -1693,7 +1693,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Keep portable flag.
      */
-    public boolean keepPortable() {
+    public boolean keepBinary() {
         CacheOperationContext opCtx = operationContextPerCall();
 
         return opCtx != null && opCtx.isKeepBinary();
@@ -1730,34 +1730,34 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Unwraps collection.
      *
      * @param col Collection to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep portable flag.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
-        return cacheObjCtx.unwrapPortablesIfNeeded(col, keepPortable);
+    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepBinary) {
+        return cacheObjCtx.unwrapPortablesIfNeeded(col, keepBinary);
     }
 
     /**
      * Unwraps object for binary.
      *
      * @param o Object to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep portable flag.
      * @return Unwrapped object.
      */
-    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
-        return cacheObjCtx.unwrapPortableIfNeeded(o, keepPortable);
+    public Object unwrapPortableIfNeeded(Object o, boolean keepBinary) {
+        return cacheObjCtx.unwrapPortableIfNeeded(o, keepBinary);
     }
 
     /**
      * Unwraps object for binary.
      *
      * @param o Object to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep portable flag.
      * @param cpy Copy value flag.
      * @return Unwrapped object.
      */
-    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable, boolean cpy) {
-        return cacheObjCtx.unwrapPortableIfNeeded(o, keepPortable, cpy);
+    public Object unwrapPortableIfNeeded(Object o, boolean keepBinary, boolean cpy) {
+        return cacheObjCtx.unwrapPortableIfNeeded(o, keepBinary, cpy);
     }
 
     /**

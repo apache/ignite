@@ -222,7 +222,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         if (cache == null)
             throw new IllegalArgumentException("Cache doesn't exist: " + name);
 
-        return new PlatformCache(platformCtx, cache.keepPortable(), false);
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
 
     /** {@inheritDoc} */
@@ -231,7 +231,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         assert cache != null;
 
-        return new PlatformCache(platformCtx, cache.keepPortable(), false);
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
 
     /** {@inheritDoc} */
@@ -240,7 +240,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         assert cache != null;
 
-        return new PlatformCache(platformCtx, cache.keepPortable(), false);
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
 
     /** {@inheritDoc} */
@@ -249,13 +249,13 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepPortable)
+    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepBinary)
         throws IgniteCheckedException {
         IgniteDataStreamer ldr = ctx.dataStream().dataStreamer(cacheName);
 
         ldr.keepBinary(true);
 
-        return new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepPortable);
+        return new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepBinary);
     }
 
     /** {@inheritDoc} */

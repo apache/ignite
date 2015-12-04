@@ -62,7 +62,7 @@ public abstract class GridCachePortableStoreAbstractSelfTest extends GridCommonA
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
         cacheCfg.setCacheStoreFactory(singletonFactory(STORE));
-        cacheCfg.setKeepBinaryInStore(keepPortableInStore());
+        cacheCfg.setKeepBinaryInStore(keepBinaryInStore());
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);
@@ -81,7 +81,7 @@ public abstract class GridCachePortableStoreAbstractSelfTest extends GridCommonA
     /**
      * @return Keep binary in store flag.
      */
-    protected abstract boolean keepPortableInStore();
+    protected abstract boolean keepBinaryInStore();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

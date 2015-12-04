@@ -79,7 +79,7 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepPortable) throws IgniteCheckedException {
+    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepBinary) throws IgniteCheckedException {
         return null;
     }
 

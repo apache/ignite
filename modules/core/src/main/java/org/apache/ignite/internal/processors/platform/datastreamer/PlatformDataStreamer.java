@@ -67,7 +67,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
     private final DataStreamerImpl ldr;
 
     /** Portable flag. */
-    private final boolean keepPortable;
+    private final boolean keepBinary;
 
     /** Topology update event listener. */
     private volatile GridLocalEventListener lsnr;
@@ -79,12 +79,12 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
      * @param ldr Data streamer.
      */
     public PlatformDataStreamer(PlatformContext platformCtx, String cacheName, DataStreamerImpl ldr,
-        boolean keepPortable) {
+        boolean keepBinary) {
         super(platformCtx);
 
         this.cacheName = cacheName;
         this.ldr = ldr;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc}  */
@@ -132,7 +132,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
                 Object rec = reader.readObjectDetached();
 
-                ldr.receiver(platformCtx.createStreamReceiver(rec, ptr, keepPortable));
+                ldr.receiver(platformCtx.createStreamReceiver(rec, ptr, keepBinary));
 
                 return TRUE;
 

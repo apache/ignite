@@ -221,7 +221,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
             }
 
             // Read random keys. Take values as PortableObject.
-            IgniteCache<Integer, BinaryObject> c2 = ((IgniteCacheProxy)c).keepPortable();
+            IgniteCache<Integer, BinaryObject> c2 = ((IgniteCacheProxy)c).keepBinary();
 
             for (int i = 0; i < 100; i ++) {
                 Integer k = rnd.nextInt(KEYS_COUNT);

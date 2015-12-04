@@ -102,11 +102,11 @@ public interface PlatformProcessor extends GridProcessor {
      * Get data streamer.
      *
      * @param cacheName Cache name.
-     * @param keepPortable Portable flag.
+     * @param keepBinary Portable flag.
      * @return Data streamer.
      * @throws IgniteCheckedException If failed.
      */
-    public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepPortable) throws IgniteCheckedException;
+    public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Get transactions.

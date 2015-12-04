@@ -154,7 +154,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         UUID subjId,
         String cloClsName,
         String taskName,
-        boolean keepPortable)
+        boolean keepBinary)
     {
         addEvent(part,
             key,
@@ -168,7 +168,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             subjId,
             cloClsName,
             taskName,
-            keepPortable);
+            keepBinary);
     }
 
     /**
@@ -246,7 +246,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         UUID subjId,
         @Nullable String cloClsName,
         @Nullable String taskName,
-        boolean keepPortable
+        boolean keepBinary
     ) {
         assert key != null || type == EVT_CACHE_STARTED || type == EVT_CACHE_STOPPED;
 
@@ -265,16 +265,16 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                     "(try to increase topology history size configuration property of configured " +
                     "discovery SPI): " + evtNodeId);
 
-            keepPortable = keepPortable || forceKeepBinary;
+            keepBinary = keepBinary || forceKeepBinary;
 
             Object key0;
             Object val0;
             Object oldVal0;
 
             try {
-                key0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepPortable, false);
-                val0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(newVal, keepPortable, false);
-                oldVal0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(oldVal, keepPortable, false);
+                key0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepBinary, false);
+                val0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(newVal, keepBinary, false);
+                oldVal0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(oldVal, keepBinary, false);
             }
             catch (Exception e) {
                 if (!cctx.cacheObjectContext().processor().isPortableEnabled(cctx.config()))

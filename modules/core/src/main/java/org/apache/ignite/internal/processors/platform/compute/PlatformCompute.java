@@ -258,7 +258,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      */
     protected Object executeJavaTask(BinaryRawReaderEx reader, boolean async) {
         String taskName = reader.readString();
-        boolean keepPortable = reader.readBoolean();
+        boolean keepBinary = reader.readBoolean();
         Object arg = reader.readObjectDetached();
 
         Collection<UUID> nodeIds = readNodeIds(reader);
@@ -268,7 +268,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
         if (async)
             compute0 = compute0.withAsync();
 
-        if (!keepPortable && arg instanceof BinaryObjectImpl)
+        if (!keepBinary && arg instanceof BinaryObjectImpl)
             arg = ((BinaryObject)arg).deserialize();
 
         Object res = compute0.execute(taskName, arg);

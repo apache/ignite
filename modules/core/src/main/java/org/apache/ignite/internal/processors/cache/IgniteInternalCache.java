@@ -186,14 +186,14 @@ import org.jetbrains.annotations.Nullable;
  * You won't be able to work with deserialized form if class definition for the {@code Value} is not on
  * classpath. Even if you have the class definition, you should always avoid full deserialization if it's not
  * needed for performance reasons. To work with portable format directly you should create special projection
- * using {@link #keepPortable()} method:
+ * using {@link #keepBinary()} method:
  * <pre>
  * IgniteInternalCache<Integer, GridPortableObject> prj = Ignition.grid().cache(null).keepBinary();
  *
  * // Value is not deserialized and returned in portable format.
  * GridPortableObject po = prj.get(1);
  * </pre>
- * See {@link #keepPortable()} method JavaDoc for more details.
+ * See {@link #keepBinary()} method JavaDoc for more details.
  */
 public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
@@ -261,7 +261,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @return New internal cache instance for portable objects.
      */
-    public <K1, V1> IgniteInternalCache<K1, V1> keepPortable();
+    public <K1, V1> IgniteInternalCache<K1, V1> keepBinary();
 
     /**
      * Returns {@code true} if this map contains no key-value mappings.

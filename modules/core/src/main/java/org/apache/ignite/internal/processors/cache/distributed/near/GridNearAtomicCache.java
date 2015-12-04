@@ -225,7 +225,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         @Nullable byte[] valBytes,
         long ttl,
         long expireTime,
-        boolean keepPortable,
+        boolean keepBinary,
         UUID nodeId,
         UUID subjId,
         String taskName
@@ -251,7 +251,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         /*write-through*/false,
                         /*read-through*/false,
                         /*retval*/false,
-                        keepPortable,
+                        keepBinary,
                         /*expiry policy*/null,
                         /*event*/true,
                         /*metrics*/true,

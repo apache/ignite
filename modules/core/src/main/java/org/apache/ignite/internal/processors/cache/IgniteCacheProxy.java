@@ -322,7 +322,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public <K1, V1> IgniteCache<K1, V1> withKeepBinary() {
-        return keepPortable();
+        return keepBinary();
     }
 
     /** {@inheritDoc} */
@@ -1741,7 +1741,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Projection for portable objects.
      */
     @SuppressWarnings("unchecked")
-    public <K1, V1> IgniteCache<K1, V1> keepPortable() {
+    public <K1, V1> IgniteCache<K1, V1> keepBinary() {
         GridCacheGateway<K, V> gate = this.gate;
 
         CacheOperationContext prev = onEnter(gate, opCtx);
