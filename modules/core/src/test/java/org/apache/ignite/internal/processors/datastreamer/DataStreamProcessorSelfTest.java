@@ -217,6 +217,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             ldr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
+            awaitPartitionMapExchange();
+
             final AtomicInteger idxGen = new AtomicInteger();
             final int cnt = 400;
             final int threads = 10;
@@ -263,6 +265,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             final IgniteDataStreamer<Integer, Integer> rmvLdr = g2.dataStreamer(null);
 
             rmvLdr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
+
+            awaitPartitionMapExchange();
 
             final CountDownLatch l2 = new CountDownLatch(threads);
 
@@ -468,6 +472,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             ldr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>individual());
             ldr.perNodeBufferSize(2);
+
+            awaitPartitionMapExchange();
 
             // Define count of puts.
             final AtomicInteger idxGen = new AtomicInteger();
