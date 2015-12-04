@@ -37,7 +37,7 @@ import org.apache.ignite.binary.BinaryObject;
 /**
  * Tests that portable object is the same in cache entry and in index.
  */
-public abstract class GridPortableDuplicateIndexObjectsAbstractSelfTest extends GridCacheAbstractSelfTest {
+public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;

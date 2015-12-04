@@ -19,20 +19,23 @@ package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.portable.GridPortableDuplicateIndexObjectsAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.GridBinaryDuplicateIndexObjectsAbstractSelfTest;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- * Test PARTITIONED ATOMIC.
+ * Test PARTITIONED and TRANSACTIONAL.
  */
-public class GridCachePortableDuplicateIndexObjectPartitionedAtomicSelfTest extends
-    GridPortableDuplicateIndexObjectsAbstractSelfTest {
+public class GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest extends
+    GridBinaryDuplicateIndexObjectsAbstractSelfTest {
     /** {@inheritDoc} */
     @Override public CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
+        return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
     @Override public CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
+        return PARTITIONED;
     }
 }
