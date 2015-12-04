@@ -254,7 +254,8 @@ namespace Apache.Ignite.Core.Impl.Common
 
             Debug.Assert(declaringType != null);  // static fields are not supported
 
-            var method = new DynamicMethod("setter", typeof(void), new[] { typeof(object), field.FieldType }, declaringType, true);
+            var method = new DynamicMethod(string.Empty, null, new[] { typeof(object), field.FieldType }, 
+                declaringType, true);
 
             var il = method.GetILGenerator();
             
