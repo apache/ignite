@@ -236,8 +236,8 @@ public class PlatformTransactions extends PlatformAbstractTarget {
             case OP_CACHE_CONFIG_PARAMETERS:
                 TransactionConfiguration txCfg = platformCtx.kernalContext().config().getTransactionConfiguration();
 
-                writer.writeEnum(txCfg.getDefaultTxConcurrency());
-                writer.writeEnum(txCfg.getDefaultTxIsolation());
+                writer.writeInt(txCfg.getDefaultTxConcurrency().ordinal());
+                writer.writeInt(txCfg.getDefaultTxIsolation().ordinal());
                 writer.writeLong(txCfg.getDefaultTxTimeout());
 
                 break;

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
@@ -74,8 +75,41 @@ public abstract class BinaryFieldAccessor {
             case P_DOUBLE:
                 return new DoublePrimitiveAccessor(field, id);
 
+            case BYTE:
+            case BOOLEAN:
+            case SHORT:
+            case CHAR:
+            case INT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+            case DECIMAL:
+            case STRING:
+            case UUID:
+            case DATE:
+            case TIMESTAMP:
+            case BYTE_ARR:
+            case SHORT_ARR:
+            case INT_ARR:
+            case LONG_ARR:
+            case FLOAT_ARR:
+            case DOUBLE_ARR:
+            case CHAR_ARR:
+            case BOOLEAN_ARR:
+            case DECIMAL_ARR:
+            case STRING_ARR:
+            case UUID_ARR:
+            case DATE_ARR:
+            case TIMESTAMP_ARR:
+            case ENUM_ARR:
+            case OBJECT_ARR:
+            case PORTABLE_OBJ:
+            case PORTABLE:
+            case EXTERNALIZABLE:
+                return new DefaultFinalClassAccessor(field, id, mode, false);
+
             default:
-                return new DefaultAccessor(field, id, mode);
+                return new DefaultFinalClassAccessor(field, id, mode, !U.isFinal(field.getType()));
         }
     }
 
@@ -389,9 +423,12 @@ public abstract class BinaryFieldAccessor {
     /**
      * Default accessor.
      */
-    private static class DefaultAccessor extends BinaryFieldAccessor {
+    private static class DefaultFinalClassAccessor extends BinaryFieldAccessor {
         /** Target field. */
         private final Field field;
+
+        /** Dynamic accessor flag. */
+        private final boolean dynamic;
 
         /**
          * Constructor.
@@ -400,12 +437,13 @@ public abstract class BinaryFieldAccessor {
          * @param id Field ID.
          * @param mode Mode.
          */
-        public DefaultAccessor(Field field, int id, BinaryWriteMode mode) {
+        DefaultFinalClassAccessor(Field field, int id, BinaryWriteMode mode, boolean dynamic) {
             super(id, mode);
 
             assert field != null;
 
             this.field = field;
+            this.dynamic = dynamic;
         }
 
         /** {@inheritDoc} */
@@ -424,7 +462,7 @@ public abstract class BinaryFieldAccessor {
                 throw new BinaryObjectException("Failed to get value for field: " + field, e);
             }
 
-            switch (mode) {
+            switch (mode(val)) {
                 case BYTE:
                     writer.writeByteField((Byte) val);
 
@@ -609,6 +647,25 @@ public abstract class BinaryFieldAccessor {
 
         /** {@inheritDoc} */
         @Override public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
+            Object val = dynamic ? reader.readField(id) : readFixedType(reader);
+
+            try {
+                if (val != null || !field.getType().isPrimitive())
+                    field.set(obj, val);
+            }
+            catch (IllegalAccessException e) {
+                throw new BinaryObjectException("Failed to set value for field: " + field, e);
+            }
+        }
+
+        /**
+         * Reads fixed type from the given reader with flags validation.
+         *
+         * @param reader Reader to read from.
+         * @return Read value.
+         * @throws BinaryObjectException If failed to read value from the stream.
+         */
+        protected Object readFixedType(BinaryReaderExImpl reader) throws BinaryObjectException {
             Object val = null;
 
             switch (mode) {
@@ -793,13 +850,17 @@ public abstract class BinaryFieldAccessor {
                     assert false : "Invalid mode: " + mode;
             }
 
-            try {
-                if (val != null || !field.getType().isPrimitive())
-                    field.set(obj, val);
-            }
-            catch (IllegalAccessException e) {
-                throw new BinaryObjectException("Failed to set value for field: " + field, e);
-            }
+            return val;
+        }
+
+        /**
+         * @param val Val to get write mode for.
+         * @return Write mode.
+         */
+        protected BinaryWriteMode mode(Object val) {
+            return dynamic ?
+                val == null ? BinaryWriteMode.OBJECT : PortableUtils.mode(val.getClass()) :
+                mode;
         }
     }
 }

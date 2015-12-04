@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
@@ -479,11 +480,18 @@ namespace Apache.Ignite.Core.Tests.Binary
         * <summary>Check write of enum.</summary>
         */
         [Test]
+        [SuppressMessage("ReSharper", "ExpressionIsAlwaysNull")]
         public void TestWriteEnum()
         {
             TestEnum val = TestEnum.Val1;
 
             Assert.AreEqual(_marsh.Unmarshal<TestEnum>(_marsh.Marshal(val)), val);
+
+            TestEnum? val2 = TestEnum.Val1;
+            Assert.AreEqual(_marsh.Unmarshal<TestEnum?>(_marsh.Marshal(val2)), val2);
+
+            val2 = null;
+            Assert.AreEqual(_marsh.Unmarshal<TestEnum?>(_marsh.Marshal(val2)), val2);
         }
 
         /// <summary>
@@ -500,7 +508,13 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             TestEnum val = TestEnum.Val1;
 
-            Assert.AreEqual(marsh.Unmarshal<TestEnum>(marsh.Marshal(val)), val);
+            var data = marsh.Marshal(val);
+
+            Assert.AreEqual(marsh.Unmarshal<TestEnum>(data), val);
+
+            var binEnum = marsh.Unmarshal<IBinaryObject>(data, true);
+
+            Assert.AreEqual(val, (TestEnum) binEnum.EnumValue);
         }
 
         /**
@@ -668,8 +682,13 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             IBinaryObject portNewObj = marsh.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
+            Assert.IsTrue(portNewObj.HasField("field1"));
+            Assert.IsTrue(portNewObj.HasField("field2"));
+            Assert.IsFalse(portNewObj.HasField("field3"));
+
             Assert.AreEqual(obj.Field1, portNewObj.GetField<int>("field1"));
             Assert.AreEqual(obj.Field2, portNewObj.GetField<int>("Field2"));
+            Assert.AreEqual(0, portNewObj.GetField<int>("field3"));
         }
 
         /**
@@ -881,8 +900,11 @@ namespace Apache.Ignite.Core.Tests.Binary
             Marshaller marsh =
                 new Marshaller(new BinaryConfiguration
                 {
-                    TypeConfigurations =
-                        new List<BinaryTypeConfiguration> {new BinaryTypeConfiguration(typeof (EnumType))}
+                    TypeConfigurations = new[]
+                    {
+                        new BinaryTypeConfiguration(typeof (EnumType)),
+                        new BinaryTypeConfiguration(typeof (TestEnum))
+                    }
                 });
 
             EnumType obj = new EnumType
@@ -896,6 +918,19 @@ namespace Apache.Ignite.Core.Tests.Binary
             IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
+
+            // Test enum field in binary form
+            var binEnum = portObj.GetField<IBinaryObject>("PEnum");
+            Assert.AreEqual(obj.PEnum.GetHashCode(), binEnum.GetHashCode());
+            Assert.AreEqual((int) obj.PEnum, binEnum.EnumValue);
+            Assert.AreEqual(obj.PEnum, binEnum.Deserialize<TestEnum>());
+            Assert.AreEqual(obj.PEnum, binEnum.Deserialize<object>());
+            Assert.AreEqual(typeof(TestEnum), binEnum.Deserialize<object>().GetType());
+            Assert.AreEqual(null, binEnum.GetField<object>("someField"));
+            Assert.IsFalse(binEnum.HasField("anyField"));
+
+            var binEnumArr = portObj.GetField<IBinaryObject[]>("PEnumArray");
+            Assert.IsTrue(binEnumArr.Select(x => x.Deserialize<TestEnum>()).SequenceEqual(obj.PEnumArray));
 
             EnumType newObj = portObj.Deserialize<EnumType>();
 
@@ -1094,7 +1129,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             inner.RawOuter = outer;
 
             var bytes = asbinary
-                ? marsh.Marshal(new IgniteBinary(marsh).ToBinary<IBinaryObject>(outer))
+                ? marsh.Marshal(new Binary(marsh).ToBinary<IBinaryObject>(outer))
                 : marsh.Marshal(outer);
 
             IBinaryObject outerObj;
@@ -2053,6 +2088,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         public enum TestEnum
+        {
+            Val1, Val2, Val3 = 10
+        }
+
+        public enum TestEnum2
         {
             Val1, Val2, Val3 = 10
         }

@@ -1546,7 +1546,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (expiryPlc != null && !readFromStore && !cctx.putIfAbsentFilter(filter) && hasValueUnlocked())
                         updateTtl(expiryPlc);
 
-                    return new T3<>(false, retval ? CU.value(old, cctx, false) : null, null);
+                    Object val = retval ?
+                        cctx.cacheObjectContext().unwrapPortableIfNeeded(CU.value(old, cctx, false), keepBinary, false)
+                        : null;
+
+                    return new T3<>(false, val, null);
                 }
             }
 
@@ -3012,7 +3016,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return Next entry.
      */
     GridCacheMapEntry next(int segId) {
-        return segId % 2 == 0 ? next0 : next1;
+        return (segId & 1) == 0 ? next0 : next1;
     }
 
     /**
@@ -3022,7 +3026,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param next Next entry.
      */
     void next(int segId, @Nullable GridCacheMapEntry next) {
-        if (segId % 2 == 0)
+        if ((segId & 1) == 0)
             next0 = next;
         else
             next1 = next;

@@ -114,6 +114,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Committing transactions. */
     private final ThreadLocal<IgniteInternalTx> threadCtx = new ThreadLocal<>();
 
+    /** Transaction which topology version should be used when mapping internal tx. */
+    private final ThreadLocal<IgniteInternalTx> txTopology = new ThreadLocal<>();
+
     /** Per-thread transaction map. */
     private final ConcurrentMap<Long, IgniteInternalTx> threadMap = newMap();
 
@@ -622,7 +625,24 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 return tx;
         }
 
-        return null;
+        return txTopology.get();
+    }
+
+    /**
+     * @param tx Transaction.
+     */
+    public boolean setTxTopologyHint(IgniteInternalTx tx) {
+        if (tx == null)
+            txTopology.remove();
+        else {
+            if (txTopology.get() == null) {
+                txTopology.set(tx);
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

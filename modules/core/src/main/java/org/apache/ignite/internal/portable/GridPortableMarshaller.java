@@ -173,6 +173,9 @@ public class GridPortableMarshaller {
     public static final byte CONC_SKIP_LIST_SET = 6;
 
     /** */
+    public static final byte CONC_LINKED_QUEUE = 7;
+
+    /** */
     public static final byte HASH_MAP = 1;
 
     /** */

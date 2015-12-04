@@ -112,7 +112,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -796,7 +796,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!ctx.config().isDaemon())
             ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
-        marshallerCache().context().preloader().syncFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
+        marshallerCache().context().preloader().initialRebalanceFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
             @Override public void applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
                 ctx.marshallerContext().onMarshallerCachePreloaded(ctx);
             }
@@ -817,10 +817,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (cfg.getRebalanceMode() == SYNC) {
                     if (cfg.getCacheMode() == REPLICATED ||
                         (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceDelay() >= 0)) {
-                        cache.preloader().syncFuture().get();
+                        boolean utilityCache = CU.isUtilityCache(cache.name());
 
-                        if (CU.isUtilityCache(cache.name()))
-                            ctx.cacheObjects().onUtilityCacheStarted();
+                        if (utilityCache || CU.isMarshallerCache(cache.name())) {
+                            cache.preloader().initialRebalanceFuture().get();
+
+                            if (utilityCache)
+                                ctx.cacheObjects().onUtilityCacheStarted();
+                        }
+                        else
+                            cache.preloader().syncFuture().get();
                     }
                 }
             }
@@ -1021,7 +1027,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.isKeepBinaryInStore() && cfg.isKeepBinaryInStore() != CacheConfiguration.DFLT_KEEP_BINARY_IN_STORE
             && !(ctx.config().getMarshaller() instanceof BinaryMarshaller))
             U.warn(log, "CacheConfiguration.isKeepBinaryInStore() configuration property will be ignored because " +
-                "PortableMarshaller is not used");
+                "BinaryMarshaller is not used");
 
         // Start managers.
         for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))

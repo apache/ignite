@@ -28,9 +28,9 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.binary.Address;
-import org.apache.ignite.examples.binary.Organization;
-import org.apache.ignite.examples.binary.OrganizationType;
+import org.apache.ignite.examples.model.binary.Address;
+import org.apache.ignite.examples.model.binary.Organization;
+import org.apache.ignite.examples.model.binary.OrganizationType;
 import org.apache.ignite.binary.BinaryObject;
 
 /**
@@ -44,8 +44,8 @@ import org.apache.ignite.binary.BinaryObject;
  * Remote nodes should always be started with special configuration file which
  * enables the binary marshaller: {@code 'ignite.{sh|bat} examples/config/binary/example-ignite-binary.xml'}.
  * <p>
- * Alternatively you can run {@link org.apache.ignite.examples.binary.ExampleBinaryNodeStartup} in another JVM which will
- * start node with {@code examples/config/binary/example-ignite-binary.xml} configuration.
+ * Alternatively you can run {@link org.apache.ignite.examples.ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 @SuppressWarnings("TypeMayBeWeakened")
 public class CacheClientBinaryPutGetExample {
@@ -58,7 +58,7 @@ public class CacheClientBinaryPutGetExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) {
-        try (Ignite ignite = Ignition.start("examples/config/binary/example-ignite-binary.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Binary objects cache put-get example started.");
 

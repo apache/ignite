@@ -1352,7 +1352,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         /**
          * @return Salary.
          */
-        public double salary() {
+        public int salary() {
             return salary;
         }
 

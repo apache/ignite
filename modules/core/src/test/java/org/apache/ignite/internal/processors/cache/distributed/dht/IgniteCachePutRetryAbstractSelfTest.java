@@ -124,6 +124,8 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
         cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
+        cfg.setIncludeEventTypes(new int[0]);
+
         return cfg;
     }
 

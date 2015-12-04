@@ -46,7 +46,6 @@ import org.apache.ignite.internal.portable.mutabletest.GridBinaryMarshalerAwareT
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.portable.IgniteBinaryImpl;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryObject;
@@ -968,7 +967,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         mutableObj.build();
 
-        BinaryType metadata = portables().metadata(TestObjectContainer.class);
+        BinaryType metadata = portables().type(TestObjectContainer.class);
 
         assertEquals("String", metadata.fieldTypeName("xx567"));
     }
@@ -984,7 +983,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         mutableObj.build();
 
-        BinaryType metadata = portables().metadata(TestObjectContainer.class);
+        BinaryType metadata = portables().type(TestObjectContainer.class);
 
         assertEquals("String", metadata.fieldTypeName("xx567"));
     }
@@ -1008,7 +1007,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         mutableObj.build();
 
-        BinaryType metadata = portables().metadata(c.getClass());
+        BinaryType metadata = portables().type(c.getClass());
 
         assertTrue(metadata.fieldNames().containsAll(Arrays.asList("intField", "intArrField", "arrField", "strField",
             "colField", "mapField", "enumField", "enumArrField")));

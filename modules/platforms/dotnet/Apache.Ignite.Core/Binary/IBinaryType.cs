@@ -48,5 +48,18 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         /// <returns>Affinity key field name or null in case it is not provided.</returns>
         string AffinityKeyFieldName { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether this type represents an enum.
+        /// </summary>
+        /// <value>   
+        /// <c>true</c> if this instance represents an enum; otherwise, <c>false</c>.
+        /// </value>
+        bool IsEnum { get; }
+
+        /// <summary>
+        /// Gets the type identifier.
+        /// </summary>
+        int TypeId { get; }
     }
 }

@@ -113,12 +113,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
 
-    /** */
-    private static final int MAX_UPDATE_RETRIES = 100;
-
-    /** */
-    private static final long RETRY_DELAY = 1;
-
     /** Initialization latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
@@ -973,7 +967,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         IgniteOutClosureX<GridCacheQueueHeader> rmv = new IgniteOutClosureX<GridCacheQueueHeader>() {
             @Override public GridCacheQueueHeader applyx() throws IgniteCheckedException {
-                return (GridCacheQueueHeader)retryRemove(cctx.cache(), new GridCacheQueueHeaderKey(name));
+                return (GridCacheQueueHeader)cctx.cache().getAndRemove(new GridCacheQueueHeaderKey(name));
             }
         };
 
@@ -986,6 +980,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     hdr.id(),
                     name,
                     hdr.collocated(),
+                    cctx.binaryMarshaller(),
                     hdr.head(),
                     hdr.tail(),
                     0);
@@ -1569,7 +1564,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         IgniteOutClosureX<GridCacheSetHeader> rmv = new IgniteOutClosureX<GridCacheSetHeader>() {
             @Override public GridCacheSetHeader applyx() throws IgniteCheckedException {
-                return (GridCacheSetHeader)retryRemove(cctx.cache(), new GridCacheSetHeaderKey(name));
+                return (GridCacheSetHeader)cctx.cache().getAndRemove(new GridCacheSetHeaderKey(name));
             }
         };
 
@@ -1580,22 +1575,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         };
 
         removeDataStructure(rmv, name, SET, afterRmv);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key to remove.
-     * @throws IgniteCheckedException If failed.
-     * @return Removed value.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryRemove(final IgniteInternalCache cache, final Object key)
-        throws IgniteCheckedException {
-        return retry(log, new Callable<T>() {
-            @Nullable @Override public T call() throws Exception {
-                return (T)cache.getAndRemove(key);
-            }
-        });
     }
 
     /**

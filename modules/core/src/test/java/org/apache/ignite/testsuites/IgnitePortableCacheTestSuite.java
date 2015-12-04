@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.portable.distributed.dht.Grid
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortablesNearPartitionedByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortablesPartitionedOnlyByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
-import org.apache.ignite.marshaller.portable.BinaryMarshaller;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
@@ -76,7 +76,6 @@ public class IgnitePortableCacheTestSuite extends TestSuite {
         ignoredTests.add(GridCacheMvccSelfTest.class);
 
         suite.addTest(IgniteCacheTestSuite.suite(ignoredTests));
-        suite.addTest(IgniteCacheExpiryPolicyTestSuite.suite());
 
         suite.addTestSuite(GridCacheMemoryModePortableSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicPortableSelfTest.class);

@@ -59,8 +59,8 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
-            GridTestUtils.getNextMulticastGroup(IgniteExamplesSelfTestSuite.class));
+//        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
+//            GridTestUtils.getNextMulticastGroup(IgniteExamplesSelfTestSuite.class));
 
         TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 

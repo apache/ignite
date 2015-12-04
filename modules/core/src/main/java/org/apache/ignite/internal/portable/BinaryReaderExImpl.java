@@ -234,7 +234,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 int off = in.position();
 
                 // Registers class by type ID, at least locally if the cache is not ready yet.
-                typeId = ctx.descriptorForClass(PortableUtils.doReadClass(in, ctx, ldr, typeId0)).typeId();
+                typeId = ctx.descriptorForClass(PortableUtils.doReadClass(in, ctx, ldr, typeId0), false).typeId();
 
                 int clsNameLen = in.position() - off;
 
@@ -246,7 +246,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 dataStart = start + DFLT_HDR_LEN;
             }
 
-            idMapper = userType ? ctx.userTypeIdMapper(typeId) : null;
+            idMapper = userType ? ctx.userTypeIdMapper(typeId) : BinaryInternalIdMapper.defaultInstance();
             schema = PortableUtils.hasSchema(flags) ? getOrCreateSchema() : null;
         }
         else {
@@ -277,7 +277,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return Descriptor.
      */
     PortableClassDescriptor descriptor() {
-        return ctx.descriptorForTypeId(userType, typeId, ldr);
+        return ctx.descriptorForTypeId(userType, typeId, ldr, true);
     }
 
     /**
@@ -1427,7 +1427,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ:
-                PortableClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId, ldr);
+                PortableClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
 
                 streamPosition(dataStart);
 
@@ -1616,7 +1616,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OPTM_MARSH:
-                obj = PortableUtils.doReadOptimized(in, ctx);
+                obj = PortableUtils.doReadOptimized(in, ctx, ldr);
 
                 break;
 
@@ -1625,6 +1625,17 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         }
 
         return obj;
+    }
+
+    /**
+     * @return Deserialized object.
+     * @throws BinaryObjectException If failed.
+     */
+    @Nullable Object readField(int fieldId) throws BinaryObjectException {
+        if (!findFieldById(fieldId))
+            return null;
+
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds).deserialize();
     }
 
     /**

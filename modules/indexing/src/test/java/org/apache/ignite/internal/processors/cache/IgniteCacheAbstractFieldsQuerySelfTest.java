@@ -270,7 +270,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     fields = meta.fields("Organization");
 
                     assert fields != null;
-                    assert fields.size() == 4;
+                    assertEquals("Fields: " + fields, 5, fields.size());
                     assert String.class.getName().equals(fields.get("_KEY"));
                     assert Organization.class.getName().equals(fields.get("_VAL"));
                     assert int.class.getName().equals(fields.get("ID"));
@@ -545,7 +545,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         int cnt = 0;
 
         for (List<?> row : res) {
-            assert row.size() == 9;
+            assertEquals(10, row.size());
 
             if (cnt == 0) {
                 assert new AffinityKey<>("p1", "o1").equals(row.get(0));
@@ -809,6 +809,21 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testMethodAnnotationWithoutGet() throws Exception {
+        QueryCursor<List<?>> qry = grid(0).cache(null)
+            .query(new SqlFieldsQuery("select methodField from Organization where methodField='name-A'")
+            .setPageSize(10));
+
+        List<List<?>> flds = qry.getAll();
+
+        assertEquals(1, flds.size());
+
+        assertEquals("name-A", flds.get(0).get(0));
+    }
+
+    /**
      * @param cacheName Cache name.
      * @throws Exception If failed.
      */
@@ -993,6 +1008,14 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
             this.id = id;
             this.name = name;
+        }
+
+        /**
+         * @return Generated method value.
+         */
+        @QuerySqlField
+        public String methodField() {
+            return "name-" + name;
         }
 
         /** {@inheritDoc} */

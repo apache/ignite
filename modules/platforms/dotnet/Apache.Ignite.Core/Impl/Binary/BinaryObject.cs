@@ -17,14 +17,17 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Runtime.CompilerServices;
     using System.Text;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary object.
@@ -61,6 +64,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="header">The header.</param>
         public BinaryObject(Marshaller marsh, byte[] data, int offset, BinaryObjectHeader header)
         {
+            Debug.Assert(marsh != null);
+            Debug.Assert(data != null);
+            Debug.Assert(offset >= 0 && offset < data.Length);
+
             _marsh = marsh;
 
             _data = data;
@@ -78,9 +85,21 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T GetField<T>(string fieldName)
         {
+            IgniteArgumentCheck.NotNullOrEmpty(fieldName, "fieldName");
+
             int pos;
 
             return TryGetFieldPosition(fieldName, out pos) ? GetField<T>(pos, null) : default(T);
+        }
+
+        /** <inheritdoc /> */
+        public bool HasField(string fieldName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(fieldName, "fieldName");
+
+            int pos;
+
+            return TryGetFieldPosition(fieldName, out pos);
         }
 
         /// <summary>
@@ -102,6 +121,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         public T Deserialize<T>()
         {
             return Deserialize<T>(BinaryMode.Deserialize);
+        }
+
+        /** <inheritdoc /> */
+        public int EnumValue
+        {
+            get
+            {
+                throw new NotSupportedException("IBinaryObject.Value is only supported for enums. " +
+                    "Check IBinaryObject.IsEnum property before accessing Value.");
+            }
         }
 
         /// <summary>
