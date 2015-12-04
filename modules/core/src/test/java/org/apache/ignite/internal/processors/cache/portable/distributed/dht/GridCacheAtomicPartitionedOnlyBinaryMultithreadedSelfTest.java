@@ -28,7 +28,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
-public class GridCacheAtomicPartitionedOnlyPortableMultithreadedSelfTest extends
+public class GridCacheAtomicPartitionedOnlyBinaryMultithreadedSelfTest extends
     GridCacheBinaryObjectsAbstractMultiThreadedSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

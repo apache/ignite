@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 /**
  *
  */
-public class GridCacheAtomicPartitionedOnlyPortableMultiNodeSelfTest extends
-    GridCacheAtomicPartitionedOnlyPortableMultithreadedSelfTest {
+public class GridCacheAtomicPartitionedOnlyBinaryMultiNodeSelfTest extends
+    GridCacheAtomicPartitionedOnlyBinaryMultithreadedSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 4;
