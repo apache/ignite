@@ -27,9 +27,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictio
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredSelfTest;
 import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
-import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheExpiryPolicyTestSuite;
 import org.apache.ignite.internal.processors.cache.portable.GridPortableCacheEntryMemorySizeSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.datastreaming.DataStreamProcessorPortableSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.datastreaming.DataStreamProcessorBinarySelfTest;
 import org.apache.ignite.internal.processors.cache.portable.datastreaming.GridDataStreamerImplSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAffinityRoutingPortableSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyPortableDataStreamerMultiNodeSelfTest;
@@ -87,7 +86,7 @@ public class IgnitePortableCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheOffHeapTieredAtomicPortableSelfTest.class);
 
         suite.addTestSuite(GridDataStreamerImplSelfTest.class);
-        suite.addTestSuite(DataStreamProcessorPortableSelfTest.class);
+        suite.addTestSuite(DataStreamProcessorBinarySelfTest.class);
         suite.addTestSuite(GridCacheAtomicPartitionedOnlyPortableDataStreamerMultiNodeSelfTest.class);
         suite.addTestSuite(GridCacheAtomicPartitionedOnlyPortableDataStreamerMultithreadedSelfTest.class);
 

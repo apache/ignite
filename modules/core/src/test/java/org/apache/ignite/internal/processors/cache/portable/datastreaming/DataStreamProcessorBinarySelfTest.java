@@ -29,7 +29,7 @@ import org.apache.ignite.stream.StreamReceiver;
 /**
  *
  */
-public class DataStreamProcessorPortableSelfTest extends DataStreamProcessorSelfTest {
+public class DataStreamProcessorBinarySelfTest extends DataStreamProcessorSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
