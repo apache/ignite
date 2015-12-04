@@ -25,14 +25,14 @@ import org.apache.ignite.binary.BinaryObject;
 /**
  *
  */
-public class PortablePlainBinaryObject implements BinaryLazyValue {
+public class PlainBinaryObject implements BinaryLazyValue {
     /** */
     private final BinaryObject portableObj;
 
     /**
      * @param portableObj Portable object.
      */
-    public PortablePlainBinaryObject(BinaryObject portableObj) {
+    public PlainBinaryObject(BinaryObject portableObj) {
         this.portableObj = portableObj;
     }
 

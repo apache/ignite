@@ -475,7 +475,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 BinaryObjectImpl portableObj = new BinaryObjectImpl(ctx, arr, pos + 4 + start);
 
-                return new PortablePlainBinaryObject(portableObj);
+                return new PlainBinaryObject(portableObj);
             }
 
             default:
@@ -762,7 +762,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 BinaryObjectImpl portableObj = new BinaryObjectImpl(ctx, arr,
                     pos - 4 - size + start);
 
-                return new PortablePlainBinaryObject(portableObj);
+                return new PlainBinaryObject(portableObj);
             }
 
             default:
