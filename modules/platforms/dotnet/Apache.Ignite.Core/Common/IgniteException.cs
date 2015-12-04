@@ -26,6 +26,9 @@ namespace Apache.Ignite.Core.Common
     [Serializable]
     public class IgniteException : Exception
     {
+        /** Java stack trace. */
+        private readonly string _javaStackTrace;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteException"/> class.
         /// </summary>
@@ -46,6 +49,16 @@ namespace Apache.Ignite.Core.Common
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteException" /> class.
         /// </summary>
+        /// <param name="message">The message that describes the error.</param>
+        /// <param name="javaStackTrace">The Java stack trace.</param>
+        public IgniteException(string message, string javaStackTrace) : this(message)
+        {
+            _javaStackTrace = javaStackTrace;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteException" /> class.
+        /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="cause">The cause.</param>
         public IgniteException(string message, Exception cause) : base(message, cause)
@@ -61,6 +74,23 @@ namespace Apache.Ignite.Core.Common
         protected IgniteException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)
         {
             // No-op.
+        }
+
+        /// <summary>
+        /// Gets the Java stack trace, if applicable.
+        /// </summary>
+        /// <value>
+        /// The Java stack trace, or null.
+        /// </value>
+        public string JavaStackTrace
+        {
+            get { return _javaStackTrace; }
+        }
+
+        /** <inheritdoc /> */
+        public override string ToString()
+        {
+            return string.Format("{0}, JavaStackTrace: {1}", base.ToString(), JavaStackTrace);
         }
     }
 }

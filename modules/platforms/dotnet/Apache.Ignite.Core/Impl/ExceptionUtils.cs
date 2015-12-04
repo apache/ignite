@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Impl
         private static readonly IDictionary<string, ExceptionFactoryDelegate> EXS = new Dictionary<string, ExceptionFactoryDelegate>();
 
         /** Exception factory delegate. */
-        private delegate Exception ExceptionFactoryDelegate(string msg);
+        private delegate Exception ExceptionFactoryDelegate(string msg, string javaStackTrace);
         
         /// <summary>
         /// Static initializer.
@@ -59,42 +59,42 @@ namespace Apache.Ignite.Core.Impl
         static ExceptionUtils()
         {
             // Common Java exceptions mapped to common .Net exceptions.
-            EXS["java.lang.IllegalArgumentException"] = m => new ArgumentException(m);
-            EXS["java.lang.IllegalStateException"] = m => new InvalidOperationException(m);
-            EXS["java.lang.UnsupportedOperationException"] = m => new NotImplementedException(m);
-            EXS["java.lang.InterruptedException"] = m => new ThreadInterruptedException(m);
+            EXS["java.lang.IllegalArgumentException"] = (m, s) => new ArgumentException(FormatJavaErrorMessage(m, s));
+            EXS["java.lang.IllegalStateException"] = (m, s) => new InvalidOperationException(FormatJavaErrorMessage(m, s));
+            EXS["java.lang.UnsupportedOperationException"] = (m, s) => new NotImplementedException(FormatJavaErrorMessage(m, s));
+            EXS["java.lang.InterruptedException"] = (m, s) => new ThreadInterruptedException(FormatJavaErrorMessage(m, s));
             
             // Generic Ignite exceptions.
-            EXS["org.apache.ignite.IgniteException"] = m => new IgniteException(m);
-            EXS["org.apache.ignite.IgniteCheckedException"] = m => new IgniteException(m);
+            EXS["org.apache.ignite.IgniteException"] = (m, s) => new IgniteException(m, s);
+            EXS["org.apache.ignite.IgniteCheckedException"] = (m, s) => new IgniteException(m, s);
 
             // Cluster exceptions.
-            EXS["org.apache.ignite.cluster.ClusterGroupEmptyException"] = m => new ClusterGroupEmptyException(m);
-            EXS["org.apache.ignite.cluster.ClusterTopologyException"] = m => new ClusterTopologyException(m);
+            EXS["org.apache.ignite.cluster.ClusterGroupEmptyException"] = (m, s) => new ClusterGroupEmptyException(m, s);
+            EXS["org.apache.ignite.cluster.ClusterTopologyException"] = (m, s) => new ClusterTopologyException(m, s);
 
             // Compute exceptions.
-            EXS["org.apache.ignite.compute.ComputeExecutionRejectedException"] = m => new ComputeExecutionRejectedException(m);
-            EXS["org.apache.ignite.compute.ComputeJobFailoverException"] = m => new ComputeJobFailoverException(m);
-            EXS["org.apache.ignite.compute.ComputeTaskCancelledException"] = m => new ComputeTaskCancelledException(m);
-            EXS["org.apache.ignite.compute.ComputeTaskTimeoutException"] = m => new ComputeTaskTimeoutException(m);
-            EXS["org.apache.ignite.compute.ComputeUserUndeclaredException"] = m => new ComputeUserUndeclaredException(m);
+            EXS["org.apache.ignite.compute.ComputeExecutionRejectedException"] = (m, s) => new ComputeExecutionRejectedException(m, s);
+            EXS["org.apache.ignite.compute.ComputeJobFailoverException"] = (m, s) => new ComputeJobFailoverException(m, s);
+            EXS["org.apache.ignite.compute.ComputeTaskCancelledException"] = (m, s) => new ComputeTaskCancelledException(m, s);
+            EXS["org.apache.ignite.compute.ComputeTaskTimeoutException"] = (m, s) => new ComputeTaskTimeoutException(m, s);
+            EXS["org.apache.ignite.compute.ComputeUserUndeclaredException"] = (m, s) => new ComputeUserUndeclaredException(m, s);
 
             // Cache exceptions.
-            EXS["javax.cache.CacheException"] = m => new CacheException(m);
-            EXS["javax.cache.integration.CacheLoaderException"] = m => new CacheStoreException(m);
-            EXS["javax.cache.integration.CacheWriterException"] = m => new CacheStoreException(m);
-            EXS["javax.cache.processor.EntryProcessorException"] = m => new CacheEntryProcessorException(m);
-            EXS["org.apache.ignite.cache.CacheAtomicUpdateTimeoutException"] = m => new CacheAtomicUpdateTimeoutException(m);
+            EXS["javax.cache.CacheException"] = (m, s) => new CacheException(m);
+            EXS["javax.cache.integration.CacheLoaderException"] = (m, s) => new CacheStoreException(m, s);
+            EXS["javax.cache.integration.CacheWriterException"] = (m, s) => new CacheStoreException(m, s);
+            EXS["javax.cache.processor.EntryProcessorException"] = (m, s) => new CacheEntryProcessorException(m, s);
+            EXS["org.apache.ignite.cache.CacheAtomicUpdateTimeoutException"] = (m, s) => new CacheAtomicUpdateTimeoutException(m, s);
             
             // Transaction exceptions.
-            EXS["org.apache.ignite.transactions.TransactionOptimisticException"] = m => new TransactionOptimisticException(m);
-            EXS["org.apache.ignite.transactions.TransactionTimeoutException"] = m => new TransactionTimeoutException(m);
-            EXS["org.apache.ignite.transactions.TransactionRollbackException"] = m => new TransactionRollbackException(m);
-            EXS["org.apache.ignite.transactions.TransactionHeuristicException"] = m => new TransactionHeuristicException(m);
+            EXS["org.apache.ignite.transactions.TransactionOptimisticException"] = (m, s) => new TransactionOptimisticException(m, s);
+            EXS["org.apache.ignite.transactions.TransactionTimeoutException"] = (m, s) => new TransactionTimeoutException(m, s);
+            EXS["org.apache.ignite.transactions.TransactionRollbackException"] = (m, s) => new TransactionRollbackException(m, s);
+            EXS["org.apache.ignite.transactions.TransactionHeuristicException"] = (m, s) => new TransactionHeuristicException(m, s);
 
             // Security exceptions.
-            EXS["org.apache.ignite.IgniteAuthenticationException"] = m => new SecurityException(m);
-            EXS["org.apache.ignite.plugin.security.GridSecurityException"] = m => new SecurityException(m);
+            EXS["org.apache.ignite.IgniteAuthenticationException"] = (m, s) => new SecurityException(FormatJavaErrorMessage(m, s));
+            EXS["org.apache.ignite.plugin.security.GridSecurityException"] = (m, s) => new SecurityException(FormatJavaErrorMessage(m, s));
         }
 
         /// <summary>
@@ -102,13 +102,15 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="clsName">Exception class name.</param>
         /// <param name="msg">Exception message.</param>
+        /// <param name="stackTrace">Native stack trace.</param>
         /// <param name="reader">Error data reader.</param>
-        public static Exception GetException(string clsName, string msg, BinaryReader reader = null)
+        /// <returns>Exception.</returns>
+        public static Exception GetException(string clsName, string msg, string stackTrace, BinaryReader reader = null)
         {
             ExceptionFactoryDelegate ctor;
 
             if (EXS.TryGetValue(clsName, out ctor))
-                return ctor(msg);
+                return ctor(msg, stackTrace);
 
             if (ClsNoClsDefFoundErr.Equals(clsName))
                 return new IgniteException("Java class is not found (did you set IGNITE_HOME environment " +
@@ -119,7 +121,7 @@ namespace Apache.Ignite.Core.Impl
                     "variable?): " + msg);
 
             if (ClsCachePartialUpdateErr.Equals(clsName))
-                return ProcessCachePartialUpdateException(msg, reader);
+                return ProcessCachePartialUpdateException(msg, stackTrace, reader);
             
             return new IgniteException("Java exception occurred [class=" + clsName + ", message=" + msg + ']');
         }
@@ -128,10 +130,11 @@ namespace Apache.Ignite.Core.Impl
         /// Process cache partial update exception.
         /// </summary>
         /// <param name="msg">Message.</param>
+        /// <param name="stackTrace">Stack trace.</param>
         /// <param name="reader">Reader.</param>
         /// <returns></returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static Exception ProcessCachePartialUpdateException(string msg, BinaryReader reader)
+        private static Exception ProcessCachePartialUpdateException(string msg, string stackTrace, BinaryReader reader)
         {
             if (reader == null)
                 return new CachePartialUpdateException(msg, new IgniteException("Failed keys are not available."));
@@ -161,7 +164,7 @@ namespace Apache.Ignite.Core.Impl
             string innerErrCls = reader.ReadString();
             string innerErrMsg = reader.ReadString();
 
-            Exception innerErr = GetException(innerErrCls, innerErrMsg);
+            Exception innerErr = GetException(innerErrCls, innerErrMsg, stackTrace);
 
             return new CachePartialUpdateException(msg, innerErr);
         }
@@ -171,16 +174,28 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="clsName">Class name.</param>
         /// <param name="msg">Message.</param>
+        /// <param name="stackTrace">Stack trace.</param>
         /// <returns>Exception.</returns>
-        public static Exception GetJvmInitializeException(string clsName, string msg)
+        public static Exception GetJvmInitializeException(string clsName, string msg, string stackTrace)
         {
             if (clsName != null)
-                return new IgniteException("Failed to initialize JVM.", GetException(clsName, msg));
+                return new IgniteException("Failed to initialize JVM.", GetException(clsName, msg, stackTrace));
 
             if (msg != null)
-                return new IgniteException("Failed to initialize JVM: " + msg);
+                return new IgniteException("Failed to initialize JVM: " + msg + "\n" + stackTrace);
 
             return new IgniteException("Failed to initialize JVM.");
+        }
+
+        /// <summary>
+        /// Formats the java error message.
+        /// </summary>
+        /// <param name="msg">The message.</param>
+        /// <param name="javaStackTrace">The java stack trace.</param>
+        /// <returns>Concatenated string.</returns>
+        private static string FormatJavaErrorMessage(string msg, string javaStackTrace)
+        {
+            return string.Format("{0}\nJavaStackTrace: {1}", msg, javaStackTrace);
         }
 
         /// <summary>

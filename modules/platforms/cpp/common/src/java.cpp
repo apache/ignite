@@ -511,7 +511,8 @@ namespace ignite
                 DeleteClass(env, c_Throwable);
             }
 
-            bool JniJavaMembers::WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen) {
+            bool JniJavaMembers::WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, 
+				int* errMsgLen, char** stackTrace, int* stackTraceLen) {
                 if (env && env->ExceptionCheck()) {
                     if (m_Class_getName && m_Throwable_getMessage) {
                         jthrowable err = env->ExceptionOccurred();
@@ -868,6 +869,8 @@ namespace ignite
                 int errClsNameLen = 0;
                 std::string errMsg;
                 int errMsgLen = 0;
+                std::string stackTrace;
+                int stackTraceLen = 0;
 
                 try {
                     if (!JVM.GetJvm()) {
@@ -894,9 +897,11 @@ namespace ignite
                 {
                     char* errClsNameChars = NULL;
                     char* errMsgChars = NULL;
+                    char* stackTraceChars = NULL;
 
                     // Read error info if possible.
-                    javaMembers.WriteErrorInfo(env, &errClsNameChars, &errClsNameLen, &errMsgChars, &errMsgLen);
+                    javaMembers.WriteErrorInfo(env, &errClsNameChars, &errClsNameLen, &errMsgChars, &errMsgLen, 
+						&stackTraceChars, &stackTraceLen);
 
                     if (errClsNameChars) {
                         errClsName = errClsNameChars;
