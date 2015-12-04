@@ -28,8 +28,4 @@ public class GridNearCacheTxNodeFailureSelfTest extends GridCacheTxNodeFailureSe
     @Override protected CacheConfiguration cacheConfiguration(String gridName) {
         return super.cacheConfiguration(gridName).setNearConfiguration(new NearCacheConfiguration());
     }
-
-    @Override public void testPrimaryNodeFailureBackupCommitImplicit(){
-        fail("https://issues.apache.org/jira/browse/IGNITE-1611");
-    }
 }
