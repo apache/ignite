@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
-import org.apache.ignite.internal.portable.streams.PortableInputStream;
-import org.apache.ignite.internal.portable.streams.PortableOutputStream;
+import org.apache.ignite.internal.portable.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.portable.streams.BinaryInputStream;
+import org.apache.ignite.internal.portable.streams.BinaryOutputStream;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.jetbrains.annotations.Nullable;
 
@@ -258,7 +258,7 @@ public class GridPortableMarshaller {
     @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws BinaryObjectException {
         assert bytes != null;
 
-        return (T)PortableUtils.unmarshal(PortableHeapInputStream.create(bytes, 0), ctx, clsLdr);
+        return (T)PortableUtils.unmarshal(BinaryHeapInputStream.create(bytes, 0), ctx, clsLdr);
     }
 
     /**
@@ -267,7 +267,7 @@ public class GridPortableMarshaller {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <T> T unmarshal(PortableInputStream in) throws BinaryObjectException {
+    @Nullable public <T> T unmarshal(BinaryInputStream in) throws BinaryObjectException {
         return (T)PortableUtils.unmarshal(in, ctx, null);
     }
 
@@ -285,7 +285,7 @@ public class GridPortableMarshaller {
         if (arr[0] == NULL)
             return null;
 
-        return (T)new BinaryReaderExImpl(ctx, PortableHeapInputStream.create(arr, 0), ldr).deserialize();
+        return (T)new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, 0), ldr).deserialize();
     }
 
     /**
@@ -294,7 +294,7 @@ public class GridPortableMarshaller {
      * @param out Output stream.
      * @return Writer.
      */
-    public BinaryWriterExImpl writer(PortableOutputStream out) {
+    public BinaryWriterExImpl writer(BinaryOutputStream out) {
         return new BinaryWriterExImpl(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), null);
     }
 

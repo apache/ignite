@@ -27,7 +27,7 @@ import org.apache.ignite.internal.portable.PortablePositionReadable;
 import org.apache.ignite.internal.portable.PortablePrimitives;
 import org.apache.ignite.internal.portable.PortableSchema;
 import org.apache.ignite.internal.portable.PortableUtils;
-import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
+import org.apache.ignite.internal.portable.streams.BinaryHeapInputStream;
 
 import java.sql.Timestamp;
 import java.util.Date;
@@ -68,7 +68,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
         pos = objImpl.start();
 
         // TODO: IGNITE-1272 - Is class loader needed here?
-        reader = new BinaryReaderExImpl(ctx, PortableHeapInputStream.create(arr, pos), null);
+        reader = new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, pos), null);
 
         objMap = new HashMap<>();
     }
@@ -84,7 +84,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
         this.arr = other.arr;
         this.pos = start;
 
-        reader = new BinaryReaderExImpl(ctx, PortableHeapInputStream.create(arr, start), null, other.reader.handles());
+        reader = new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, start), null, other.reader.handles());
 
         this.objMap = other.objMap;
     }

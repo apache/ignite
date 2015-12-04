@@ -22,8 +22,8 @@ import org.apache.ignite.binary.BinaryObjectException;
 /**
  * Portable abstract input stream.
  */
-public abstract class PortableAbstractInputStream extends PortableAbstractStream
-    implements PortableInputStream {
+public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
+    implements BinaryInputStream {
     /** Length of data inside array. */
     protected int len;
 

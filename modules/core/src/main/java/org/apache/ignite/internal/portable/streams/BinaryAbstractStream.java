@@ -24,7 +24,7 @@ import sun.misc.Unsafe;
 /**
  * Portable abstract stream.
  */
-public abstract class PortableAbstractStream implements PortableStream {
+public abstract class BinaryAbstractStream implements BinaryStream {
     /** Byte: zero. */
     protected static final byte BYTE_ZERO = 0;
 

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.portable.streams;
 /**
  * Portable off-heap input stream.
  */
-public class PortableOffheapInputStream extends PortableAbstractInputStream {
+public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
     /** Pointer. */
     private final long ptr;
 
@@ -36,7 +36,7 @@ public class PortableOffheapInputStream extends PortableAbstractInputStream {
      * @param ptr Pointer.
      * @param cap Capacity.
      */
-    public PortableOffheapInputStream(long ptr, int cap) {
+    public BinaryOffheapInputStream(long ptr, int cap) {
         this(ptr, cap, false);
     }
 
@@ -48,7 +48,7 @@ public class PortableOffheapInputStream extends PortableAbstractInputStream {
      * @param forceHeap If {@code true} method {@link #offheapPointer} returns 0 and unmarshalling will
      *        create heap-based objects.
      */
-    public PortableOffheapInputStream(long ptr, int cap, boolean forceHeap) {
+    public BinaryOffheapInputStream(long ptr, int cap, boolean forceHeap) {
         this.ptr = ptr;
         this.cap = cap;
         this.forceHeap = forceHeap;

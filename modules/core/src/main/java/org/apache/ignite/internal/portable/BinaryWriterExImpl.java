@@ -22,8 +22,8 @@ import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
-import org.apache.ignite.internal.portable.streams.PortableOutputStream;
+import org.apache.ignite.internal.portable.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.portable.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
@@ -94,7 +94,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     private final PortableContext ctx;
 
     /** Output stream. */
-    private final PortableOutputStream out;
+    private final BinaryOutputStream out;
 
     /** Schema. */
     private final BinaryWriterSchemaHolder schema;
@@ -132,7 +132,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param tlsCtx TLS context.
      */
     public BinaryWriterExImpl(PortableContext ctx, BinaryThreadLocalContext tlsCtx) {
-        this(ctx, new PortableHeapOutputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
+        this(ctx, new BinaryHeapOutputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
     }
 
     /**
@@ -140,7 +140,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param out Output stream.
      * @param handles Handles.
      */
-    public BinaryWriterExImpl(PortableContext ctx, PortableOutputStream out, BinaryWriterSchemaHolder schema,
+    public BinaryWriterExImpl(PortableContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema,
         BinaryWriterHandles handles) {
         this.ctx = ctx;
         this.out = out;
@@ -1626,7 +1626,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /** {@inheritDoc} */
-    @Override public PortableOutputStream out() {
+    @Override public BinaryOutputStream out() {
         return out;
     }
 

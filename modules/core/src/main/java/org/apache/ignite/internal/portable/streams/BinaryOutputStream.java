@@ -20,7 +20,7 @@ package org.apache.ignite.internal.portable.streams;
 /**
  * Portable output stream.
  */
-public interface PortableOutputStream extends PortableStream, AutoCloseable {
+public interface BinaryOutputStream extends BinaryStream, AutoCloseable {
     /**
      * Write byte value.
      *

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.portable.streams;
 /**
  * Portable offheap output stream.
  */
-public class PortableOffheapOutputStream extends PortableAbstractOutputStream {
+public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
     /** Pointer. */
     private long ptr;
 
@@ -32,7 +32,7 @@ public class PortableOffheapOutputStream extends PortableAbstractOutputStream {
      *
      * @param cap Capacity.
      */
-    public PortableOffheapOutputStream(int cap) {
+    public BinaryOffheapOutputStream(int cap) {
         this(0, cap);
     }
 
@@ -42,7 +42,7 @@ public class PortableOffheapOutputStream extends PortableAbstractOutputStream {
      * @param ptr Pointer to existing address.
      * @param cap Capacity.
      */
-    public PortableOffheapOutputStream(long ptr, int cap) {
+    public BinaryOffheapOutputStream(long ptr, int cap) {
         this.ptr = ptr == 0 ? allocate(cap) : ptr;
 
         this.cap = cap;

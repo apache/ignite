@@ -23,7 +23,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
+import org.apache.ignite.internal.portable.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -390,7 +390,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             default:
-                val = PortableUtils.unmarshal(PortableHeapInputStream.create(arr, fieldPos), ctx, null);
+                val = PortableUtils.unmarshal(BinaryHeapInputStream.create(arr, fieldPos), ctx, null);
 
                 break;
         }
@@ -575,6 +575,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Reader.
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx) {
-        return new BinaryReaderExImpl(ctx, PortableHeapInputStream.create(arr, start), null, rCtx);
+        return new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, start), null, rCtx);
     }
 }

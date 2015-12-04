@@ -20,7 +20,7 @@ package org.apache.ignite.internal.portable.streams;
 /**
  * Portable stream.
  */
-public interface PortableStream {
+public interface BinaryStream {
     /**
      * @return Position.
      */

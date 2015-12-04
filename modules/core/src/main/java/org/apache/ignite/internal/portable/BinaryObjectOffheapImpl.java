@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.portable.streams.PortableOffheapInputStream;
+import org.apache.ignite.internal.portable.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -304,7 +304,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 break;
 
             default:
-                PortableOffheapInputStream stream = new PortableOffheapInputStream(ptr, size, false);
+                BinaryOffheapInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
 
                 stream.position(fieldPos);
 
@@ -420,7 +420,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @return Reader.
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx) {
-        PortableOffheapInputStream stream = new PortableOffheapInputStream(ptr, size, false);
+        BinaryOffheapInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
 
         stream.position(start);
 

@@ -20,8 +20,8 @@ package org.apache.ignite.internal.portable.streams;
 /**
  * Base portable output stream.
  */
-public abstract class PortableAbstractOutputStream extends PortableAbstractStream
-    implements PortableOutputStream {
+public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
+    implements BinaryOutputStream {
     /** Minimal capacity when it is reasonable to start doubling resize. */
     private static final int MIN_CAP = 256;
 

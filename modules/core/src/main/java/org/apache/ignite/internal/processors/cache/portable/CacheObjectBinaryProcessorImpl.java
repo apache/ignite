@@ -41,8 +41,8 @@ import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.portable.streams.PortableInputStream;
-import org.apache.ignite.internal.portable.streams.PortableOffheapInputStream;
+import org.apache.ignite.internal.portable.streams.BinaryInputStream;
+import org.apache.ignite.internal.portable.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
@@ -366,7 +366,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (type != CacheObject.TYPE_BYTE_ARR) {
             assert size > 0 : size;
 
-            PortableInputStream in = new PortableOffheapInputStream(ptr, size, forceHeap);
+            BinaryInputStream in = new BinaryOffheapInputStream(ptr, size, forceHeap);
 
             return portableMarsh.unmarshal(in);
         }

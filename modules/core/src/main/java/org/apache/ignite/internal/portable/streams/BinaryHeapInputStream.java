@@ -22,7 +22,7 @@ import java.util.Arrays;
 /**
  * Portable off-heap input stream.
  */
-public final class PortableHeapInputStream extends PortableAbstractInputStream {
+public final class BinaryHeapInputStream extends BinaryAbstractInputStream {
     /**
      * Create stream with pointer set at the given position.
      *
@@ -30,10 +30,10 @@ public final class PortableHeapInputStream extends PortableAbstractInputStream {
      * @param pos Position.
      * @return Stream.
      */
-    public static PortableHeapInputStream create(byte[] data, int pos) {
+    public static BinaryHeapInputStream create(byte[] data, int pos) {
         assert pos < data.length;
 
-        PortableHeapInputStream stream = new PortableHeapInputStream(data);
+        BinaryHeapInputStream stream = new BinaryHeapInputStream(data);
 
         stream.pos = pos;
 
@@ -48,7 +48,7 @@ public final class PortableHeapInputStream extends PortableAbstractInputStream {
      *
      * @param data Data.
      */
-    public PortableHeapInputStream(byte[] data) {
+    public BinaryHeapInputStream(byte[] data) {
         this.data = data;
 
         len = data.length;
@@ -57,8 +57,8 @@ public final class PortableHeapInputStream extends PortableAbstractInputStream {
     /**
      * @return Copy of this stream.
      */
-    public PortableHeapInputStream copy() {
-        PortableHeapInputStream in = new PortableHeapInputStream(Arrays.copyOf(data, data.length));
+    public BinaryHeapInputStream copy() {
+        BinaryHeapInputStream in = new BinaryHeapInputStream(Arrays.copyOf(data, data.length));
 
         in.position(pos);
 

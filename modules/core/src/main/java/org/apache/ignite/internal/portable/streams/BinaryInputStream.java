@@ -22,7 +22,7 @@ import org.apache.ignite.internal.portable.PortablePositionReadable;
 /**
  * Portable input stream.
  */
-public interface PortableInputStream extends PortableStream, PortablePositionReadable {
+public interface BinaryInputStream extends BinaryStream, PortablePositionReadable {
     /**
      * Read byte value.
      *

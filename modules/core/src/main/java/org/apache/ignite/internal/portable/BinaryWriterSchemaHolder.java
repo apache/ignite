@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.portable.streams.PortableOutputStream;
+import org.apache.ignite.internal.portable.streams.BinaryOutputStream;
 
 /**
  * Binary writer schema holder.
@@ -78,7 +78,7 @@ public class BinaryWriterSchemaHolder {
      * @param compactFooter Whether footer should be written in compact form.
      * @return Amount of bytes dedicated to each field offset. Could be 1, 2 or 4.
      */
-    public int write(PortableOutputStream out, int fieldCnt, boolean compactFooter) {
+    public int write(BinaryOutputStream out, int fieldCnt, boolean compactFooter) {
         int startIdx = idx - fieldCnt * 2;
         assert startIdx >= 0;
 
