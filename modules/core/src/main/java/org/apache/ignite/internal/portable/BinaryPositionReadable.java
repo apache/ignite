@@ -20,7 +20,7 @@ package org.apache.ignite.internal.portable;
 /**
  * Interface allowing for positioned read.
  */
-public interface PortablePositionReadable {
+public interface BinaryPositionReadable {
     /**
      * Read byte at the given position.
      *

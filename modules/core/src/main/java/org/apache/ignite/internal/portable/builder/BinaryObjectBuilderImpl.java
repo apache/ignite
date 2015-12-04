@@ -87,7 +87,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     private final int hdrLen;
 
     /** Context of PortableObject reading process. Or {@code null} if object is not created from PortableObject. */
-    private final PortableBuilderReader reader;
+    private final BinaryBuilderReader reader;
 
     /** */
     private int hashCode;
@@ -122,7 +122,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param obj Object to wrap.
      */
     public BinaryObjectBuilderImpl(BinaryObjectImpl obj) {
-        this(new PortableBuilderReader(obj), obj.start());
+        this(new BinaryBuilderReader(obj), obj.start());
 
         reader.registerObject(this);
     }
@@ -131,7 +131,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param reader ctx
      * @param start Start.
      */
-    BinaryObjectBuilderImpl(PortableBuilderReader reader, int start) {
+    BinaryObjectBuilderImpl(BinaryBuilderReader reader, int start) {
         this.reader = reader;
         this.start = start;
         this.flags = reader.readShortPositioned(start + FLAGS_POS);

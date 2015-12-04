@@ -31,7 +31,7 @@ public class BinaryModifiableLazyValue extends BinaryAbstractLazyValue {
      * @param valOff
      * @param len
      */
-    public BinaryModifiableLazyValue(PortableBuilderReader reader, int valOff, int len) {
+    public BinaryModifiableLazyValue(BinaryBuilderReader reader, int valOff, int len) {
         super(reader, valOff);
 
         this.len = len;

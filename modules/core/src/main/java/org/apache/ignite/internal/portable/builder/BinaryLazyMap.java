@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  */
 class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilderSerializationAware {
     /** */
-    private final PortableBuilderReader reader;
+    private final BinaryBuilderReader reader;
 
     /** */
     private final int off;
@@ -44,7 +44,7 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
      * @param reader Reader.
      * @param off Offset.
      */
-    private BinaryLazyMap(PortableBuilderReader reader, int off) {
+    private BinaryLazyMap(BinaryBuilderReader reader, int off) {
         this.reader = reader;
         this.off = off;
     }
@@ -53,7 +53,7 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
      * @param reader Reader.
      * @return PortableLazyMap.
      */
-    @Nullable public static BinaryLazyMap parseMap(PortableBuilderReader reader) {
+    @Nullable public static BinaryLazyMap parseMap(BinaryBuilderReader reader) {
         int off = reader.position() - 1;
 
         int size = reader.readInt();

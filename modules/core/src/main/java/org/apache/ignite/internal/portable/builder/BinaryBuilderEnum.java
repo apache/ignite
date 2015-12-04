@@ -48,7 +48,7 @@ public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
     /**
      * @param reader PortableBuilderReader.
      */
-    public BinaryBuilderEnum(PortableBuilderReader reader) {
+    public BinaryBuilderEnum(BinaryBuilderReader reader) {
         int typeId = reader.readInt();
 
         if (typeId == GridPortableMarshaller.UNREGISTERED_TYPE_ID) {

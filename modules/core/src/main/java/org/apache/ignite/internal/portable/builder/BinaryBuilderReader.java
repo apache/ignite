@@ -23,7 +23,7 @@ import org.apache.ignite.internal.portable.BinaryReaderExImpl;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
-import org.apache.ignite.internal.portable.PortablePositionReadable;
+import org.apache.ignite.internal.portable.BinaryPositionReadable;
 import org.apache.ignite.internal.portable.PortablePrimitives;
 import org.apache.ignite.internal.portable.PortableSchema;
 import org.apache.ignite.internal.portable.PortableUtils;
@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 /**
  *
  */
-public class PortableBuilderReader implements PortablePositionReadable {
+public class BinaryBuilderReader implements BinaryPositionReadable {
     /** */
     private final PortableContext ctx;
 
@@ -62,7 +62,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
      *
      * @param objImpl Portable object
      */
-    PortableBuilderReader(BinaryObjectImpl objImpl) {
+    BinaryBuilderReader(BinaryObjectImpl objImpl) {
         ctx = objImpl.context();
         arr = objImpl.array();
         pos = objImpl.start();
@@ -79,7 +79,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
      * @param other Other reader.
      * @param start Start position.
      */
-    PortableBuilderReader(PortableBuilderReader other, int start) {
+    BinaryBuilderReader(BinaryBuilderReader other, int start) {
         this.ctx = other.ctx;
         this.arr = other.arr;
         this.pos = start;
@@ -380,7 +380,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 BinaryObjectBuilderImpl res = objMap.get(objStart);
 
                 if (res == null) {
-                    res = new BinaryObjectBuilderImpl(new PortableBuilderReader(this, objStart), objStart);
+                    res = new BinaryObjectBuilderImpl(new BinaryBuilderReader(this, objStart), objStart);
 
                     objMap.put(objStart, res);
                 }
@@ -392,7 +392,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 BinaryObjectBuilderImpl res = objMap.get(pos);
 
                 if (res == null) {
-                    res = new BinaryObjectBuilderImpl(new PortableBuilderReader(this, pos), pos);
+                    res = new BinaryObjectBuilderImpl(new BinaryBuilderReader(this, pos), pos);
 
                     objMap.put(pos, res);
                 }
@@ -505,7 +505,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 BinaryObjectBuilderImpl res = objMap.get(objStart);
 
                 if (res == null) {
-                    res = new BinaryObjectBuilderImpl(new PortableBuilderReader(this, objStart), objStart);
+                    res = new BinaryObjectBuilderImpl(new BinaryBuilderReader(this, objStart), objStart);
 
                     objMap.put(objStart, res);
                 }
@@ -519,7 +519,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 BinaryObjectBuilderImpl res = objMap.get(pos);
 
                 if (res == null) {
-                    res = new BinaryObjectBuilderImpl(new PortableBuilderReader(this, pos), pos);
+                    res = new BinaryObjectBuilderImpl(new BinaryBuilderReader(this, pos), pos);
 
                     objMap.put(pos, res);
                 }

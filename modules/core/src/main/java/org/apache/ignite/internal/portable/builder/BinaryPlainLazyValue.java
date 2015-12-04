@@ -31,7 +31,7 @@ class BinaryPlainLazyValue extends BinaryAbstractLazyValue {
      * @param valOff Offset
      * @param len Length.
      */
-    protected BinaryPlainLazyValue(PortableBuilderReader reader, int valOff, int len) {
+    protected BinaryPlainLazyValue(BinaryBuilderReader reader, int valOff, int len) {
         super(reader, valOff);
 
         this.len = len;

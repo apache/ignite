@@ -39,7 +39,7 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
     /**
      * @param reader Reader.
      */
-    protected BinaryEnumArrayLazyValue(PortableBuilderReader reader) {
+    protected BinaryEnumArrayLazyValue(BinaryBuilderReader reader) {
         super(reader, reader.position() - 1);
 
         int typeId = reader.readInt();

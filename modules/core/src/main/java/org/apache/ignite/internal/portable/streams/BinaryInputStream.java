@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.portable.streams;
 
-import org.apache.ignite.internal.portable.PortablePositionReadable;
+import org.apache.ignite.internal.portable.BinaryPositionReadable;
 
 /**
  * Portable input stream.
  */
-public interface BinaryInputStream extends BinaryStream, PortablePositionReadable {
+public interface BinaryInputStream extends BinaryStream, BinaryPositionReadable {
     /**
      * Read byte value.
      *

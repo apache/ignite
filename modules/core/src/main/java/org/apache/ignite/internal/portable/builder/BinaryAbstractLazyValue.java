@@ -25,7 +25,7 @@ abstract class BinaryAbstractLazyValue implements BinaryLazyValue {
     protected Object val;
 
     /** */
-    protected final PortableBuilderReader reader;
+    protected final BinaryBuilderReader reader;
 
     /** */
     protected final int valOff;
@@ -34,7 +34,7 @@ abstract class BinaryAbstractLazyValue implements BinaryLazyValue {
      * @param reader Reader.
      * @param valOff Value.
      */
-    protected BinaryAbstractLazyValue(PortableBuilderReader reader, int valOff) {
+    protected BinaryAbstractLazyValue(BinaryBuilderReader reader, int valOff) {
         this.reader = reader;
         this.valOff = valOff;
     }

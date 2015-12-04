@@ -700,7 +700,7 @@ public class PortableUtils {
      * @param start Start position.
      * @return Length.
      */
-    public static int length(PortablePositionReadable in, int start) {
+    public static int length(BinaryPositionReadable in, int start) {
         return in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
     }
 
@@ -711,7 +711,7 @@ public class PortableUtils {
      * @param start Object start position inside the stream.
      * @return Footer start.
      */
-    public static int footerStartRelative(PortablePositionReadable in, int start) {
+    public static int footerStartRelative(BinaryPositionReadable in, int start) {
         short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
 
         if (hasSchema(flags))
@@ -729,7 +729,7 @@ public class PortableUtils {
      * @param start Start position.
      * @return Footer start.
      */
-    public static int footerStartAbsolute(PortablePositionReadable in, int start) {
+    public static int footerStartAbsolute(BinaryPositionReadable in, int start) {
         return footerStartRelative(in, start) + start;
     }
 
@@ -740,7 +740,7 @@ public class PortableUtils {
      * @param start Start position.
      * @return Footer.
      */
-    public static IgniteBiTuple<Integer, Integer> footerAbsolute(PortablePositionReadable in, int start) {
+    public static IgniteBiTuple<Integer, Integer> footerAbsolute(BinaryPositionReadable in, int start) {
         short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
 
         int footerEnd = length(in, start);
@@ -768,7 +768,7 @@ public class PortableUtils {
      * @param start Object start position inside the stream.
      * @return Raw offset.
      */
-    public static int rawOffsetRelative(PortablePositionReadable in, int start) {
+    public static int rawOffsetRelative(BinaryPositionReadable in, int start) {
         short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
 
         int len = length(in, start);
@@ -794,7 +794,7 @@ public class PortableUtils {
      * @param start Object start position inside the stream.
      * @return Raw offset.
      */
-    public static int rawOffsetAbsolute(PortablePositionReadable in, int start) {
+    public static int rawOffsetAbsolute(BinaryPositionReadable in, int start) {
         return start + rawOffsetRelative(in, start);
     }
 
@@ -831,7 +831,7 @@ public class PortableUtils {
      * @param fieldOffsetSize Field offset size.
      * @return Relative field offset.
      */
-    public static int fieldOffsetRelative(PortablePositionReadable stream, int pos, int fieldOffsetSize) {
+    public static int fieldOffsetRelative(BinaryPositionReadable stream, int pos, int fieldOffsetSize) {
         int res;
 
         if (fieldOffsetSize == OFFSET_1)

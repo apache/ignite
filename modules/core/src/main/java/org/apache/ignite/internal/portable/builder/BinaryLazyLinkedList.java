@@ -31,7 +31,7 @@ import java.util.ListIterator;
  */
 class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilderSerializationAware {
     /** */
-    private final PortableBuilderReader reader;
+    private final BinaryBuilderReader reader;
 
     /** */
     private final int off;
@@ -43,7 +43,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
      * @param reader Reader.
      * @param size Size,
      */
-    BinaryLazyLinkedList(PortableBuilderReader reader, int size) {
+    BinaryLazyLinkedList(BinaryBuilderReader reader, int size) {
         this.reader = reader;
         off = reader.position() - 1/* flag */ - 4/* size */ - 1/* col type */;
 

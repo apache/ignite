@@ -35,7 +35,7 @@ class BinaryLazySet extends BinaryAbstractLazyValue {
      * @param reader Reader.
      * @param size Size.
      */
-    BinaryLazySet(PortableBuilderReader reader, int size) {
+    BinaryLazySet(BinaryBuilderReader reader, int size) {
         super(reader, reader.position() - 1);
 
         off = reader.position() - 1/* flag */ - 4/* size */ - 1/* col type */;

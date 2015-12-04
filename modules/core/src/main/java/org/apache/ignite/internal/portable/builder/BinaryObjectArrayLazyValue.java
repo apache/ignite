@@ -38,7 +38,7 @@ class BinaryObjectArrayLazyValue extends BinaryAbstractLazyValue {
     /**
      * @param reader Reader.
      */
-    protected BinaryObjectArrayLazyValue(PortableBuilderReader reader) {
+    protected BinaryObjectArrayLazyValue(BinaryBuilderReader reader) {
         super(reader, reader.position() - 1);
 
         int typeId = reader.readInt();

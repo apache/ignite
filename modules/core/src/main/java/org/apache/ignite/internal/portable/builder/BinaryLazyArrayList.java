@@ -29,7 +29,7 @@ import java.util.List;
  */
 class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderSerializationAware {
     /** */
-    private final PortableBuilderReader reader;
+    private final BinaryBuilderReader reader;
 
     /** */
     private final int off;
@@ -41,7 +41,7 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
      * @param reader Reader.
      * @param size Size,
      */
-    BinaryLazyArrayList(PortableBuilderReader reader, int size) {
+    BinaryLazyArrayList(BinaryBuilderReader reader, int size) {
         this.reader = reader;
         off = reader.position() - 1/* flag */ - 4/* size */ - 1/* col type */;
 
