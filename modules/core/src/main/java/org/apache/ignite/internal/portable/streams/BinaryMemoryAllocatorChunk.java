@@ -26,7 +26,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RE
 /**
  * Memory allocator chunk.
  */
-public class PortableMemoryAllocatorChunk {
+public class BinaryMemoryAllocatorChunk {
     /** Unsafe instance. */
     protected static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
