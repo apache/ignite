@@ -548,7 +548,7 @@ public class BinaryClassDescriptor {
                 break;
 
             case PORTABLE_ENUM:
-                writer.doWritePortableEnum((BinaryEnumObjectImpl)obj);
+                writer.doWriteBinaryEnum((BinaryEnumObjectImpl)obj);
 
                 break;
 
@@ -563,7 +563,7 @@ public class BinaryClassDescriptor {
                 break;
 
             case PORTABLE_OBJ:
-                writer.doWritePortableObject((BinaryObjectImpl)obj);
+                writer.doWriteBinaryObject((BinaryObjectImpl)obj);
 
                 break;
 

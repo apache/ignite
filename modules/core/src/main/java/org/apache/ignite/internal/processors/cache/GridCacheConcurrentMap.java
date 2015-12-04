@@ -2148,7 +2148,7 @@ public class GridCacheConcurrentMap {
 
         /** {@inheritDoc} */
         @Override public K next() {
-            return (K)it.ctx.cacheObjectContext().unwrapPortableIfNeeded(it.next().key(), keepBinary, true);
+            return (K)it.ctx.cacheObjectContext().unwrapBinaryIfNeeded(it.next().key(), keepBinary, true);
         }
 
         /** {@inheritDoc} */

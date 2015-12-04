@@ -40,7 +40,7 @@ import org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.Tes
 import org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectContainer;
 import org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectInner;
 import org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectOuter;
-import org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectPlainPortable;
+import org.apache.ignite.internal.portable.mutabletest.GridBinaryTestClasses.TestObjectPlainBinary;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -118,7 +118,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         obj.setDefaultData();
         obj.enumArr = null;
 
-        TestObjectAllTypes deserialized = builder(toPortable(obj)).build().deserialize();
+        TestObjectAllTypes deserialized = builder(toBinary(obj)).build().deserialize();
 
         GridTestUtils.deepEquals(obj, deserialized);
     }
@@ -726,7 +726,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testOffheapPortable() throws Exception {
+    public void testOffheapBinary() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
         builder.hashCode(100);
@@ -894,7 +894,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         TestObjectContainer c = new TestObjectContainer(list);
 
-        BinaryObjectBuilderImpl builder = builder(toPortable(c));
+        BinaryObjectBuilderImpl builder = builder(toBinary(c));
         builder.<List>getField("foo").add("!!!");
 
         BinaryObject res = builder.build();
@@ -911,9 +911,9 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testSetPortableObject() {
+    public void testSetBinaryObject() {
         BinaryObject portableObj = builder(TestObjectContainer.class.getName())
-            .setField("foo", toPortable(new TestObjectAllTypes()))
+            .setField("foo", toBinary(new TestObjectAllTypes()))
             .build();
 
         assertTrue(portableObj.<TestObjectContainer>deserialize().foo instanceof TestObjectAllTypes);
@@ -922,14 +922,14 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testPlainPortableObjectCopyFrom() {
-        TestObjectPlainPortable obj = new TestObjectPlainPortable(toPortable(new TestObjectAllTypes()));
+    public void testPlainBinaryObjectCopyFrom() {
+        TestObjectPlainBinary obj = new TestObjectPlainBinary(toBinary(new TestObjectAllTypes()));
 
-        BinaryObjectBuilderImpl builder = builder(toPortable(obj));
+        BinaryObjectBuilderImpl builder = builder(toBinary(obj));
         assertTrue(builder.getField("plainPortable") instanceof BinaryObject);
 
-        TestObjectPlainPortable deserialized = builder.build().deserialize();
-        assertTrue(deserialized.plainPortable != null);
+        TestObjectPlainBinary deserialized = builder.build().deserialize();
+        assertTrue(deserialized.plainBinary != null);
     }
 
     /**
@@ -953,7 +953,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         obj.setDefaultData();
         obj.enumArr = null;
 
-        BinaryObjectBuilder builder = builder(toPortable(obj));
+        BinaryObjectBuilder builder = builder(toBinary(obj));
 
         builder.removeField("str");
 
@@ -972,7 +972,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         obj.setDefaultData();
         obj.enumArr = null;
 
-        BinaryObjectBuilderImpl builder = builder(toPortable(obj));
+        BinaryObjectBuilderImpl builder = builder(toBinary(obj));
 
         builder.getField("i_");
 
@@ -990,7 +990,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         outer.inner.outer = outer;
         outer.foo = "a";
 
-        BinaryObjectBuilder builder = builder(toPortable(outer));
+        BinaryObjectBuilder builder = builder(toBinary(outer));
 
         builder.setField("foo", "b");
 
@@ -1011,7 +1011,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
      * @param obj Object.
      * @return Portable object.
      */
-    private BinaryObject toPortable(Object obj) {
+    private BinaryObject toBinary(Object obj) {
         return portables().toBinary(obj);
     }
 

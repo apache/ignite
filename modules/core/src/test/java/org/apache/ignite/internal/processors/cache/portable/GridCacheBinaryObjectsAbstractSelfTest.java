@@ -391,12 +391,12 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
 
-        IgniteCache<Integer, BinaryObject> cachePortableAsync = kpc.withAsync();
+        IgniteCache<Integer, BinaryObject> cacheBinaryAsync = kpc.withAsync();
 
         for (int i = 0; i < ENTRY_CNT; i++) {
-            cachePortableAsync.get(i);
+            cacheBinaryAsync.get(i);
 
-            BinaryObject po = cachePortableAsync.<BinaryObject>future().get();
+            BinaryObject po = cacheBinaryAsync.<BinaryObject>future().get();
 
             assertEquals(i, (int)po.field("val"));
         }
@@ -484,13 +484,13 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         }
 
         IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
-        IgniteCache<Integer, BinaryObject> cachePortableAsync = kpc.withAsync();
+        IgniteCache<Integer, BinaryObject> cacheBinaryAsync = kpc.withAsync();
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                cachePortableAsync.get(i);
+                cacheBinaryAsync.get(i);
 
-                BinaryObject po = cachePortableAsync.<BinaryObject>future().get();
+                BinaryObject po = cacheBinaryAsync.<BinaryObject>future().get();
 
                 assertEquals(i, (int)po.field("val"));
 
@@ -567,7 +567,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         }
 
         IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
-        IgniteCache<Integer, BinaryObject> cachePortableAsync = kpc.withAsync();
+        IgniteCache<Integer, BinaryObject> cacheBinaryAsync = kpc.withAsync();
 
         for (int i = 0; i < ENTRY_CNT; ) {
             Set<Integer> keys = new HashSet<>();
@@ -576,9 +576,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
                 keys.add(i++);
 
 
-            cachePortableAsync.getAll(keys);
+            cacheBinaryAsync.getAll(keys);
 
-            Map<Integer, BinaryObject> objs = cachePortableAsync.<Map<Integer, BinaryObject>>future().get();
+            Map<Integer, BinaryObject> objs = cacheBinaryAsync.<Map<Integer, BinaryObject>>future().get();
 
             assertEquals(10, objs.size());
 

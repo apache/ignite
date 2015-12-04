@@ -46,7 +46,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Test for portable object affinity key.
  */
-public class GridPortableAffinityKeySelfTest extends GridCommonAbstractTest {
+public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
     /** */
     private static final AtomicReference<UUID> nodeId = new AtomicReference<>();
 

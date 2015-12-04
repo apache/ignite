@@ -102,7 +102,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     private final String taskName;
 
     /** Whether to deserialize portable objects. */
-    private boolean deserializePortable;
+    private boolean deserializeBinary;
 
     /** Skip values flag. */
     private boolean skipVals;
@@ -145,7 +145,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         boolean forcePrimary,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean canRemap,
@@ -160,7 +160,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         this.forcePrimary = forcePrimary;
         this.subjId = subjId;
         this.taskName = taskName;
-        this.deserializePortable = deserializePortable;
+        this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.canRemap = canRemap;
@@ -580,7 +580,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 }
                 else {
                     if (!keepCacheObjects) {
-                        Object res = cctx.unwrapPortableIfNeeded(val, !deserializePortable && !skipVals);
+                        Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary && !skipVals);
 
                         onDone(res);
                     }

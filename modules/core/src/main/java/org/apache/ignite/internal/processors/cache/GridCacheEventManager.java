@@ -272,12 +272,12 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             Object oldVal0;
 
             try {
-                key0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepBinary, false);
-                val0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(newVal, keepBinary, false);
-                oldVal0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(oldVal, keepBinary, false);
+                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
+                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, keepBinary, false);
+                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false);
             }
             catch (Exception e) {
-                if (!cctx.cacheObjectContext().processor().isPortableEnabled(cctx.config()))
+                if (!cctx.cacheObjectContext().processor().isBinaryEnabled(cctx.config()))
                     throw e;
 
                 if (log.isDebugEnabled())
@@ -289,9 +289,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
 
                 forceKeepBinary = true;
 
-                key0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(key, true, false);
-                val0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(newVal, true, false);
-                oldVal0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(oldVal, true, false);
+                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, true, false);
+                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, true, false);
+                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, true, false);
             }
 
             cctx.gridEvents().record(new CacheEvent(cctx.name(),

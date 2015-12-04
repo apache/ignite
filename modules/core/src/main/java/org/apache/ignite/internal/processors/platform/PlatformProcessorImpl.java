@@ -136,7 +136,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         try {
             for (StoreInfo store : pendingStores)
-                registerStore0(store.store, store.convertPortable);
+                registerStore0(store.store, store.convertBinary);
 
             pendingStores.clear();
 
@@ -304,7 +304,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public void registerStore(PlatformCacheStore store, boolean convertPortable)
+    @Override public void registerStore(PlatformCacheStore store, boolean convertBinary)
         throws IgniteCheckedException {
         storeLock.readLock().lock();
 
@@ -314,9 +314,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                     store);
 
             if (started)
-                registerStore0(store, convertPortable);
+                registerStore0(store, convertBinary);
             else
-                pendingStores.add(new StoreInfo(store, convertPortable));
+                pendingStores.add(new StoreInfo(store, convertBinary));
         }
         finally {
             storeLock.readLock().unlock();
@@ -340,11 +340,11 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      * @param convertPortable Convert portable flag.
      * @throws IgniteCheckedException If failed.
      */
-    private void registerStore0(PlatformCacheStore store, boolean convertPortable) throws IgniteCheckedException {
+    private void registerStore0(PlatformCacheStore store, boolean convertBinary) throws IgniteCheckedException {
         if (store instanceof PlatformDotNetCacheStore) {
             PlatformDotNetCacheStore store0 = (PlatformDotNetCacheStore)store;
 
-            store0.initialize(ctx, convertPortable);
+            store0.initialize(ctx, convertBinary);
         }
         else
             throw new IgniteCheckedException("Unsupported interop store: " + store);
@@ -358,7 +358,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         private final PlatformCacheStore store;
 
         /** Convert portable flag. */
-        private final boolean convertPortable;
+        private final boolean convertBinary;
 
         /**
          * Constructor.
@@ -366,9 +366,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
          * @param store Store.
          * @param convertPortable Convert portable flag.
          */
-        private StoreInfo(PlatformCacheStore store, boolean convertPortable) {
+        private StoreInfo(PlatformCacheStore store, boolean convertBinary) {
             this.store = store;
-            this.convertPortable = convertPortable;
+            this.convertBinary = convertBinary;
         }
     }
 }

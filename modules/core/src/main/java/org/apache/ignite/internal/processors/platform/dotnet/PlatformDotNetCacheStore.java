@@ -321,7 +321,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @param convertPortable Convert portable flag.
      * @throws org.apache.ignite.IgniteCheckedException
      */
-    public void initialize(GridKernalContext ctx, boolean convertPortable) throws IgniteCheckedException {
+    public void initialize(GridKernalContext ctx, boolean convertBinary) throws IgniteCheckedException {
         A.notNull(typName, "typName");
 
         platformCtx = PlatformUtils.platformContext(ctx.grid());
@@ -331,7 +331,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            write(writer, convertPortable);
+            write(writer, convertBinary);
 
             out.synchronize();
 
@@ -345,9 +345,9 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @param writer Writer.
      * @param convertPortable Convert portable flag.
      */
-    protected void write(BinaryRawWriterEx writer, boolean convertPortable) {
+    protected void write(BinaryRawWriterEx writer, boolean convertBinary) {
         writer.writeString(typName);
-        writer.writeBoolean(convertPortable);
+        writer.writeBoolean(convertBinary);
         writer.writeMap(props);
     }
 

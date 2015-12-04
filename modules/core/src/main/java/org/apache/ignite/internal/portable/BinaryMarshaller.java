@@ -84,7 +84,7 @@ public class BinaryMarshaller extends AbstractMarshaller {
      * @param ctx Portable context.
      */
     @SuppressWarnings("UnusedDeclaration")
-    private void setPortableContext(BinaryContext ctx, IgniteConfiguration cfg) {
+    private void setBinaryContext(BinaryContext ctx, IgniteConfiguration cfg) {
         ctx.configure(this, cfg);
 
         impl = new InternalBinaryMarshaller(ctx);

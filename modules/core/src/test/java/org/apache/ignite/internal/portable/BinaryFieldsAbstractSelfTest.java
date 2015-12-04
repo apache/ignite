@@ -486,7 +486,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     private TestContext context(BinaryMarshaller marsh, String fieldName) throws Exception {
         TestObject obj = createObject();
 
-        BinaryObjectExImpl portObj = toPortable(marsh, obj);
+        BinaryObjectExImpl portObj = toBinary(marsh, obj);
 
         BinaryField field = portObj.type().field(fieldName);
 
@@ -506,7 +506,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
         TestObject obj = createObject();
         TestOuterObject outObj = new TestOuterObject(obj);
 
-        BinaryObjectExImpl portOutObj = toPortable(marsh, outObj);
+        BinaryObjectExImpl portOutObj = toBinary(marsh, outObj);
         BinaryObjectExImpl portObj = portOutObj.field("fInner");
 
         assert portObj != null;
@@ -533,7 +533,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @return Portable object.
      * @throws Exception If failed.
      */
-    protected abstract BinaryObjectExImpl toPortable(BinaryMarshaller marsh, Object obj) throws Exception;
+    protected abstract BinaryObjectExImpl toBinary(BinaryMarshaller marsh, Object obj) throws Exception;
 
     /**
      * Outer test object.

@@ -325,7 +325,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
         Object retval =
             res == null ? null : rawRetval ? ret : (this.retval || op == TRANSFORM) ?
-                cctx.unwrapPortableIfNeeded(ret.value(), keepBinary) : ret.success();
+                cctx.unwrapBinaryIfNeeded(ret.value(), keepBinary) : ret.success();
 
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
@@ -1191,7 +1191,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             Collection<Object> keys = new ArrayList<>(failedKeys.size());
 
             for (KeyCacheObject key : failedKeys)
-                keys.add(cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepBinary, false));
+                keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false));
 
             err0.add(keys, err, topVer);
         }

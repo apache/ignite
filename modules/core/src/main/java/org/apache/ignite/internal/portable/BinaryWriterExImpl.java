@@ -805,7 +805,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void doWritePortableEnum(BinaryEnumObjectImpl val) {
+    void doWriteBinaryEnum(BinaryEnumObjectImpl val) {
         assert val != null;
 
         int typeId = val.typeId();
@@ -878,7 +878,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param po Portable object.
      */
-    public void doWritePortableObject(@Nullable BinaryObjectImpl po) {
+    public void doWriteBinaryObject(@Nullable BinaryObjectImpl po) {
         if (po == null)
             out.writeByte(NULL);
         else {
@@ -1244,8 +1244,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param po Portable object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    void writePortableObjectField(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
-        doWritePortableObject(po);
+    void writeBinaryObjectField(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
+        doWriteBinaryObject(po);
     }
 
     /** {@inheritDoc} */

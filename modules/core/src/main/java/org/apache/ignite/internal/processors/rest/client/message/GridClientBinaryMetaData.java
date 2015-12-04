@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Portable meta data sent from client.
  */
-public class GridClientPortableMetaData {
+public class GridClientBinaryMetaData {
     /** */
     private int typeId;
 
@@ -66,6 +66,6 @@ public class GridClientPortableMetaData {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridClientPortableMetaData.class, this);
+        return S.toString(GridClientBinaryMetaData.class, this);
     }
 }

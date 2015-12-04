@@ -35,7 +35,7 @@ import java.util.Map;
 /**
  * Wildcards test.
  */
-public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
+public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */

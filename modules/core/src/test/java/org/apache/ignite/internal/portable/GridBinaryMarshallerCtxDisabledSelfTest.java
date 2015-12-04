@@ -36,7 +36,7 @@ import java.util.Arrays;
 /**
  *
  */
-public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstractTest {
+public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
@@ -68,12 +68,12 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
 
         assertEquals(simpleObj, marsh.unmarshal(marsh.marshal(simpleObj), null));
 
-        SimpleBinary simplePortable = new SimpleBinary();
+        SimpleBinary simpleBinary = new SimpleBinary();
 
-        simplePortable.str = "portable";
-        simplePortable.arr = new long[] {100, 200, 300};
+        simpleBinary.str = "portable";
+        simpleBinary.arr = new long[] {100, 200, 300};
 
-        assertEquals(simplePortable, marsh.unmarshal(marsh.marshal(simplePortable), null));
+        assertEquals(simpleBinary, marsh.unmarshal(marsh.marshal(simpleBinary), null));
 
         SimpleExternalizable simpleExtr = new SimpleExternalizable();
 

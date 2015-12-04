@@ -907,7 +907,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     entry != null ? entry.peek(true, false, false, topVer, expiryPlc) : null;
 
                                 // TODO 950 nocopy
-                                val = (V)cctx.cacheObjectContext().unwrapPortableIfNeeded(cacheVal, qry.keepBinary());
+                                val = (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheVal, qry.keepBinary());
                             }
                             catch (GridCacheEntryRemovedException e) {
                                 val = null;
@@ -960,7 +960,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     private boolean checkPredicate(Map.Entry<K, V> e) {
                         if (keyValFilter != null) {
-                            Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(e, qry.keepBinary());
+                            Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapBinaryIfNeeded(e, qry.keepBinary());
 
                             return keyValFilter.apply(e0.getKey(), e0.getValue());
                         }
@@ -1112,8 +1112,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     final LazySwapEntry e = new LazySwapEntry(it.next(), keepBinary);
 
                     if (filter != null) {
-                        K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepBinary);
-                        V val = (V)cctx.unwrapPortableIfNeeded(e.value(), keepBinary);
+                        K key = (K)cctx.unwrapBinaryIfNeeded(e.key(), keepBinary);
+                        V val = (V)cctx.unwrapBinaryIfNeeded(e.value(), keepBinary);
 
                         if (!filter.apply(key, val))
                             continue;
@@ -1536,7 +1536,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     // Unwrap entry for reducer or transformer only.
                     if (rdc != null || trans != null)
-                        entry = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(entry, qry.keepBinary());
+                        entry = (Map.Entry<K, V>)cctx.unwrapBinaryIfNeeded(entry, qry.keepBinary());
 
                     // Reduce.
                     if (rdc != null) {
@@ -2549,7 +2549,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             CacheObject obj = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), t.get2(), t.get1());
 
-            return (V)cctx.cacheObjectContext().unwrapPortableIfNeeded(obj, keepBinary);
+            return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(obj, keepBinary);
         }
 
         /** {@inheritDoc} */
@@ -2657,8 +2657,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throws IgniteCheckedException {
             LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
 
-            K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepBinary);
-            V val = (V)cctx.unwrapPortableIfNeeded(e.value(), keepBinary);
+            K key = (K)cctx.unwrapBinaryIfNeeded(e.key(), keepBinary);
+            V val = (V)cctx.unwrapBinaryIfNeeded(e.value(), keepBinary);
 
             if (!filter.apply(key, val))
                 return null;

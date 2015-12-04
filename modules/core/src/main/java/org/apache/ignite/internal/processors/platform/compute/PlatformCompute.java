@@ -278,14 +278,14 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 private static final long serialVersionUID = 0L;
 
                 @Override public Object apply(IgniteFuture fut) {
-                    return toPortable(fut.get());
+                    return toBinary(fut.get());
                 }
             }));
 
             return null;
         }
         else
-            return toPortable(res);
+            return toBinary(res);
     }
 
     /**
@@ -294,7 +294,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param src Source object.
      * @return Result.
      */
-    private Object toPortable(Object src) {
+    private Object toBinary(Object src) {
         return platformCtx.kernalContext().grid().binary().toBinary(src);
     }
 

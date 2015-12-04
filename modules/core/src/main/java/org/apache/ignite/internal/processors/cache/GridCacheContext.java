@@ -320,7 +320,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.cacheType = cacheType;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
-        this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isPortableEnabled(cacheCfg);
+        this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
 
         /*
          * Managers in starting order!
@@ -1744,8 +1744,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param keepBinary Keep portable flag.
      * @return Unwrapped object.
      */
-    public Object unwrapPortableIfNeeded(Object o, boolean keepBinary) {
-        return cacheObjCtx.unwrapPortableIfNeeded(o, keepBinary);
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary) {
+        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary);
     }
 
     /**
@@ -1756,8 +1756,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param cpy Copy value flag.
      * @return Unwrapped object.
      */
-    public Object unwrapPortableIfNeeded(Object o, boolean keepBinary, boolean cpy) {
-        return cacheObjCtx.unwrapPortableIfNeeded(o, keepBinary, cpy);
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy) {
+        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary, cpy);
     }
 
     /**
@@ -1772,7 +1772,7 @@ public class GridCacheContext<K, V> implements Externalizable {
                     CacheInvokeResult invokeRes = (CacheInvokeResult)res;
 
                     if (invokeRes.result() != null)
-                        res = CacheInvokeResult.fromResult(unwrapPortableIfNeeded(invokeRes.result(),
+                        res = CacheInvokeResult.fromResult(unwrapBinaryIfNeeded(invokeRes.result(),
                             keepBinary, false));
                 }
 
@@ -1881,15 +1881,15 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheObject val,
         boolean skipVals,
         boolean keepCacheObjects,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         boolean cpy) {
         assert key != null;
         assert val != null || skipVals;
 
         if (!keepCacheObjects) {
-            Object key0 = unwrapPortableIfNeeded(key, !deserializePortable);
+            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary);
 
-            Object val0 = skipVals ? true : unwrapPortableIfNeeded(val, !deserializePortable);
+            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary);
 
             assert key0 != null : key;
             assert val0 != null : val;

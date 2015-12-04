@@ -19,7 +19,7 @@ package org.apache.ignite.internal.portable.test;
 
 /**
  */
-public class GridPortableTestClass1 {
+public class GridBinaryTestClass1 {
     /**
      */
     private static class InnerClass {

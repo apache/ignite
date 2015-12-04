@@ -228,7 +228,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      *
      * @return Cache with "keep portable" flag set.
      */
-    public PlatformCache withKeepPortable() {
+    public PlatformCache withKeepBinary() {
         if (keepBinary)
             return this;
 

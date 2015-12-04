@@ -95,7 +95,7 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     /** {@inheritDoc} */
     @Override public K getKey() {
         if (key == null)
-            key = (K)cctx.unwrapPortableIfNeeded(keyObj, keepBinary);
+            key = (K)cctx.unwrapBinaryIfNeeded(keyObj, keepBinary);
 
         return key;
     }
@@ -103,7 +103,7 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     /** {@inheritDoc} */
     @Override public V getValue() {
         if (val == null)
-            val = (V)cctx.unwrapPortableIfNeeded(valObj, keepBinary, false);
+            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, false);
 
         return val;
     }

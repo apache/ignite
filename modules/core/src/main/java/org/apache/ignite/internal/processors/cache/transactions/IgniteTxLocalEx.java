@@ -73,7 +73,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     public <K, V> IgniteInternalFuture<Map<K, V>> getAllAsync(
         GridCacheContext cacheCtx,
         Collection<KeyCacheObject> keys,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         boolean skipVals,
         boolean keepCacheObjects,
         boolean skipStore);

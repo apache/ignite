@@ -376,11 +376,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public Object marshalToPortable(@Nullable Object obj) throws BinaryObjectException {
+    @Override public Object marshalToBinary(@Nullable Object obj) throws BinaryObjectException {
         if (obj == null)
             return null;
 
-        if (BinaryUtils.isPortableType(obj.getClass()))
+        if (BinaryUtils.isBinaryType(obj.getClass()))
             return obj;
 
         if (obj instanceof Object[]) {
@@ -389,7 +389,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             Object[] pArr = new Object[arr.length];
 
             for (int i = 0; i < arr.length; i++)
-                pArr[i] = marshalToPortable(arr[i]);
+                pArr[i] = marshalToBinary(arr[i]);
 
             return pArr;
         }
@@ -398,9 +398,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             IgniteBiTuple tup = (IgniteBiTuple)obj;
 
             if (obj instanceof T2)
-                return new T2<>(marshalToPortable(tup.get1()), marshalToPortable(tup.get2()));
+                return new T2<>(marshalToBinary(tup.get1()), marshalToBinary(tup.get2()));
 
-            return new IgniteBiTuple<>(marshalToPortable(tup.get1()), marshalToPortable(tup.get2()));
+            return new IgniteBiTuple<>(marshalToBinary(tup.get1()), marshalToBinary(tup.get2()));
         }
 
         if (obj instanceof Collection) {
@@ -414,7 +414,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 pCol = new ArrayList<>(col.size());
 
             for (Object item : col)
-                pCol.add(marshalToPortable(item));
+                pCol.add(marshalToBinary(item));
 
             return pCol;
         }
@@ -425,7 +425,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             Map<Object, Object> pMap = BinaryUtils.newMap((Map<Object, Object>)obj);
 
             for (Map.Entry<?, ?> e : map.entrySet())
-                pMap.put(marshalToPortable(e.getKey()), marshalToPortable(e.getValue()));
+                pMap.put(marshalToBinary(e.getKey()), marshalToBinary(e.getValue()));
 
             return pMap;
         }
@@ -433,7 +433,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (obj instanceof Map.Entry) {
             Map.Entry<?, ?> e = (Map.Entry<?, ?>)obj;
 
-            return new GridMapEntry<>(marshalToPortable(e.getKey()), marshalToPortable(e.getValue()));
+            return new GridMapEntry<>(marshalToBinary(e.getKey()), marshalToBinary(e.getValue()));
         }
 
         byte[] arr = portableMarsh.marshal(obj);
@@ -579,12 +579,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortableObject(Object obj) {
+    @Override public boolean isBinaryObject(Object obj) {
         return obj instanceof BinaryObject;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortableEnabled(CacheConfiguration<?, ?> ccfg) {
+    @Override public boolean isBinaryEnabled(CacheConfiguration<?, ?> ccfg) {
         return marsh instanceof BinaryMarshaller;
     }
 
@@ -623,7 +623,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (obj == null)
             return 0;
 
-        return isPortableObject(obj) ? ((BinaryObjectEx)obj).typeId() : typeId(obj.getClass().getSimpleName());
+        return isBinaryObject(obj) ? ((BinaryObjectEx)obj).typeId() : typeId(obj.getClass().getSimpleName());
     }
 
     /** {@inheritDoc} */
@@ -631,7 +631,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (obj == null)
             return null;
 
-        return isPortableObject(obj) ? ((BinaryObject)obj).field(fieldName) : super.field(obj, fieldName);
+        return isBinaryObject(obj) ? ((BinaryObject)obj).field(fieldName) : super.field(obj, fieldName);
     }
 
     /** {@inheritDoc} */
@@ -696,7 +696,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return (KeyCacheObject)obj;
 
         if (((CacheObjectBinaryContext)ctx).portableEnabled()) {
-            obj = toPortable(obj);
+            obj = toBinary(obj);
 
             if (obj instanceof BinaryObject)
                 return (BinaryObjectImpl)obj;
@@ -714,7 +714,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (obj == null || obj instanceof CacheObject)
             return (CacheObject)obj;
 
-        obj = toPortable(obj);
+        obj = toBinary(obj);
 
         if (obj instanceof BinaryObject)
             return (BinaryObjectImpl)obj;
@@ -760,14 +760,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @return Portable object.
      * @throws IgniteException In case of error.
      */
-    @Nullable public Object toPortable(@Nullable Object obj) throws IgniteException {
+    @Nullable public Object toBinary(@Nullable Object obj) throws IgniteException {
         if (obj == null)
             return null;
 
-        if (isPortableObject(obj))
+        if (isBinaryObject(obj))
             return obj;
 
-        return marshalToPortable(obj);
+        return marshalToBinary(obj);
     }
 
     /**

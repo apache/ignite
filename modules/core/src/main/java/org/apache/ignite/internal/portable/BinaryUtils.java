@@ -638,7 +638,7 @@ public class BinaryUtils {
      * @param cls Class to check.
      * @return Whether type is portable.
      */
-    public static boolean isPortableType(Class<?> cls) {
+    public static boolean isBinaryType(Class<?> cls) {
         assert cls != null;
 
         return BinaryObject.class.isAssignableFrom(cls) ||
@@ -1293,7 +1293,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static BinaryObject doReadPortableObject(BinaryInputStream in, BinaryContext ctx) {
+    public static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx) {
         if (in.offheapPointer() > 0) {
             int len = in.readInt();
 
@@ -1425,7 +1425,7 @@ public class BinaryUtils {
      * @param type Plain type.
      * @return Enum.
      */
-    private static BinaryEnumObjectImpl doReadPortableEnum(BinaryInputStream in, BinaryContext ctx,
+    private static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
         return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
     }
@@ -1437,7 +1437,7 @@ public class BinaryUtils {
      * @param ctx Portable context.
      * @return Enum array.
      */
-    private static Object[] doReadPortableEnumArray(BinaryInputStream in, BinaryContext ctx) {
+    private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
         Object[] arr = (Object[]) Array.newInstance(BinaryObject.class, len);
@@ -1448,7 +1448,7 @@ public class BinaryUtils {
             if (flag == NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadPortableEnum(in, ctx, doReadEnumType(in));
+                arr[i] = doReadBinaryEnum(in, ctx, doReadEnumType(in));
         }
 
         return arr;
@@ -1692,15 +1692,15 @@ public class BinaryUtils {
                 return doReadMapEntry(in, ctx, ldr, handles, false);
 
             case PORTABLE_OBJ:
-                return doReadPortableObject(in, ctx);
+                return doReadBinaryObject(in, ctx);
 
             case ENUM:
-                return doReadPortableEnum(in, ctx, doReadEnumType(in));
+                return doReadBinaryEnum(in, ctx, doReadEnumType(in));
 
             case ENUM_ARR:
                 doReadEnumType(in); // Simply skip this part as we do not need it.
 
-                return doReadPortableEnumArray(in, ctx);
+                return doReadBinaryEnumArray(in, ctx);
 
             case CLASS:
                 return doReadClass(in, ctx, ldr);

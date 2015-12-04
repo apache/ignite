@@ -30,7 +30,7 @@ import org.apache.ignite.internal.portable.BinaryMarshaller;
 /**
  *
  */
-public class GridPortableCacheEntryMemorySizeSelfTest extends GridCacheEntryMemorySizeSelfTest {
+public class GridBinaryCacheEntryMemorySizeSelfTest extends GridCacheEntryMemorySizeSelfTest {
     /** {@inheritDoc} */
     @Override protected Marshaller createMarshaller() throws IgniteCheckedException {
         BinaryMarshaller marsh = new BinaryMarshaller();

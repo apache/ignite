@@ -395,7 +395,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean skipTx,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         boolean skipVals,
         boolean canRemap
     ) {
@@ -416,7 +416,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             forcePrimary,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             opCtx != null && opCtx.skipStore(),

@@ -44,24 +44,24 @@ public class GridCacheOffHeapTieredEvictionAtomicBinarySelfTest extends GridCach
 
     /** {@inheritDoc} */
     @Override protected TestPredicate testPredicate(String expVal, boolean acceptNull) {
-        return new PortableValuePredicate(expVal, acceptNull);
+        return new BinaryValuePredicate(expVal, acceptNull);
     }
 
     /** {@inheritDoc} */
     @Override protected TestProcessor testClosure(String expVal, boolean acceptNull) {
-        return new PortableValueClosure(expVal, acceptNull);
+        return new BinaryValueClosure(expVal, acceptNull);
     }
 
     /**
      *
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class PortableValuePredicate extends TestPredicate {
+    static class BinaryValuePredicate extends TestPredicate {
         /**
          * @param expVal Expected value.
          * @param acceptNull If {@code true} value can be null;
          */
-        PortableValuePredicate(String expVal, boolean acceptNull) {
+        BinaryValuePredicate(String expVal, boolean acceptNull) {
             super(expVal, acceptNull);
         }
 
@@ -77,12 +77,12 @@ public class GridCacheOffHeapTieredEvictionAtomicBinarySelfTest extends GridCach
      *
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class PortableValueClosure extends TestProcessor {
+    static class BinaryValueClosure extends TestProcessor {
         /**
          * @param expVal Expected value.
          * @param acceptNull If {@code true} value can be null;
          */
-        PortableValueClosure(String expVal, boolean acceptNull) {
+        BinaryValueClosure(String expVal, boolean acceptNull) {
             super(expVal, acceptNull);
         }
 

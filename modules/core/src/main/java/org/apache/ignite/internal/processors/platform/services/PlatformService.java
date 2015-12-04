@@ -33,7 +33,7 @@ public interface PlatformService extends Service {
      * @return Resulting data.
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
-    public Object invokeMethod(String mthdName, boolean srvKeepPortable, Object[] args) throws IgniteCheckedException;
+    public Object invokeMethod(String mthdName, boolean srvKeepBinary, Object[] args) throws IgniteCheckedException;
 
     /**
      * Gets native pointer.

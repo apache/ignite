@@ -714,7 +714,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         key,
                                         e.cached().rawGetOrUnmarshal(true),
                                         e.keepBinary()),
-                                    cacheCtx.cacheObjectContext().unwrapPortableIfNeeded(val, e.keepBinary(), false));
+                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(val, e.keepBinary(), false));
 
                                 if (interceptorVal == null)
                                     continue;
@@ -1357,7 +1357,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         Map<K, V> map,
         Map<KeyCacheObject, GridCacheVersion> missed,
         int keysCnt,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         boolean skipVals,
         boolean keepCacheObjects,
         boolean skipStore
@@ -1396,7 +1396,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         val = txEntry.applyEntryProcessors(val);
 
                     if (val != null)
-                        cacheCtx.addResult(map, key, val, skipVals, keepCacheObjects, deserializePortable, false);
+                        cacheCtx.addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, false);
                 }
                 else {
                     assert txEntry.op() == TRANSFORM;
@@ -1433,7 +1433,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     val,
                                     skipVals,
                                     keepCacheObjects,
-                                    deserializePortable,
+                                    deserializeBinary,
                                     false);
                             }
                             else
@@ -1479,7 +1479,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         null,
                                         resolveTaskName(),
                                         accessPlc,
-                                        !deserializePortable) : null;
+                                        !deserializeBinary) : null;
 
                                 if (res != null) {
                                     val = res.get1();
@@ -1499,7 +1499,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     null,
                                     resolveTaskName(),
                                     accessPlc,
-                                    !deserializePortable);
+                                    !deserializeBinary);
                             }
 
                             if (val != null) {
@@ -1508,7 +1508,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     val,
                                     skipVals,
                                     keepCacheObjects,
-                                    deserializePortable,
+                                    deserializeBinary,
                                     false);
                             }
                             else
@@ -1531,7 +1531,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 -1L,
                                 null,
                                 skipStore,
-                                !deserializePortable);
+                                !deserializeBinary);
 
                             // As optimization, mark as checked immediately
                             // for non-pessimistic if value is not null.
@@ -1607,7 +1607,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         final GridCacheContext cacheCtx,
         final Map<K, V> map,
         final Map<KeyCacheObject, GridCacheVersion> missedMap,
-        final boolean deserializePortable,
+        final boolean deserializeBinary,
         final boolean skipVals,
         final boolean keepCacheObjects,
         final boolean skipStore
@@ -1636,7 +1636,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 missedMap.keySet(),
                 skipVals,
                 needReadVer,
-                !deserializePortable,
+                !deserializeBinary,
                 new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
                     @Override public void apply(KeyCacheObject key, Object val, GridCacheVersion loadVer) {
                         if (isRollbackOnly()) {
@@ -1676,7 +1676,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     visibleVal,
                                     skipVals,
                                     keepCacheObjects,
-                                    deserializePortable,
+                                    deserializeBinary,
                                     false);
                             }
                         }
@@ -1697,7 +1697,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     visibleVal,
                                     skipVals,
                                     keepCacheObjects,
-                                    deserializePortable,
+                                    deserializeBinary,
                                     false);
                             }
                         }
@@ -1710,7 +1710,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     @Override public <K, V> IgniteInternalFuture<Map<K, V>> getAllAsync(
         final GridCacheContext cacheCtx,
         Collection<KeyCacheObject> keys,
-        final boolean deserializePortable,
+        final boolean deserializeBinary,
         final boolean skipVals,
         final boolean keepCacheObjects,
         final boolean skipStore) {
@@ -1740,7 +1740,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 retMap,
                 missed,
                 keysCnt,
-                deserializePortable,
+                deserializeBinary,
                 skipVals,
                 keepCacheObjects,
                 skipStore);
@@ -1773,7 +1773,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         for (KeyCacheObject cacheKey : lockKeys) {
                             K keyVal = (K)
                                 (keepCacheObjects ? cacheKey :
-                                cacheCtx.cacheObjectContext().unwrapPortableIfNeeded(cacheKey, !deserializePortable));
+                                cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(cacheKey, !deserializeBinary));
 
                             if (retMap.containsKey(keyVal))
                                 // We already have a return value.
@@ -1823,7 +1823,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             val,
                                             skipVals,
                                             keepCacheObjects,
-                                            deserializePortable,
+                                            deserializeBinary,
                                             false);
                                     }
 
@@ -1847,7 +1847,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             return checkMissed(cacheCtx,
                                 retMap,
                                 missed,
-                                deserializePortable,
+                                deserializeBinary,
                                 skipVals,
                                 keepCacheObjects,
                                 skipStore);
@@ -1913,7 +1913,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     return checkMissed(cacheCtx,
                         retMap,
                         missed,
-                        deserializePortable,
+                        deserializeBinary,
                         skipVals,
                         keepCacheObjects,
                         skipStore);

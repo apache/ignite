@@ -799,7 +799,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             else
                 cacheVal = localCachePeek0(cacheKey, modes.heap, modes.offheap, modes.swap, plc);
 
-            Object val = ctx.unwrapPortableIfNeeded(cacheVal, ctx.keepBinary(), false);
+            Object val = ctx.unwrapBinaryIfNeeded(cacheVal, ctx.keepBinary(), false);
 
             return (V)val;
         }
@@ -1474,7 +1474,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean skipTx,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         final boolean skipVals,
         boolean canRemap
     ) {
@@ -1483,7 +1483,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             skipTx,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             skipVals,
             canRemap).chain(
             new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
@@ -1521,7 +1521,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean skipTx,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         boolean skipVals,
         boolean canRemap
     ) {
@@ -1534,7 +1534,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             !skipTx,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             forcePrimary,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
@@ -1560,7 +1560,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean checkTx,
         @Nullable final UUID subjId,
         final String taskName,
-        final boolean deserializePortable,
+        final boolean deserializeBinary,
         final boolean forcePrimary,
         @Nullable IgniteCacheExpiryPolicy expiry,
         final boolean skipVals,
@@ -1576,7 +1576,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             checkTx,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             expiry,
             skipVals,
             false,
@@ -1603,7 +1603,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean checkTx,
         @Nullable final UUID subjId,
         final String taskName,
-        final boolean deserializePortable,
+        final boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiry,
         final boolean skipVals,
         final boolean keepCacheObjects,
@@ -1661,7 +1661,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 null,
                                 taskName,
                                 expiry,
-                                !deserializePortable);
+                                !deserializeBinary);
 
                             if (res == null) {
                                 if (storeEnabled) {
@@ -1687,7 +1687,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         res.get1(),
                                         skipVals,
                                         keepCacheObjects,
-                                        deserializePortable,
+                                        deserializeBinary,
                                         true);
                                 }
 
@@ -1762,7 +1762,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                                             cacheVal,
                                                             skipVals,
                                                             keepCacheObjects,
-                                                            deserializePortable,
+                                                            deserializeBinary,
                                                             false);
                                                     }
                                                 }
@@ -1861,7 +1861,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             return asyncOp(tx, new AsyncOp<Map<K1, V1>>(keys) {
                 @Override public IgniteInternalFuture<Map<K1, V1>> op(IgniteTxLocalAdapter tx) {
-                    return tx.getAllAsync(ctx, keys, deserializePortable, skipVals, false, !readThrough);
+                    return tx.getAllAsync(ctx, keys, deserializeBinary, skipVals, false, !readThrough);
                 }
             }, ctx.operationContextPerCall());
         }
@@ -3812,7 +3812,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("IfMayBeConditional")
-    @Nullable public V promote(K key, boolean deserializePortable) throws IgniteCheckedException {
+    @Nullable public V promote(K key, boolean deserializeBinary) throws IgniteCheckedException {
         A.notNull(key, "key");
 
         if (keyCheck)
@@ -3842,7 +3842,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         Object val0 = val != null ? val.value(ctx.cacheObjectContext(), true) : null;
 
-        return (V)ctx.unwrapPortableIfNeeded(val0, !deserializePortable);
+        return (V)ctx.unwrapBinaryIfNeeded(val0, !deserializeBinary);
     }
 
     /** {@inheritDoc} */
@@ -4482,9 +4482,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Cached value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V get(K key, boolean deserializePortable)
+    @Nullable public V get(K key, boolean deserializeBinary)
         throws IgniteCheckedException {
-        return getAsync(key, deserializePortable).get();
+        return getAsync(key, deserializeBinary).get();
     }
 
     /**
@@ -4492,7 +4492,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param deserializePortable Deserialize portable flag.
      * @return Read operation future.
      */
-    public final IgniteInternalFuture<V> getAsync(final K key, boolean deserializePortable) {
+    public final IgniteInternalFuture<V> getAsync(final K key, boolean deserializeBinary) {
         try {
             checkJta();
         }
@@ -4507,7 +4507,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*skip tx*/false,
             null,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             false,
             /*can remap*/true);
     }
@@ -4518,10 +4518,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Map of cached values.
      * @throws IgniteCheckedException If read failed.
      */
-    public Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable) throws IgniteCheckedException {
+    public Map<K, V> getAll(Collection<? extends K> keys, boolean deserializeBinary) throws IgniteCheckedException {
         checkJta();
 
-        return getAllAsync(keys, deserializePortable).get();
+        return getAllAsync(keys, deserializeBinary).get();
     }
 
     /**
@@ -4530,7 +4530,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Read future.
      */
     public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
-        boolean deserializePortable) {
+        boolean deserializeBinary) {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         return getAllAsync(keys,
@@ -4538,7 +4538,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*skip tx*/false,
             /*subject id*/null,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             /*skip vals*/false,
             /*can remap*/true);
     }
@@ -4631,7 +4631,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Public API iterator.
      */
     protected Iterator<Cache.Entry<K, V>> iterator(final Iterator<GridCacheEntryEx> it,
-        final boolean deserializePortable) {
+        final boolean deserializeBinary) {
         return new Iterator<Cache.Entry<K, V>>() {
             {
                 advance();
@@ -4669,7 +4669,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     GridCacheEntryEx entry = it.next();
 
                     try {
-                        next = toCacheEntry(entry, deserializePortable);
+                        next = toCacheEntry(entry, deserializeBinary);
 
                         if (next == null)
                             continue;
@@ -4695,7 +4695,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws GridCacheEntryRemovedException If entry removed.
      */
     @Nullable private Cache.Entry<K, V> toCacheEntry(GridCacheEntryEx entry,
-        boolean deserializePortable)
+        boolean deserializeBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException
     {
         CacheObject val = entry.innerGet(
@@ -4711,7 +4711,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             null,
             null,
-            !deserializePortable);
+            !deserializeBinary);
 
         if (val == null)
             return null;
@@ -4721,9 +4721,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         Object key0 = key.value(ctx.cacheObjectContext(), true);
         Object val0 = val.value(ctx.cacheObjectContext(), true);
 
-        if (deserializePortable) {
-            key0 = ctx.unwrapPortableIfNeeded(key0, true);
-            val0 = ctx.unwrapPortableIfNeeded(val0, true);
+        if (deserializeBinary) {
+            key0 = ctx.unwrapBinaryIfNeeded(key0, true);
+            val0 = ctx.unwrapBinaryIfNeeded(val0, true);
         }
 
         return new CacheEntryImpl<>((K)key0, (V)val0, entry.version());

@@ -1167,8 +1167,8 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
-    public void testPortableObjectField() {
-        TestObjectContainer container = new TestObjectContainer(toPortable(new TestObjectArrayList()));
+    public void testBinaryObjectField() {
+        TestObjectContainer container = new TestObjectContainer(toBinary(new TestObjectArrayList()));
 
         BinaryObjectBuilderImpl wrapper = wrap(container);
 
@@ -1181,12 +1181,12 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
-    public void testAssignPortableObject() {
+    public void testAssignBinaryObject() {
         TestObjectContainer container = new TestObjectContainer();
 
         BinaryObjectBuilderImpl wrapper = wrap(container);
 
-        wrapper.setField("foo", toPortable(new TestObjectArrayList()));
+        wrapper.setField("foo", toBinary(new TestObjectArrayList()));
 
         TestObjectContainer deserialized = wrapper.build().deserialize();
         assertTrue(deserialized.foo instanceof TestObjectArrayList);
@@ -1212,7 +1212,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectAllTypes obj = new TestObjectAllTypes();
         obj.setDefaultData();
 
-        BinaryObjectBuilderImpl wrapper = wrap(toPortable(obj));
+        BinaryObjectBuilderImpl wrapper = wrap(toBinary(obj));
 
         wrapper.removeField("str");
 
@@ -1232,7 +1232,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         obj.foo = arr1;
 
-        TestObjectContainer res = toPortable(obj).deserialize();
+        TestObjectContainer res = toBinary(obj).deserialize();
 
         Object[] resArr = (Object[])res.foo;
 
@@ -1254,7 +1254,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         obj.foo = arr1;
 
-        TestObjectContainer res = toPortable(obj).deserialize();
+        TestObjectContainer res = toBinary(obj).deserialize();
 
         List<?> resArr = (List<?>)res.foo;
 
@@ -1265,7 +1265,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      * @param obj Object.
      * @return Object in portable format.
      */
-    private BinaryObject toPortable(Object obj) {
+    private BinaryObject toBinary(Object obj) {
         return portables().toBinary(obj);
     }
 
@@ -1274,7 +1274,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      * @return GridMutablePortableObject.
      */
     private BinaryObjectBuilderImpl wrap(Object obj) {
-        return BinaryObjectBuilderImpl.wrap(toPortable(obj));
+        return BinaryObjectBuilderImpl.wrap(toBinary(obj));
     }
 
     /**

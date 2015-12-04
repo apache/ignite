@@ -128,8 +128,8 @@ import org.apache.ignite.internal.util.typedef.F;
      * @param keepBinary Keep binary flag.
      * @return Unwrapped object.
      */
-    public Object unwrapPortableIfNeeded(Object o, boolean keepBinary) {
-        return unwrapPortableIfNeeded(o, keepBinary, true);
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary) {
+        return unwrapBinaryIfNeeded(o, keepBinary, true);
     }
 
     /**
@@ -138,11 +138,11 @@ import org.apache.ignite.internal.util.typedef.F;
      * @param cpy Copy value flag.
      * @return Unwrapped object.
      */
-    public Object unwrapPortableIfNeeded(Object o, boolean keepBinary, boolean cpy) {
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy) {
         if (o == null)
             return null;
 
-        return unwrapPortable(o, keepBinary, cpy);
+        return unwrapBinary(o, keepBinary, cpy);
     }
 
     /**
@@ -170,7 +170,7 @@ import org.apache.ignite.internal.util.typedef.F;
         Collection<Object> col0 = new ArrayList<>(col.size());
 
         for (Object obj : col)
-            col0.add(unwrapPortable(obj, keepBinary, cpy));
+            col0.add(unwrapBinary(obj, keepBinary, cpy));
 
         return col0;
     }
@@ -187,7 +187,7 @@ import org.apache.ignite.internal.util.typedef.F;
         Object[] res = new Object[arr.length];
 
         for (int i = 0; i < arr.length; i++)
-            res[i] = unwrapPortable(arr[i], keepBinary, cpy);
+            res[i] = unwrapBinary(arr[i], keepBinary, cpy);
 
         return res;
     }
@@ -206,7 +206,7 @@ import org.apache.ignite.internal.util.typedef.F;
         Map<Object, Object> map0 = BinaryUtils.newMap(map);
 
         for (Map.Entry<Object, Object> e : map.entrySet())
-            map0.put(unwrapPortable(e.getKey(), keepBinary, cpy), unwrapPortable(e.getValue(), keepBinary, cpy));
+            map0.put(unwrapBinary(e.getKey(), keepBinary, cpy), unwrapBinary(e.getValue(), keepBinary, cpy));
 
         return map0;
     }
@@ -225,7 +225,7 @@ import org.apache.ignite.internal.util.typedef.F;
         for (int i = 0; i < size; i++) {
             Object o = col.get(i);
 
-            Object unwrapped = unwrapPortable(o, keepBinary, cpy);
+            Object unwrapped = unwrapBinary(o, keepBinary, cpy);
 
             if (o != unwrapped)
                 col.set(i, unwrapped);
@@ -244,7 +244,7 @@ import org.apache.ignite.internal.util.typedef.F;
         Set<Object> set0 = BinaryUtils.newSet(set);
 
         for (Object obj : set)
-            set0.add(unwrapPortable(obj, keepBinary, cpy));
+            set0.add(unwrapBinary(obj, keepBinary, cpy));
 
         return set0;
     }
@@ -253,17 +253,17 @@ import org.apache.ignite.internal.util.typedef.F;
      * @param o Object to unwrap.
      * @return Unwrapped object.
      */
-    private Object unwrapPortable(Object o, boolean keepBinary, boolean cpy) {
+    private Object unwrapBinary(Object o, boolean keepBinary, boolean cpy) {
         if (o instanceof Map.Entry) {
             Map.Entry entry = (Map.Entry)o;
 
             Object key = entry.getKey();
 
-            Object uKey = unwrapPortable(key, keepBinary, cpy);
+            Object uKey = unwrapBinary(key, keepBinary, cpy);
 
             Object val = entry.getValue();
 
-            Object uVal = unwrapPortable(val, keepBinary, cpy);
+            Object uVal = unwrapBinary(val, keepBinary, cpy);
 
             return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
         }
@@ -277,7 +277,7 @@ import org.apache.ignite.internal.util.typedef.F;
             CacheObject co = (CacheObject)o;
 
             if (!keepBinary || co.isPlatformType())
-                return unwrapPortable(co.value(this, cpy), keepBinary, cpy);
+                return unwrapBinary(co.value(this, cpy), keepBinary, cpy);
         }
 
         return o;

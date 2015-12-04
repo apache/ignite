@@ -19,13 +19,13 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.portable.BinaryEnumsSelfTest;
-import org.apache.ignite.internal.portable.GridPortableAffinityKeySelfTest;
+import org.apache.ignite.internal.portable.GridBinaryAffinityKeySelfTest;
 import org.apache.ignite.internal.portable.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.portable.BinaryObjectBuilderSelfTest;
-import org.apache.ignite.internal.portable.GridPortableMarshallerCtxDisabledSelfTest;
+import org.apache.ignite.internal.portable.GridBinaryMarshallerCtxDisabledSelfTest;
 import org.apache.ignite.internal.portable.BinaryMarshallerSelfTest;
-import org.apache.ignite.internal.portable.GridPortableMetaDataSelfTest;
-import org.apache.ignite.internal.portable.GridPortableWildcardsSelfTest;
+import org.apache.ignite.internal.portable.GridBinaryMetaDataSelfTest;
+import org.apache.ignite.internal.portable.GridBinaryWildcardsSelfTest;
 import org.apache.ignite.internal.portable.BinaryFooterOffsetsHeapSelfTest;
 import org.apache.ignite.internal.portable.BinaryFooterOffsetsOffheapSelfTest;
 import org.apache.ignite.internal.portable.BinaryFieldsHeapSelfTest;
@@ -67,7 +67,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Binary Objects Test Suite");
 
         suite.addTestSuite(BinaryMarshallerSelfTest.class);
-        suite.addTestSuite(GridPortableMarshallerCtxDisabledSelfTest.class);
+        suite.addTestSuite(GridBinaryMarshallerCtxDisabledSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderAdditionalSelfTest.class);
         suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
@@ -75,9 +75,9 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryFooterOffsetsHeapSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsOffheapSelfTest.class);
         suite.addTestSuite(BinaryEnumsSelfTest.class);
-        suite.addTestSuite(GridPortableMetaDataSelfTest.class);
-        suite.addTestSuite(GridPortableAffinityKeySelfTest.class);
-        suite.addTestSuite(GridPortableWildcardsSelfTest.class);
+        suite.addTestSuite(GridBinaryMetaDataSelfTest.class);
+        suite.addTestSuite(GridBinaryAffinityKeySelfTest.class);
+        suite.addTestSuite(GridBinaryWildcardsSelfTest.class);
 
         // Tests for objects with non-compact footers.
         suite.addTestSuite(BinaryMarshallerNonCompactSelfTest.class);

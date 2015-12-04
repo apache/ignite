@@ -209,7 +209,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     desc.name(simpleValType);
 
-                    if (ctx.cacheObjects().isPortableEnabled(ccfg)) {
+                    if (ctx.cacheObjects().isBinaryEnabled(ccfg)) {
                         // Safe to check null.
                         if (SQL_TYPES.contains(valCls))
                             desc.valueClass(valCls);
@@ -237,8 +237,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     TypeId typeId;
                     TypeId altTypeId = null;
 
-                    if (valCls == null || ctx.cacheObjects().isPortableEnabled(ccfg)) {
-                        processPortableMeta(qryEntity, desc);
+                    if (valCls == null || ctx.cacheObjects().isBinaryEnabled(ccfg)) {
+                        processBinaryMeta(qryEntity, desc);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
 
@@ -281,7 +281,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     desc.name(meta.getSimpleValueType());
 
-                    if (ctx.cacheObjects().isPortableEnabled(ccfg)) {
+                    if (ctx.cacheObjects().isBinaryEnabled(ccfg)) {
                         // Safe to check null.
                         if (SQL_TYPES.contains(valCls))
                             desc.valueClass(valCls);
@@ -301,8 +301,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     TypeId typeId;
                     TypeId altTypeId = null;
 
-                    if (valCls == null || ctx.cacheObjects().isPortableEnabled(ccfg)) {
-                        processPortableMeta(meta, desc);
+                    if (valCls == null || ctx.cacheObjects().isBinaryEnabled(ccfg)) {
+                        processBinaryMeta(meta, desc);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
 
@@ -586,7 +586,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             TypeId id;
 
-            boolean portableVal = ctx.cacheObjects().isPortableObject(val);
+            boolean portableVal = ctx.cacheObjects().isBinaryObject(val);
 
             if (portableVal) {
                 int typeId = ctx.cacheObjects().typeId(val);
@@ -609,7 +609,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
 
-            if (!ctx.cacheObjects().isPortableObject(key)) {
+            if (!ctx.cacheObjects().isBinaryObject(key)) {
                 Class<?> keyCls = key.value(coctx, false).getClass();
 
                 if (!desc.keyClass().isAssignableFrom(keyCls))
@@ -1291,7 +1291,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void processPortableMeta(CacheTypeMetadata meta, TypeDescriptor d)
+    private void processBinaryMeta(CacheTypeMetadata meta, TypeDescriptor d)
         throws IgniteCheckedException {
         Map<String,String> aliases = meta.getAliases();
 
@@ -1299,7 +1299,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue(), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
 
             d.addProperty(prop, false);
 
@@ -1311,7 +1311,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue(), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
 
             d.addProperty(prop, false);
 
@@ -1323,7 +1323,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (String txtIdx : meta.getTextFields()) {
-            PortableProperty prop = buildPortableProperty(txtIdx, String.class, aliases);
+            BinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases);
 
             d.addProperty(prop, false);
 
@@ -1341,7 +1341,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int order = 0;
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    PortableProperty prop = buildPortableProperty(idxField.getKey(), idxField.getValue().get1(), aliases);
+                    BinaryProperty prop = buildBinaryProperty(idxField.getKey(), idxField.getValue().get1(), aliases);
 
                     d.addProperty(prop, false);
 
@@ -1355,7 +1355,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue(), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
 
             if (!d.props.containsKey(prop.name()))
                 d.addProperty(prop, false);
@@ -1369,14 +1369,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void processPortableMeta(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
+    private void processBinaryMeta(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
         Map<String,String> aliases = qryEntity.getAliases();
 
         if (aliases == null)
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
-            PortableProperty prop = buildPortableProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class), aliases);
 
             d.addProperty(prop, false);
         }
@@ -1474,10 +1474,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param aliases Aliases.
      * @return Portable property.
      */
-    private PortableProperty buildPortableProperty(String pathStr, Class<?> resType, Map<String,String> aliases) {
+    private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String,String> aliases) {
         String[] path = pathStr.split("\\.");
 
-        PortableProperty res = null;
+        BinaryProperty res = null;
 
         StringBuilder fullName = new StringBuilder();
 
@@ -1489,7 +1489,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String alias = aliases.get(fullName.toString());
 
-            res = new PortableProperty(prop, res, resType, alias);
+            res = new BinaryProperty(prop, res, resType, alias);
         }
 
         return res;
@@ -1793,7 +1793,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private class PortableProperty extends GridQueryProperty {
+    private class BinaryProperty extends GridQueryProperty {
         /** Property name. */
         private String propName;
 
@@ -1801,7 +1801,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private String alias;
 
         /** Parent property. */
-        private PortableProperty parent;
+        private BinaryProperty parent;
 
         /** Result class. */
         private Class<?> type;
@@ -1822,7 +1822,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param parent Parent property.
          * @param type Result type.
          */
-        private PortableProperty(String propName, PortableProperty parent, Class<?> type, String alias) {
+        private BinaryProperty(String propName, BinaryProperty parent, Class<?> type, String alias) {
             this.propName = propName;
             this.alias = F.isEmpty(alias) ? propName : alias;
             this.parent = parent;
@@ -1839,7 +1839,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (obj == null)
                     return null;
 
-                if (!ctx.cacheObjects().isPortableObject(obj))
+                if (!ctx.cacheObjects().isBinaryObject(obj))
                     throw new IgniteCheckedException("Non-portable object received as a result of property extraction " +
                         "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
             }

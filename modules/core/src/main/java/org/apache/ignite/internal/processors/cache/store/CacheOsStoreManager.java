@@ -57,7 +57,7 @@ public class CacheOsStoreManager extends GridCacheStoreManagerAdapter {
             if (store instanceof PlatformCacheStore) {
                 PlatformProcessor proc = ctx.platform();
 
-                proc.registerStore((PlatformCacheStore)store, configuredConvertPortable());
+                proc.registerStore((PlatformCacheStore)store, configuredConvertBinary());
             }
         }
 
@@ -76,12 +76,12 @@ public class CacheOsStoreManager extends GridCacheStoreManagerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean convertPortable() {
-        return configuredConvertPortable() && !(cfgStore instanceof PlatformCacheStore);
+    @Override public boolean convertBinary() {
+        return configuredConvertBinary() && !(cfgStore instanceof PlatformCacheStore);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean configuredConvertPortable() {
+    @Override public boolean configuredConvertBinary() {
         return !(ctx.config().getMarshaller() instanceof BinaryMarshaller && cfg.isKeepBinaryInStore());
     }
 }

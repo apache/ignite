@@ -147,7 +147,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testAddMissingPortable() throws Exception {
+    public void testAddMissingBinary() throws Exception {
         try {
             portables = true;
 
@@ -182,7 +182,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testAddPortableDataFromMap() throws Exception {
+    public void testAddBinaryDataFromMap() throws Exception {
         try {
             portables = true;
 

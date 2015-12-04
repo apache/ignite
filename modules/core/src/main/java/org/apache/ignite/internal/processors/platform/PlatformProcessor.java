@@ -169,7 +169,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @param convertPortable Convert portable flag.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerStore(PlatformCacheStore store, boolean convertPortable) throws IgniteCheckedException;
+    public void registerStore(PlatformCacheStore store, boolean convertBinary) throws IgniteCheckedException;
 
     /**
      * Get or create AtomicLong.

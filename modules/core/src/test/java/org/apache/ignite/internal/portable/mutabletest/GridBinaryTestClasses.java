@@ -104,22 +104,22 @@ public class GridBinaryTestClasses {
     /**
      *
      */
-    public static class TestObjectPlainPortable {
+    public static class TestObjectPlainBinary {
         /** */
-        public BinaryObject plainPortable;
+        public BinaryObject plainBinary;
 
         /**
          *
          */
-        public TestObjectPlainPortable() {
+        public TestObjectPlainBinary() {
             // No-op.
         }
 
         /**
          * @param plainPortable Object.
          */
-        public TestObjectPlainPortable(BinaryObject plainPortable) {
-            this.plainPortable = plainPortable;
+        public TestObjectPlainBinary(BinaryObject plainBinary) {
+            this.plainBinary = plainBinary;
         }
     }
 

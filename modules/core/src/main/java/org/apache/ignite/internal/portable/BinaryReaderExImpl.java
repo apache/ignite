@@ -332,7 +332,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return Portable object.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable BinaryObject readPortableObject(int fieldId) throws BinaryObjectException {
+    @Nullable BinaryObject readBinaryObject(int fieldId) throws BinaryObjectException {
         if (findFieldById(fieldId)) {
             if (checkFlag(PORTABLE_OBJ) == Flag.NULL)
                 return null;
@@ -1591,7 +1591,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case PORTABLE_OBJ:
-                obj = BinaryUtils.doReadPortableObject(in, ctx);
+                obj = BinaryUtils.doReadBinaryObject(in, ctx);
 
                 ((BinaryObjectImpl)obj).context(ctx);
 

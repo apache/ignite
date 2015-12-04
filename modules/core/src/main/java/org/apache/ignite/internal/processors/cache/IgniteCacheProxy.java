@@ -455,13 +455,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         final CacheQuery<Map.Entry<K,V>> qry;
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
-        boolean isKeepPortable = opCtx != null && opCtx.isKeepBinary();
+        boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
 
         if (filter instanceof ScanQuery) {
             IgniteBiPredicate<K, V> p = ((ScanQuery)filter).getFilter();
 
             qry = ctx.queries().createScanQuery(p != null ? p : ACCEPT_ALL, ((ScanQuery)filter).getPartition(),
-                isKeepPortable);
+                isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
@@ -476,7 +476,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         else if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
 
-            qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), isKeepPortable);
+            qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
@@ -489,7 +489,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 }, false);
         }
         else if (filter instanceof SpiQuery) {
-            qry = ctx.queries().createSpiQuery(isKeepPortable);
+            qry = ctx.queries().createSpiQuery(isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);

@@ -190,10 +190,10 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
     /**
      * @return Convert-portable flag.
      */
-    public boolean convertPortable();
+    public boolean convertBinary();
 
     /**
      * @return Configured convert portable flag.
      */
-    public boolean configuredConvertPortable();
+    public boolean configuredConvertBinary();
 }

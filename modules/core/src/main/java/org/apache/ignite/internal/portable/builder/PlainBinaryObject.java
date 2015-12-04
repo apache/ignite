@@ -48,6 +48,6 @@ public class PlainBinaryObject implements BinaryLazyValue {
         if (val instanceof BinaryObjectOffheapImpl)
             val = ((BinaryObjectOffheapImpl)val).heapCopy();
 
-        writer.doWritePortableObject((BinaryObjectImpl)val);
+        writer.doWriteBinaryObject((BinaryObjectImpl)val);
     }
 }

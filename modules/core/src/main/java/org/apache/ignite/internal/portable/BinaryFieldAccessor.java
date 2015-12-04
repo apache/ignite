@@ -614,7 +614,7 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case PORTABLE_OBJ:
-                    writer.writePortableObjectField((BinaryObjectImpl)val);
+                    writer.writeBinaryObjectField((BinaryObjectImpl)val);
 
                     break;
 
@@ -820,7 +820,7 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case PORTABLE_OBJ:
-                    val = reader.readPortableObject(id);
+                    val = reader.readBinaryObject(id);
 
                     break;
 
