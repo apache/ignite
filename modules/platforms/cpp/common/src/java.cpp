@@ -183,6 +183,9 @@ namespace ignite
             const char* C_CLASS = "java/lang/Class";
             JniMethod M_CLASS_GET_NAME = JniMethod("getName", "()Ljava/lang/String;", false);
 
+            const char* C_X = "org/apache/ignite/internal/util/typedef";
+            JniMethod M_X_GET_FULL_STACK_TRACE = JniMethod("getFullStackTrace", "(Ljava/lang/Throwable;)Ljava/lang/String;", false);
+
             const char* C_IGNITE_EXCEPTION = "org/apache/ignite/IgniteException";
 
             const char* C_PLATFORM_NO_CALLBACK_EXCEPTION = "org/apache/ignite/internal/processors/platform/PlatformNoCallbackException";
@@ -504,11 +507,15 @@ namespace ignite
                 m_Throwable_printStackTrace = FindMethod(env, c_Throwable, M_THROWABLE_PRINT_STACK_TRACE);
 				m_Throwable_getCause = FindMethod(env, c_Throwable, M_THROWABLE_GET_CAUSE);
 				m_Throwable_getStackTrace = FindMethod(env, c_Throwable, M_THROWABLE_GET_STACK_TRACE);
+				
+				c_X = FindClass(env, C_X);
+				m_Throwable_getStackTrace = FindMethod(env, c_Throwable, M_X_GET_FULL_STACK_TRACE);
             }
 
             void JniJavaMembers::Destroy(JNIEnv* env) {
                 DeleteClass(env, c_Class);
                 DeleteClass(env, c_Throwable);
+                DeleteClass(env, c_X);
             }
 
             bool JniJavaMembers::WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, 
@@ -527,6 +534,9 @@ namespace ignite
                         jstring msg = static_cast<jstring>(env->CallObjectMethod(err, m_Throwable_getMessage));
                         *errMsg = StringToChars(env, msg, errMsgLen);
 
+						jstring trace = static_cast<jstring>(env->CallStaticObjectMethod(c_X, m_X_getFullStackTrace));
+						*stackTrace = StringToChars(env, trace, stackTraceLen);
+
                         if (errCls)
                             env->DeleteLocalRef(errCls);
 
@@ -535,6 +545,9 @@ namespace ignite
 
                         if (msg)
                             env->DeleteLocalRef(msg);
+
+                        if (trace)
+                            env->DeleteLocalRef(trace);
 
                         return true;
                     }
@@ -916,6 +929,13 @@ namespace ignite
                         delete[] errMsgChars;
                     }
 
+					if (stackTraceChars)
+					{
+						stackTrace = stackTraceChars;
+
+						delete[] stackTraceChars;
+					}
+
                     // Destroy mmebers.
                     if (env) {
                         members.Destroy(env);
@@ -940,7 +960,7 @@ namespace ignite
 
                     if (hnds.error)
                         hnds.error(hnds.target, IGNITE_JNI_ERR_JVM_INIT, errClsName.c_str(), errClsNameLen,
-                            errMsg.c_str(), errMsgLen, NULL, 0);
+                            errMsg.c_str(), errMsgLen, stackTrace.c_str(), stackTraceLen, NULL, 0);
                 }
 
                 return ctx;
@@ -2105,7 +2125,7 @@ namespace ignite
                     AttachHelper::OnThreadAttach();
                 else {
                     if (hnds.error)
-                        hnds.error(hnds.target, IGNITE_JNI_ERR_JVM_ATTACH, NULL, 0, NULL, 0, NULL, 0);
+                        hnds.error(hnds.target, IGNITE_JNI_ERR_JVM_ATTACH, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
                 }
 
                 return env;
