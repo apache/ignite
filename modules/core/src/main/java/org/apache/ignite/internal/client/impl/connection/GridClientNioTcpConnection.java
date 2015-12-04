@@ -156,7 +156,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     private final GridClientMarshaller marsh;
 
     /** */
-    private final ThreadLocal<Boolean> keepPortablesMode;
+    private final ThreadLocal<Boolean> keepBinariesMode;
 
     /**
      * Creates a client facade, tries to connect to remote server, in case of success starts reader thread.
@@ -190,7 +190,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         Byte marshId,
         GridClientTopology top,
         Object cred,
-        ThreadLocal<Boolean> keepPortablesMode
+        ThreadLocal<Boolean> keepBinariesMode
     ) throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
@@ -199,7 +199,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         this.marsh = marsh;
         this.pingInterval = pingInterval;
         this.pingTimeout = pingTimeout;
-        this.keepPortablesMode = keepPortablesMode;
+        this.keepBinariesMode = keepBinariesMode;
 
         SocketChannel ch = null;
         Socket sock = null;
@@ -385,16 +385,16 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      *
      * @param msg Message to request,
      * @param destId Destination node identifier.
-     * @param keepPortables Keep binary flag.
+     * @param keepBinaries Keep binary flag.
      * @return Response object.
      * @throws GridClientConnectionResetException If request failed.
      * @throws GridClientClosedException If client was closed.
      */
-    private <R> GridClientFutureAdapter<R> makeRequest(GridClientMessage msg, UUID destId, boolean keepPortables)
+    private <R> GridClientFutureAdapter<R> makeRequest(GridClientMessage msg, UUID destId, boolean keepBinaries)
         throws GridClientConnectionResetException, GridClientClosedException {
         assert msg != null;
 
-        TcpClientFuture<R> res = new TcpClientFuture<>(false, keepPortables);
+        TcpClientFuture<R> res = new TcpClientFuture<>(false, keepBinaries);
 
         msg.destinationId(destId);
 
@@ -786,12 +786,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
     /** {@inheritDoc} */
     @Override public <R> GridClientFutureAdapter<R> execute(String taskName, Object arg, UUID destNodeId,
-        final boolean keepPortables) throws GridClientConnectionResetException, GridClientClosedException {
+        final boolean keepBinaries) throws GridClientConnectionResetException, GridClientClosedException {
         GridClientTaskRequest msg = new GridClientTaskRequest();
 
         msg.taskName(taskName);
         msg.argument(arg);
-        msg.keepPortables(keepPortables);
+        msg.keepBinaries(keepBinaries);
 
         return this.<GridClientTaskResultBean>makeRequest(msg, destNodeId).chain(
             new GridClientFutureCallback<GridClientTaskResultBean, R>() {
@@ -1038,7 +1038,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         private final boolean forward;
 
         /** Keep binary flag. */
-        private final boolean keepPortables;
+        private final boolean keepBinaries;
 
         /** Pending message for this future. */
         private GridClientMessage pendingMsg;
@@ -1052,7 +1052,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
          */
         private TcpClientFuture() {
             forward = false;
-            keepPortables = false;
+            keepBinaries = false;
         }
 
         /**
@@ -1060,9 +1060,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
          *
          * @param forward Flag value.
          */
-        private TcpClientFuture(boolean forward, boolean keepPortables) {
+        private TcpClientFuture(boolean forward, boolean keepBinaries) {
             this.forward = forward;
-            this.keepPortables = keepPortables;
+            this.keepBinaries = keepBinaries;
         }
 
         /**
@@ -1103,8 +1103,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         /**
          * @return Keep binary flag.
          */
-        public boolean keepPortables() {
-            return keepPortables;
+        public boolean keepBinaries() {
+            return keepBinaries;
         }
 
         /** {@inheritDoc} */

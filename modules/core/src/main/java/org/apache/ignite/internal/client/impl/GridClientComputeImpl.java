@@ -125,14 +125,14 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
     @Override public <R> GridClientFuture<R> executeAsync(final String taskName, final Object taskArg) {
         A.notNull(taskName, "taskName");
 
-        final boolean keepPortables = KEEP_PORTABLES.get();
+        final boolean keepBinaries = KEEP_PORTABLES.get();
 
         KEEP_PORTABLES.set(false);
 
         return withReconnectHandling(new ClientProjectionClosure<R>() {
             @Override public GridClientFuture<R> apply(GridClientConnection conn, UUID destNodeId)
                 throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.execute(taskName, taskArg, destNodeId, keepPortables);
+                return conn.execute(taskName, taskArg, destNodeId, keepBinaries);
             }
         });
     }
@@ -148,14 +148,14 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
         Object affKey, final Object taskArg) {
         A.notNull(taskName, "taskName");
 
-        final boolean keepPortables = KEEP_PORTABLES.get();
+        final boolean keepBinaries = KEEP_PORTABLES.get();
 
         KEEP_PORTABLES.set(false);
 
         return withReconnectHandling(new ClientProjectionClosure<R>() {
             @Override public GridClientFuture<R> apply(GridClientConnection conn, UUID destNodeId)
                 throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.execute(taskName, taskArg, destNodeId, keepPortables);
+                return conn.execute(taskName, taskArg, destNodeId, keepBinaries);
             }
         }, cacheName, affKey);
     }
