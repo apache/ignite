@@ -18,9 +18,11 @@
 #ifndef _IGNITE_ODBC_DRIVER_APPLICATION_DATA_BUFFER
 #define _IGNITE_ODBC_DRIVER_APPLICATION_DATA_BUFFER
 
-#include <ignite/guid.h>
-
 #include <stdint.h>
+
+#include <map>
+
+#include <ignite/guid.h>
 
 #include "ignite/odbc/type_traits.h"
 
@@ -194,6 +196,9 @@ namespace ignite
             /** Result length. */
             int64_t* reslen;
         };
+
+        /** Column binging map type alias. */
+        typedef std::map<uint16_t, ApplicationDataBuffer> ColumnBindingMap;
     }
 }
 

@@ -27,6 +27,7 @@
 #include <ignite/impl/interop/interop_input_stream.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
+#include "ignite/odbc/query/query.h"
 #include "ignite/odbc/application_data_buffer.h"
 #include "ignite/odbc/parser.h"
 #include "ignite/odbc/common_types.h"
@@ -63,6 +64,7 @@ namespace ignite
 
             /**
              * Unbind specified column buffer.
+             *
              * @param columnIdx Column index.
              */
             void UnbindColumn(uint16_t columnIdx);
@@ -74,6 +76,7 @@ namespace ignite
 
             /**
              * Prepare SQL query.
+             *
              * @note Only SELECT queries are supported currently.
              * @param query SQL query.
              * @param len Query length.
@@ -83,6 +86,7 @@ namespace ignite
 
             /**
              * Execute SQL query.
+             *
              * @note Only SELECT queries are supported currently.
              * @param query SQL query.
              * @param len Query length.
@@ -92,13 +96,25 @@ namespace ignite
 
             /**
              * Execute SQL query.
+             *
              * @note Only SELECT queries are supported currently.
              * @return True on success.
              */
             bool ExecuteSqlQuery();
 
             /**
+             * Get columns metadata.
+             *
+             * @param cache Cache name.
+             * @param table Table name.
+             * @param column Column name.
+             * @return True on success.
+             */
+            bool ExecuteGetColumnsMetaQuery(const std::string& cache, const std::string& table, const std::string& column);
+
+            /**
              * Close statement.
+             *
              * @return True on success.
              */
             bool Close();
@@ -106,51 +122,32 @@ namespace ignite
             /**
              * Fetch query result row.
              *
-             * @return True on success.
+             * @return Operation result.
              */
             SqlResult FetchRow();
 
             /**
              * Get column metadata.
+             *
              * @return Column metadata.
              */
-            const std::vector<ColumnMeta>& GetMeta() const
-            {
-                return resultMeta;
-            }
+            const ColumnMetaVector* GetMeta() const;
 
         private:
-
             /**
              * Constructor.
              * Called by friend classes.
+             *
              * @param parent Connection associated with the statement.
              */
             Statement(Connection& parent);
 
             /**
-             * Make query execute request and use response to set internal
-             * state.
+             * Make get columns metadata requets and use response to set internal state.
              *
              * @return True on success.
              */
-            bool MakeRequestExecute();
-
-            /**
-             * Make query close request.
-             * @return True on success.
-             */
-            bool MakeRequestClose();
-
-            /**
-             * Make data fetch request and use response to set internal state.
-             *
-             * @return True on success.
-             */
-            bool MakeRequestFetch();
-
-            /** Column binging map type alias. */
-            typedef std::map<uint16_t, ApplicationDataBuffer> ColumnBindingMap;
+            bool MakeRequestGetColumnsMeta(const std::string& cache, const std::string& table, const std::string& column);
 
             /** Connection associated with the statement. */
             Connection& connection;
@@ -158,14 +155,8 @@ namespace ignite
             /** Column bindings. */
             ColumnBindingMap columnBindings;
 
-            /** SQL Query. */
-            std::string sql;
-
-            /** Columns metadata. */
-            ColumnMetaVector resultMeta;
-
-            /** Cursor. */
-            std::auto_ptr<Cursor> cursor;
+            /** Underlying query. */
+            std::auto_ptr<query::Query> currentQuery;
         };
     }
 }

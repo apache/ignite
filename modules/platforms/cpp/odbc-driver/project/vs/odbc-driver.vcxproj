@@ -89,7 +89,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\src;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\src;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -103,7 +103,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\src;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\src;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -119,7 +119,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\src;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\src;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -137,7 +137,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\src;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\src;$(ProjectDir)\..\..\os\win;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -159,6 +159,7 @@
     <ClCompile Include="..\..\src\connection_info.cpp" />
     <ClCompile Include="..\..\src\odbc.cpp" />
     <ClCompile Include="..\..\src\application_data_buffer.cpp" />
+    <ClCompile Include="..\..\src\query\data_query.cpp" />
     <ClCompile Include="..\..\src\result_page.cpp" />
     <ClCompile Include="..\..\src\row.cpp" />
     <ClCompile Include="..\..\src\statement.cpp" />
@@ -188,6 +189,8 @@
     <ClInclude Include="..\..\include\ignite\odbc\interop_stack_memory.h" />
     <ClInclude Include="..\..\include\ignite\odbc\message.h" />
     <ClInclude Include="..\..\include\ignite\odbc\parser.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\data_query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\result_page.h" />
     <ClInclude Include="..\..\include\ignite\odbc\row.h" />
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />

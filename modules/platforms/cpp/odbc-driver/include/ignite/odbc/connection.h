@@ -54,14 +54,14 @@ namespace ignite
              * @return True on success.
              */
             bool Establish(const std::string& host, uint16_t port, const std::string& cache);
-            
+
             /**
              * Release established connection.
              *
              * @return True on success.
              */
             bool Release();
-            
+
             /**
              * Create statement associated with the connection.
              *

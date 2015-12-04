@@ -18,12 +18,6 @@
 #ifndef _IGNITE_ODBC_DRIVER_SOCKET_CLIENT
 #define _IGNITE_ODBC_DRIVER_SOCKET_CLIENT
 
-#define WIN32_LEAN_AND_MEAN
-#define _WINSOCKAPI_
-
-#include <windows.h>
-#include <winsock2.h>
-
 #include <stdint.h>
 
 #include "ignite/common/common.h"
@@ -99,7 +93,7 @@ namespace ignite
                 int Receive(int8_t* buffer, size_t size);
 
             private:
-                SOCKET socketHandle;
+                uintptr_t socketHandle;
 
                 IGNITE_NO_COPY_ASSIGNMENT(SocketClient)
             };

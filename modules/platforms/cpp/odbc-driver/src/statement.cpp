@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include "ignite/odbc/query/data_query.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
@@ -25,7 +26,7 @@ namespace ignite
     namespace odbc
     {
         Statement::Statement(Connection& parent) :
-            connection(parent), columnBindings(), resultMeta()
+            connection(parent), columnBindings(), currentQuery()
         {
             // No-op.
         }
@@ -52,7 +53,12 @@ namespace ignite
 
         void Statement::PrepareSqlQuery(const char* query, size_t len)
         {
-            sql.assign(query, len);
+            if (currentQuery.get())
+                currentQuery->Close();
+
+            std::string sql(query, len);
+
+            currentQuery.reset(new query::DataQuery(connection, sql));
         }
 
         bool Statement::ExecuteSqlQuery(const char* query, size_t len)
@@ -66,79 +72,52 @@ namespace ignite
 
         bool Statement::ExecuteSqlQuery()
         {
-            if (sql.empty())
+            if (!currentQuery.get())
                 return false;
 
-            bool success = MakeRequestExecute();
+            return currentQuery->Execute();
+        }
 
-            if (!success)
-                return false;
-
-            return true;
+        bool Statement::ExecuteGetColumnsMetaQuery(const std::string& cache, const std::string& table, const std::string& column)
+        {
+            // TODO: implement me.
+            return false;
         }
 
         bool Statement::Close()
         {
-            if (!cursor.get())
+            if (!currentQuery.get())
                 return false;
 
-            bool success = MakeRequestClose();
+            currentQuery->Close();
 
-            cursor.reset();
+            currentQuery.reset();
 
-            return success;
+            return true;
         }
 
         SqlResult Statement::FetchRow()
         {
-            if (!cursor.get())
+            if (!currentQuery.get())
                 return SQL_RESULT_ERROR;
 
-            if (!cursor->HasNext())
-            {
-                return SQL_RESULT_NO_DATA;
-            }
-
-            if (cursor->NeedDataUpdate())
-            {
-                bool success = MakeRequestFetch();
-
-                if (!success)
-                    return SQL_RESULT_ERROR;
-            }
-            else
-                cursor->Increment();
-
-
-            Row* row = cursor->GetRow();
-
-            if (!row)
-                return SQL_RESULT_ERROR;
-
-            for (int32_t i = 1; i < row->GetSize() + 1; ++i)
-            {
-                ColumnBindingMap::iterator it = columnBindings.find(i);
-
-                bool success;
-
-                if (it != columnBindings.end())
-                    success = row->ReadColumnToBuffer(it->second);
-                else
-                    success = row->SkipColumn();
-
-                if (!success)
-                    return SQL_RESULT_ERROR;
-            }
-
-            return SQL_RESULT_SUCCESS;
+            return currentQuery->FetchNextRow(columnBindings);
         }
 
-        bool Statement::MakeRequestExecute()
+        const ColumnMetaVector * Statement::GetMeta() const
         {
-            const std::string& cacheName = connection.GetCache();
+            if (!currentQuery.get())
+                return 0;
 
-            QueryExecuteRequest req(cacheName, sql);
-            QueryExecuteResponse rsp;
+            return &currentQuery->GetMeta();
+        }
+
+        bool Statement::MakeRequestGetColumnsMeta(const std::string& cache, const std::string& table, const std::string& column)
+        {
+            //std::auto_ptr<ResultPage> resultPage(new ResultPage());
+
+            QueryGetColumnsMetaRequest req(cache, table, column);
+            QueryGetColumnsMetaResponse rsp;
 
             bool success = connection.SyncMessage(req, rsp);
 
@@ -152,68 +131,7 @@ namespace ignite
                 return false;
             }
 
-            cursor.reset(new Cursor(rsp.GetQueryId()));
-
-            resultMeta.assign(rsp.GetMeta().begin(), rsp.GetMeta().end());
-
-            LOG_MSG("Query id: %lld\n", cursor->GetQueryId());
-
-            for (int i = 0; i < rsp.GetMeta().size(); ++i)
-            {
-                LOG_MSG("[%d] SchemaName:    %s\n", i, rsp.GetMeta()[i].GetSchemaName().c_str());
-                LOG_MSG("[%d] TypeName:      %s\n", i, rsp.GetMeta()[i].GetTypeName().c_str());
-                LOG_MSG("[%d] FieldName:     %s\n", i, rsp.GetMeta()[i].GetFieldName().c_str());
-                LOG_MSG("[%d] FieldTypeName: %s\n", i, rsp.GetMeta()[i].GetFieldTypeName().c_str());
-                LOG_MSG("\n");
-            }
-
-            return true;
-        }
-
-        bool Statement::MakeRequestClose()
-        {
-            QueryCloseRequest req(cursor->GetQueryId());
-            QueryCloseResponse rsp;
-
-            bool success = connection.SyncMessage(req, rsp);
-
-            if (!success)
-                return false;
-
-            LOG_MSG("Query id: %lld\n", rsp.GetQueryId());
-
-            if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
-            {
-                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
-
-                return false;
-            }
-
-            return true;
-        }
-
-        bool Statement::MakeRequestFetch()
-        {
-            std::auto_ptr<ResultPage> resultPage(new ResultPage());
-
-            QueryFetchRequest req(cursor->GetQueryId(), ResultPage::DEFAULT_SIZE);
-            QueryFetchResponse rsp(*resultPage);
-
-            bool success = connection.SyncMessage(req, rsp);
-
-            LOG_MSG("Query id: %lld\n", rsp.GetQueryId());
-
-            if (!success)
-                return false;
-
-            if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
-            {
-                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
-
-                return false;
-            }
-
-            cursor->UpdateData(resultPage);
+            //cursor->UpdateData(resultPage);
 
             return true;
         }

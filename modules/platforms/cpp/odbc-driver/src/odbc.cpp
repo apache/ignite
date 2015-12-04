@@ -532,6 +532,7 @@ SQLRETURN SQL_API SQLExtendedFetch(SQLHSTMT         stmt,
 SQLRETURN SQL_API SQLNumResultCols(SQLHSTMT stmt, SQLSMALLINT *columnNum)
 {
     using ignite::odbc::Statement;
+    using ignite::odbc::ColumnMetaVector;
 
     LOG_MSG("SQLNumResultCols called\n");
 
@@ -540,7 +541,12 @@ SQLRETURN SQL_API SQLNumResultCols(SQLHSTMT stmt, SQLSMALLINT *columnNum)
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-    *columnNum = static_cast<SQLSMALLINT>(statement->GetMeta().size());
+    const ColumnMetaVector* meta = statement->GetMeta();
+
+    if (!meta)
+        return SQL_ERROR;
+
+    *columnNum = static_cast<SQLSMALLINT>(meta->size());
 
     LOG_MSG("columnNum: %d\n", *columnNum);
 
@@ -565,6 +571,33 @@ SQLRETURN SQL_API SQLTables(SQLHSTMT    stmt,
     LOG_MSG("schemaName: %s\n", schemaName);
     LOG_MSG("tableName: %s\n", tableName);
     LOG_MSG("tableType: %s\n", tableType);
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLColumns(SQLHSTMT       stmt,
+                             SQLCHAR*       catalogName,
+                             SQLSMALLINT    catalogNameLen,
+                             SQLCHAR*       schemaName,
+                             SQLSMALLINT    schemaNameLen,
+                             SQLCHAR*       tableName,
+                             SQLSMALLINT    tableNameLen,
+                             SQLCHAR*       columnName,
+                             SQLSMALLINT    columnNameLen)
+{
+    using ignite::odbc::Statement;
+
+    LOG_MSG("SQLColumns called\n");
+
+    LOG_MSG("catalogName: %s\n", catalogName);
+    LOG_MSG("schemaName: %s\n", schemaName);
+    LOG_MSG("tableName: %s\n", tableName);
+    LOG_MSG("columnName: %s\n", columnName);
 
     Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -654,20 +687,6 @@ SQLRETURN SQL_API SQLSetCursorName(SQLHSTMT     stmt,
                                    SQLSMALLINT  nameLen)
 {
     LOG_MSG("SQLSetCursorName called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLColumns(SQLHSTMT       stmt,
-    SQLCHAR*       catalogName,
-    SQLSMALLINT    catalogNameLen,
-    SQLCHAR*       schemaName,
-    SQLSMALLINT    schemaNameLen,
-    SQLCHAR*       tableName,
-    SQLSMALLINT    tableNameLen,
-    SQLCHAR*       columnName,
-    SQLSMALLINT    columnNameLen)
-{
-    LOG_MSG("SQLColumns called\n");
     return SQL_SUCCESS;
 }
 
