@@ -1399,8 +1399,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         waitList.add(cctx.cacheContext(cId).name());
                                 }
 
-                                Callable<Boolean> r = cacheCtx.preloader().addAssignments(
-                                    assignsMap.get(cacheId), forcePreload, waitList, cnt);
+                                Callable<Boolean> r = cacheCtx.preloader().addAssignments(assignsMap.get(cacheId),
+                                    forcePreload,
+                                    waitList,
+                                    cnt);
 
                                 if (r != null) {
                                     U.log(log, "Cache rebalancing scheduled: [cache=" + cacheCtx.name() +
@@ -1425,7 +1427,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
                                     ", node=" + exchFut.discoveryEvent().eventNode().id() + ']');
 
-                                if (marshR != null)
+                                if (marshR != null) {
                                     try {
                                         marshR.call(); //Marshaller cache rebalancing launches in sync way.
                                     }
@@ -1435,6 +1437,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                         continue;
                                     }
+                                }
 
                                 final GridFutureAdapter fut = new GridFutureAdapter();
 
@@ -1463,17 +1466,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                             fut.onDone();
                                         }
                                     }
-                                }, /*system pool*/ true);
+                                }, /*system pool*/true);
                             }
-                            else
+                            else {
                                 U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
                                     "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
                                     ", node=" + exchFut.discoveryEvent().eventNode().id() + ']');
+                            }
                         }
-                        else
+                        else {
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +
                                 "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
                                 ", node=" + exchFut.discoveryEvent().eventNode().id() + ']');
+                        }
                     }
                 }
                 catch (IgniteInterruptedCheckedException e) {
