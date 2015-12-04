@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMa
 /**
  *
  */
-public class CacheObjectPortableContext extends CacheObjectContext {
+public class CacheObjectBinaryContext extends CacheObjectContext {
     /** */
     private boolean portableEnabled;
 
@@ -36,7 +36,7 @@ public class CacheObjectPortableContext extends CacheObjectContext {
      * @param storeVal {@code True} if should store unmarshalled value in cache.
      * @param depEnabled {@code true} if deployment is enabled for the given cache.
      */
-    public CacheObjectPortableContext(GridKernalContext kernalCtx,
+    public CacheObjectBinaryContext(GridKernalContext kernalCtx,
         boolean cpyOnGet,
         boolean storeVal,
         boolean portableEnabled,

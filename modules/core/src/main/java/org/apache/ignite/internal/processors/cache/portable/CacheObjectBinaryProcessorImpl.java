@@ -655,7 +655,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         CacheObjectContext ctx0 = super.contextForCache(cfg);
 
-        CacheObjectContext res = new CacheObjectPortableContext(ctx,
+        CacheObjectContext res = new CacheObjectBinaryContext(ctx,
             ctx0.copyOnGet(),
             ctx0.storeValue(),
             portableEnabled,
@@ -668,7 +668,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public byte[] marshal(CacheObjectContext ctx, Object val) throws IgniteCheckedException {
-        if (!((CacheObjectPortableContext)ctx).portableEnabled() || portableMarsh == null)
+        if (!((CacheObjectBinaryContext)ctx).portableEnabled() || portableMarsh == null)
             return super.marshal(ctx, val);
 
         byte[] arr = portableMarsh.marshal(val);
@@ -681,7 +681,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException {
-        if (!((CacheObjectPortableContext)ctx).portableEnabled() || portableMarsh == null)
+        if (!((CacheObjectBinaryContext)ctx).portableEnabled() || portableMarsh == null)
             return super.unmarshal(ctx, bytes, clsLdr);
 
         return portableMarsh.unmarshal(bytes, clsLdr);
@@ -689,13 +689,13 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj) {
-        if (!((CacheObjectPortableContext)ctx).portableEnabled())
+        if (!((CacheObjectBinaryContext)ctx).portableEnabled())
             return super.toCacheKeyObject(ctx, obj, userObj);
 
         if (obj instanceof KeyCacheObject)
             return (KeyCacheObject)obj;
 
-        if (((CacheObjectPortableContext)ctx).portableEnabled()) {
+        if (((CacheObjectBinaryContext)ctx).portableEnabled()) {
             obj = toPortable(obj);
 
             if (obj instanceof BinaryObject)
@@ -708,7 +708,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj,
         boolean userObj) {
-        if (!((CacheObjectPortableContext)ctx).portableEnabled())
+        if (!((CacheObjectBinaryContext)ctx).portableEnabled())
             return super.toCacheObject(ctx, obj, userObj);
 
         if (obj == null || obj instanceof CacheObject)
@@ -733,7 +733,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp)
         throws IgniteCheckedException {
-        if (!((CacheObjectPortableContext)ctx.cacheObjectContext()).portableEnabled())
+        if (!((CacheObjectBinaryContext)ctx.cacheObjectContext()).portableEnabled())
             return super.toCacheObject(ctx, valPtr, tmp);
 
         Object val = unmarshal(valPtr, !tmp);
@@ -746,7 +746,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public Object unwrapTemporary(GridCacheContext ctx, Object obj) throws BinaryObjectException {
-        if (!((CacheObjectPortableContext)ctx.cacheObjectContext()).portableEnabled())
+        if (!((CacheObjectBinaryContext)ctx.cacheObjectContext()).portableEnabled())
             return obj;
 
         if (obj instanceof BinaryObjectOffheapImpl)
