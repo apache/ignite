@@ -79,7 +79,7 @@ public class GridH2QueryContext {
     private int pageSize;
 
     /** */
-    private GridH2Collocation qryCollocation;
+    private GridH2CollocationModel qryCollocationModel;
 
     /**
      * @param locNodeId Local node ID.
@@ -115,15 +115,15 @@ public class GridH2QueryContext {
     /**
      * @return Query collocation model.
      */
-    public GridH2Collocation queryCollocation() {
-        return qryCollocation;
+    public GridH2CollocationModel queryCollocationModel() {
+        return qryCollocationModel;
     }
 
     /**
-     * @param qryCollocation Query collocation model.
+     * @param qryCollocationModel Query collocation model.
      */
-    public void queryCollocation(GridH2Collocation qryCollocation) {
-        this.qryCollocation = qryCollocation;
+    public void queryCollocationModel(GridH2CollocationModel qryCollocationModel) {
+        this.qryCollocationModel = qryCollocationModel;
     }
 
     /**

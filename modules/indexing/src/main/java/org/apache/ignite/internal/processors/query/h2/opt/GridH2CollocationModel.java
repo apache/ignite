@@ -35,7 +35,7 @@ import org.h2.table.TableFilter;
 /**
  * Collocation model for a query.
  */
-public final class GridH2Collocation {
+public final class GridH2CollocationModel {
     /** */
     public static final int MULTIPLIER_COLLOCATED = 1;
 
@@ -46,7 +46,7 @@ public final class GridH2Collocation {
     private static final int MULTIPLIER_BROADCAST = 80;
 
     /** */
-    private final GridH2Collocation upper;
+    private final GridH2CollocationModel upper;
 
     /** */
     private final int filter;
@@ -58,13 +58,13 @@ public final class GridH2Collocation {
     private Type type;
 
     /** */
-    private GridH2Collocation[] children;
+    private GridH2CollocationModel[] children;
 
     /** */
     private TableFilter[] childFilters;
 
     /** */
-    private List<GridH2Collocation> unions;
+    private List<GridH2CollocationModel> unions;
 
     /** */
     private Select select;
@@ -73,7 +73,7 @@ public final class GridH2Collocation {
      * @param upper Upper.
      * @param filter Filter.
      */
-    private GridH2Collocation(GridH2Collocation upper, int filter) {
+    private GridH2CollocationModel(GridH2CollocationModel upper, int filter) {
         this.upper = upper;
         this.filter = filter;
     }
@@ -82,10 +82,11 @@ public final class GridH2Collocation {
      * @param upper Upper.
      * @param filter Filter.
      * @param unions Unions.
-     * @return Create collocation model.
+     * @return Created child collocation model.
      */
-    private static GridH2Collocation createChild(GridH2Collocation upper, int filter, List<GridH2Collocation> unions) {
-        GridH2Collocation child = new GridH2Collocation(upper, filter);
+    private static GridH2CollocationModel createChildModel(GridH2CollocationModel upper, int filter,
+        List<GridH2CollocationModel> unions) {
+        GridH2CollocationModel child = new GridH2CollocationModel(upper, filter);
 
         if (unions != null) {
             // Bind created child to unions.
@@ -128,7 +129,7 @@ public final class GridH2Collocation {
             // We have to clone because H2 reuses array and reorders elements.
             this.childFilters = childFilters.clone();
 
-            children = new GridH2Collocation[childFilters.length];
+            children = new GridH2CollocationModel[childFilters.length];
         }
         else {
             assert this.childFilters.length == childFilters.length;
@@ -174,9 +175,9 @@ public final class GridH2Collocation {
             int maxMultiplier = MULTIPLIER_COLLOCATED;
 
             for (int i = 0; i < childFilters.length; i++) {
-                GridH2Collocation c = child(i, true);
+                GridH2CollocationModel child = child(i, true);
 
-                Type t = c.type(true);
+                Type t = child.type(true);
 
                 if (t.isPartitioned()) {
                     partitioned = true;
@@ -184,7 +185,7 @@ public final class GridH2Collocation {
                     if (!t.isCollocated()) {
                         collocated = false;
 
-                        int m = c.multiplier(true);
+                        int m = child.multiplier(true);
 
                         if (m > maxMultiplier) {
                             maxMultiplier = m;
@@ -256,11 +257,11 @@ public final class GridH2Collocation {
      */
     private boolean findPartitionedTableBefore(int f) {
         for (int i = 0; i < f; i++) {
-            GridH2Collocation c = child(i, true);
+            GridH2CollocationModel child = child(i, true);
 
             // The c can be null if it is not a GridH2Table and not a sub-query,
             // it is a some kind of function table or anything else that considered replicated.
-            if (c != null && c.type(true).isPartitioned())
+            if (child != null && child.type(true).isPartitioned())
                 return true;
         }
 
@@ -299,10 +300,10 @@ public final class GridH2Collocation {
                     TableFilter prevJoin = expCol.getTableFilter();
 
                     if (prevJoin != null) {
-                        GridH2Collocation co = child(indexOf(prevJoin), true);
+                        GridH2CollocationModel cm = child(indexOf(prevJoin), true);
 
-                        if (co != null) {
-                            Type t = co.type(true);
+                        if (cm != null) {
+                            Type t = cm.type(true);
 
                             if (t.isPartitioned() && t.isCollocated() && isAffinityColumn(prevJoin, expCol))
                                 return Affinity.JOINED_WITH_COLLOCATED;
@@ -444,15 +445,15 @@ public final class GridH2Collocation {
      * @param create Create child if needed.
      * @return Child collocation.
      */
-    private GridH2Collocation child(int i, boolean create) {
-        GridH2Collocation child = children[i];
+    private GridH2CollocationModel child(int i, boolean create) {
+        GridH2CollocationModel child = children[i];
 
         if (child == null && create && isChildTableOrView(i, null)) {
             TableFilter f = childFilters[i];
 
             children[i] = child = f.getTable().isView() ?
                 buildCollocationModel(this, i, getSubQuery(f), null) :
-                createChild(this, i, null);
+                createChildModel(this, i, null);
         }
 
         return child;
@@ -469,7 +470,7 @@ public final class GridH2Collocation {
     /**
      * @return Unions list.
      */
-    private List<GridH2Collocation> getOrCreateUnions() {
+    private List<GridH2CollocationModel> getOrCreateUnions() {
         if (unions == null) {
             unions = new ArrayList<>(4);
 
@@ -486,22 +487,22 @@ public final class GridH2Collocation {
      * @param filter Filter.
      * @return Collocation.
      */
-    public static GridH2Collocation buildCollocationModel(GridH2QueryContext qctx, SubQueryInfo info,
+    public static GridH2CollocationModel buildCollocationModel(GridH2QueryContext qctx, SubQueryInfo info,
         TableFilter[] filters, int filter) {
-        GridH2Collocation c;
+        GridH2CollocationModel cm;
 
         if (info != null) {
             // Go up until we reach the root query.
-            c = buildCollocationModel(qctx, info.getUpper(), info.getFilters(), info.getFilter());
+            cm = buildCollocationModel(qctx, info.getUpper(), info.getFilters(), info.getFilter());
         }
         else {
             // We are at the root query.
-            c = qctx.queryCollocation();
+            cm = qctx.queryCollocationModel();
 
-            if (c == null) {
-                c = createChild(null, -1, null);
+            if (cm == null) {
+                cm = createChildModel(null, -1, null);
 
-                qctx.queryCollocation(c);
+                qctx.queryCollocationModel(cm);
             }
         }
 
@@ -509,29 +510,29 @@ public final class GridH2Collocation {
 
         // Handle union. We have to rely on fact that select will be the same on uppermost select.
         // For sub-queries we will drop collocation models, so that they will be recalculated anyways.
-        if (c.select != null && c.select != select) {
-            List<GridH2Collocation> unions = c.getOrCreateUnions();
+        if (cm.select != null && cm.select != select) {
+            List<GridH2CollocationModel> unions = cm.getOrCreateUnions();
 
             // Try to find this select in existing unions.
             // Start with 1 because at 0 it always will be c.
             for (int i = 1; i < unions.size(); i++) {
-                GridH2Collocation u = unions.get(i);
+                GridH2CollocationModel u = unions.get(i);
 
                 if (u.select == select) {
-                    c = u;
+                    cm = u;
 
                     break;
                 }
             }
 
             // Nothing was found, need to create new child in union.
-            if (c.select != select)
-                c = createChild(c.upper, c.filter, unions);
+            if (cm.select != select)
+                cm = createChildModel(cm.upper, cm.filter, unions);
         }
 
-        c.childFilters(filters);
+        cm.childFilters(filters);
 
-        return c.child(filter, true);
+        return cm.child(filter, true);
     }
 
     /**
@@ -549,16 +550,16 @@ public final class GridH2Collocation {
      * @param unions Unions.
      * @return Built model.
      */
-    private static GridH2Collocation buildCollocationModel(GridH2Collocation upper, int filter, Query qry,
-        List<GridH2Collocation> unions) {
+    private static GridH2CollocationModel buildCollocationModel(GridH2CollocationModel upper, int filter, Query qry,
+        List<GridH2CollocationModel> unions) {
         if (qry.isUnion()) {
             if (unions == null)
                 unions = new ArrayList<>();
 
             SelectUnion union = (SelectUnion)qry;
 
-            GridH2Collocation a = buildCollocationModel(upper, filter, union.getLeft(), unions);
-            GridH2Collocation b = buildCollocationModel(upper, filter, union.getRight(), unions);
+            GridH2CollocationModel a = buildCollocationModel(upper, filter, union.getLeft(), unions);
+            GridH2CollocationModel b = buildCollocationModel(upper, filter, union.getRight(), unions);
 
             return a == null ? b : a;
         }
@@ -572,20 +573,20 @@ public final class GridH2Collocation {
 
         TableFilter[] filters = list.toArray(new TableFilter[list.size()]);
 
-        GridH2Collocation c = createChild(upper, filter, unions);
+        GridH2CollocationModel cm = createChildModel(upper, filter, unions);
 
-        c.childFilters(filters);
+        cm.childFilters(filters);
 
         for (int i = 0; i < filters.length; i++) {
             TableFilter f = filters[i];
 
             if (f.getTable().isView())
-                buildCollocationModel(c, i, getSubQuery(f), null);
+                buildCollocationModel(cm, i, getSubQuery(f), null);
             else if (f.getTable() instanceof GridH2Table)
-                createChild(c, i, null);
+                createChildModel(cm, i, null);
         }
 
-        return upper == null ? c : null;
+        return upper == null ? cm : null;
     }
 
     /**
