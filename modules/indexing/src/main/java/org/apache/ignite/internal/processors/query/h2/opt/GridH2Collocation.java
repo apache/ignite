@@ -35,7 +35,7 @@ import org.h2.table.TableFilter;
 /**
  * Collocation model for a query.
  */
-public class GridH2Collocation {
+public final class GridH2Collocation {
     /** */
     public static final int MULTIPLIER_COLLOCATED = 1;
 
@@ -113,7 +113,7 @@ public class GridH2Collocation {
      * @param childFilters New child filters.
      * @return {@code true} If child filters were updated.
      */
-    public boolean childFilters(TableFilter[] childFilters) {
+    private boolean childFilters(TableFilter[] childFilters) {
         assert childFilters != null;
         assert select == childFilters[0].getSelect();
 
@@ -303,7 +303,7 @@ public class GridH2Collocation {
                     TableFilter prevJoin = expCol.getTableFilter();
 
                     if (prevJoin != null) {
-                        GridH2Collocation co = children[indexOf(prevJoin)];
+                        GridH2Collocation co = child(indexOf(prevJoin));
 
                         assert co != null || isNotTableOrViewChild(-1, prevJoin);
 
@@ -395,8 +395,13 @@ public class GridH2Collocation {
         for (TableFilter f = select.getTopTableFilter(); f != null; f = f.getJoin()) {
             childFilters[i] = f;
 
+            GridH2Collocation c = child(i);
+
+            if (c == null)
+                child(i, c = new GridH2Collocation(this, i));
+
             if (f.getTable().isView())
-                children[i].finalizeChildFiltersOrder();
+                c.finalizeChildFiltersOrder();
 
             i++;
         }
@@ -419,8 +424,18 @@ public class GridH2Collocation {
             boolean needReset = false;
 
             for (int i = 0; i < childFilters.length; i++) {
-                if (childFilters[i].getTable().isView() && children[i].finalizeChildFiltersOrder())
-                    needReset = true;
+                Table t = childFilters[i].getTable();
+
+                if (t.isView() || t instanceof GridH2Table) {
+                    if (child(i) == null) {
+                        child(i, new GridH2Collocation(this, i));
+
+                        needReset = true;
+                    }
+
+                    if (t.isView() && child(i).finalizeChildFiltersOrder())
+                        needReset = true;
+                }
             }
 
             if (needReset)
@@ -494,8 +509,8 @@ public class GridH2Collocation {
      * @param idx Index.
      * @param child Child collocation.
      */
-    public void child(int idx, GridH2Collocation child) {
-        assert child(idx) == null;
+    private void child(int idx, GridH2Collocation child) {
+        assert children[idx] == null;
 
         children[idx] = child;
     }
@@ -504,22 +519,8 @@ public class GridH2Collocation {
      * @param idx Index.
      * @return Child collocation.
      */
-    public GridH2Collocation child(int idx) {
+    private GridH2Collocation child(int idx) {
         return children[idx];
-    }
-
-    /**
-     * @return Upper collocation.
-     */
-    public GridH2Collocation upper() {
-        return upper;
-    }
-
-    /**
-     * @return Filter.
-     */
-    public int filter() {
-        return filter;
     }
 
     /**
@@ -578,7 +579,7 @@ public class GridH2Collocation {
             }
 
             if (i == unions.size()) {
-                c = new GridH2Collocation(c.upper(), c.filter());
+                c = new GridH2Collocation(c.upper, c.filter);
 
                 unions.add(c);
 
