@@ -25,9 +25,12 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 
 /**
- * Serializer based on Kryo serialization
+ * Serializer based on Kryo serialization.
  */
 public class KryoSerializer implements Serializer {
+
+    // TODO IGNITE-1371: Serializer is Serializable, but kryos variable is NOT serializable, missing transient?
+
     /** Thread local instance of {@link com.esotericsoftware.kryo.Kryo} */
     private ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
         protected Kryo initialValue() {
@@ -41,6 +44,7 @@ public class KryoSerializer implements Serializer {
             return null;
 
         ByteArrayOutputStream stream = null;
+
         Output out = null;
 
         try {

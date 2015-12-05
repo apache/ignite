@@ -18,10 +18,10 @@
 package org.apache.ignite.tests.load;
 
 /**
- * Implementation of ${@link org.apache.ignite.tests.load.Generator} generating
- * ${@link Integer} instance
+ * Implementation of {@link org.apache.ignite.tests.load.Generator} generating {@link Integer} instance.
  */
 public class IntGenerator implements Generator {
+    /** {@inheritDoc} */
     @Override public Object generate(int i) {
         return i;
     }

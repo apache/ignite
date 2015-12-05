@@ -39,65 +39,106 @@ import org.xml.sax.InputSource;
  * Stores persistence settings for Ignite cache key and value
  */
 public class KeyValuePersistenceSettings {
+    /** */
     private static final String KEYSPACE_ATTR = "keyspace";
+
+    /** */
     private static final String TABLE_ATTR = "table";
+
+    /** */
     private static final String LOAD_ON_STARTUP_ATTR = "loadOnStartup";
+
+    /** */
     private static final String TTL_ATTR = "ttl";
+
+    /** */
     private static final String PERSISTENCE_NODE = "persistence";
+
+    /** */
     private static final String KEYSPACE_OPTIONS_NODE = "keyspaceOptions";
+
+    /** */
     private static final String TABLE_OPTIONS_NODE = "tableOptions";
+
+    /** */
     private static final String KEY_PERSISTENCE_NODE = "keyPersistence";
+
+    /** */
     private static final String VALUE_PERSISTENCE_NODE = "valuePersistence";
 
-    private int startupLoadingCount = 10000;
+    /** TODO IGNITE-1371: add comment */
+    private int startupLoadingCnt = 10000;
+
+    /** TODO IGNITE-1371: add comment */
     private Integer ttl;
+
+    /** TODO IGNITE-1371: add comment */
     private String keyspace;
-    private String table;
-    private String tableOptions;
+
+    /** TODO IGNITE-1371: add comment */
+    private String tbl;
+
+    /** TODO IGNITE-1371: add comment */
+    private String tblOptions;
+
+    /** TODO IGNITE-1371: add comment */
     private String keyspaceOptions = "replication = {'class' : 'SimpleStrategy', 'replication_factor' : 3} " +
         "and durable_writes = true";
 
+    /** TODO IGNITE-1371: add comment */
     private KeyPersistenceSettings keyPersistenceSettings;
-    private ValuePersistenceSettings valuePersistenceSettings;
 
+    /** TODO IGNITE-1371: add comment */
+    private ValuePersistenceSettings valPersistenceSettings;
+
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public KeyValuePersistenceSettings(String settings) {
         init(settings);
     }
 
-    public KeyValuePersistenceSettings(Resource settingsResource) {
-        init(loadSettings(settingsResource));
+    /** TODO IGNITE-1371: add comment */
+    public KeyValuePersistenceSettings(Resource settingsRsrc) {
+        init(loadSettings(settingsRsrc));
     }
 
+    /** TODO IGNITE-1371: add comment */
     public int getStartupLoadingCount() {
-        return startupLoadingCount;
+        return startupLoadingCnt;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public Integer getTTL() {
         return ttl;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getKeyspace() {
         return keyspace;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getTable() {
-        return table;
+        return tbl;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getTableFullName()
     {
-        return keyspace + "." + table;
+        return keyspace + "." + tbl;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public KeyPersistenceSettings getKeyPersistenceSettings() {
         return keyPersistenceSettings;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public ValuePersistenceSettings getValuePersistenceSettings() {
-        return valuePersistenceSettings;
+        return valPersistenceSettings;
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getFields() {
         List<PojoField> fields = new LinkedList<>();
@@ -105,22 +146,25 @@ public class KeyValuePersistenceSettings {
         for (PojoField field : keyPersistenceSettings.getFields())
             fields.add(field);
 
-        for (PojoField field : valuePersistenceSettings.getFields())
+        for (PojoField field : valPersistenceSettings.getFields())
             fields.add(field);
 
         return fields;
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getKeyFields() {
         return keyPersistenceSettings.getFields();
     }
 
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getValueFields() {
-        return valuePersistenceSettings.getFields();
+        return valPersistenceSettings.getFields();
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getKeyspaceDDLStatement() {
         StringBuilder builder = new StringBuilder();
         builder.append("create keyspace if not exists ").append(keyspace);
@@ -140,13 +184,15 @@ public class KeyValuePersistenceSettings {
         return statement;
     }
 
+    /** TODO IGNITE-1371: add comment */
     public String getTableDDLStatement() {
-        String columnsDDL = keyPersistenceSettings.getTableColumnsDDL() + ", " + valuePersistenceSettings.getTableColumnsDDL();
+        String colsDDL = keyPersistenceSettings.getTableColumnsDDL() + ", " + valPersistenceSettings.getTableColumnsDDL();
 
         String primaryKeyDDL = keyPersistenceSettings.getPrimaryKeyDDL();
+
         String clusteringDDL = keyPersistenceSettings.getClusteringDDL();
 
-        String optionsDDL = tableOptions != null && !tableOptions.trim().isEmpty() ? tableOptions.trim() : "";
+        String optionsDDL = tblOptions != null && !tblOptions.trim().isEmpty() ? tblOptions.trim() : "";
 
         if (clusteringDDL != null && !clusteringDDL.isEmpty())
             optionsDDL = optionsDDL.isEmpty() ? clusteringDDL : optionsDDL + " and " + clusteringDDL;
@@ -155,40 +201,43 @@ public class KeyValuePersistenceSettings {
             optionsDDL = optionsDDL.trim().toLowerCase().startsWith("with") ? optionsDDL.trim() : "with " + optionsDDL.trim();
 
         StringBuilder builder = new StringBuilder();
-        builder.append("create table if not exists ").append(keyspace).append(".").append(table);
-        builder.append(" (").append(columnsDDL).append(", ").append(primaryKeyDDL).append(")");
+
+        builder.append("create table if not exists ").append(keyspace).append(".").append(tbl);
+        builder.append(" (").append(colsDDL).append(", ").append(primaryKeyDDL).append(")");
 
         if (!optionsDDL.isEmpty())
             builder.append(" ").append(optionsDDL);
 
-        String tableDDL = builder.toString().trim();
+        String tblDDL = builder.toString().trim();
 
-        return tableDDL.endsWith(";") ? tableDDL : tableDDL + ";";
+        return tblDDL.endsWith(";") ? tblDDL : tblDDL + ";";
     }
 
+    /** TODO IGNITE-1371: add comment */
     public List<String> getIndexDDLStatements() {
-        List<String> indexDDLs = new LinkedList<>();
+        List<String> idxDDLs = new LinkedList<>();
 
-        List<PojoField> fields = valuePersistenceSettings.getFields();
+        List<PojoField> fields = valPersistenceSettings.getFields();
 
         for (PojoField field : fields) {
             if (((PojoValueField)field).isIndexed())
-                indexDDLs.add(((PojoValueField)field).getIndexDDL(keyspace, table));
+                idxDDLs.add(((PojoValueField)field).getIndexDDL(keyspace, tbl));
         }
 
-        return indexDDLs;
+        return idxDDLs;
     }
 
-    private String loadSettings(Resource resource) {
+    /** TODO IGNITE-1371: add comment */
+    private String loadSettings(Resource rsrc) {
         StringBuilder settings = new StringBuilder();
         InputStream in;
         BufferedReader reader = null;
 
         try {
-            in = resource.getInputStream();
+            in = rsrc.getInputStream();
         }
         catch (IOException e) {
-            throw new IgniteException("Failed to get input stream for Cassandra persistence settings resource: " + resource, e);
+            throw new IgniteException("Failed to get input stream for Cassandra persistence settings resource: " + rsrc, e);
         }
 
         try {
@@ -206,7 +255,7 @@ public class KeyValuePersistenceSettings {
             }
         }
         catch (Throwable e) {
-            throw new IgniteException("Failed to read input stream for Cassandra persistence settings resource: " + resource, e);
+            throw new IgniteException("Failed to read input stream for Cassandra persistence settings resource: " + rsrc, e);
         }
         finally {
             if (reader != null) {
@@ -229,6 +278,23 @@ public class KeyValuePersistenceSettings {
         return settings.toString();
     }
 
+    /**
+     * @param elem Element with data.
+     * @param attr Attribute name.
+     * @return Numeric value for specified attribute.
+     */
+    private int extractIntAttribute(Element elem, String attr) {
+        String val = elem.getAttribute(attr).trim();
+
+        try {
+            return Integer.parseInt(val);
+        }
+        catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Incorrect value '" + val + "' specified for '" + attr + "' attribute");
+        }
+    }
+
+    /** TODO IGNITE-1371: add comment */
     @SuppressWarnings("IfCanBeSwitch")
     private void init(String settings) {
         Document doc;
@@ -261,29 +327,13 @@ public class KeyValuePersistenceSettings {
         }
 
         keyspace = root.getAttribute(KEYSPACE_ATTR).trim();
-        table = root.getAttribute(TABLE_ATTR).trim();
+        tbl = root.getAttribute(TABLE_ATTR).trim();
 
-        if (root.hasAttribute(LOAD_ON_STARTUP_ATTR)) {
-            String val = root.getAttribute(LOAD_ON_STARTUP_ATTR).trim();
+        if (root.hasAttribute(LOAD_ON_STARTUP_ATTR))
+            startupLoadingCnt = extractIntAttribute(root, LOAD_ON_STARTUP_ATTR);
 
-            try {
-                startupLoadingCount = Integer.parseInt(val);
-            }
-            catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Incorrect value '" + val + "' specified for '" + LOAD_ON_STARTUP_ATTR + "' attribute");
-            }
-        }
-
-        if (root.hasAttribute(TTL_ATTR)) {
-            String val = root.getAttribute(TTL_ATTR).trim();
-
-            try {
-                ttl = Integer.parseInt(val);
-            }
-            catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Incorrect value '" + val + "' specified for '" + TTL_ATTR + "' attribute");
-            }
-        }
+        if (root.hasAttribute(TTL_ATTR))
+            ttl = extractIntAttribute(root, TTL_ATTR);
 
         if (!root.hasChildNodes()) {
             throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification," +
@@ -291,9 +341,9 @@ public class KeyValuePersistenceSettings {
         }
 
         NodeList children = root.getChildNodes();
-        int count = children.getLength();
+        int cnt = children.getLength();
 
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < cnt; i++) {
             Node node = children.item(i);
 
             if (node.getNodeType() != Node.ELEMENT_NODE)
@@ -303,8 +353,8 @@ public class KeyValuePersistenceSettings {
             String nodeName = el.getNodeName();
 
             if (nodeName.equals(TABLE_OPTIONS_NODE)) {
-                tableOptions = el.getTextContent();
-                tableOptions = tableOptions.replace("\n", " ").replace("\r", "");
+                tblOptions = el.getTextContent();
+                tblOptions = tblOptions.replace("\n", " ").replace("\r", "");
             }
             else if (nodeName.equals(KEYSPACE_OPTIONS_NODE)) {
                 keyspaceOptions = el.getTextContent();
@@ -313,7 +363,7 @@ public class KeyValuePersistenceSettings {
             else if (nodeName.equals(KEY_PERSISTENCE_NODE))
                 keyPersistenceSettings = new KeyPersistenceSettings(el);
             else if (nodeName.equals(VALUE_PERSISTENCE_NODE))
-                valuePersistenceSettings = new ValuePersistenceSettings(el);
+                valPersistenceSettings = new ValuePersistenceSettings(el);
         }
 
         if (keyPersistenceSettings == null) {
@@ -321,13 +371,13 @@ public class KeyValuePersistenceSettings {
                 " there are no key persistence settings specified");
         }
 
-        if (valuePersistenceSettings == null) {
+        if (valPersistenceSettings == null) {
             throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification," +
                 " there are no value persistence settings specified");
         }
 
         List<PojoField> keyFields = keyPersistenceSettings.getFields();
-        List<PojoField> valueFields = valuePersistenceSettings.getFields();
+        List<PojoField> valFields = valPersistenceSettings.getFields();
 
         if (PersistenceStrategy.POJO.equals(keyPersistenceSettings.getStrategy()) &&
             (keyFields == null || keyFields.isEmpty())) {
@@ -335,17 +385,17 @@ public class KeyValuePersistenceSettings {
                 " there are no key fields found");
         }
 
-        if (PersistenceStrategy.POJO.equals(valuePersistenceSettings.getStrategy()) &&
-            (valueFields == null || valueFields.isEmpty())) {
+        if (PersistenceStrategy.POJO.equals(valPersistenceSettings.getStrategy()) &&
+            (valFields == null || valFields.isEmpty())) {
             throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification," +
                 " there are no value fields found");
         }
 
-        if (keyFields == null || keyFields.isEmpty() || valueFields == null || valueFields.isEmpty())
+        if (keyFields == null || keyFields.isEmpty() || valFields == null || valFields.isEmpty())
             return;
 
         for (PojoField keyField : keyFields) {
-            for (PojoField valField : valueFields) {
+            for (PojoField valField : valFields) {
                 if (keyField.getColumn().equals(valField.getColumn())) {
                     throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification," +
                         " key column '" + keyField.getColumn() + "' also specified as a value column");

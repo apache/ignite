@@ -29,23 +29,24 @@ import org.w3c.dom.NodeList;
  * Stores persistence settings for Ignite cache key
  */
 public class KeyPersistenceSettings extends PersistenceSettings {
-    /** Partition key XML tag */
+    /** Partition key XML tag. */
     private static final String PARTITION_KEY_ELEMENT = "partitionKey";
-    /** Cluster key XML tag */
+    /** Cluster key XML tag. */
     private static final String CLUSTER_KEY_ELEMENT = "clusterKey";
-    /** POJO field XML tag */
+    /** POJO field XML tag. */
     private static final String FIELD_ELEMENT = "field";
 
-    /** POJO fields */
+    /** POJO fields. */
     private List<PojoField> fields = new LinkedList<>();
-    /** Partition key fields */
+    /** Partition key fields. */
     private List<PojoField> partKeyFields = new LinkedList<>();
-    /** Cluster key fields */
+    /** Cluster key fields. */
     private List<PojoField> clusterKeyFields = new LinkedList<>();
 
     /**
-     * Creates key persistence settings object based on it's XML configuration
-     * @param el - XML element storing key persistence settings
+     * Creates key persistence settings object based on it's XML configuration.
+     *
+     * @param el XML element storing key persistence settings
      */
     public KeyPersistenceSettings(Element el) {
         super(el);
@@ -86,8 +87,9 @@ public class KeyPersistenceSettings extends PersistenceSettings {
     }
 
     /**
-     * Returns Cassandra DDL for primary key
-     * @return - DDL statement
+     * Returns Cassandra DDL for primary key.
+     *
+     * @return DDL statement.
      */
     public String getPrimaryKeyDDL() {
         StringBuilder partKey = new StringBuilder();
@@ -118,8 +120,9 @@ public class KeyPersistenceSettings extends PersistenceSettings {
     }
 
     /**
-     * Returns Cassandra DDL for cluster key
-     * @return - cluster key DDL
+     * Returns Cassandra DDL for cluster key.
+     *
+     * @return Cluster key DDL.
      */
     public String getClusteringDDL() {
         StringBuilder builder = new StringBuilder();
@@ -147,8 +150,9 @@ public class KeyPersistenceSettings extends PersistenceSettings {
     }
 
     /**
-     * Returns partition key columns of Cassandra table
-     * @return - list of column names
+     * Returns partition key columns of Cassandra table.
+     *
+     * @return List of column names.
      */
     private List<String> getPartitionKeyColumns() {
         List<String> cols = new LinkedList<>();
@@ -167,8 +171,9 @@ public class KeyPersistenceSettings extends PersistenceSettings {
     }
 
     /**
-     * Returns cluster key columns of Cassandra table
-     * @return - list of column names
+     * Returns cluster key columns of Cassandra table.
+     *
+     * @return List of column names.
      */
     private List<String> getClusterKeyColumns() {
         List<String> cols = new LinkedList<>();
@@ -182,10 +187,11 @@ public class KeyPersistenceSettings extends PersistenceSettings {
     }
 
     /**
-     * Extracts POJO fields specified in XML element
-     * @param el - XML element describing fields
-     * @param descriptors - POJO fields descriptors
-     * @return - list of {@code This} fields
+     * Extracts POJO fields specified in XML element.
+     *
+     * @param el XML element describing fields.
+     * @param descriptors POJO fields descriptors.
+     * @return List of {@code This} fields.
      */
     private List<PojoField> detectFields(Element el, List<PropertyDescriptor> descriptors) {
         List<PojoField> list = new LinkedList<>();
@@ -226,8 +232,7 @@ public class KeyPersistenceSettings extends PersistenceSettings {
     }
 
     /**
-     * Returns POJO field descriptors for partition key
-     * @return {@code This}
+     * @return POJO field descriptors for partition key.
      */
     private List<PropertyDescriptor> getPartitionKeyDescriptors() {
         List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(),
@@ -239,8 +244,7 @@ public class KeyPersistenceSettings extends PersistenceSettings {
     }
 
     /**
-     * Returns POJO field descriptors for cluster key
-     * @return {@code This}
+     * @return POJO field descriptors for cluster key.
      */
     private List<PropertyDescriptor> getClusterKeyDescriptors(List<PojoField> partKeyFields) {
         List<PropertyDescriptor> primitivePropDescriptors =

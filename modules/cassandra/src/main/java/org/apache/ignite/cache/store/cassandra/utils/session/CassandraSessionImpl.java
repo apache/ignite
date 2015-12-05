@@ -43,46 +43,47 @@ import org.apache.ignite.cache.store.cassandra.utils.session.pool.SessionPool;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 
 /**
- * Implementation for ${@link org.apache.ignite.cache.store.cassandra.utils.session.CassandraSession}
+ * Implementation for {@link org.apache.ignite.cache.store.cassandra.utils.session.CassandraSession}.
  */
 public class CassandraSessionImpl implements CassandraSession {
-    /** Number of CQL query execution attempts */
+    /** Number of CQL query execution attempts. */
     private static final int CQL_EXECUTION_ATTEMPTS_COUNT = 20;
 
-    /** Timeout between CQL query execution attemps */
+    /** Timeout between CQL query execution attempts. */
     private static final int CQL_EXECUTION_ATTEMPTS_TIMEOUT = 2000;
 
-    /** Cassandra cluster builder */
+    /** Cassandra cluster builder. */
     private volatile Cluster.Builder builder;
 
-    /** Cassandra driver session */
+    /** Cassandra driver session. */
     private volatile Session ses;
 
-    /** Number of references to Cassandra driver session (for multithreaded environment) */
+    /** Number of references to Cassandra driver session (for multithreaded environment). */
     private volatile int refCnt = 0;
 
-    /** Number of records to immediately fetch in CQL statement execution */
+    /** Number of records to immediately fetch in CQL statement execution. */
     private Integer fetchSize;
 
-    /** Consistency level for Cassandra READ operations (select) */
+    /** Consistency level for Cassandra READ operations (select). */
     private ConsistencyLevel readConsistency;
 
-    /** Consistency level for Cassandra WRITE operations (insert/update/delete) */
+    /** Consistency level for Cassandra WRITE operations (insert/update/delete). */
     private ConsistencyLevel writeConsistency;
 
-    /** Logger */
+    /** Logger. */
     private IgniteLogger log;
 
-    /** Error handlers counter */
+    /** Error handlers counter. */
     private final AtomicInteger handlersCnt = new AtomicInteger(-1);
 
     /**
-     * Creates instance of Cassandra driver session wrapper
-     * @param builder - builder for Cassandra cluster
-     * @param fetchSize - number of row to immediately fetch in CQL statement execution
-     * @param readConsistency - Consistency level for Cassandra READ operations (select)
-     * @param writeConsistency - Consistency level for Cassandra WRITE operations (insert/update/delete)
-     * @param log - logger
+     * Creates instance of Cassandra driver session wrapper.
+     *
+     * @param builder Builder for Cassandra cluster.
+     * @param fetchSize Number of row to immediately fetch in CQL statement execution.
+     * @param readConsistency Consistency level for Cassandra READ operations (select).
+     * @param writeConsistency Consistency level for Cassandra WRITE operations (insert/update/delete).
+     * @param log Logger.
      */
     public CassandraSessionImpl(Cluster.Builder builder, Integer fetchSize, ConsistencyLevel readConsistency,
         ConsistencyLevel writeConsistency, IgniteLogger log) {
@@ -311,7 +312,7 @@ public class CassandraSessionImpl implements CassandraSession {
     }
 
     /**
-     * Recreates Cassandra driver session
+     * Recreates Cassandra driver session.
      */
     private synchronized void refresh() {
         //make sure that session removed from the pool
@@ -324,8 +325,7 @@ public class CassandraSessionImpl implements CassandraSession {
     }
 
     /**
-     * Returns Cassandra driver session
-     * @return - Cassandra driver session
+     * @return Cassandra driver session.
      */
     private synchronized Session session() {
         if (ses != null)
@@ -345,14 +345,14 @@ public class CassandraSessionImpl implements CassandraSession {
     }
 
     /**
-     * Increments number of references to Cassandra driver session (required for multithreaded environment)
+     * Increments number of references to Cassandra driver session (required for multithreaded environment).
      */
     private synchronized void incrementSessionRefs() {
         refCnt++;
     }
 
     /**
-     * Decrements number of references to Cassandra driver session (required for multithreaded environment)
+     * Decrements number of references to Cassandra driver session (required for multithreaded environment).
      */
     private synchronized int decrementSessionRefs() {
         if (refCnt != 0)
@@ -362,11 +362,12 @@ public class CassandraSessionImpl implements CassandraSession {
     }
 
     /**
-     * Prepares CQL statement using current Cassandra driver session
-     * @param statement - CQL statement
-     * @param settings - persistence settings
-     * @param tblExistenceRequired - flag indicating if table existence is required for the statement
-     * @return - prepared statement
+     * Prepares CQL statement using current Cassandra driver session.
+     *
+     * @param statement CQL statement.
+     * @param settings Persistence settings.
+     * @param tblExistenceRequired Flag indicating if table existence is required for the statement.
+     * @return Prepared statement.
      */
     private PreparedStatement prepareStatement(String statement, KeyValuePersistenceSettings settings,
         boolean tblExistenceRequired) {
@@ -408,8 +409,9 @@ public class CassandraSessionImpl implements CassandraSession {
     }
 
     /**
-     * Creates Cassandra keyspace
-     * @param settings - persistence settings
+     * Creates Cassandra keyspace.
+     *
+     * @param settings Persistence settings.
      */
     private void createKeyspace(KeyValuePersistenceSettings settings) {
         int attempt = 0;
@@ -443,8 +445,9 @@ public class CassandraSessionImpl implements CassandraSession {
     }
 
     /**
-     * Creates Cassandra table
-     * @param settings - persistence settings
+     * Creates Cassandra table.
+     *
+     * @param settings Persistence settings.
      */
     private void createTable(KeyValuePersistenceSettings settings) {
         int attempt = 0;
@@ -484,8 +487,9 @@ public class CassandraSessionImpl implements CassandraSession {
     }
 
     /**
-     * Creates Cassandra table indexes
-     * @param settings - persistence settings
+     * Creates Cassandra table indexes.
+     *
+     * @param settings Persistence settings.
      */
     private void createTableIndexes(KeyValuePersistenceSettings settings) {
         if (settings.getIndexDDLStatements() == null || settings.getIndexDDLStatements().isEmpty())
@@ -533,9 +537,10 @@ public class CassandraSessionImpl implements CassandraSession {
     }
 
     /**
-     * Tunes CQL statement execution options (consistency level, fetch option and etc.)
-     * @param statement - statement
-     * @return - modified statement
+     * Tunes CQL statement execution options (consistency level, fetch option and etc.).
+     *
+     * @param statement Statement.
+     * @return Modified statement.
      */
     private Statement tuneStatementExecutionOptions(Statement statement) {
         String qry = "";
@@ -562,15 +567,33 @@ public class CassandraSessionImpl implements CassandraSession {
     }
 
     /**
-     * Handles situation when Cassandra table doesn't exist
-     * @param settings - persistence settings
+     * Handles situation when Cassandra table doesn't exist.
+     *
+     * @param settings Persistence settings.
      */
     private void handleTableAbsenceError(KeyValuePersistenceSettings settings) {
+        /** TODO IGNITE-1371: suspicious code, may be use:
+         *
+         * private final AtomicInteger handlersCnt = new AtomicInteger();
+         *
+         *  ...
+         *
+         * if (handlersCnt.compareAndSet(0, 1)) {
+         *     do smth...
+         *
+         *     handlersCnt.set(0);
+         * }
+         * else {
+         *     // Oooops... I am not the first thread who tried to handle table absence problem.
+         *     return;
+         * }
+         */
+
         int hndNum = handlersCnt.incrementAndGet();
 
         try {
             synchronized (handlersCnt) {
-                // Oooops... I am not the first thread who tried to handle table absence problem
+                // Oooops... I am not the first thread who tried to handle table absence problem.
                 if (hndNum != 0)
                     return;
 
@@ -609,11 +632,12 @@ public class CassandraSessionImpl implements CassandraSession {
     }
 
     /**
-     * Handles situation when Cassandra host which is responsible for CQL query execution became unavailable
-     * @param e - exception
-     * @param attempt - number of attempts
-     * @param msg - error message
-     * @return - {@code true} if host unavailability was successfully handled
+     * Handles situation when Cassandra host which is responsible for CQL query execution became unavailable.
+     *
+     * @param e Exception to handle.
+     * @param attempt Number of attempts.
+     * @param msg Error message.
+     * @return {@code true} if host unavailability was successfully handled.
      */
     private boolean handleHostsAvailabilityError(Throwable e, int attempt, String msg) {
         if (attempt >= CQL_EXECUTION_ATTEMPTS_COUNT)

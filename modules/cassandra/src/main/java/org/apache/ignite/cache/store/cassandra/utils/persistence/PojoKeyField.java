@@ -29,16 +29,22 @@ public class PojoKeyField extends PojoField {
     /**
      * Specifies sort order for POJO key field
      */
-    public static enum SortOrder {
-        ASC, DESC;
+    public enum SortOrder {
+        /** Ascending sort order. */
+        ASC,
+        /** Descending sort order. */
+        DESC
     }
 
+    /** */
     private static final String SORT_ATTR = "sort";
 
+    /** TODO IGNITE-1371: add comment */
     private SortOrder sortOrder = null;
 
-    public PojoKeyField(Element el, Class pojoClass) {
-        super(el, pojoClass);
+    /** TODO IGNITE-1371: add comment */
+    public PojoKeyField(Element el, Class pojoCls) {
+        super(el, pojoCls);
 
         if (el.hasAttribute(SORT_ATTR)) {
             try {
@@ -50,14 +56,17 @@ public class PojoKeyField extends PojoField {
         }
     }
 
-    public PojoKeyField(PropertyDescriptor descriptor) {
-        super(descriptor);
+    /** TODO IGNITE-1371: add comment */
+    public PojoKeyField(PropertyDescriptor desc) {
+        super(desc);
     }
 
+    /** TODO IGNITE-1371: add comment */
     public SortOrder getSortOrder() {
         return sortOrder;
     }
 
+    /** TODO IGNITE-1371: add comment */
     protected void init(QuerySqlField sqlField) {
         if (sqlField.descending())
             sortOrder = SortOrder.DESC;

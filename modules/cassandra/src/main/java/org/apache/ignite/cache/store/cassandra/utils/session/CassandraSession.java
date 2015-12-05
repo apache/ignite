@@ -20,15 +20,20 @@ package org.apache.ignite.cache.store.cassandra.utils.session;
 import java.io.Closeable;
 
 /**
- * Wrapper around Cassandra driver session, to automatically handle
- *  - keyspace and table absence exceptions
- *  - timeout exceptions
- *  - batch operations
+ * Wrapper around Cassandra driver session, to automatically handle:
+ * <ul>
+ *  <li>Keyspace and table absence exceptions</li>
+ *  <li>Timeout exceptions</li>
+ *  <li>Batch operations</li>
+ * </ul>
  */
 public interface CassandraSession extends Closeable {
+    /** TODO IGNITE-1371: add comment */
     public <V> V execute(ExecutionAssistant<V> assistant);
 
+    /** TODO IGNITE-1371: add comment */
     public <R, V> R execute(BatchExecutionAssistant<R, V> assistant, Iterable<? extends V> data);
 
+    /** TODO IGNITE-1371: add comment */
     public void execute(BatchLoaderAssistant assistant);
 }

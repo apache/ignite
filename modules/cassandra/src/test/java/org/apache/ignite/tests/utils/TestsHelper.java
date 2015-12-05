@@ -213,13 +213,12 @@ public class TestsHelper {
     }
 
     public static Person generateRandomPerson() {
-        int phonesCount = RANDOM.nextInt(4);
+        int phonesCnt = RANDOM.nextInt(4);
 
         List<String> phones = new LinkedList<>();
 
-        for (int i = 0; i < phonesCount; i++) {
+        for (int i = 0; i < phonesCnt; i++)
             phones.add(randomNumber(4));
-        }
 
         return new Person(randomString(4), randomString(4), RANDOM.nextInt(100),
             RANDOM.nextBoolean(), RANDOM.nextLong(), RANDOM.nextFloat(), new Date(), phones);

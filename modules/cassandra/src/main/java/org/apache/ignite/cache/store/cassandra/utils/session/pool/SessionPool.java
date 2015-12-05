@@ -75,13 +75,13 @@ public class SessionPool {
         }
     }
 
-    /** Sessions monitor sleep timeout */
+    /** Sessions monitor sleep timeout. */
     private static final long SLEEP_TIMEOUT = 60000; // 1 minute
 
-    /** Sessions which were returned to pool */
+    /** Sessions which were returned to pool. */
     private static final Map<CassandraSessionImpl, SessionWrapper> sessions = new HashMap<>();
 
-    /** Singleton instance */
+    /** Singleton instance. */
     private static SessionMonitor monitorSingleton;
 
     static {
@@ -93,9 +93,10 @@ public class SessionPool {
     }
 
     /**
-     * Returns Cassandra driver session to sessions pool
-     * @param cassandraSes - session wrapper
-     * @param driverSes - driver session
+     * Returns Cassandra driver session to sessions pool.
+     *
+     * @param cassandraSes Session wrapper.
+     * @param driverSes Driver session.
      */
     public static void put(CassandraSessionImpl cassandraSes, Session driverSes) {
         if (cassandraSes == null || driverSes == null)
@@ -119,9 +120,10 @@ public class SessionPool {
     }
 
     /**
-     * Extracts Cassandra driver session from pool
-     * @param cassandraSes - session wrapper
-     * @return - Cassandra driver session
+     * Extracts Cassandra driver session from pool.
+     *
+     * @param cassandraSes Session wrapper.
+     * @return Cassandra driver session.
      */
     public static Session get(CassandraSessionImpl cassandraSes) {
         if (cassandraSes == null)
@@ -137,7 +139,7 @@ public class SessionPool {
     }
 
     /**
-     * Releases all session from pool and closes all their connections to Cassandra database
+     * Releases all session from pool and closes all their connections to Cassandra database.
      */
     public static void release() {
         Collection<SessionWrapper> wrappers;

@@ -20,10 +20,11 @@ package org.apache.ignite.tests.load;
 import org.apache.ignite.tests.pojos.PersonId;
 
 /**
- * Implementation of ${@link org.apache.ignite.tests.load.Generator} generating
- * ${@link org.apache.ignite.tests.pojos.PersonId} instance
+ * Implementation of {@link org.apache.ignite.tests.load.Generator} generating
+ * {@link org.apache.ignite.tests.pojos.PersonId} instance.
  */
 public class PersonIdGenerator implements Generator {
+    /** {@inheritDoc} */
     @Override public Object generate(int i) {
         return new PersonId(Integer.toString(i), Integer.toString(i), i);
     }
