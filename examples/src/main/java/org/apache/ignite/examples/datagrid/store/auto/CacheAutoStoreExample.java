@@ -143,7 +143,7 @@ public class CacheAutoStoreExample {
                 cache.clear();
 
                 System.out.println(">>> ------------------------------------------");
-                System.out.println(">>> Load data to cache from DB with cusom SQL...");
+                System.out.println(">>> Load data to cache from DB with custom SQL...");
 
                 // Load cache on all data nodes with custom SQL statement.
                 cache.loadCache(null, "java.lang.Long", "select * from PERSON where id <= 3");
