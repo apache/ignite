@@ -64,9 +64,6 @@ public final class GridH2Collocation {
     private TableFilter[] childFilters;
 
     /** */
-    private boolean childsOrderFinalized;
-
-    /** */
     private List<GridH2Collocation> unions;
 
     /** */
@@ -76,23 +73,36 @@ public final class GridH2Collocation {
      * @param upper Upper.
      * @param filter Filter.
      */
-    public GridH2Collocation(GridH2Collocation upper, int filter) {
+    private GridH2Collocation(GridH2Collocation upper, int filter) {
         this.upper = upper;
         this.filter = filter;
     }
 
     /**
-     * @return List of unions.
-     */
-    public List<GridH2Collocation> unions() {
-        return unions;
-    }
-
-    /**
+     * @param upper Upper.
+     * @param filter Filter.
      * @param unions Unions.
+     * @return Create collocation model.
      */
-    public void unions(List<GridH2Collocation> unions) {
-        this.unions = unions;
+    private static GridH2Collocation createChild(GridH2Collocation upper, int filter, List<GridH2Collocation> unions) {
+        GridH2Collocation child = new GridH2Collocation(upper, filter);
+
+        if (unions != null) {
+            // Bind created child to unions.
+            assert upper == null || upper.child(filter, false) != null;
+
+            unions.add(child);
+
+            child.unions = unions;
+        }
+        else if (upper != null) {
+            // Bind created child to upper model.
+            assert upper.child(filter, false) == null;
+
+            upper.children[filter] = child;
+        }
+
+        return child;
     }
 
     /**
@@ -114,8 +124,6 @@ public final class GridH2Collocation {
         else if (Arrays.equals(this.childFilters, childFilters))
             return false;
 
-        childsOrderFinalized = false;
-
         if (this.childFilters == null) {
             // We have to clone because H2 reuses array and reorders elements.
             this.childFilters = childFilters.clone();
@@ -131,17 +139,11 @@ public final class GridH2Collocation {
             Arrays.fill(children, null);
         }
 
-        reset();
-
-        return true;
-    }
-
-    /**
-     * Reset current collocation model and all the children, but do not touch union.
-     */
-    private void reset() {
+        // Reset results.
         type = null;
         multiplier = 0;
+
+        return true;
     }
 
     /**
@@ -149,13 +151,13 @@ public final class GridH2Collocation {
      * @param f Table filter.
      * @return {@code true} If the child is not a table or view.
      */
-    private boolean isNotTableOrViewChild(int i, TableFilter f) {
+    private boolean isChildTableOrView(int i, TableFilter f) {
         if (f == null)
             f = childFilters[i];
 
         Table t = f.getTable();
 
-        return !t.isView() && !(t instanceof GridH2Table);
+        return t.isView() || t instanceof GridH2Table;
     }
 
     /**
@@ -169,34 +171,33 @@ public final class GridH2Collocation {
             // We are at sub-query.
             boolean collocated = true;
             boolean partitioned = false;
-            int maxMultiplier = 0;
+            int maxMultiplier = MULTIPLIER_COLLOCATED;
 
             for (int i = 0; i < childFilters.length; i++) {
-                GridH2Collocation c = child(i);
-
-                if (c == null) {
-                    assert isNotTableOrViewChild(i, null);
-
-                    continue;
-                }
+                GridH2Collocation c = child(i, true);
 
                 Type t = c.type(true);
 
-                if (!t.isCollocated()) {
-                    collocated = false;
-
-                    int m = c.multiplier(true);
-
-                    if (m > maxMultiplier)
-                        maxMultiplier = m;
-                }
-
-                if (t.isPartitioned())
+                if (t.isPartitioned()) {
                     partitioned = true;
+
+                    if (!t.isCollocated()) {
+                        collocated = false;
+
+                        int m = c.multiplier(true);
+
+                        if (m > maxMultiplier) {
+                            maxMultiplier = m;
+
+                            if (maxMultiplier == MULTIPLIER_BROADCAST)
+                                break;
+                        }
+                    }
+                }
             }
 
             type = Type.of(partitioned, collocated);
-            multiplier = type.isCollocated() ? MULTIPLIER_COLLOCATED : maxMultiplier;
+            multiplier = maxMultiplier;
         }
         else {
             assert upper != null;
@@ -242,6 +243,9 @@ public final class GridH2Collocation {
                     multiplier = MULTIPLIER_BROADCAST;
 
                     break;
+
+                default:
+                    throw new IllegalStateException();
             }
         }
     }
@@ -252,11 +256,9 @@ public final class GridH2Collocation {
      */
     private boolean findPartitionedTableBefore(int f) {
         for (int i = 0; i < f; i++) {
-            GridH2Collocation c = child(i);
+            GridH2Collocation c = child(i, true);
 
-            assert c != null || isNotTableOrViewChild(i, null);
-
-            // The `c` can be null if it is not a GridH2Table and not a sub-query,
+            // The c can be null if it is not a GridH2Table and not a sub-query,
             // it is a some kind of function table or anything else that considered replicated.
             if (c != null && c.type(true).isPartitioned())
                 return true;
@@ -297,9 +299,7 @@ public final class GridH2Collocation {
                     TableFilter prevJoin = expCol.getTableFilter();
 
                     if (prevJoin != null) {
-                        GridH2Collocation co = child(indexOf(prevJoin));
-
-                        assert co != null || isNotTableOrViewChild(-1, prevJoin);
+                        GridH2Collocation co = child(indexOf(prevJoin), true);
 
                         if (co != null) {
                             Type t = co.type(true);
@@ -342,7 +342,7 @@ public final class GridH2Collocation {
         Table t = col.getTable();
 
         if (t.isView()) {
-            Query qry = ((ViewIndex)f.getIndex()).getQuery();
+            Query qry = getSubQuery(f);
 
             return isAffinityColumn(qry, expCol);
         }
@@ -375,69 +375,9 @@ public final class GridH2Collocation {
     }
 
     /**
-     * Sets table filters to the final state of query.
-     *
-     * @return {@code false} if nothing was actually done here.
-     */
-    private boolean finalizeChildFiltersOrder() {
-        if (childFilters == null || childsOrderFinalized)
-            return false;
-
-        int i = 0;
-
-        // Collect table filters in final order after optimization.
-        for (TableFilter f = select.getTopTableFilter(); f != null; f = f.getJoin()) {
-            childFilters[i] = f;
-
-            GridH2Collocation c = child(i);
-
-            if (c == null)
-                child(i, c = new GridH2Collocation(this, i));
-
-            if (f.getTable().isView())
-                c.finalizeChildFiltersOrder();
-
-            i++;
-        }
-
-        assert i == childFilters.length;
-
-        reset();
-
-        childsOrderFinalized = true;
-
-        return true;
-    }
-
-    /**
      * @return Multiplier.
      */
     public int calculateMultiplier() {
-        if (childFilters != null && !childsOrderFinalized) {
-            // We have to set all sub-queries structure to the final one we will have in query.
-            boolean needReset = false;
-
-            for (int i = 0; i < childFilters.length; i++) {
-                Table t = childFilters[i].getTable();
-
-                if (t.isView() || t instanceof GridH2Table) {
-                    if (child(i) == null) {
-                        child(i, new GridH2Collocation(this, i));
-
-                        needReset = true;
-                    }
-
-                    if (t.isView() && child(i).finalizeChildFiltersOrder())
-                        needReset = true;
-                }
-            }
-
-            if (needReset)
-                reset();
-
-            childsOrderFinalized = true;
-        }
-
         // We don't need multiplier for union here because it will be summarized in H2.
         return multiplier(false);
     }
@@ -452,9 +392,9 @@ public final class GridH2Collocation {
         assert multiplier != 0;
 
         if (withUnion && unions != null) {
-            int maxMultiplier = unions.get(0).multiplier(false);
+            int maxMultiplier = 0;
 
-            for (int i = 1; i < unions.size(); i++) {
+            for (int i = 0; i < unions.size(); i++) {
                 int m = unions.get(i).multiplier(false);
 
                 if (m > maxMultiplier)
@@ -500,21 +440,43 @@ public final class GridH2Collocation {
     }
 
     /**
-     * @param idx Index.
-     * @param child Child collocation.
+     * @param i Index.
+     * @param create Create child if needed.
+     * @return Child collocation.
      */
-    private void child(int idx, GridH2Collocation child) {
-        assert children[idx] == null;
+    private GridH2Collocation child(int i, boolean create) {
+        GridH2Collocation child = children[i];
 
-        children[idx] = child;
+        if (child == null && create && isChildTableOrView(i, null)) {
+            TableFilter f = childFilters[i];
+
+            children[i] = child = f.getTable().isView() ?
+                buildCollocationModel(this, i, getSubQuery(f), null) :
+                createChild(this, i, null);
+        }
+
+        return child;
     }
 
     /**
-     * @param idx Index.
-     * @return Child collocation.
+     * @param f Table filter.
+     * @return Sub-query.
      */
-    private GridH2Collocation child(int idx) {
-        return children[idx];
+    private static Query getSubQuery(TableFilter f) {
+        return ((ViewIndex)f.getIndex()).getQuery();
+    }
+
+    /**
+     * @return Unions list.
+     */
+    private List<GridH2Collocation> getOrCreateUnions() {
+        if (unions == null) {
+            unions = new ArrayList<>(4);
+
+            unions.add(this);
+        }
+
+        return unions;
     }
 
     /**
@@ -537,7 +499,7 @@ public final class GridH2Collocation {
             c = qctx.queryCollocation();
 
             if (c == null) {
-                c = new GridH2Collocation(null, -1);
+                c = createChild(null, -1, null);
 
                 qctx.queryCollocation(c);
             }
@@ -548,48 +510,28 @@ public final class GridH2Collocation {
         // Handle union. We have to rely on fact that select will be the same on uppermost select.
         // For sub-queries we will drop collocation models, so that they will be recalculated anyways.
         if (c.select != null && c.select != select) {
-            List<GridH2Collocation> unions = c.unions();
+            List<GridH2Collocation> unions = c.getOrCreateUnions();
 
-            int i = 1;
+            // Try to find this select in existing unions.
+            // Start with 1 because at 0 it always will be c.
+            for (int i = 1; i < unions.size(); i++) {
+                GridH2Collocation u = unions.get(i);
 
-            if (unions == null) {
-                unions = new ArrayList<>();
+                if (u.select == select) {
+                    c = u;
 
-                unions.add(c);
-                c.unions(unions);
-            }
-            else {
-                for (; i < unions.size(); i++) {
-                    GridH2Collocation u = unions.get(i);
-
-                    if (u.select == select) {
-                        c = u;
-
-                        break;
-                    }
+                    break;
                 }
             }
 
-            if (i == unions.size()) {
-                c = new GridH2Collocation(c.upper, c.filter);
-
-                unions.add(c);
-
-                c.unions(unions);
-            }
+            // Nothing was found, need to create new child in union.
+            if (c.select != select)
+                c = createChild(c.upper, c.filter, unions);
         }
 
         c.childFilters(filters);
 
-        GridH2Collocation child = c.child(filter);
-
-        if (child == null) {
-            child = new GridH2Collocation(c, filter);
-
-            c.child(filter, child);
-        }
-
-        return child;
+        return c.child(filter, true);
     }
 
     /**
@@ -630,26 +572,17 @@ public final class GridH2Collocation {
 
         TableFilter[] filters = list.toArray(new TableFilter[list.size()]);
 
-        GridH2Collocation c = new GridH2Collocation(upper, filter);
-
-        if (unions != null) {
-            unions.add(c);
-
-            c.unions(unions);
-        }
+        GridH2Collocation c = createChild(upper, filter, unions);
 
         c.childFilters(filters);
-
-        if (upper != null)
-            upper.child(filter, c);
 
         for (int i = 0; i < filters.length; i++) {
             TableFilter f = filters[i];
 
             if (f.getTable().isView())
-                c.child(i, buildCollocationModel(c, i, ((ViewIndex)f.getIndex()).getQuery(), null));
+                buildCollocationModel(c, i, getSubQuery(f), null);
             else if (f.getTable() instanceof GridH2Table)
-                c.child(i, new GridH2Collocation(c, i));
+                createChild(c, i, null);
         }
 
         return upper == null ? c : null;
