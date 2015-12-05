@@ -82,20 +82,6 @@ public final class GridH2Collocation {
     }
 
     /**
-     * @param select Select.
-     */
-    public void select(Select select) {
-        this.select = select;
-    }
-
-    /**
-     * @return Select.
-     */
-    public Select select() {
-        return select;
-    }
-
-    /**
      * @return List of unions.
      */
     public List<GridH2Collocation> unions() {
@@ -115,9 +101,17 @@ public final class GridH2Collocation {
      */
     private boolean childFilters(TableFilter[] childFilters) {
         assert childFilters != null;
-        assert select == childFilters[0].getSelect();
 
-        if (Arrays.equals(this.childFilters, childFilters))
+        Select select = childFilters[0].getSelect();
+
+        assert this.select == null || this.select == select;
+
+        if (this.select == null) {
+            this.select = select;
+
+            assert this.childFilters == null;
+        }
+        else if (Arrays.equals(this.childFilters, childFilters))
             return false;
 
         childsOrderFinalized = false;
@@ -545,17 +539,15 @@ public final class GridH2Collocation {
             if (c == null) {
                 c = new GridH2Collocation(null, -1);
 
-                c.select(filters[0].getSelect());
-
                 qctx.queryCollocation(c);
             }
         }
 
-        // Handle union. We have to rely on fact that select will be the same on uppermost select.
-        // For sub-queries we will drop collocation models, so that they will be recalculated anyways.
         Select select = filters[0].getSelect();
 
-        if (c.select() != select) {
+        // Handle union. We have to rely on fact that select will be the same on uppermost select.
+        // For sub-queries we will drop collocation models, so that they will be recalculated anyways.
+        if (c.select != null && c.select != select) {
             List<GridH2Collocation> unions = c.unions();
 
             int i = 1;
@@ -570,7 +562,7 @@ public final class GridH2Collocation {
                 for (; i < unions.size(); i++) {
                     GridH2Collocation u = unions.get(i);
 
-                    if (u.select() == select) {
+                    if (u.select == select) {
                         c = u;
 
                         break;
@@ -583,7 +575,6 @@ public final class GridH2Collocation {
 
                 unions.add(c);
 
-                c.select(select);
                 c.unions(unions);
             }
         }
