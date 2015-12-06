@@ -3,7 +3,7 @@ Apache Ignite Cassandra Module
 
 Apache Ignite Cassandra module provides CacheStore implementation backed by Cassandra database.
 
-To enable Cassandra module when starting a standalone node, move 'optional/ignite-cloud' folder to
+To enable Cassandra module when starting a standalone node, move 'optional/ignite-cassandra' folder to
 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
