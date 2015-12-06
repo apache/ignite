@@ -26,24 +26,52 @@ import org.apache.ignite.cache.store.cassandra.utils.persistence.KeyValuePersist
  * Provides information for single operations (load, delete, write) of Ignite cache
  * backed by {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}.
  *
- * @param <R> Type of the result returned from operation
+ * @param <R> type of the result returned from operation.
  */
 public interface ExecutionAssistant<R> {
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Indicates if Cassandra table existence is required for operation.
+     *
+     * @return true if table existence required.
+     */
     public boolean tableExistenceRequired();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns CQL statement to be used for operation.
+     *
+     * @return CQL statement.
+     */
     public String getStatement();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Binds prepared statement.
+     *
+     * @param statement prepared statement.
+     *
+     * @return bound statement.
+     */
     public BoundStatement bindStatement(PreparedStatement statement);
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Persistence settings to use for operation.
+     *
+     * @return persistence settings.
+     */
     public KeyValuePersistenceSettings getPersistenceSettings();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns operation name.
+     *
+     * @return operation name.
+     */
     public String operationName();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Processes Cassandra database table row returned by specified CQL statement.
+     *
+     * @param row Cassandra database table row.
+     *
+     * @return result of the operation.
+     */
     public R process(Row row);
 }

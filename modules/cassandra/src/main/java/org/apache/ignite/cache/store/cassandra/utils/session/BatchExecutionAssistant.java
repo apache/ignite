@@ -26,8 +26,8 @@ import org.apache.ignite.cache.store.cassandra.utils.persistence.KeyValuePersist
  * Provides information for batch operations (loadAll, deleteAll, writeAll) of Ignite cache
  * backed by {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}.
  *
- * @param <R> Type of the result returned from batch operation
- * @param <V> Type of the value used in batch operation
+ * @param <R> type of the result returned from batch operation.
+ * @param <V> type of the value used in batch operation.
  */
 public interface BatchExecutionAssistant<R, V> {
     /**
@@ -56,7 +56,7 @@ public interface BatchExecutionAssistant<R, V> {
     /**
      *  Returns Ignite cache key/value persistence settings.
      *
-     * @return  - persistence settings
+     * @return persistence settings.
      */
     public KeyValuePersistenceSettings getPersistenceSettings();
 
@@ -78,8 +78,8 @@ public interface BatchExecutionAssistant<R, V> {
     /**
      * Checks if row/object with specified sequential number is already processed.
      *
-     * @param seqNum - object sequential number
-     * @return - {@code true} if object is already processed
+     * @param seqNum object sequential number
+     * @return {@code true} if object is already processed
      */
     public boolean alreadyProcessed(int seqNum);
 

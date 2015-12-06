@@ -31,31 +31,39 @@ import org.w3c.dom.Element;
  * from Ignite cache should be stored in Cassandra.
  */
 public abstract class PersistenceSettings {
-    /** */
+    /** Xml attribute specifying persistence strategy. */
     private static final String STRATEGY_ATTR = "strategy";
 
-    /** */
+    /** Xml attribute specifying Cassandra column name. */
     private static final String COLUMN_ATTR = "column";
 
-    /** */
+    /** Xml attribute specifying BLOB serializer to use. */
     private static final String SERIALIZER_ATTR = "serializer";
 
-    /** */
+    /** Xml attribute specifying java class of the object to be persisted. */
     private static final String CLASS_ATTR = "class";
 
-    /** TODO IGNITE-1371: add comment */
+    /** Persistence strategy to use. */
     private PersistenceStrategy stgy;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Java class of the object to be persisted. */
     private Class javaCls;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Cassandra table column name where object should be persisted in
+     *  case of using BLOB or PRIMITIVE persistence strategy. */
     private String col;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Serializer for BLOBs. */
     private Serializer serializer = new JavaSerializer();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Extracts property descriptor from the descriptors list by its name.
+     *
+     * @param descriptors descriptors list.
+     * @param propName property name.
+     *
+     * @return property descriptor.
+     */
     public static PropertyDescriptor findPropertyDescriptor(List<PropertyDescriptor> descriptors, String propName) {
         if (descriptors == null || descriptors.isEmpty() || propName == null || propName.trim().isEmpty())
             return null;
@@ -68,7 +76,11 @@ public abstract class PersistenceSettings {
         return null;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Constracts persistence settings from corresponding XML element.
+     *
+     * @param el xml element containing persistence settings configuration.
+     */
     @SuppressWarnings("unchecked")
     public PersistenceSettings(Element el) {
         if (el == null)
@@ -112,11 +124,14 @@ public abstract class PersistenceSettings {
         }
 
         if (PersistenceStrategy.POJO.equals(stgy)) {
+            if (javaCls == null)
+                throw new IllegalStateException("Object java class should be specified for POJO persistence strategy");
+
             try {
-                javaCls.getConstructor(); // TODO IGNITE-1371: Possible NPE, javaCls could be null, see line 95.
+                javaCls.getConstructor();
             }
             catch (Throwable e) {
-                throw new IllegalArgumentException("Java class '" + javaCls.getName() + "' couldn't be used as POJO " +  // TODO IGNITE-1371: Possible NPE, javaCls could be null, see line 95.
+                throw new IllegalArgumentException("Java class '" + javaCls.getName() + "' couldn't be used as POJO " +
                     "cause it doesn't have no arguments constructor", e);
             }
         }
@@ -151,30 +166,55 @@ public abstract class PersistenceSettings {
             col = defaultColumnName();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns java class of the object to be persisted.
+     *
+     * @return java class.
+     */
     public Class getJavaClass() {
         return javaCls;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns persistence strategy to use.
+     *
+     * @return persistence strategy.
+     */
     public PersistenceStrategy getStrategy() {
         return stgy;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns Cassandra table column name where object should be persisted in
+     * case of using BLOB or PRIMITIVE persistence strategy.
+     *
+     * @return column name.
+     */
     public String getColumn() {
         return col;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns serializer to be used for BLOBs.
+     *
+     * @return serializer.
+     */
     public Serializer getSerializer() {
         return serializer;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns list of POJO fields to be persisted.
+     *
+     * @return list of fields.
+     */
     public abstract List<PojoField> getFields();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns Cassandra table columns DDL, corresponding to POJO fields which should be persisted.
+     *
+     * @return DDL statement for Cassandra table fields
+     */
     public String getTableColumnsDDL() {
         if (PersistenceStrategy.BLOB.equals(stgy))
             return col + " " + DataType.Name.BLOB.toString();
@@ -199,10 +239,18 @@ public abstract class PersistenceSettings {
         return builder.toString();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns default name for Cassandra column (if it's not specified explicitly).
+     *
+     * @return column name
+     */
     protected abstract String defaultColumnName();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Checks if there are POJO filed with the same name or same Cassandra column specified in persistence settings
+     *
+     * @param fields list of fields to be persisted into Cassandra
+     */
     protected void checkDuplicates(List<PojoField> fields) {
         if (fields == null || fields.isEmpty())
             return;
@@ -233,7 +281,12 @@ public abstract class PersistenceSettings {
         }
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Instantiates Class object for particular class
+     *
+     * @param clazz class name
+     * @return Class object
+     */
     private Class getClassInstance(String clazz) {
         try {
             return Class.forName(clazz);
@@ -262,7 +315,12 @@ public abstract class PersistenceSettings {
         throw new RuntimeException("Failed to load class '" + clazz + "' using reflection");
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * CReates new object instance of particular class
+     *
+     * @param clazz class name
+     * @return object
+     */
     private Object newObjectInstance(String clazz) {
         try {
             return getClassInstance(clazz).newInstance();

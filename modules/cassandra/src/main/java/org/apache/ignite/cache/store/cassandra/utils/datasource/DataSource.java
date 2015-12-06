@@ -43,85 +43,89 @@ import org.apache.ignite.cache.store.cassandra.utils.session.CassandraSessionImp
  * Data source abstraction to specify configuration of the Cassandra session to be used
  */
 public class DataSource {
-    /** TODO IGNITE-1371: add comment */
+    /** Number of rows to immediately fetch in CQL statement execution. */
     private Integer fetchSize;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Consistency level for READ operations. */
     private ConsistencyLevel readConsistency;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Consistency level for WRITE operations. */
     private ConsistencyLevel writeConsistency;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Username to use for authentication. */
     private String user;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Password to use for authentication. */
     private String pwd;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Port to use for Cassandra connection. */
     private Integer port;
 
-    /** TODO IGNITE-1371: add comment */
+    /** List of contact points to connect to Cassandra cluster. */
     private List<InetAddress> contactPoints;
 
-    /** TODO IGNITE-1371: add comment */
+    /** List of contact points with ports to connect to Cassandra cluster. */
     private List<InetSocketAddress> contactPointsWithPorts;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Maximum time to wait for schema agreement before returning from a DDL query. */
     private Integer maxSchemaAgreementWaitSeconds;
 
-    /** TODO IGNITE-1371: add comment */
+    /** The native protocol version to use. */
     private Integer protoVer;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Compression to use for the transport. */
     private String compression;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Use SSL for communications with Cassandra. */
     private Boolean useSSL;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Enables metrics collection. */
     private Boolean collectMetrix;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Enables JMX reporting of the metrics. */
     private Boolean jmxReporting;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Credentials to use for authentication. */
     private Credentials creds;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Load balancing policy to use. */
     private LoadBalancingPolicy loadBalancingPlc;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Reconnection policy to use. */
     private ReconnectionPolicy reconnectionPlc;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Retry policy to use. */
     private RetryPolicy retryPlc;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Address translator to use. */
     private AddressTranslater addrTranslater;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Speculative execution policy to use. */
     private SpeculativeExecutionPolicy speculativeExecutionPlc;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Authentication provider to use. */
     private AuthProvider authProvider;
 
-    /** TODO IGNITE-1371: add comment */
+    /** SSL options to use. */
     private SSLOptions sslOptions;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Connection pooling options to use. */
     private PoolingOptions poolingOptions;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Socket options to use. */
     private SocketOptions sockOptions;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Netty options to use for connection. */
     private NettyOptions nettyOptions;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Cassandra session wrapper instance. */
     private volatile CassandraSession ses;
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets user name to use for authentication.
+     *
+     * @param user user name
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setUser(String user) {
         this.user = user;
@@ -129,7 +133,11 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets password to use for authentication.
+     *
+     * @param pwd password
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setPassword(String pwd) {
         this.pwd = pwd;
@@ -137,7 +145,11 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets port to use for Cassandra connection.
+     *
+     * @param port port
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setPort(int port) {
         this.port = port;
@@ -145,7 +157,11 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets list of contact points to connect to Cassandra cluster.
+     *
+     * @param points contact points
+     */
     public void setContactPoints(String... points) {
         if (points == null || points.length == 0)
             return;
@@ -180,7 +196,7 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /** Sets maximum time to wait for schema agreement before returning from a DDL query. */
     @SuppressWarnings("UnusedDeclaration")
     public void setMaxSchemaAgreementWaitSeconds(int seconds) {
         maxSchemaAgreementWaitSeconds = seconds;
@@ -188,7 +204,11 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets the native protocol version to use.
+     *
+     * @param ver version number
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setProtocolVersion(int ver) {
         protoVer = ver;
@@ -196,7 +216,11 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets compression algorithm to use for the transport.
+     *
+     * @param compression compression algorithm
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setCompression(String compression) {
         this.compression = compression == null || compression.trim().isEmpty() ? null : compression.trim();
@@ -212,7 +236,11 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Enables SSL for communications with Cassandra.
+     *
+     * @param use flag to enable/disable SSL
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setUseSSL(boolean use) {
         useSSL = use;
@@ -220,7 +248,11 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Enables metrics collection.
+     *
+     * @param collect flag to enable/disable metrics collection
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setCollectMetrix(boolean collect) {
         collectMetrix = collect;
@@ -228,7 +260,11 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Enables JMX reporting of the metrics.
+     *
+     * @param enableReporting flag to enable/disable JMX reporting
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setJmxReporting(boolean enableReporting) {
         jmxReporting = enableReporting;
@@ -236,7 +272,11 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets number of rows to immediately fetch in CQL statement execution.
+     *
+     * @param size number of rows to fetch.
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setFetchSize(int size) {
         fetchSize = size;
@@ -244,35 +284,55 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Set consistency level for READ operations.
+     *
+     * @param level consistency level.
+     */
     public void setReadConsistency(String level) {
         readConsistency = parseConsistencyLevel(level);
 
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Set consistency level for WRITE operations.
+     *
+     * @param level consistency level.
+     */
     public void setWriteConsistency(String level) {
         writeConsistency = parseConsistencyLevel(level);
 
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets credentials to use for authentication.
+     *
+     * @param creds credentials.
+     */
     public void setCredentials(Credentials creds) {
         this.creds = creds;
 
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets load balancing policy.
+     *
+     * @param plc load balancing policy.
+     */
     public void setLoadBalancingPolicy(LoadBalancingPolicy plc) {
         this.loadBalancingPlc = plc;
 
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets reconnection policy.
+     *
+     * @param plc reconnection policy.
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setReconnectionPolicy(ReconnectionPolicy plc) {
         this.reconnectionPlc = plc;
@@ -280,7 +340,11 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets retry policy.
+     *
+     * @param plc retry policy.
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setRetryPolicy(RetryPolicy plc) {
         this.retryPlc = plc;
@@ -288,7 +352,11 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets address translator.
+     *
+     * @param translater address translator.
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setAddressTranslater(AddressTranslater translater) {
         this.addrTranslater = translater;
@@ -296,49 +364,78 @@ public class DataSource {
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets speculative execution policy.
+     *
+     * @param plc speculative execution policy.
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setSpeculativeExecutionPolicy(SpeculativeExecutionPolicy plc) {
         this.speculativeExecutionPlc = plc;
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets authentication provider.
+     *
+     * @param provider authentication provider
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setAuthProvider(AuthProvider provider) {
         this.authProvider = provider;
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets SSL options.
+     *
+     * @param options SSL options.
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setSslOptions(SSLOptions options) {
         this.sslOptions = options;
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets pooling options.
+     *
+     * @param options pooling options to use.
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setPoolingOptions(PoolingOptions options) {
         this.poolingOptions = options;
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets socket options to use.
+     *
+     * @param options socket options.
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setSocketOptions(SocketOptions options) {
         this.sockOptions = options;
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Sets netty options to use.
+     *
+     * @param options netty options.
+     */
     @SuppressWarnings("UnusedDeclaration")
     public void setNettyOptions(NettyOptions options) {
         this.nettyOptions = options;
         invalidate();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Creates Cassandra session wrapper if it wasn't created yet and returns it
+     *
+     * @param log logger
+     * @return Cassandra session wrapper
+     */
     @SuppressWarnings("deprecation")
     public synchronized CassandraSession session(IgniteLogger log) {
         if (ses != null)
@@ -418,7 +515,13 @@ public class DataSource {
         return ses = new CassandraSessionImpl(builder, fetchSize, readConsistency, writeConsistency, log);
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Parses consistency level provided as string.
+     *
+     * @param level consistency level string.
+     *
+     * @return consistency level.
+     */
     private ConsistencyLevel parseConsistencyLevel(String level) {
         if (level == null)
             return null;
@@ -431,7 +534,9 @@ public class DataSource {
         }
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Invalidates session.
+     */
     private synchronized void invalidate() {
         ses = null;
     }

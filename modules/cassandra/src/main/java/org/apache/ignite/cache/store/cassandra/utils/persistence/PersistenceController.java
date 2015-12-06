@@ -33,22 +33,26 @@ import org.apache.ignite.cache.store.cassandra.utils.serializer.Serializer;
  * of how Java objects should be written/loaded to/from Cassandra.
  */
 public class PersistenceController {
-    /** TODO IGNITE-1371: add comment */
+    /** Ignite cache key/value persistence settings. */
     private KeyValuePersistenceSettings persistenceSettings;
 
-    /** TODO IGNITE-1371: add comment */
+    /** CQL statement to insert row into Cassandra table. */
     private String writeStatement;
 
-    /** TODO IGNITE-1371: add comment */
+    /** CQL statement to delete row from Cassandra table. */
     private String delStatement;
 
-    /** TODO IGNITE-1371: add comment */
+    /** CQL statement to select value fields from Cassandra table. */
     private String loadStatement;
 
-    /** TODO IGNITE-1371: add comment */
+    /** CQL statement to select key/value fields from Cassandra table. */
     private String loadStatementWithKeyFields;
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Constructs persistence controller from Ignite cache persistence settings.
+     *
+     * @param settings persistence settings.
+     */
     public PersistenceController(KeyValuePersistenceSettings settings) {
         if (settings == null)
             throw new IllegalArgumentException("Persistent settings can't be null");
@@ -56,22 +60,38 @@ public class PersistenceController {
         this.persistenceSettings = settings;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns Ignite cache persistence settings.
+     *
+     * @return persistence settings.
+     */
     public KeyValuePersistenceSettings getPersistenceSettings() {
         return persistenceSettings;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns Cassandra keyspace to use.
+     *
+     * @return keyspace.
+     */
     public String getKeyspace() {
         return persistenceSettings.getKeyspace();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns Cassandra table to use.
+     *
+     * @return table.
+     */
     public String getTable() {
         return persistenceSettings.getTable();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns CQL statement to insert row into Cassandra table.
+     *
+     * @return CQL statement.
+     */
     public String getWriteStatement() {
         if (writeStatement != null)
             return writeStatement;
@@ -102,7 +122,11 @@ public class PersistenceController {
         return writeStatement;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns CQL statement to delete row from Cassandra table.
+     *
+     * @return CQL statement.
+     */
     public String getDeleteStatement() {
         if (delStatement != null)
             return delStatement;
@@ -128,7 +152,13 @@ public class PersistenceController {
         return delStatement;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns CQL statement to select key/value fields from Cassandra table.
+     *
+     * @param includeKeyFields whether to include/exclude key fields from the returned row.
+     *
+     * @return CQL statement.
+     */
     public String getLoadStatement(boolean includeKeyFields) {
         if (loadStatement != null && loadStatementWithKeyFields != null)
             return includeKeyFields ? loadStatementWithKeyFields : loadStatement;
@@ -180,7 +210,14 @@ public class PersistenceController {
         return includeKeyFields ? loadStatementWithKeyFields : loadStatement;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Binds Ignite cache key object to {@link com.datastax.driver.core.PreparedStatement}.
+     *
+     * @param statement statement to which key object should be bind.
+     * @param key key object.
+     *
+     * @return statement with bounded key.
+     */
     public BoundStatement bindKey(PreparedStatement statement, Object key) {
         KeyPersistenceSettings settings = persistenceSettings.getKeyPersistenceSettings();
 
@@ -190,7 +227,15 @@ public class PersistenceController {
         return statement.bind(values);
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Binds Ignite cache key and value object to {@link com.datastax.driver.core.PreparedStatement}.
+     *
+     * @param statement statement to which key and value object should be bind.
+     * @param key key object.
+     * @param val value object.
+     *
+     * @return statement with bounded key and value.
+     */
     public BoundStatement bindKeyValue(PreparedStatement statement, Object key, Object val) {
         KeyPersistenceSettings keySettings = persistenceSettings.getKeyPersistenceSettings();
         Object[] keyValues = getBindingValues(keySettings.getStrategy(),
@@ -217,18 +262,37 @@ public class PersistenceController {
         return statement.bind(values);
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Builds Ignite cache key object from returned Cassandra table row.
+     *
+     * @param row Cassandra table row.
+     *
+     * @return key object.
+     */
     @SuppressWarnings("UnusedDeclaration")
     public Object buildKeyObject(Row row) {
         return buildObject(row, persistenceSettings.getKeyPersistenceSettings());
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Builds Ignite cache value object from Cassandra table row .
+     *
+     * @param row Cassandra table row.
+     *
+     * @return value object.
+     */
     public Object buildValueObject(Row row) {
         return buildObject(row, persistenceSettings.getValuePersistenceSettings());
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Builds object from Cassandra table row.
+     *
+     * @param row Cassandra table row.
+     * @param settings persistence settings to use.
+     *
+     * @return object.
+     */
     private Object buildObject(Row row, PersistenceSettings settings) {
         if (row == null)
             return null;
@@ -262,7 +326,17 @@ public class PersistenceController {
         return obj;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Extracts field values from POJO object and converts them into Java types
+     * which could be mapped to Cassandra types.
+     *
+     * @param stgy persistence strategy to use.
+     * @param serializer serializer to use for BLOBs.
+     * @param fields fields who's values should be extracted.
+     * @param obj object instance who's field values should be extracted.
+     *
+     * @return array of object field values converted into Java object instances having Cassandra compatible types
+     */
     private Object[] getBindingValues(PersistenceStrategy stgy, Serializer serializer, List<PojoField> fields, Object obj) {
         if (PersistenceStrategy.PRIMITIVE.equals(stgy)) {
             if (PropertyMappingHelper.getCassandraType(obj.getClass()) == null ||
@@ -295,7 +369,11 @@ public class PersistenceController {
         return values;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns list of Cassandra table columns mapped to Ignite cache key and value fields
+     *
+     * @return list of column names
+     */
     private List<String> getKeyValueColumns() {
         List<String> cols = getKeyColumns();
 
@@ -304,17 +382,29 @@ public class PersistenceController {
         return cols;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns list of Cassandra table columns mapped to Ignite cache key fields
+     *
+     * @return list of column names
+     */
     private List<String> getKeyColumns() {
         return getColumns(persistenceSettings.getKeyPersistenceSettings());
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns list of Cassandra table columns mapped to Ignite cache value fields
+     *
+     * @return list of column names
+     */
     private List<String> getValueColumns() {
         return getColumns(persistenceSettings.getValuePersistenceSettings());
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns list of Cassandra table columns based on persistence strategy to use
+     *
+     * @return list of column names
+     */
     private List<String> getColumns(PersistenceSettings settings) {
         List<String> cols = new LinkedList<>();
 

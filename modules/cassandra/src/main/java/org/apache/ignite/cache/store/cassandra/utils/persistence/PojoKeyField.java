@@ -36,13 +36,18 @@ public class PojoKeyField extends PojoField {
         DESC
     }
 
-    /** */
+    /** Xml attribute specifying sort order. */
     private static final String SORT_ATTR = "sort";
 
-    /** TODO IGNITE-1371: add comment */
+    /** Sort order. */
     private SortOrder sortOrder = null;
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Constructs Ignite cache key POJO object descriptor.
+     *
+     * @param el xml configuration element.
+     * @param pojoCls java class of key POJO field.
+     */
     public PojoKeyField(Element el, Class pojoCls) {
         super(el, pojoCls);
 
@@ -56,17 +61,29 @@ public class PojoKeyField extends PojoField {
         }
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Constructs Ignite cache key POJO object descriptor.
+     *
+     * @param desc property descriptor.
+     */
     public PojoKeyField(PropertyDescriptor desc) {
         super(desc);
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns sort order for the field.
+     *
+     * @return sort order.
+     */
     public SortOrder getSortOrder() {
         return sortOrder;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Initializes descriptor from {@link QuerySqlField} annotation.
+     *
+     * @param sqlField {@link QuerySqlField} annotation.
+     */
     protected void init(QuerySqlField sqlField) {
         if (sqlField.descending())
             sortOrder = SortOrder.DESC;

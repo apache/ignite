@@ -39,10 +39,10 @@ import org.apache.ignite.cache.store.cassandra.utils.serializer.Serializer;
  * map builtin Java types to appropriate Cassandra types.
  */
 public class PropertyMappingHelper {
-    /** */
+    /** Bytes array Class type. */
     private static final Class BYTES_ARRAY_CLASS = (new byte[] {}).getClass();
 
-    /** */
+    /** Mapping from Java to Cassandra types. */
     private static final Map<Class, DataType.Name> JAVA_TO_CASSANDRA_MAPPING = new HashMap<Class, DataType.Name>() {{
         put(String.class, DataType.Name.TEXT);
         put(Integer.class, DataType.Name.INT);
@@ -66,12 +66,25 @@ public class PropertyMappingHelper {
         put(BigInteger.class, DataType.Name.VARINT);
     }};
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Maps Cassandra type to specified Java type.
+     *
+     * @param clazz java class.
+     *
+     * @return Cassandra type.
+     */
     public static DataType.Name getCassandraType(Class clazz) {
         return JAVA_TO_CASSANDRA_MAPPING.get(clazz);
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns property descriptor by class property name.
+     *
+     * @param clazz class from which to get property descriptor.
+     * @param prop name of the property.
+     *
+     * @return property descriptor.
+     */
     public static PropertyDescriptor getPojoPropertyDescriptor(Class clazz, String prop) {
         List<PropertyDescriptor> descriptors = getPojoPropertyDescriptors(clazz, false);
 
@@ -86,12 +99,27 @@ public class PropertyMappingHelper {
         throw new IllegalArgumentException("POJO class doesn't have '" + prop + "' property");
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Extracts all property descriptors from a class.
+     *
+     * @param clazz class which property descriptors should be extracted.
+     * @param primitive boolean flag indicating that only property descriptors for primitive properties should be extracted.
+     *
+     * @return list of class property descriptors
+     */
     public static List<PropertyDescriptor> getPojoPropertyDescriptors(Class clazz, boolean primitive) {
         return getPojoPropertyDescriptors(clazz, null, primitive);
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Extracts all property descriptors having specific annotation from a class.
+     *
+     * @param clazz class which property descriptors should be extracted.
+     * @param annotation annotation to look for.
+     * @param primitive boolean flag indicating that only property descriptors for primitive properties should be extracted.
+     *
+     * @return list of class property descriptors
+     */
     public static <T extends Annotation> List<PropertyDescriptor> getPojoPropertyDescriptors(Class clazz,
         Class<T> annotation, boolean primitive) {
         PropertyDescriptor[] descriptors = PropertyUtils.getPropertyDescriptors(clazz);
@@ -113,12 +141,27 @@ public class PropertyMappingHelper {
         return list;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Checks if property descriptor describes primitive property (int, boolean, long and etc.)
+     *
+     * @param desc property descriptor.
+     *
+     * @return {@code true} property is primitive
+     */
     public static boolean isPrimitivePropertyDescriptor(PropertyDescriptor desc) {
         return PropertyMappingHelper.JAVA_TO_CASSANDRA_MAPPING.containsKey(desc.getPropertyType());
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns value of specific column in the row returned by CQL statement.
+     *
+     * @param row row returned by CQL statement.
+     * @param col column name.
+     * @param clazz java class to which column value should be casted.
+     * @param serializer serializer to use if column stores BLOB otherwise could be null.
+     *
+     * @return row column value.
+     */
     public static Object getCassandraColumnValue(Row row, String col, Class clazz, Serializer serializer) {
         if (String.class.equals(clazz))
             return row.getString(col);

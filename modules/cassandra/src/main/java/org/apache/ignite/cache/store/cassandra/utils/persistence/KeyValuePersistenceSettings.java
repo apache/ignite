@@ -39,106 +39,131 @@ import org.xml.sax.InputSource;
  * Stores persistence settings for Ignite cache key and value
  */
 public class KeyValuePersistenceSettings {
-    /** */
+    /** Xml attribute specifying Cassandra keyspace to use. */
     private static final String KEYSPACE_ATTR = "keyspace";
 
-    /** */
+    /** Xml attribute specifying Cassandra table to use. */
     private static final String TABLE_ATTR = "table";
 
-    /** */
-    private static final String LOAD_ON_STARTUP_ATTR = "loadOnStartup";
-
-    /** */
+    /** Xml attribute specifying ttl (time to leave) for rows inserted in Cassandra. */
     private static final String TTL_ATTR = "ttl";
 
-    /** */
+    /** Root xml element containing persistence settings specification. */
     private static final String PERSISTENCE_NODE = "persistence";
 
-    /** */
+    /** Xml element specifying Cassandra keyspace options. */
     private static final String KEYSPACE_OPTIONS_NODE = "keyspaceOptions";
 
-    /** */
+    /** Xml element specifying Cassandra table options. */
     private static final String TABLE_OPTIONS_NODE = "tableOptions";
 
-    /** */
+    /** Xml element specifying Ignite cache key persistence settings. */
     private static final String KEY_PERSISTENCE_NODE = "keyPersistence";
 
-    /** */
+    /** Xml element specifying Ignite cache value persistence settings. */
     private static final String VALUE_PERSISTENCE_NODE = "valuePersistence";
 
-    /** TODO IGNITE-1371: add comment */
-    private int startupLoadingCnt = 10000;
-
-    /** TODO IGNITE-1371: add comment */
+    /** TTL (time to leave) for rows inserted into Cassandra table. */
     private Integer ttl;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Cassandra keyspace. */
     private String keyspace;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Cassandra table. */
     private String tbl;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Cassandra table creation options. */
     private String tblOptions;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Cassandra keyspace creation options. */
     private String keyspaceOptions = "replication = {'class' : 'SimpleStrategy', 'replication_factor' : 3} " +
         "and durable_writes = true";
 
-    /** TODO IGNITE-1371: add comment */
+    /** Persistence settings for Ignite cache keys */
     private KeyPersistenceSettings keyPersistenceSettings;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Persistence settings for Ignite cache values */
     private ValuePersistenceSettings valPersistenceSettings;
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Constructs Ignite cache key/value persistence settings.
+     *
+     * @param settings string containing xml with persistence settings for Ignite cache key/value
+     */
     @SuppressWarnings("UnusedDeclaration")
     public KeyValuePersistenceSettings(String settings) {
         init(settings);
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Constructs Ignite cache key/value persistence settings.
+     *
+     * @param settingsRsrc resource containing xml with persistence settings for Ignite cache key/value
+     */
     public KeyValuePersistenceSettings(Resource settingsRsrc) {
         init(loadSettings(settingsRsrc));
     }
 
-    /** TODO IGNITE-1371: add comment */
-    public int getStartupLoadingCount() {
-        return startupLoadingCnt;
-    }
-
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns ttl to use for while inserting new rows into Cassandra table.
+     *
+     * @return ttl
+     */
     public Integer getTTL() {
         return ttl;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns Cassandra keyspace to use.
+     *
+     * @return keyspace.
+     */
     public String getKeyspace() {
         return keyspace;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns Cassandra table to use.
+     *
+     * @return table.
+     */
     public String getTable() {
         return tbl;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns full name of Cassandra table to use (including keyspace).
+     *
+     * @return full table name in format "keyspace.table".
+     */
     public String getTableFullName()
     {
         return keyspace + "." + tbl;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns persistence settings for Ignite cache keys.
+     *
+     * @return keys persistence settings.
+     */
     public KeyPersistenceSettings getKeyPersistenceSettings() {
         return keyPersistenceSettings;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns persistence settings for Ignite cache values.
+     *
+     * @return values persistence settings.
+     */
     public ValuePersistenceSettings getValuePersistenceSettings() {
         return valPersistenceSettings;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns list of POJO fields to be mapped to Cassandra table columns.
+     *
+     * @return POJO fields list
+     */
     @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getFields() {
         List<PojoField> fields = new LinkedList<>();
@@ -152,19 +177,31 @@ public class KeyValuePersistenceSettings {
         return fields;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns list of Ignite cache key POJO fields to be mapped to Cassandra table columns.
+     *
+     * @return POJO fields list
+     */
     @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getKeyFields() {
         return keyPersistenceSettings.getFields();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns list of Ignite cache value POJO fields to be mapped to Cassandra table columns.
+     *
+     * @return POJO fields list
+     */
     @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getValueFields() {
         return valPersistenceSettings.getFields();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns DDL statement to create Cassandra keyspace.
+     *
+     * @return keyspace DDL statement.
+     */
     public String getKeyspaceDDLStatement() {
         StringBuilder builder = new StringBuilder();
         builder.append("create keyspace if not exists ").append(keyspace);
@@ -184,7 +221,11 @@ public class KeyValuePersistenceSettings {
         return statement;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns DDL statement to create Cassandra table.
+     *
+     * @return table DDL statement.
+     */
     public String getTableDDLStatement() {
         String colsDDL = keyPersistenceSettings.getTableColumnsDDL() + ", " + valPersistenceSettings.getTableColumnsDDL();
 
@@ -213,7 +254,11 @@ public class KeyValuePersistenceSettings {
         return tblDDL.endsWith(";") ? tblDDL : tblDDL + ";";
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns DDL statements to create Cassandra table secondary indexes.
+     *
+     * @return DDL statements to create secondary indexes.
+     */
     public List<String> getIndexDDLStatements() {
         List<String> idxDDLs = new LinkedList<>();
 
@@ -227,7 +272,13 @@ public class KeyValuePersistenceSettings {
         return idxDDLs;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Loads Ignite cache persistence settings from resource
+     *
+     * @param rsrc resource
+     *
+     * @return string containing xml with Ignite cache persistence settings
+     */
     private String loadSettings(Resource rsrc) {
         StringBuilder settings = new StringBuilder();
         InputStream in;
@@ -294,7 +345,11 @@ public class KeyValuePersistenceSettings {
         }
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Initializes persistence settings from xml string
+     *
+     * @param settings xml string containing Ignite cache persistence settings configuration
+     */
     @SuppressWarnings("IfCanBeSwitch")
     private void init(String settings) {
         Document doc;
@@ -328,9 +383,6 @@ public class KeyValuePersistenceSettings {
 
         keyspace = root.getAttribute(KEYSPACE_ATTR).trim();
         tbl = root.getAttribute(TABLE_ATTR).trim();
-
-        if (root.hasAttribute(LOAD_ON_STARTUP_ATTR))
-            startupLoadingCnt = extractIntAttribute(root, LOAD_ON_STARTUP_ATTR);
 
         if (root.hasAttribute(TTL_ATTR))
             ttl = extractIntAttribute(root, TTL_ATTR);

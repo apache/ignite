@@ -25,31 +25,36 @@ import org.w3c.dom.Element;
  * Descriptor for Ignite value POJO class
  */
 public class PojoValueField extends PojoField {
-    /** */
+    /** Xml attribute specifying that Cassandra column is static. */
     private static final String STATIC_ATTR = "static";
 
-    /** */
+    /** Xml attribute specifying that secondary index should be created for Cassandra column. */
     private static final String INDEX_ATTR = "index";
 
-    /** */
+    /** Xml attribute specifying secondary index custom class. */
     private static final String INDEX_CLASS_ATTR = "indexClass";
 
-    /** */
+    /** Xml attribute specifying secondary index options. */
     private static final String INDEX_OPTIONS_ATTR = "indexOptions";
 
-    /** TODO IGNITE-1371: add comment */
+    /** Indicates if Cassandra column should be indexed. */
     private Boolean isIndexed;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Custom java class for Cassandra secondary index. */
     private String idxCls;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Secondary index options. */
     private String idxOptions;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Indicates if Cassandra column is static. */
     private Boolean isStatic;
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Constructs Ignite cache value field descriptor.
+     *
+     * @param el field descriptor xml configuration element.
+     * @param pojoCls field java class
+     */
     public PojoValueField(Element el, Class pojoCls) {
         super(el, pojoCls);
 
@@ -73,12 +78,20 @@ public class PojoValueField extends PojoField {
         }
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Constructs Ignite cache value field descriptor.
+     *
+     * @param desc field property descriptor.
+     */
     public PojoValueField(PropertyDescriptor desc) {
         super(desc);
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns DDL for Cassandra columns corresponding to POJO field.
+     *
+     * @return columns DDL.
+     */
     public String getColumnDDL() {
         String colDDL = super.getColumnDDL();
 
@@ -88,12 +101,23 @@ public class PojoValueField extends PojoField {
         return colDDL;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Indicates if secondary index should be created for the field.
+     *
+     * @return true/false if secondary index should/shouldn't be created for the field.
+     */
     public boolean isIndexed() {
         return isIndexed != null && isIndexed;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns DDL for the field secondary index.
+     *
+     * @param keyspace Cassandra keyspace shere index should be created.
+     * @param tbl Cassandra table for which secondary index should be created.
+     *
+     * @return secondary index DDL.
+     */
     public String getIndexDDL(String keyspace, String tbl) {
         if (isIndexed == null || !isIndexed)
             return null;
@@ -116,7 +140,11 @@ public class PojoValueField extends PojoField {
         return builder.append(";").toString();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Initializes descriptor from {@link QuerySqlField} annotation.
+     *
+     * @param sqlField {@link QuerySqlField} annotation.
+     */
     protected void init(QuerySqlField sqlField) {
         if (sqlField.index())
             isIndexed = true;

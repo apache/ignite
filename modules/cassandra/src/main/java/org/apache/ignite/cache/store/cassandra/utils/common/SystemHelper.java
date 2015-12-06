@@ -27,10 +27,10 @@ public class SystemHelper {
     /** System line separator. */
     public static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
-    /** TODO IGNITE-1371: add comment */
+    /** Host name. */
     public static final String HOST_NAME;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Host IP address */
     public static final String HOST_IP;
 
     static {

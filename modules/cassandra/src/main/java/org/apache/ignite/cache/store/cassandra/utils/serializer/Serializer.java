@@ -25,9 +25,21 @@ import java.nio.ByteBuffer;
  * for writing/loading data to/from Cassandra in binary (BLOB) format.
  */
 public interface Serializer extends Serializable {
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Serializes object into byte buffer.
+     *
+     * @param obj object.
+     *
+     * @return byte buffer.
+     */
     public ByteBuffer serialize(Object obj);
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Deserializes object from byte buffer.
+     *
+     * @param buf byte buffer.
+     *
+     * @return object.
+     */
     public Object deserialize(ByteBuffer buf);
 }

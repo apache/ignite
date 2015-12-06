@@ -24,32 +24,46 @@ import org.apache.ignite.cache.store.cassandra.utils.common.CassandraHelper;
  * Wrapper for Cassandra driver session, responsible for monitoring session expiration and its closing.
  */
 public class SessionWrapper {
-    /** */
+    /** Expiration timeout for Cassandra driver session. */
     public static final long DFLT_EXPIRATION_TIMEOUT = 300000;  // 5 minutes.
 
-    /** TODO IGNITE-1371: add comment */
+    /** Cassandra driver session. */
     private Session ses;
 
-    /** TODO IGNITE-1371: add comment */
+    /** Wrapper creation time.  */
     private long time;
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Creates instance of Cassandra driver session wrapper.
+     *
+     * @param ses Cassandra driver session.
+     */
     public SessionWrapper(Session ses) {
         this.ses = ses;
         this.time = System.currentTimeMillis();
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Checks if Cassandra driver session expired.
+     *
+     * @return true if session expired.
+     */
     public boolean expired() {
         return System.currentTimeMillis() - time > DFLT_EXPIRATION_TIMEOUT;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns wrapped Cassandra driver session.
+     *
+     * @return Cassandra driver session.
+     */
     public Session driverSession() {
         return ses;
     }
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Closes wrapped Cassandra driver session
+     */
     public void release() {
         CassandraHelper.closeSession(ses);
         ses = null;

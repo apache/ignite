@@ -80,7 +80,7 @@ public class CassandraSessionImpl implements CassandraSession {
      * Creates instance of Cassandra driver session wrapper.
      *
      * @param builder Builder for Cassandra cluster.
-     * @param fetchSize Number of row to immediately fetch in CQL statement execution.
+     * @param fetchSize Number of rows to immediately fetch in CQL statement execution.
      * @param readConsistency Consistency level for Cassandra READ operations (select).
      * @param writeConsistency Consistency level for Cassandra WRITE operations (insert/update/delete).
      * @param log Logger.

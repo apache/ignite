@@ -7,12 +7,24 @@ import com.datastax.driver.core.Statement;
  * Provides information for loadCache operation of {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}.
  */
 public interface BatchLoaderAssistant {
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns name of the batch load operation.
+     *
+     * @return operation name.
+     */
     public String operationName();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Returns CQL statement to use in batch load operation.
+     *
+     * @return CQL statement for batch load operation.
+     */
     public Statement getStatement();
 
-    /** TODO IGNITE-1371: add comment */
+    /**
+     * Processes each row returned by batch load operation.
+     *
+     * @param row row selected from Cassandra table.
+     */
     public void process(Row row);
 }
