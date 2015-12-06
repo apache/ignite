@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import org.apache.ignite.cache.store.cassandra.utils.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.utils.session.pool.SessionPool;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -36,40 +37,62 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  * Helper class providing bunch of utility methods to work with Cassandra
  */
 public class CassandraHelper {
+    /** */
     private static final ResourceBundle CREDENTIALS = ResourceBundle.getBundle("org/apache/ignite/tests/cassandra/credentials");
+
+    /** */
     private static final ResourceBundle CONNECTION = ResourceBundle.getBundle("org/apache/ignite/tests/cassandra/connection");
+
+    /** */
     private static final ResourceBundle KEYSPACES = ResourceBundle.getBundle("org/apache/ignite/tests/cassandra/keyspaces");
 
+    /** */
     private static final ApplicationContext connectionContext = new ClassPathXmlApplicationContext("org/apache/ignite/tests/cassandra/connection-settings.xml");
 
+    /** */
     private static DataSource adminDataSrc;
+
+    /** */
     private static DataSource regularDataSrc;
 
+    /** */
     private static Cluster adminCluster;
-    private static Cluster regularCluster;
-    private static Session adminSession;
-    private static Session regularSession;
 
+    /** */
+    private static Cluster regularCluster;
+
+    /** */
+    private static Session adminSes;
+
+    /** */
+    private static Session regularSes;
+
+    /** */
     public static String getAdminUser() {
         return CREDENTIALS.getString("admin.user");
     }
 
+    /** */
     public static String getAdminPassword() {
         return CREDENTIALS.getString("admin.password");
     }
 
+    /** */
     public static String getRegularUser() {
         return CREDENTIALS.getString("regular.user");
     }
 
+    /** */
     public static String getRegularPassword() {
         return CREDENTIALS.getString("regular.password");
     }
 
+    /** */
     public static String[] getTestKeyspaces() {
         return KEYSPACES.getString("keyspaces").split(",");
     }
 
+    /** */
     public static String[] getContactPointsArray() {
         String[] points = CONNECTION.getString("contact.points").split(",");
 
@@ -82,6 +105,7 @@ public class CassandraHelper {
         return points;
     }
 
+    /** */
     public static List<InetAddress> getContactPoints() {
         String[] points = getContactPointsArray();
 
@@ -103,6 +127,7 @@ public class CassandraHelper {
         return contactPoints;
     }
 
+    /** */
     public static List<InetSocketAddress> getContactPointsWithPorts() {
         String[] points = getContactPointsArray();
 
@@ -126,6 +151,7 @@ public class CassandraHelper {
         return contactPoints;
     }
 
+    /** */
     public static void dropTestKeyspaces() {
         String[] keyspaces = getTestKeyspaces();
 
@@ -139,6 +165,7 @@ public class CassandraHelper {
         }
     }
 
+    /** */
     public static ResultSet executeWithAdminCredentials(String statement, Object... args) {
         if (args == null || args.length == 0)
             return adminSession().execute(statement);
@@ -147,6 +174,7 @@ public class CassandraHelper {
         return adminSession().execute(ps.bind(args));
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public static ResultSet executeWithRegularCredentials(String statement, Object... args) {
         if (args == null || args.length == 0)
@@ -156,16 +184,19 @@ public class CassandraHelper {
         return regularSession().execute(ps.bind(args));
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public static ResultSet executeWithAdminCredentials(Statement statement) {
         return adminSession().execute(statement);
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public static ResultSet executeWithRegularCredentials(Statement statement) {
         return regularSession().execute(statement);
     }
 
+    /** */
     public static synchronized DataSource getAdminDataSrc() {
         if (adminDataSrc != null)
             return adminDataSrc;
@@ -173,6 +204,7 @@ public class CassandraHelper {
         return adminDataSrc = (DataSource)connectionContext.getBean("cassandraAdminDataSource");
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public static synchronized DataSource getRegularDataSrc() {
         if (regularDataSrc != null)
@@ -181,6 +213,7 @@ public class CassandraHelper {
         return regularDataSrc = (DataSource)connectionContext.getBean("cassandraRegularDataSource");
     }
 
+    /** */
     public static void testAdminConnection() {
         try {
             adminSession();
@@ -190,6 +223,7 @@ public class CassandraHelper {
         }
     }
 
+    /** */
     public static void testRegularConnection() {
         try {
             regularSession();
@@ -199,42 +233,35 @@ public class CassandraHelper {
         }
     }
 
+    /** */
     public static synchronized void releaseCassandraResources() {
         try {
-            if (adminSession != null && !adminSession.isClosed())
-                adminSession.close();
-        }
-        catch (Throwable ignored) {
+            if (adminSes != null && !adminSes.isClosed())
+                U.closeQuiet(adminSes);
         }
         finally {
-            adminSession = null;
+            adminSes = null;
         }
 
         try {
             if (adminCluster != null && !adminCluster.isClosed())
-                adminCluster.close();
-        }
-        catch (Throwable ignored) {
+                U.closeQuiet(adminCluster);
         }
         finally {
             adminCluster = null;
         }
 
         try {
-            if (regularSession != null && !regularSession.isClosed())
-                regularSession.close();
-        }
-        catch (Throwable ignored) {
+            if (regularSes != null && !regularSes.isClosed())
+                U.closeQuiet(regularSes);
         }
         finally {
-            regularSession = null;
+            regularSes = null;
         }
 
         try {
             if (regularCluster != null && !regularCluster.isClosed())
-                regularCluster.close();
-        }
-        catch (Throwable ignored) {
+                U.closeQuiet(regularCluster);
         }
         finally {
             regularCluster = null;
@@ -243,9 +270,10 @@ public class CassandraHelper {
         SessionPool.release();
     }
 
+    /** */
     private static synchronized Session adminSession() {
-        if (adminSession != null)
-            return adminSession;
+        if (adminSes != null)
+            return adminSes;
 
         try {
             Cluster.Builder builder = Cluster.builder();
@@ -254,16 +282,17 @@ public class CassandraHelper {
             builder.addContactPointsWithPorts(getContactPointsWithPorts());
 
             adminCluster = builder.build();
-            return adminSession = adminCluster.connect();
+            return adminSes = adminCluster.connect();
         }
         catch (Throwable e) {
             throw new RuntimeException("Failed to create admin session to Cassandra database", e);
         }
     }
 
+    /** */
     private static synchronized Session regularSession() {
-        if (regularSession != null)
-            return regularSession;
+        if (regularSes != null)
+            return regularSes;
 
         try {
             Cluster.Builder builder = Cluster.builder();
@@ -272,7 +301,7 @@ public class CassandraHelper {
             builder.addContactPointsWithPorts(getContactPointsWithPorts());
 
             regularCluster = builder.build();
-            return regularSession = regularCluster.connect();
+            return regularSes = regularCluster.connect();
         }
         catch (Throwable e) {
             throw new RuntimeException("Failed to create regular session to Cassandra database", e);

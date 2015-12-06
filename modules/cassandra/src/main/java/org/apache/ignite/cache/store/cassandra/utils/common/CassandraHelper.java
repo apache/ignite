@@ -22,6 +22,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import java.util.regex.Pattern;
 
 /**
@@ -48,19 +49,11 @@ public class CassandraHelper {
 
         Cluster cluster = driverSes.getCluster();
 
-        try {
-            if (!driverSes.isClosed())
-                driverSes.close();
-        }
-        catch (Throwable ignored) {
-        }
+        if (!driverSes.isClosed())
+            U.closeQuiet(driverSes);
 
-        try {
-            if (!cluster.isClosed())
-                cluster.close();
-        }
-        catch (Throwable ignored) {
-        }
+        if (!cluster.isClosed())
+            U.closeQuiet(cluster);
     }
 
     /**

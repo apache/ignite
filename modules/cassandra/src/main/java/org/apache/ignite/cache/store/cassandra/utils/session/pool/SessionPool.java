@@ -27,11 +27,11 @@ import java.util.Map;
 import org.apache.ignite.cache.store.cassandra.utils.session.CassandraSessionImpl;
 
 /**
- * Cassandra driver sessions pool
+ * Cassandra driver sessions pool.
  */
 public class SessionPool {
     /**
-     * Monitors session pool and closes unused session
+     * Monitors session pool and closes unused session.
      */
     private static class SessionMonitor extends Thread {
         /** {@inheritDoc} */

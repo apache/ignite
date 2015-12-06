@@ -113,7 +113,7 @@ public class PojoValueField extends PojoField {
     /**
      * Returns DDL for the field secondary index.
      *
-     * @param keyspace Cassandra keyspace shere index should be created.
+     * @param keyspace Cassandra keyspace where index should be created.
      * @param tbl Cassandra table for which secondary index should be created.
      *
      * @return secondary index DDL.

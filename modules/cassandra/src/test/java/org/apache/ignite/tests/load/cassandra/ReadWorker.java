@@ -25,20 +25,25 @@ import org.apache.ignite.tests.load.Worker;
  * Cassandra direct load tests worker for read operation CacheStore.load
  */
 public class ReadWorker extends Worker {
+    /** */
     public static final String LOGGER_NAME = "CassandraReadLoadTest";
 
+    /** */
     public ReadWorker(CacheStore cacheStore, int startPosition, int endPosition) {
         super(cacheStore, startPosition, endPosition);
     }
 
+    /** {@inheritDoc} */
     @Override protected String loggerName() {
         return LOGGER_NAME;
     }
 
+    /** {@inheritDoc} */
     @Override protected boolean batchMode() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void process(CacheStore cacheStore, CacheEntryImpl entry) {
         cacheStore.load(entry.getKey());

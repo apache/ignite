@@ -21,6 +21,7 @@ import com.datastax.driver.core.DataType;
 import java.beans.PropertyDescriptor;
 import java.nio.ByteBuffer;
 import java.util.List;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.cassandra.utils.common.PropertyMappingHelper;
 import org.apache.ignite.cache.store.cassandra.utils.serializer.JavaSerializer;
 import org.apache.ignite.cache.store.cassandra.utils.serializer.Serializer;
@@ -77,7 +78,7 @@ public abstract class PersistenceSettings {
     }
 
     /**
-     * Constracts persistence settings from corresponding XML element.
+     * Constructs persistence settings from corresponding XML element.
      *
      * @param el xml element containing persistence settings configuration.
      */
@@ -312,11 +313,11 @@ public abstract class PersistenceSettings {
         catch (ClassNotFoundException ignored) {
         }
 
-        throw new RuntimeException("Failed to load class '" + clazz + "' using reflection");
+        throw new IgniteException("Failed to load class '" + clazz + "' using reflection");
     }
 
     /**
-     * CReates new object instance of particular class
+     * Creates new object instance of particular class
      *
      * @param clazz class name
      * @return object
@@ -326,8 +327,7 @@ public abstract class PersistenceSettings {
             return getClassInstance(clazz).newInstance();
         }
         catch (Throwable e) {
-            throw new RuntimeException("Failed to instantiate class '" + clazz +
-                "' using default constructor", e);
+            throw new IgniteException("Failed to instantiate class '" + clazz + "' using default constructor", e);
         }
     }
 

@@ -40,6 +40,7 @@ public class CassandraDirectPersistenceTest {
     /** */
     private static final Logger LOGGER = Logger.getLogger(CassandraDirectPersistenceTest.class.getName());
 
+    /** */
     @BeforeClass
     public static void setUpClass() {
         if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
@@ -54,6 +55,7 @@ public class CassandraDirectPersistenceTest {
         LOGGER.info("Start tests execution");
     }
 
+    /** */
     @AfterClass
     public static void tearDownClass() {
         if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
@@ -67,6 +69,7 @@ public class CassandraDirectPersistenceTest {
         }
     }
 
+    /** */
     @Test
     @SuppressWarnings("unchecked")
     public void primitiveStrategyTest() {
@@ -139,6 +142,7 @@ public class CassandraDirectPersistenceTest {
         LOGGER.info("PRIMITIVE strategy delete tests passed");
     }
 
+    /** */
     @Test
     @SuppressWarnings("unchecked")
     public void blobStrategyTest() {
@@ -228,6 +232,7 @@ public class CassandraDirectPersistenceTest {
         LOGGER.info("BLOB strategy delete tests passed");
     }
 
+    /** */
     @Test
     @SuppressWarnings("unchecked")
     public void pojoStrategyTest() {

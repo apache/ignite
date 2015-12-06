@@ -4,6 +4,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.cassandra.utils.persistence.PersistenceController;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -45,7 +46,6 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
     /** {@inheritDoc} */
     @Override public Void call() throws Exception {
         ses.execute(new BatchLoaderAssistant() {
-
             /** {@inheritDoc} */
             @Override public String operationName() {
                 return "loadCache";
@@ -65,20 +65,18 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
                     key = (K)ctrl.buildKeyObject(row);
                 }
                 catch (Throwable e) {
-                    if (log != null)
-                        log.error("Failed to build Ignite key object from provided Cassandra row", e);
+                    log.error("Failed to build Ignite key object from provided Cassandra row", e);
 
-                    throw new RuntimeException("Failed to build Ignite key object from provided Cassandra row", e);
+                    throw new IgniteException("Failed to build Ignite key object from provided Cassandra row", e);
                 }
 
                 try {
                     val = (V)ctrl.buildValueObject(row);
                 }
                 catch (Throwable e) {
-                    if (log != null)
-                        log.error("Failed to build Ignite value object from provided Cassandra row", e);
+                    log.error("Failed to build Ignite value object from provided Cassandra row", e);
 
-                    throw new RuntimeException("Failed to build Ignite value object from provided Cassandra row", e);
+                    throw new IgniteException("Failed to build Ignite value object from provided Cassandra row", e);
                 }
 
                 clo.apply(key, val);

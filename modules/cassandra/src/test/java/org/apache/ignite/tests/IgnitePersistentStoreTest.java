@@ -42,8 +42,10 @@ import org.springframework.core.io.ClassPathResource;
  * to store cache data into Cassandra tables
  */
 public class IgnitePersistentStoreTest {
+    /** */
     private static final Logger LOGGER = Logger.getLogger(IgnitePersistentStoreTest.class.getName());
 
+    /** */
     @BeforeClass
     public static void setUpClass() {
         if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
@@ -58,6 +60,7 @@ public class IgnitePersistentStoreTest {
         LOGGER.info("Start tests execution");
     }
 
+    /** */
     @AfterClass
     public static void tearDownClass() {
         if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
@@ -71,6 +74,7 @@ public class IgnitePersistentStoreTest {
         }
     }
 
+    /** */
     @Test
     public void primitiveStrategyTest() {
         if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
@@ -148,6 +152,7 @@ public class IgnitePersistentStoreTest {
         }
     }
 
+    /** */
     @Test
     public void blobStrategyTest() {
         if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
@@ -225,6 +230,7 @@ public class IgnitePersistentStoreTest {
         }
     }
 
+    /** */
     @Test
     public void pojoStrategyTest() {
         if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
@@ -318,6 +324,7 @@ public class IgnitePersistentStoreTest {
         }
     }
 
+    /** */
     @Test
     public void loadCacheTest() {
         if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {

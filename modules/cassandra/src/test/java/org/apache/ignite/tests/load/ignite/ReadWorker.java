@@ -25,20 +25,25 @@ import org.apache.ignite.tests.load.Worker;
  * Ignite load tests worker for read operation CacheStore.load
  */
 public class ReadWorker extends Worker {
+    /** */
     public static final String LOGGER_NAME = "IgniteReadLoadTest";
 
+    /** */
     public ReadWorker(Ignite ignite, int startPosition, int endPosition) {
         super(ignite, startPosition, endPosition);
     }
 
+    /** {@inheritDoc} */
     @Override protected String loggerName() {
         return LOGGER_NAME;
     }
 
+    /** {@inheritDoc} */
     @Override protected boolean batchMode() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void process(IgniteCache cache, Object key, Object val) {
         cache.get(key);

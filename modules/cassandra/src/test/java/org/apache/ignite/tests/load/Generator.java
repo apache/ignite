@@ -22,5 +22,6 @@ package org.apache.ignite.tests.load;
  * from provided int number (which sequentially incremented in load test driver loop)
  */
 public interface Generator {
+    /** */
     public Object generate(int i);
 }
