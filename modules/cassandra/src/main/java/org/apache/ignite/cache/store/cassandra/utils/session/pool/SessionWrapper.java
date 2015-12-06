@@ -21,29 +21,51 @@ import com.datastax.driver.core.Session;
 import org.apache.ignite.cache.store.cassandra.utils.common.CassandraHelper;
 
 /**
- * Wrapper for Cassandra driver session, responsible for monitoring session expiration and its closing
+ * Wrapper for Cassandra driver session, responsible for monitoring session expiration and its closing.
  */
 public class SessionWrapper {
-    public static final long EXPIRATION_TIMEOUT = 300000;  //5 minutes
+    /** Expiration timeout for Cassandra driver session. */
+    public static final long DFLT_EXPIRATION_TIMEOUT = 300000;  // 5 minutes.
 
-    private Session session;
+    /** Cassandra driver session. */
+    private Session ses;
+
+    /** Wrapper creation time.  */
     private long time;
 
-    public SessionWrapper(Session session) {
-        this.session = session;
+    /**
+     * Creates instance of Cassandra driver session wrapper.
+     *
+     * @param ses Cassandra driver session.
+     */
+    public SessionWrapper(Session ses) {
+        this.ses = ses;
         this.time = System.currentTimeMillis();
     }
 
+    /**
+     * Checks if Cassandra driver session expired.
+     *
+     * @return true if session expired.
+     */
     public boolean expired() {
-        return System.currentTimeMillis() - time > EXPIRATION_TIMEOUT;
+        return System.currentTimeMillis() - time > DFLT_EXPIRATION_TIMEOUT;
     }
 
+    /**
+     * Returns wrapped Cassandra driver session.
+     *
+     * @return Cassandra driver session.
+     */
     public Session driverSession() {
-        return session;
+        return ses;
     }
 
+    /**
+     * Closes wrapped Cassandra driver session
+     */
     public void release() {
-        CassandraHelper.closeSession(session);
-        session = null;
+        CassandraHelper.closeSession(ses);
+        ses = null;
     }
 }

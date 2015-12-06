@@ -20,15 +20,41 @@ package org.apache.ignite.cache.store.cassandra.utils.session;
 import java.io.Closeable;
 
 /**
- * Wrapper around Cassandra driver session, to automatically handle
- *  - keyspace and table absence exceptions
- *  - timeout exceptions
- *  - batch operations
+ * Wrapper around Cassandra driver session, to automatically handle:
+ * <ul>
+ *  <li>Keyspace and table absence exceptions</li>
+ *  <li>Timeout exceptions</li>
+ *  <li>Batch operations</li>
+ * </ul>
  */
 public interface CassandraSession extends Closeable {
+    /**
+     * Execute single synchronous operation against Cassandra  database.
+     *
+     * @param assistant execution assistance to perform the main operation logic.
+     * @param <V> type of the result returned from operation.
+     *
+     * @return result of the operation.
+     */
     public <V> V execute(ExecutionAssistant<V> assistant);
 
+    /**
+     * Executes batch asynchronous operation against Cassandra database.
+     *
+     * @param assistant execution assistance to perform the main operation logic.
+     * @param data data which should be processed in batch operation.
+     * @param <R> type of the result returned from batch operation.
+     * @param <V> type of the value used in batch operation.
+     *
+     * @return result of the operation.
+     */
     public <R, V> R execute(BatchExecutionAssistant<R, V> assistant, Iterable<? extends V> data);
 
+    /**
+     * Executes batch asynchronous operation to load bunch of records
+     * specified by CQL statement from Cassandra database
+     *
+     * @param assistant execution assistance to perform the main operation logic.
+     */
     public void execute(BatchLoaderAssistant assistant);
 }

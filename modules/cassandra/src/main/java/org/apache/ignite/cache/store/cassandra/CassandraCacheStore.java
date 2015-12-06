@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
-import org.apache.ignite.cache.store.cassandra.utils.common.SystemHelper;
 import org.apache.ignite.cache.store.cassandra.utils.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.utils.persistence.KeyValuePersistenceSettings;
 import org.apache.ignite.cache.store.cassandra.utils.persistence.PersistenceController;
@@ -66,16 +65,17 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     @LoggerResource
     private IgniteLogger log;
 
-    /** Cassandra data source */
+    /** Cassandra data source. */
     private DataSource dataSrc;
 
-    /** Controller component responsible for serialization logic */
+    /** Controller component responsible for serialization logic. */
     private PersistenceController controller;
 
     /**
+     * Store constructor.
      *
-     * @param dataSrc - data source
-     * @param settings - persistence settings for Ignite key and value objects
+     * @param dataSrc Data source.
+     * @param settings Persistence settings for Ignite key and value objects.
      */
     public CassandraCacheStore(DataSource dataSrc, KeyValuePersistenceSettings settings) {
         this.dataSrc = dataSrc;
@@ -88,10 +88,11 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             return;
 
         ExecutorService pool = null;
+
         Collection<Future<?>> futs = new ArrayList<>(args.length);
 
         try {
-            pool = Executors.newFixedThreadPool(SystemHelper.PROCESSORS_COUNT);
+            pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
             for (Object obj : args) {
                 if (obj == null || !(obj instanceof String) || !((String)obj).trim().toLowerCase().startsWith("select"))
@@ -361,8 +362,12 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         }
     }
 
-    /** Returns Cassandra session wrapper or creates new if it doesn't exist. This wrapper hides all the low-level
-     * Cassandra interaction details by providing only high-level methods */
+    /**
+     * Gets Cassandra session wrapper or creates new if it doesn't exist.
+     * This wrapper hides all the low-level Cassandra interaction details by providing only high-level methods.
+     *
+     * @return Cassandra session wrapper.
+     */
     private CassandraSession getCassandraSession() {
         if (storeSes == null || storeSes.transaction() == null)
             return dataSrc.session(log != null ? log : new NullLogger());
@@ -377,7 +382,11 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         return ses;
     }
 
-    /** Releases Cassandra related resources */
+    /**
+     * Releases Cassandra related resources.
+     *
+     * @param ses Cassandra session wrapper.
+     */
     private void closeCassandraSession(CassandraSession ses) {
         if (ses != null && (storeSes == null || storeSes.transaction() == null)) {
             try {

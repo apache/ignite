@@ -29,16 +29,27 @@ public class PojoKeyField extends PojoField {
     /**
      * Specifies sort order for POJO key field
      */
-    public static enum SortOrder {
-        ASC, DESC;
+    public enum SortOrder {
+        /** Ascending sort order. */
+        ASC,
+        /** Descending sort order. */
+        DESC
     }
 
+    /** Xml attribute specifying sort order. */
     private static final String SORT_ATTR = "sort";
 
+    /** Sort order. */
     private SortOrder sortOrder = null;
 
-    public PojoKeyField(Element el, Class pojoClass) {
-        super(el, pojoClass);
+    /**
+     * Constructs Ignite cache key POJO object descriptor.
+     *
+     * @param el xml configuration element.
+     * @param pojoCls java class of key POJO field.
+     */
+    public PojoKeyField(Element el, Class pojoCls) {
+        super(el, pojoCls);
 
         if (el.hasAttribute(SORT_ATTR)) {
             try {
@@ -50,14 +61,29 @@ public class PojoKeyField extends PojoField {
         }
     }
 
-    public PojoKeyField(PropertyDescriptor descriptor) {
-        super(descriptor);
+    /**
+     * Constructs Ignite cache key POJO object descriptor.
+     *
+     * @param desc property descriptor.
+     */
+    public PojoKeyField(PropertyDescriptor desc) {
+        super(desc);
     }
 
+    /**
+     * Returns sort order for the field.
+     *
+     * @return sort order.
+     */
     public SortOrder getSortOrder() {
         return sortOrder;
     }
 
+    /**
+     * Initializes descriptor from {@link QuerySqlField} annotation.
+     *
+     * @param sqlField {@link QuerySqlField} annotation.
+     */
     protected void init(QuerySqlField sqlField) {
         if (sqlField.descending())
             sortOrder = SortOrder.DESC;

@@ -25,18 +25,38 @@ import org.w3c.dom.Element;
  * Descriptor for Ignite value POJO class
  */
 public class PojoValueField extends PojoField {
+    /** Xml attribute specifying that Cassandra column is static. */
     private static final String STATIC_ATTR = "static";
+
+    /** Xml attribute specifying that secondary index should be created for Cassandra column. */
     private static final String INDEX_ATTR = "index";
+
+    /** Xml attribute specifying secondary index custom class. */
     private static final String INDEX_CLASS_ATTR = "indexClass";
+
+    /** Xml attribute specifying secondary index options. */
     private static final String INDEX_OPTIONS_ATTR = "indexOptions";
 
+    /** Indicates if Cassandra column should be indexed. */
     private Boolean isIndexed;
-    private String indexClass;
-    private String indexOptions;
+
+    /** Custom java class for Cassandra secondary index. */
+    private String idxCls;
+
+    /** Secondary index options. */
+    private String idxOptions;
+
+    /** Indicates if Cassandra column is static. */
     private Boolean isStatic;
 
-    public PojoValueField(Element el, Class pojoClass) {
-        super(el, pojoClass);
+    /**
+     * Constructs Ignite cache value field descriptor.
+     *
+     * @param el field descriptor xml configuration element.
+     * @param pojoCls field java class
+     */
+    public PojoValueField(Element el, Class pojoCls) {
+        super(el, pojoCls);
 
         if (el.hasAttribute(STATIC_ATTR))
             isStatic = Boolean.parseBoolean(el.getAttribute(STATIC_ATTR).trim().toLowerCase());
@@ -45,58 +65,86 @@ public class PojoValueField extends PojoField {
             isIndexed = Boolean.parseBoolean(el.getAttribute(INDEX_ATTR).trim().toLowerCase());
 
         if (el.hasAttribute(INDEX_CLASS_ATTR))
-            indexClass = el.getAttribute(INDEX_CLASS_ATTR).trim();
+            idxCls = el.getAttribute(INDEX_CLASS_ATTR).trim();
 
         if (el.hasAttribute(INDEX_OPTIONS_ATTR)) {
-            indexOptions = el.getAttribute(INDEX_OPTIONS_ATTR).trim();
+            idxOptions = el.getAttribute(INDEX_OPTIONS_ATTR).trim();
 
-            if (!indexOptions.toLowerCase().startsWith("with")) {
-                indexOptions = indexOptions.toLowerCase().startsWith("options") ?
-                    "with " + indexOptions :
-                    "with options = " + indexOptions;
+            if (!idxOptions.toLowerCase().startsWith("with")) {
+                idxOptions = idxOptions.toLowerCase().startsWith("options") ?
+                    "with " + idxOptions :
+                    "with options = " + idxOptions;
             }
         }
     }
 
-    public PojoValueField(PropertyDescriptor descriptor) {
-        super(descriptor);
+    /**
+     * Constructs Ignite cache value field descriptor.
+     *
+     * @param desc field property descriptor.
+     */
+    public PojoValueField(PropertyDescriptor desc) {
+        super(desc);
     }
 
+    /**
+     * Returns DDL for Cassandra columns corresponding to POJO field.
+     *
+     * @return columns DDL.
+     */
     public String getColumnDDL() {
-        String columnDDL = super.getColumnDDL();
+        String colDDL = super.getColumnDDL();
 
         if (isStatic != null && isStatic)
-            columnDDL = columnDDL + " static";
+            colDDL = colDDL + " static";
 
-        return columnDDL;
+        return colDDL;
     }
 
+    /**
+     * Indicates if secondary index should be created for the field.
+     *
+     * @return true/false if secondary index should/shouldn't be created for the field.
+     */
     public boolean isIndexed() {
         return isIndexed != null && isIndexed;
     }
 
-    public String getIndexDDL(String keyspace, String table) {
+    /**
+     * Returns DDL for the field secondary index.
+     *
+     * @param keyspace Cassandra keyspace shere index should be created.
+     * @param tbl Cassandra table for which secondary index should be created.
+     *
+     * @return secondary index DDL.
+     */
+    public String getIndexDDL(String keyspace, String tbl) {
         if (isIndexed == null || !isIndexed)
             return null;
 
         StringBuilder builder = new StringBuilder();
 
-        if (indexClass != null)
-            builder.append("create custom index if not exists on ").append(keyspace).append(".").append(table);
+        if (idxCls != null)
+            builder.append("create custom index if not exists on ").append(keyspace).append(".").append(tbl);
         else
-            builder.append("create index if not exists on ").append(keyspace).append(".").append(table);
+            builder.append("create index if not exists on ").append(keyspace).append(".").append(tbl);
 
         builder.append(" (").append(getColumn()).append(")");
 
-        if (indexClass != null)
-            builder.append(" using '").append(indexClass).append("'");
+        if (idxCls != null)
+            builder.append(" using '").append(idxCls).append("'");
 
-        if (indexOptions != null)
-            builder.append(" ").append(indexOptions);
+        if (idxOptions != null)
+            builder.append(" ").append(idxOptions);
 
         return builder.append(";").toString();
     }
 
+    /**
+     * Initializes descriptor from {@link QuerySqlField} annotation.
+     *
+     * @param sqlField {@link QuerySqlField} annotation.
+     */
     protected void init(QuerySqlField sqlField) {
         if (sqlField.index())
             isIndexed = true;

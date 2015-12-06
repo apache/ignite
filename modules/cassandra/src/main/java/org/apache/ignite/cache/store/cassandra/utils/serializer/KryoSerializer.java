@@ -25,11 +25,11 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 
 /**
- * Serializer based on Kryo serialization
+ * Serializer based on Kryo serialization.
  */
 public class KryoSerializer implements Serializer {
     /** Thread local instance of {@link com.esotericsoftware.kryo.Kryo} */
-    private ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
+    private transient ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
         protected Kryo initialValue() {
             return new Kryo();
         }
@@ -41,6 +41,7 @@ public class KryoSerializer implements Serializer {
             return null;
 
         ByteArrayOutputStream stream = null;
+
         Output out = null;
 
         try {

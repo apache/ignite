@@ -42,8 +42,8 @@ public class CassandraHelper {
 
     private static final ApplicationContext connectionContext = new ClassPathXmlApplicationContext("org/apache/ignite/tests/cassandra/connection-settings.xml");
 
-    private static DataSource adminDataSource;
-    private static DataSource regularDataSource;
+    private static DataSource adminDataSrc;
+    private static DataSource regularDataSrc;
 
     private static Cluster adminCluster;
     private static Cluster regularCluster;
@@ -166,19 +166,19 @@ public class CassandraHelper {
         return regularSession().execute(statement);
     }
 
-    public static synchronized DataSource getAdminDataSource() {
-        if (adminDataSource != null)
-            return adminDataSource;
+    public static synchronized DataSource getAdminDataSrc() {
+        if (adminDataSrc != null)
+            return adminDataSrc;
 
-        return adminDataSource = (DataSource)connectionContext.getBean("cassandraAdminDataSource");
+        return adminDataSrc = (DataSource)connectionContext.getBean("cassandraAdminDataSource");
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static synchronized DataSource getRegularDataSource() {
-        if (regularDataSource != null)
-            return regularDataSource;
+    public static synchronized DataSource getRegularDataSrc() {
+        if (regularDataSrc != null)
+            return regularDataSrc;
 
-        return regularDataSource = (DataSource)connectionContext.getBean("cassandraRegularDataSource");
+        return regularDataSrc = (DataSource)connectionContext.getBean("cassandraRegularDataSource");
     }
 
     public static void testAdminConnection() {

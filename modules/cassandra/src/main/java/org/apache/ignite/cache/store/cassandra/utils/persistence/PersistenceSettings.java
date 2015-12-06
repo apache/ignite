@@ -27,32 +27,60 @@ import org.apache.ignite.cache.store.cassandra.utils.serializer.Serializer;
 import org.w3c.dom.Element;
 
 /**
- * Stores persistence settings, which describes how particular key/value from Ignite cache
- * should be stored in Cassandra
+ * Stores persistence settings, which describes how particular key/value
+ * from Ignite cache should be stored in Cassandra.
  */
 public abstract class PersistenceSettings {
+    /** Xml attribute specifying persistence strategy. */
     private static final String STRATEGY_ATTR = "strategy";
+
+    /** Xml attribute specifying Cassandra column name. */
     private static final String COLUMN_ATTR = "column";
+
+    /** Xml attribute specifying BLOB serializer to use. */
     private static final String SERIALIZER_ATTR = "serializer";
+
+    /** Xml attribute specifying java class of the object to be persisted. */
     private static final String CLASS_ATTR = "class";
 
-    private PersistenceStrategy strategy;
-    private Class javaClass;
-    private String column;
+    /** Persistence strategy to use. */
+    private PersistenceStrategy stgy;
+
+    /** Java class of the object to be persisted. */
+    private Class javaCls;
+
+    /** Cassandra table column name where object should be persisted in
+     *  case of using BLOB or PRIMITIVE persistence strategy. */
+    private String col;
+
+    /** Serializer for BLOBs. */
     private Serializer serializer = new JavaSerializer();
 
-    public static PropertyDescriptor findPropertyDescriptor(List<PropertyDescriptor> descriptors, String propertyName) {
-        if (descriptors == null || descriptors.isEmpty() || propertyName == null || propertyName.trim().isEmpty())
+    /**
+     * Extracts property descriptor from the descriptors list by its name.
+     *
+     * @param descriptors descriptors list.
+     * @param propName property name.
+     *
+     * @return property descriptor.
+     */
+    public static PropertyDescriptor findPropertyDescriptor(List<PropertyDescriptor> descriptors, String propName) {
+        if (descriptors == null || descriptors.isEmpty() || propName == null || propName.trim().isEmpty())
             return null;
 
         for (PropertyDescriptor descriptor : descriptors) {
-            if (descriptor.getName().equals(propertyName))
+            if (descriptor.getName().equals(propName))
                 return descriptor;
         }
 
         return null;
     }
 
+    /**
+     * Constracts persistence settings from corresponding XML element.
+     *
+     * @param el xml element containing persistence settings configuration.
+     */
     @SuppressWarnings("unchecked")
     public PersistenceSettings(Element el) {
         if (el == null)
@@ -64,58 +92,61 @@ public abstract class PersistenceSettings {
         }
 
         try {
-            strategy = PersistenceStrategy.valueOf(el.getAttribute(STRATEGY_ATTR).trim().toUpperCase());
+            stgy = PersistenceStrategy.valueOf(el.getAttribute(STRATEGY_ATTR).trim().toUpperCase());
         }
         catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Incorrect persistence strategy specified: " + el.getAttribute(STRATEGY_ATTR));
         }
 
-        if (!el.hasAttribute(CLASS_ATTR) && !PersistenceStrategy.BLOB.equals(strategy)) {
+        if (!el.hasAttribute(CLASS_ATTR) && !PersistenceStrategy.BLOB.equals(stgy)) {
             throw new IllegalArgumentException("DOM element representing key/value persistence object should have '" +
                 CLASS_ATTR + "' attribute or have BLOB persistence strategy");
         }
 
         try {
-            javaClass = el.hasAttribute(CLASS_ATTR) ? getClassInstance(el.getAttribute(CLASS_ATTR).trim()) : null;
+            javaCls = el.hasAttribute(CLASS_ATTR) ? getClassInstance(el.getAttribute(CLASS_ATTR).trim()) : null;
         }
         catch (Throwable e) {
             throw new IllegalArgumentException("Incorrect java class specified '" + el.getAttribute(CLASS_ATTR) + "' " +
                 "for Cassandra persistence", e);
         }
 
-        if (!PersistenceStrategy.BLOB.equals(strategy) &&
-            (javaClass.equals(ByteBuffer.class) || javaClass.equals(byte[].class))) {
+        if (!PersistenceStrategy.BLOB.equals(stgy) &&
+            (ByteBuffer.class.equals(javaCls) || byte[].class.equals(javaCls))) {
             throw new IllegalArgumentException("Java class '" + el.getAttribute(CLASS_ATTR) + "' " +
                 "specified could only be persisted using BLOB persistence strategy");
         }
 
-        if (PersistenceStrategy.PRIMITIVE.equals(strategy) &&
-            PropertyMappingHelper.getCassandraType(javaClass) == null) {
+        if (PersistenceStrategy.PRIMITIVE.equals(stgy) &&
+            PropertyMappingHelper.getCassandraType(javaCls) == null) {
             throw new IllegalArgumentException("Current implementation doesn't support persisting '" +
-                javaClass.getName() + "' object using PRIMITIVE strategy");
+                javaCls.getName() + "' object using PRIMITIVE strategy");
         }
 
-        if (PersistenceStrategy.POJO.equals(strategy)) {
+        if (PersistenceStrategy.POJO.equals(stgy)) {
+            if (javaCls == null)
+                throw new IllegalStateException("Object java class should be specified for POJO persistence strategy");
+
             try {
-                javaClass.getConstructor();
+                javaCls.getConstructor();
             }
             catch (Throwable e) {
-                throw new IllegalArgumentException("Java class '" + javaClass.getName() + "' couldn't be used as POJO " +
+                throw new IllegalArgumentException("Java class '" + javaCls.getName() + "' couldn't be used as POJO " +
                     "cause it doesn't have no arguments constructor", e);
             }
         }
 
         if (el.hasAttribute(COLUMN_ATTR)) {
-            if (!PersistenceStrategy.BLOB.equals(strategy) && !PersistenceStrategy.PRIMITIVE.equals(strategy)) {
+            if (!PersistenceStrategy.BLOB.equals(stgy) && !PersistenceStrategy.PRIMITIVE.equals(stgy)) {
                 throw new IllegalArgumentException("Incorrect configuration of Cassandra key/value persistence settings, " +
                     "'" + COLUMN_ATTR + "' attribute is only applicable for PRIMITIVE or BLOB strategy");
             }
 
-            column = el.getAttribute(COLUMN_ATTR).trim();
+            col = el.getAttribute(COLUMN_ATTR).trim();
         }
 
         if (el.hasAttribute(SERIALIZER_ATTR)) {
-            if (!PersistenceStrategy.BLOB.equals(strategy) && !PersistenceStrategy.POJO.equals(strategy)) {
+            if (!PersistenceStrategy.BLOB.equals(stgy) && !PersistenceStrategy.POJO.equals(stgy)) {
                 throw new IllegalArgumentException("Incorrect configuration of Cassandra key/value persistence settings, " +
                     "'" + SERIALIZER_ATTR + "' attribute is only applicable for BLOB and POJO strategies");
             }
@@ -131,36 +162,65 @@ public abstract class PersistenceSettings {
             serializer = (Serializer)obj;
         }
 
-        if ((PersistenceStrategy.BLOB.equals(strategy) || PersistenceStrategy.PRIMITIVE.equals(strategy)) && column == null)
-            column = defaultColumnName();
+        if ((PersistenceStrategy.BLOB.equals(stgy) || PersistenceStrategy.PRIMITIVE.equals(stgy)) && col == null)
+            col = defaultColumnName();
     }
 
+    /**
+     * Returns java class of the object to be persisted.
+     *
+     * @return java class.
+     */
     public Class getJavaClass() {
-        return javaClass;
+        return javaCls;
     }
 
+    /**
+     * Returns persistence strategy to use.
+     *
+     * @return persistence strategy.
+     */
     public PersistenceStrategy getStrategy() {
-        return strategy;
+        return stgy;
     }
 
+    /**
+     * Returns Cassandra table column name where object should be persisted in
+     * case of using BLOB or PRIMITIVE persistence strategy.
+     *
+     * @return column name.
+     */
     public String getColumn() {
-        return column;
+        return col;
     }
 
+    /**
+     * Returns serializer to be used for BLOBs.
+     *
+     * @return serializer.
+     */
     public Serializer getSerializer() {
         return serializer;
     }
 
+    /**
+     * Returns list of POJO fields to be persisted.
+     *
+     * @return list of fields.
+     */
     public abstract List<PojoField> getFields();
 
+    /**
+     * Returns Cassandra table columns DDL, corresponding to POJO fields which should be persisted.
+     *
+     * @return DDL statement for Cassandra table fields
+     */
     public String getTableColumnsDDL() {
-        if (PersistenceStrategy.BLOB.equals(strategy)) {
-            return column + " " + DataType.Name.BLOB.toString();
-        }
+        if (PersistenceStrategy.BLOB.equals(stgy))
+            return col + " " + DataType.Name.BLOB.toString();
 
-        if (PersistenceStrategy.PRIMITIVE.equals(strategy)) {
-            return column + " " + PropertyMappingHelper.getCassandraType(javaClass);
-        }
+        if (PersistenceStrategy.PRIMITIVE.equals(stgy))
+            return col + " " + PropertyMappingHelper.getCassandraType(javaCls);
 
         StringBuilder builder = new StringBuilder();
 
@@ -172,22 +232,32 @@ public abstract class PersistenceSettings {
         }
 
         if (builder.length() == 0) {
-            throw new IllegalStateException("There are no POJO fields found for '" + javaClass.toString()
+            throw new IllegalStateException("There are no POJO fields found for '" + javaCls.toString()
                 + "' class to be presented as a Cassandra primary key");
         }
 
         return builder.toString();
     }
 
+    /**
+     * Returns default name for Cassandra column (if it's not specified explicitly).
+     *
+     * @return column name
+     */
     protected abstract String defaultColumnName();
 
+    /**
+     * Checks if there are POJO filed with the same name or same Cassandra column specified in persistence settings
+     *
+     * @param fields list of fields to be persisted into Cassandra
+     */
     protected void checkDuplicates(List<PojoField> fields) {
         if (fields == null || fields.isEmpty())
             return;
 
         for (PojoField field1 : fields) {
             boolean sameNames = false;
-            boolean sameColumns = false;
+            boolean sameCols = false;
 
             for (PojoField field2 : fields) {
                 if (field1.getName().equals(field2.getName())) {
@@ -200,17 +270,23 @@ public abstract class PersistenceSettings {
                 }
 
                 if (field1.getColumn().equals(field2.getColumn())) {
-                    if (sameColumns) {
+                    if (sameCols) {
                         throw new IllegalArgumentException("Incorrect Cassandra persistence settings," +
                             " two POJO fields with the same column '" + field1.getColumn() + "' specified");
                     }
 
-                    sameColumns = true;
+                    sameCols = true;
                 }
             }
         }
     }
 
+    /**
+     * Instantiates Class object for particular class
+     *
+     * @param clazz class name
+     * @return Class object
+     */
     private Class getClassInstance(String clazz) {
         try {
             return Class.forName(clazz);
@@ -239,6 +315,12 @@ public abstract class PersistenceSettings {
         throw new RuntimeException("Failed to load class '" + clazz + "' using reflection");
     }
 
+    /**
+     * CReates new object instance of particular class
+     *
+     * @param clazz class name
+     * @return object
+     */
     private Object newObjectInstance(String clazz) {
         try {
             return getClassInstance(clazz).newInstance();

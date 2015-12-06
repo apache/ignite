@@ -29,11 +29,16 @@ import org.apache.log4j.Logger;
 
 /**
  * Load tests for {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore} implementation of
- * ${@link org.apache.ignite.cache.store.CacheStore} which allows to store Ignite cache data into Cassandra tables
+ * {@link org.apache.ignite.cache.store.CacheStore} which allows to store Ignite cache data into Cassandra tables.
  */
 public class CassandraDirectPersistenceLoadTest extends LoadTestDriver {
+    /** */
     private static final Logger LOGGER = Logger.getLogger("CassandraLoadTests");
 
+    /**
+     *
+     * @param args Test arguments.
+     */
     public static void main(String[] args) {
         try {
             LOGGER.info("Cassandra load tests execution started");
@@ -61,16 +66,18 @@ public class CassandraDirectPersistenceLoadTest extends LoadTestDriver {
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected Logger logger() {
         return LOGGER;
     }
 
-    @Override protected Object setup(String loggerName) {
+    /** {@inheritDoc} */
+    @Override protected Object setup(String logName) {
         return CacheStoreHelper.createCacheStore(
             TestsHelper.getLoadTestsCacheName(),
             TestsHelper.getLoadTestsPersistenceSettings(),
-            CassandraHelper.getAdminDataSource(),
-            Logger.getLogger(loggerName));
+            CassandraHelper.getAdminDataSrc(),
+            Logger.getLogger(logName));
     }
 
 }
