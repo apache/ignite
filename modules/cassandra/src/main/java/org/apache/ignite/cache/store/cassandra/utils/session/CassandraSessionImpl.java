@@ -572,23 +572,6 @@ public class CassandraSessionImpl implements CassandraSession {
      * @param settings Persistence settings.
      */
     private void handleTableAbsenceError(KeyValuePersistenceSettings settings) {
-        /** TODO IGNITE-1371: suspicious code, may be use:
-         *
-         * private final AtomicInteger handlersCnt = new AtomicInteger();
-         *
-         *  ...
-         *
-         * if (handlersCnt.compareAndSet(0, 1)) {
-         *     do smth...
-         *
-         *     handlersCnt.set(0);
-         * }
-         * else {
-         *     // Oooops... I am not the first thread who tried to handle table absence problem.
-         *     return;
-         * }
-         */
-
         int hndNum = handlersCnt.incrementAndGet();
 
         try {
