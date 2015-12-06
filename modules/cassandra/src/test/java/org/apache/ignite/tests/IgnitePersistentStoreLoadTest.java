@@ -62,14 +62,17 @@ public class IgnitePersistentStoreLoadTest extends LoadTestDriver {
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected Logger logger() {
         return LOGGER;
     }
 
-    @Override protected Object setup(String loggerName) {
+    /** {@inheritDoc} */
+    @Override protected Object setup(String logName) {
         return Ignition.start(TestsHelper.getLoadTestsIgniteConfig());
     }
 
+    /** {@inheritDoc} */
     @Override protected void tearDown(Object obj) {
         Ignite ignite = (Ignite)obj;
 

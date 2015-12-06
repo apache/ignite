@@ -26,65 +26,70 @@ import org.apache.ignite.cache.store.cassandra.utils.persistence.KeyValuePersist
  * Provides information for batch operations (loadAll, deleteAll, writeAll) of Ignite cache
  * backed by {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}.
  *
- * @param <R> Type of the result returned from batch operation
- * @param <V> Type of the value used in batch operation
+ * @param <R> type of the result returned from batch operation.
+ * @param <V> type of the value used in batch operation.
  */
 public interface BatchExecutionAssistant<R, V> {
     /**
-     * Indicates if Cassandra tables existence is required for this batch operation
-     * @return - {@code true} true if table existence required
+     * Indicates if Cassandra tables existence is required for this batch operation.
+     *
+     * @return {@code true} true if table existence required.
      */
     public boolean tableExistenceRequired();
 
     /**
-     * Returns unbind CLQ statement for to be executed inside batch operation
-     * @return - unbind CQL statement
+     * Returns unbind CLQ statement for to be executed inside batch operation.
+     *
+     * @return Unbind CQL statement.
      */
     public String getStatement();
 
     /**
-     * Binds prepared statement to current Cassandra session
-     * @param statement - statement
-     * @param obj - parameters for statement binding
-     * @return - bounded statement
+     * Binds prepared statement to current Cassandra session.
+     *
+     * @param statement Statement.
+     * @param obj Parameters for statement binding.
+     * @return Bounded statement.
      */
     public BoundStatement bindStatement(PreparedStatement statement, V obj);
 
     /**
-     *  Returns Ignite cache key/value persistence sessings
-     * @return  - persistence settings
+     *  Returns Ignite cache key/value persistence settings.
+     *
+     * @return persistence settings.
      */
     public KeyValuePersistenceSettings getPersistenceSettings();
 
     /**
-     * Display name for the batch operation
-     * @return - operation display name
+     * Display name for the batch operation.
+     *
+     * @return Operation display name.
      */
     public String operationName();
 
     /**
-     * Processes particular row inside batch operation
-     * @param row - row
-     * @param seqNum - sequential number of the row
+     * Processes particular row inside batch operation.
+     *
+     * @param row Row to process.
+     * @param seqNum Sequential number of the row.
      */
     public void process(Row row, int seqNum);
 
     /**
-     * Checks if row/object with specified sequential number is already processed
-     * @param seqNum - object sequential number
-     * @return - {@code true} if object is already processed
+     * Checks if row/object with specified sequential number is already processed.
+     *
+     * @param seqNum object sequential number
+     * @return {@code true} if object is already processed
      */
     public boolean alreadyProcessed(int seqNum);
 
     /**
-     * Returns number of processed objects/rows
-     * @return - number of processed objects/rows
+     * @return number of processed objects/rows.
      */
     public int processedCount();
 
     /**
-     * Returns batch operation result
-     * @return - batch operation result
+     * @return batch operation result.
      */
     public R processedData();
 }

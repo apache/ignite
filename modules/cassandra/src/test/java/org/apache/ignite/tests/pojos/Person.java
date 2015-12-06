@@ -84,24 +84,20 @@ public class Person implements Externalizable {
         Person person = (Person)obj;
 
         if ((firstName != null && !firstName.equals(person.firstName)) ||
-            (person.firstName != null && !person.firstName.equals(firstName))) {
+            (person.firstName != null && !person.firstName.equals(firstName)))
             return false;
-        }
 
         if ((lastName != null && !lastName.equals(person.lastName)) ||
-            (person.lastName != null && !person.lastName.equals(lastName))) {
+            (person.lastName != null && !person.lastName.equals(lastName)))
             return false;
-        }
 
         if ((birthDate != null && !birthDate.equals(person.birthDate)) ||
-            (person.birthDate != null && !person.birthDate.equals(birthDate))) {
+            (person.birthDate != null && !person.birthDate.equals(birthDate)))
             return false;
-        }
 
         if ((phones != null && !phones.equals(person.phones)) ||
-            (person.phones != null && !person.phones.equals(phones))) {
+            (person.phones != null && !person.phones.equals(phones)))
             return false;
-        }
 
         return age == person.age && married == person.married &&
             height == person.height && weight == person.weight;
@@ -115,19 +111,16 @@ public class Person implements Externalizable {
         Person person = (Person)obj;
 
         if ((firstName != null && !firstName.equals(person.firstName)) ||
-            (person.firstName != null && !person.firstName.equals(firstName))) {
+            (person.firstName != null && !person.firstName.equals(firstName)))
             return false;
-        }
 
         if ((lastName != null && !lastName.equals(person.lastName)) ||
-            (person.lastName != null && !person.lastName.equals(lastName))) {
+            (person.lastName != null && !person.lastName.equals(lastName)))
             return false;
-        }
 
         if ((birthDate != null && !birthDate.equals(person.birthDate)) ||
-            (person.birthDate != null && !person.birthDate.equals(birthDate))) {
+            (person.birthDate != null && !person.birthDate.equals(birthDate)))
             return false;
-        }
 
         return age == person.age && married == person.married &&
             height == person.height && weight == person.weight;

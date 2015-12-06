@@ -24,10 +24,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Test implementation of ${@link CacheStoreSession} for the unit tests purposes
+ * Test implementation of {@link CacheStoreSession} for the unit tests purposes
  */
 public class TestCacheSession implements CacheStoreSession {
-
     private String cacheName;
     private Transaction tx;
     private Map<Object, Object> props;

@@ -36,11 +36,13 @@ import org.apache.ignite.cache.store.cassandra.utils.serializer.Serializer;
 
 /**
  * Helper class providing bunch of methods to discover fields of POJO objects and
- * map primitive Java types to appropriate Cassandra types
+ * map builtin Java types to appropriate Cassandra types.
  */
 public class PropertyMappingHelper {
+    /** Bytes array Class type. */
     private static final Class BYTES_ARRAY_CLASS = (new byte[] {}).getClass();
 
+    /** Mapping from Java to Cassandra types. */
     private static final Map<Class, DataType.Name> JAVA_TO_CASSANDRA_MAPPING = new HashMap<Class, DataType.Name>() {{
         put(String.class, DataType.Name.TEXT);
         put(Integer.class, DataType.Name.INT);
@@ -64,29 +66,60 @@ public class PropertyMappingHelper {
         put(BigInteger.class, DataType.Name.VARINT);
     }};
 
-    public static DataType.Name getCassandraType(Class clazz)
-    {
+    /**
+     * Maps Cassandra type to specified Java type.
+     *
+     * @param clazz java class.
+     *
+     * @return Cassandra type.
+     */
+    public static DataType.Name getCassandraType(Class clazz) {
         return JAVA_TO_CASSANDRA_MAPPING.get(clazz);
     }
 
-    public static PropertyDescriptor getPojoPropertyDescriptor(Class clazz, String property) {
+    /**
+     * Returns property descriptor by class property name.
+     *
+     * @param clazz class from which to get property descriptor.
+     * @param prop name of the property.
+     *
+     * @return property descriptor.
+     */
+    public static PropertyDescriptor getPojoPropertyDescriptor(Class clazz, String prop) {
         List<PropertyDescriptor> descriptors = getPojoPropertyDescriptors(clazz, false);
 
         if (descriptors == null || descriptors.isEmpty())
-            throw new IllegalArgumentException("POJO class doesn't have '" + property + "' property");
+            throw new IllegalArgumentException("POJO class doesn't have '" + prop + "' property");
 
         for (PropertyDescriptor descriptor : descriptors) {
-            if (descriptor.getName().equals(property))
+            if (descriptor.getName().equals(prop))
                 return descriptor;
         }
 
-        throw new IllegalArgumentException("POJO class doesn't have '" + property + "' property");
+        throw new IllegalArgumentException("POJO class doesn't have '" + prop + "' property");
     }
 
+    /**
+     * Extracts all property descriptors from a class.
+     *
+     * @param clazz class which property descriptors should be extracted.
+     * @param primitive boolean flag indicating that only property descriptors for primitive properties should be extracted.
+     *
+     * @return list of class property descriptors
+     */
     public static List<PropertyDescriptor> getPojoPropertyDescriptors(Class clazz, boolean primitive) {
         return getPojoPropertyDescriptors(clazz, null, primitive);
     }
 
+    /**
+     * Extracts all property descriptors having specific annotation from a class.
+     *
+     * @param clazz class which property descriptors should be extracted.
+     * @param annotation annotation to look for.
+     * @param primitive boolean flag indicating that only property descriptors for primitive properties should be extracted.
+     *
+     * @return list of class property descriptors
+     */
     public static <T extends Annotation> List<PropertyDescriptor> getPojoPropertyDescriptors(Class clazz,
         Class<T> annotation, boolean primitive) {
         PropertyDescriptor[] descriptors = PropertyUtils.getPropertyDescriptors(clazz);
@@ -98,9 +131,8 @@ public class PropertyMappingHelper {
 
         for (PropertyDescriptor descriptor : descriptors) {
             if (descriptor.getReadMethod() == null || descriptor.getWriteMethod() == null ||
-                (primitive && !isPrimitivePropertyDescriptor(descriptor))) {
+                (primitive && !isPrimitivePropertyDescriptor(descriptor)))
                 continue;
-            }
 
             if (annotation == null || descriptor.getReadMethod().getAnnotation(annotation) != null)
                 list.add(descriptor);
@@ -109,50 +141,80 @@ public class PropertyMappingHelper {
         return list;
     }
 
-    public static boolean isPrimitivePropertyDescriptor(PropertyDescriptor descriptor)
-    {
-        return PropertyMappingHelper.JAVA_TO_CASSANDRA_MAPPING.containsKey(descriptor.getPropertyType());
+    /**
+     * Checks if property descriptor describes primitive property (int, boolean, long and etc.)
+     *
+     * @param desc property descriptor.
+     *
+     * @return {@code true} property is primitive
+     */
+    public static boolean isPrimitivePropertyDescriptor(PropertyDescriptor desc) {
+        return PropertyMappingHelper.JAVA_TO_CASSANDRA_MAPPING.containsKey(desc.getPropertyType());
     }
 
-    public static Object getCassandraColumnValue(Row row, String column, Class clazz, Serializer serializer) {
+    /**
+     * Returns value of specific column in the row returned by CQL statement.
+     *
+     * @param row row returned by CQL statement.
+     * @param col column name.
+     * @param clazz java class to which column value should be casted.
+     * @param serializer serializer to use if column stores BLOB otherwise could be null.
+     *
+     * @return row column value.
+     */
+    public static Object getCassandraColumnValue(Row row, String col, Class clazz, Serializer serializer) {
         if (String.class.equals(clazz))
-            return row.getString(column);
-        else if (Integer.class.equals(clazz) || int.class.equals(clazz))
-            return row.getInt(column);
-        else if (Short.class.equals(clazz) || short.class.equals(clazz))
-            return (short)row.getInt(column);
-        else if (Long.class.equals(clazz) || long.class.equals(clazz))
-            return row.getLong(column);
-        else if (Double.class.equals(clazz) || double.class.equals(clazz))
-            return row.getDouble(column);
-        else if (Boolean.class.equals(clazz) || boolean.class.equals(clazz))
-            return row.getBool(column);
-        else if (Float.class.equals(clazz) || float.class.equals(clazz))
-            return row.getFloat(column);
-        else if (ByteBuffer.class.equals(clazz))
-            return row.getBytes(column);
-        else if (PropertyMappingHelper.BYTES_ARRAY_CLASS.equals(clazz)) {
-            ByteBuffer buffer = row.getBytes(column);
-            return buffer == null ? null : buffer.array();
+            return row.getString(col);
+
+        if (Integer.class.equals(clazz) || int.class.equals(clazz))
+            return row.getInt(col);
+
+        if (Short.class.equals(clazz) || short.class.equals(clazz))
+            return (short)row.getInt(col);
+
+        if (Long.class.equals(clazz) || long.class.equals(clazz))
+            return row.getLong(col);
+
+        if (Double.class.equals(clazz) || double.class.equals(clazz))
+            return row.getDouble(col);
+
+        if (Boolean.class.equals(clazz) || boolean.class.equals(clazz))
+            return row.getBool(col);
+
+        if (Float.class.equals(clazz) || float.class.equals(clazz))
+            return row.getFloat(col);
+
+        if (ByteBuffer.class.equals(clazz))
+            return row.getBytes(col);
+
+        if (PropertyMappingHelper.BYTES_ARRAY_CLASS.equals(clazz)) {
+            ByteBuffer buf = row.getBytes(col);
+
+            return buf == null ? null : buf.array();
         }
-        else if (BigDecimal.class.equals(clazz))
-            return row.getDecimal(column);
-        else if (InetAddress.class.equals(clazz))
-            return row.getInet(column);
-        else if (Date.class.equals(clazz))
-            return row.getDate(column);
-        else if (UUID.class.equals(clazz))
-            return row.getUUID(column);
-        else if (BigInteger.class.equals(clazz))
-            return row.getVarint(column);
+
+        if (BigDecimal.class.equals(clazz))
+            return row.getDecimal(col);
+
+        if (InetAddress.class.equals(clazz))
+            return row.getInet(col);
+
+        if (Date.class.equals(clazz))
+            return row.getDate(col);
+
+        if (UUID.class.equals(clazz))
+            return row.getUUID(col);
+
+        if (BigInteger.class.equals(clazz))
+            return row.getVarint(col);
 
         if (serializer == null) {
-            throw new IllegalStateException("Can't deserialize value from '" + column + "' Cassandra column, " +
+            throw new IllegalStateException("Can't deserialize value from '" + col + "' Cassandra column, " +
                 "cause there is no BLOB serializer specified");
         }
 
-        ByteBuffer buffer = row.getBytes(column);
+        ByteBuffer buf = row.getBytes(col);
 
-        return buffer == null ? null : serializer.deserialize(buffer);
+        return buf == null ? null : serializer.deserialize(buf);
     }
 }

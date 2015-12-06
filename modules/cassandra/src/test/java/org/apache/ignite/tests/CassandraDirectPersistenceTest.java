@@ -34,16 +34,16 @@ import org.springframework.core.io.ClassPathResource;
 
 /**
  * Unit tests for {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore} implementation of
- * ${@link org.apache.ignite.cache.store.CacheStore} which allows to store Ignite cache data into Cassandra tables.
+ * {@link org.apache.ignite.cache.store.CacheStore} which allows to store Ignite cache data into Cassandra tables.
  */
 public class CassandraDirectPersistenceTest {
+    /** */
     private static final Logger LOGGER = Logger.getLogger(CassandraDirectPersistenceTest.class.getName());
 
     @BeforeClass
     public static void setUpClass() {
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
+        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
             return;
-        }
 
         LOGGER.info("Testing admin connection to Cassandra");
         CassandraHelper.testAdminConnection();
@@ -56,9 +56,8 @@ public class CassandraDirectPersistenceTest {
 
     @AfterClass
     public static void tearDownClass() {
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
+        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
             return;
-        }
 
         try {
             CassandraHelper.dropTestKeyspaces();
@@ -78,11 +77,11 @@ public class CassandraDirectPersistenceTest {
 
         CacheStore store1 = CacheStoreHelper.createCacheStore("intTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml"),
-            CassandraHelper.getAdminDataSource());
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store2 = CacheStoreHelper.createCacheStore("stringTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-2.xml"),
-            CassandraHelper.getAdminDataSource());
+            CassandraHelper.getAdminDataSrc());
 
         Collection<CacheEntryImpl<Integer, Integer>> intEntries = TestsHelper.generateIntegersEntries();
         Collection<CacheEntryImpl<String, String>> strEntries = TestsHelper.generateStringsEntries();
@@ -105,12 +104,12 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running single operation read tests");
 
-        Integer intValue = (Integer)store1.load(intEntries.iterator().next().getKey());
-        if (!intEntries.iterator().next().getValue().equals(intValue))
+        Integer intVal = (Integer)store1.load(intEntries.iterator().next().getKey());
+        if (!intEntries.iterator().next().getValue().equals(intVal))
             throw new RuntimeException("Integer values was incorrectly deserialized from Cassandra");
 
-        String strValue = (String)store2.load(strEntries.iterator().next().getKey());
-        if (!strEntries.iterator().next().getValue().equals(strValue))
+        String strVal = (String)store2.load(strEntries.iterator().next().getKey());
+        if (!strEntries.iterator().next().getValue().equals(strVal))
             throw new RuntimeException("String values was incorrectly deserialized from Cassandra");
 
         LOGGER.info("Single operation read tests passed");
@@ -150,15 +149,15 @@ public class CassandraDirectPersistenceTest {
 
         CacheStore store1 = CacheStoreHelper.createCacheStore("intTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/blob/persistence-settings-1.xml"),
-            CassandraHelper.getAdminDataSource());
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store2 = CacheStoreHelper.createCacheStore("personTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/blob/persistence-settings-2.xml"),
-            CassandraHelper.getAdminDataSource());
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store3 = CacheStoreHelper.createCacheStore("personTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/blob/persistence-settings-3.xml"),
-            CassandraHelper.getAdminDataSource());
+            CassandraHelper.getAdminDataSrc());
 
         Collection<CacheEntryImpl<Integer, Integer>> intEntries = TestsHelper.generateIntegersEntries();
         Collection<CacheEntryImpl<Integer, Person>> personEntries = TestsHelper.generateIntegersPersonsEntries();
@@ -183,16 +182,16 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running single operation read tests");
 
-        Integer intValue = (Integer)store1.load(intEntries.iterator().next().getKey());
-        if (!intEntries.iterator().next().getValue().equals(intValue))
+        Integer intVal = (Integer)store1.load(intEntries.iterator().next().getKey());
+        if (!intEntries.iterator().next().getValue().equals(intVal))
             throw new RuntimeException("Integer values was incorrectly deserialized from Cassandra");
 
-        Person personValue = (Person)store2.load(personEntries.iterator().next().getKey());
-        if (!personEntries.iterator().next().getValue().equals(personValue))
+        Person personVal = (Person)store2.load(personEntries.iterator().next().getKey());
+        if (!personEntries.iterator().next().getValue().equals(personVal))
             throw new RuntimeException("Person values was incorrectly deserialized from Cassandra");
 
-        personValue = (Person)store3.load(personEntries.iterator().next().getKey());
-        if (!personEntries.iterator().next().getValue().equals(personValue))
+        personVal = (Person)store3.load(personEntries.iterator().next().getKey());
+        if (!personEntries.iterator().next().getValue().equals(personVal))
             throw new RuntimeException("Person values was incorrectly deserialized from Cassandra");
 
         LOGGER.info("Single operation read tests passed");
@@ -239,15 +238,15 @@ public class CassandraDirectPersistenceTest {
 
         CacheStore store1 = CacheStoreHelper.createCacheStore("intTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-1.xml"),
-            CassandraHelper.getAdminDataSource());
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store2 = CacheStoreHelper.createCacheStore("personTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-2.xml"),
-            CassandraHelper.getAdminDataSource());
+            CassandraHelper.getAdminDataSrc());
 
         CacheStore store3 = CacheStoreHelper.createCacheStore("personTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml"),
-            CassandraHelper.getAdminDataSource());
+            CassandraHelper.getAdminDataSrc());
 
         Collection<CacheEntryImpl<Integer, Person>> entries1 = TestsHelper.generateIntegersPersonsEntries();
         Collection<CacheEntryImpl<PersonId, Person>> entries2 = TestsHelper.generatePersonIdsPersonsEntries();

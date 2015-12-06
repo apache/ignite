@@ -27,29 +27,29 @@ import org.apache.log4j.Logger;
 import org.springframework.core.io.Resource;
 
 /**
- * Helper class utilized by unit tests to get appropriate instance of ${@link CacheStore}
+ * Helper class utilized by unit tests to get appropriate instance of {@link CacheStore}
  */
 public class CacheStoreHelper {
     private static final Logger LOGGER = Logger.getLogger(CacheStoreHelper.class.getName());
 
-    public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings, DataSource connection) {
-        return createCacheStore(cacheName, persistenceSettings, connection, LOGGER);
+    public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings, DataSource conn) {
+        return createCacheStore(cacheName, persistenceSettings, conn, LOGGER);
     }
 
     public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings,
-        DataSource connection, Logger logger) {
+        DataSource conn, Logger log) {
         CassandraCacheStore<Integer, Integer> cacheStore =
-            new CassandraCacheStore<>(connection, new KeyValuePersistenceSettings(persistenceSettings));
+            new CassandraCacheStore<>(conn, new KeyValuePersistenceSettings(persistenceSettings));
 
         try {
-            Field sessionField = CassandraCacheStore.class.getDeclaredField("storeSession");
-            Field loggerField = CassandraCacheStore.class.getDeclaredField("logger");
+            Field sesField = CassandraCacheStore.class.getDeclaredField("storeSession");
+            Field logField = CassandraCacheStore.class.getDeclaredField("logger");
 
-            sessionField.setAccessible(true);
-            loggerField.setAccessible(true);
+            sesField.setAccessible(true);
+            logField.setAccessible(true);
 
-            sessionField.set(cacheStore, new TestCacheSession(cacheName));
-            loggerField.set(cacheStore, new Log4JLogger(logger));
+            sesField.set(cacheStore, new TestCacheSession(cacheName));
+            logField.set(cacheStore, new Log4JLogger(log));
         }
         catch (Throwable e) {
             throw new RuntimeException("Failed to initialize test Ignite cache store", e);
