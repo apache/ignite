@@ -42,7 +42,7 @@ import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest
 public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
     /** Supported commands. */
     private static final Collection<Integer> SUPPORTED_COMMANDS =
-            U.sealList(EXECUTE_SQL_QUERY, FETCH_SQL_QUERY, CLOSE_SQL_QUERY, GET_COLUMNS_META);
+            U.sealList(EXECUTE_SQL_QUERY, FETCH_SQL_QUERY, CLOSE_SQL_QUERY, GET_COLUMNS_META, GET_TABLES_META);
 
     /** Query ID sequence. */
     private static final AtomicLong qryIdGen = new AtomicLong();
@@ -287,12 +287,16 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
                 if (!matches(table.name(), req.table()))
                     continue;
 
+                if (!matches("TABLE", req.tableType()))
+                    continue;
+
                 GridOdbcTableMeta tableMeta = new GridOdbcTableMeta(req.catalog(), req.schema(),
                         table.name(), "TABLE");
 
                 if (!meta.contains(tableMeta))
                     meta.add(tableMeta);
             }
+
             QueryGetTablesMetaResult res = new QueryGetTablesMetaResult(meta);
 
             return new GridOdbcResponse(res);

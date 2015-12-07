@@ -107,7 +107,7 @@ namespace ignite
             if (cache.empty())
                 cache = connection.GetCache();
 
-            currentQuery.reset(new query::TableMetadataQuery(connection, catalog, schema, table, tableType));
+            currentQuery.reset(new query::TableMetadataQuery(connection, catalog, cache, table, tableType));
 
             return currentQuery->Execute();
         }

@@ -47,7 +47,13 @@ namespace ignite
         {
             int32_t strLen = reader.ReadString(0, 0);
             if (!strLen)
+            {
                 str.clear();
+
+                char dummy;
+
+                reader.ReadString(&dummy, sizeof(dummy));
+            }
             else
             {
                 str.resize(strLen);
