@@ -428,6 +428,10 @@
                                 <title>Spark Integration</title>
                                 <packages>org.apache.ignite.spark.examples.java</packages>
                             </group>
+                            <group>
+                                <title>OSGi integration</title>
+                                <packages>org.apache.ignite.osgi*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[
