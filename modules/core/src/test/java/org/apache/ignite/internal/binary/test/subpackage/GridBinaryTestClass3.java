@@ -19,6 +19,6 @@ package org.apache.ignite.internal.binary.test.subpackage;
 
 /**
  */
-public class GridPortableTestClass3 {
+public class GridBinaryTestClass3 {
     // No-op.
 }
