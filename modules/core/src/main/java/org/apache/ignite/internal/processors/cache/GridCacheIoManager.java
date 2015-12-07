@@ -562,7 +562,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             default:
                 throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
-                    + msg + "]");
+                    + msg + "]", msg.classError());
         }
     }
 
