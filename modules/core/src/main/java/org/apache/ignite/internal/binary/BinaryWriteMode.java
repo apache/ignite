@@ -136,13 +136,13 @@ public enum BinaryWriteMode {
     MAP_ENTRY(InternalBinaryMarshaller.MAP_ENTRY),
 
     /** */
-    PORTABLE_OBJ(InternalBinaryMarshaller.OBJ),
+    BINARY_OBJ(InternalBinaryMarshaller.OBJ),
 
     /** */
     ENUM(InternalBinaryMarshaller.ENUM),
 
     /** Portable enum. */
-    PORTABLE_ENUM(InternalBinaryMarshaller.ENUM),
+    BINARY_ENUM(InternalBinaryMarshaller.ENUM),
 
     /** */
     ENUM_ARR(InternalBinaryMarshaller.ENUM_ARR),
@@ -151,7 +151,7 @@ public enum BinaryWriteMode {
     CLASS(InternalBinaryMarshaller.CLASS),
 
     /** */
-    PORTABLE(InternalBinaryMarshaller.BINARY_OBJ),
+    BINARY(InternalBinaryMarshaller.BINARY_OBJ),
 
     /** */
     EXTERNALIZABLE(InternalBinaryMarshaller.OBJ),

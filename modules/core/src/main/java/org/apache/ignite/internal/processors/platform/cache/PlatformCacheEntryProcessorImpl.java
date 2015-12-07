@@ -53,7 +53,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
     private static final byte ENTRY_STATE_REMOVED = 2;
 
     /** Indicates error in processor that is written as binary.  */
-    private static final byte ENTRY_STATE_ERR_PORTABLE = 3;
+    private static final byte ENTRY_STATE_ERR_BINARY = 3;
 
     /** Indicates error in processor that is written as string.  */
     private static final byte ENTRY_STATE_ERR_STRING = 4;
@@ -184,7 +184,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
 
                 break;
 
-            case ENTRY_STATE_ERR_PORTABLE:
+            case ENTRY_STATE_ERR_BINARY:
                 // Full exception
                 Object nativeErr = reader.readObjectDetached();
 
