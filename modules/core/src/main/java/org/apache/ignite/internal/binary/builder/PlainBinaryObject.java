@@ -30,7 +30,7 @@ public class PlainBinaryObject implements BinaryLazyValue {
     private final BinaryObject binaryObj;
 
     /**
-     * @param portableObj Binary object.
+     * @param binaryObj Binary object.
      */
     public PlainBinaryObject(BinaryObject binaryObj) {
         this.binaryObj = binaryObj;

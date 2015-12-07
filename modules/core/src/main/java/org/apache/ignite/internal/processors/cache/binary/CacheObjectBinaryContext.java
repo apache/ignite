@@ -31,7 +31,7 @@ public class CacheObjectBinaryContext extends CacheObjectContext {
 
     /**
      * @param kernalCtx Kernal context.
-     * @param portableEnabled Binary enabled flag.
+     * @param binaryEnabled Binary enabled flag.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
      * @param depEnabled {@code true} if deployment is enabled for the given cache.

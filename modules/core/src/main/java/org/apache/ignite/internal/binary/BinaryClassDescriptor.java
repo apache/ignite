@@ -358,14 +358,14 @@ public class BinaryClassDescriptor {
     }
 
     /**
-     * @return portableWriteReplace() method
+     * @return binaryWriteReplace() method
      */
     @Nullable Method getWriteReplaceMethod() {
         return writeReplaceMtd;
     }
 
     /**
-     * @return portableReadResolve() method
+     * @return binaryReadResolve() method
      */
     @SuppressWarnings("UnusedDeclaration")
     @Nullable Method getReadResolveMethod() {

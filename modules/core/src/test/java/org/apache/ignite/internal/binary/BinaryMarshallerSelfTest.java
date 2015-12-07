@@ -652,7 +652,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertNull(simplePo.field("binary"));
         assertNull(simplePo.field("unknown"));
 
-        BinaryObject binaryPo = po.field("_portable");
+        BinaryObject binaryPo = po.field("_binary");
 
         assertEquals(obj.binary, binaryPo.deserialize());
 
@@ -686,7 +686,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             new Integer(((BinaryObject)binaryPo.field("_enumVal")).enumOrdinal()));
         assertArrayEquals(ordinals(obj.binary.enumArr), ordinals((BinaryObject[])binaryPo.field("_enumArr")));
         assertNull(binaryPo.field("_simple"));
-        assertNull(binaryPo.field("_portable"));
+        assertNull(binaryPo.field("_binary"));
         assertNull(binaryPo.field("unknown"));
     }
 
@@ -3126,7 +3126,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             writer.writeEnum("_enumVal", enumVal);
             writer.writeEnumArray("_enumArr", enumArr);
             writer.writeObject("_simple", simple);
-            writer.writeObject("_portable", binary);
+            writer.writeObject("_binary", binary);
 
             BinaryRawWriter raw = writer.rawWriter();
 
@@ -3193,7 +3193,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             enumVal = reader.readEnum("_enumVal");
             enumArr = reader.readEnumArray("_enumArr");
             simple = reader.readObject("_simple");
-            binary = reader.readObject("_portable");
+            binary = reader.readObject("_binary");
 
             BinaryRawReader raw = reader.rawReader();
 

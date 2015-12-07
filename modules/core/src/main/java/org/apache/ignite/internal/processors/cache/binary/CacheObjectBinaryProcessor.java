@@ -40,7 +40,7 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
     /**
      * Creates builder initialized by existing binary object.
      *
-     * @param portableObj Binary object to edit.
+     * @param binaryObj Binary object to edit.
      * @return Binary builder.
      */
     public BinaryObjectBuilder builder(BinaryObject binaryObj);

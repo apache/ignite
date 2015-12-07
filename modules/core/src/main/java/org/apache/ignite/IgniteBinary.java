@@ -116,7 +116,7 @@ import org.jetbrains.annotations.Nullable;
  * builder.stringField("fieldA", "A");
  * build.intField("fieldB", "B");
  *
- * BinaryObject portableObj = builder.build();
+ * BinaryObject binaryObj = builder.build();
  * </pre>
  * For the cases when class definition is present
  * in the class path, it is also possible to populate a standard POJO and then
@@ -127,7 +127,7 @@ import org.jetbrains.annotations.Nullable;
  * obj.setFieldA("A");
  * obj.setFieldB(123);
  *
- * BinaryObject portableObj = Ignition.ignite().binary().toBinary(obj);
+ * BinaryObject binaryObj = Ignition.ignite().binary().toBinary(obj);
  * </pre>
  * NOTE: you don't need to convert typed objects to binary format before storing
  * them in cache, Ignite will do that automatically.
@@ -312,7 +312,7 @@ public interface IgniteBinary {
     /**
      * Creates binary builder initialized by existing binary object.
      *
-     * @param portableObj Binary object to initialize builder.
+     * @param binaryObj Binary object to initialize builder.
      * @return Binary builder.
      */
     public BinaryObjectBuilder builder(BinaryObject binaryObj) throws BinaryObjectException;

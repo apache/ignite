@@ -51,8 +51,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("gridportabletestclass2".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
         assertTrue(typeIds.containsKey("innerclass".hashCode()));
     }
 
@@ -107,8 +107,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("gridportabletestclass2".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
         assertTrue(typeIds.containsKey("innerclass".hashCode()));
     }
 
@@ -211,9 +211,9 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
         assertTrue(typeIds.containsKey("innerclass".hashCode()));
-        assertFalse(typeIds.containsKey("gridportabletestclass2".hashCode()));
+        assertFalse(typeIds.containsKey("gridbinarytestclass2".hashCode()));
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -235,8 +235,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("gridportabletestclass2".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
     }
 
     /**
@@ -287,8 +287,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("gridportabletestclass2".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
     }
 
     /**
@@ -384,7 +384,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
