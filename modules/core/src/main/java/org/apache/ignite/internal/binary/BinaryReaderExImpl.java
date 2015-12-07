@@ -68,7 +68,7 @@ import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.NULL;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.OBJ;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.OBJ_ARR;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.OPTM_MARSH;
-import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.PORTABLE_OBJ;
+import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.SHORT;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.STRING;
@@ -334,7 +334,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     @Nullable BinaryObject readBinaryObject(int fieldId) throws BinaryObjectException {
         if (findFieldById(fieldId)) {
-            if (checkFlag(PORTABLE_OBJ) == Flag.NULL)
+            if (checkFlag(BINARY_OBJ) == Flag.NULL)
                 return null;
 
             return new BinaryObjectImpl(ctx, BinaryUtils.doReadByteArray(in), in.readInt());
@@ -1590,12 +1590,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 break;
 
-            case PORTABLE_OBJ:
+            case BINARY_OBJ:
                 obj = BinaryUtils.doReadBinaryObject(in, ctx);
 
                 ((BinaryObjectImpl)obj).context(ctx);
 
-                if (!InternalBinaryMarshaller.KEEP_PORTABLES.get())
+                if (!InternalBinaryMarshaller.KEEP_BINARIES.get())
                     obj = ((BinaryObject)obj).deserialize();
 
                 break;

@@ -151,7 +151,7 @@ public enum BinaryWriteMode {
     CLASS(InternalBinaryMarshaller.CLASS),
 
     /** */
-    PORTABLE(InternalBinaryMarshaller.PORTABLE_OBJ),
+    PORTABLE(InternalBinaryMarshaller.BINARY_OBJ),
 
     /** */
     EXTERNALIZABLE(InternalBinaryMarshaller.OBJ),

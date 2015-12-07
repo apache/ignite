@@ -68,7 +68,7 @@ import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.NULL;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.OBJ;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.OBJ_ARR;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.OPTM_MARSH;
-import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.PORTABLE_OBJ;
+import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.PROTO_VER;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.SHORT;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.SHORT_ARR;
@@ -886,7 +886,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             out.unsafeEnsure(1 + 4 + poArr.length + 4);
 
-            out.unsafeWriteByte(PORTABLE_OBJ);
+            out.unsafeWriteByte(BINARY_OBJ);
             out.unsafeWriteInt(poArr.length);
             out.writeByteArray(poArr);
             out.unsafeWriteInt(po.start());

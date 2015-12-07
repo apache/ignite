@@ -98,7 +98,7 @@ import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.OBJ;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.OBJECT_TYPE_ID;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.OBJ_ARR;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.OPTM_MARSH;
-import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.PORTABLE_OBJ;
+import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.PROPERTIES_MAP;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.PROTO_VER;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.SHORT;
@@ -268,7 +268,7 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[TIMESTAMP] = "Timestamp";
         FIELD_TYPE_NAMES[ENUM] = "Enum";
         FIELD_TYPE_NAMES[OBJ] = "Object";
-        FIELD_TYPE_NAMES[PORTABLE_OBJ] = "Object";
+        FIELD_TYPE_NAMES[BINARY_OBJ] = "Object";
         FIELD_TYPE_NAMES[COL] = "Collection";
         FIELD_TYPE_NAMES[MAP] = "Map";
         FIELD_TYPE_NAMES[MAP_ENTRY] = "Entry";
@@ -1691,7 +1691,7 @@ public class BinaryUtils {
             case MAP_ENTRY:
                 return doReadMapEntry(in, ctx, ldr, handles, false);
 
-            case PORTABLE_OBJ:
+            case BINARY_OBJ:
                 return doReadBinaryObject(in, ctx);
 
             case ENUM:

@@ -350,7 +350,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 return;
 
-            case InternalBinaryMarshaller.PORTABLE_OBJ:
+            case InternalBinaryMarshaller.BINARY_OBJ:
                 len = readInt() + 4;
 
                 break;
@@ -468,7 +468,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return builderEnum;
             }
 
-            case InternalBinaryMarshaller.PORTABLE_OBJ: {
+            case InternalBinaryMarshaller.BINARY_OBJ: {
                 int size = readIntPositioned(pos + 1);
 
                 int start = readIntPositioned(pos + 4 + size);
@@ -752,7 +752,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case InternalBinaryMarshaller.MAP_ENTRY:
                 return new BinaryLazyMapEntry(this);
 
-            case InternalBinaryMarshaller.PORTABLE_OBJ: {
+            case InternalBinaryMarshaller.BINARY_OBJ: {
                 int size = readInt();
 
                 pos += size;

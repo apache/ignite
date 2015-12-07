@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class InternalBinaryMarshaller {
     /** */
-    public static final ThreadLocal<Boolean> KEEP_PORTABLES = new ThreadLocal<Boolean>() {
+    public static final ThreadLocal<Boolean> KEEP_BINARIES = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
             return true;
         }
@@ -122,7 +122,7 @@ public class InternalBinaryMarshaller {
     public static final byte MAP_ENTRY = 26;
 
     /** */
-    public static final byte PORTABLE_OBJ = 27;
+    public static final byte BINARY_OBJ = 27;
 
     /** */
     public static final byte ENUM = 28;
