@@ -26,19 +26,12 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
-    /// <summary>
-    /// Write delegate.
-    /// </summary>
-    /// <param name="writer">Write context.</param>
-    /// <param name="obj">Object to write.</param>
-    internal delegate void BinarySystemWriteDelegate(BinaryWriter writer, object obj);
-
     internal class BinarySystemWriteHandler
     {
-        private readonly BinarySystemWriteDelegate _writeAction;
+        private readonly Action<BinaryWriter, object> _writeAction;
         private readonly bool _supportsHandles;
 
-        public BinarySystemWriteHandler(BinarySystemWriteDelegate writeAction, bool supportsHandles = false)
+        public BinarySystemWriteHandler(Action<BinaryWriter, object> writeAction, bool supportsHandles = false)
         {
             Debug.Assert(writeAction != null);
 
@@ -63,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal static class BinarySystemHandlers
     {
         /** Write handlers. */
-        private static readonly CopyOnWriteConcurrentDictionary<Type, BinarySystemWriteHandler> _writeHandlers =
+        private static readonly CopyOnWriteConcurrentDictionary<Type, BinarySystemWriteHandler> WriteHandlers =
             new CopyOnWriteConcurrentDictionary<Type, BinarySystemWriteHandler>();
 
         /** Read handlers. */
@@ -198,7 +191,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns></returns>
         public static BinarySystemWriteHandler GetWriteHandler(Type type)
         {
-            return _writeHandlers.GetOrAdd(type, t =>
+            return WriteHandlers.GetOrAdd(type, t =>
             {
                 bool supportsHandles;
 
@@ -216,7 +209,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>
         /// Write handler or NULL.
         /// </returns>
-        private static BinarySystemWriteDelegate FindWriteHandler(Type type, out bool supportsHandles)
+        private static Action<BinaryWriter, object> FindWriteHandler(Type type, out bool supportsHandles)
         {
             supportsHandles = false;
 
