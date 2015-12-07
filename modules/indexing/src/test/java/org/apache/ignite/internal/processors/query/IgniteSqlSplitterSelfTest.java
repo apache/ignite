@@ -324,7 +324,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    private static class Person {
+    private static class Person implements Serializable {
         @QuerySqlField
         int orgId;
 
@@ -332,7 +332,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         String name;
     }
 
-    private static class Organization {
+    private static class Organization implements Serializable {
         @QuerySqlField
         String name;
     }
