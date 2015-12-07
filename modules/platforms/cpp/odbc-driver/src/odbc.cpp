@@ -564,20 +564,28 @@ SQLRETURN SQL_API SQLTables(SQLHSTMT    stmt,
                             SQLSMALLINT tableTypeLen)
 {
     using ignite::odbc::Statement;
+    using ignite::utility::SqlStringToString;
 
     LOG_MSG("SQLTables called\n");
-
-    LOG_MSG("catalogName: %s\n", catalogName);
-    LOG_MSG("schemaName: %s\n", schemaName);
-    LOG_MSG("tableName: %s\n", tableName);
-    LOG_MSG("tableType: %s\n", tableType);
 
     Statement *statement = reinterpret_cast<Statement*>(stmt);
 
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-    return SQL_SUCCESS;
+    std::string catalog = SqlStringToString(catalogName, catalogNameLen);
+    std::string schema = SqlStringToString(schemaName, schemaNameLen);
+    std::string table = SqlStringToString(tableName, tableNameLen);
+    std::string tableT = SqlStringToString(tableType, tableTypeLen);
+
+    LOG_MSG("catalog: %s\n", catalog.c_str());
+    LOG_MSG("schema: %s\n", schema.c_str());
+    LOG_MSG("table: %s\n", table.c_str());
+    LOG_MSG("tableT: %s\n", tableT.c_str());
+
+    bool success = false; // statement->ExecuteGetColumnsMetaQuery(schema, table, column);
+
+    return success ? SQL_SUCCESS : SQL_ERROR;
 }
 
 SQLRETURN SQL_API SQLColumns(SQLHSTMT       stmt,
@@ -595,19 +603,20 @@ SQLRETURN SQL_API SQLColumns(SQLHSTMT       stmt,
 
     LOG_MSG("SQLColumns called\n");
 
-    LOG_MSG("catalogName: %s, len: %d\n", catalogName, catalogNameLen);
-    LOG_MSG("schemaName: %s, len: %d\n", schemaName, schemaNameLen);
-    LOG_MSG("tableName: %s, len: %d\n", tableName, tableNameLen);
-    LOG_MSG("columnName: %s, len: %d\n", columnName, columnNameLen);
-
     Statement *statement = reinterpret_cast<Statement*>(stmt);
 
     if (!statement)
         return SQL_INVALID_HANDLE;
 
+    std::string catalog = SqlStringToString(catalogName, catalogNameLen);
     std::string schema = SqlStringToString(schemaName, schemaNameLen);
     std::string table = SqlStringToString(tableName, tableNameLen);
     std::string column = SqlStringToString(columnName, columnNameLen);
+
+    LOG_MSG("catalog: %s\n", catalog.c_str());
+    LOG_MSG("schema: %s\n", schema.c_str());
+    LOG_MSG("table: %s\n", table.c_str());
+    LOG_MSG("column: %s\n", column.c_str());
 
     bool success = statement->ExecuteGetColumnsMetaQuery(schema, table, column);
 

@@ -20,7 +20,7 @@
 #include "ignite/odbc/type_traits.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
-#include "ignite/odbc/query/metadata_query.h"
+#include "ignite/odbc/query/column_metadata_query.h"
 
 namespace
 {
@@ -70,7 +70,7 @@ namespace ignite
     {
         namespace query
         {
-            MetadataQuery::MetadataQuery(Connection& connection, const std::string& cache,
+            ColumnMetadataQuery::ColumnMetadataQuery(Connection& connection, const std::string& cache,
                                          const std::string& table, const std::string& column) :
                 connection(connection),
                 cache(cache),
@@ -105,12 +105,12 @@ namespace ignite
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "REMARKS",        varcharType,  IGNITE_TYPE_STRING));
             }
 
-            MetadataQuery::~MetadataQuery()
+            ColumnMetadataQuery::~ColumnMetadataQuery()
             {
                 // No-op.
             }
             
-            bool MetadataQuery::Execute()
+            bool ColumnMetadataQuery::Execute()
             {
                 bool success = MakeRequestGetColumnsMeta();
 
@@ -122,12 +122,12 @@ namespace ignite
                 return success;
             }
             
-            const ColumnMetaVector& MetadataQuery::GetMeta() const
+            const ColumnMetaVector& ColumnMetadataQuery::GetMeta() const
             {
                 return columnsMeta;
             }
 
-            SqlResult MetadataQuery::FetchNextRow(ColumnBindingMap & columnBindings)
+            SqlResult ColumnMetadataQuery::FetchNextRow(ColumnBindingMap & columnBindings)
             {
                 if (!executed)
                     return SQL_RESULT_ERROR;
@@ -228,7 +228,7 @@ namespace ignite
                 return SQL_RESULT_SUCCESS;
             }
 
-            bool MetadataQuery::Close()
+            bool ColumnMetadataQuery::Close()
             {
                 meta.clear();
 
@@ -237,12 +237,12 @@ namespace ignite
                 return true;
             }
 
-            bool MetadataQuery::DataAvailable() const
+            bool ColumnMetadataQuery::DataAvailable() const
             {
                 return cursor != meta.end();
             }
 
-            bool MetadataQuery::MakeRequestGetColumnsMeta()
+            bool ColumnMetadataQuery::MakeRequestGetColumnsMeta()
             {
                 QueryGetColumnsMetaRequest req(cache, table, column);
                 QueryGetColumnsMetaResponse rsp;

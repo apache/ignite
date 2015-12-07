@@ -16,7 +16,7 @@
  */
 
 #include "ignite/odbc/query/data_query.h"
-#include "ignite/odbc/query/metadata_query.h"
+#include "ignite/odbc/query/column_metadata_query.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
@@ -89,7 +89,7 @@ namespace ignite
             if (cache.empty())
                 cache = connection.GetCache();
 
-            currentQuery.reset(new query::MetadataQuery(connection, cache, table, column));
+            currentQuery.reset(new query::ColumnMetadataQuery(connection, cache, table, column));
 
             return currentQuery->Execute();
         }

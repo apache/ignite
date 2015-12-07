@@ -61,7 +61,7 @@
     <ClCompile Include="..\..\src\query\data_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\query\metadata_query.cpp">
+    <ClCompile Include="..\..\src\query\column_metadata_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
   </ItemGroup>
@@ -129,7 +129,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\query\data_query.h">
       <Filter>Code\query</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\query\metadata_query.h">
+    <ClInclude Include="..\..\include\ignite\odbc\query\column_metadata_query.h">
       <Filter>Code\query</Filter>
     </ClInclude>
   </ItemGroup>

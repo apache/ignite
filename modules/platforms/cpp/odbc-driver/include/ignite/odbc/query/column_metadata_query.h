@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_METADATA_QUERY
-#define _IGNITE_ODBC_DRIVER_METADATA_QUERY
+#ifndef _IGNITE_ODBC_DRIVER_COLUMN_METADATA_QUERY
+#define _IGNITE_ODBC_DRIVER_COLUMN_METADATA_QUERY
 
 #include "ignite/odbc/query/query.h"
 #include "ignite/odbc/cursor.h"
@@ -33,19 +33,19 @@ namespace ignite
             /**
              * Query.
              */
-            class MetadataQuery : public Query
+            class ColumnMetadataQuery : public Query
             {
             public:
                 /**
                  * Constructor.
                  */
-                MetadataQuery(Connection& connection, const std::string& cache, 
+                ColumnMetadataQuery(Connection& connection, const std::string& cache, 
                     const std::string& table, const std::string& column);
 
                 /**
                  * Destructor.
                  */
-                virtual ~MetadataQuery();
+                virtual ~ColumnMetadataQuery();
 
                 /**
                  * Execute query.
