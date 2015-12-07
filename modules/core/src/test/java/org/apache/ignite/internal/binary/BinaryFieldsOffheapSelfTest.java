@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 import sun.misc.Unsafe;
 
 /**
- * Field tests for heap-based portables.
+ * Field tests for heap-based binaries.
  */
 public class BinaryFieldsOffheapSelfTest extends BinaryFieldsAbstractSelfTest {
     /** Unsafe instance. */

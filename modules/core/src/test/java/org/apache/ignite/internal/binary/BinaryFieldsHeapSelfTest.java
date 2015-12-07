@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.binary;
 
 /**
- * Field tests for heap-based portables.
+ * Field tests for heap-based binaries.
  */
 public class BinaryFieldsHeapSelfTest extends BinaryFieldsAbstractSelfTest {
     /** {@inheritDoc} */
