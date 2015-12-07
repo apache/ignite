@@ -159,8 +159,8 @@ mixin table-igfs-path-mode(header, tblMdl, keyFld, valFld, keyPlaceholder, valPl
                         td.col-sm-12
                             +table-igfs-path-mode-edit('new', keyPlaceholder, valPlaceholder, '{{::field.focusId}}', '-1')
 
-mixin details-row
-    - var lblDetailClasses = ['col-sm-4', 'details-label']
+mixin details-row(lblClasses, fieldClasses)
+    - var lblDetailClasses = lblClasses + ' details-label'
 
     - var detailMdl = 'getModel(backupItem, detail)[detail.model]';
     - var detailCommon = {'ng-model': detailMdl, 'ng-required': 'detail.required'};
@@ -179,13 +179,13 @@ mixin details-row
                 +tipLabel('detail.tip')
         div(ng-switch-when='text')
             label(class=lblDetailClasses ng-class='{required: detail.required}') {{::detail.label}}:
-            .col-sm-8
+            .div(class=fieldClasses)
                 +tipField('detail.tip')
                 .input-tip
                     input.form-control(id='{{::detail.model}}' type='text' placeholder='{{::detail.placeholder}}')&attributes(detailCommon)
         div(ng-switch-when='number')
             label(class=lblDetailClasses ng-class='{required: detail.required}') {{::detail.label}}:
-            .col-sm-8
+            .div(class=fieldClasses)
                 +tipField('detail.tip')
                 .input-tip
                     input.form-control(id='{{::detail.id}}' name='{{detail.model}}' type='number' ng-disabled=detailDisabled placeholder='{{::detail.placeholder}}' min='{{detail.min ? detail.min : 0}}' max='{{detail.max ? detail.max : Number.MAX_VALUE}}')&attributes(detailCommon)
@@ -194,13 +194,13 @@ mixin details-row
                     +ico-exclamation('{{detail.model}}', 'number', 'Invalid value. Only numbers allowed.')
         div(ng-switch-when='dropdown')
             label(class=lblDetailClasses ng-class='{required: detail.required}') {{::detail.label}}:
-            .col-sm-8
+            .div(class=fieldClasses)
                 +tipField('detail.tip')
                 .input-tip
                     button.select-toggle.form-control(id='{{::detail.id}}' bs-select data-placeholder='{{::detail.placeholder}}' bs-options='item.value as item.label for item in {{detail.items}}' tabindex='0')&attributes(detailCommon)&attributes(dropdownPlaceholder)
         div(ng-switch-when='dropdown-multiple')
             label(class=lblDetailClasses ng-class='{required: detail.required}') {{::detail.label}}:
-            .col-sm-8
+            .div(class=fieldClasses)
                 +tipField('detail.tip')
                 .input-tip
                     button.select-toggle.form-control(bs-select data-multiple='1' data-placeholder='{{::detail.placeholder}}' bs-options='item.value as item.label for item in {{detail.items}}' tabindex='-1')&attributes(detailCommon)&attributes(dropdownPlaceholder)
@@ -313,7 +313,8 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
     - var fieldRequiredClass = '{true: "required"}[field.required || required(field)]'
     - var fieldHide = '{{field.hide}}'
     - var fieldDisabled = {'ng-disabled': '{{field.disabled}}'}
-    - var dropdownPlaceholder = {'ng-class': '{placeholder: !(' + fieldMdl + ' && ' + fieldMdl + '.length > 0)}'}
+    - var dropdownPlaceholder = {'ng-class': '{placeholder: ' + fieldMdl + ' == undefined || ' + fieldMdl + ' == null}'}
+    - var dropdownMultiPlaceholder = {'ng-class': '{placeholder: !(' + fieldMdl + ' && ' + fieldMdl + '.length > 0)}'}
 
     div(ng-switch='field.type')
         div(ng-switch-when='label')
@@ -363,7 +364,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
             div(class=fieldClasses)
                 +tipField('field.tip')
                 .input-tip
-                    button.select-toggle.form-control(id='{{::field.id}}' bs-select ng-disabled='{{field.items}}.length == 0' data-multiple='1' data-placeholder='{{::$eval(field.items).length == 0 ? field.placeholderEmpty || field.placeholder : field.placeholder}}' bs-options='item.value as item.label for item in {{field.items}}' tabindex='-1')&attributes(fieldCommon)&attributes(dropdownPlaceholder)
+                    button.select-toggle.form-control(id='{{::field.id}}' bs-select ng-disabled='{{field.items}}.length == 0' data-multiple='1' data-placeholder='{{::$eval(field.items).length == 0 ? field.placeholderEmpty || field.placeholder : field.placeholder}}' bs-options='item.value as item.label for item in {{field.items}}' tabindex='-1')&attributes(fieldCommon)&attributes(dropdownMultiPlaceholder)
         div(ng-switch-when='dropdown-details' ng-hide=fieldHide)
             - var expanded = 'field.details[' + fieldMdl + '].expanded'
 
@@ -375,7 +376,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
             a.customize(ng-if='#{fieldMdl} && field.settings && field.details[#{fieldMdl}].fields.length > 0' ng-click='#{expanded} = !#{expanded}') {{#{expanded} ? 'Hide settings' : 'Show settings'}}
             .col-sm-12.panel-details(ng-show='(#{expanded} || !field.settings) && #{fieldMdl}')
                 .details-row(ng-repeat='detail in field.details[#{fieldMdl}].fields')
-                    +details-row
+                    +details-row(lblClasses, fieldClasses)
         .section(ng-switch-when='panel-details' ng-hide=fieldHide)&attributes(fieldCommon)
             .col-sm-12.group
                 .group-legend
@@ -383,7 +384,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                     +group-tip('field.tip')
                 .group-content
                     .details-row(ng-repeat='detail in field.details')
-                        +details-row
+                        +details-row(lblClasses, fieldClasses)
         .group-section(ng-switch-when='table-simple' ng-hide=fieldHide)&attributes(fieldCommon)
             .col-sm-12.group
                 .group-legend
