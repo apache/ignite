@@ -144,12 +144,14 @@ public class GridSqlQuerySplitter {
      * @param stmt Prepared statement.
      * @param params Parameters.
      * @param collocatedGroupBy Whether the query has collocated GROUP BY keys.
+     * @param distributedJoins If distributed joins enabled.
      * @return Two step query.
      */
     public static GridCacheTwoStepQuery split(
         JdbcPreparedStatement stmt,
         Object[] params,
-        boolean collocatedGroupBy
+        final boolean collocatedGroupBy,
+        final boolean distributedJoins
     ) {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
@@ -178,7 +180,7 @@ public class GridSqlQuerySplitter {
         // We do not have to look at each map query separately here, because if
         // the whole initial query is collocated, then all the map sub-queries
         // will be collocated as well.
-        res.fullCollocation(isCollocated(query(prepared)));
+        res.distributedJoins(distributedJoins && !isCollocated(query(prepared)));
 
         return res;
     }

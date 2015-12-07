@@ -610,8 +610,8 @@ public class GridReduceQueryExecutor {
 
                 boolean retry = false;
 
-                final boolean oldStyle = true; oldNodesInTopology(); // TODO =
-                final boolean distributedJoins = !qry.fullCollocation();
+                final boolean oldStyle = oldNodesInTopology();
+                final boolean distributedJoins = qry.distributedJoins();
 
                 if (send(nodes,
                     oldStyle ?
@@ -682,8 +682,8 @@ public class GridReduceQueryExecutor {
                     else {
                         UUID locNodeId = ctx.localNodeId();
 
-                        GridH2QueryContext.set(
-                            new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE).pageSize(r.pageSize));
+                        GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
+                            .pageSize(r.pageSize).distributedJoins(false));
 
                         h2.enforceJoinOrder(enforceJoinOrder);
 

@@ -51,7 +51,7 @@ public class GridCacheTwoStepQuery {
     private Set<String> tbls;
 
     /** */
-    private boolean fullCollocation;
+    private boolean distributedJoins;
 
     /** */
     private boolean skipMergeTbl;
@@ -66,11 +66,24 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param fullCollocation If it is a collocated query and no distributed joins can occur.
+     * Specify if distributed joins are enabled for this query.
+     *
+     * @param distributedJoins Distributed joins enabled.
      */
-    public void fullCollocation(boolean fullCollocation) {
-        this.fullCollocation = fullCollocation;
+    public void distributedJoins(boolean distributedJoins) {
+        this.distributedJoins = distributedJoins;
     }
+
+    /**
+     * Check if distributed joins are enabled for this query.
+     *
+     * @return {@code true} If distributed joind enabled.
+     */
+    public boolean distributedJoins() {
+        return distributedJoins;
+    }
+
+
     /**
      * @return {@code True} if reduce query can skip merge table creation and get data directly from merge index.
      */
@@ -83,13 +96,6 @@ public class GridCacheTwoStepQuery {
      */
     public void skipMergeTbl(boolean skipMergeTbl) {
         this.skipMergeTbl = skipMergeTbl;
-    }
-
-    /**
-     * @return {@code true} If it is a collocated query and no distributed joins can occur.
-     */
-    public boolean fullCollocation() {
-        return fullCollocation;
     }
 
     /**

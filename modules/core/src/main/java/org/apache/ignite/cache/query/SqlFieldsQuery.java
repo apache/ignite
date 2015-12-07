@@ -59,6 +59,9 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean enforceJoinOrder;
 
+    /** */
+    private boolean distributedJoins;
+
     /**
      * Constructs SQL fields query.
      *
@@ -168,6 +171,27 @@ public final class SqlFieldsQuery extends Query<List<?>> {
         this.enforceJoinOrder = enforceJoinOrder;
 
         return this;
+    }
+
+    /**
+     * Specify if distributed joins are enabled for this query.
+     *
+     * @param distributedJoins Distributed joins enabled.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setDistributedJoins(boolean distributedJoins) {
+        this.distributedJoins = distributedJoins;
+
+        return this;
+    }
+
+    /**
+     * Check if distributed joins are enabled for this query.
+     *
+     * @return {@code true} If distributed joind enabled.
+     */
+    public boolean isDistributedJoins() {
+        return distributedJoins;
     }
 
     /** {@inheritDoc} */

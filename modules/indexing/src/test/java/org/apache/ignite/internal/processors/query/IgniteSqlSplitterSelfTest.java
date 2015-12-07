@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -235,8 +236,11 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 c.put(key++, p);
             }
 
+            X.println("Plan : " + c.query(new SqlFieldsQuery("explain select count(*) from Person p, Organization o " +
+                "where p.orgId = o._key").setDistributedJoins(true)).getAll());
+
             assertEquals(15000L, c.query(new SqlFieldsQuery("select count(*) from Person p, Organization o " +
-                "where p.orgId = o._key")).getAll().get(0).get(0));
+                "where p.orgId = o._key").setDistributedJoins(true)).getAll().get(0).get(0));
         }
         finally {
             c.destroy();
