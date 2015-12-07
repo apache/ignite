@@ -227,11 +227,20 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type == typeof (BinaryEnum))
                 return WriteBinaryEnum;
             if (type == typeof (ArrayList))
+            {
+                supportsHandles = true;
                 return WriteArrayList;
-            if (type == typeof(Hashtable))
+            }
+            if (type == typeof (Hashtable))
+            {
+                supportsHandles = true;
                 return WriteHashtable;
-            if (type == typeof(DictionaryEntry))
+            }
+            if (type == typeof (DictionaryEntry))
+            {
+                supportsHandles = true;
                 return WriteMapEntry;
+            }
             if (type.IsArray)
             {
                 // We know how to write any array type.
@@ -275,8 +284,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return WriteEnumArray;
                 
                 // Object array.
-                if (elemType == typeof (object) || elemType == typeof(IBinaryObject) || elemType == typeof(BinaryObject))
+                if (elemType == typeof (object) || elemType == typeof (IBinaryObject) ||
+                    elemType == typeof (BinaryObject))
+                {
+                    supportsHandles = true;
                     return WriteArray;
+                }
             }
 
             if (type.IsEnum)
