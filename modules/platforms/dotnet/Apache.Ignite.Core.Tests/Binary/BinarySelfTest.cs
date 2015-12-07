@@ -1182,6 +1182,11 @@ namespace Apache.Ignite.Core.Tests.Binary
             CollectionAssert.AreEqual(data.Collection, res.Collection);
 
             // Collection in collection dependency loop
+            var collection = new ArrayList {1, 2};
+            collection.Add(collection);
+            data.Collection = collection;
+
+            CollectionAssert.AreEqual(data.Collection, res.Collection);
         }
 
         ///
