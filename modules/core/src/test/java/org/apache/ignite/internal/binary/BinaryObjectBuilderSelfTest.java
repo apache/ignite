@@ -41,7 +41,7 @@ import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestO
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectInner;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectOuter;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectPlainBinary;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -912,11 +912,11 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testSetBinaryObject() {
-        BinaryObject portableObj = builder(TestObjectContainer.class.getName())
+        BinaryObject binaryObj = builder(TestObjectContainer.class.getName())
             .setField("foo", toBinary(new TestObjectAllTypes()))
             .build();
 
-        assertTrue(portableObj.<TestObjectContainer>deserialize().foo instanceof TestObjectAllTypes);
+        assertTrue(binaryObj.<TestObjectContainer>deserialize().foo instanceof TestObjectAllTypes);
     }
 
     /**

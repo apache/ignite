@@ -38,22 +38,22 @@ import org.apache.ignite.internal.binary.noncompact.BinaryMarshallerNonCompactSe
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderAdditionalNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetadataUpdateChangingTopologySelfTest;
-import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
-import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodeBinaryObjectMetadataTest;
-import org.apache.ignite.internal.processors.cache.portable.GridCacheBinaryStoreObjectsSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.GridCacheBinaryStoreBinariesSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledOffheapTieredSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsAtomicOffheapTieredSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsPartitionedNearDisabledOffheapTieredSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsPartitionedNearDisabledSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsPartitionedOffheapTieredSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheBinaryObjectsPartitionedSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.replicated.GridCacheBinaryObjectsReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.local.GridCacheBinaryObjectsAtomicLocalSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.local.GridCacheBinaryObjectsLocalOffheapTieredSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.local.GridCacheBinaryObjectsLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreObjectsSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedNearDisabledOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedNearDisabledSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.replicated.GridCacheBinaryObjectsReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsAtomicLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalSelfTest;
 
 /**
  * Test for binary objects stored in cache.

@@ -36,7 +36,7 @@ class BinaryBuilderSerializer {
     private final Map<BinaryObjectBuilderImpl, Integer> objToPos = new IdentityHashMap<>();
 
     /** */
-    private Map<BinaryObject, BinaryObjectBuilderImpl> portableObjToWrapper;
+    private Map<BinaryObject, BinaryObjectBuilderImpl> binaryObjToWrapper;
 
     /**
      * @param obj Mutable object.
@@ -64,15 +64,15 @@ class BinaryBuilderSerializer {
         }
 
         if (val instanceof BinaryObjectExImpl) {
-            if (portableObjToWrapper == null)
-                portableObjToWrapper = new IdentityHashMap<>();
+            if (binaryObjToWrapper == null)
+                binaryObjToWrapper = new IdentityHashMap<>();
 
-            BinaryObjectBuilderImpl wrapper = portableObjToWrapper.get(val);
+            BinaryObjectBuilderImpl wrapper = binaryObjToWrapper.get(val);
 
             if (wrapper == null) {
                 wrapper = BinaryObjectBuilderImpl.wrap((BinaryObject)val);
 
-                portableObjToWrapper.put((BinaryObject)val, wrapper);
+                binaryObjToWrapper.put((BinaryObject)val, wrapper);
             }
 
             val = wrapper;

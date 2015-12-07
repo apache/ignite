@@ -16,7 +16,7 @@
  */
 
 
-package org.apache.ignite.internal.processors.cache.portable.local;
+package org.apache.ignite.internal.processors.cache.binary.local;
 
 /**
  *

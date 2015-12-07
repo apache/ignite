@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.portable;
+package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
@@ -34,7 +34,7 @@ public class GridCacheBinaryStoreBinariesSelfTest extends GridCacheBinaryStoreAb
         assert idxs != null;
 
         for (int idx : idxs)
-            map.put(portable(new Key(idx)), portable(new Value(idx)));
+            map.put(binary(new Key(idx)), binary(new Value(idx)));
     }
 
     /** {@inheritDoc} */
@@ -45,7 +45,7 @@ public class GridCacheBinaryStoreBinariesSelfTest extends GridCacheBinaryStoreAb
         assertEquals(idxs.length, map.size());
 
         for (int idx : idxs) {
-            Object val = map.get(portable(new Key(idx)));
+            Object val = map.get(binary(new Key(idx)));
 
             assertTrue(String.valueOf(val), val instanceof BinaryObject);
 
@@ -60,7 +60,7 @@ public class GridCacheBinaryStoreBinariesSelfTest extends GridCacheBinaryStoreAb
      * @param obj Object.
      * @return Portable object.
      */
-    private Object portable(Object obj) {
+    private Object binary(Object obj) {
         return grid().binary().toBinary(obj);
     }
 }

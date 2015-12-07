@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
+package org.apache.ignite.internal.processors.cache.binary.distributed.dht;
 
 /**
  *

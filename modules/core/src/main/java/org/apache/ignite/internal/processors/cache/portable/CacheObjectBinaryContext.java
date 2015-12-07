@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.portable;
+package org.apache.ignite.internal.processors.cache.binary;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMa
  */
 public class CacheObjectBinaryContext extends CacheObjectContext {
     /** */
-    private boolean portableEnabled;
+    private boolean binaryEnabled;
 
     /**
      * @param kernalCtx Kernal context.
@@ -39,18 +39,18 @@ public class CacheObjectBinaryContext extends CacheObjectContext {
     public CacheObjectBinaryContext(GridKernalContext kernalCtx,
         boolean cpyOnGet,
         boolean storeVal,
-        boolean portableEnabled,
+        boolean binaryEnabled,
         boolean depEnabled) {
-        super(kernalCtx, portableEnabled ? new CacheDefaultBinaryAffinityKeyMapper() :
+        super(kernalCtx, binaryEnabled ? new CacheDefaultBinaryAffinityKeyMapper() :
             new GridCacheDefaultAffinityKeyMapper(), cpyOnGet, storeVal, depEnabled);
 
-        this.portableEnabled = portableEnabled;
+        this.binaryEnabled = binaryEnabled;
     }
 
     /**
      * @return Portable enabled flag.
      */
-    public boolean portableEnabled() {
-        return portableEnabled;
+    public boolean binaryEnabled() {
+        return binaryEnabled;
     }
 }

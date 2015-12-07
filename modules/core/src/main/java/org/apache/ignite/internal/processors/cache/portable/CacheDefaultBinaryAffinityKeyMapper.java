@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.portable;
+package org.apache.ignite.internal.processors.cache.binary;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteKernal;

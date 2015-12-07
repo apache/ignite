@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.portable.datastreaming;
+package org.apache.ignite.internal.processors.cache.binary.datastreaming;
 
 import java.io.Serializable;
 import java.util.Map;

@@ -141,7 +141,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         BinaryUtils.checkProtocolVersion(ver);
 
         int typeId = reader.readIntPositioned(start + TYPE_ID_POS);
-        ctx = reader.portableContext();
+        ctx = reader.binaryContext();
         hashCode = reader.readIntPositioned(start + HASH_CODE_POS);
 
         if (typeId == UNREGISTERED_TYPE_ID) {

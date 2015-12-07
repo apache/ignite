@@ -65,7 +65,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -695,7 +695,7 @@ public class BinaryContext implements Externalizable {
             if (g == null)
                 throw new IllegalStateException("Failed to find grid for name: " + gridName);
 
-            return ((CacheObjectBinaryProcessorImpl)g.context().cacheObjects()).portableContext();
+            return ((CacheObjectBinaryProcessorImpl)g.context().cacheObjects()).binaryContext();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

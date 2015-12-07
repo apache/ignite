@@ -55,6 +55,6 @@ public class BinaryFieldsOffheapSelfTest extends BinaryFieldsAbstractSelfTest {
 
         UNSAFE.copyMemory(arr, BYTE_ARR_OFF, null, ptr, arr.length);
 
-        return new BinaryObjectOffheapImpl(portableContext(marsh), ptr, 0, arr.length);
+        return new BinaryObjectOffheapImpl(binaryContext(marsh), ptr, 0, arr.length);
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.portable.local;
+package org.apache.ignite.internal.processors.cache.binary.local;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 

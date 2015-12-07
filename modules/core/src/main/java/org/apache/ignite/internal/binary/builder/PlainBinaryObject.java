@@ -27,23 +27,23 @@ import org.apache.ignite.binary.BinaryObject;
  */
 public class PlainBinaryObject implements BinaryLazyValue {
     /** */
-    private final BinaryObject portableObj;
+    private final BinaryObject binaryObj;
 
     /**
      * @param portableObj Portable object.
      */
-    public PlainBinaryObject(BinaryObject portableObj) {
-        this.portableObj = portableObj;
+    public PlainBinaryObject(BinaryObject binaryObj) {
+        this.binaryObj = binaryObj;
     }
 
     /** {@inheritDoc} */
     @Override public Object value() {
-        return portableObj;
+        return binaryObj;
     }
 
     /** {@inheritDoc} */
     @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
-        BinaryObject val = portableObj;
+        BinaryObject val = binaryObj;
 
         if (val instanceof BinaryObjectOffheapImpl)
             val = ((BinaryObjectOffheapImpl)val).heapCopy();

@@ -92,7 +92,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
     /**
      * @return Portable context.
      */
-    public BinaryContext portableContext() {
+    public BinaryContext binaryContext() {
         return ctx;
     }
 
@@ -473,9 +473,9 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 int start = readIntPositioned(pos + 4 + size);
 
-                BinaryObjectImpl portableObj = new BinaryObjectImpl(ctx, arr, pos + 4 + start);
+                BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr, pos + 4 + start);
 
-                return new PlainBinaryObject(portableObj);
+                return new PlainBinaryObject(binaryObj);
             }
 
             default:
@@ -759,10 +759,10 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 int start = readInt();
 
-                BinaryObjectImpl portableObj = new BinaryObjectImpl(ctx, arr,
+                BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr,
                     pos - 4 - size + start);
 
-                return new PlainBinaryObject(portableObj);
+                return new PlainBinaryObject(binaryObj);
             }
 
             default:

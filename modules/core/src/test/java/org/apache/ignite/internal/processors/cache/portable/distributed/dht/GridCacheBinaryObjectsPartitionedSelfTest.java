@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
+package org.apache.ignite.internal.processors.cache.binary.distributed.dht;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.portable.GridCacheBinaryObjectsAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectsAbstractSelfTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;

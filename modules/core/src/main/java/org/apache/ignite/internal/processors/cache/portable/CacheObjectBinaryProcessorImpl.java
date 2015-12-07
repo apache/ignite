@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.portable;
+package org.apache.ignite.internal.processors.cache.binary;
 
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
@@ -128,13 +128,13 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     };
 
     /** */
-    private BinaryContext portableCtx;
+    private BinaryContext binaryCtx;
 
     /** */
     private Marshaller marsh;
 
     /** */
-    private InternalBinaryMarshaller portableMarsh;
+    private InternalBinaryMarshaller binaryMarsh;
 
     /** */
     @GridToStringExclude
@@ -194,7 +194,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                     assert metaDataCache != null;
 
-                    CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(portableCtx));
+                    CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(binaryCtx));
                 }
 
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
@@ -207,12 +207,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             BinaryMarshaller pMarh0 = (BinaryMarshaller)marsh;
 
-            portableCtx = new BinaryContext(metaHnd, ctx.config());
+            binaryCtx = new BinaryContext(metaHnd, ctx.config());
 
-            IgniteUtils.invoke(BinaryMarshaller.class, pMarh0, "setPortableContext", portableCtx,
+            IgniteUtils.invoke(BinaryMarshaller.class, pMarh0, "setPortableContext", binaryCtx,
                 ctx.config());
 
-            portableMarsh = new InternalBinaryMarshaller(portableCtx);
+            binaryMarsh = new InternalBinaryMarshaller(binaryCtx);
 
             binaries = new IgniteBinaryImpl(ctx, this);
         }
@@ -287,7 +287,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
 
         for (Map.Entry<Integer, BinaryMetadata> e : metaBuf.entrySet())
-            addMeta(e.getKey(), e.getValue().wrap(portableCtx));
+            addMeta(e.getKey(), e.getValue().wrap(binaryCtx));
 
         metaBuf.clear();
 
@@ -322,17 +322,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     res = oldMeta0;
                 }
 
-                return res != null ? res.wrap(portableCtx) : null;
+                return res != null ? res.wrap(binaryCtx) : null;
             }
         });
     }
 
     /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
-        if (portableCtx == null)
+        if (binaryCtx == null)
             return super.typeId(typeName);
 
-        return portableCtx.typeId(typeName);
+        return binaryCtx.typeId(typeName);
     }
 
     /**
@@ -341,7 +341,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @throws org.apache.ignite.binary.BinaryObjectException If failed.
      */
     public byte[] marshal(@Nullable Object obj) throws BinaryObjectException {
-        byte[] arr = portableMarsh.marshal(obj);
+        byte[] arr = binaryMarsh.marshal(obj);
 
         assert arr.length > 0;
 
@@ -368,7 +368,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             BinaryInputStream in = new BinaryOffheapInputStream(ptr, size, forceHeap);
 
-            return portableMarsh.unmarshal(in);
+            return binaryMarsh.unmarshal(in);
         }
         else
             return U.copyMemory(ptr, size);
@@ -436,11 +436,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return new GridMapEntry<>(marshalToBinary(e.getKey()), marshalToBinary(e.getValue()));
         }
 
-        byte[] arr = portableMarsh.marshal(obj);
+        byte[] arr = binaryMarsh.marshal(obj);
 
         assert arr.length > 0;
 
-        Object obj0 = portableMarsh.unmarshal(arr, null);
+        Object obj0 = binaryMarsh.unmarshal(arr, null);
 
         // Possible if a class has writeObject method.
         if (obj0 instanceof BinaryObject)
@@ -453,17 +453,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @return Marshaller.
      */
     public InternalBinaryMarshaller marshaller() {
-        return portableMarsh;
+        return binaryMarsh;
     }
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(String clsName) {
-        return new BinaryObjectBuilderImpl(portableCtx, clsName);
+        return new BinaryObjectBuilderImpl(binaryCtx, clsName);
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectBuilder builder(BinaryObject portableObj) {
-        return BinaryObjectBuilderImpl.wrap(portableObj);
+    @Override public BinaryObjectBuilder builder(BinaryObject binaryObj) {
+        return BinaryObjectBuilderImpl.wrap(binaryObj);
     }
 
     /** {@inheritDoc} */
@@ -471,7 +471,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         Map<String, Integer> fieldTypeIds, boolean isEnum) throws BinaryObjectException {
         BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null, isEnum);
 
-        portableCtx.updateMetadata(typeId, meta);
+        binaryCtx.updateMetadata(typeId, meta);
     }
 
     /** {@inheritDoc} */
@@ -510,7 +510,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 if (meta == null && !metaDataCache.context().preloader().syncFuture().isDone())
                     meta = metaDataCache.getTopologySafe(key);
 
-                return meta != null ? meta.wrap(portableCtx) : null;
+                return meta != null ? meta.wrap(binaryCtx) : null;
             }
         }
         catch (CacheException e) {
@@ -532,7 +532,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             Map<Integer, BinaryType> res = U.newHashMap(meta.size());
 
             for (Map.Entry<BinaryMetadataKey, BinaryMetadata> e : meta.entrySet())
-                res.put(e.getKey().typeId(), e.getValue().wrap(portableCtx));
+                res.put(e.getKey().typeId(), e.getValue().wrap(binaryCtx));
 
             return res;
         }
@@ -556,7 +556,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     private static final long serialVersionUID = 0L;
 
                     @Override public BinaryType apply(Cache.Entry<BinaryMetadataKey, BinaryMetadata> e) {
-                        return e.getValue().wrap(portableCtx);
+                        return e.getValue().wrap(binaryCtx);
                     }
                 });
         }
@@ -566,11 +566,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public BinaryObject buildEnum(String typeName, int ord) throws IgniteException {
         typeName = BinaryContext.typeName(typeName);
 
-        int typeId = portableCtx.typeId(typeName);
+        int typeId = binaryCtx.typeId(typeName);
 
         updateMetadata(typeId, typeName, null, null, true);
 
-        return new BinaryEnumObjectImpl(portableCtx, typeId, null, ord);
+        return new BinaryEnumObjectImpl(binaryCtx, typeId, null, ord);
     }
 
     /** {@inheritDoc} */
@@ -605,7 +605,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             else if (po instanceof BinaryObjectEx) {
                 int id = ((BinaryObjectEx)po).typeId();
 
-                String affKeyFieldName = portableCtx.affinityKeyFieldName(id);
+                String affKeyFieldName = binaryCtx.affinityKeyFieldName(id);
 
                 if (affKeyFieldName != null)
                     return po.field(affKeyFieldName);
@@ -642,15 +642,15 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /**
      * @return Portable context.
      */
-    public BinaryContext portableContext() {
-        return portableCtx;
+    public BinaryContext binaryContext() {
+        return binaryCtx;
     }
 
     /** {@inheritDoc} */
     @Override public CacheObjectContext contextForCache(CacheConfiguration cfg) throws IgniteCheckedException {
         assert cfg != null;
 
-        boolean portableEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(cfg.getName()) &&
+        boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(cfg.getName()) &&
             !GridCacheUtils.isIgfsCache(ctx.config(), cfg.getName());
 
         CacheObjectContext ctx0 = super.contextForCache(cfg);
@@ -658,7 +658,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         CacheObjectContext res = new CacheObjectBinaryContext(ctx,
             ctx0.copyOnGet(),
             ctx0.storeValue(),
-            portableEnabled,
+            binaryEnabled,
             ctx0.addDeploymentInfo());
 
         ctx.resource().injectGeneric(res.defaultAffMapper());
@@ -668,10 +668,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public byte[] marshal(CacheObjectContext ctx, Object val) throws IgniteCheckedException {
-        if (!((CacheObjectBinaryContext)ctx).portableEnabled() || portableMarsh == null)
+        if (!((CacheObjectBinaryContext)ctx).binaryEnabled() || binaryMarsh == null)
             return super.marshal(ctx, val);
 
-        byte[] arr = portableMarsh.marshal(val);
+        byte[] arr = binaryMarsh.marshal(val);
 
         assert arr.length > 0;
 
@@ -681,21 +681,21 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException {
-        if (!((CacheObjectBinaryContext)ctx).portableEnabled() || portableMarsh == null)
+        if (!((CacheObjectBinaryContext)ctx).binaryEnabled() || binaryMarsh == null)
             return super.unmarshal(ctx, bytes, clsLdr);
 
-        return portableMarsh.unmarshal(bytes, clsLdr);
+        return binaryMarsh.unmarshal(bytes, clsLdr);
     }
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj) {
-        if (!((CacheObjectBinaryContext)ctx).portableEnabled())
+        if (!((CacheObjectBinaryContext)ctx).binaryEnabled())
             return super.toCacheKeyObject(ctx, obj, userObj);
 
         if (obj instanceof KeyCacheObject)
             return (KeyCacheObject)obj;
 
-        if (((CacheObjectBinaryContext)ctx).portableEnabled()) {
+        if (((CacheObjectBinaryContext)ctx).binaryEnabled()) {
             obj = toBinary(obj);
 
             if (obj instanceof BinaryObject)
@@ -708,7 +708,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj,
         boolean userObj) {
-        if (!((CacheObjectBinaryContext)ctx).portableEnabled())
+        if (!((CacheObjectBinaryContext)ctx).binaryEnabled())
             return super.toCacheObject(ctx, obj, userObj);
 
         if (obj == null || obj instanceof CacheObject)
@@ -725,7 +725,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
         if (type == BinaryObjectImpl.TYPE_BINARY)
-            return new BinaryObjectImpl(portableContext(), bytes, 0);
+            return new BinaryObjectImpl(binaryContext(), bytes, 0);
 
         return super.toCacheObject(ctx, type, bytes);
     }
@@ -733,7 +733,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp)
         throws IgniteCheckedException {
-        if (!((CacheObjectBinaryContext)ctx.cacheObjectContext()).portableEnabled())
+        if (!((CacheObjectBinaryContext)ctx.cacheObjectContext()).binaryEnabled())
             return super.toCacheObject(ctx, valPtr, tmp);
 
         Object val = unmarshal(valPtr, !tmp);
@@ -746,7 +746,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public Object unwrapTemporary(GridCacheContext ctx, Object obj) throws BinaryObjectException {
-        if (!((CacheObjectBinaryContext)ctx.cacheObjectContext()).portableEnabled())
+        if (!((CacheObjectBinaryContext)ctx.cacheObjectContext()).binaryEnabled())
             return obj;
 
         if (obj instanceof BinaryObjectOffheapImpl)

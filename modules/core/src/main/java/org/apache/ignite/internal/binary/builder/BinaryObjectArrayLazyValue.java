@@ -56,7 +56,7 @@ class BinaryObjectArrayLazyValue extends BinaryAbstractLazyValue {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
-            compTypeId = reader.portableContext().descriptorForClass(cls, true).typeId();
+            compTypeId = reader.binaryContext().descriptorForClass(cls, true).typeId();
         }
         else {
             compTypeId = typeId;

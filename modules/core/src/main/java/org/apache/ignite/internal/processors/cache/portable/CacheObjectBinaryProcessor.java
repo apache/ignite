@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.portable;
+package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Collection;
 import java.util.Map;
@@ -43,7 +43,7 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @param portableObj Portable object to edit.
      * @return Portable builder.
      */
-    public BinaryObjectBuilder builder(BinaryObject portableObj);
+    public BinaryObjectBuilder builder(BinaryObject binaryObj);
 
     /**
      * @param typeId Type ID.

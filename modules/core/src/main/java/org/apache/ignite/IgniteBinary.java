@@ -315,7 +315,7 @@ public interface IgniteBinary {
      * @param portableObj Portable object to initialize builder.
      * @return Portable builder.
      */
-    public BinaryObjectBuilder builder(BinaryObject portableObj) throws BinaryObjectException;
+    public BinaryObjectBuilder builder(BinaryObject binaryObj) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided class.
