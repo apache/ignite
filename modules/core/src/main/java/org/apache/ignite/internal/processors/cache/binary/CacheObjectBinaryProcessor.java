@@ -92,7 +92,7 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
     public BinaryObject buildEnum(String typeName, int ord) throws IgniteException;
 
     /**
-     * @return Portables interface.
+     * @return Binaries interface.
      * @throws IgniteException If failed.
      */
     public IgniteBinary binary() throws IgniteException;

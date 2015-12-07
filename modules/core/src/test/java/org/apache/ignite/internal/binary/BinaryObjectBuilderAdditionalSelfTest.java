@@ -112,7 +112,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * @return Portables API.
+     * @return Binaries API.
      */
     protected IgniteBinary binaries() {
         return grid(0).binary();

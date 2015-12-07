@@ -1001,7 +1001,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Portables.
+     * @return Binaries.
      */
     private IgniteBinary binaries() {
         return grid(0).binary();
