@@ -33,17 +33,38 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <param name="obj">Object to write.</param>
     internal delegate void BinarySystemWriteDelegate(BinaryWriter writer, object obj);
 
+    internal class BinarySystemWriteHandler
+    {
+        private readonly BinarySystemWriteDelegate _writeAction;
+        private readonly bool _supportsHandles;
+
+        public BinarySystemWriteHandler(BinarySystemWriteDelegate writeAction, bool supportsHandles = false)
+        {
+            Debug.Assert(writeAction != null);
+
+            _writeAction = writeAction;
+            _supportsHandles = supportsHandles;
+        }
+
+        public void Write(BinaryWriter writer, object obj)
+        {
+            _writeAction(writer, obj);
+        }
+
+        private bool SupportsHandles
+        {
+            get { return _supportsHandles; }
+        }
+    }
+
     /**
      * <summary>Collection of predefined handlers for various system types.</summary>
      */
     internal static class BinarySystemHandlers
     {
         /** Write handlers. */
-        private static volatile Dictionary<Type, BinarySystemWriteDelegate> _writeHandlers =
-            new Dictionary<Type, BinarySystemWriteDelegate>();
-
-        /** Mutex for write handlers update. */
-        private static readonly object WriteHandlersMux = new object();
+        private static readonly CopyOnWriteConcurrentDictionary<Type, BinarySystemWriteHandler> _writeHandlers =
+            new CopyOnWriteConcurrentDictionary<Type, BinarySystemWriteHandler>();
 
         /** Read handlers. */
         private static readonly IBinarySystemReader[] ReadHandlers = new IBinarySystemReader[255];
@@ -175,32 +196,30 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static BinarySystemWriteDelegate GetWriteHandler(Type type)
+        public static BinarySystemWriteHandler GetWriteHandler(Type type)
         {
-            BinarySystemWriteDelegate res;
+            return _writeHandlers.GetOrAdd(type, t =>
+            {
+                bool supportsHandles;
 
-            var writeHandlers0 = _writeHandlers;
+                var handler = FindWriteHandler(t, out supportsHandles);
 
-            // Have we ever met this type?
-            if (writeHandlers0 != null && writeHandlers0.TryGetValue(type, out res))
-                return res;
-
-            // Determine write handler for type and add it.
-            res = FindWriteHandler(type);
-
-            if (res != null)
-                AddWriteHandler(type, res);
-
-            return res;
+                return handler == null ? null : new BinarySystemWriteHandler(handler, supportsHandles);
+            });
         }
 
         /// <summary>
         /// Find write handler for type.
         /// </summary>
         /// <param name="type">Type.</param>
-        /// <returns>Write handler or NULL.</returns>
-        private static BinarySystemWriteDelegate FindWriteHandler(Type type)
+        /// <param name="supportsHandles">Flag indicating whether returned delegate supports handles.</param>
+        /// <returns>
+        /// Write handler or NULL.
+        /// </returns>
+        private static BinarySystemWriteDelegate FindWriteHandler(Type type, out bool supportsHandles)
         {
+            supportsHandles = false;
+
             // 1. Well-known types.
             if (type == typeof(string))
                 return WriteString;
@@ -296,36 +315,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return BinaryUtils.TypeArrayEnum;
 
             return BinaryUtils.TypeObject;
-        }
-
-        /// <summary>
-        /// Add write handler for type.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="handler"></param>
-        private static void AddWriteHandler(Type type, BinarySystemWriteDelegate handler)
-        {
-            lock (WriteHandlersMux)
-            {
-                if (_writeHandlers == null)
-                {
-                    Dictionary<Type, BinarySystemWriteDelegate> writeHandlers0 = 
-                        new Dictionary<Type, BinarySystemWriteDelegate>();
-
-                    writeHandlers0[type] = handler;
-
-                    _writeHandlers = writeHandlers0;
-                }
-                else if (!_writeHandlers.ContainsKey(type))
-                {
-                    Dictionary<Type, BinarySystemWriteDelegate> writeHandlers0 =
-                        new Dictionary<Type, BinarySystemWriteDelegate>(_writeHandlers);
-
-                    writeHandlers0[type] = handler;
-
-                    _writeHandlers = writeHandlers0;
-                }
-            }
         }
 
         /// <summary>

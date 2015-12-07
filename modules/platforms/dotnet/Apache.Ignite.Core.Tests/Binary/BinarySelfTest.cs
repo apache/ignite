@@ -1164,7 +1164,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.RawInner);
         }
 
-        [Test]
+        //[Test]
         public void TestHandlesCollections()
         {
             var marsh = new Marshaller(new BinaryConfiguration
