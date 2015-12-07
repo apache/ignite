@@ -45,6 +45,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunction
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlPlaceholder.EMPTY;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.prepared;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.query;
+import static org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor.toArray;
 
 /**
  * Splits a single SQL query into two step map-reduce query.
@@ -367,7 +368,7 @@ public class GridSqlQuerySplitter {
             findParams(mapQry, params, new ArrayList<>(params.length), paramIdxs).toArray());
 
         map.columns(collectColumns(mapExps));
-        map.parameterIndexes(toIntArray(paramIdxs));
+        map.parameterIndexes(toArray(paramIdxs));
 
         res.addMapQuery(map);
 
@@ -378,20 +379,10 @@ public class GridSqlQuerySplitter {
         GridCacheSqlQuery rdc = new GridCacheSqlQuery(rdcQry.getSQL(),
             findParams(rdcQry, params, new ArrayList<>(), paramIdxs).toArray());
 
-        rdc.parameterIndexes(toIntArray(paramIdxs));
+        rdc.parameterIndexes(toArray(paramIdxs));
         res.skipMergeTbl(rdcQry.simpleQuery());
 
         return rdc;
-    }
-
-    /**
-     * @param arr Integer array.
-     * @return Primitive int array.
-     */
-    private static int[] toIntArray(IntArray arr) {
-        int[] res = new int[arr.size()];
-        arr.toArray(res);
-        return res;
     }
 
     /**

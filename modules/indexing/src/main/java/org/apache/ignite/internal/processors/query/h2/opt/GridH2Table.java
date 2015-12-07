@@ -259,7 +259,7 @@ public class GridH2Table extends TableBase {
             ses.addLock(this);
         }
 
-        if (snapshotEnabled && snapshotInLock())
+        if (snapshotInLock())
             snapshotIndexes(null);
 
         return false;
@@ -269,7 +269,10 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If we must snapshot and release index snapshots in {@link #lock(Session, boolean, boolean)}
      * and {@link #unlock(Session)} methods.
      */
-    private static boolean snapshotInLock() {
+    private boolean snapshotInLock() {
+        if (!snapshotEnabled)
+            return false;
+
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
         return qctx == null || // Outside of Ignite query context.
@@ -279,9 +282,11 @@ public class GridH2Table extends TableBase {
 
     /**
      * @param qctx Query context.
-     * @return Snapshots.
      */
-    public Object[] snapshotIndexes(GridH2QueryContext qctx) {
+    public void snapshotIndexes(GridH2QueryContext qctx) {
+        if (!snapshotEnabled)
+            return;
+
         Object[] snapshots;
 
         Lock l;
@@ -294,7 +299,7 @@ public class GridH2Table extends TableBase {
                 snapshots = doSnapshotIndexes(snapshots, qctx);
 
                 if (snapshots != null)
-                    return snapshots; // Reused successfully.
+                    return; // Reused successfully.
             }
 
             l = lock(true, waitTime);
@@ -321,8 +326,6 @@ public class GridH2Table extends TableBase {
         finally {
             unlock(l);
         }
-
-        return snapshots;
     }
 
     /**
@@ -377,6 +380,8 @@ public class GridH2Table extends TableBase {
      */
     @SuppressWarnings("unchecked")
     private Object[] doSnapshotIndexes(Object[] snapshots, GridH2QueryContext qctx) {
+        assert snapshotEnabled;
+
         if (snapshots == null) // Nothing to reuse, create new snapshots.
             snapshots = new Object[idxs.size() - 1];
 
@@ -434,7 +439,7 @@ public class GridH2Table extends TableBase {
         if (ses != null && !sessions.remove(ses))
             return;
 
-        if (snapshotEnabled && snapshotInLock())
+        if (snapshotInLock())
             releaseSnapshots();
     }
 
@@ -442,7 +447,11 @@ public class GridH2Table extends TableBase {
      * Releases snapshots.
      */
     public void releaseSnapshots() {
-        for (int i = 1, len = idxs.size(); i < len; i++)  // Release snapshots on all except first which is scan.
+        if (!snapshotEnabled)
+            return;
+
+        // Release snapshots on all except first which is scan.
+        for (int i = 1, len = idxs.size(); i < len; i++)
             index(i).releaseSnapshot();
     }
 

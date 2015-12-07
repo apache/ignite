@@ -108,7 +108,7 @@ public class GridReduceQueryExecutor {
     public static final byte QUERY_POOL = GridIoPolicy.SYSTEM_POOL;
 
     /** */
-    private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.6.0");
+    private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.4.0");
 
     /** */
     private GridKernalContext ctx;
@@ -514,15 +514,9 @@ public class GridReduceQueryExecutor {
 
             final long qryReqId = reqIdGen.incrementAndGet();
 
-            final QueryRun r = new QueryRun();
+            final String space = cctx.name();
 
-            r.pageSize = qry.pageSize() <= 0 ? GridCacheTwoStepQuery.DFLT_PAGE_SIZE : qry.pageSize();
-
-            r.idxs = new ArrayList<>(qry.mapQueries().size());
-
-            String space = cctx.name();
-
-            r.conn = (JdbcConnection)h2.connectionForSpace(space);
+            final QueryRun r = new QueryRun(h2.connectionForSpace(space), qry.mapQueries().size(), qry.pageSize());
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
@@ -1126,6 +1120,9 @@ public class GridReduceQueryExecutor {
         Message msg,
         @Nullable IgniteBiClosure<ClusterNode, Message, Message> specialize
     ) {
+        if (log.isDebugEnabled())
+            log.debug("Sending: [msg=" + msg + ", nodes=" + nodes + ", specialize=" + specialize + "]");
+
         return h2.send(GridTopic.TOPIC_QUERY, nodes, msg, specialize, locNodeHandler);
     }
 
@@ -1170,7 +1167,7 @@ public class GridReduceQueryExecutor {
      * @param ints Ints.
      * @return Array.
      */
-    private static int[] toArray(IntArray ints) {
+    public static int[] toArray(IntArray ints) {
         int[] res = new int[ints.size()];
 
         ints.toArray(res);
@@ -1186,7 +1183,7 @@ public class GridReduceQueryExecutor {
         if (m == null)
             return null;
 
-        Map<UUID,int[]> res = new HashMap<>(m.size());
+        Map<UUID,int[]> res = new HashMap<>(m.size(), 1f);
 
         for (Map.Entry<ClusterNode,IntArray> entry : m.entrySet())
             res.put(entry.getKey().id(), toArray(entry.getValue()));
@@ -1267,23 +1264,34 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     *
+     * Query run.
      */
     private static class QueryRun {
         /** */
-        private List<GridMergeIndex> idxs;
+        private final List<GridMergeIndex> idxs;
 
         /** */
         private CountDownLatch latch;
 
         /** */
-        private JdbcConnection conn;
+        private final JdbcConnection conn;
 
         /** */
-        private int pageSize;
+        private final int pageSize;
 
         /** Can be either CacheException in case of error or AffinityTopologyVersion to retry if needed. */
         private final AtomicReference<Object> state = new AtomicReference<>();
+
+        /**
+         * @param conn Connection.
+         * @param idxsCnt Number of indexes.
+         * @param pageSize Page size.
+         */
+        private QueryRun(Connection conn, int idxsCnt, int pageSize) {
+            this.conn = (JdbcConnection)conn;
+            this.idxs = new ArrayList<>(idxsCnt);
+            this.pageSize = pageSize > 0 ? pageSize : GridCacheTwoStepQuery.DFLT_PAGE_SIZE;
+        }
 
         /**
          * @param o Fail state object.

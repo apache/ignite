@@ -1091,7 +1091,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             try {
                 bindParameters(stmt, F.asList(qry.getArgs()));
 
-                twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), qry.isCollocated(),
+                twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), groupByCollocated,
                     distributedJoins);
 
                 meta = meta(stmt.getMetaData());
