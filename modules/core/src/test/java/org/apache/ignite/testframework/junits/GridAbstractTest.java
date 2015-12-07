@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -1116,6 +1117,20 @@ public abstract class GridAbstractTest extends TestCase {
         IgniteConfiguration cfg = getConfiguration(gridName, getTestResources());
 
         cfg.setNodeId(null);
+
+        if (GridTestProperties.getProperty(GridTestProperties.BINARY_COMPACT_FOOTERS) != null) {
+            if (!Boolean.valueOf(GridTestProperties.getProperty(GridTestProperties.BINARY_COMPACT_FOOTERS))) {
+                BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
+
+                if (bCfg == null) {
+                    bCfg = new BinaryConfiguration();
+
+                    cfg.setBinaryConfiguration(bCfg);
+                }
+
+                bCfg.setCompactFooter(false);
+            }
+        }
 
         if (gridName != null && gridName.matches(".*\\d")) {
             String idStr = UUID.randomUUID().toString();

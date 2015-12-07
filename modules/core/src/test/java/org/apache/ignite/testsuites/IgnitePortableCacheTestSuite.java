@@ -76,7 +76,6 @@ public class IgnitePortableCacheTestSuite extends TestSuite {
         ignoredTests.add(GridCacheMvccSelfTest.class);
 
         suite.addTest(IgniteCacheTestSuite.suite(ignoredTests));
-        suite.addTest(IgniteCacheExpiryPolicyTestSuite.suite());
 
         suite.addTestSuite(GridCacheMemoryModePortableSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicPortableSelfTest.class);

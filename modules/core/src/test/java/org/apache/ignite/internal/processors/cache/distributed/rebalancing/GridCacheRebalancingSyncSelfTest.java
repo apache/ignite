@@ -45,19 +45,19 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static int TEST_SIZE = 100_000;
+    private static final int TEST_SIZE = 100_000;
 
     /** partitioned cache name. */
-    protected static String CACHE_NAME_DHT_PARTITIONED = "cacheP";
+    protected static final String CACHE_NAME_DHT_PARTITIONED = "cacheP";
 
     /** partitioned cache 2 name. */
-    protected static String CACHE_NAME_DHT_PARTITIONED_2 = "cacheP2";
+    protected static final String CACHE_NAME_DHT_PARTITIONED_2 = "cacheP2";
 
     /** replicated cache name. */
-    protected static String CACHE_NAME_DHT_REPLICATED = "cacheR";
+    protected static final String CACHE_NAME_DHT_REPLICATED = "cacheR";
 
     /** replicated cache 2 name. */
-    protected static String CACHE_NAME_DHT_REPLICATED_2 = "cacheR2";
+    protected static final String CACHE_NAME_DHT_REPLICATED_2 = "cacheR2";
 
     /** */
     private volatile boolean concurrentStartFinished;
@@ -122,6 +122,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param ignite Ignite.
+     * @param from Start from key.
+     * @param iter Iteration.
      */
     protected void generateData(Ignite ignite, int from, int iter) {
         generateData(ignite, CACHE_NAME_DHT_PARTITIONED, from, iter);
@@ -132,6 +134,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param ignite Ignite.
+     * @param name Cache name.
+     * @param from Start from key.
+     * @param iter Iteration.
      */
     protected void generateData(Ignite ignite, String name, int from, int iter) {
         for (int i = from; i < from + TEST_SIZE; i++) {
@@ -144,9 +149,10 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param ignite Ignite.
-     * @throws IgniteCheckedException Exception.
+     * @param from Start from key.
+     * @param iter Iteration.
      */
-    protected void checkData(Ignite ignite, int from, int iter) throws IgniteCheckedException {
+    protected void checkData(Ignite ignite, int from, int iter) {
         checkData(ignite, CACHE_NAME_DHT_PARTITIONED, from, iter);
         checkData(ignite, CACHE_NAME_DHT_PARTITIONED_2, from, iter);
         checkData(ignite, CACHE_NAME_DHT_REPLICATED, from, iter);
@@ -155,10 +161,11 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param ignite Ignite.
+     * @param from Start from key.
+     * @param iter Iteration.
      * @param name Cache name.
-     * @throws IgniteCheckedException Exception.
      */
-    protected void checkData(Ignite ignite, String name, int from, int iter) throws IgniteCheckedException {
+    protected void checkData(Ignite ignite, String name, int from, int iter) {
         for (int i = from; i < from + TEST_SIZE; i++) {
             if (i % (TEST_SIZE / 10) == 0)
                 log.info("<" + name + "> Checked " + i * 100 / (TEST_SIZE) + "% entries (" + TEST_SIZE + ").");
@@ -169,7 +176,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception Exception
+     * @throws Exception If failed.
      */
     public void testSimpleRebalancing() throws Exception {
         Ignite ignite = startGrid(0);
@@ -206,7 +213,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception Exception
+     * @throws Exception If failed.
      */
     public void testLoadRebalancing() throws Exception {
         final Ignite ignite = startGrid(0);
@@ -240,14 +247,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         Thread t2 = new Thread() {
             @Override public void run() {
-                while (!concurrentStartFinished) {
-                    try {
-                        checkData(ignite, CACHE_NAME_DHT_PARTITIONED, 0, 0);
-                    }
-                    catch (IgniteCheckedException e) {
-                        e.printStackTrace();
-                    }
-                }
+                while (!concurrentStartFinished)
+                    checkData(ignite, CACHE_NAME_DHT_PARTITIONED, 0, 0);
             }
         };
 
@@ -282,7 +283,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      * @param id Node id.
      * @param major Major ver.
      * @param minor Minor ver.
-     * @throws IgniteCheckedException Exception.
+     * @throws IgniteCheckedException If failed.
      */
     protected void waitForRebalancing(int id, int major, int minor) throws IgniteCheckedException {
         waitForRebalancing(id, new AffinityTopologyVersion(major, minor));
@@ -291,7 +292,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @param id Node id.
      * @param major Major ver.
-     * @throws IgniteCheckedException Exception.
+     * @throws IgniteCheckedException If failed.
      */
     protected void waitForRebalancing(int id, int major) throws IgniteCheckedException {
         waitForRebalancing(id, new AffinityTopologyVersion(major));
@@ -300,7 +301,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @param id Node id.
      * @param top Topology version.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     protected void waitForRebalancing(int id, AffinityTopologyVersion top) throws IgniteCheckedException {
         boolean finished = false;
@@ -327,6 +328,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     protected void checkSupplyContextMapIsEmpty() {
         for (Ignite g : G.allGrids()) {
             for (GridCacheAdapter c : ((IgniteEx)g).context().cache().internalCaches()) {
@@ -342,12 +344,13 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 5 * 60_000;
     }
 
     /**
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testComplexRebalancing() throws Exception {
         final Ignite ignite = startGrid(0);
@@ -368,9 +371,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     startGrid(1);
                     startGrid(2);
 
-                    while (!concurrentStartFinished2) {
+                    while (!concurrentStartFinished2)
                         U.sleep(10);
-                    }
 
                     waitForRebalancing(0, 5, 0);
                     waitForRebalancing(1, 5, 0);
@@ -387,9 +389,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
                     grid(0).getOrCreateCache(cacheRCfg);
 
-                    while (!concurrentStartFinished3) {
+                    while (!concurrentStartFinished3)
                         U.sleep(10);
-                    }
 
                     concurrentStartFinished = true;
                 }

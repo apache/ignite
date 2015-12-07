@@ -107,6 +107,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** Start future. */
     private GridFutureAdapter<Object> startFut;
 
+    /** Future completed when rebalance on start topology finished. */
+    private final GridFutureAdapter<Object> initRebalanceFut;
+
     /** Busy lock to prevent activities from accessing exchanger while it's stopping. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
@@ -155,6 +158,18 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
                         fut.onNodeLeft(e.eventNode().id());
                 }
+
+                if (!initRebalanceFut.isDone()) {
+                    startFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                        @Override public void apply(IgniteInternalFuture<?> fut) {
+                            cctx.closures().runLocalSafe(new Runnable() {
+                                @Override public void run() {
+                                    initRebalanceFut.onDone();
+                                }
+                            });
+                        }
+                    });
+                }
             }
             finally {
                 leaveBusy();
@@ -171,6 +186,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         top = cctx.dht().topology();
 
         startFut = new GridFutureAdapter<>();
+        initRebalanceFut = new GridFutureAdapter<>();
     }
 
     /** {@inheritDoc} */
@@ -208,6 +224,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         supplier = new GridDhtPartitionSupplier(cctx);
         demander = new GridDhtPartitionDemander(cctx, demandLock);
+
+        demander.rebalanceFuture().listen(new CI1<IgniteInternalFuture<Boolean>>() {
+            @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                initRebalanceFut.onDone();
+            }
+        });
 
         supplier.start();
         demander.start();
@@ -302,7 +324,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
                         exchFut.exchangeId());
 
-                break;
+                assigns.cancelled(true);
+
+                return assigns;
             }
 
             // If partition belongs to local node.
@@ -454,6 +478,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> rebalanceFuture() {
         return cctx.kernalContext().clientNode() ? new GridFinishedFuture<>(true) : demander.rebalanceFuture();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> initialRebalanceFuture() {
+        return cctx.kernalContext().clientNode() ? new GridFinishedFuture<>(true) : initRebalanceFut;
     }
 
     /**

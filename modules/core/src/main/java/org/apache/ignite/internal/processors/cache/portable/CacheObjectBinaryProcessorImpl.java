@@ -503,7 +503,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             if (clientNode)
                 return clientMetaDataCache.get(typeId);
             else {
-                BinaryMetadata meta = metaDataCache.localPeek(new PortableMetadataKey(typeId));
+                PortableMetadataKey key = new PortableMetadataKey(typeId);
+
+                BinaryMetadata meta = metaDataCache.localPeek(key);
+
+                if (meta == null && !metaDataCache.context().preloader().syncFuture().isDone())
+                    meta = metaDataCache.getTopologySafe(key);
 
                 return meta != null ? meta.wrap(portableCtx) : null;
             }
@@ -593,6 +598,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             if (meta != null) {
                 String affKeyFieldName = meta.affinityKeyFieldName();
+
+                if (affKeyFieldName != null)
+                    return po.field(affKeyFieldName);
+            }
+            else if (po instanceof BinaryObjectEx) {
+                int id = ((BinaryObjectEx)po).typeId();
+
+                String affKeyFieldName = portableCtx.affinityKeyFieldName(id);
 
                 if (affKeyFieldName != null)
                     return po.field(affKeyFieldName);
