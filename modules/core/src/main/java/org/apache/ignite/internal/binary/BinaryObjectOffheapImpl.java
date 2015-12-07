@@ -59,7 +59,7 @@ import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.TIMESTA
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.UUID;
 
 /**
- *  Portable object implementation over offheap memory
+ *  Binary object implementation over offheap memory
  */
 public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizable, CacheObject {
     /** */
@@ -155,7 +155,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType type() throws BinaryObjectException {
         if (ctx == null)
-            throw new BinaryObjectException("PortableContext is not set for the object.");
+            throw new BinaryObjectException("BinaryContext is not set for the object.");
 
         return ctx.metadata(typeId());
     }

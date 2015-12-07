@@ -86,7 +86,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean isBinaryEnabled(CacheConfiguration<?, ?> ccfg);
 
     /**
-     * @param obj Portable object to get field from.
+     * @param obj Binary object to get field from.
      * @param fieldName Field name.
      * @return Field value.
      */

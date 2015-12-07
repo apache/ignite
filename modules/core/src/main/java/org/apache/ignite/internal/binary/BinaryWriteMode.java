@@ -141,7 +141,7 @@ public enum BinaryWriteMode {
     /** */
     ENUM(InternalBinaryMarshaller.ENUM),
 
-    /** Portable enum. */
+    /** Binary enum. */
     BINARY_ENUM(InternalBinaryMarshaller.ENUM),
 
     /** */

@@ -103,7 +103,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
      *          if called on backup node.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize binary flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param canRemap Flag indicating whether future can be remapped on a newer topology version.

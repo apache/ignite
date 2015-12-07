@@ -82,7 +82,7 @@ import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.IN
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Portable marshaller tests.
+ * Binary marshaller tests.
  */
 @SuppressWarnings({"OverlyStrongTypeCast", "ArrayHashCode", "ConstantConditions"})
 public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
@@ -797,7 +797,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param obj Simple object.
-     * @param po Portable object.
+     * @param po Binary object.
      */
     private void checkSimpleObjectData(SimpleObject obj, BinaryObject po) {
         assertEquals(obj.b, (byte)po.field("b"));
@@ -1516,7 +1516,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 //                    return null;
 //                }
 //            },
-//            PortableException.class,
+//            BinaryException.class,
 //            "Invalid value type for field: i"
 //        );
     }
@@ -1587,7 +1587,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param po Portable object.
+     * @param po Binary object.
      * @param fields Fields.
      * @return Copy.
      */
@@ -2359,7 +2359,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param po Portable object.
+     * @param po Binary object.
      * @param off Offset.
      * @return Value.
      */
@@ -2391,7 +2391,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @param obj Object.
      * @param marsh Marshaller.
-     * @return Portable object.
+     * @return Binary object.
      */
     private <T> BinaryObjectImpl marshal(T obj, BinaryMarshaller marsh) throws IgniteCheckedException {
         byte[] bytes = marsh.marshal(obj);
@@ -2409,7 +2409,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param marsh Marshaller.
-     * @return Portable context.
+     * @return Binary context.
      */
     protected BinaryContext binaryContext(BinaryMarshaller marsh) {
         InternalBinaryMarshaller impl = U.field(marsh, "impl");
@@ -2475,7 +2475,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, iCfg);
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
 
         return marsh;
     }
@@ -2593,7 +2593,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Portable object.
+     * @return Binary object.
      */
     private TestBinary binaryObject() {
         SimpleObject innerSimple = new SimpleObject();

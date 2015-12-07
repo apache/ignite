@@ -21,7 +21,7 @@ import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Portable meta data sent from client.
+ * Binary meta data sent from client.
  */
 public class GridClientBinaryMetaData {
     /** */

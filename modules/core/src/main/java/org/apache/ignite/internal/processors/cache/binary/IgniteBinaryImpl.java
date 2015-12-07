@@ -156,7 +156,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /**
-     * @return Portable processor.
+     * @return Binary processor.
      */
     public IgniteCacheObjectProcessor processor() {
         return proc;

@@ -1472,7 +1472,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *      nested fields.
      * @param resType Result type.
      * @param aliases Aliases.
-     * @return Portable property.
+     * @return Binary property.
      */
     private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String,String> aliases) {
         String[] path = pathStr.split("\\.");
@@ -1513,7 +1513,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             resType,
             aliases);
 
-        if (res == null) // We check key before value consistently with PortableProperty.
+        if (res == null) // We check key before value consistently with BinaryProperty.
             res = buildClassProperty(false, valCls, pathStr, resType, aliases);
 
         if (res == null)

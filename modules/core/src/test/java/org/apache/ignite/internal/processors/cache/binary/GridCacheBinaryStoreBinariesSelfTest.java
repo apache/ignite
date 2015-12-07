@@ -58,7 +58,7 @@ public class GridCacheBinaryStoreBinariesSelfTest extends GridCacheBinaryStoreAb
 
     /**
      * @param obj Object.
-     * @return Portable object.
+     * @return Binary object.
      */
     private Object binary(Object obj) {
         return grid().binary().toBinary(obj);

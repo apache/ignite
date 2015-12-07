@@ -1677,7 +1677,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Portable processor.
+     * @return Binary processor.
      */
     public IgniteCacheObjectProcessor cacheObjects() {
         return kernalContext().cacheObjects();
@@ -1872,7 +1872,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param val Value.
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects flag.
-     * @param deserializePortable Deserialize binary flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param cpy Copy flag.
      */
     @SuppressWarnings("unchecked")

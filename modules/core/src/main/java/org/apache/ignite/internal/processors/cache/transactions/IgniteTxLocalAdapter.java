@@ -1342,7 +1342,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param map Return map.
      * @param missed Map of missed keys.
      * @param keysCnt Keys count (to avoid call to {@code Collection.size()}).
-     * @param deserializePortable Deserialize binary flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects flag.
      * @param skipStore Skip store flag.
@@ -1597,7 +1597,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param cacheCtx Cache context.
      * @param map Return map.
      * @param missedMap Missed keys.
-     * @param deserializePortable Deserialize binary flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects flag.
      * @param skipStore Skip store flag.

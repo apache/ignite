@@ -24,7 +24,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Portable objects marshaller.
+ * Binary objects marshaller.
  */
 public class InternalBinaryMarshaller {
     /** */
@@ -251,7 +251,7 @@ public class InternalBinaryMarshaller {
 
     /**
      * @param bytes Bytes array.
-     * @return Portable object.
+     * @return Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
@@ -263,7 +263,7 @@ public class InternalBinaryMarshaller {
 
     /**
      * @param in Input stream.
-     * @return Portable object.
+     * @return Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")

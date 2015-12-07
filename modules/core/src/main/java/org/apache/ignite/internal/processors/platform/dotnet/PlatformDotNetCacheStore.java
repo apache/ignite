@@ -318,7 +318,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * Initialize the store.
      *
      * @param ctx Context.
-     * @param convertPortable Convert binary flag.
+     * @param convertBinary Convert binary flag.
      * @throws org.apache.ignite.IgniteCheckedException
      */
     public void initialize(GridKernalContext ctx, boolean convertBinary) throws IgniteCheckedException {
@@ -343,7 +343,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * Write store data to a stream.
      *
      * @param writer Writer.
-     * @param convertPortable Convert binary flag.
+     * @param convertBinary Convert binary flag.
      */
     protected void write(BinaryRawWriterEx writer, boolean convertBinary) {
         writer.writeString(typName);

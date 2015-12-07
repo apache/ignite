@@ -56,13 +56,13 @@ import org.jetbrains.annotations.Nullable;
  * To work with the binary format directly, user should create a special cache projection
  * using IgniteCache.withKeepBinary() method and then retrieve individual fields as needed:
  * <pre name=code class=java>
- * IgniteCache&lt;PortableObject, PortableObject&gt; prj = cache.withKeepBinary();
+ * IgniteCache&lt;BinaryObject, BinaryObject&gt; prj = cache.withKeepBinary();
  *
  * // Convert instance of MyKey to binary format.
- * // We could also use PortableBuilder to create the key in binary format directly.
- * PortableObject key = grid.binary().toBinary(new MyKey());
+ * // We could also use BinaryBuilder to create the key in binary format directly.
+ * BinaryObject key = grid.binary().toBinary(new MyKey());
  *
- * PortableObject val = prj.get(key);
+ * BinaryObject val = prj.get(key);
  *
  * String field = val.field("myFieldName");
  * </pre>
@@ -80,9 +80,9 @@ import org.jetbrains.annotations.Nullable;
  * and still wanted to work with binary binary format for values, then we would declare cache projection
  * as follows:
  * <pre name=code class=java>
- * IgniteCache&lt;Integer.class, PortableObject&gt; prj = cache.withKeepBinary();
+ * IgniteCache&lt;Integer.class, BinaryObject&gt; prj = cache.withKeepBinary();
  * </pre>
- * <h1 class="header">Automatic Portable Types</h1>
+ * <h1 class="header">Automatic Binary Types</h1>
  * Note that only binary classes are converted to {@link org.apache.ignite.binary.BinaryObject} format. Following
  * classes are never converted (e.g., {@link #toBinary(Object)} method will return original
  * object, and instances of these classes will be stored in cache without changes):
@@ -106,17 +106,17 @@ import org.jetbrains.annotations.Nullable;
  * {@code List} in C#, {@link LinkedList} in Java is {@link LinkedList} in C#, {@link HashMap}
  * in Java is {@code Dictionary} in C#, and {@link TreeMap} in Java becomes {@code SortedDictionary}
  * in C#, etc.
- * <h1 class="header">Building Portable Objects</h1>
+ * <h1 class="header">Building Binary Objects</h1>
  * Ignite comes with {@link org.apache.ignite.binary.BinaryObjectBuilder} which allows to build binary objects dynamically:
  * <pre name=code class=java>
- * PortableBuilder builder = Ignition.ignite().binary().builder();
+ * BinaryBuilder builder = Ignition.ignite().binary().builder();
  *
  * builder.typeId("MyObject");
  *
  * builder.stringField("fieldA", "A");
  * build.intField("fieldB", "B");
  *
- * PortableObject portableObj = builder.build();
+ * BinaryObject portableObj = builder.build();
  * </pre>
  * For the cases when class definition is present
  * in the class path, it is also possible to populate a standard POJO and then
@@ -127,15 +127,15 @@ import org.jetbrains.annotations.Nullable;
  * obj.setFieldA("A");
  * obj.setFieldB(123);
  *
- * PortableObject portableObj = Ignition.ignite().binary().toBinary(obj);
+ * BinaryObject portableObj = Ignition.ignite().binary().toBinary(obj);
  * </pre>
  * NOTE: you don't need to convert typed objects to binary format before storing
  * them in cache, Ignite will do that automatically.
- * <h1 class="header">Portable Metadata</h1>
+ * <h1 class="header">Binary Metadata</h1>
  * Even though Ignite binary protocol only works with hash codes for type and field names
  * to achieve better performance, Ignite provides metadata for all binary types which
  * can be queried ar runtime via any of the {@link IgniteBinary#type(Class)}
- * methods. Having metadata also allows for proper formatting of {@code PortableObject#toString()} method,
+ * methods. Having metadata also allows for proper formatting of {@code BinaryObject#toString()} method,
  * even when binary objects are kept in binary format only, which may be necessary for audit reasons.
  * <h1 class="header">Dynamic Structure Changes</h1>
  * Since objects are always cached in the binary binary format, server does not need to
@@ -159,7 +159,7 @@ import org.jetbrains.annotations.Nullable;
  * ...
  * &lt;!-- Explicit binary objects configuration. --&gt;
  * &lt;property name="marshaller"&gt;
- *     &lt;bean class="org.apache.ignite.marshaller.binary.PortableMarshaller"&gt;
+ *     &lt;bean class="org.apache.ignite.marshaller.binary.BinaryMarshaller"&gt;
  *         &lt;property name="classNames"&gt;
  *             &lt;list&gt;
  *                 &lt;value&gt;my.package.for.binary.objects.*&lt;/value&gt;
@@ -174,7 +174,7 @@ import org.jetbrains.annotations.Nullable;
  * <pre name=code class=java>
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
- * PortableMarshaller marsh = new PortableMarshaller();
+ * BinaryMarshaller marsh = new BinaryMarshaller();
  *
  * marsh.setClassNames(Arrays.asList(
  *     Employee.class.getName(),
@@ -194,11 +194,11 @@ import org.jetbrains.annotations.Nullable;
  * With binary objects you would have to do it as following:
  * <pre name=code class=xml>
  * &lt;property name="marshaller"&gt;
- *     &lt;bean class="org.gridgain.grid.marshaller.binary.PortableMarshaller"&gt;
+ *     &lt;bean class="org.gridgain.grid.marshaller.binary.BinaryMarshaller"&gt;
  *         ...
  *         &lt;property name="typeConfigurations"&gt;
  *             &lt;list&gt;
- *                 &lt;bean class="org.apache.ignite.binary.PortableTypeConfiguration"&gt;
+ *                 &lt;bean class="org.apache.ignite.binary.BinaryTypeConfiguration"&gt;
  *                     &lt;property name="className" value="org.apache.ignite.examples.client.binary.EmployeeKey"/&gt;
  *                     &lt;property name="affinityKeyFieldName" value="organizationId"/&gt;
  *                 &lt;/bean&gt;
@@ -212,19 +212,19 @@ import org.jetbrains.annotations.Nullable;
  * Serialization and deserialization works out-of-the-box in Ignite. However, you can provide your own custom
  * serialization logic by optionally implementing {@link org.apache.ignite.binary.Binarylizable} interface, like so:
  * <pre name=code class=java>
- * public class Address implements PortableMarshalAware {
+ * public class Address implements BinaryMarshalAware {
  *     private String street;
  *     private int zip;
  *
  *     // Empty constructor required for binary deserialization.
  *     public Address() {}
  *
- *     &#64;Override public void writeBinary(PortableWriter writer) throws PortableException {
+ *     &#64;Override public void writeBinary(BinaryWriter writer) throws BinaryException {
  *         writer.writeString("street", street);
  *         writer.writeInt("zip", zip);
  *     }
  *
- *     &#64;Override public void readBinary(PortableReader reader) throws PortableException {
+ *     &#64;Override public void readBinary(BinaryReader reader) throws BinaryException {
  *         street = reader.readString("street");
  *         zip = reader.readInt("zip");
  *     }
@@ -255,7 +255,7 @@ import org.jetbrains.annotations.Nullable;
  * ID-mapper may be provided either globally in {@link org.apache.ignite.configuration.BinaryConfiguration},
  * or for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
- * Portable objects can be indexed for querying by specifying index fields in
+ * Binary objects can be indexed for querying by specifying index fields in
  * {@link org.apache.ignite.cache.CacheTypeMetadata} inside of specific
  * {@link org.apache.ignite.configuration.CacheConfiguration} instance,
  * like so:
@@ -312,8 +312,8 @@ public interface IgniteBinary {
     /**
      * Creates binary builder initialized by existing binary object.
      *
-     * @param portableObj Portable object to initialize builder.
-     * @return Portable builder.
+     * @param portableObj Binary object to initialize builder.
+     * @return Binary builder.
      */
     public BinaryObjectBuilder builder(BinaryObject binaryObj) throws BinaryObjectException;
 

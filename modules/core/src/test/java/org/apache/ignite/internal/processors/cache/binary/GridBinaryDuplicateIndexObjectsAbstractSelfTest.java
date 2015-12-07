@@ -107,7 +107,7 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
         assertEquals(new Integer(fieldTwoVal), cacheVal.field("fieldTwo"));
 
         List<?> row = F.first(prj.query(new SqlFieldsQuery("select _val from " +
-            "TestPortable where _key = ?").setArgs(key)).getAll());
+            "TestBinary where _key = ?").setArgs(key)).getAll());
 
         assertEquals(1, row.size());
 

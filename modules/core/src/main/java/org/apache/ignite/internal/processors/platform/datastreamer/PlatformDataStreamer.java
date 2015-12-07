@@ -65,7 +65,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
     /** Data streamer. */
     private final DataStreamerImpl ldr;
 
-    /** Portable flag. */
+    /** Binary flag. */
     private final boolean keepBinary;
 
     /** Topology update event listener. */

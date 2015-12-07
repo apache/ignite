@@ -36,7 +36,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Portable meta data test.
+ * Binary meta data test.
  */
 public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
     /** */

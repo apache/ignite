@@ -220,7 +220,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
                 assertEquals(k, v.val());
             }
 
-            // Read random keys. Take values as PortableObject.
+            // Read random keys. Take values as BinaryObject.
             IgniteCache<Integer, BinaryObject> c2 = ((IgniteCacheProxy)c).keepBinary();
 
             for (int i = 0; i < 100; i ++) {

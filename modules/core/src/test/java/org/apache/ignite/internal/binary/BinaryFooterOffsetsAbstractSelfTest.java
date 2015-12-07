@@ -39,7 +39,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     /** Marshaller. */
     protected BinaryMarshaller marsh;
 
-    /** Portable context. */
+    /** Binary context. */
     protected BinaryContext ctx;
 
     /** {@inheritDoc} */
@@ -62,7 +62,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, iCfg);
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
     }
 
     /**
@@ -166,7 +166,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @param marsh Marshaller.
      * @param obj Object.
-     * @return Portable object.
+     * @return Binary object.
      * @throws Exception If failed.
      */
     protected abstract BinaryObjectExImpl toBinary(BinaryMarshaller marsh, Object obj) throws Exception;

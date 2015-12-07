@@ -52,7 +52,7 @@ import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
 
 /**
- * Portable class descriptor.
+ * Binary class descriptor.
  */
 public class BinaryClassDescriptor {
     /** */

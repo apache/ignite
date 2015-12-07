@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Portable metadata which is passed over a wire.
+ * Binary metadata which is passed over a wire.
  */
 public class BinaryMetadata implements Externalizable {
     /** */
@@ -146,7 +146,7 @@ public class BinaryMetadata implements Externalizable {
     /**
      * Wrap metadata into binary type.
      *
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      * @return Binary type.
      */
     public BinaryTypeImpl wrap(BinaryContext ctx) {

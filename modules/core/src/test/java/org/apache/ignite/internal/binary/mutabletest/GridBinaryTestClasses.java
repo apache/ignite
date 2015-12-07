@@ -116,7 +116,7 @@ public class GridBinaryTestClasses {
         }
 
         /**
-         * @param plainPortable Object.
+         * @param plainBinary Object.
          */
         public TestObjectPlainBinary(BinaryObject plainBinary) {
             this.plainBinary = plainBinary;

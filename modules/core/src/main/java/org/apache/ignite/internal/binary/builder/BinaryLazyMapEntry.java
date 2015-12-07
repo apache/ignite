@@ -32,7 +32,7 @@ class BinaryLazyMapEntry implements Map.Entry<Object, Object>, BinaryBuilderSeri
     private Object val;
 
     /**
-     * @param reader GridMutablePortableReader
+     * @param reader GridMutableBinaryReader
      */
     BinaryLazyMapEntry(BinaryBuilderReader reader) {
         key = reader.parseValue();

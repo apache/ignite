@@ -81,7 +81,7 @@ public class BinaryMarshaller extends AbstractMarshaller {
     /**
      * Sets {@link BinaryContext}.
      * <p/>
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      */
     @SuppressWarnings("UnusedDeclaration")
     private void setBinaryContext(BinaryContext ctx, IgniteConfiguration cfg) {
@@ -116,7 +116,7 @@ public class BinaryMarshaller extends AbstractMarshaller {
     @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
-        // we have to fully read the InputStream because GridPortableMarshaller requires support of a method that
+        // we have to fully read the InputStream because GridBinaryMarshaller requires support of a method that
         // returns number of bytes remaining.
         try {
             byte[] arr = new byte[4096];

@@ -99,7 +99,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * Portable processor implementation.
+ * Binary processor implementation.
  */
 public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorImpl implements
     CacheObjectBinaryProcessor {
@@ -209,7 +209,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             binaryCtx = new BinaryContext(metaHnd, ctx.config());
 
-            IgniteUtils.invoke(BinaryMarshaller.class, pMarh0, "setPortableContext", binaryCtx,
+            IgniteUtils.invoke(BinaryMarshaller.class, pMarh0, "setBinaryContext", binaryCtx,
                 ctx.config());
 
             binaryMarsh = new InternalBinaryMarshaller(binaryCtx);
@@ -589,7 +589,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /**
-     * @param po Portable object.
+     * @param po Binary object.
      * @return Affinity key.
      */
     public Object affinityKey(BinaryObject po) {
@@ -640,7 +640,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /**
-     * @return Portable context.
+     * @return Binary context.
      */
     public BinaryContext binaryContext() {
         return binaryCtx;
@@ -757,7 +757,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /**
      * @param obj Object.
-     * @return Portable object.
+     * @return Binary object.
      * @throws IgniteException In case of error.
      */
     @Nullable public Object toBinary(@Nullable Object obj) throws IgniteException {

@@ -342,7 +342,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param topVer Topology version.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize binary flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param canRemap Can remap flag.
@@ -379,7 +379,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param topVer Topology version.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize binary flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
@@ -427,7 +427,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param topVer Topology version.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize binary flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param canRemap Flag indicating whether future can be remapped on a newer topology version.

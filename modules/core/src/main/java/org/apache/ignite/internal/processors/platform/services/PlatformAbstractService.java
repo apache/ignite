@@ -65,7 +65,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
      *
      * @param svc Service.
      * @param ctx Context.
-     * @param srvKeepPortable Whether to keep objects binary on server if possible.
+     * @param srvKeepBinary Whether to keep objects binary on server if possible.
      */
     public PlatformAbstractService(Object svc, PlatformContext ctx, boolean srvKeepBinary) {
         assert svc != null;

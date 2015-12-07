@@ -49,7 +49,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import sun.misc.Unsafe;
 
 /**
- * Portable builder test.
+ * Binary builder test.
  */
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
@@ -926,7 +926,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         TestObjectPlainBinary obj = new TestObjectPlainBinary(toBinary(new TestObjectAllTypes()));
 
         BinaryObjectBuilderImpl builder = builder(toBinary(obj));
-        assertTrue(builder.getField("plainPortable") instanceof BinaryObject);
+        assertTrue(builder.getField("plainBinary") instanceof BinaryObject);
 
         TestObjectPlainBinary deserialized = builder.build().deserialize();
         assertTrue(deserialized.plainBinary != null);
@@ -1009,7 +1009,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param obj Object.
-     * @return Portable object.
+     * @return Binary object.
      */
     private BinaryObject toBinary(Object obj) {
         return binaries().toBinary(obj);

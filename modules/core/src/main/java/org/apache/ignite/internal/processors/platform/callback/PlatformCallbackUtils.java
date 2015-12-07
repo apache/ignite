@@ -223,7 +223,7 @@ public class PlatformCallbackUtils {
      * @param ptr Receiver native pointer.
      * @param cache Cache object.
      * @param memPtr Stream pointer.
-     * @param keepBinary Portable flag.
+     * @param keepBinary Binary flag.
      */
     static native void dataStreamerStreamReceiverInvoke(long envPtr, long ptr, Object cache, long memPtr,
         boolean keepBinary);

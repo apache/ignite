@@ -116,7 +116,7 @@ import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.UUID;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.UUID_ARR;
 
 /**
- * Portable utils.
+ * Binary utils.
  */
 public class BinaryUtils {
     /** */
@@ -128,7 +128,7 @@ public class BinaryUtils {
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
 
-    /** Portable classes. */
+    /** Binary classes. */
     private static final Collection<Class<?>> BINARY_CLS = new HashSet<>();
 
     /** Flag: user type. */
@@ -606,7 +606,7 @@ public class BinaryUtils {
 
     /**
      * @param cls Class.
-     * @return Portable field type.
+     * @return Binary field type.
      */
     public static byte typeByClass(Class<?> cls) {
         Byte type = PLAIN_CLASS_TO_FLAG.get(cls);
@@ -1387,7 +1387,7 @@ public class BinaryUtils {
     /**
      * Resolve the class.
      *
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      * @param typeId Type ID.
      * @param clsName Class name.
      * @param ldr Class loaded.
@@ -1421,7 +1421,7 @@ public class BinaryUtils {
      * Read binary enum.
      *
      * @param in Input stream.
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      * @param type Plain type.
      * @return Enum.
      */
@@ -1434,7 +1434,7 @@ public class BinaryUtils {
      * Read binary enum array.
      *
      * @param in Input stream.
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      * @return Enum array.
      */
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {

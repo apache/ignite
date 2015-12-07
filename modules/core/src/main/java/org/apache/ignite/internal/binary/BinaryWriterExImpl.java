@@ -81,7 +81,7 @@ import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.UUID;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.UUID_ARR;
 
 /**
- * Portable writer implementation.
+ * Binary writer implementation.
  */
 public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, ObjectOutput {
     /** Length: integer. */
@@ -876,7 +876,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @param po Portable object.
+     * @param po Binary object.
      */
     public void doWriteBinaryObject(@Nullable BinaryObjectImpl po) {
         if (po == null)
@@ -1241,7 +1241,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @param po Portable object.
+     * @param po Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     void writeBinaryObjectField(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
@@ -1825,7 +1825,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @return Portable context.
+     * @return Binary context.
      */
     public BinaryContext context() {
         return ctx;

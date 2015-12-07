@@ -57,11 +57,11 @@ public class IgniteBinaryCacheTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        TestSuite suite = new TestSuite("Portable Cache Test Suite");
+        TestSuite suite = new TestSuite("Binary Cache Test Suite");
 
         HashSet<Class> ignoredTests = new HashSet<>();
 
-        // Tests below have a special version for Portable Marshaller
+        // Tests below have a special version for Binary Marshaller
         ignoredTests.add(DataStreamProcessorSelfTest.class);
         ignoredTests.add(GridCacheOffHeapTieredEvictionAtomicSelfTest.class);
         ignoredTests.add(GridCacheOffHeapTieredEvictionSelfTest.class);
@@ -71,7 +71,7 @@ public class IgniteBinaryCacheTestSuite extends TestSuite {
         ignoredTests.add(IgniteCacheAtomicLocalExpiryPolicyTest.class);
         ignoredTests.add(GridCacheEntryMemorySizeSelfTest.class);
 
-        // Tests that are not ready to be used with PortableMarshaller
+        // Tests that are not ready to be used with BinaryMarshaller
         ignoredTests.add(GridCacheMvccSelfTest.class);
 
         suite.addTest(IgniteCacheTestSuite.suite(ignoredTests));

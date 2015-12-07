@@ -80,11 +80,11 @@ import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.UUID;
 import static org.apache.ignite.internal.binary.InternalBinaryMarshaller.UUID_ARR;
 
 /**
- * Portable reader implementation.
+ * Binary reader implementation.
  */
 @SuppressWarnings("unchecked")
 public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, BinaryReaderHandlesHolder, ObjectInput {
-    /** Portable context. */
+    /** Binary context. */
     private final BinaryContext ctx;
 
     /** Input stream. */
@@ -329,7 +329,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /**
      * @param fieldId Field ID.
-     * @return Portable object.
+     * @return Binary object.
      * @throws BinaryObjectException In case of error.
      */
     @Nullable BinaryObject readBinaryObject(int fieldId) throws BinaryObjectException {

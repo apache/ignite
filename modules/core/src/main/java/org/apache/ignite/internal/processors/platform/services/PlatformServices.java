@@ -68,7 +68,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      *
      * @param platformCtx Context.
      * @param services Services facade.
-     * @param srvKeepPortable Server keep binary flag.
+     * @param srvKeepBinary Server keep binary flag.
      */
     public PlatformServices(PlatformContext platformCtx, IgniteServices services, boolean srvKeepBinary) {
         super(platformCtx);

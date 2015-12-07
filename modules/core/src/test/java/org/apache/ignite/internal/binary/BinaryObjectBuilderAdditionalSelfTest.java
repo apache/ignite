@@ -1271,7 +1271,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
     /**
      * @param obj Object.
-     * @return GridMutablePortableObject.
+     * @return GridMutableBinaryObject.
      */
     private BinaryObjectBuilderImpl wrap(Object obj) {
         return BinaryObjectBuilderImpl.wrap(toBinary(obj));
