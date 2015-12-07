@@ -1189,7 +1189,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
             var resCollection = (ArrayList) res.Collection;
 
+            Assert.AreEqual(resCollection, resCollection[2]);
             Assert.AreEqual(collection[0], resCollection[0]);
+            Assert.AreEqual(collection[1], resCollection[1]);
         }
 
         ///
