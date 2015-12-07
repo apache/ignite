@@ -1,16 +1,4 @@
 {
-  "screenTip": {
-    "workflowTitle": "On This Screen:",
-    "workflowContent": [
-      "Configure IGFS file systems",
-      "more-info"
-    ],
-    "whatsNextTitle": "Next Steps:",
-    "whatsNextContent": [
-      "Continue to <a href='/configuration/summary'>Summary</a>",
-      "Back to <a href='/configuration/clusters'>Clusters</a>"
-    ]
-  },
   "moreInfo": {
     "title": "IGFS screen",
     "content": [

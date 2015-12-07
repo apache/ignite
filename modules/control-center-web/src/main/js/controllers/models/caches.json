@@ -1,19 +1,4 @@
 {
-  "screenTip": {
-    "workflowTitle": "On This Screen:",
-    "workflowContent": [
-      "Configure Caches",
-      "Link Metadata to Caches",
-      "Link Caches to Clusters",
-      "more-info"
-    ],
-    "whatsNextTitle": "Next Steps:",
-    "whatsNextContent": [
-      "Continue to <a href='/configuration/metadata'>Metadata</a>",
-      "Continue to <a href='/configuration/summary'>Summary</a>",
-      "Back to <a href='/configuration/clusters'>Clusters</a>"
-    ]
-  },
   "moreInfo": {
     "title": "Caches screen",
     "content": ["Manage your cluster's caches on current screen.",

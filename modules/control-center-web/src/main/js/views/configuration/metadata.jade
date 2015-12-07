@@ -19,9 +19,23 @@ include ../includes/controls
 .docs-header
     h1 Create and Configure Cache Type Metadata
 .docs-body(ng-controller='metadataController')
+    ignite-callout
+        ignite-callout-cel(data-title='On This Screen')
+            li Manually enter Metadata
+            li Load Metadata from Database
+            li 
+                a(bs-modal='moreInfo' data-placement='center' data-template-url='/templates/message.html') More info
+                    
+        ignite-callout-cel(data-title='Next Steps')
+            li Continue to 
+                a(ui-sref='base.configuration.summary') Summary
+            li Back to 
+                a(ui-sref='base.configuration.caches') Caches
+            li Back to 
+                a(ui-sref='base.configuration.clusters') Clusters
+                        
     div(dw-loading='loadingMetadataScreen' dw-loading-options='{text: "Loading metadata screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
-            +block-callout('{{screenTip.workflowTitle}}', 'screenTip.workflowContent', '{{screenTip.whatsNextTitle}}', 'screenTip.whatsNextContent')
             hr
             .padding-bottom-dflt(ng-show='metadatas && metadatas.length > 0')
                 table.links(st-set-filter='metadatasSearch' st-table='displayedRows' st-safe-src='metadatas')
