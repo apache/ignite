@@ -159,6 +159,13 @@ public class GridReduceQueryExecutor {
     /** */
     private final GridSpinBusyLock busyLock;
 
+    /** */
+    private final CIX2<ClusterNode,Message> locNodeHandler = new CIX2<ClusterNode,Message>() {
+        @Override public void applyx(ClusterNode locNode, Message msg) {
+            h2.mapQueryExecutor().onMessage(locNode.id(), msg);
+        }
+    };
+
     /**
      * @param busyLock Busy lock.
      */
@@ -1119,11 +1126,7 @@ public class GridReduceQueryExecutor {
         Message msg,
         @Nullable IgniteBiClosure<ClusterNode, Message, Message> specialize
     ) {
-        return h2.send(GridTopic.TOPIC_QUERY, nodes, msg, specialize, new CIX2<ClusterNode,Message>() {
-            @Override public void applyx(ClusterNode locNode, Message msg) {
-                h2.mapQueryExecutor().onMessage(locNode.id(), msg);
-            }
-        });
+        return h2.send(GridTopic.TOPIC_QUERY, nodes, msg, specialize, locNodeHandler);
     }
 
     /**
