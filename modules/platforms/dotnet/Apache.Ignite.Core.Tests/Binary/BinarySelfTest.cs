@@ -1164,6 +1164,26 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.RawInner);
         }
 
+        [Test]
+        public void TestHandlesCollections()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration(typeof (HandleCollection))
+                }
+            });
+
+            // Simple collection
+            var data = new HandleCollection {Collection = new[] {1, 2, 3}};
+            var res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
+
+            CollectionAssert.AreEqual(data.Collection, res.Collection);
+
+            // Collection in collection dependency loop
+        }
+
         ///
         /// <summary>Test KeepSerialized property</summary>
         ///
@@ -2073,6 +2093,22 @@ namespace Apache.Ignite.Core.Tests.Binary
                 RawInner = rawReader.ReadObject<HandleInner>();
 
                 RawAfter = rawReader.ReadString();
+            }
+        }
+
+        public class HandleCollection : IBinarizable
+        {
+            public ICollection Collection { get; set; }
+
+
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteCollection("col", Collection);
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                Collection = reader.ReadCollection("col");
             }
         }
 
