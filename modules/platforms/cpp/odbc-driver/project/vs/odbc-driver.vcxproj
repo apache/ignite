@@ -150,17 +150,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\socket_client.cpp" />
-    <ClCompile Include="..\..\src\column_meta.cpp" />
     <ClCompile Include="..\..\src\common_types.cpp" />
     <ClCompile Include="..\..\src\configuration.cpp" />
     <ClCompile Include="..\..\src\connection.cpp" />
     <ClCompile Include="..\..\src\cursor.cpp" />
     <ClCompile Include="..\..\src\environment.cpp" />
     <ClCompile Include="..\..\src\connection_info.cpp" />
+    <ClCompile Include="..\..\src\meta\column_meta.cpp" />
+    <ClCompile Include="..\..\src\meta\table_meta.cpp" />
     <ClCompile Include="..\..\src\odbc.cpp" />
     <ClCompile Include="..\..\src\application_data_buffer.cpp" />
     <ClCompile Include="..\..\src\query\data_query.cpp" />
     <ClCompile Include="..\..\src\query\column_metadata_query.cpp" />
+    <ClCompile Include="..\..\src\query\table_metadata_query.cpp" />
     <ClCompile Include="..\..\src\result_page.cpp" />
     <ClCompile Include="..\..\src\row.cpp" />
     <ClCompile Include="..\..\src\statement.cpp" />
@@ -180,19 +182,20 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\odbc\application_data_buffer.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\column_meta.h" />
     <ClInclude Include="..\..\include\ignite\odbc\common_types.h" />
     <ClInclude Include="..\..\include\ignite\odbc\configuration.h" />
     <ClInclude Include="..\..\include\ignite\odbc\connection.h" />
     <ClInclude Include="..\..\include\ignite\odbc\connection_info.h" />
     <ClInclude Include="..\..\include\ignite\odbc\cursor.h" />
     <ClInclude Include="..\..\include\ignite\odbc\environment.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\interop_stack_memory.h" />
     <ClInclude Include="..\..\include\ignite\odbc\message.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\meta\column_meta.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\meta\table_meta.h" />
     <ClInclude Include="..\..\include\ignite\odbc\parser.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\data_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\column_metadata_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\table_metadata_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\result_page.h" />
     <ClInclude Include="..\..\include\ignite\odbc\row.h" />
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />

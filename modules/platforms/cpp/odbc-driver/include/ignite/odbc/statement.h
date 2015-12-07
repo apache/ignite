@@ -27,12 +27,13 @@
 #include <ignite/impl/interop/interop_input_stream.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
+#include "ignite/odbc/meta/column_meta.h"
+#include "ignite/odbc/meta/table_meta.h"
 #include "ignite/odbc/query/query.h"
 #include "ignite/odbc/application_data_buffer.h"
 #include "ignite/odbc/parser.h"
 #include "ignite/odbc/common_types.h"
 #include "ignite/odbc/cursor.h"
-#include "ignite/odbc/column_meta.h"
 #include "ignite/odbc/utility.h"
 
 namespace ignite
@@ -105,12 +106,25 @@ namespace ignite
             /**
              * Get columns metadata.
              *
-             * @param schema Schema name.
-             * @param table Table name.
-             * @param column Column name.
+             * @param schema Schema search pattern.
+             * @param table Table search pattern.
+             * @param column Column search pattern.
              * @return True on success.
              */
-            bool ExecuteGetColumnsMetaQuery(const std::string& schema, const std::string& table, const std::string& column);
+            bool ExecuteGetColumnsMetaQuery(const std::string& schema, const std::string& table,
+                const std::string& column);
+
+            /**
+             * Get tables metadata.
+             *
+             * @param schema Catalog search pattern.
+             * @param schema Schema search pattern.
+             * @param table Table search pattern.
+             * @param tableType Table type search pattern.
+             * @return True on success.
+             */
+            bool ExecuteGetTablesMetaQuery(const std::string& catalog, const std::string& schema,
+                const std::string& table, const std::string& tableType);
 
             /**
              * Close statement.
@@ -131,7 +145,7 @@ namespace ignite
              *
              * @return Column metadata.
              */
-            const ColumnMetaVector* GetMeta() const;
+            const meta::ColumnMetaVector* GetMeta() const;
 
             /**
              * Check if data is available.

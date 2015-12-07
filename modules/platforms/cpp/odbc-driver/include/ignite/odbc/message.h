@@ -25,8 +25,9 @@
 #include "ignite/impl/binary/binary_reader_impl.h"
 
 #include "ignite/odbc/utility.h"
-#include "ignite/odbc/column_meta.h"
 #include "ignite/odbc/result_page.h"
+#include "ignite/odbc/meta/column_meta.h"
+#include "ignite/odbc/meta/table_meta.h"
 
 namespace ignite
 {
@@ -40,7 +41,9 @@ namespace ignite
 
             REQUEST_TYPE_CLOSE_SQL_QUERY = 3,
 
-            REQUEST_TYPE_GET_COLUMNS_METADATA = 4
+            REQUEST_TYPE_GET_COLUMNS_METADATA = 4,
+
+            REQUEST_TYPE_GET_TABLES_METADATA = 5
         };
 
         enum ResponseStatus
@@ -190,12 +193,12 @@ namespace ignite
             /**
              * Constructor.
              *
-             * @param cache Cache name.
+             * @param schema Schema name.
              * @param table Table name.
              * @param column Column name.
              */
-            QueryGetColumnsMetaRequest(const std::string& cache, const std::string& table, const std::string& column) :
-                cache(cache), table(table), column(column)
+            QueryGetColumnsMetaRequest(const std::string& schema, const std::string& table, const std::string& column) :
+                schema(schema), table(table), column(column)
             {
                 // No-op.
             }
@@ -216,20 +219,77 @@ namespace ignite
             {
                 writer.WriteInt8(REQUEST_TYPE_GET_COLUMNS_METADATA);
                 
-                utility::WriteString(writer, cache);
+                utility::WriteString(writer, schema);
                 utility::WriteString(writer, table);
                 utility::WriteString(writer, column);
             }
 
         private:
-            /** Cache name. */
-            std::string cache;
+            /** Schema search pattern. */
+            std::string schema;
 
-            /** Table name. */
+            /** Table search pattern. */
             std::string table;
 
-            /** Column name. */
+            /** Column search pattern. */
             std::string column;
+        };
+
+        /**
+         * Query get tables metadata request.
+         */
+        class QueryGetTablesMetaRequest
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param catalog Catalog search pattern.
+             * @param schema Schema search pattern.
+             * @param table Table search pattern.
+             * @param tableTypes Table types search pattern.
+             */
+            QueryGetTablesMetaRequest(const std::string& catalog, const std::string& schema,
+                                      const std::string& table, const std::string& tableTypes) :
+                catalog(catalog), schema(schema), table(table), tableTypes(tableTypes)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryGetTablesMetaRequest()
+            {
+                // No-op.
+            }
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+            {
+                writer.WriteInt8(REQUEST_TYPE_GET_TABLES_METADATA);
+
+                utility::WriteString(writer, catalog);
+                utility::WriteString(writer, schema);
+                utility::WriteString(writer, table);
+                utility::WriteString(writer, tableTypes);
+            }
+
+        private:
+            /** Column search pattern. */
+            std::string catalog;
+
+            /** Schema search pattern. */
+            std::string schema;
+
+            /** Table search pattern. */
+            std::string table;
+
+            /** Column search pattern. */
+            std::string tableTypes;
         };
 
         /**
@@ -389,7 +449,7 @@ namespace ignite
              * Get column metadata.
              * @return Column metadata.
              */
-            const std::vector<ColumnMeta>& GetMeta() const
+            const meta::ColumnMetaVector& GetMeta() const
             {
                 return meta;
             }
@@ -403,14 +463,14 @@ namespace ignite
             {
                 queryId = reader.ReadInt64();
 
-                ReadColumnMetaVector(reader, meta);
+                meta::ReadColumnMetaVector(reader, meta);
             }
 
             /** Query ID. */
             int64_t queryId;
 
             /** Columns metadata. */
-            ColumnMetaVector meta;
+            meta::ColumnMetaVector meta;
         };
 
         /**
@@ -490,7 +550,7 @@ namespace ignite
              * Get column metadata.
              * @return Column metadata.
              */
-            const std::vector<ColumnMeta>& GetMeta() const
+            const meta::ColumnMetaVector& GetMeta() const
             {
                 return meta;
             }
@@ -502,11 +562,56 @@ namespace ignite
              */
             virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
             {
-                ReadColumnMetaVector(reader, meta);
+                meta::ReadColumnMetaVector(reader, meta);
             }
 
             /** Columns metadata. */
-            ColumnMetaVector meta;
+            meta::ColumnMetaVector meta;
+        };
+
+        /**
+         * Query get table metadata response.
+         */
+        class QueryGetTablesMetaResponse : public QueryResponse
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            QueryGetTablesMetaResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~QueryGetTablesMetaResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Get column metadata.
+             * @return Column metadata.
+             */
+            const meta::TableMetaVector& GetMeta() const
+            {
+                return meta;
+            }
+
+        private:
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                meta::ReadTableMetaVector(reader, meta);
+            }
+
+            /** Columns metadata. */
+            meta::TableMetaVector meta;
         };
     }
 }

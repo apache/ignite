@@ -43,8 +43,8 @@ namespace ignite
 
                 return MakeRequestExecute();
             }
-            
-            const ColumnMetaVector & DataQuery::GetMeta() const
+
+            const meta::ColumnMetaVector & DataQuery::GetMeta() const
             {
                 return resultMeta;
             }

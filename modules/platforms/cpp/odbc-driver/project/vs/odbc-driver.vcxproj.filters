@@ -11,6 +11,9 @@
     <Filter Include="Code\query">
       <UniqueIdentifier>{b09a6b2e-c30c-4727-8e85-4b315e757706}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\meta">
+      <UniqueIdentifier>{71d6243f-e8c9-4f21-a5a3-3dc89641af28}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\odbc.cpp">
@@ -55,14 +58,20 @@
     <ClCompile Include="..\..\os\win\src\socket_client.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\column_meta.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\query\data_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\query\column_metadata_query.cpp">
       <Filter>Code\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\query\table_metadata_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\meta\column_meta.cpp">
+      <Filter>Code\meta</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\meta\table_meta.cpp">
+      <Filter>Code\meta</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -73,9 +82,6 @@
   <ItemGroup>
     <ClInclude Include="result_page.h" />
     <ClInclude Include="..\..\include\ignite\odbc\application_data_buffer.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\column_meta.h">
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\common_types.h">
@@ -94,9 +100,6 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\environment.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\interop_stack_memory.h">
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\message.h">
@@ -131,6 +134,15 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\column_metadata_query.h">
       <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\table_metadata_query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\meta\column_meta.h">
+      <Filter>Code\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\meta\table_meta.h">
+      <Filter>Code\meta</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -19,7 +19,7 @@
 #define _IGNITE_ODBC_DRIVER_COLUMN_METADATA_QUERY
 
 #include "ignite/odbc/query/query.h"
-#include "ignite/odbc/cursor.h"
+#include "ignite/odbc/meta/column_meta.h"
 
 namespace ignite
 {
@@ -38,8 +38,13 @@ namespace ignite
             public:
                 /**
                  * Constructor.
+                 *
+                 * @param connection Associated connection.
+                 * @param schema Schema search pattern.
+                 * @param table Table search pattern.
+                 * @param column Column search pattern.
                  */
-                ColumnMetadataQuery(Connection& connection, const std::string& cache, 
+                ColumnMetadataQuery(Connection& connection, const std::string& schema,
                     const std::string& table, const std::string& column);
 
                 /**
@@ -59,7 +64,7 @@ namespace ignite
                  *
                  * @return Column metadata.
                  */
-                virtual const ColumnMetaVector& GetMeta() const;
+                virtual const meta::ColumnMetaVector& GetMeta() const;
 
                 /**
                  * Fetch next result row to application buffers.
@@ -93,8 +98,8 @@ namespace ignite
                 /** Connection associated with the statement. */
                 Connection& connection;
 
-                /** Cache search pattern. */
-                std::string cache;
+                /** Schema search pattern. */
+                std::string schema;
 
                 /** Table search pattern. */
                 std::string table;
@@ -106,13 +111,13 @@ namespace ignite
                 bool executed;
 
                 /** Fetched metadata. */
-                ColumnMetaVector meta;
+                meta::ColumnMetaVector meta;
 
                 /** Metadata cursor. */
-                ColumnMetaVector::iterator cursor;
+                meta::ColumnMetaVector::iterator cursor;
 
                 /** Columns metadata. */
-                ColumnMetaVector columnsMeta;
+                meta::ColumnMetaVector columnsMeta;
             };
         }
     }

@@ -70,10 +70,10 @@ namespace ignite
     {
         namespace query
         {
-            ColumnMetadataQuery::ColumnMetadataQuery(Connection& connection, const std::string& cache,
+            ColumnMetadataQuery::ColumnMetadataQuery(Connection& connection, const std::string& schema,
                                          const std::string& table, const std::string& column) :
                 connection(connection),
-                cache(cache),
+                schema(schema),
                 table(table),
                 column(column),
                 executed(false),
@@ -81,6 +81,7 @@ namespace ignite
                 columnsMeta()
             {
                 using namespace ignite::impl::binary;
+                using meta::ColumnMeta;
 
                 columnsMeta.reserve(12);
 
@@ -121,8 +122,8 @@ namespace ignite
 
                 return success;
             }
-            
-            const ColumnMetaVector& ColumnMetadataQuery::GetMeta() const
+
+            const meta::ColumnMetaVector& ColumnMetadataQuery::GetMeta() const
             {
                 return columnsMeta;
             }
@@ -141,7 +142,7 @@ namespace ignite
                 {
                     uint16_t columnIdx = it->first;
                     ApplicationDataBuffer& buffer = it->second;
-                    const ColumnMeta& currentColumn = *cursor;
+                    const meta::ColumnMeta& currentColumn = *cursor;
                     uint8_t columnType = currentColumn.GetDataType();
 
                     switch (columnIdx)
@@ -184,7 +185,8 @@ namespace ignite
 
                         case COLUMN_SIZE:
                         {
-                            buffer.PutNull(); //buffer.PutInt16(type_traits::BinaryTypeColumnSize(columnType));
+                            //TODO: buffer.PutInt16(type_traits::BinaryTypeColumnSize(columnType));
+                            buffer.PutNull(); 
                             break;
                         }
 
@@ -196,13 +198,15 @@ namespace ignite
 
                         case DECIMAL_DIGITS:
                         {
-                            buffer.PutNull(); //buffer.PutInt16(type_traits::BinaryTypeDecimalDigits(columnType));
+                            //TODO: buffer.PutInt16(type_traits::BinaryTypeDecimalDigits(columnType));
+                            buffer.PutNull();
                             break;
                         }
 
                         case NUM_PREC_RADIX:
                         {
-                            buffer.PutNull(); //buffer.PutInt16(type_traits::BinaryTypePrecRadix(columnType));
+                            //TODO: buffer.PutInt16(type_traits::BinaryTypePrecRadix(columnType));
+                            buffer.PutNull();
                             break;
                         }
 
@@ -244,7 +248,7 @@ namespace ignite
 
             bool ColumnMetadataQuery::MakeRequestGetColumnsMeta()
             {
-                QueryGetColumnsMetaRequest req(cache, table, column);
+                QueryGetColumnsMetaRequest req(schema, table, column);
                 QueryGetColumnsMetaResponse rsp;
 
                 bool success = connection.SyncMessage(req, rsp);

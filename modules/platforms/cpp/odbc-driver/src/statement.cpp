@@ -17,6 +17,7 @@
 
 #include "ignite/odbc/query/data_query.h"
 #include "ignite/odbc/query/column_metadata_query.h"
+#include "ignite/odbc/query/table_metadata_query.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
@@ -79,7 +80,8 @@ namespace ignite
             return currentQuery->Execute();
         }
 
-        bool Statement::ExecuteGetColumnsMetaQuery(const std::string& schema, const std::string& table, const std::string& column)
+        bool Statement::ExecuteGetColumnsMetaQuery(const std::string& schema, 
+            const std::string& table, const std::string& column)
         {
             if (currentQuery.get())
                 currentQuery->Close();
@@ -90,6 +92,22 @@ namespace ignite
                 cache = connection.GetCache();
 
             currentQuery.reset(new query::ColumnMetadataQuery(connection, cache, table, column));
+
+            return currentQuery->Execute();
+        }
+
+        bool Statement::ExecuteGetTablesMetaQuery(const std::string& catalog, 
+            const std::string& schema, const std::string& table, const std::string& tableType)
+        {
+            if (currentQuery.get())
+                currentQuery->Close();
+
+            std::string cache(schema);
+
+            if (cache.empty())
+                cache = connection.GetCache();
+
+            currentQuery.reset(new query::TableMetadataQuery(connection, catalog, schema, table, tableType));
 
             return currentQuery->Execute();
         }
@@ -114,7 +132,7 @@ namespace ignite
             return currentQuery->FetchNextRow(columnBindings);
         }
 
-        const ColumnMetaVector * Statement::GetMeta() const
+        const meta::ColumnMetaVector* Statement::GetMeta() const
         {
             if (!currentQuery.get())
                 return 0;

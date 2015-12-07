@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_DATA_QUERY
-#define _IGNITE_ODBC_DRIVER_DATA_QUERY
+#ifndef _IGNITE_ODBC_DRIVER_TABLE_METADATA_QUERY
+#define _IGNITE_ODBC_DRIVER_TABLE_METADATA_QUERY
 
 #include "ignite/odbc/query/query.h"
-#include "ignite/odbc/cursor.h"
+#include "ignite/odbc/meta/table_meta.h"
 
 namespace ignite
 {
@@ -33,18 +33,25 @@ namespace ignite
             /**
              * Query.
              */
-            class DataQuery : public Query
+            class TableMetadataQuery : public Query
             {
             public:
                 /**
                  * Constructor.
+                 *
+                 * @param connection Associated connection.
+                 * @param catalog Catalog search pattern.
+                 * @param schema Schema search pattern.
+                 * @param table Table search pattern.
+                 * @param tableType Table type search pattern.
                  */
-                DataQuery(Connection& connection, const std::string& sql);
+                TableMetadataQuery(Connection& connection, const std::string& catalog,
+                    const std::string& schema, const std::string& table, const std::string& tableType);
 
                 /**
                  * Destructor.
                  */
-                virtual ~DataQuery();
+                virtual ~TableMetadataQuery();
 
                 /**
                  * Execute query.
@@ -73,7 +80,7 @@ namespace ignite
                  * @return True on success.
                  */
                 virtual bool Close();
-
+                
                 /**
                  * Check if data is available.
                  *
@@ -83,38 +90,59 @@ namespace ignite
 
             private:
                 /**
-                 * Make query execute request and use response to set internal
-                 * state.
+                 * Make get columns metadata requets and use response to set internal state.
                  *
                  * @return True on success.
                  */
-                bool MakeRequestExecute();
+                bool MakeRequestGetTablesMeta();
 
                 /**
-                 * Make query close request.
+                 * Check if it is special semantic case for the SQL_ALL_CATALOGS.
                  *
-                 * @return True on success.
+                 * @return True if it is special semantic case for the SQL_ALL_CATALOGS.
                  */
-                bool MakeRequestClose();
+                bool SpecialSemanticsAllCatalogs();
 
                 /**
-                 * Make data fetch request and use response to set internal state.
+                 * Check if it is special semantic case for the SQL_ALL_SCHEMAS.
                  *
-                 * @return True on success.
+                 * @return True if it is special semantic case for the SQL_ALL_SCHEMAS.
                  */
-                bool MakeRequestFetch();
+                bool SpecialSemanticsAllSchemas();
+
+                /**
+                 * Check if it is special semantic case for the SQL_ALL_TABLE_TYPES .
+                 *
+                 * @return True if it is special semantic case for the SQL_ALL_TABLE_TYPES .
+                 */
+                bool SpecialSemanticsAllTableTypes();
 
                 /** Connection associated with the statement. */
                 Connection& connection;
 
-                /** SQL Query. */
-                std::string sql;
+                /** Catalog search pattern. */
+                std::string catalog;
+
+                /** Schema search pattern. */
+                std::string schema;
+
+                /** Table search pattern. */
+                std::string table;
+
+                /** Table type search pattern. */
+                std::string tableType;
+
+                /** Query executed. */
+                bool executed;
+
+                /** Fetched metadata. */
+                meta::TableMetaVector meta;
+
+                /** Metadata cursor. */
+                meta::TableMetaVector::iterator cursor;
 
                 /** Columns metadata. */
-                meta::ColumnMetaVector resultMeta;
-
-                /** Cursor. */
-                std::auto_ptr<Cursor> cursor;
+                meta::ColumnMetaVector columnsMeta;
             };
         }
     }

@@ -15,34 +15,35 @@
  * limitations under the License.
  */
 
-#include "ignite/odbc/column_meta.h"
+#include "ignite/odbc/meta/table_meta.h"
 
 namespace ignite
 {
     namespace odbc
     {
-        void ColumnMeta::Read(ignite::impl::binary::BinaryReaderImpl & reader)
+        namespace meta
         {
-            utility::ReadString(reader, schemaName);
-            utility::ReadString(reader, tableName);
-            utility::ReadString(reader, columnName);
-            utility::ReadString(reader, typeName);
-
-            dataType = reader.ReadInt8();
-        }
-
-        void ReadColumnMetaVector(ignite::impl::binary::BinaryReaderImpl& reader, ColumnMetaVector& meta)
-        {
-            int32_t metaNum = reader.ReadInt32();
-
-            meta.clear();
-            meta.reserve(static_cast<size_t>(metaNum));
-
-            for (int32_t i = 0; i < metaNum; ++i)
+            void TableMeta::Read(ignite::impl::binary::BinaryReaderImpl & reader)
             {
-                meta.push_back(ColumnMeta());
+                utility::ReadString(reader, catalogName);
+                utility::ReadString(reader, schemaName);
+                utility::ReadString(reader, tableName);
+                utility::ReadString(reader, tableType);
+            }
 
-                meta.back().Read(reader);
+            void ReadTableMetaVector(ignite::impl::binary::BinaryReaderImpl& reader, TableMetaVector& meta)
+            {
+                int32_t metaNum = reader.ReadInt32();
+
+                meta.clear();
+                meta.reserve(static_cast<size_t>(metaNum));
+
+                for (int32_t i = 0; i < metaNum; ++i)
+                {
+                    meta.push_back(TableMeta());
+
+                    meta.back().Read(reader);
+                }
             }
         }
     }

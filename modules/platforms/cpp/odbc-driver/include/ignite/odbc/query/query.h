@@ -22,7 +22,7 @@
 
 #include <map>
 
-#include "ignite/odbc/column_meta.h"
+#include "ignite/odbc/meta/column_meta.h"
 #include "ignite/odbc/common_types.h"
 #include "ignite/odbc/row.h"
 
@@ -66,7 +66,7 @@ namespace ignite
                  *
                  * @return Column metadata.
                  */
-                virtual const ColumnMetaVector& GetMeta() const = 0;
+                virtual const meta::ColumnMetaVector& GetMeta() const = 0;
 
                 /**
                  * Fetch next result row to application buffers.

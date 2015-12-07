@@ -532,7 +532,7 @@ SQLRETURN SQL_API SQLExtendedFetch(SQLHSTMT         stmt,
 SQLRETURN SQL_API SQLNumResultCols(SQLHSTMT stmt, SQLSMALLINT *columnNum)
 {
     using ignite::odbc::Statement;
-    using ignite::odbc::ColumnMetaVector;
+    using ignite::odbc::meta::ColumnMetaVector;
 
     LOG_MSG("SQLNumResultCols called\n");
 
@@ -576,14 +576,14 @@ SQLRETURN SQL_API SQLTables(SQLHSTMT    stmt,
     std::string catalog = SqlStringToString(catalogName, catalogNameLen);
     std::string schema = SqlStringToString(schemaName, schemaNameLen);
     std::string table = SqlStringToString(tableName, tableNameLen);
-    std::string tableT = SqlStringToString(tableType, tableTypeLen);
+    std::string tableTypeStr = SqlStringToString(tableType, tableTypeLen);
 
     LOG_MSG("catalog: %s\n", catalog.c_str());
     LOG_MSG("schema: %s\n", schema.c_str());
     LOG_MSG("table: %s\n", table.c_str());
-    LOG_MSG("tableT: %s\n", tableT.c_str());
+    LOG_MSG("tableType: %s\n", tableTypeStr.c_str());
 
-    bool success = false; // statement->ExecuteGetColumnsMetaQuery(schema, table, column);
+    bool success = statement->ExecuteGetTablesMetaQuery(catalog, schema, table, tableTypeStr);
 
     return success ? SQL_SUCCESS : SQL_ERROR;
 }
