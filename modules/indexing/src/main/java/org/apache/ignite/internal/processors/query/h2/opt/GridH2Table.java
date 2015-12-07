@@ -463,7 +463,16 @@ public class GridH2Table extends TableBase {
 
         GridH2Row row = desc.createRow(key, val, expirationTime);
 
-        return doUpdate(row, rmv);
+        if (!rmv)
+            ((GridH2AbstractKeyValueRow)row).valuesCache(new Value[getColumns().length]);
+
+        try {
+            return doUpdate(row, rmv);
+        }
+        finally {
+            if (!rmv)
+                ((GridH2AbstractKeyValueRow)row).valuesCache(null);
+        }
     }
 
     /**
