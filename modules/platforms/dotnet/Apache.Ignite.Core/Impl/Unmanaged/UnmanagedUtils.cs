@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcIgnitionStart = "IgniteIgnitionStart";
         private const string ProcIgnitionStop = "IgniteIgnitionStop";
         private const string ProcIgnitionStopAll = "IgniteIgnitionStopAll";
-        
+
         private const string ProcProcessorReleaseStart = "IgniteProcessorReleaseStart";
         private const string ProcProcessorProjection = "IgniteProcessorProjection";
         private const string ProcProcessorCache = "IgniteProcessorCache";
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcProcessorServices = "IgniteProcessorServices";
         private const string ProcProcessorExtensions = "IgniteProcessorExtensions";
         private const string ProcProcessorAtomicLong = "IgniteProcessorAtomicLong";
-        
+
         private const string ProcTargetInStreamOutLong = "IgniteTargetInStreamOutLong";
         private const string ProcTargetInStreamOutStream = "IgniteTargetInStreamOutStream";
         private const string ProcTargetInStreamOutObject = "IgniteTargetInStreamOutObject";
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcCacheWithNoRetries = "IgniteCacheWithNoRetries";
         private const string ProcCacheWithExpiryPolicy = "IgniteCacheWithExpiryPolicy";
         private const string ProcCacheWithAsync = "IgniteCacheWithAsync";
-        private const string ProcCacheWithKeepBinary = "IgniteCacheWithKeepPortable";
+        private const string ProcCacheWithKeepBinary = "IgniteCacheWithKeepBinary";
         private const string ProcCacheClear = "IgniteCacheClear";
         private const string ProcCacheRemoveAll = "IgniteCacheRemoveAll";
         private const string ProcCacheOutOpQueryCursor = "IgniteCacheOutOpQueryCursor";
@@ -138,16 +138,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcHandlersSize = "IgniteHandlersSize";
 
         private const string ProcCreateContext = "IgniteCreateContext";
-        
+
         private const string ProcEventsWithAsync = "IgniteEventsWithAsync";
         private const string ProcEventsStopLocalListen = "IgniteEventsStopLocalListen";
         private const string ProcEventsLocalListen = "IgniteEventsLocalListen";
         private const string ProcEventsIsEnabled = "IgniteEventsIsEnabled";
 
         private const string ProcDeleteContext = "IgniteDeleteContext";
-        
+
         private const string ProcServicesWithAsync = "IgniteServicesWithAsync";
-        private const string ProcServicesWithServerKeepBinary = "IgniteServicesWithServerKeepPortable";
+        private const string ProcServicesWithServerKeepBinary = "IgniteServicesWithServerKeepBinary";
         private const string ProcServicesCancel = "IgniteServicesCancel";
         private const string ProcServicesCancelAll = "IgniteServicesCancelAll";
         private const string ProcServicesGetServiceProxy = "IgniteServicesGetServiceProxy";
@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void* ProcessorServicesDelegate(void* ctx, void* obj, void* prj);
         private delegate void* ProcessorExtensionsDelegate(void* ctx, void* obj);
         private delegate void* ProcessorAtomicLongDelegate(void* ctx, void* obj, sbyte* name, long initVal, bool create);
-        
+
         private delegate long TargetInStreamOutLongDelegate(void* ctx, void* target, int opType, long memPtr);
         private delegate void TargetInStreamOutStreamDelegate(void* ctx, void* target, int opType, long inMemPtr, long outMemPtr);
         private delegate void* TargetInStreamOutObjectDelegate(void* ctx, void* target, int opType, long memPtr);
@@ -269,7 +269,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate int HandlersSizeDelegate();
 
         private delegate void* CreateContextDelegate(void* opts, int optsLen, void* cbs);
-        
+
         private delegate void* EventsWithAsyncDelegate(void* ctx, void* obj);
         private delegate bool EventsStopLocalListenDelegate(void* ctx, void* obj, long hnd);
         private delegate void EventsLocalListenDelegate(void* ctx, void* obj, long hnd, int type);
@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ProcessorServicesDelegate PROCESSOR_SERVICES;
         private static readonly ProcessorExtensionsDelegate PROCESSOR_EXTENSIONS;
         private static readonly ProcessorAtomicLongDelegate PROCESSOR_ATOMIC_LONG;
-        
+
         private static readonly TargetInStreamOutLongDelegate TARGET_IN_STREAM_OUT_LONG;
         private static readonly TargetInStreamOutStreamDelegate TARGET_IN_STREAM_OUT_STREAM;
         private static readonly TargetInStreamOutObjectDelegate TARGET_IN_STREAM_OUT_OBJECT;
@@ -401,14 +401,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly HandlersSizeDelegate HANDLERS_SIZE;
 
         private static readonly CreateContextDelegate CREATE_CONTEXT;
-        
+
         private static readonly EventsWithAsyncDelegate EVENTS_WITH_ASYNC;
         private static readonly EventsStopLocalListenDelegate EVENTS_STOP_LOCAL_LISTEN;
         private static readonly EventsLocalListenDelegate EVENTS_LOCAL_LISTEN;
         private static readonly EventsIsEnabledDelegate EVENTS_IS_ENABLED;
- 
+
         private static readonly DeleteContextDelegate DELETE_CONTEXT;
-        
+
         private static readonly ServicesWithAsyncDelegate SERVICES_WITH_ASYNC;
         private static readonly ServicesWithServerKeepBinaryDelegate SERVICES_WITH_SERVER_KEEP_BINARY;
         private static readonly ServicesCancelDelegate SERVICES_CANCEL;
@@ -450,7 +450,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             IGNITION_START = CreateDelegate<IgnitionStartDelegate>(ProcIgnitionStart);
             IGNITION_STOP = CreateDelegate<IgnitionStopDelegate>(ProcIgnitionStop);
             IGNITION_STOP_ALL = CreateDelegate<IgnitionStopAllDelegate>(ProcIgnitionStopAll);
-            
+
             PROCESSOR_RELEASE_START = CreateDelegate<ProcessorReleaseStartDelegate>(ProcProcessorReleaseStart);
             PROCESSOR_PROJECTION = CreateDelegate<ProcessorProjectionDelegate>(ProcProcessorProjection);
             PROCESSOR_CACHE = CreateDelegate<ProcessorCacheDelegate>(ProcProcessorCache);
@@ -465,7 +465,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             PROCESSOR_SERVICES = CreateDelegate<ProcessorServicesDelegate>(ProcProcessorServices);
             PROCESSOR_EXTENSIONS = CreateDelegate<ProcessorExtensionsDelegate>(ProcProcessorExtensions);
             PROCESSOR_ATOMIC_LONG = CreateDelegate<ProcessorAtomicLongDelegate>(ProcProcessorAtomicLong);
-            
+
             TARGET_IN_STREAM_OUT_LONG = CreateDelegate<TargetInStreamOutLongDelegate>(ProcTargetInStreamOutLong);
             TARGET_IN_STREAM_OUT_STREAM = CreateDelegate<TargetInStreamOutStreamDelegate>(ProcTargetInStreamOutStream);
             TARGET_IN_STREAM_OUT_OBJECT = CreateDelegate<TargetInStreamOutObjectDelegate>(ProcTargetInStreamOutObject);
@@ -505,15 +505,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             ContinuousQryClose = CreateDelegate<ContinuousQueryCloseDelegate>(ProcContinuousQryClose);
             ContinuousQryGetInitialQueryCursor = CreateDelegate<ContinuousQueryGetInitialQueryCursorDelegate>(ProcContinuousQryGetInitialQueryCursor);
 
-            DataStreamerListenTop = CreateDelegate<DataStreamerListenTopologyDelegate>(ProcDataStreamerListenTop); 
+            DataStreamerListenTop = CreateDelegate<DataStreamerListenTopologyDelegate>(ProcDataStreamerListenTop);
             DATA_STREAMER_ALLOW_OVERWRITE_GET = CreateDelegate<DataStreamerAllowOverwriteGetDelegate>(ProcDataStreamerAllowOverwriteGet);
-            DATA_STREAMER_ALLOW_OVERWRITE_SET = CreateDelegate<DataStreamerAllowOverwriteSetDelegate>(ProcDataStreamerAllowOverwriteSet); 
-            DATA_STREAMER_SKIP_STORE_GET = CreateDelegate<DataStreamerSkipStoreGetDelegate>(ProcDataStreamerSkipStoreGet); 
-            DATA_STREAMER_SKIP_STORE_SET = CreateDelegate<DataStreamerSkipStoreSetDelegate>(ProcDataStreamerSkipStoreSet); 
-            DATA_STREAMER_PER_NODE_BUFFER_SIZE_GET = CreateDelegate<DataStreamerPerNodeBufferSizeGetDelegate>(ProcDataStreamerPerNodeBufferSizeGet); 
-            DATA_STREAMER_PER_NODE_BUFFER_SIZE_SET = CreateDelegate<DataStreamerPerNodeBufferSizeSetDelegate>(ProcDataStreamerPerNodeBufferSizeSet); 
-            DataStreamerPerNodeParallelOpsGet = CreateDelegate<DataStreamerPerNodeParallelOperationsGetDelegate>(ProcDataStreamerPerNodeParallelOpsGet); 
-            DataStreamerPerNodeParallelOpsSet = CreateDelegate<DataStreamerPerNodeParallelOperationsSetDelegate>(ProcDataStreamerPerNodeParallelOpsSet); 
+            DATA_STREAMER_ALLOW_OVERWRITE_SET = CreateDelegate<DataStreamerAllowOverwriteSetDelegate>(ProcDataStreamerAllowOverwriteSet);
+            DATA_STREAMER_SKIP_STORE_GET = CreateDelegate<DataStreamerSkipStoreGetDelegate>(ProcDataStreamerSkipStoreGet);
+            DATA_STREAMER_SKIP_STORE_SET = CreateDelegate<DataStreamerSkipStoreSetDelegate>(ProcDataStreamerSkipStoreSet);
+            DATA_STREAMER_PER_NODE_BUFFER_SIZE_GET = CreateDelegate<DataStreamerPerNodeBufferSizeGetDelegate>(ProcDataStreamerPerNodeBufferSizeGet);
+            DATA_STREAMER_PER_NODE_BUFFER_SIZE_SET = CreateDelegate<DataStreamerPerNodeBufferSizeSetDelegate>(ProcDataStreamerPerNodeBufferSizeSet);
+            DataStreamerPerNodeParallelOpsGet = CreateDelegate<DataStreamerPerNodeParallelOperationsGetDelegate>(ProcDataStreamerPerNodeParallelOpsGet);
+            DataStreamerPerNodeParallelOpsSet = CreateDelegate<DataStreamerPerNodeParallelOperationsSetDelegate>(ProcDataStreamerPerNodeParallelOpsSet);
 
             MessagingWithAsync = CreateDelegate<MessagingWithAsyncDelegate>(ProcMessagingWithAsync);
 
@@ -555,7 +555,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             EVENTS_STOP_LOCAL_LISTEN = CreateDelegate<EventsStopLocalListenDelegate>(ProcEventsStopLocalListen);
             EVENTS_LOCAL_LISTEN = CreateDelegate<EventsLocalListenDelegate>(ProcEventsLocalListen);
             EVENTS_IS_ENABLED = CreateDelegate<EventsIsEnabledDelegate>(ProcEventsIsEnabled);
-            
+
             SERVICES_WITH_ASYNC = CreateDelegate<ServicesWithAsyncDelegate>(ProcServicesWithAsync);
             SERVICES_WITH_SERVER_KEEP_BINARY = CreateDelegate<ServicesWithServerKeepBinaryDelegate>(ProcServicesWithServerKeepBinary);
             SERVICES_CANCEL = CreateDelegate<ServicesCancelDelegate>(ProcServicesCancel);
@@ -617,7 +617,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             IGNITION_STOP_ALL(ctx, cancel);
         }
-        
+
         internal static void ProcessorReleaseStart(IUnmanagedTarget target)
         {
             PROCESSOR_RELEASE_START(target.Context, target.Target);
@@ -709,7 +709,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 Marshal.FreeHGlobal(new IntPtr(name0));
             }
         }
-        
+
         internal static IUnmanagedTarget ProcessorTransactions(IUnmanagedTarget target)
         {
             void* res = PROCESSOR_TRANSACTIONS(target.Context, target.Target);
@@ -752,7 +752,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
-        internal static IUnmanagedTarget ProcessorAtomicLong(IUnmanagedTarget target, string name, long initialValue, 
+        internal static IUnmanagedTarget ProcessorAtomicLong(IUnmanagedTarget target, string name, long initialValue,
             bool create)
         {
             var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
@@ -1083,7 +1083,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             return target.ChangeTarget(res);
         }
-        
+
         internal static void ProjectionResetMetrics(IUnmanagedTarget target)
         {
             PROJECTION_RESET_METRICS(target.Context, target.Target);
@@ -1168,7 +1168,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             int res = REALLOCATE(memPtr, cap);
 
             if (res != 0)
-                throw new IgniteException("Failed to reallocate external memory [ptr=" + memPtr + 
+                throw new IgniteException("Failed to reallocate external memory [ptr=" + memPtr +
                     ", capacity=" + cap + ']');
         }
 
@@ -1198,7 +1198,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        
+
 
         internal static int HandlersSize()
         {
