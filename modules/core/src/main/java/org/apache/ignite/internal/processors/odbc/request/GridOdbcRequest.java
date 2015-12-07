@@ -32,6 +32,9 @@ public class GridOdbcRequest {
     /** Get columns meta query. */
     public static final int GET_COLUMNS_META = 4;
 
+    /** Get columns meta query. */
+    public static final int GET_TABLES_META = 5;
+
     /** Command. */
     private int cmd;
 

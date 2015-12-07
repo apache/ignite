@@ -24,6 +24,7 @@ import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
 import org.apache.ignite.internal.portable.streams.PortableInputStream;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.GridOdbcColumnMeta;
+import org.apache.ignite.internal.processors.odbc.GridOdbcTableMeta;
 import org.apache.ignite.internal.processors.odbc.request.*;
 import org.apache.ignite.internal.processors.odbc.response.*;
 import org.apache.ignite.internal.util.nio.GridNioParser;
@@ -218,6 +219,22 @@ public class GridOdbcParser implements GridNioParser {
                 break;
             }
 
+            case GridOdbcRequest.GET_TABLES_META: {
+                String catalog = reader.readString();
+                String schema = reader.readString();
+                String table = reader.readString();
+                String tableType = reader.readString();
+
+                System.out.println("Message GET_COLUMNS_META:");
+                System.out.println("catalog: " + catalog);
+                System.out.println("schema: " + schema);
+                System.out.println("table: " + table);
+                System.out.println("tableType: " + tableType);
+
+                res = new QueryGetTablesMetaRequest(catalog, schema, table, tableType);
+                break;
+            }
+
             default:
                 throw new IOException("Failed to parse incoming packet (unknown command type) [ses=" + ses +
                         ", cmd=[" + Byte.toString(cmd) + ']');
@@ -306,6 +323,18 @@ public class GridOdbcParser implements GridNioParser {
 
             for (GridOdbcColumnMeta columnMeta : columnsMeta)
                 columnMeta.writeBinary(writer, marsh.context());
+
+        } else if (res0 instanceof QueryGetTablesMetaResult) {
+            QueryGetTablesMetaResult res = (QueryGetTablesMetaResult) res0;
+
+            Collection<GridOdbcTableMeta> tablesMeta = res.getMeta();
+
+            assert tablesMeta != null;
+
+            writer.writeInt(tablesMeta.size());
+
+            for (GridOdbcTableMeta tableMeta : tablesMeta)
+                tableMeta.writeBinary(writer);
 
         } else {
             throw new IOException("Failed to serialize response packet (unknown response type) [ses=" + ses + "]");

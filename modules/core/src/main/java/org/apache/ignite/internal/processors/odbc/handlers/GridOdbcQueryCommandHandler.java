@@ -22,6 +22,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.GridOdbcColumnMeta;
+import org.apache.ignite.internal.processors.odbc.GridOdbcTableMeta;
 import org.apache.ignite.internal.processors.odbc.request.*;
 import org.apache.ignite.internal.processors.odbc.response.*;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -33,10 +34,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest.EXECUTE_SQL_QUERY;
-import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest.FETCH_SQL_QUERY;
-import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest.CLOSE_SQL_QUERY;
-import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest.GET_COLUMNS_META;
+import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest.*;
 
 /**
  * SQL query handler.
@@ -84,7 +82,11 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
             }
 
             case GET_COLUMNS_META: {
-                return  GetColumnsMeta((QueryGetColumnsMetaRequest) req);
+                return GetColumnsMeta((QueryGetColumnsMetaRequest) req);
+            }
+
+            case GET_TABLES_META: {
+                return GetTablesMeta((QueryGetTablesMetaRequest) req);
             }
         }
 
@@ -128,6 +130,18 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
         }
 
         return res;
+    }
+
+    /**
+     * Checks whether string matches SQL pattern.
+     *
+     * @param str String.
+     * @param ptrn Pattern.
+     * @return Whether string matches pattern.
+     */
+    private boolean matches(String str, String ptrn) {
+        return str != null && (ptrn == null || ptrn.isEmpty() ||
+                str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
     }
 
     /**
@@ -236,11 +250,11 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
             Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(req.cacheName());
 
             for (GridQueryTypeDescriptor table : tablesMeta) {
-                if (!req.tableName().isEmpty() && !table.name().equalsIgnoreCase(req.tableName()))
+                if (!matches(table.name(), req.tableName()))
                     continue;
 
                 for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
-                    if (!req.columnName().isEmpty() && !field.getKey().equalsIgnoreCase(req.columnName()))
+                    if (!matches(field.getKey(), req.columnName()))
                         continue;
 
                     GridOdbcColumnMeta columnMeta = new GridOdbcColumnMeta(req.cacheName(),
@@ -251,6 +265,35 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
                 }
             }
             QueryGetColumnsMetaResult res = new QueryGetColumnsMetaResult(meta);
+
+            return new GridOdbcResponse(res);
+        }
+        catch (Exception e) {
+            return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
+        }
+    }
+
+    /**
+     * @param req Get tables metadata request.
+     * @return Response.
+     */
+    private GridOdbcResponse GetTablesMeta(QueryGetTablesMetaRequest req) {
+        try {
+            List<GridOdbcTableMeta> meta = new ArrayList<>();
+
+            Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(req.schema());
+
+            for (GridQueryTypeDescriptor table : tablesMeta) {
+                if (!matches(table.name(), req.table()))
+                    continue;
+
+                GridOdbcTableMeta tableMeta = new GridOdbcTableMeta(req.catalog(), req.schema(),
+                        table.name(), "TABLE");
+
+                if (!meta.contains(tableMeta))
+                    meta.add(tableMeta);
+            }
+            QueryGetTablesMetaResult res = new QueryGetTablesMetaResult(meta);
 
             return new GridOdbcResponse(res);
         }
