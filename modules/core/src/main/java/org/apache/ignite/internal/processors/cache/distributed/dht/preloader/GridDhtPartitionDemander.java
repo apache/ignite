@@ -359,7 +359,7 @@ public class GridDhtPartitionDemander {
      * @param fut Future.
      * @param assigns Assignments.
      * @throws IgniteCheckedException If failed.
-     * @return
+     * @return Partitions were requested.
      */
     private boolean requestPartitions(
         RebalanceFuture fut,
