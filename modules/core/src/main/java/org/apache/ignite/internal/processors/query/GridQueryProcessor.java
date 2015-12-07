@@ -235,8 +235,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         desc.keyClass(keyCls);
                     }
 
-                    desc.affinityKey(null); // TODO get affinity key field alias from config
-
                     TypeId typeId;
                     TypeId altTypeId = null;
 
@@ -247,6 +245,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                         if (valCls != null)
                             altTypeId = new TypeId(ccfg.getName(), valCls);
+
+                        // Need to setup affinity key for distributed joins.
+                        String affField = ctx.cacheObjects().affinityField(qryEntity.getKeyType());
+
+                        if (affField != null)
+                            desc.affinityKey(affField);
                     }
                     else {
                         processClassMeta(qryEntity, desc);
