@@ -38,5 +38,10 @@ angular
 
 			$state.go('login');
 		}
+		else if (Auth.authorized && toState.name === 'login') {
+			event.preventDefault();
+
+			$state.go('base.configuration.clusters');
+		}
 	});
 }]);

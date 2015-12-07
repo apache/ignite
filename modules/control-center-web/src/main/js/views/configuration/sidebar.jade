@@ -23,10 +23,7 @@
                         span.fa-stack
                             i.fa.fa-circle-thin.fa-stack-2x
                             i.fa.fa-stack-1x {{::$index + 1}}
-                        | {{::item.label}}
-                    ul(ng-if='item.subItems' style='margin-left:30px')
-                        li(ng-repeat='subItem in item.subItems')
-                            a(ng-class='{active: isActive("{{::subItem.href}}")}' href='{{::subItem.href}}') {{::subItem.label}}
+                        | {{::item.text}}
 
     .col-xs-9.col-sm-9.col-md-10.border-left.section-right
         .docs-content(ui-view='')
