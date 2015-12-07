@@ -1186,6 +1186,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             collection.Add(collection);
             data.Collection = collection;
 
+            // TODO: Update reader as well
             res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
             var resCollection = (ArrayList) res.Collection;
 
