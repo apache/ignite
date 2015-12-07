@@ -132,6 +132,15 @@ namespace ignite
          * @param str String.
          */
         void WriteString(ignite::impl::binary::BinaryWriterImpl& writer, const std::string& str);
+
+        /**
+         * Convert SQL string buffer to std::string.
+         *
+         * @param sqlStr SQL string buffer.
+         * @param sqlStrLen SQL string length.
+         * @return Standard string containing the same data.
+         */
+        std::string SqlStringToString(const unsigned char* sqlStr, int16_t sqlStrLen);
     }
 }
 

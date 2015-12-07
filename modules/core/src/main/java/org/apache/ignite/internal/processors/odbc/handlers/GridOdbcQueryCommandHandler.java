@@ -237,17 +237,18 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
             Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(req.cacheName());
 
             for (GridQueryTypeDescriptor table : tablesMeta) {
-                if (!req.tableName().isEmpty() && !table.name().equals(req.tableName()))
+                if (!req.tableName().isEmpty() && !table.name().equalsIgnoreCase(req.tableName()))
                     continue;
 
                 for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
-                    if (!req.columnName().isEmpty() && !field.getKey().equals(req.columnName()))
+                    if (!req.columnName().isEmpty() && !field.getKey().equalsIgnoreCase(req.columnName()))
                         continue;
 
                     GridOdbcColumnMeta columnMeta = new GridOdbcColumnMeta(req.cacheName(),
                             table.name(), field.getKey(), field.getValue());
 
-                    meta.add(columnMeta);
+                    if (!meta.contains(columnMeta))
+                        meta.add(columnMeta);
                 }
             }
             QueryGetColumnsMetaResult res = new QueryGetColumnsMetaResult(meta);

@@ -79,10 +79,15 @@ namespace ignite
             return currentQuery->Execute();
         }
 
-        bool Statement::ExecuteGetColumnsMetaQuery(const std::string& cache, const std::string& table, const std::string& column)
+        bool Statement::ExecuteGetColumnsMetaQuery(const std::string& schema, const std::string& table, const std::string& column)
         {
             if (currentQuery.get())
                 currentQuery->Close();
+
+            std::string cache(schema);
+
+            if (cache.empty())
+                cache = connection.GetCache();
 
             currentQuery.reset(new query::MetadataQuery(connection, cache, table, column));
 

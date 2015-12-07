@@ -7,7 +7,6 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 import java.io.IOException;
 
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
 
 /**
@@ -55,6 +54,20 @@ public class GridOdbcColumnMeta {
         }
     }
 
+    @Override
+    public boolean equals(Object o)
+    {
+        if (!(o instanceof GridOdbcColumnMeta))
+            return false;
+
+        GridOdbcColumnMeta another = (GridOdbcColumnMeta)o;
+
+        return schemaName.equals(another.schemaName) &&
+               tableName.equals(another.tableName)   &&
+               columnName.equals(another.columnName) &&
+               dataType.equals(another.dataType);
+    }
+
 
     /**
      * @return Cache name.
@@ -87,7 +100,7 @@ public class GridOdbcColumnMeta {
     /**
      * Write in a binary format.
      * @param writer Binary writer.
-     * @param ctx Binary context.
+     * @param ctx Portable context.
      * @throws IOException
      */
     public void writeBinary(BinaryRawWriterEx writer, PortableContext ctx) throws IOException {
@@ -96,14 +109,18 @@ public class GridOdbcColumnMeta {
         writer.writeString(columnName);
         writer.writeString(dataType.getName());
 
+        byte typeId;
+
         PortableClassDescriptor desc = ctx.descriptorForClass(dataType);
 
         if (desc == null)
             throw new IOException("Object is not portable: [class=" + dataType + ']');
 
         if (desc.registered())
-            writer.writeByte((byte) desc.typeId());
+            typeId = (byte)desc.typeId();
         else
-            writer.writeByte((byte) UNREGISTERED_TYPE_ID);
+            typeId = (byte)UNREGISTERED_TYPE_ID;
+
+        writer.writeByte(typeId);
     }
 }

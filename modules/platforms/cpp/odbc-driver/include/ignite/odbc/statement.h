@@ -105,12 +105,12 @@ namespace ignite
             /**
              * Get columns metadata.
              *
-             * @param cache Cache name.
+             * @param schema Schema name.
              * @param table Table name.
              * @param column Column name.
              * @return True on success.
              */
-            bool ExecuteGetColumnsMetaQuery(const std::string& cache, const std::string& table, const std::string& column);
+            bool ExecuteGetColumnsMetaQuery(const std::string& schema, const std::string& table, const std::string& column);
 
             /**
              * Close statement.

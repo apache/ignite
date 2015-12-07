@@ -17,9 +17,14 @@
 
 #include "ignite/odbc/utility.h"
 
-#ifdef min
+#ifdef _WIN32
+#   define _WINSOCKAPI_
+#   include <windows.h>
 #   undef min
-#endif
+#endif //_WIN32
+
+#include <sqlext.h>
+#include <odbcinst.h>
 
 namespace ignite
 {
@@ -54,6 +59,23 @@ namespace ignite
         void WriteString(ignite::impl::binary::BinaryWriterImpl& writer, const std::string & str)
         {
             writer.WriteString(str.data(), static_cast<int32_t>(str.size()));
+        }
+
+        std::string SqlStringToString(const unsigned char* sqlStr, int16_t sqlStrLen)
+        {
+            std::string res;
+
+            const char* sqlStrC = reinterpret_cast<const char*>(sqlStr);
+
+            if (!sqlStr || !sqlStrLen)
+                return res;
+
+            if (sqlStrLen == SQL_NTS)
+                res.assign(sqlStrC);
+            else
+                res.assign(sqlStrC, sqlStrLen);
+
+            return res;
         }
     }
 }

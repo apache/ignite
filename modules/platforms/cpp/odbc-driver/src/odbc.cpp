@@ -18,6 +18,7 @@
 #ifdef _WIN32
 #   define _WINSOCKAPI_
 #   include <windows.h>
+#   undef min
 #endif //_WIN32
 
 #include <cstdio>
@@ -34,7 +35,6 @@
 #include "ignite/odbc/environment.h"
 #include "ignite/odbc/connection.h"
 
-#undef min
 
 FILE* log_file = NULL;
 
@@ -591,31 +591,23 @@ SQLRETURN SQL_API SQLColumns(SQLHSTMT       stmt,
                              SQLSMALLINT    columnNameLen)
 {
     using ignite::odbc::Statement;
+    using ignite::utility::SqlStringToString;
 
     LOG_MSG("SQLColumns called\n");
 
-    LOG_MSG("catalogName: %s\n", catalogName);
-    LOG_MSG("schemaName: %s\n", schemaName);
-    LOG_MSG("tableName: %s\n", tableName);
-    LOG_MSG("columnName: %s\n", columnName);
+    LOG_MSG("catalogName: %s, len: %d\n", catalogName, catalogNameLen);
+    LOG_MSG("schemaName: %s, len: %d\n", schemaName, schemaNameLen);
+    LOG_MSG("tableName: %s, len: %d\n", tableName, tableNameLen);
+    LOG_MSG("columnName: %s, len: %d\n", columnName, columnNameLen);
 
     Statement *statement = reinterpret_cast<Statement*>(stmt);
 
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-    std::string schema;
-    std::string table;
-    std::string column;
-
-    if (schemaName)
-        schema.assign(reinterpret_cast<char*>(schemaName), schemaNameLen);
-
-    if (tableName)
-        table.assign(reinterpret_cast<char*>(tableName), tableNameLen);
-
-    if (columnName)
-        column.assign(reinterpret_cast<char*>(columnName), columnNameLen);
+    std::string schema = SqlStringToString(schemaName, schemaNameLen);
+    std::string table = SqlStringToString(tableName, tableNameLen);
+    std::string column = SqlStringToString(columnName, columnNameLen);
 
     bool success = statement->ExecuteGetColumnsMetaQuery(schema, table, column);
 
