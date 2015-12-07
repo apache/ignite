@@ -1192,6 +1192,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(resCollection, resCollection[2]);
             Assert.AreEqual(collection[0], resCollection[0]);
             Assert.AreEqual(collection[1], resCollection[1]);
+
+            // TODO: Test other collection types and map entries
         }
 
         ///
