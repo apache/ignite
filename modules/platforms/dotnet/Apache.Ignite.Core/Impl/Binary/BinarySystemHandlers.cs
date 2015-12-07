@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _writeAction(writer, obj);
         }
 
-        private bool SupportsHandles
+        public bool SupportsHandles
         {
             get { return _supportsHandles; }
         }

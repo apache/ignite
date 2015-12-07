@@ -1180,7 +1180,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (handler == null)  // We did our best, object cannot be marshalled.
                     throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
                 
-                // TODO
+                if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
+                    return;
+
                 handler.Write(this, obj);
             }
         }
