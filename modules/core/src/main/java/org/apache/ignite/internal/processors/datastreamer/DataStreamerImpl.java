@@ -838,7 +838,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 for (IgniteInternalFuture fut = q.poll(); fut != null; fut = q.poll()) {
                     try {
-                        fut.get();
+                        fut.get(); // death point
                     }
                     catch (IgniteClientDisconnectedCheckedException e) {
                         if (log.isDebugEnabled())

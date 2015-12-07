@@ -568,7 +568,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(EventType.SwapSpaceCleared, evt.Type);
             Assert.IsNotNullOrEmpty(evt.Name);
             Assert.AreNotEqual(Guid.Empty, evt.Id.GlobalId);
-            Assert.IsTrue((evt.Timestamp - DateTime.Now).TotalSeconds < 10);
+            Assert.IsTrue(Math.Abs((evt.Timestamp - DateTime.UtcNow).TotalSeconds) < 20, 
+                "Invalid event timestamp: '{0}', current time: '{1}'", evt.Timestamp, DateTime.Now);
         }
 
         /// <summary>

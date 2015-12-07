@@ -34,8 +34,12 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter;
+import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -50,7 +54,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -104,10 +111,17 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
         assertEquals(0, jcache().localSize());
+        Logger.getRootLogger().setLevel(Level.DEBUG);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
+        ((GridTestLog4jLogger)log).getLogger(GridDistributedCacheAdapter.class).setLevel(Level.DEBUG);
+        ((GridTestLog4jLogger)log).getLogger(GridProcessorAdapter.class).setLevel(Level.DEBUG);
+        ((GridTestLog4jLogger)log).getLogger(GridTaskProcessor.class).setLevel(Level.DEBUG);
+        ((GridTestLog4jLogger)log).getLogger(GridKernalContext.class).setLevel(Level.DEBUG);
+        Logger.getRootLogger().setLevel(Level.DEBUG);
         Transaction tx = jcache().unwrap(Ignite.class).transactions().tx();
 
         if (tx != null) {
