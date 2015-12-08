@@ -1204,7 +1204,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var dict = new Hashtable { { 1, 1 }, { 2, 2 } };
             dict.Add(3, dict);
 
-            var arr = collectionRaw.ToArray();
+            var arr = collectionObj.ToArray();
             arr[1] = arr;
 
             object entry = new DictionaryEntry(1, 2);

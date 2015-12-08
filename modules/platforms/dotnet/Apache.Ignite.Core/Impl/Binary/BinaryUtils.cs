@@ -1058,12 +1058,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var stream = ctx.Stream;
 
+            var pos = stream.Position;
+
             if (typed)
                 stream.ReadInt();
 
             int len = stream.ReadInt();
 
             var vals = new T[len];
+
+            ctx.AddHandle(pos - 1, vals);
 
             for (int i = 0; i < len; i++)
                 vals[i] = ctx.Deserialize<T>();
