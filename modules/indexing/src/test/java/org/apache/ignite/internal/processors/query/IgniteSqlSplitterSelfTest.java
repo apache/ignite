@@ -218,7 +218,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             awaitPartitionMapExchange();
 
             int key = 0;
-            for (int i = 0; i < 3000; i++) {
+
+            for (int i = 0; i < 30; i++) {
                 Organization o = new Organization();
 
                 o.name = "Org" + i;
@@ -227,11 +228,12 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             }
 
             Random rnd = new GridRandom();
-            for (int i = 0; i < 15000; i++) {
+
+            for (int i = 0; i < 100; i++) {
                 Person p = new Person();
 
                 p.name = "Person" + i;
-                p.orgId = rnd.nextInt(3000);
+                p.orgId = rnd.nextInt(30);
 
                 c.put(key++, p);
             }
@@ -239,7 +241,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             X.println("Plan : " + c.query(new SqlFieldsQuery("explain select count(*) from Person p, Organization o " +
                 "where p.orgId = o._key").setDistributedJoins(true)).getAll());
 
-            assertEquals(15000L, c.query(new SqlFieldsQuery("select count(*) from Person p, Organization o " +
+            assertEquals(100L, c.query(new SqlFieldsQuery("select count(*) from Person p, Organization o " +
                 "where p.orgId = o._key").setDistributedJoins(true)).getAll().get(0).get(0));
         }
         finally {

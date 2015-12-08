@@ -1379,6 +1379,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
             assert remainingRanges > 0;
 
+            if (log.isDebugEnabled())
+                log.debug("Starting stream: [node=" + node + ", req=" + req + "]");
+
             send(singletonList(node), req);
         }
 
