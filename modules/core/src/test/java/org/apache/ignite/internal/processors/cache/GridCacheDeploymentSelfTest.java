@@ -228,7 +228,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
 
             if (g1.configuration().getMarshaller() instanceof BinaryMarshaller)
-                fail("http://atlassian.gridgain.com/jira/browse/GG-10791");
+                fail("https://issues.apache.org/jira/browse/IGNITE-2106");
 
             Ignite g2 = startGrid(2);
 
