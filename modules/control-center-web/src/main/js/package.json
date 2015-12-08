@@ -84,6 +84,7 @@
       "css": "github:systemjs/plugin-css@^0.1.20",
       "file-saver": "github:eligrey/FileSaver.js@master",
       "font-awesome": "npm:font-awesome@^4.4.0",
+      "jade": "github:johnsoftek/plugin-jade@^0.5.1",
       "jquery": "github:components/jquery@^2.1.4",
       "jszip": "github:Stuk/jszip@^2.5.0",
       "lodash": "npm:lodash@^3.10.1",

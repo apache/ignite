@@ -1,18 +1,4 @@
 {
-  "screenTip": {
-    "workflowTitle": "On This Screen:",
-    "workflowContent": [
-      "Manually enter Metadata",
-      "Load Metadata from Database",
-      "more-info"
-    ],
-    "whatsNextTitle": "Next Steps:",
-    "whatsNextContent": [
-      "Continue to <a href='/configuration/summary'>Summary</a>",
-      "Back to <a href='/configuration/caches'>Caches</a>",
-      "Back to <a href='/configuration/clusters'>Clusters</a>"
-    ]
-  },
   "moreInfo": {
     "title": "Metadata screen",
     "content": ["Manage your type metadata on current screen.",
