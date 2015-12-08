@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexingDisable
 import org.apache.ignite.internal.processors.cache.GridCacheQueryInternalKeysSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQuerySerializationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheCollocatedQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheDuplicateEntityConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFieldsQueryNoDataSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLargeResultSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheNoClassQuerySelfTest;
@@ -105,6 +106,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // Parsing
         suite.addTestSuite(GridQueryParsingTest.class);
+
+        // Config.
+        suite.addTestSuite(IgniteCacheDuplicateEntityConfigurationSelfTest.class);
 
         // Queries tests.
         suite.addTestSuite(IgniteSqlSplitterSelfTest.class);

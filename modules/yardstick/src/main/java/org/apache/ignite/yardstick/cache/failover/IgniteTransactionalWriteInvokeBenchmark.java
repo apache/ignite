@@ -68,17 +68,15 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
         long start = System.nanoTime();
 
-        if (cfg.memberId() == 0) {
-            try (IgniteDataStreamer<String, Long> dataLdr = ignite().dataStreamer(cacheName())) {
-                for (int k = 0; k < args.range() && !Thread.currentThread().isInterrupted(); k++) {
-                    dataLdr.addData("key-" + k + "-master", INITIAL_VALUE);
+        try (IgniteDataStreamer<String, Long> dataLdr = ignite().dataStreamer(cacheName())) {
+            for (int k = 0; k < args.range() && !Thread.currentThread().isInterrupted(); k++) {
+                dataLdr.addData("key-" + k + "-master", INITIAL_VALUE);
 
-                    for (int i = 0; i < args.keysCount(); i++)
-                        dataLdr.addData("key-" + k + "-" + i, INITIAL_VALUE);
+                for (int i = 0; i < args.keysCount(); i++)
+                    dataLdr.addData("key-" + k + "-" + i, INITIAL_VALUE);
 
-                    if (k % 100000 == 0)
-                        println(cfg, "Populated accounts: " + k);
-                }
+                if (k % 100000 == 0)
+                    println(cfg, "Populated accounts: " + k);
             }
         }
 

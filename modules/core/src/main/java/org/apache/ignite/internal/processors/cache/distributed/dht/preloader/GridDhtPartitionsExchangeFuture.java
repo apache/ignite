@@ -754,6 +754,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 // Assign to class variable so it will be included into toString() method.
                 this.partReleaseFut = partReleaseFut;
 
+                if (exchId.isLeft())
+                    cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
+
                 if (log.isDebugEnabled())
                     log.debug("Before waiting for partition release future: " + this);
 
@@ -777,9 +780,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 if (log.isDebugEnabled())
                     log.debug("After waiting for partition release future: " + this);
-
-                if (exchId.isLeft())
-                    cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
 
                 IgniteInternalFuture<?> locksFut = cctx.mvcc().finishLocks(exchId.topologyVersion());
 
@@ -1015,9 +1015,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (ready) {
                     GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
 
-                    if (useOldApi) {
+                    if (useOldApi)
                         locMap = new GridDhtPartitionFullMap(locMap.nodeId(), locMap.nodeOrder(), locMap.updateSequence(), locMap);
-                    }
 
                     m.addFullPartitionsMap(cacheCtx.cacheId(), locMap);
 
