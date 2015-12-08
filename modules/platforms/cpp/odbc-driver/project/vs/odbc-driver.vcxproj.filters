@@ -17,6 +17,9 @@
     <Filter Include="Code\config">
       <UniqueIdentifier>{71117941-fa47-4768-afe8-901c94d431c7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\app">
+      <UniqueIdentifier>{dbe40149-df23-4b89-92e4-16817775cd0e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\odbc.cpp">
@@ -32,9 +35,6 @@
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\type_traits.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\application_data_buffer.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common_types.cpp">
@@ -76,6 +76,9 @@
     <ClCompile Include="..\..\src\config\connection_info.cpp">
       <Filter>Code\config</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\app\application_data_buffer.cpp">
+      <Filter>Code\app</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -84,9 +87,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="result_page.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\application_data_buffer.h">
-      <Filter>Code</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\common_types.h">
       <Filter>Code</Filter>
     </ClInclude>
@@ -146,6 +146,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_info.h">
       <Filter>Code\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\app\application_data_buffer.h">
+      <Filter>Code\app</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

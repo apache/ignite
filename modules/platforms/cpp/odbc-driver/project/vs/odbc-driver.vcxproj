@@ -150,6 +150,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\socket_client.cpp" />
+    <ClCompile Include="..\..\src\app\application_data_buffer.cpp" />
     <ClCompile Include="..\..\src\common_types.cpp" />
     <ClCompile Include="..\..\src\config\configuration.cpp" />
     <ClCompile Include="..\..\src\config\connection_info.cpp" />
@@ -159,7 +160,6 @@
     <ClCompile Include="..\..\src\meta\column_meta.cpp" />
     <ClCompile Include="..\..\src\meta\table_meta.cpp" />
     <ClCompile Include="..\..\src\odbc.cpp" />
-    <ClCompile Include="..\..\src\application_data_buffer.cpp" />
     <ClCompile Include="..\..\src\query\data_query.cpp" />
     <ClCompile Include="..\..\src\query\column_metadata_query.cpp" />
     <ClCompile Include="..\..\src\query\table_metadata_query.cpp" />
@@ -181,7 +181,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\ignite\odbc\application_data_buffer.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\app\application_data_buffer.h" />
     <ClInclude Include="..\..\include\ignite\odbc\common_types.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\configuration.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_info.h" />
