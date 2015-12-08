@@ -26,30 +26,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
-    internal class BinarySystemWriteHandler
-    {
-        private readonly Action<BinaryWriter, object> _writeAction;
-        private readonly bool _supportsHandles;
-
-        public BinarySystemWriteHandler(Action<BinaryWriter, object> writeAction, bool supportsHandles = false)
-        {
-            Debug.Assert(writeAction != null);
-
-            _writeAction = writeAction;
-            _supportsHandles = supportsHandles;
-        }
-
-        public void Write(BinaryWriter writer, object obj)
-        {
-            _writeAction(writer, obj);
-        }
-
-        public bool SupportsHandles
-        {
-            get { return _supportsHandles; }
-        }
-    }
-
     /**
      * <summary>Collection of predefined handlers for various system types.</summary>
      */
@@ -840,6 +816,49 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 return TypeCaster<T>.Cast(_readDelegate1(ctx.Stream));
             }
+        }
+    }
+
+    /// <summary>
+    /// Write delegate + handles flag.
+    /// </summary>
+    internal class BinarySystemWriteHandler
+    {
+        /** */
+        private readonly Action<BinaryWriter, object> _writeAction;
+
+        /** */
+        private readonly bool _supportsHandles;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinarySystemWriteHandler"/> class.
+        /// </summary>
+        /// <param name="writeAction">The write action.</param>
+        /// <param name="supportsHandles">Handles flag.</param>
+        public BinarySystemWriteHandler(Action<BinaryWriter, object> writeAction, bool supportsHandles = false)
+        {
+            Debug.Assert(writeAction != null);
+
+            _writeAction = writeAction;
+            _supportsHandles = supportsHandles;
+        }
+
+        /// <summary>
+        /// Writes object to a specified writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="obj">The object.</param>
+        public void Write(BinaryWriter writer, object obj)
+        {
+            _writeAction(writer, obj);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this handler supports handles.
+        /// </summary>
+        public bool SupportsHandles
+        {
+            get { return _supportsHandles; }
         }
     }
 }
