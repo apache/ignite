@@ -1194,15 +1194,40 @@ namespace Apache.Ignite.Core.Tests.Binary
             collection.Add(collection);
             data.Collection = collection;
 
-            // TODO: Update reader as well
-            res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
-            var resCollection = (ArrayList) res.Collection;
+            var collectionRaw = new ArrayList(collection);
+            collectionRaw.Add(collectionRaw);
+            data.CollectionRaw = collectionRaw;
 
-            Assert.AreEqual(resCollection, resCollection[2]);
+            var collectionObj = new ArrayList(collectionRaw);
+            collectionObj.Add(collectionObj);
+            data.Object = collectionObj;
+
+            res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
+
+            var resCollection = (ArrayList) res.Collection;
             Assert.AreEqual(collection[0], resCollection[0]);
             Assert.AreEqual(collection[1], resCollection[1]);
+            Assert.AreSame(resCollection, resCollection[2]);
 
-            // TODO: Test other collection types and map entries
+            var resCollectionRaw = (ArrayList) res.CollectionRaw;
+            Assert.AreEqual(collectionRaw[0], resCollectionRaw[0]);
+            Assert.AreEqual(collectionRaw[1], resCollectionRaw[1]);
+            Assert.AreSame(resCollection, resCollectionRaw[2]);
+            Assert.AreSame(resCollectionRaw, resCollectionRaw[3]);
+
+            var resCollectionObj = (ArrayList) res.Object;
+            Assert.AreEqual(collectionObj[0], resCollectionObj[0]);
+            Assert.AreEqual(collectionObj[1], resCollectionObj[1]);
+            Assert.AreSame(resCollection, resCollectionObj[2]);
+            Assert.AreSame(resCollectionRaw, resCollectionObj[3]);
+            Assert.AreSame(resCollectionObj, resCollectionObj[4]);
+
+            // Dictionary
+            var dict = new Hashtable {{1, 1}, {2, 2}};
+            dict.Add(3, dict);
+
+            // MapEntry
+
         }
 
         ///
