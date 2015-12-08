@@ -26,6 +26,13 @@ $commonUtils.isDefined = function (v) {
     return !(v === undefined || v === null);
 };
 
+$commonUtils.isEmptyArray = function(arr) {
+    if ($commonUtils.isDefined(arr))
+        return arr.length === 0;
+
+    return true;
+};
+
 /**
  * @param v Value to check.
  * @returns {boolean} 'true' if value defined and not empty string.
