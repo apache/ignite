@@ -1,19 +1,4 @@
 {
-  "screenTip": {
-    "workflowTitle": "On This Screen:",
-    "workflowContent": [
-      "Download XML Config",
-      "Download Java Code",
-      "Download Docker File",
-      "more-info"
-    ],
-    "whatsNextTitle": "Next Steps:",
-    "whatsNextContent": [
-      "Deploy Ignite Servers",
-      "Connect Ignite Clients",
-      "Analyze with SQL"
-    ]
-  },
   "moreInfo": {
     "title": "Summary screen",
     "content": ["Generated cluster's configuration showed on this screen.",

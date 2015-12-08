@@ -20,6 +20,7 @@ consoleModule.controller('summaryController', [
     '$scope', '$http', '$common', '$loading', '$table',
     function ($scope, $http, $common, $loading, $table) {
     var igniteVersion = '1.5.0';
+    $loading.start('loadingSummaryScreen');
 
     $scope.panelExpanded = $common.panelExpanded;
     $scope.tableVisibleRow = $table.tableVisibleRow;
@@ -243,8 +244,6 @@ consoleModule.controller('summaryController', [
         saveAs(blob, cluster.name + '-configuration.zip');
     };
 
-    $loading.start('loadingSummaryScreen');
-
     $http.post('/api/v1/configuration/clusters/list')
         .success(function (data) {
             $scope.clusters = data.clusters;
@@ -286,5 +285,6 @@ consoleModule.controller('summaryController', [
         })
         .finally(function () {
             $loading.finish('loadingSummaryScreen');
+            $scope.ui = {ready: true}
         });
 }]);

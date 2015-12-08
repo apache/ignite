@@ -15,13 +15,17 @@
  * limitations under the License.
  */
 
-import template from './callout.jade!';
+import template from './callout-cel.jade!'
 
-export default ['igniteCallout', [() => {
+export default ['igniteCalloutCel', [() => {
 	return {
+		scope: {
+			title: '@'
+		},
 		restrict: 'E',
 		template,
 		replace: true,
-		transclude: true 
+		transclude: true,
+		require: '^igniteCallout'
 	}
 }]]

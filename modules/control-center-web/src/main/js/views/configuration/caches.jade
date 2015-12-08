@@ -19,9 +19,24 @@ include ../includes/controls
 .docs-header
     h1 Create and Configure Ignite Caches
 .docs-body(ng-controller='cachesController')
+    ignite-callout
+        ignite-callout-cel(data-title='On This Screen')
+            li Configure Caches
+            li Link Metadata to Caches
+            li Link Caches to Clusters
+            li
+                a(bs-modal='moreInfo' data-placement='center' data-template-url='/templates/message.html') More info
+                    
+        ignite-callout-cel(data-title='Next Steps')
+            li Continue to&nbsp;
+                a(ui-sref='base.configuration.metadata') Metadata
+            li Continue to&nbsp;
+                a(ui-sref='base.configuration.summary') Summary
+            li Back to&nbsp;
+                a(ui-sref='base.configuration.clusters') Clusters
+
     div(dw-loading='loadingCachesScreen' dw-loading-options='{text: "Loading caches screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
-            +block-callout('{{screenTip.workflowTitle}}', 'screenTip.workflowContent', '{{screenTip.whatsNextTitle}}', 'screenTip.whatsNextContent')
             hr
             +main-table('Caches:', 'caches', 'cacheName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}, {{row.cacheMode | displayValue:cacheModes:"Cache mode not set"}}, {{row.atomicityMode | displayValue:atomicities:"Cache atomicity not set"}}')
             .padding-top-dflt(bs-affix)

@@ -19,9 +19,20 @@ include ../includes/controls
 .docs-header
     h1 Create and Configure IGFS
 .docs-body(ng-controller='igfsController')
+    ignite-callout
+        ignite-callout-cel(data-title='On This Screen')
+            li Configure IGFS file systems
+            li
+                a(bs-modal='moreInfo' data-placement='center' data-template-url='/templates/message.html') More info
+                    
+        ignite-callout-cel(data-title='Next Steps')
+            li Continue to&nbsp;
+                a(ui-sref='base.configuration.summary') Summary
+            li Back to&nbsp;
+                a(ui-sref='base.configuration.clusters') Clusters
+
     div(dw-loading='loadingIgfsScreen' dw-loading-options='{text: "Loading IGFS screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
-            +block-callout('{{screenTip.workflowTitle}}', 'screenTip.workflowContent', '{{screenTip.whatsNextTitle}}', 'screenTip.whatsNextContent')
             hr
             +main-table('IGFS:', 'igfss', 'igfsName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
             .padding-top-dflt(bs-affix)

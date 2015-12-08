@@ -70,6 +70,7 @@ import './modules/configuration/sidebar/main'
 
 // directives
 import igniteCallout from './directives/callout/callout.directive'
+import igniteCalloutCel from './directives/callout/callout-cel.directive'
 import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive'
 import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive'
 import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive'
@@ -100,6 +101,7 @@ angular
 ])
 // directives
 .directive(...igniteCallout)
+.directive(...igniteCalloutCel)
 .directive(...igniteUiAceXml)
 .directive(...igniteUiAceJava)
 .directive(...igniteUiAcePom)

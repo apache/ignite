@@ -18,11 +18,10 @@
 @import "font-awesome-custom";
 @import "bootstrap-custom";
 
+@import "./../../app/directives/callout/callout.scss";
+
 $logo-path: "/images/logo.png";
 $input-height: 28px;
-$ignite-block-callout-left-background: #f4f8fa;
-$ignite-block-callout-right-background: #f3f8f3;
-$ignite-block-callout-gradient-to: #ffffff;
 $ignite-placeholder-color: #999999;
 $ignite-border-color: #ddd;
 $ignite-darck-border-color: #aaa;
@@ -1393,62 +1392,6 @@ a {
 
 .agent-download {
     padding: 10px 10px 10px 20px;
-}
-
-.block-callout-parent {
-    margin-top: 10px;
-
-    table {
-        width: 100%
-    }
-}
-
-.block-callout {
-    border-left: 5px solid;
-    vertical-align: top;
-
-    i {
-        padding: 10px 5px 0 10px;
-    }
-
-    label {
-        font-weight: bold;
-    }
-
-    ul {
-        padding: 5px 0 10px 20px;
-        margin: 0 0 0 10px;
-    }
-}
-
-.block-callout-left {
-    @extend .block-callout;
-
-    background: linear-gradient(to right, $ignite-block-callout-left-background, $ignite-block-callout-gradient-to);
-    border-color: $brand-info;
-
-    i {
-        color: $brand-info;
-    }
-
-    label {
-        color: $brand-info;
-    }
-}
-
-.block-callout-right {
-    @extend .block-callout;
-
-    background: linear-gradient(to right, $ignite-block-callout-right-background, $ignite-block-callout-gradient-to);
-    border-color: $brand-success;
-
-    i {
-        color: $brand-success;
-    }
-
-    label {
-        color: $brand-success;
-    }
 }
 
 .ace_content {
