@@ -26,123 +26,127 @@ namespace ignite
 {
     namespace odbc
     {
-        /**
-         * ODBC configuration abstraction.
-         */
-        class Configuration
+        namespace config
         {
-        public:
             /**
-             * Default constructor.
+             * ODBC configuration abstraction.
              */
-            Configuration();
-
-            /**
-             * Destructor.
-             */
-            ~Configuration();
-
-            /**
-             * Fill configuration data using connection string.
-             *
-             * @param str Pointer to string data.
-             * @param len String length.
-             */
-            void FillFromConnectString(const char* str, size_t len);
-
-            /**
-             * Convert configure to connect string.
-             *
-             * @return Connect string.
-             */
-            std::string ToConnectString() const;
-
-            /**
-             * Fill configuration data using config attributes string.
-             *
-             * @param str Pointer to list of zero-terminated strings.
-             *            Terminated by two zero bytes.
-             */
-            void FillFromConfigAttributes(const char* attributes);
-
-            /**
-             * Get server port.
-             *
-             * @return Server port.
-             */
-            uint16_t GetPort() const
+            class Configuration
             {
-                return port;
-            }
+            public:
+                /**
+                 * Default constructor.
+                 */
+                Configuration();
 
-            /**
-             * Get DSN.
-             *
-             * @return Data Source Name.
-             */
-            const std::string& GetDsn() const
-            {
-                return dsn;
-            }
+                /**
+                 * Destructor.
+                 */
+                ~Configuration();
 
-            /**
-             * Get Driver.
-             *
-             * @return Driver name.
-             */
-            const std::string& GetDriver() const
-            {
-                return driver;
-            }
+                /**
+                 * Fill configuration data using connection string.
+                 *
+                 * @param str Pointer to string data.
+                 * @param len String length.
+                 */
+                void FillFromConnectString(const char* str, size_t len);
 
-            /**
-             * Get server host.
-             *
-             * @return Server host.
-             */
-            const std::string& GetHost() const
-            {
-                return host;
-            }
+                /**
+                 * Convert configure to connect string.
+                 *
+                 * @return Connect string.
+                 */
+                std::string ToConnectString() const;
 
-            /**
-             * Get cache.
-             *
-             * @return Cache name.
-             */
-            const std::string& GetCache() const
-            {
-                return cache;
-            }
+                /**
+                 * Fill configuration data using config attributes string.
+                 *
+                 * @param str Pointer to list of zero-terminated strings.
+                 *            Terminated by two zero bytes.
+                 */
+                void FillFromConfigAttributes(const char* attributes);
 
-        private:
-            /** Map containing connect arguments. */
-            typedef std::map<std::string, std::string> ArgumentMap;
+                /**
+                 * Get server port.
+                 *
+                 * @return Server port.
+                 */
+                uint16_t GetPort() const
+                {
+                    return port;
+                }
 
-            /**
-             * Parse connect string into key-value storage.
-             *
-             * @param str String to parse.
-             * @param len String length.
-             * @param params Parsing result.
-             */
-            void ParseAttributeList(const char* str, size_t len, char delimeter, ArgumentMap& args) const;
+                /**
+                 * Get DSN.
+                 *
+                 * @return Data Source Name.
+                 */
+                const std::string& GetDsn() const
+                {
+                    return dsn;
+                }
 
-            /** Data Source Name. */
-            std::string dsn;
+                /**
+                 * Get Driver.
+                 *
+                 * @return Driver name.
+                 */
+                const std::string& GetDriver() const
+                {
+                    return driver;
+                }
 
-            /** Driver name. */
-            std::string driver;
+                /**
+                 * Get server host.
+                 *
+                 * @return Server host.
+                 */
+                const std::string& GetHost() const
+                {
+                    return host;
+                }
 
-            /** Server hostname. */
-            std::string host;
+                /**
+                 * Get cache.
+                 *
+                 * @return Cache name.
+                 */
+                const std::string& GetCache() const
+                {
+                    return cache;
+                }
 
-            /** Port of the server. */
-            uint16_t port;
+            private:
+                /** Map containing connect arguments. */
+                typedef std::map<std::string, std::string> ArgumentMap;
 
-            /** Cache name. */
-            std::string cache;
-        };
+                /**
+                 * Parse connect string into key-value storage.
+                 *
+                 * @param str String to parse.
+                 * @param len String length.
+                 * @param params Parsing result.
+                 */
+                void ParseAttributeList(const char* str, size_t len, char delimeter, ArgumentMap& args) const;
+
+                /** Data Source Name. */
+                std::string dsn;
+
+                /** Driver name. */
+                std::string driver;
+
+                /** Server hostname. */
+                std::string host;
+
+                /** Port of the server. */
+                uint16_t port;
+
+                /** Cache name. */
+                std::string cache;
+            };
+        }
+
     }
 }
 
