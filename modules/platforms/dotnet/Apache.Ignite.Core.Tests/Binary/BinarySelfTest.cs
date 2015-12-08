@@ -1175,25 +1175,26 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }
             });
 
-            // Simple collection
-            var data = new HandleCollection();
-
             // Collection in collection dependency loop
             var collection = new ArrayList {1, 2};
             collection.Add(collection);
-            data.Collection = collection;
 
             var collectionRaw = new ArrayList(collection);
             collectionRaw.Add(collectionRaw);
-            data.CollectionRaw = collectionRaw;
 
             var collectionObj = new ArrayList(collectionRaw);
             collectionObj.Add(collectionObj);
-            data.Object = collectionObj;
 
             var dict = new Hashtable { { 1, 1 }, { 2, 2 } };
             dict.Add(3, dict);
-            data.Dictionary = dict;
+
+            var data = new HandleCollection
+            {
+                Collection = collection,
+                CollectionRaw = collectionRaw,
+                Object = collectionObj,
+                Dictionary = dict
+            };
 
             var res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
 
