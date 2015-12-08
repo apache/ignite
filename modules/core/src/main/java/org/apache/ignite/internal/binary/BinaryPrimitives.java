@@ -17,24 +17,13 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.util.GridUnsafe;
-import sun.misc.Unsafe;
-
 import java.nio.ByteOrder;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * Primitives writer.
  */
 public abstract class BinaryPrimitives {
-    /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** */
-    private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
-
-    /** */
-    private static final long CHAR_ARR_OFF = UNSAFE.arrayBaseOffset(char[].class);
-
     /** Whether little endian is set. */
     private static final boolean BIG_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
 
@@ -44,7 +33,7 @@ public abstract class BinaryPrimitives {
      * @param val Value.
      */
     public static void writeByte(byte[] arr, int off, byte val) {
-        UNSAFE.putByte(arr, BYTE_ARR_OFF + off, val);
+        GridUnsafe.putByte(arr, GridUnsafe.BYTE_ARR_OFF + off, val);
     }
 
     /**
@@ -53,7 +42,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static byte readByte(byte[] arr, int off) {
-        return UNSAFE.getByte(arr, BYTE_ARR_OFF + off);
+        return GridUnsafe.getByte(arr, GridUnsafe.BYTE_ARR_OFF + off);
     }
 
     /**
@@ -62,7 +51,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static byte readByte(long ptr, int off) {
-        return UNSAFE.getByte(ptr + off);
+        return GridUnsafe.getByte(ptr + off);
     }
 
     /**
@@ -73,7 +62,7 @@ public abstract class BinaryPrimitives {
     public static byte[] readByteArray(byte[] arr, int off, int len) {
         byte[] arr0 = new byte[len];
 
-        UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, BYTE_ARR_OFF, len);
+        GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF + off, arr0, GridUnsafe.BYTE_ARR_OFF, len);
 
         return arr0;
     }
@@ -86,7 +75,7 @@ public abstract class BinaryPrimitives {
     public static byte[] readByteArray(long ptr, int off, int len) {
         byte[] arr0 = new byte[len];
 
-        UNSAFE.copyMemory(null, ptr + off, arr0, BYTE_ARR_OFF, len);
+        GridUnsafe.copyMemory(null, ptr + off, arr0, GridUnsafe.BYTE_ARR_OFF, len);
 
         return arr0;
     }
@@ -127,7 +116,7 @@ public abstract class BinaryPrimitives {
         if (BIG_ENDIAN)
             val = Short.reverseBytes(val);
 
-        UNSAFE.putShort(arr, BYTE_ARR_OFF + off, val);
+        GridUnsafe.putShortAligned(arr, GridUnsafe.BYTE_ARR_OFF + off, val);
     }
 
     /**
@@ -136,7 +125,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static short readShort(byte[] arr, int off) {
-        short val = UNSAFE.getShort(arr, BYTE_ARR_OFF + off);
+        short val = GridUnsafe.getShortAligned(arr, GridUnsafe.BYTE_ARR_OFF + off);
 
         if (BIG_ENDIAN)
             val = Short.reverseBytes(val);
@@ -150,7 +139,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static short readShort(long ptr, int off) {
-        short val = UNSAFE.getShort(ptr + off);
+        short val = GridUnsafe.getShort(ptr + off);
 
         if (BIG_ENDIAN)
             val = Short.reverseBytes(val);
@@ -167,7 +156,7 @@ public abstract class BinaryPrimitives {
         if (BIG_ENDIAN)
             val = Character.reverseBytes(val);
 
-        UNSAFE.putChar(arr, BYTE_ARR_OFF + off, val);
+        GridUnsafe.putCharAligned(arr, GridUnsafe.BYTE_ARR_OFF + off, val);
     }
 
     /**
@@ -176,7 +165,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static char readChar(byte[] arr, int off) {
-        char val = UNSAFE.getChar(arr, BYTE_ARR_OFF + off);
+        char val = GridUnsafe.getCharAligned(arr, GridUnsafe.BYTE_ARR_OFF + off);
 
         if (BIG_ENDIAN)
             val = Character.reverseBytes(val);
@@ -190,7 +179,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static char readChar(long ptr, int off) {
-        char val = UNSAFE.getChar(ptr + off);
+        char val = GridUnsafe.getChar(ptr + off);
 
         if (BIG_ENDIAN)
             val = Character.reverseBytes(val);
@@ -206,7 +195,7 @@ public abstract class BinaryPrimitives {
     public static char[] readCharArray(byte[] arr, int off, int len) {
         char[] arr0 = new char[len];
 
-        UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, CHAR_ARR_OFF, len << 1);
+        GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF + off, arr0, GridUnsafe.CHAR_ARR_OFF, len << 1);
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < len; i++)
@@ -224,7 +213,7 @@ public abstract class BinaryPrimitives {
     public static char[] readCharArray(long ptr, int off, int len) {
         char[] arr0 = new char[len];
 
-        UNSAFE.copyMemory(null, ptr + off, arr0, CHAR_ARR_OFF, len << 1);
+        GridUnsafe.copyMemory(null, ptr + off, arr0, GridUnsafe.CHAR_ARR_OFF, len << 1);
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < len; i++)
@@ -243,7 +232,7 @@ public abstract class BinaryPrimitives {
         if (BIG_ENDIAN)
             val = Integer.reverseBytes(val);
 
-        UNSAFE.putInt(arr, BYTE_ARR_OFF + off, val);
+        GridUnsafe.putIntAligned(arr, GridUnsafe.BYTE_ARR_OFF + off, val);
     }
 
     /**
@@ -252,7 +241,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static int readInt(byte[] arr, int off) {
-        int val = UNSAFE.getInt(arr, BYTE_ARR_OFF + off);
+        int val = GridUnsafe.getIntAligned(arr, GridUnsafe.BYTE_ARR_OFF + off);
 
         if (BIG_ENDIAN)
             val = Integer.reverseBytes(val);
@@ -266,7 +255,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static int readInt(long ptr, int off) {
-        int val = UNSAFE.getInt(ptr + off);
+        int val = GridUnsafe.getInt(ptr + off);
 
         if (BIG_ENDIAN)
             val = Integer.reverseBytes(val);
@@ -283,7 +272,7 @@ public abstract class BinaryPrimitives {
         if (BIG_ENDIAN)
             val = Long.reverseBytes(val);
 
-        UNSAFE.putLong(arr, BYTE_ARR_OFF + off, val);
+        GridUnsafe.putLongAligned(arr, GridUnsafe.BYTE_ARR_OFF + off, val);
     }
 
     /**
@@ -292,7 +281,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static long readLong(byte[] arr, int off) {
-        long val = UNSAFE.getLong(arr, BYTE_ARR_OFF + off);
+        long val = GridUnsafe.getLongAligned(arr, GridUnsafe.BYTE_ARR_OFF + off);
 
         if (BIG_ENDIAN)
             val = Long.reverseBytes(val);
@@ -306,7 +295,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static long readLong(long ptr, int off) {
-        long val = UNSAFE.getLong(ptr + off);
+        long val = GridUnsafe.getLong(ptr + off);
 
         if (BIG_ENDIAN)
             val = Long.reverseBytes(val);

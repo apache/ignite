@@ -17,15 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.BOOLEAN_ARR_OFF;
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.BYTE_ARR_OFF;
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.CHAR_ARR_OFF;
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.DOUBLE_ARR_OFF;
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.FLOAT_ARR_OFF;
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.INT_ARR_OFF;
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.LONG_ARR_OFF;
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.SHORT_ARR_OFF;
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.UNSAFE;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * Interop output stream implementation.
@@ -59,12 +51,12 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     @Override public void writeByte(byte val) {
         ensureCapacity(pos + 1);
 
-        UNSAFE.putByte(data + pos++, val);
+        GridUnsafe.putByte(data + pos++, val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeByteArray(byte[] val) {
-        copyAndShift(val, BYTE_ARR_OFF, val.length);
+        copyAndShift(val, GridUnsafe.BYTE_ARR_OFF, val.length);
     }
 
     /** {@inheritDoc} */
@@ -74,63 +66,63 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
 
     /** {@inheritDoc} */
     @Override public void writeBooleanArray(boolean[] val) {
-        copyAndShift(val, BOOLEAN_ARR_OFF, val.length);
+        copyAndShift(val, GridUnsafe.BOOLEAN_ARR_OFF, val.length);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(short val) {
         ensureCapacity(pos + 2);
 
-        UNSAFE.putShort(data + pos, val);
+        GridUnsafe.putShort(data + pos, val);
 
         shift(2);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShortArray(short[] val) {
-        copyAndShift(val, SHORT_ARR_OFF, val.length << 1);
+        copyAndShift(val, GridUnsafe.SHORT_ARR_OFF, val.length << 1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeChar(char val) {
         ensureCapacity(pos + 2);
 
-        UNSAFE.putChar(data + pos, val);
+        GridUnsafe.putChar(data + pos, val);
 
         shift(2);
     }
 
     /** {@inheritDoc} */
     @Override public void writeCharArray(char[] val) {
-        copyAndShift(val, CHAR_ARR_OFF, val.length << 1);
+        copyAndShift(val, GridUnsafe.CHAR_ARR_OFF, val.length << 1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeInt(int val) {
         ensureCapacity(pos + 4);
 
-        UNSAFE.putInt(data + pos, val);
+        GridUnsafe.putInt(data + pos, val);
 
         shift(4);
     }
 
     /** {@inheritDoc} */
     @Override public void writeIntArray(int[] val) {
-        copyAndShift(val, INT_ARR_OFF, val.length << 2);
+        copyAndShift(val, GridUnsafe.INT_ARR_OFF, val.length << 2);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(int pos, short val) {
         ensureCapacity(pos + 2);
 
-        UNSAFE.putShort(data + pos, val);
+        GridUnsafe.putShort(data + pos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeInt(int pos, int val) {
         ensureCapacity(pos + 4);
 
-        UNSAFE.putInt(data + pos, val);
+        GridUnsafe.putInt(data + pos, val);
     }
 
     /** {@inheritDoc} */
@@ -140,21 +132,21 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
 
     /** {@inheritDoc} */
     @Override public void writeFloatArray(float[] val) {
-        copyAndShift(val, FLOAT_ARR_OFF, val.length << 2);
+        copyAndShift(val, GridUnsafe.FLOAT_ARR_OFF, val.length << 2);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLong(long val) {
         ensureCapacity(pos + 8);
 
-        UNSAFE.putLong(data + pos, val);
+        GridUnsafe.putLong(data + pos, val);
 
         shift(8);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLongArray(long[] val) {
-        copyAndShift(val, LONG_ARR_OFF, val.length << 3);
+        copyAndShift(val, GridUnsafe.LONG_ARR_OFF, val.length << 3);
     }
 
     /** {@inheritDoc} */
@@ -164,12 +156,12 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
 
     /** {@inheritDoc} */
     @Override public void writeDoubleArray(double[] val) {
-        copyAndShift(val, DOUBLE_ARR_OFF, val.length << 3);
+        copyAndShift(val, GridUnsafe.DOUBLE_ARR_OFF, val.length << 3);
     }
 
     /** {@inheritDoc} */
     @Override public void write(byte[] arr, int off, int len) {
-        copyAndShift(arr, BYTE_ARR_OFF + off, len);
+        copyAndShift(arr, GridUnsafe.BYTE_ARR_OFF + off, len);
     }
 
     /** {@inheritDoc} */
@@ -234,7 +226,7 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteByte(byte val) {
-        UNSAFE.putByte(data + pos++, val);
+        GridUnsafe.putByte(data + pos++, val);
     }
 
     /** {@inheritDoc} */
@@ -244,38 +236,38 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteShort(short val) {
-        UNSAFE.putShort(data + pos, val);
+        GridUnsafe.putShort(data + pos, val);
 
         shift(2);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteShort(int pos, short val) {
-        UNSAFE.putShort(data + pos, val);
+        GridUnsafe.putShort(data + pos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteChar(char val) {
-        UNSAFE.putChar(data + pos, val);
+        GridUnsafe.putChar(data + pos, val);
 
         shift(2);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteInt(int val) {
-        UNSAFE.putInt(data + pos, val);
+        GridUnsafe.putInt(data + pos, val);
 
         shift(4);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteInt(int pos, int val) {
-        UNSAFE.putInt(data + pos, val);
+        GridUnsafe.putInt(data + pos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteLong(long val) {
-        UNSAFE.putLong(data + pos, val);
+        GridUnsafe.putLong(data + pos, val);
 
         shift(8);
     }
@@ -335,7 +327,7 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     private void copyAndShift(Object src, long off, int len) {
         ensureCapacity(pos + len);
 
-        UNSAFE.copyMemory(src, off, null, data + pos, len);
+        GridUnsafe.copyMemory(src, off, null, data + pos, len);
 
         shift(len);
     }

@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.binary.streams;
 
 import java.nio.ByteOrder;
-import org.apache.ignite.internal.util.GridUnsafe;
-import sun.misc.Unsafe;
 
 /**
  * Binary abstract stream.
@@ -33,33 +31,6 @@ public abstract class BinaryAbstractStream implements BinaryStream {
 
     /** Whether little endian is used on the platform. */
     protected static final boolean LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
-
-    /** Unsafe instance. */
-    protected static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** Array offset: boolean. */
-    protected static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
-
-    /** Array offset: byte. */
-    protected static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
-
-    /** Array offset: short. */
-    protected static final long SHORT_ARR_OFF = UNSAFE.arrayBaseOffset(short[].class);
-
-    /** Array offset: char. */
-    protected static final long CHAR_ARR_OFF = UNSAFE.arrayBaseOffset(char[].class);
-
-    /** Array offset: int. */
-    protected static final long INT_ARR_OFF = UNSAFE.arrayBaseOffset(int[].class);
-
-    /** Array offset: float. */
-    protected static final long FLOAT_ARR_OFF = UNSAFE.arrayBaseOffset(float[].class);
-
-    /** Array offset: long. */
-    protected static final long LONG_ARR_OFF = UNSAFE.arrayBaseOffset(long[].class);
-
-    /** Array offset: double. */
-    protected static final long DOUBLE_ARR_OFF = UNSAFE.arrayBaseOffset(double[].class);
 
     /** Position. */
     protected int pos;
