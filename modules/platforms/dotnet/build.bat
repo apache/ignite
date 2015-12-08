@@ -35,20 +35,9 @@ echo Copy client libraries into the distribution directory: %TARGET_DIR%
 rmdir /S /Q %TARGET_DIR%
 IF NOT EXIST %TARGET_DIR%\NUL mkdir %TARGET_DIR%
 
-copy /Y gridgain-exe\bin\%PLATFORM%\Release\Apache.Ignite.Core.dll %TARGET_DIR%
-copy /Y gridgain-exe\bin\%PLATFORM%\Release\GridGain.Core.dll %TARGET_DIR%
-copy /Y gridgain-exe\bin\%PLATFORM%\Release\GridGain.Core.xml %TARGET_DIR%
-copy /Y gridgain-exe\bin\%PLATFORM%\Release\GridGain.exe %TARGET_DIR%
-copy /Y gridgain-exe\bin\%PLATFORM%\Release\GridGain.exe.config %TARGET_DIR%
+copy /Y Apache.Ignite\bin\%PLATFORM%\Release\*.* %TARGET_DIR%
 
 copy /Y readme.txt %TARGET_DIR%
-
-rem rem Execute tests.
-rem cd builds
-rem ..\gridgain-test\bin\Release\GridGainTest.exe
-rem cd ..
-rem
-rem IF NOT EXIST builds\TestResult.xml GOTO INVALID_TEST_RESULT
 
 goto DONE
 
