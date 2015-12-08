@@ -226,6 +226,7 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridH2RowRange.class);
 //        gen.generateAndWrite(GridH2RowRangeBounds.class);
 //        gen.generateAndWrite(GridH2QueryRequest.class);
+//        gen.generateAndWrite(GridH2RowMessage.class);
     }
 
     /**
