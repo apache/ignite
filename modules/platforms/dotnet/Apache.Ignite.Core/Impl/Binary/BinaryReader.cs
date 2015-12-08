@@ -853,7 +853,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="pos">Position.</param>
         /// <param name="obj">Object.</param>
-        private void AddHandle(int pos, object obj)
+        internal void AddHandle(int pos, object obj)
         {
             if (_hnds == null)
                 _hnds = new BinaryReaderHandleDictionary(pos, obj);

@@ -1138,6 +1138,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IBinaryStream stream = ctx.Stream;
 
+            int pos = stream.Position;
+
             int len = stream.ReadInt();
 
             byte colType = ctx.Stream.ReadByte();
@@ -1157,6 +1159,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             else
                 res = factory.Invoke(len);
+
+            ctx.AddHandle(pos - 1, res);
 
             if (adder == null)
                 adder = (col, elem) => { ((ArrayList) col).Add(elem); };
