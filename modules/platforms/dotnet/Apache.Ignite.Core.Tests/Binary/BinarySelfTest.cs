@@ -1204,6 +1204,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             var dict = new Hashtable { { 1, 1 }, { 2, 2 } };
             dict.Add(3, dict);
 
+            var arr = collectionRaw.ToArray();
+            arr[1] = arr;
+
             object entry = new DictionaryEntry(1, 2);
             var dictionaryEntryValSetter = DelegateConverter.CompileFieldSetter(typeof (DictionaryEntry)
                 .GetField("_value", BindingFlags.Instance | BindingFlags.NonPublic));
@@ -1215,6 +1218,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 CollectionRaw = collectionRaw,
                 Object = collectionObj,
                 Dictionary = dict,
+                Array = arr,
                 DictionaryEntry = (DictionaryEntry) entry
             };
 
@@ -1242,6 +1246,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(1, resDict[1]);
             Assert.AreEqual(2, resDict[2]);
             Assert.AreSame(resDict, resDict[3]);
+
+            var resArr = res.Array;
+            Assert.AreEqual(arr[0], resArr[0]);
+            Assert.AreSame(resArr, resArr[1]);
+            Assert.AreSame(resCollection, resArr[2]);
+            Assert.AreSame(resCollectionRaw, resArr[3]);
+            Assert.AreSame(resCollectionObj, resArr[4]);
 
             var resEntry = res.DictionaryEntry;
             var innerEntry = (DictionaryEntry) resEntry.Value;
@@ -2169,6 +2180,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             public DictionaryEntry DictionaryEntry { get; set; }
             public ICollection CollectionRaw { get; set; }
             public object Object { get; set; }
+            public object[] Array { get; set; }
 
             public void WriteBinary(IBinaryWriter writer)
             {
@@ -2176,6 +2188,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteDictionary("dict", Dictionary);
                 writer.WriteObject("dictEntry", DictionaryEntry);
                 writer.WriteObject("obj", Object);
+                writer.WriteArray("arr", Array);
                 writer.GetRawWriter().WriteCollection(CollectionRaw);
             }
 
@@ -2185,6 +2198,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Dictionary = reader.ReadDictionary("dict");
                 DictionaryEntry = reader.ReadObject<DictionaryEntry>("dictEntry");
                 Object = reader.ReadObject<object>("obj");
+                Array = reader.ReadArray<object>("arr");
                 CollectionRaw = reader.GetRawReader().ReadCollection();
             }
         }
