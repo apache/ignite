@@ -14,6 +14,9 @@
     <Filter Include="Code\meta">
       <UniqueIdentifier>{71d6243f-e8c9-4f21-a5a3-3dc89641af28}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\config">
+      <UniqueIdentifier>{71117941-fa47-4768-afe8-901c94d431c7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\odbc.cpp">
@@ -23,9 +26,6 @@
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\environment.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\configuration.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\statement.cpp">
@@ -38,9 +38,6 @@
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common_types.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\connection_info.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\utility.cpp">
@@ -73,6 +70,12 @@
     <ClCompile Include="..\..\src\meta\table_meta.cpp">
       <Filter>Code\meta</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\config\configuration.cpp">
+      <Filter>Code\config</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\config\connection_info.cpp">
+      <Filter>Code\config</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -87,13 +90,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\common_types.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\configuration.h">
-      <Filter>Code</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\connection.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\connection_info.h">
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\cursor.h">
@@ -143,6 +140,12 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\meta\table_meta.h">
       <Filter>Code\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\config\configuration.h">
+      <Filter>Code\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\config\connection_info.h">
+      <Filter>Code\config</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

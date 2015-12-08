@@ -23,9 +23,9 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <ignite/odbc/configuration.h>
+#include <ignite/odbc/config/configuration.h>
 
-using namespace ignite::odbc;
+using namespace ignite::odbc::config;
 
 namespace
 {

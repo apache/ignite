@@ -29,9 +29,9 @@
 #include <sqlext.h>
 #include <odbcinst.h>
 
+#include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/type_traits.h"
-#include "ignite/odbc/configuration.h"
 #include "ignite/odbc/environment.h"
 #include "ignite/odbc/connection.h"
 
@@ -54,7 +54,7 @@ BOOL INSTAPI ConfigDSN(HWND     hwndParent,
 {
     LOG_MSG("ConfigDSN called\n");
 
-    ignite::odbc::Configuration config;
+    ignite::odbc::config::Configuration config;
 
     config.FillFromConfigAttributes(attributes);
 
@@ -104,7 +104,7 @@ SQLRETURN SQLGetInfo(SQLHDBC        conn,
                      SQLSMALLINT*   length)
 {
     using ignite::odbc::Connection;
-    using ignite::odbc::ConnectionInfo;
+    using ignite::odbc::config::ConnectionInfo;
 
     LOG_MSG("SQLGetInfo called: %d (%s)\n", infoType, ConnectionInfo::InfoTypeToString(infoType));
 
@@ -339,7 +339,7 @@ SQLRETURN SQL_API SQLDriverConnect(SQLHDBC      conn,
     if (inConnectionStringLen == SQL_NTS && inConnectionString)
         inConnectionStringLen = static_cast<SQLSMALLINT>(strlen((char*)inConnectionString));
 
-    ignite::odbc::Configuration config;
+    ignite::odbc::config::Configuration config;
 
     config.FillFromConnectString(reinterpret_cast<const char*>(inConnectionString), inConnectionStringLen);
 

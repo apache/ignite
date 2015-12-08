@@ -31,9 +31,9 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <ignite/odbc/connection_info.h>
+#include <ignite/odbc/config/connection_info.h>
 
-using namespace ignite::odbc;
+using namespace ignite::odbc::config;
 
 BOOST_AUTO_TEST_SUITE(ConnectionInfoTestSuite)
 

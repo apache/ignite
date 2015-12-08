@@ -16,17 +16,11 @@
     <ClCompile Include="..\..\src\configuration_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\odbc-driver\src\configuration.cpp">
-      <Filter>Externals</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\odbc-driver\src\utility.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\connection_info_test.cpp">
       <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\odbc-driver\src\connection_info.cpp">
-      <Filter>Externals</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\parser_test.cpp">
       <Filter>Code</Filter>
@@ -60,6 +54,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\utility_test.cpp">
       <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc-driver\src\config\configuration.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc-driver\src\config\connection_info.cpp">
+      <Filter>Externals</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

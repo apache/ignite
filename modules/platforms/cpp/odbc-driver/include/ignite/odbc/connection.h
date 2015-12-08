@@ -24,7 +24,7 @@
 
 #include "ignite/odbc/socket_client.h"
 #include "ignite/odbc/statement.h"
-#include "ignite/odbc/connection_info.h"
+#include "ignite/odbc/config/connection_info.h"
 
 namespace ignite
 {
@@ -43,7 +43,7 @@ namespace ignite
              * Get connection info.
              * @return Connection info.
              */
-            const ConnectionInfo& GetInfo() const;
+            const config::ConnectionInfo& GetInfo() const;
 
             /**
              * Establish connection to ODBC server.

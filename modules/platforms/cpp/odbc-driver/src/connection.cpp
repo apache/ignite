@@ -47,10 +47,10 @@ namespace ignite
             // No-op.
         }
 
-        const ConnectionInfo & Connection::GetInfo() const
+        const config::ConnectionInfo & Connection::GetInfo() const
         {
             // Connection info is the same for all connections now.
-            static ConnectionInfo info;
+            static config::ConnectionInfo info;
 
             return info;
         }
