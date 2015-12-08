@@ -1176,10 +1176,18 @@ namespace Apache.Ignite.Core.Tests.Binary
             });
 
             // Simple collection
-            var data = new HandleCollection {Collection = new[] {1, 2, 3}};
+            var data = new HandleCollection
+            {
+                Collection = new[] {1, 2, 3},
+                CollectionRaw = new[] {"1", "2"},
+                Object = new[] {1.1, 2.3}
+            };
+
             var res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
 
             CollectionAssert.AreEqual(data.Collection, res.Collection);
+            CollectionAssert.AreEqual(data.CollectionRaw, res.CollectionRaw);
+            CollectionAssert.AreEqual((ICollection) data.Object, (ICollection) res.Object);
 
             // Collection in collection dependency loop
             var collection = new ArrayList {1, 2};
@@ -2112,16 +2120,21 @@ namespace Apache.Ignite.Core.Tests.Binary
         public class HandleCollection : IBinarizable
         {
             public ICollection Collection { get; set; }
+            public ICollection CollectionRaw { get; set; }
+            public object Object { get; set; }
 
             public void WriteBinary(IBinaryWriter writer)
             {
-                // TODO: Test WriteObject/ReadObject also
                 writer.WriteCollection("col", Collection);
+                writer.WriteObject("obj", Object);
+                writer.GetRawWriter().WriteCollection(CollectionRaw);
             }
 
             public void ReadBinary(IBinaryReader reader)
             {
                 Collection = reader.ReadCollection("col");
+                Object = reader.ReadObject<object>("obj");
+                CollectionRaw = reader.GetRawReader().ReadCollection();
             }
         }
 
