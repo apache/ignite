@@ -971,7 +971,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                     info("Disconnected: " + evt);
 
                     disconnectLatch.countDown();
-                } else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                }
+                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
                     info("Reconnected: " + evt);
 
                     reconnectLatch.countDown();
@@ -1096,7 +1097,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         for (int iter = 0; iter < 3; iter++) {
             log.info("Iteration: " + iter);
 
-            reconnectClientNodes(clients, grid(0), null);
+            reconnectClientNodes(log, clients, grid(0), null);
 
             for (Ignite client : clients) {
                 IgniteCache<Object, Object> cache = client.cache(null);
