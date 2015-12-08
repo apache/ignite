@@ -22,7 +22,7 @@
 
 #include "ignite/odbc/result_page.h"
 #include "ignite/odbc/common_types.h"
-#include "ignite/odbc/application_data_buffer.h"
+#include "ignite/odbc/app/application_data_buffer.h"
 
 namespace ignite
 {
@@ -59,7 +59,7 @@ namespace ignite
              * @param dataBuf Application data buffer.
              * @return True on success.
              */
-            bool ReadColumnToBuffer(ApplicationDataBuffer& dataBuf);
+            bool ReadColumnToBuffer(app::ApplicationDataBuffer& dataBuf);
 
             /**
              * Skip columnt.

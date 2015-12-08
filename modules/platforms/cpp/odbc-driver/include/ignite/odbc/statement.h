@@ -30,7 +30,7 @@
 #include "ignite/odbc/meta/column_meta.h"
 #include "ignite/odbc/meta/table_meta.h"
 #include "ignite/odbc/query/query.h"
-#include "ignite/odbc/application_data_buffer.h"
+#include "ignite/odbc/app/application_data_buffer.h"
 #include "ignite/odbc/parser.h"
 #include "ignite/odbc/common_types.h"
 #include "ignite/odbc/cursor.h"
@@ -61,7 +61,7 @@ namespace ignite
              * @param columnIdx Column index.
              * @param buffer Buffer to put column data to.
              */
-            void BindColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer);
+            void BindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer);
 
             /**
              * Unbind specified column buffer.
@@ -167,7 +167,7 @@ namespace ignite
             Connection& connection;
 
             /** Column bindings. */
-            ColumnBindingMap columnBindings;
+            app::ColumnBindingMap columnBindings;
 
             /** Underlying query. */
             std::auto_ptr<query::Query> currentQuery;

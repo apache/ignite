@@ -38,7 +38,7 @@ namespace ignite
             // No-op.
         }
 
-        void Statement::BindColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer)
+        void Statement::BindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer)
         {
             columnBindings[columnIdx] = buffer;
         }

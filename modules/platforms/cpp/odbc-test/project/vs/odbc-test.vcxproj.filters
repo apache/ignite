@@ -34,9 +34,6 @@
     <ClCompile Include="..\..\src\application_data_buffer_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\odbc-driver\src\application_data_buffer.cpp">
-      <Filter>Externals</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\row_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -59,6 +56,9 @@
       <Filter>Externals</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\odbc-driver\src\config\connection_info.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc-driver\src\app\application_data_buffer.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
   </ItemGroup>

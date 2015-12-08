@@ -109,7 +109,7 @@ namespace ignite
             return hdr;
         }
 
-        bool Row::ReadColumnToBuffer(ApplicationDataBuffer& dataBuf)
+        bool Row::ReadColumnToBuffer(app::ApplicationDataBuffer& dataBuf)
         {
             using namespace ignite::impl::binary;
             using namespace ignite::impl::interop;

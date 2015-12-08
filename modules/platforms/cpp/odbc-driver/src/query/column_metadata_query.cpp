@@ -128,7 +128,7 @@ namespace ignite
                 return columnsMeta;
             }
 
-            SqlResult ColumnMetadataQuery::FetchNextRow(ColumnBindingMap & columnBindings)
+            SqlResult ColumnMetadataQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
             {
                 if (!executed)
                     return SQL_RESULT_ERROR;
@@ -136,12 +136,12 @@ namespace ignite
                 if (cursor == meta.end())
                     return SQL_RESULT_NO_DATA;
 
-                ColumnBindingMap::iterator it;
+                app::ColumnBindingMap::iterator it;
 
                 for (it = columnBindings.begin(); it != columnBindings.end(); ++it)
                 {
                     uint16_t columnIdx = it->first;
-                    ApplicationDataBuffer& buffer = it->second;
+                    app::ApplicationDataBuffer& buffer = it->second;
                     const meta::ColumnMeta& currentColumn = *cursor;
                     uint8_t columnType = currentColumn.GetDataType();
 

@@ -71,7 +71,7 @@ namespace ignite
                  *
                  * @return Operation result.
                  */
-                virtual SqlResult FetchNextRow(ColumnBindingMap& columnBindings);
+                virtual SqlResult FetchNextRow(app::ColumnBindingMap& columnBindings);
 
                 /**
                  * Close query.

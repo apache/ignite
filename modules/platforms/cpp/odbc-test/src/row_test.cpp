@@ -33,6 +33,7 @@
 
 #include <ignite/odbc/row.h>
 
+using namespace ignite::odbc::app;
 using namespace ignite::odbc;
 
 

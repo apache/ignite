@@ -22,9 +22,10 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/guid.h>
-#include <ignite/odbc/application_data_buffer.h>
+#include <ignite/odbc/app/application_data_buffer.h>
 
-using namespace ignite::odbc;
+using namespace ignite::odbc::app;
+using namespace ignite::odbc::type_traits;
 
 BOOST_AUTO_TEST_SUITE(ApplicationDataBufferTestSuite)
 
@@ -33,7 +34,7 @@ BOOST_AUTO_TEST_CASE(TestIntToString)
     char buffer[1024];
     int64_t reslen;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_SQL_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_SQL_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
 
     appBuf.PutInt8(12);
     BOOST_REQUIRE(!strcmp(buffer, "12"));
@@ -65,7 +66,7 @@ BOOST_AUTO_TEST_CASE(TestFloatToString)
     char buffer[1024];
     int64_t reslen;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_SQL_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_SQL_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
 
     appBuf.PutFloat(12.42f);
     BOOST_REQUIRE(!strcmp(buffer, "12.42"));
@@ -89,7 +90,7 @@ BOOST_AUTO_TEST_CASE(TestGuidToString)
     char buffer[1024];
     int64_t reslen;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_SQL_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_SQL_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
 
     ignite::Guid guid(0x1da1ef8f39ff4d62ULL, 0x8b72e8e9f3371801ULL);
 
@@ -104,7 +105,7 @@ BOOST_AUTO_TEST_CASE(TestBinaryToString)
     char buffer[1024];
     int64_t reslen;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_SQL_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_SQL_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
 
     int8_t binary[] = { 's', 'o', 'm', 'e', ' ', 'd', 'a', 't', 'a', '\0' };
 
@@ -119,7 +120,7 @@ BOOST_AUTO_TEST_CASE(TestStringToString)
     char buffer[1024];
     int64_t reslen;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_SQL_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_SQL_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
 
     std::string testString("Test string");
 
@@ -134,7 +135,7 @@ BOOST_AUTO_TEST_CASE(TestStringToWstring)
     wchar_t buffer[1024];
     int64_t reslen;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_SQL_TYPE_WCHAR, buffer, sizeof(buffer), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_SQL_TYPE_WCHAR, buffer, sizeof(buffer), &reslen);
 
     std::string testString("Test string");
 
@@ -147,7 +148,7 @@ BOOST_AUTO_TEST_CASE(TestStringToLong)
     long numBuf;
     int64_t reslen;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_SQL_TYPE_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_SQL_TYPE_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen);
 
     appBuf.PutString("424242424");
     BOOST_REQUIRE(numBuf == 424242424L);
@@ -161,7 +162,7 @@ BOOST_AUTO_TEST_CASE(TestStringToTiny)
     int8_t numBuf;
     int64_t reslen;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_SQL_TYPE_SIGNED_TINYINT, &numBuf, sizeof(numBuf), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_SQL_TYPE_SIGNED_TINYINT, &numBuf, sizeof(numBuf), &reslen);
 
     appBuf.PutString("12");
     BOOST_REQUIRE(numBuf == 12);
@@ -175,7 +176,7 @@ BOOST_AUTO_TEST_CASE(TestStringToFloat)
     float numBuf;
     int64_t reslen;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_SQL_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_SQL_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen);
 
     appBuf.PutString("12.21");
     BOOST_REQUIRE_CLOSE_FRACTION(numBuf, 12.21, 0.0000001);
@@ -189,7 +190,7 @@ BOOST_AUTO_TEST_CASE(TestIntToFloat)
     float numBuf;
     int64_t reslen;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_SQL_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_SQL_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen);
 
     appBuf.PutInt8(5);
     BOOST_REQUIRE_CLOSE_FRACTION(numBuf, 5.0, 0.0000001);
@@ -215,7 +216,7 @@ BOOST_AUTO_TEST_CASE(TestFloatToShort)
     short numBuf;
     int64_t reslen;
 
-    ApplicationDataBuffer appBuf(type_traits::IGNITE_SQL_TYPE_SIGNED_SHORT, &numBuf, sizeof(numBuf), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_SQL_TYPE_SIGNED_SHORT, &numBuf, sizeof(numBuf), &reslen);
 
     appBuf.PutDouble(5.42);
     BOOST_REQUIRE(numBuf == 5);

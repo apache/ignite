@@ -451,7 +451,7 @@ SQLRETURN SQL_API SQLBindCol(SQLHSTMT       stmt,
     using namespace ignite::odbc::type_traits;
 
     using ignite::odbc::Statement;
-    using ignite::odbc::ApplicationDataBuffer;
+    using ignite::odbc::app::ApplicationDataBuffer;
 
     LOG_MSG("SQLBindCol called: index=%d, type=%d\n", colNum, targetType);
 

@@ -49,7 +49,7 @@ namespace ignite
                 return resultMeta;
             }
 
-            SqlResult DataQuery::FetchNextRow(ColumnBindingMap & columnBindings)
+            SqlResult DataQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
             {
                 if (!cursor.get())
                     return SQL_RESULT_ERROR;
@@ -76,7 +76,7 @@ namespace ignite
 
                 for (int32_t i = 1; i < row->GetSize() + 1; ++i)
                 {
-                    ColumnBindingMap::iterator it = columnBindings.find(i);
+                    app::ColumnBindingMap::iterator it = columnBindings.find(i);
 
                     bool success;
 
