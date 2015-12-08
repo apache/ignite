@@ -884,23 +884,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Determines whether header at current position is HDR_NULL.
-        /// </summary>
-        private bool IsNotNullHeader(byte expHdr)
-        {
-            var hdr = ReadByte();
-            
-            if (hdr == BinaryUtils.HdrNull)
-                return false;
-
-            if (expHdr != hdr)
-                throw new BinaryObjectException(string.Format("Invalid header on deserialization. " +
-                                                          "Expected: {0} but was: {1}", expHdr, hdr));
-
-            return true;
-        }
-
-        /// <summary>
         /// Seeks the field by name.
         /// </summary>
         private bool SeekField(string fieldName)
@@ -961,7 +944,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T Read<T>(Func<BinaryReader, T> readFunc, byte expHdr)
         {
-            return IsNotNullHeader(expHdr) ? readFunc(this) : default(T);
+            return Read(() => readFunc(this), expHdr);
         }
 
         /// <summary>
@@ -969,7 +952,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T Read<T>(Func<IBinaryStream, T> readFunc, byte expHdr)
         {
-            return IsNotNullHeader(expHdr) ? readFunc(Stream) : default(T);
+            return Read(() => readFunc(Stream), expHdr);
         }
 
         /// <summary>
@@ -977,7 +960,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T Read<T>(Func<T> readFunc, byte expHdr)
         {
-            return IsNotNullHeader(expHdr) ? readFunc() : default(T);
+            var hdr = ReadByte();
+
+            if (hdr == BinaryUtils.HdrNull)
+                return default(T);
+
+            if (hdr == BinaryUtils.HdrHnd)
+                return ReadHandleObject<T>(Stream.Position - 1);
+
+            if (expHdr != hdr)
+                throw new BinaryObjectException(string.Format("Invalid header on deserialization. " +
+                                                          "Expected: {0} but was: {1}", expHdr, hdr));
+
+            return readFunc();
         }
 
         /// <summary>
