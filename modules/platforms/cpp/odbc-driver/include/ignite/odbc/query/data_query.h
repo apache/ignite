@@ -19,6 +19,7 @@
 #define _IGNITE_ODBC_DRIVER_DATA_QUERY
 
 #include "ignite/odbc/query/query.h"
+#include "ignite/odbc/app/parameter.h"
 #include "ignite/odbc/cursor.h"
 
 namespace ignite
@@ -39,7 +40,7 @@ namespace ignite
                 /**
                  * Constructor.
                  */
-                DataQuery(Connection& connection, const std::string& sql);
+                DataQuery(Connection& connection, const std::string& sql, const app::ParameterBindingMap& params);
 
                 /**
                  * Destructor.
@@ -109,6 +110,9 @@ namespace ignite
 
                 /** SQL Query. */
                 std::string sql;
+
+                /** Parameter bindings. */
+                const app::ParameterBindingMap& params;
 
                 /** Columns metadata. */
                 meta::ColumnMetaVector resultMeta;

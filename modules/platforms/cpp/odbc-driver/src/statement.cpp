@@ -53,19 +53,36 @@ namespace ignite
             columnBindings.clear();
         }
 
-        bool Statement::PrepareSqlQuery(const char* query, size_t len)
+        void Statement::BindParameter(uint16_t paramIdx, const app::Parameter& param)
         {
-            return ExecuteSqlQuery(query, len);
+            paramBindings[paramIdx] = param;
         }
 
-        bool Statement::ExecuteSqlQuery(const char* query, size_t len)
+        void Statement::UnbindParameter(uint16_t paramIdx)
+        {
+            paramBindings.erase(paramIdx);
+        }
+
+        void Statement::UnbindAllParameters()
+        {
+            paramBindings.clear();
+        }
+
+        bool Statement::PrepareSqlQuery(const char* query, size_t len)
         {
             if (currentQuery.get())
                 currentQuery->Close();
 
             std::string sql(query, len);
 
-            currentQuery.reset(new query::DataQuery(connection, sql));
+            currentQuery.reset(new query::DataQuery(connection, sql, paramBindings));
+
+            return false;
+        }
+
+        bool Statement::ExecuteSqlQuery(const char* query, size_t len)
+        {
+            PrepareSqlQuery(query, len);
 
             return ExecuteSqlQuery();
         }

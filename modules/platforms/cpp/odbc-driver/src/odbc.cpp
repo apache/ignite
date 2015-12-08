@@ -648,7 +648,11 @@ SQLRETURN SQL_API SQLBindParameter(SQLHSTMT     stmt,
                                    SQLLEN       bufferLen,
                                    SQLLEN*      resLen)
 {
+    using namespace ignite::odbc::type_traits;
+
     using ignite::odbc::Statement;
+    using ignite::odbc::app::ApplicationDataBuffer;
+    using ignite::odbc::app::Parameter;
     using ignite::odbc::type_traits::IsSqlTypeSupported;
 
     LOG_MSG("SQLBindParameter called\n");
@@ -666,6 +670,17 @@ SQLRETURN SQL_API SQLBindParameter(SQLHSTMT     stmt,
 
     if (!IsSqlTypeSupported(paramSqlType))
         return SQL_ERROR;
+
+    IgniteSqlType driverType = ToDriverType(bufferType);
+
+    if (driverType == IGNITE_ODBC_C_TYPE_UNSUPPORTED)
+        return SQL_ERROR;
+
+    ApplicationDataBuffer dataBuffer(driverType, buffer, bufferLen, resLen);
+
+    Parameter param(dataBuffer, paramSqlType, columnSize, decDigits);
+
+    statement->BindParameter(paramIdx, param);
 
     return SQL_SUCCESS;
 }

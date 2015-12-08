@@ -31,6 +31,7 @@
 #include "ignite/odbc/meta/table_meta.h"
 #include "ignite/odbc/query/query.h"
 #include "ignite/odbc/app/application_data_buffer.h"
+#include "ignite/odbc/app/parameter.h"
 #include "ignite/odbc/parser.h"
 #include "ignite/odbc/common_types.h"
 #include "ignite/odbc/cursor.h"
@@ -74,6 +75,26 @@ namespace ignite
              * Unbind all column buffers.
              */
             void UnbindAllColumns();
+
+            /**
+             * Bind parameter.
+             *
+             * @param paramIdx Parameter index.
+             * @param param Parameter.
+             */
+            void BindParameter(uint16_t paramIdx, const app::Parameter& param);
+
+            /**
+             * Unbind specified parameter.
+             *
+             * @param paramIdx Parameter index.
+             */
+            void UnbindParameter(uint16_t paramIdx);
+
+            /**
+             * Unbind all parameters.
+             */
+            void UnbindAllParameters();
 
             /**
              * Prepare SQL query.
@@ -168,6 +189,9 @@ namespace ignite
 
             /** Column bindings. */
             app::ColumnBindingMap columnBindings;
+
+            /** Parameter bindings. */
+            app::ParameterBindingMap paramBindings;
 
             /** Underlying query. */
             std::auto_ptr<query::Query> currentQuery;

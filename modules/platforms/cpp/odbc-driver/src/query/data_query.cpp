@@ -25,8 +25,9 @@ namespace ignite
     {
         namespace query
         {
-            DataQuery::DataQuery(Connection& connection, const std::string& sql) : 
-                connection(connection), sql(sql)
+            DataQuery::DataQuery(Connection& connection, const std::string& sql, 
+                const app::ParameterBindingMap& params) :
+                connection(connection), sql(sql), params(params)
             {
                 // No-op.
             }
@@ -113,7 +114,7 @@ namespace ignite
             {
                 const std::string& cacheName = connection.GetCache();
 
-                QueryExecuteRequest req(cacheName, sql);
+                QueryExecuteRequest req(cacheName, sql, params);
                 QueryExecuteResponse rsp;
 
                 bool success = connection.SyncMessage(req, rsp);
