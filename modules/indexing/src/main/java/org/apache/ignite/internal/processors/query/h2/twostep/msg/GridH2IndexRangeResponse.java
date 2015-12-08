@@ -155,30 +155,36 @@ public class GridH2IndexRangeResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("err", err))
+                if (!writer.writeInt("batchLookupId", batchLookupId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeUuid("originNodeId", originNodeId))
+                if (!writer.writeString("err", err))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("qryId", qryId))
+                if (!writer.writeUuid("originNodeId", originNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeCollection("ranges", ranges, MessageCollectionItemType.MSG))
+                if (!writer.writeLong("qryId", qryId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
+                if (!writer.writeCollection("ranges", ranges, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
                 if (!writer.writeByte("status", status))
                     return false;
 
@@ -198,7 +204,7 @@ public class GridH2IndexRangeResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                err = reader.readString("err");
+                batchLookupId = reader.readInt("batchLookupId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -206,7 +212,7 @@ public class GridH2IndexRangeResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                originNodeId = reader.readUuid("originNodeId");
+                err = reader.readString("err");
 
                 if (!reader.isLastRead())
                     return false;
@@ -214,7 +220,7 @@ public class GridH2IndexRangeResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                qryId = reader.readLong("qryId");
+                originNodeId = reader.readUuid("originNodeId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -222,7 +228,7 @@ public class GridH2IndexRangeResponse implements Message {
                 reader.incrementState();
 
             case 3:
-                ranges = reader.readCollection("ranges", MessageCollectionItemType.MSG);
+                qryId = reader.readLong("qryId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -230,6 +236,14 @@ public class GridH2IndexRangeResponse implements Message {
                 reader.incrementState();
 
             case 4:
+                ranges = reader.readCollection("ranges", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
                 status = reader.readByte("status");
 
                 if (!reader.isLastRead())
@@ -249,6 +263,6 @@ public class GridH2IndexRangeResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 }
