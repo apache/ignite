@@ -1176,18 +1176,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             });
 
             // Simple collection
-            var data = new HandleCollection
-            {
-                Collection = new[] {1, 2, 3},
-                CollectionRaw = new[] {"1", "2"},
-                Object = new[] {1.1, 2.3}
-            };
-
-            var res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
-
-            CollectionAssert.AreEqual(data.Collection, res.Collection);
-            CollectionAssert.AreEqual(data.CollectionRaw, res.CollectionRaw);
-            CollectionAssert.AreEqual((ICollection) data.Object, (ICollection) res.Object);
+            var data = new HandleCollection();
 
             // Collection in collection dependency loop
             var collection = new ArrayList {1, 2};
@@ -1206,7 +1195,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             dict.Add(3, dict);
             data.Dictionary = dict;
 
-            res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
+            var res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
 
             var resCollection = (ArrayList) res.Collection;
             Assert.AreEqual(collection[0], resCollection[0]);
