@@ -1226,6 +1226,15 @@ namespace Apache.Ignite.Core.Tests.Binary
             var dict = new Hashtable {{1, 1}, {2, 2}};
             dict.Add(3, dict);
 
+            data = new HandleCollection {Collection = dict};
+            res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
+
+            var resDict = (Hashtable) res.Collection;
+
+            Assert.AreEqual(1, resDict[1]);
+            Assert.AreEqual(2, resDict[2]);
+            Assert.AreSame(resDict, resDict[3]);
+
             // MapEntry
 
         }
