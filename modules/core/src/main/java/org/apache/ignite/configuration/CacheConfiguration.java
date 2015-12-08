@@ -1872,7 +1872,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
             TypeDescriptor desc = processKeyAndValueClasses(keyCls, valCls);
 
-            qryEntities.add(convert(desc));
+            QueryEntity converted = convert(desc);
+
+            boolean dup = false;
+
+            for (QueryEntity entity : qryEntities) {
+                if (F.eq(entity.getValueType(), converted.getValueType())) {
+                    dup = true;
+
+                    break;
+                }
+            }
+
+            if (!dup)
+                qryEntities.add(converted);
         }
 
         return this;
@@ -1968,10 +1981,21 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
         if (this.qryEntities == null)
             this.qryEntities = new ArrayList<>(qryEntities);
-        else if (indexedTypes != null)
-            this.qryEntities.addAll(qryEntities);
-        else
-            throw new CacheException("Query entities can be set only once.");
+
+        for (QueryEntity entity : qryEntities) {
+            boolean found = false;
+
+            for (QueryEntity existing : this.qryEntities) {
+                if (F.eq(entity.getValueType(), existing.getValueType())) {
+                    found = true;
+
+                    break;
+                }
+            }
+
+            if (!found)
+                this.qryEntities.add(entity);
+        }
 
         return this;
     }

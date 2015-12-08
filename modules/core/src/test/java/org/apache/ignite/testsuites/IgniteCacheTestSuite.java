@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerEager
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerTxLocalTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerTxReplicatedTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerTxTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheEntryProcessorCallTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheManyAsyncOperationsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheNearLockValueSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTransactionalStopBusySelfTest;
@@ -167,6 +168,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicLocalInvokeTest.class);
         suite.addTestSuite(IgniteCacheAtomicLocalWithStoreInvokeTest.class);
         suite.addTestSuite(IgniteCacheTxInvokeTest.class);
+        suite.addTestSuite(IgniteCacheEntryProcessorCallTest.class);
         suite.addTestSuite(IgniteCacheTxNearEnabledInvokeTest.class);
         suite.addTestSuite(IgniteCacheTxLocalInvokeTest.class);
         suite.addTestSuite(IgniteCrossCacheTxStoreSelfTest.class);
