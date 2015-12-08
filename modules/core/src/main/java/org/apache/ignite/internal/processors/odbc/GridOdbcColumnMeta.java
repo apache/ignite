@@ -26,13 +26,25 @@ public class GridOdbcColumnMeta {
     private Class<?> dataType;
 
     /**
+     * Add quotation marks at the beginning and end of the string.
+     * @param str Input string.
+     * @return String surrounded with quotation marks.
+     */
+    private String AddQuotationMarksIfNeeded(String str) {
+        if (!str.startsWith("\"") && !str.isEmpty())
+            return "\"" + str + "\"";
+
+        return str;
+    }
+
+    /**
      * @param schemaName Cache name.
      * @param tableName Table name.
      * @param columnName Column name.
      * @param dataType Data type.
      */
     public GridOdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType) {
-        this.schemaName = schemaName;
+        this.schemaName = AddQuotationMarksIfNeeded(schemaName);
         this.tableName = tableName;
         this.columnName = columnName;
         this.dataType = dataType;
@@ -42,7 +54,7 @@ public class GridOdbcColumnMeta {
      * @param info Field metadata.
      */
     public GridOdbcColumnMeta(GridQueryFieldMetadata info) {
-        this.schemaName = info.schemaName();
+        this.schemaName = AddQuotationMarksIfNeeded(info.schemaName());
         this.tableName = info.typeName();
         this.columnName = info.fieldName();
 
@@ -66,35 +78,6 @@ public class GridOdbcColumnMeta {
                tableName.equals(another.tableName)   &&
                columnName.equals(another.columnName) &&
                dataType.equals(another.dataType);
-    }
-
-
-    /**
-     * @return Cache name.
-     */
-    public String getSchemaName() {
-        return schemaName;
-    }
-
-    /**
-     * @return Table name.
-     */
-    public String getTableName() {
-        return tableName;
-    }
-
-    /**
-     * @return Column name.
-     */
-    public String getColumnName() {
-        return columnName;
-    }
-
-    /**
-     * @return Data type.
-     */
-    public Class<?> getDataType() {
-        return dataType;
     }
 
     /**

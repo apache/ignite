@@ -21,6 +21,18 @@ public class GridOdbcTableMeta {
     private String tableType;
 
     /**
+     * Add quotation marks at the beginning and end of the string.
+     * @param str Input string.
+     * @return String surrounded with quotation marks.
+     */
+    private String AddQuotationMarksIfNeeded(String str) {
+        if (!str.startsWith("\"") && !str.isEmpty())
+            return "\"" + str + "\"";
+
+        return str;
+    }
+
+    /**
      * @param catalog Catalog name.
      * @param schema Schema name.
      * @param table Table name.
@@ -28,7 +40,7 @@ public class GridOdbcTableMeta {
      */
     public GridOdbcTableMeta(String catalog, String schema, String table, String tableType) {
         this.catalog = catalog;
-        this.schema = schema;
+        this.schema = AddQuotationMarksIfNeeded(schema);
         this.table = table;
         this.tableType = tableType;
     }
