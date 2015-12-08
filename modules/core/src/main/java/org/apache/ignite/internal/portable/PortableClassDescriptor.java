@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -43,10 +36,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.jetbrains.annotations.Nullable;
 
 import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
@@ -268,11 +267,11 @@ public class PortableClassDescriptor {
                         }
                     }
                 }
-                
+
                 fields = fields0.toArray(new BinaryFieldAccessor[fields0.size()]);
-                
+
                 stableSchema = schemaBuilder.build();
-                
+
                 break;
 
             default:
@@ -796,19 +795,20 @@ public class PortableClassDescriptor {
      * @return {@code true} if to use, {@code false} otherwise.
      */
     private boolean initUseOptimizedMarshallerFlag() {
-       boolean use;
+        for (Class c = cls; !c.equals(Object.class); c = c.getSuperclass()) {
+            try {
+                Method writeObj = c.getDeclaredMethod("writeObject", ObjectOutputStream.class);
+                Method readObj = c.getDeclaredMethod("readObject", ObjectInputStream.class);
 
-        try {
-            Method writeObj = cls.getDeclaredMethod("writeObject", ObjectOutputStream.class);
-            Method readObj = cls.getDeclaredMethod("readObject", ObjectInputStream.class);
-
-            use = !Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
-                writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class;
+                if (!Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
+                    writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class)
+                    return true;
+            }
+            catch (NoSuchMethodException e) {
+                // No-op.
+            }
         }
-        catch (NoSuchMethodException e) {
-            use = false;
-        }
 
-        return use;
+        return false;
     }
 }

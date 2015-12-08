@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -31,48 +30,55 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Collection of UUIDs.
+ * Collection of messages.
  */
-public class UUIDCollectionMessage implements Message {
+public final class GridMessageCollection<M extends Message> implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    @GridDirectCollection(UUID.class)
-    private Collection<UUID> uuids;
+    @GridDirectCollection(Message.class)
+    private Collection<M> msgs;
 
     /**
-     * Empty constructor required for direct marshalling.
+     *
      */
-    public UUIDCollectionMessage() {
+    public GridMessageCollection() {
         // No-op.
     }
 
     /**
-     * @param uuids UUIDs to wrap.
+     * @param msgs Collection of messages.
      */
-    public UUIDCollectionMessage(Collection<UUID> uuids) {
-        this.uuids = uuids;
+    public GridMessageCollection(Collection<M> msgs) {
+        this.msgs = msgs;
     }
 
     /**
-     * @param uuids UUIDs.
-     * @return Message.
+     * @param msgs Messages.
+     * @return Message list.
      */
-    public static UUIDCollectionMessage of(UUID... uuids) {
-        if (uuids == null || uuids.length == 0)
+    public static <X extends Message> GridMessageCollection<X> of(X... msgs) {
+        if (msgs == null || msgs.length == 0)
             return null;
 
-        List<UUID> list = uuids.length == 1 ? Collections.singletonList(uuids[0]) : Arrays.asList(uuids);
+        List<X> list = msgs.length == 1 ? Collections.singletonList(msgs[0]) : Arrays.asList(msgs);
 
-        return new UUIDCollectionMessage(list);
+        return new GridMessageCollection<>(list);
     }
 
     /**
-     * @return The collection of UUIDs that was wrapped.
+     * @return Messages.
      */
-    public Collection<UUID> uuids() {
-        return uuids;
+    public Collection<M> messages() {
+        return msgs;
+    }
+
+    /**
+     * @param msgs Messages.
+     */
+    public void messages(Collection<M> msgs) {
+        this.msgs = msgs;
     }
 
     /** {@inheritDoc} */
@@ -88,7 +94,7 @@ public class UUIDCollectionMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("uuids", uuids, MessageCollectionItemType.UUID))
+                if (!writer.writeCollection("msgs", msgs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -107,7 +113,7 @@ public class UUIDCollectionMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                uuids = reader.readCollection("uuids", MessageCollectionItemType.UUID);
+                msgs = reader.readCollection("msgs", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -116,12 +122,12 @@ public class UUIDCollectionMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(UUIDCollectionMessage.class);
+        return reader.afterMessageRead(GridMessageCollection.class);
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 115;
+        return 124;
     }
 
     /** {@inheritDoc} */
@@ -137,18 +143,18 @@ public class UUIDCollectionMessage implements Message {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        UUIDCollectionMessage that = (UUIDCollectionMessage)o;
+        GridMessageCollection<?> that = (GridMessageCollection<?>)o;
 
-        return uuids == that.uuids || (uuids != null && uuids.equals(that.uuids));
+        return msgs == that.msgs || (msgs != null && msgs.equals(that.msgs));
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return uuids != null ? uuids.hashCode() : 0;
+        return msgs != null ? msgs.hashCode() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(UUIDCollectionMessage.class, this, "uuidsSize", uuids == null ? null : uuids.size());
+        return S.toString(GridMessageCollection.class, this, "msgsSize", msgs == null ? null : msgs.size());
     }
 }
