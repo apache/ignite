@@ -42,33 +42,26 @@ mixin chart-settings(mdl)
 
 .row
     .col-sm-12
+        ignite-callout
+            ignite-callout-cel(data-title='With SQL Notebook you can')
+                li Create any number of queries
+                li Execute and explain SQL queries
+                li Execute scan queries
+                li View data in tabular form and as charts
+
+            ignite-callout-cel(data-title='To execute SQL you need')
+                li Start Apache Ignite Cluster with caches
+                li Populate caches with data
+                li Start Apache Ignite Web Agent
+                li Create query, enter some SQL and execute it
+
         .docs-content(ng-controller='sqlController' dw-loading='loadingNotebookScreen' dw-loading-options='{text: "Loading notebook screen...", className: "page-loading-overlay"}')
+            hr
             div(ng-if='loaded && !notebook' style='text-align: center')
                 h2 Failed to load notebook
                 label.col-sm-12 Notebook not accessible any more. Go back to configuration or open to another notebook.
                 button.h3.btn.btn-primary(ng-click='goToConfiguration()') Back to configuration
             div(ng-if='loaded && notebook')
-                .block-callout-parent
-                    table
-                        tbody
-                            tr
-                                td.block-callout-left(width='50%')
-                                    i.fa.fa-check-square.block-callout-header-left
-                                    label.block-callout-header-left With SQL Notebook you can:
-                                    ul
-                                        li Create any number of queries
-                                        li Execute and explain SQL queries
-                                        li Execute scan queries
-                                        li View data in tabular form and as charts
-                                td.block-callout-right(width='50%')
-                                    i.fa.fa-check-square.block-callout-header-right
-                                    label.block-callout-header-right To execute SQL you need:
-                                    ul
-                                        li Start Apache Ignite Cluster with caches
-                                        li Populate caches with data
-                                        li Start Apache Ignite Web Agent
-                                        li Create query, enter some SQL and execute it
-                hr
                 .row(bs-affix style='margin-bottom: 10px')
                     .docs-header.notebook-header
                         h1.col-sm-6(ng-hide='notebook.edit')

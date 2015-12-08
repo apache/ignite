@@ -18,7 +18,6 @@
 import template from './callout-cel.jade!'
 
 export default ['igniteCalloutCel', [() => {
-
 	return {
 		scope: {
 			title: '@'

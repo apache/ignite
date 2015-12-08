@@ -14,26 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin block-callout(workflowTitle, workflowContent, whatsNextTitle, whatsNextContent)
-    .block-callout-parent
-        table
-            tbody
-                tr
-                    td.block-callout-left(width='50%')
-                        i.fa.fa-check-square.block-callout-header-left
-                        label.block-callout-header-left #{workflowTitle}
-                        ul
-                            li(ng-repeat='item in #{workflowContent}')
-                                div(ng-switch='item')
-                                    div(ng-switch-when='more-info')
-                                        a(bs-modal='moreInfo' data-placement='center' data-template-url='/templates/message.html') More info
-                                    div(ng-switch-default) {{::item}}
-                    td.block-callout-right(width='50%')
-                        i.fa.fa-check-square.block-callout-header-right
-                        label.block-callout-header-right #{whatsNextTitle}
-                        ul
-                            li(ng-repeat='item in #{whatsNextContent}' ng-bind-html='item')
-
 mixin tipField(lines)
     i.tipField.fa.fa-question-circle(ng-if=lines bs-tooltip='joinTip(#{lines})')
     i.tipField.fa.fa-question-circle.blank(ng-if='!#{lines}')
