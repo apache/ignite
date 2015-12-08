@@ -637,6 +637,21 @@ SQLRETURN SQL_API SQLMoreResults(SQLHSTMT stmt)
     return statement->DataAvailable() ? SQL_SUCCESS : SQL_NO_DATA;
 }
 
+SQLRETURN SQL_API SQLBindParameter(SQLHSTMT     stmt,
+                                   SQLUSMALLINT paramIdx,
+                                   SQLSMALLINT  ioType,
+                                   SQLSMALLINT  bufferType,
+                                   SQLSMALLINT  paramSqlType,
+                                   SQLULEN      columnSize,
+                                   SQLSMALLINT  decDigits,
+                                   SQLPOINTER   buffer,
+                                   SQLLEN       bufferLen,
+                                   SQLLEN*      resLen)
+{
+    LOG_MSG("SQLBindParameter called\n");
+    return SQL_SUCCESS;
+}
+
 // ==== Not implemented ====
 
 SQLRETURN SQL_API SQLCancel(SQLHSTMT stmt)
@@ -948,23 +963,6 @@ SQLRETURN SQL_API SQLTablePrivileges(SQLHSTMT arg0,
     SWORD arg6)
 {
     LOG_MSG("SQLTablePrivileges called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLBindParameter /////
-
-SQLRETURN SQL_API SQLBindParameter(SQLHSTMT arg0,
-    UWORD arg1,
-    SWORD arg2,
-    SWORD arg3,
-    SWORD arg4,
-    UDWORD arg5,
-    SWORD arg6,
-    PTR arg7,
-    SDWORD arg8,
-    UNALIGNED SDWORD * arg9)
-{
-    LOG_MSG("SQLBindParameter called\n");
     return SQL_SUCCESS;
 }
 

@@ -83,7 +83,7 @@ namespace ignite
              * @param len Query length.
              * @return True on success.
              */
-            void PrepareSqlQuery(const char* query, size_t len);
+            bool PrepareSqlQuery(const char* query, size_t len);
 
             /**
              * Execute SQL query.

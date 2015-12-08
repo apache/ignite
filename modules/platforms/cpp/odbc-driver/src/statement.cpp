@@ -53,7 +53,12 @@ namespace ignite
             columnBindings.clear();
         }
 
-        void Statement::PrepareSqlQuery(const char* query, size_t len)
+        bool Statement::PrepareSqlQuery(const char* query, size_t len)
+        {
+            return ExecuteSqlQuery(query, len);
+        }
+
+        bool Statement::ExecuteSqlQuery(const char* query, size_t len)
         {
             if (currentQuery.get())
                 currentQuery->Close();
@@ -61,13 +66,6 @@ namespace ignite
             std::string sql(query, len);
 
             currentQuery.reset(new query::DataQuery(connection, sql));
-        }
-
-        bool Statement::ExecuteSqlQuery(const char* query, size_t len)
-        {
-            using namespace ignite::impl::interop;
-
-            PrepareSqlQuery(query, len);
 
             return ExecuteSqlQuery();
         }

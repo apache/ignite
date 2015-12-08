@@ -33,7 +33,7 @@ namespace ignite
 
             DataQuery::~DataQuery()
             {
-                // No-op.
+                Close();
             }
             
             bool DataQuery::Execute()
