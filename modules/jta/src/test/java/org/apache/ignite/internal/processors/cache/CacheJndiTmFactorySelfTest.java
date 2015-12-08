@@ -19,87 +19,110 @@ package org.apache.ignite.internal.processors.cache;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import org.objectweb.jotm.Jotm;
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.InvalidTransactionException;
+import javax.transaction.NotSupportedException;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
+import org.apache.ignite.cache.jta.jndi.CacheJndiTmFactory;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
  */
-public class CacheJndiTmFactorySelfTest
-//    extends GridCacheAbstractSelfTest
-{
-    public static final String CTX_NAME = "java:/comp/env/jdbc/mytm";
-    /** Java Open Transaction Manager facade. */
-    protected static Jotm jotm;
-//
-//    /** {@inheritDoc} */
-//    @Override protected int gridCount() {
-//        return 2;
-//    }
+public class CacheJndiTmFactorySelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final String TM_JNDI_NAME = "java:/comp/env/tm/testtm1";
 
-    public static void main(String[] args) throws NamingException {
-        // rcarver - setup the jndi context and the datasource
-        // rcarver - setup the jndi context and the datasource
-        try {
-            // Create initial context
-            System.setProperty(Context.INITIAL_CONTEXT_FACTORY,
-                "org.apache.naming.java.javaURLContextFactory");
-            System.setProperty(Context.URL_PKG_PREFIXES,
-                "org.apache.naming");
-            InitialContext ic = new InitialContext();
+    /** */
+    private static final String TM_JNDI_NAME2 = "java:/comp/env/tm/testtm2";
 
-            ic.createSubcontext("java:");
-            ic.createSubcontext("java:/comp");
-            ic.createSubcontext("java:/comp/env");
-            ic.createSubcontext("java:/comp/env/tm");
+    /** */
+    private static final String NOT_TM_JNDI_NAME = "java:/comp/env/tm/wrongClass";
 
-            // Construct TM
-            ic.bind("java:/comp/env/tm/jotm", "Hello Artem!");
-        } catch (NamingException ex) {
-            ex.printStackTrace();
-//            Logger.getLogger(MyDAOTest.class.getName()).log(Level.SEVERE, null, ex);
-        }
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        // Create initial context
+        System.setProperty(Context.INITIAL_CONTEXT_FACTORY, "org.apache.naming.java.javaURLContextFactory");
+        System.setProperty(Context.URL_PKG_PREFIXES, "org.apache.naming");
 
-        Context initContext = new InitialContext();
-        Context webContext = (Context)initContext.lookup("java:/comp/env");
+        InitialContext ic = new InitialContext();
 
-        Object o = webContext.lookup("tm/jotm");
+        ic.createSubcontext("java:");
+        ic.createSubcontext("java:/comp");
+        ic.createSubcontext("java:/comp/env");
+        ic.createSubcontext("java:/comp/env/tm");
 
-        System.out.println(">>>>>" + o);
+        ic.bind(TM_JNDI_NAME, new TestTransactionManager());
+        ic.bind(TM_JNDI_NAME2, new TestTransactionManager2());
+        ic.bind(NOT_TM_JNDI_NAME, 1);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testName() throws Exception {
-        // rcarver - setup the jndi context and the datasource
-        try {
-            // Create initial context
-            System.setProperty(Context.INITIAL_CONTEXT_FACTORY,
-                "org.apache.naming.java.javaURLContextFactory");
-            System.setProperty(Context.URL_PKG_PREFIXES,
-                "org.apache.naming");
-            InitialContext ic = new InitialContext();
+    public void testFactory() throws Exception {
+        CacheJndiTmFactory f = new CacheJndiTmFactory("wrongJndiName", NOT_TM_JNDI_NAME, TM_JNDI_NAME2, TM_JNDI_NAME);
 
-            ic.createSubcontext("java:");
-            ic.createSubcontext("java:/comp");
-            ic.createSubcontext("java:/comp/env");
-            ic.createSubcontext("java:/comp/env/jdbc");
+        TransactionManager mgr = f.create();
 
-            // Construct TM
-            jotm = new Jotm(true, false);
+        assertNotNull(mgr);
 
-            ic.bind("java:/comp/env/jdbc/nameofmyjdbcresource", jotm);
-        } catch (NamingException ex) {
-            ex.printStackTrace();
-//            Logger.getLogger(MyDAOTest.class.getName()).log(Level.SEVERE, null, ex);
+        assertTrue("Mgr: " + mgr, mgr instanceof TestTransactionManager2);
+    }
+
+    /**
+     *
+     */
+    public static class TestTransactionManager implements TransactionManager {
+        /** {@inheritDoc} */
+        @Override public void begin() throws NotSupportedException, SystemException {
         }
 
-        Context initContext = new InitialContext();
-        Context webContext = (Context)initContext.lookup("java:/comp/env");
+        /** {@inheritDoc} */
+        @Override public void commit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException,
+            SecurityException, IllegalStateException, SystemException {
+        }
 
-        Jotm jotm = (Jotm)webContext.lookup("jdbc/nameofmyjdbcresource");
+        /** {@inheritDoc} */
+        @Override public int getStatus() throws SystemException {
+            return 0;
+        }
 
-        System.out.println(">>>>>" + jotm);
+        /** {@inheritDoc} */
+        @Override public Transaction getTransaction() throws SystemException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resume(Transaction tobj) throws InvalidTransactionException, IllegalStateException,
+            SystemException {
+        }
+
+        /** {@inheritDoc} */
+        @Override public void rollback() throws IllegalStateException, SecurityException, SystemException {
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setRollbackOnly() throws IllegalStateException, SystemException {
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setTransactionTimeout(int seconds) throws SystemException {
+        }
+
+        /** {@inheritDoc} */
+        @Override public Transaction suspend() throws SystemException {
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    public static class TestTransactionManager2 extends TestTransactionManager{
     }
 }

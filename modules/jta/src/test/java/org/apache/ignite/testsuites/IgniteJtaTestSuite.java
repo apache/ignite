@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheJndiTmFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheJtaConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheJtaFactoryConfigValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.GridPartitionedCacheJtaFactorySelfTest;
@@ -46,6 +47,9 @@ public class IgniteJtaTestSuite extends TestSuite {
         suite.addTestSuite(GridJtaLifecycleAwareSelfTest.class);
         suite.addTestSuite(GridCacheJtaConfigurationValidationSelfTest.class);
         suite.addTestSuite(GridCacheJtaFactoryConfigValidationSelfTest.class);
+
+        // Factory
+        suite.addTestSuite(CacheJndiTmFactorySelfTest.class);
 
         return suite;
     }

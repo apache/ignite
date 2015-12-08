@@ -117,7 +117,7 @@ public class CacheJndiTmFactory implements Factory<TransactionManager> {
                 obj = ctx.lookup(s);
             }
             catch (NamingException e) {
-                U.quietAndWarn(null, "Failed to lookup resourse: " + e);
+                U.warn(null, "Failed to lookup resourse: " + e);
 
                 continue;
             }
