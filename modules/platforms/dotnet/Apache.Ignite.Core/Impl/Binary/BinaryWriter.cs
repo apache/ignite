@@ -1322,7 +1322,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_hnds == null)
             {
                 // Cache absolute handle position.
-                _hnds = new BinaryHandleDictionary<object, long>(obj, pos);
+                _hnds = new BinaryHandleDictionary<object, long>(obj, pos, ReferenceEqualityComparer<object>.Instance);
 
                 return false;
             }

@@ -17,26 +17,29 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
+
     /// <summary>
-    /// Object handle dictionary for <see cref="BinaryReader"/>.
+    /// Comparer that uses ReferenceEquals.
     /// </summary>
-    internal class BinaryReaderHandleDictionary : BinaryHandleDictionary<int, object>
+    internal class ReferenceEqualityComparer<T> : IEqualityComparer<T>
     {
         /// <summary>
-        /// Constructor with initial key-value pair.
+        /// Default instance.
         /// </summary>
-        /// <param name="key">Key.</param>
-        /// <param name="val">Value.</param>
-        public BinaryReaderHandleDictionary(int key, object val)
-            : base(key, val, null)
+        public static readonly ReferenceEqualityComparer<T> Instance = new ReferenceEqualityComparer<T>();
+
+        /** <inheritdoc /> */
+        public bool Equals(T x, T y)
         {
-            // No-op.
+            return ReferenceEquals(x, y);
         }
 
         /** <inheritdoc /> */
-        protected override int EmptyKey
+        public int GetHashCode(T obj)
         {
-            get { return -1; }
+            return RuntimeHelpers.GetHashCode(obj);
         }
     }
 }

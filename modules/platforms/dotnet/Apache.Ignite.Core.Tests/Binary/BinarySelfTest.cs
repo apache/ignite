@@ -27,10 +27,12 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -1202,8 +1204,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             var dict = new Hashtable { { 1, 1 }, { 2, 2 } };
             dict.Add(3, dict);
 
-            var entry = new DictionaryEntry(1, 2);
-            entry.Value = entry;
+            object entry = new DictionaryEntry(1, 2);
+            var dictionaryEntryValSetter = DelegateConverter.CompileFieldSetter(typeof (DictionaryEntry)
+                .GetField("_value", BindingFlags.Instance | BindingFlags.NonPublic));
+            dictionaryEntryValSetter(entry, entry);  // modify boxed copy to create reference loop
 
             var data = new HandleCollection
             {
@@ -1211,7 +1215,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 CollectionRaw = collectionRaw,
                 Object = collectionObj,
                 Dictionary = dict,
-                DictionaryEntry = entry
+                DictionaryEntry = (DictionaryEntry) entry
             };
 
             var res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));

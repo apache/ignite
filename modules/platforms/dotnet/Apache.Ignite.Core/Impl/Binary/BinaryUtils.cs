@@ -1300,7 +1300,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Modify boxed copy
             DictionaryEntryKeySetter(entry, ctx.Deserialize<object>());
-            DictionaryEntryKeySetter(entry, ctx.Deserialize<object>());
+            DictionaryEntryValSetter(entry, ctx.Deserialize<object>());
 
             return (DictionaryEntry) entry;
         }
