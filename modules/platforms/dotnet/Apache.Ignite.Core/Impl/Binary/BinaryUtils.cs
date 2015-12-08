@@ -1283,10 +1283,14 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static DictionaryEntry ReadMapEntry(BinaryReader ctx)
         {
-            object key = ctx.Deserialize<object>();
-            object val = ctx.Deserialize<object>();
+            var entry = new DictionaryEntry();
 
-            return new DictionaryEntry(key, val);
+            ctx.AddHandle(ctx.Stream.Position - 1, entry);
+
+            entry.Key = ctx.Deserialize<object>();
+            entry.Value = ctx.Deserialize<object>();
+
+            return entry;
         }
 
         /**
