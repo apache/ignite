@@ -18,16 +18,20 @@
 package org.apache.ignite.internal.util;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * Collection of UUIDs.
  */
 public class UUIDCollectionMessage implements Message {
     /** */
@@ -49,6 +53,19 @@ public class UUIDCollectionMessage implements Message {
      */
     public UUIDCollectionMessage(Collection<UUID> uuids) {
         this.uuids = uuids;
+    }
+
+    /**
+     * @param uuids UUIDs.
+     * @return Message.
+     */
+    public static UUIDCollectionMessage of(UUID... uuids) {
+        if (uuids == null || uuids.length == 0)
+            return null;
+
+        List<UUID> list = uuids.length == 1 ? Collections.singletonList(uuids[0]) : Arrays.asList(uuids);
+
+        return new UUIDCollectionMessage(list);
     }
 
     /**
@@ -110,5 +127,28 @@ public class UUIDCollectionMessage implements Message {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        UUIDCollectionMessage that = (UUIDCollectionMessage)o;
+
+        return uuids == that.uuids || (uuids != null && uuids.equals(that.uuids));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return uuids != null ? uuids.hashCode() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(UUIDCollectionMessage.class, this, "uuidsSize", uuids == null ? null : uuids.size());
     }
 }
