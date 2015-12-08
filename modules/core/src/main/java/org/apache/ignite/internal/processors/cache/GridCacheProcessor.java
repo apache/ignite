@@ -796,7 +796,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!ctx.config().isDaemon())
             ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
-        marshallerCache().context().preloader().syncFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
+        marshallerCache().context().preloader().initialRebalanceFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
             @Override public void applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
                 ctx.marshallerContext().onMarshallerCachePreloaded(ctx);
             }
@@ -817,10 +817,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (cfg.getRebalanceMode() == SYNC) {
                     if (cfg.getCacheMode() == REPLICATED ||
                         (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceDelay() >= 0)) {
-                        cache.preloader().syncFuture().get();
+                        boolean utilityCache = CU.isUtilityCache(cache.name());
 
-                        if (CU.isUtilityCache(cache.name()))
-                            ctx.cacheObjects().onUtilityCacheStarted();
+                        if (utilityCache || CU.isMarshallerCache(cache.name())) {
+                            cache.preloader().initialRebalanceFuture().get();
+
+                            if (utilityCache)
+                                ctx.cacheObjects().onUtilityCacheStarted();
+                        }
+                        else
+                            cache.preloader().syncFuture().get();
                     }
                 }
             }

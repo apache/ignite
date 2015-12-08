@@ -169,7 +169,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                 if (ex != null)
                     throw ex;
 
-                asyncCache.invoke(key, new IncrementCacheEntryProcessor());
+                asyncCache.invoke(key, new IncrementInvokeRetryCacheEntryProcessor());
                 asyncCache.future().get(args.cacheOperationTimeoutMillis());
 
                 AtomicLong prevVal = map.putIfAbsent(key, new AtomicLong(0));
@@ -195,7 +195,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
 
     /**
      */
-    private static class IncrementCacheEntryProcessor implements CacheEntryProcessor<String, Long, Long> {
+    private static class IncrementInvokeRetryCacheEntryProcessor implements CacheEntryProcessor<String, Long, Long> {
         /** */
         private static final long serialVersionUID = 0;
 
