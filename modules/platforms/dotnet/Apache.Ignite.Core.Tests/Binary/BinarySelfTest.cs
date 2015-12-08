@@ -1202,6 +1202,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             collectionObj.Add(collectionObj);
             data.Object = collectionObj;
 
+            var dict = new Hashtable { { 1, 1 }, { 2, 2 } };
+            dict.Add(3, dict);
+            data.Dictionary = dict;
+
             res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
 
             var resCollection = (ArrayList) res.Collection;
@@ -1222,20 +1226,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreSame(resCollectionRaw, resCollectionObj[3]);
             Assert.AreSame(resCollectionObj, resCollectionObj[4]);
 
-            // Dictionary
-            var dict = new Hashtable {{1, 1}, {2, 2}};
-            dict.Add(3, dict);
-
-            data = new HandleCollection {Collection = dict};
-            res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
-
-            var resDict = (Hashtable) res.Collection;
-
+            var resDict = (Hashtable) res.Dictionary;
             Assert.AreEqual(1, resDict[1]);
             Assert.AreEqual(2, resDict[2]);
             Assert.AreSame(resDict, resDict[3]);
 
             // MapEntry
+            // TODO
 
         }
 
@@ -2154,12 +2151,16 @@ namespace Apache.Ignite.Core.Tests.Binary
         public class HandleCollection : IBinarizable
         {
             public ICollection Collection { get; set; }
+            public IDictionary Dictionary { get; set; }
+            public DictionaryEntry DictionaryEntry { get; set; }
             public ICollection CollectionRaw { get; set; }
             public object Object { get; set; }
 
             public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteCollection("col", Collection);
+                writer.WriteDictionary("dict", Dictionary);
+                writer.WriteObject("dictEntry", DictionaryEntry);
                 writer.WriteObject("obj", Object);
                 writer.GetRawWriter().WriteCollection(CollectionRaw);
             }
@@ -2167,6 +2168,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             public void ReadBinary(IBinaryReader reader)
             {
                 Collection = reader.ReadCollection("col");
+                Dictionary = reader.ReadDictionary("dict");
+                DictionaryEntry = reader.ReadObject<DictionaryEntry>("dictEntry");
                 Object = reader.ReadObject<object>("obj");
                 CollectionRaw = reader.GetRawReader().ReadCollection();
             }
