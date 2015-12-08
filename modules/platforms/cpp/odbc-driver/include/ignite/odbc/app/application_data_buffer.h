@@ -142,6 +142,75 @@ namespace ignite
                  */
                 void PutNull();
 
+                /**
+                 * Get string.
+                 *
+                 * @return String value of buffer.
+                 */
+                std::string GetString(size_t maxLen) const;
+
+                /**
+                 * Get value of type int8_t.
+                 *
+                 * @return Integer value of type int8_t.
+                 */
+                int8_t GetInt8() const;
+
+                /**
+                 * Get value of type int16_t.
+                 *
+                 * @return Integer value of type int16_t.
+                 */
+                int16_t GetInt16() const;
+
+                /**
+                 * Get value of type int32_t.
+                 *
+                 * @return Integer value of type int32_t.
+                 */
+                int32_t GetInt32() const;
+
+                /**
+                 * Get value of type int64_t.
+                 *
+                 * @return Integer value of type int64_t.
+                 */
+                int64_t GetInt64() const;
+
+                /**
+                 * Get value of type float.
+                 *
+                 * @return Integer value of type float.
+                 */
+                float GetFloat() const;
+
+                /**
+                 * Get value of type double.
+                 *
+                 * @return Integer value of type double.
+                 */
+                double GetDouble() const;
+
+                /**
+                 * Get raw data.
+                 *
+                 * @return Buffer data.
+                 */
+                const void* GetData() const
+                {
+                    return buffer;
+                }
+
+                /**
+                 * Get buffer size in bytes.
+                 *
+                 * @return Buffer size.
+                 */
+                int64_t GetSize() const
+                {
+                    return buflen;
+                }
+
             private:
                 /**
                  * Put value of numeric type in the buffer.
@@ -190,6 +259,14 @@ namespace ignite
                  * @param len Data length.
                  */
                 void PutRawDataToBuffer(void *data, size_t len);
+
+                /**
+                 * Get int of type T.
+                 *
+                 * @return Integer value of specified type.
+                 */
+                template<typename T>
+                T GetNum() const;
 
                 /** Underlying data type. */
                 type_traits::IgniteSqlType type;

@@ -38,7 +38,7 @@ namespace ignite
         namespace app
         {
             ApplicationDataBuffer::ApplicationDataBuffer() :
-                type(type_traits::IGNITE_SQL_TYPE_UNSUPPORTED), buffer(0), buflen(0), reslen(0)
+                type(type_traits::IGNITE_ODBC_C_TYPE_UNSUPPORTED), buffer(0), buflen(0), reslen(0)
             {
                 // No-op.
             }
@@ -77,80 +77,80 @@ namespace ignite
                 using namespace type_traits;
                 switch (type)
                 {
-                    case IGNITE_SQL_TYPE_SIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
                     {
                         PutNumToNumBuffer<signed char>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_BIT:
-                    case IGNITE_SQL_TYPE_UNSIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_BIT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
                     {
                         PutNumToNumBuffer<unsigned char>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_SIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
                     {
                         PutNumToNumBuffer<short>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_UNSIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
                     {
                         PutNumToNumBuffer<unsigned short>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_SIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
                     {
                         PutNumToNumBuffer<long>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_UNSIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
                     {
                         PutNumToNumBuffer<unsigned long>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_SIGNED_BIGINT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
                     {
                         PutNumToNumBuffer<int64_t>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_UNSIGNED_BIGINT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
                     {
                         PutNumToNumBuffer<uint64_t>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_FLOAT:
+                    case IGNITE_ODBC_C_TYPE_FLOAT:
                     {
                         PutNumToNumBuffer<float>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_DOUBLE:
+                    case IGNITE_ODBC_C_TYPE_DOUBLE:
                     {
                         PutNumToNumBuffer<double>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_CHAR:
+                    case IGNITE_ODBC_C_TYPE_CHAR:
                     {
                         PutValToStrBuffer<char>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_WCHAR:
+                    case IGNITE_ODBC_C_TYPE_WCHAR:
                     {
                         PutValToStrBuffer<wchar_t>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_NUMERIC:
+                    case IGNITE_ODBC_C_TYPE_NUMERIC:
                     {
                         if (buffer)
                         {
@@ -169,8 +169,8 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_BINARY:
-                    case IGNITE_SQL_TYPE_DEFAULT:
+                    case IGNITE_ODBC_C_TYPE_BINARY:
+                    case IGNITE_ODBC_C_TYPE_DEFAULT:
                     {
                         if (buffer)
                         {
@@ -332,16 +332,16 @@ namespace ignite
                 using namespace type_traits;
                 switch (type)
                 {
-                    case IGNITE_SQL_TYPE_SIGNED_TINYINT:
-                    case IGNITE_SQL_TYPE_BIT:
-                    case IGNITE_SQL_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_SQL_TYPE_SIGNED_SHORT:
-                    case IGNITE_SQL_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_SQL_TYPE_SIGNED_LONG:
-                    case IGNITE_SQL_TYPE_UNSIGNED_LONG:
-                    case IGNITE_SQL_TYPE_SIGNED_BIGINT:
-                    case IGNITE_SQL_TYPE_UNSIGNED_BIGINT:
-                    case IGNITE_SQL_TYPE_NUMERIC:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_BIT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case IGNITE_ODBC_C_TYPE_NUMERIC:
                     {
                         std::stringstream converter(value);
 
@@ -354,8 +354,8 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_FLOAT:
-                    case IGNITE_SQL_TYPE_DOUBLE:
+                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case IGNITE_ODBC_C_TYPE_DOUBLE:
                     {
                         std::stringstream converter(value);
 
@@ -368,16 +368,16 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_CHAR:
-                    case IGNITE_SQL_TYPE_BINARY:
-                    case IGNITE_SQL_TYPE_DEFAULT:
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case IGNITE_ODBC_C_TYPE_BINARY:
+                    case IGNITE_ODBC_C_TYPE_DEFAULT:
                     {
                         PutStrToStrBuffer<char>(value);
 
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_WCHAR:
+                    case IGNITE_ODBC_C_TYPE_WCHAR:
                     {
                         PutStrToStrBuffer<wchar_t>(value);
 
@@ -397,21 +397,21 @@ namespace ignite
                 using namespace type_traits;
                 switch (type)
                 {
-                    case IGNITE_SQL_TYPE_CHAR:
-                    case IGNITE_SQL_TYPE_BINARY:
-                    case IGNITE_SQL_TYPE_DEFAULT:
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case IGNITE_ODBC_C_TYPE_BINARY:
+                    case IGNITE_ODBC_C_TYPE_DEFAULT:
                     {
                         PutValToStrBuffer<char>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_WCHAR:
+                    case IGNITE_ODBC_C_TYPE_WCHAR:
                     {
                         PutValToStrBuffer<wchar_t>(value);
                         break;
                     }
 
-                    case IGNITE_SQL_TYPE_GUID:
+                    case IGNITE_ODBC_C_TYPE_GUID:
                     {
                         SQLGUID* guid = reinterpret_cast<SQLGUID*>(buffer);
 
@@ -439,10 +439,10 @@ namespace ignite
                 using namespace type_traits;
                 switch (type)
                 {
-                    case IGNITE_SQL_TYPE_CHAR:
-                    case IGNITE_SQL_TYPE_WCHAR:
-                    case IGNITE_SQL_TYPE_BINARY:
-                    case IGNITE_SQL_TYPE_DEFAULT:
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case IGNITE_ODBC_C_TYPE_BINARY:
+                    case IGNITE_ODBC_C_TYPE_DEFAULT:
                     {
                         PutRawDataToBuffer(data, len);
                         break;
@@ -462,6 +462,195 @@ namespace ignite
                     *reslen = SQL_NULL_DATA;
             }
 
+            std::string ApplicationDataBuffer::GetString(size_t maxLen) const
+            {
+                using namespace type_traits;
+                std::string res;
+
+                switch (type)
+                {
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    {
+                        res.assign(reinterpret_cast<char*>(buffer),
+                                   std::min<size_t>(maxLen, buflen));
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    {
+                        std::stringstream converter;
+
+                        converter << GetNum<int64_t>();
+
+                        res = converter.str();
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_BIT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    {
+                        std::stringstream converter;
+
+                        converter << GetNum<uint64_t>();
+
+                        res = converter.str();
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    {
+                        std::stringstream converter;
+
+                        converter << GetNum<float>();
+
+                        res = converter.str();
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    {
+                        std::stringstream converter;
+
+                        converter << GetNum<double>();
+
+                        res = converter.str();
+
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                return res;
+            }
+
+            int8_t ApplicationDataBuffer::GetInt8() const
+            {
+                return GetNum<int8_t>();
+            }
+
+            int16_t ApplicationDataBuffer::GetInt16() const
+            {
+                return GetNum<int16_t>();
+            }
+
+            int32_t ApplicationDataBuffer::GetInt32() const
+            {
+                return GetNum<int32_t>();
+            }
+
+            int64_t ApplicationDataBuffer::GetInt64() const
+            {
+                return GetNum<int64_t>();
+            }
+
+            float ApplicationDataBuffer::GetFloat() const
+            {
+                return GetNum<float>();
+            }
+
+            double ApplicationDataBuffer::GetDouble() const
+            {
+                return GetNum<double>();
+            }
+
+            template<typename T>
+            T ApplicationDataBuffer::GetNum() const
+            {
+                using namespace type_traits;
+
+                T res = 0;
+
+                switch (type)
+                {
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    {
+                        std::string str = GetString(buflen);
+
+                        std::stringstream converter(str);
+
+                        converter >> res;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
+                    {
+                        res = static_cast<T>(*reinterpret_cast<int8_t*>(buffer));
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_BIT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    {
+                        res = static_cast<T>(*reinterpret_cast<uint8_t*>(buffer));
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
+                    {
+                        res = static_cast<T>(*reinterpret_cast<int16_t*>(buffer));
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    {
+                        res = static_cast<T>(*reinterpret_cast<uint16_t*>(buffer));
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
+                    {
+                        res = static_cast<T>(*reinterpret_cast<int32_t*>(buffer));
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    {
+                        res = static_cast<T>(*reinterpret_cast<uint32_t*>(buffer));
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    {
+                        res = static_cast<T>(*reinterpret_cast<int64_t*>(buffer));
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    {
+                        res = static_cast<T>(*reinterpret_cast<uint64_t*>(buffer));
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    {
+                        res = static_cast<T>(*reinterpret_cast<float*>(buffer));
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    {
+                        res = static_cast<T>(*reinterpret_cast<double*>(buffer));
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                return res;
+            }
         }
     }
 }

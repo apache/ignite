@@ -34,76 +34,84 @@ namespace ignite
             enum IgniteSqlType
             {
                 /** Alias for the SQL_C_CHAR type. */
-                IGNITE_SQL_TYPE_CHAR,
+                IGNITE_ODBC_C_TYPE_CHAR,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_WCHAR,
+                IGNITE_ODBC_C_TYPE_WCHAR,
 
                 /** Alias for the SQL_C_SSHORT type. */
-                IGNITE_SQL_TYPE_SIGNED_SHORT,
+                IGNITE_ODBC_C_TYPE_SIGNED_SHORT,
 
                 /** Alias for the SQL_C_USHORT type. */
-                IGNITE_SQL_TYPE_UNSIGNED_SHORT,
+                IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_SIGNED_LONG,
+                IGNITE_ODBC_C_TYPE_SIGNED_LONG,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_UNSIGNED_LONG,
+                IGNITE_ODBC_C_TYPE_UNSIGNED_LONG,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_FLOAT,
+                IGNITE_ODBC_C_TYPE_FLOAT,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_DOUBLE,
+                IGNITE_ODBC_C_TYPE_DOUBLE,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_BIT,
+                IGNITE_ODBC_C_TYPE_BIT,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_SIGNED_TINYINT,
+                IGNITE_ODBC_C_TYPE_SIGNED_TINYINT,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_UNSIGNED_TINYINT,
+                IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_SIGNED_BIGINT,
+                IGNITE_ODBC_C_TYPE_SIGNED_BIGINT,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_UNSIGNED_BIGINT,
+                IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_BINARY,
+                IGNITE_ODBC_C_TYPE_BINARY,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_TDATE,
+                IGNITE_ODBC_C_TYPE_TDATE,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_TTIME,
+                IGNITE_ODBC_C_TYPE_TTIME,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_TTIMESTAMP,
+                IGNITE_ODBC_C_TYPE_TTIMESTAMP,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_NUMERIC,
+                IGNITE_ODBC_C_TYPE_NUMERIC,
 
                 /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_SQL_TYPE_GUID,
+                IGNITE_ODBC_C_TYPE_GUID,
 
                 /** Alias for the SQL_DEFAULT. */
-                IGNITE_SQL_TYPE_DEFAULT,
+                IGNITE_ODBC_C_TYPE_DEFAULT,
 
                 /** Alias for all unsupported types. */
-                IGNITE_SQL_TYPE_UNSUPPORTED
+                IGNITE_ODBC_C_TYPE_UNSUPPORTED
             };
 
             /**
-             * Check if the type supported by the current implementation.
+             * Check if the C type supported by the current implementation.
              *
              * @param type Application type.
              * @return True if the type is supported.
              */
             bool IsApplicationTypeSupported(int16_t type);
+
+            /**
+             * Check if the SQL type supported by the current implementation.
+             *
+             * @param type Application type.
+             * @return True if the type is supported.
+             */
+            bool IsSqlTypeSupported(int16_t type);
 
             /**
              * Convert ODBC type to driver type alias.

@@ -79,6 +79,9 @@
     <ClCompile Include="..\..\src\app\application_data_buffer.cpp">
       <Filter>Code\app</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\app\parameter.cpp">
+      <Filter>Code\app</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -148,6 +151,9 @@
       <Filter>Code\config</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\app\application_data_buffer.h">
+      <Filter>Code\app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\app\parameter.h">
       <Filter>Code\app</Filter>
     </ClInclude>
   </ItemGroup>

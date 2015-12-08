@@ -89,10 +89,10 @@ void CheckRowData(Row& row, size_t rowIdx)
     SQLGUID guidBuf;
     char bitBuf;
 
-    ApplicationDataBuffer appLongBuf(type_traits::IGNITE_SQL_TYPE_SIGNED_LONG, &longBuf, sizeof(longBuf), &reslen);
-    ApplicationDataBuffer appStrBuf(type_traits::IGNITE_SQL_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen);
-    ApplicationDataBuffer appGuidBuf(type_traits::IGNITE_SQL_TYPE_GUID, &guidBuf, sizeof(guidBuf), &reslen);
-    ApplicationDataBuffer appBitBuf(type_traits::IGNITE_SQL_TYPE_BIT, &bitBuf, sizeof(bitBuf), &reslen);
+    ApplicationDataBuffer appLongBuf(type_traits::IGNITE_ODBC_C_TYPE_SIGNED_LONG, &longBuf, sizeof(longBuf), &reslen);
+    ApplicationDataBuffer appStrBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen);
+    ApplicationDataBuffer appGuidBuf(type_traits::IGNITE_ODBC_C_TYPE_GUID, &guidBuf, sizeof(guidBuf), &reslen);
+    ApplicationDataBuffer appBitBuf(type_traits::IGNITE_ODBC_C_TYPE_BIT, &bitBuf, sizeof(bitBuf), &reslen);
 
     // Checking size.
     BOOST_REQUIRE(row.GetSize() == 4);

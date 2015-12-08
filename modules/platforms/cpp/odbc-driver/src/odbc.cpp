@@ -462,7 +462,7 @@ SQLRETURN SQL_API SQLBindCol(SQLHSTMT       stmt,
 
     IgniteSqlType driverType = ToDriverType(targetType);
 
-    if (driverType == IGNITE_SQL_TYPE_UNSUPPORTED)
+    if (driverType == IGNITE_ODBC_C_TYPE_UNSUPPORTED)
         return SQL_ERROR;
 
     if (bufferLength < 0)
@@ -648,11 +648,31 @@ SQLRETURN SQL_API SQLBindParameter(SQLHSTMT     stmt,
                                    SQLLEN       bufferLen,
                                    SQLLEN*      resLen)
 {
+    using ignite::odbc::Statement;
+    using ignite::odbc::type_traits::IsSqlTypeSupported;
+
     LOG_MSG("SQLBindParameter called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    if (ioType != SQL_PARAM_INPUT)
+        return SQL_ERROR;
+
+    if (*resLen == SQL_DATA_AT_EXEC || *resLen <= SQL_LEN_DATA_AT_EXEC_OFFSET)
+        return SQL_ERROR;
+
+    if (!IsSqlTypeSupported(paramSqlType))
+        return SQL_ERROR;
+
     return SQL_SUCCESS;
 }
 
+//
 // ==== Not implemented ====
+//
 
 SQLRETURN SQL_API SQLCancel(SQLHSTMT stmt)
 {

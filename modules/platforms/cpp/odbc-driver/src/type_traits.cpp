@@ -34,7 +34,54 @@ namespace ignite
         {
             bool IsApplicationTypeSupported(int16_t type)
             {
-                return ToDriverType(type) != IGNITE_SQL_TYPE_UNSUPPORTED;
+                return ToDriverType(type) != IGNITE_ODBC_C_TYPE_UNSUPPORTED;
+            }
+
+            bool IsSqlTypeSupported(int16_t type)
+            {
+                switch (type)
+                {
+                    case SQL_CHAR:
+                    case SQL_VARCHAR:
+                    case SQL_LONGVARCHAR:
+                    case SQL_SMALLINT:
+                    case SQL_INTEGER:
+                    case SQL_FLOAT:
+                    case SQL_DOUBLE:
+                    case SQL_BIT:
+                    case SQL_TINYINT:
+                    case SQL_BIGINT:
+                    case SQL_BINARY:
+                    case SQL_VARBINARY:
+                    case SQL_LONGVARBINARY:
+                    case SQL_GUID:
+                        return true;
+
+                    case SQL_WCHAR:
+                    case SQL_WVARCHAR:
+                    case SQL_WLONGVARCHAR:
+                    case SQL_REAL:
+                    case SQL_DECIMAL:
+                    case SQL_NUMERIC:
+                    case SQL_TYPE_DATE:
+                    case SQL_TYPE_TIME:
+                    case SQL_TYPE_TIMESTAMP:
+                    case SQL_INTERVAL_MONTH:
+                    case SQL_INTERVAL_YEAR:
+                    case SQL_INTERVAL_YEAR_TO_MONTH:
+                    case SQL_INTERVAL_DAY:
+                    case SQL_INTERVAL_HOUR:
+                    case SQL_INTERVAL_MINUTE:
+                    case SQL_INTERVAL_SECOND:
+                    case SQL_INTERVAL_DAY_TO_HOUR:
+                    case SQL_INTERVAL_DAY_TO_MINUTE:
+                    case SQL_INTERVAL_DAY_TO_SECOND:
+                    case SQL_INTERVAL_HOUR_TO_MINUTE:
+                    case SQL_INTERVAL_HOUR_TO_SECOND:
+                    case SQL_INTERVAL_MINUTE_TO_SECOND:
+                    default:
+                        return false;
+                }
             }
 
             IgniteSqlType ToDriverType(int16_t type)
@@ -42,67 +89,67 @@ namespace ignite
                 switch (type)
                 {
                 case SQL_C_CHAR:
-                    return IGNITE_SQL_TYPE_CHAR;
+                    return IGNITE_ODBC_C_TYPE_CHAR;
 
                 case SQL_C_WCHAR:
-                    return IGNITE_SQL_TYPE_WCHAR;
+                    return IGNITE_ODBC_C_TYPE_WCHAR;
 
                 case SQL_C_SSHORT:
-                    return IGNITE_SQL_TYPE_SIGNED_SHORT;
+                    return IGNITE_ODBC_C_TYPE_SIGNED_SHORT;
 
                 case SQL_C_USHORT:
-                    return IGNITE_SQL_TYPE_UNSIGNED_SHORT;
+                    return IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT;
 
                 case SQL_C_SLONG:
-                    return IGNITE_SQL_TYPE_SIGNED_LONG;
+                    return IGNITE_ODBC_C_TYPE_SIGNED_LONG;
 
                 case SQL_C_ULONG:
-                    return IGNITE_SQL_TYPE_UNSIGNED_LONG;
+                    return IGNITE_ODBC_C_TYPE_UNSIGNED_LONG;
 
                 case SQL_C_FLOAT:
-                    return IGNITE_SQL_TYPE_FLOAT;
+                    return IGNITE_ODBC_C_TYPE_FLOAT;
 
                 case SQL_C_DOUBLE:
-                    return IGNITE_SQL_TYPE_DOUBLE;
+                    return IGNITE_ODBC_C_TYPE_DOUBLE;
 
                 case SQL_C_BIT:
-                    return IGNITE_SQL_TYPE_BIT;
+                    return IGNITE_ODBC_C_TYPE_BIT;
 
                 case SQL_C_STINYINT:
-                    return IGNITE_SQL_TYPE_SIGNED_TINYINT;
+                    return IGNITE_ODBC_C_TYPE_SIGNED_TINYINT;
 
                 case SQL_C_UTINYINT:
-                    return IGNITE_SQL_TYPE_UNSIGNED_TINYINT;
+                    return IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT;
 
                 case SQL_C_SBIGINT:
-                    return IGNITE_SQL_TYPE_SIGNED_BIGINT;
+                    return IGNITE_ODBC_C_TYPE_SIGNED_BIGINT;
 
                 case SQL_C_UBIGINT:
-                    return IGNITE_SQL_TYPE_UNSIGNED_BIGINT;
+                    return IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT;
 
                 case SQL_C_BINARY:
-                    return IGNITE_SQL_TYPE_BINARY;
+                    return IGNITE_ODBC_C_TYPE_BINARY;
 
                 case SQL_C_TYPE_DATE:
-                    return IGNITE_SQL_TYPE_TDATE;
+                    return IGNITE_ODBC_C_TYPE_TDATE;
 
                 case SQL_C_TYPE_TIME:
-                    return IGNITE_SQL_TYPE_TTIME;
+                    return IGNITE_ODBC_C_TYPE_TTIME;
 
                 case SQL_C_TYPE_TIMESTAMP:
-                    return IGNITE_SQL_TYPE_TTIMESTAMP;
+                    return IGNITE_ODBC_C_TYPE_TTIMESTAMP;
 
                 case SQL_C_NUMERIC:
-                    return IGNITE_SQL_TYPE_NUMERIC;
+                    return IGNITE_ODBC_C_TYPE_NUMERIC;
 
                 case SQL_C_GUID:
-                    return IGNITE_SQL_TYPE_GUID;
+                    return IGNITE_ODBC_C_TYPE_GUID;
 
                 case SQL_C_DEFAULT:
-                    return IGNITE_SQL_TYPE_DEFAULT;
+                    return IGNITE_ODBC_C_TYPE_DEFAULT;
 
                 default:
-                    return IGNITE_SQL_TYPE_UNSUPPORTED;
+                    return IGNITE_ODBC_C_TYPE_UNSUPPORTED;
                 }
             }
 
