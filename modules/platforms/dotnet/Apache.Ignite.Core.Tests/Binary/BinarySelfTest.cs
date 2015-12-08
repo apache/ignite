@@ -1244,8 +1244,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreSame(resDict, resDict[3]);
 
             var resEntry = res.DictionaryEntry;
+            var innerEntry = (DictionaryEntry) resEntry.Value;
             Assert.AreEqual(1, resEntry.Key);
-            Assert.AreSame(resEntry, resEntry.Value);
+            Assert.AreEqual(1, innerEntry.Key);
+            Assert.IsTrue(ReferenceEquals(innerEntry.Value, ((DictionaryEntry) innerEntry.Value).Value));
         }
 
         ///
