@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.jta.jndi;
 
-import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Map;
 import javax.cache.configuration.Factory;
@@ -25,6 +24,7 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.transaction.TransactionManager;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Implementation of {@code Factory<TransactionManager>} interface that is using JNDI names to find TM.
@@ -101,18 +101,29 @@ public class CacheJndiTmFactory implements Factory<TransactionManager> {
         assert jndiNames != null;
         assert jndiNames.length != 0;
 
+        InitialContext ctx;
+
         try {
-            InitialContext ctx = new InitialContext(environment == null ? null : new Hashtable<>(environment));
-
-            for (String s : jndiNames) {
-                Object obj = ctx.lookup(s);
-
-                if (obj != null && obj instanceof TransactionManager)
-                    return (TransactionManager) obj;
-            }
+            ctx = new InitialContext(environment == null ? null : new Hashtable<>(environment));
         }
         catch (NamingException e) {
-            throw new IgniteException("Unable to lookup TM by: " + Arrays.toString(jndiNames), e);
+            throw new IgniteException("Failed to instantiate InitialContext: " + environment, e);
+        }
+
+        for (String s : jndiNames) {
+            Object obj;
+
+            try {
+                obj = ctx.lookup(s);
+            }
+            catch (NamingException e) {
+                U.quietAndWarn(null, "Failed to lookup resourse: " + e);
+
+                continue;
+            }
+
+            if (obj != null && obj instanceof TransactionManager)
+                return (TransactionManager) obj;
         }
 
         return null;
