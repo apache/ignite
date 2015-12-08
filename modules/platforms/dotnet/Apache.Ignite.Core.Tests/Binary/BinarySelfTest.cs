@@ -1188,12 +1188,16 @@ namespace Apache.Ignite.Core.Tests.Binary
             var dict = new Hashtable { { 1, 1 }, { 2, 2 } };
             dict.Add(3, dict);
 
+            var entry = new DictionaryEntry(1, 2);
+            entry.Value = entry;
+
             var data = new HandleCollection
             {
                 Collection = collection,
                 CollectionRaw = collectionRaw,
                 Object = collectionObj,
-                Dictionary = dict
+                Dictionary = dict,
+                DictionaryEntry = entry
             };
 
             var res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
@@ -1221,9 +1225,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(2, resDict[2]);
             Assert.AreSame(resDict, resDict[3]);
 
-            // MapEntry
-            // TODO
-
+            var resEntry = res.DictionaryEntry;
+            Assert.AreEqual(1, resEntry.Key);
+            Assert.AreSame(resEntry, resEntry.Value);
         }
 
         ///
