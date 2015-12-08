@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,21 +15,8 @@
  * limitations under the License.
  */
 
-﻿﻿﻿﻿﻿﻿﻿using System.Reflection;
-﻿﻿using System.Runtime.InteropServices;
-
-[assembly: AssemblyTitle("Apache Ignite.NET Examples")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Apache Software Foundation")]
-[assembly: AssemblyProduct("Apache Ignite.NET")]
-[assembly: AssemblyCopyright("Copyright ©  2015")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-
-[assembly: ComVisible(false)]
-
-[assembly: Guid("41a0cb95-3435-4c78-b867-900b28e2c9ee")]
-
-[assembly: AssemblyVersion("1.5.0.2")]
-[assembly: AssemblyFileVersion("1.5.0.2")]
+/**
+ * <!-- Package description. -->
+ * Utility and helper classes.
+ */
+package org.apache.ignite.yarn.utils;
