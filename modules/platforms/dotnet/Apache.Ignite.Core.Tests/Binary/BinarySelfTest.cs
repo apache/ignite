@@ -2113,9 +2113,9 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             public ICollection Collection { get; set; }
 
-
             public void WriteBinary(IBinaryWriter writer)
             {
+                // TODO: Test WriteObject/ReadObject also
                 writer.WriteCollection("col", Collection);
             }
 
