@@ -285,6 +285,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                     // This is the first request containing all the search rows.
                     ConcurrentNavigableMap<GridSearchRowPointer,GridH2Row> snapshot0 = qctx.getSnapshot(idxId);
 
+                    assert !msg.bounds().isEmpty() : "empty bounds";
+
                     src = new RangeSource(msg.bounds(), snapshot0);
                 }
                 else {
@@ -298,11 +300,15 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
                 int maxRows = qctx.pageSize();
 
+                assert maxRows > 0 : maxRows;
+
                 while (maxRows > 0) {
                     GridH2RowRange range = src.next(maxRows);
 
                     if (range == null)
                         break;
+
+                    ranges.add(range);
 
                     maxRows -= range.rows().size();
                 }
@@ -820,9 +826,13 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         if (row == null)
             return null;
 
-        List<GridH2ValueMessage> vals = new ArrayList<>(row.getColumnCount());
+        int cols = row.getColumnCount();
 
-        for (int i = 0; i < vals.size(); i++) {
+        assert cols > 0 : cols;
+
+        List<GridH2ValueMessage> vals = new ArrayList<>(cols);
+
+        for (int i = 0; i < cols; i++) {
             try {
                 vals.add(GridH2ValueMessageFactory.toMessage(row.getValue(i)));
             }
@@ -849,6 +859,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         GridKernalContext ctx = kernalContext();
 
         Value[] vals = new Value[getTable().getColumns().length];
+
+        assert vals.length > 0;
 
         for (int i = 0; i < indexColumns.length; i++) {
             try {
@@ -904,6 +916,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         GridKernalContext ctx = kernalContext();
 
         List<GridH2ValueMessage> vals = msg.values();
+
+        assert !F.isEmpty(vals) : vals;
 
         Value[] vals0 = new Value[vals.size()];
 

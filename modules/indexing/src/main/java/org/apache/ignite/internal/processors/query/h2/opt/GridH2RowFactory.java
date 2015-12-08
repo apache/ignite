@@ -48,7 +48,7 @@ public class GridH2RowFactory extends RowFactory {
     public static GridH2Row create(Value... data) {
         switch (data.length) {
             case 0:
-                throw new IllegalStateException();
+                throw new IllegalStateException("Zero columns row.");
 
             case 1:
                 return new RowKey(data[0]);
