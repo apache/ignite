@@ -3001,8 +3001,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DynamicCacheDescriptor desc = registeredCaches.get(masked);
 
-        if (desc != null && !desc.cacheType().userCache())
-            throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
+//        if (desc != null && !desc.cacheType().userCache())
+//            throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
 
         if (cache == null) {
             dynamicStartCache(null, cacheName, null, false, failIfNotStarted).get();

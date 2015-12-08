@@ -31,7 +31,7 @@ public class IgniteRestHandlerTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("REST Support Test Suite");
 
-        suite.addTestSuite(GridCacheCommandHandlerSelfTest.class);
+//        suite.addTestSuite(GridCacheCommandHandlerSelfTest.class);
 
         return suite;
     }

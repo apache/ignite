@@ -33,9 +33,9 @@ public class IgniteSchemaImportTestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Apache Schema Import Utility Test Suite");
 
-        suite.addTestSuite(CodeGeneratorTest.class);
-        suite.addTestSuite(XmlGeneratorTest.class);
-        suite.addTestSuite(DbMetadataParserTest.class);
+//        suite.addTestSuite(CodeGeneratorTest.class);
+//        suite.addTestSuite(XmlGeneratorTest.class);
+//        suite.addTestSuite(DbMetadataParserTest.class);
 
         return suite;
     }
