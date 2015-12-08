@@ -901,18 +901,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Seeks the field by name, reads header and returns true if field is present and header is not null.
-        /// </summary>
-        private bool SeekField(string fieldName, byte expHdr)
-        {
-            if (!SeekField(fieldName)) 
-                return false;
-
-            // Expected read order, no need to seek.
-            return IsNotNullHeader(expHdr);
-        }
-
-        /// <summary>
         /// Seeks the field by name.
         /// </summary>
         private bool SeekField(string fieldName)
@@ -949,7 +937,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T ReadField<T>(string fieldName, Func<IBinaryStream, T> readFunc, byte expHdr)
         {
-            return SeekField(fieldName, expHdr) ? readFunc(Stream) : default(T);
+            return SeekField(fieldName) ? Read(readFunc, expHdr) : default(T);
         }
 
         /// <summary>
@@ -957,7 +945,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T ReadField<T>(string fieldName, Func<BinaryReader, T> readFunc, byte expHdr)
         {
-            return SeekField(fieldName, expHdr) ? readFunc(this) : default(T);
+            return SeekField(fieldName) ? Read(readFunc, expHdr) : default(T);
         }
 
         /// <summary>
@@ -965,7 +953,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T ReadField<T>(string fieldName, Func<T> readFunc, byte expHdr)
         {
-            return SeekField(fieldName, expHdr) ? readFunc() : default(T);
+            return SeekField(fieldName) ? Read(readFunc, expHdr) : default(T);
         }
 
         /// <summary>
@@ -982,6 +970,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         private T Read<T>(Func<IBinaryStream, T> readFunc, byte expHdr)
         {
             return IsNotNullHeader(expHdr) ? readFunc(Stream) : default(T);
+        }
+
+        /// <summary>
+        /// Reads header and invokes specified func if the header is not null.
+        /// </summary>
+        private T Read<T>(Func<T> readFunc, byte expHdr)
+        {
+            return IsNotNullHeader(expHdr) ? readFunc() : default(T);
         }
 
         /// <summary>
