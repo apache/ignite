@@ -988,6 +988,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullField();
             else
             {
+                if (WriteHandle(_stream.Position, val))
+                    return;
+
                 WriteByte(BinaryUtils.TypeDictionary);
                 BinaryUtils.WriteDictionary(val, this);
             }
