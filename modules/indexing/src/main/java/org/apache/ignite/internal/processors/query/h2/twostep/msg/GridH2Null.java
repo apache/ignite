@@ -82,4 +82,9 @@ public class GridH2Null extends GridH2ValueMessage {
     @Override public byte fieldsCount() {
         return 0;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "NULL";
+    }
 }

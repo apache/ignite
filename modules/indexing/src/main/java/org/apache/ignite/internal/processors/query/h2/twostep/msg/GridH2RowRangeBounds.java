@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -173,5 +174,10 @@ public class GridH2RowRangeBounds implements Message {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridH2RowRangeBounds.class, this);
     }
 }

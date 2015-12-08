@@ -131,4 +131,9 @@ public class GridH2Timestamp extends GridH2ValueMessage {
     @Override public byte fieldsCount() {
         return 2;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return date + "_" + nanos;
+    }
 }

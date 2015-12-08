@@ -111,4 +111,9 @@ public class GridH2Double extends GridH2ValueMessage {
     @Override public byte fieldsCount() {
         return 1;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(x);
+    }
 }

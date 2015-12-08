@@ -134,4 +134,9 @@ public class GridH2Integer extends GridH2ValueMessage {
     @Override public int hashCode() {
         return x;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(x);
+    }
 }

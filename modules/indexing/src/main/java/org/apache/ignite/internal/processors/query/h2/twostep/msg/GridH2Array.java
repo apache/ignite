@@ -127,4 +127,9 @@ public class GridH2Array extends GridH2ValueMessage {
     @Override public byte fieldsCount() {
         return 1;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(x);
+    }
 }
