@@ -26,28 +26,28 @@ $generatorJava = {};
  * @returns {*} String with value that will be valid for java.
  */
 $generatorJava.toJavaCode = function (val, type) {
-    if (val == null)
+    if (val === null)
         return 'null';
 
-    if (type == 'raw')
+    if (type === 'raw')
         return val;
 
-    if (type == 'class')
+    if (type === 'class')
         return val + '.class';
 
-    if (type == 'float')
+    if (type === 'float')
         return val + 'f';
 
-    if (type == 'path')
+    if (type === 'path')
         return '"' + val.replace(/\\/g, '\\\\') + '"';
 
     if (type)
         return type + '.' + val;
 
-    if (typeof(val) == 'string')
+    if (typeof(val) === 'string')
         return '"' + val.replace('"', '\\"') + '"';
 
-    if (typeof(val) == 'number' || typeof(val) == 'boolean')
+    if (typeof(val) === 'number' || typeof(val) === 'boolean')
         return '' + val;
 
     throw "Unknown type: " + typeof(val) + ' (' + val + ')';
@@ -166,7 +166,7 @@ $generatorJava.property = function (res, varName, obj, propName, dataType, sette
         var hasDflt = $commonUtils.isDefined(dflt);
 
         // Add to result if no default provided or value not equals to default.
-        if (!hasDflt || (hasDflt && val != dflt)) {
+        if (!hasDflt || (hasDflt && val !== dflt)) {
             res.emptyLineIfNeeded();
 
             res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
@@ -200,7 +200,7 @@ $generatorJava.listProperty = function (res, varName, obj, propName, dataType, s
         res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
             '(Arrays.asList(' +
                 _.map(val, function (v) {
-                    return $generatorJava.toJavaCode(v, dataType)
+                    return $generatorJava.toJavaCode(v, dataType);
                 }).join(', ') +
             '));');
 
@@ -225,7 +225,7 @@ $generatorJava.arrayProperty = function (res, varName, obj, propName, setterName
 
         res.line(varName + '.' + $generatorJava.setterName(propName, setterName) + '({ ' +
             _.map(val, function (v) {
-                return 'new ' + res.importClass(v) + '()'
+                return 'new ' + res.importClass(v) + '()';
             }).join(', ') +
         ' });');
 
@@ -496,11 +496,11 @@ $generatorJava.clusterAtomics = function (cluster, res) {
 
         var cacheMode = atomics.cacheMode ? atomics.cacheMode : 'PARTITIONED';
 
-        var hasData = cacheMode != 'PARTITIONED';
+        var hasData = cacheMode !== 'PARTITIONED';
 
         hasData = $generatorJava.property(res, 'atomicCfg', atomics, 'atomicSequenceReserveSize') || hasData;
 
-        if (cacheMode == 'PARTITIONED')
+        if (cacheMode === 'PARTITIONED')
             hasData = $generatorJava.property(res, 'atomicCfg', atomics, 'backups') || hasData;
 
         res.needEmptyLine = true;
@@ -652,7 +652,7 @@ $generatorJava.clusterEvents = function (cluster, res) {
     if (cluster.includeEventTypes && cluster.includeEventTypes.length > 0) {
         res.emptyLineIfNeeded();
 
-        if (cluster.includeEventTypes.length == 1) {
+        if (cluster.includeEventTypes.length === 1) {
             res.importClass('org.apache.ignite.events.EventType');
 
             res.line('cfg.setIncludeEventTypes(EventType.' + cluster.includeEventTypes[0] + ');');
@@ -739,7 +739,7 @@ $generatorJava.clusterSwap = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if (cluster.swapSpaceSpi && cluster.swapSpaceSpi.kind == 'FileSwapSpaceSpi') {
+    if (cluster.swapSpaceSpi && cluster.swapSpaceSpi.kind === 'FileSwapSpaceSpi') {
         $generatorJava.beanProperty(res, 'cfg', cluster.swapSpaceSpi.FileSwapSpaceSpi, 'swapSpaceSpi', 'swapSpi',
             $generatorCommon.SWAP_SPACE_SPI.className, $generatorCommon.SWAP_SPACE_SPI.fields, true);
 
@@ -802,7 +802,7 @@ $generatorJava.cacheGeneral = function (cache, varName, res) {
     $generatorJava.property(res, varName, cache, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
     $generatorJava.property(res, varName, cache, 'atomicityMode', 'org.apache.ignite.cache.CacheAtomicityMode');
 
-    if (cache.cacheMode == 'PARTITIONED')
+    if (cache.cacheMode === 'PARTITIONED')
         $generatorJava.property(res, varName, cache, 'backups');
 
     $generatorJava.property(res, varName, cache, 'readFromBackup');
@@ -932,7 +932,7 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
                 }
             }
 
-            if (factoryKind == 'CacheJdbcPojoStoreFactory') {
+            if (factoryKind === 'CacheJdbcPojoStoreFactory') {
                 // Generate POJO store factory.
                 $generatorJava.declareVariable(res, varName, 'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory');
 
@@ -944,26 +944,19 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
 
                 res.needEmptyLine = true;
 
-                if (metadatas && metadatas.length > 0) {
+                if (metadatas && _.find(metadatas, function (meta) {
+                    return $commonUtils.isDefinedAndNotEmpty(meta.databaseTable);
+                })) {
                     $generatorJava.declareVariable(res, 'jdbcTypes', 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.cache.store.jdbc.JdbcType');
 
                     res.needEmptyLine = true;
 
                     _.forEach(metadatas, function (meta) {
-                        $generatorJava.declareVariable(res, 'jdbcType', 'org.apache.ignite.cache.store.jdbc.JdbcType');
-
-                        res.needEmptyLine = true;
-
-                        $generatorJava.property(res, 'jdbcType', cache, 'name', undefined, 'setCacheName');
-
-                        $generatorJava.metadataStore(meta, true, res);
-
-                        res.needEmptyLine = true;
-
-                        res.line('jdbcTypes.add(jdbcType);');
-
-                        res.needEmptyLine = true;
+                        if ($commonUtils.isDefinedAndNotEmpty(meta.databaseTable))
+                            res.line('jdbcTypes.add(jdbcType' + $generatorJava.extractType(meta.valueType) + '(' + cacheVarName + '.getName()));');
                     });
+
+                    res.needEmptyLine = true;
 
                     res.line(varName + '.setTypes(jdbcTypes.toArray(new JdbcType[jdbcTypes.size()]));');
 
@@ -1024,7 +1017,7 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if (cache.cacheMode != 'LOCAL') {
+    if (cache.cacheMode !== 'LOCAL') {
         $generatorJava.property(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode');
         $generatorJava.property(res, varName, cache, 'rebalanceThreadPoolSize');
         $generatorJava.property(res, varName, cache, 'rebalanceBatchSize');
@@ -1050,7 +1043,7 @@ $generatorJava.cacheServerNearCache = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if (cache.cacheMode == 'PARTITIONED' && cache.nearCacheEnabled) {
+    if (cache.cacheMode === 'PARTITIONED' && cache.nearCacheEnabled) {
         res.needEmptyLine = true;
 
         res.importClass('org.apache.ignite.configuration.NearCacheConfiguration');
@@ -1094,7 +1087,7 @@ $generatorJava.metadataQueryFields = function (res, meta) {
 
         res.needEmptyLine = true;
 
-        res.line('queryMeta.setFields(fields);');
+        res.line('qryMeta.setFields(fields);');
 
         res.needEmptyLine = true;
     }
@@ -1113,7 +1106,7 @@ $generatorJava.metadataQueryAliases = function (res, meta) {
 
         res.needEmptyLine = true;
 
-        res.line('queryMeta.setAliases(aliases);');
+        res.line('qryMeta.setAliases(aliases);');
 
         res.needEmptyLine = true;
     }
@@ -1132,7 +1125,7 @@ $generatorJava.metadataQueryIndexes = function (res, meta) {
             var fields = index.fields;
 
             // One row generation for 1 field index.
-            if (fields && fields.length == 1) {
+            if (fields && fields.length === 1) {
                 var field = index.fields[0];
 
                 res.line('indexes.add(new ' + res.importClass('org.apache.ignite.cache.QueryIndex') +
@@ -1168,7 +1161,7 @@ $generatorJava.metadataQueryIndexes = function (res, meta) {
 
         res.needEmptyLine = true;
 
-        res.line('queryMeta.setIndexes(indexes);');
+        res.line('qryMeta.setIndexes(indexes);');
 
         res.needEmptyLine = true;
     }
@@ -1187,9 +1180,9 @@ $generatorJava.metadataDatabaseFields = function (res, meta, fieldProperty) {
 
         var lastIx = dbFields.length - 1;
 
-        _.forEach(dbFields, function (field, ix) {
-            res.importClass('org.apache.ignite.cache.store.jdbc.JdbcTypeField');
+        res.importClass('org.apache.ignite.cache.store.jdbc.JdbcTypeField');
 
+        _.forEach(dbFields, function (field, ix) {
             res.line('new JdbcTypeField(' +
                 'Types.' + field.databaseFieldType + ', ' + '"' + field.databaseFieldName + '", ' +
                 res.importClass(field.javaFieldType) + '.class, ' + '"' + field.javaFieldName + '"'+ ')' + (ix < lastIx ? ',' : ''));
@@ -1252,35 +1245,23 @@ $generatorJava.metadataStore = function (meta, withTypes, res) {
     return res;
 };
 
-// Generate cache type metadata config.
-$generatorJava.cacheQueryMetadata = function(meta, res) {
-    $generatorJava.declareVariable(res, 'queryMeta', 'org.apache.ignite.cache.QueryEntity');
-
-    $generatorJava.property(res, 'queryMeta', meta, 'keyType');
-    $generatorJava.property(res, 'queryMeta', meta, 'valueType');
-
-    res.needEmptyLine = true;
-
-    $generatorJava.metadataQuery(meta, res);
-
-    res.emptyLineIfNeeded();
-    res.line('queryEntities.add(queryMeta);');
-
-    res.needEmptyLine = true;
-};
-
 // Generate cache type metadata configs.
 $generatorJava.cacheMetadatas = function (metadatas, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     // Generate cache type metadata configs.
-    if (metadatas && metadatas.length > 0) {
+    if (metadatas && _.find(metadatas, function (meta) {
+            return $commonUtils.isDefinedAndNotEmpty(meta.fields);
+        })) {
         $generatorJava.declareVariable(res, 'queryEntities', 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.cache.QueryEntity');
 
         _.forEach(metadatas, function (meta) {
-            $generatorJava.cacheQueryMetadata(meta, res);
+            if ($commonUtils.isDefinedAndNotEmpty(meta.fields))
+                res.line('queryEntities.add(queryEntity' + $generatorJava.extractType(meta.valueType) + '());');
         });
+
+        res.needEmptyLine = true;
 
         res.line(varName + '.setQueryEntities(queryEntities);');
 
@@ -1312,6 +1293,77 @@ $generatorJava.cache = function(cache, varName, res) {
     $generatorJava.cacheStatistics(cache, varName, res);
 
     $generatorJava.cacheMetadatas(cache.metadatas, varName, res);
+};
+
+// Generation of cache metadatas in separate methods.
+$generatorJava.clusterMetadatas = function (caches, res) {
+    var metadatas = [];
+
+    var typeVarName = 'jdbcType';
+    var metaVarName = 'qryMeta';
+
+    _.forEach(caches, function (cache) {
+        _.forEach(cache.metadatas, function (meta) {
+            if (!$commonUtils.isDefined(_.find(metadatas, function (m) {
+                    return m === meta.valueType;
+                }))) {
+                $generatorJava.resetVariables(res);
+
+                var type = $generatorJava.extractType(meta.valueType);
+
+                if ($commonUtils.isDefinedAndNotEmpty(meta.databaseTable)) {
+                    res.line("/**");
+                    res.line(" * Create JDBC type for " + type + ".");
+                    res.line(" *");
+                    res.line(" * @param cacheName Cache name.");
+                    res.line(" * @returns Configured JDBC type.");
+                    res.line(" */");
+                    res.startBlock("private static JdbcType jdbcType" + type + "(String cacheName) {");
+
+                    $generatorJava.declareVariable(res, typeVarName, 'org.apache.ignite.cache.store.jdbc.JdbcType');
+
+                    res.needEmptyLine = true;
+
+                    res.line(typeVarName + '.setCacheName(cacheName);');
+
+                    $generatorJava.metadataStore(meta, true, res);
+
+                    res.needEmptyLine = true;
+
+                    res.line('return ' + typeVarName + ';');
+                    res.endBlock("}");
+
+                    res.needEmptyLine = true;
+                }
+
+                if ($commonUtils.isDefinedAndNotEmpty(meta.fields)) {
+                    res.line("/**");
+                    res.line(" * Create SQL Query descriptor for " + type + ".");
+                    res.line(" * @returns Configured query entity.");
+                    res.line(" */");
+                    res.startBlock("private static QueryEntity queryEntity" + type + "() {");
+
+                    $generatorJava.declareVariable(res, metaVarName, 'org.apache.ignite.cache.QueryEntity');
+
+                    $generatorJava.property(res, metaVarName, meta, 'keyType');
+                    $generatorJava.property(res, metaVarName, meta, 'valueType');
+
+                    res.needEmptyLine = true;
+
+                    $generatorJava.metadataQuery(meta, res);
+
+                    res.emptyLineIfNeeded();
+                    res.line('return ' + metaVarName + ';');
+
+                    res.needEmptyLine = true;
+
+                    res.endBlock("}");
+                }
+
+                metadatas.push(meta.valueType);
+            }
+        });
+    });
 };
 
 // Generate cluster caches.
@@ -1365,6 +1417,11 @@ $generatorJava.clusterCaches = function (caches, igfss, res) {
     return res;
 };
 
+// Get class name from fully specified class path.
+$generatorJava.extractType = function (fullType) {
+    return fullType.substring(fullType.lastIndexOf('.') + 1);
+};
+
 /**
  * Generate java class code.
  *
@@ -1379,8 +1436,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     if (!res)
         res = $generatorCommon.builder();
 
-    var type = (key ? meta.keyType : meta.valueType);
-    type = type.substring(type.lastIndexOf('.') + 1);
+    var type = $generatorJava.extractType(key ? meta.keyType : meta.valueType);
 
     // Class comment.
     res.line('/**');
@@ -1400,7 +1456,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     if (!key)
         _.forEach(meta.valueFields, function (valFld) {
             if (_.findIndex(allFields, function(fld) {
-                return fld.javaFieldName == valFld.javaFieldName;
+                return fld.javaFieldName === valFld.javaFieldName;
             }) < 0)
                 allFields.push(valFld);
         });
@@ -1433,7 +1489,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
         res.startBlock('public ' + type + '(');
 
         _.forEach(allFields, function(field) {
-            res.line(res.importClass(field.javaFieldType) + ' ' + field.javaFieldName + (fldIx < allFields.length - 1 ? ',' : ''))
+            res.line(res.importClass(field.javaFieldType) + ' ' + field.javaFieldName + (fldIx < allFields.length - 1 ? ',' : ''));
         });
 
         res.endBlock(') {');
@@ -1481,7 +1537,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     // Generate equals() method.
     res.line('/** {@inheritDoc} */');
     res.startBlock('@Override public boolean equals(Object o) {');
-    res.startBlock('if (this == o)');
+    res.startBlock('if (this === o)');
     res.line('return true;');
     res.endBlock();
     res.append('');
@@ -1499,10 +1555,10 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
 
         var javaName = field.javaFieldName;
 
-        res.startBlock('if (' + javaName + ' != null ? !' + javaName + '.equals(that.' + javaName + ') : that.' + javaName + ' != null)');
+        res.startBlock('if (' + javaName + ' !== null ? !' + javaName + '.equals(that.' + javaName + ') : that.' + javaName + ' !== null)');
 
         res.line('return false;');
-        res.endBlock()
+        res.endBlock();
     });
 
     res.needEmptyLine = true;
@@ -1524,8 +1580,8 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
         if (!first)
             res.needEmptyLine = true;
 
-        res.line(first ? 'int res = ' + javaName + ' != null ? ' + javaName + '.hashCode() : 0;'
-            : 'res = 31 * res + (' + javaName + ' != null ? ' + javaName + '.hashCode() : 0);');
+        res.line(first ? 'int res = ' + javaName + ' !== null ? ' + javaName + '.hashCode() : 0;'
+            : 'res = 31 * res + (' + javaName + ' !== null ? ' + javaName + '.hashCode() : 0);');
 
         first = false;
     });
@@ -1938,6 +1994,10 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
 
             res.line('return cfg;');
             res.endBlock('}');
+
+            res.needEmptyLine = true;
+
+            $generatorJava.clusterMetadatas(cluster.caches, res);
 
             res.needEmptyLine = true;
         }
