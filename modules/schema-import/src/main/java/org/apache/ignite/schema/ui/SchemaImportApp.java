@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.sql.Connection;
@@ -1734,6 +1735,19 @@ public class SchemaImportApp extends Application {
 
                 appCls.getDeclaredMethod("setDockIconImage", java.awt.Image.class)
                     .invoke(osxApp, fromFXImage(image("ignite", 128), null));
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+
+            // Workaround for JDK 7/JavaFX 2 application on Mac OSX El Capitan.
+            try {
+                Class<?> fontFinderCls = Class.forName("com.sun.t2k.MacFontFinder");
+
+                Field psNameToPathMap = fontFinderCls.getDeclaredField("psNameToPathMap");
+
+                psNameToPathMap.setAccessible(true);
+                psNameToPathMap.set(null, new HashMap<String, String>());
             }
             catch (Exception ignore) {
                 // No-op.

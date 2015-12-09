@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -45,7 +46,10 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Entry processor */
-    protected static String TEST_ENT_PROCESSOR = "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessor";
+    protected static String TEST_ENT_PROCESSOR =
+        GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) != null ?
+            GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) :
+            "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessor";
 
     /** Test value. */
     protected static String TEST_VALUE = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue";

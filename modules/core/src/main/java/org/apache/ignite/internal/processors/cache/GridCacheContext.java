@@ -36,6 +36,7 @@ import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheInterceptor;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -240,7 +242,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private boolean depEnabled;
 
     /** */
-    private boolean deferredDelete;
+    private boolean deferredDel;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -510,7 +512,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void cache(GridCacheAdapter<K, V> cache) {
         this.cache = cache;
 
-        deferredDelete = cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
+        deferredDel = cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
             (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC);
     }
 
@@ -574,7 +576,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if entries should not be deleted from cache immediately.
      */
     public boolean deferredDelete() {
-        return deferredDelete;
+        return deferredDel;
     }
 
     /**
@@ -1682,6 +1684,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} if {@link BinaryMarshaller is configured}.
+     */
+    public boolean binaryMarshaller() {
+        return marshaller() instanceof BinaryMarshaller;
+    }
+
+    /**
      * @return Keep portable flag.
      */
     public boolean keepPortable() {
@@ -1749,6 +1758,27 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable, boolean cpy) {
         return cacheObjCtx.unwrapPortableIfNeeded(o, keepPortable, cpy);
+    }
+
+    /**
+     * @param resMap Invoke results map.
+     * @param keepBinary Keep binary flag.
+     * @return Unwrapped results.
+     */
+    public Map unwrapInvokeResult(@Nullable Map<Object, EntryProcessorResult> resMap, final boolean keepBinary) {
+        return F.viewReadOnly(resMap, new C1<EntryProcessorResult, EntryProcessorResult>() {
+            @Override public EntryProcessorResult apply(EntryProcessorResult res) {
+                if (res instanceof CacheInvokeResult) {
+                    CacheInvokeResult invokeRes = (CacheInvokeResult)res;
+
+                    if (invokeRes.result() != null)
+                        res = CacheInvokeResult.fromResult(unwrapPortableIfNeeded(invokeRes.result(),
+                            keepBinary, false));
+                }
+
+                return res;
+            }
+        });
     }
 
     /**

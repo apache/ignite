@@ -31,6 +31,8 @@ public class IgniteBinaryObjectsCacheTestSuite3 {
      */
     public static TestSuite suite() throws Exception {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+        GridTestProperties.setProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME,
+            "org.apache.ignite.tests.p2p.CacheDeploymentPortableEntryProcessor");
 
         return IgniteCacheTestSuite3.suite();
     }
