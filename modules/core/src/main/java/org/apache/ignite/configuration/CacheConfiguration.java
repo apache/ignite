@@ -1112,7 +1112,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets class name of transaction manager finder for integration for JEE app servers.
      *
      * @return Transaction manager finder.
-     * @deprecated Use {@link TransactionConfiguration#getTxManagerLookupClassName()} instead.
+     * @deprecated Use {@link TransactionConfiguration#getTxManagerFactory()} instead.
      */
     @Deprecated
     public String getTransactionManagerLookupClassName() {
@@ -1125,7 +1125,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
      *      receive JTA transaction manager.
      * @return {@code this} for chaining.
-     * @deprecated Use {@link TransactionConfiguration#setTxManagerLookupClassName(String)} instead.
+     * @deprecated Use {@link TransactionConfiguration#setTxManagerFactory(Factory)} instead.
      */
     @Deprecated
     public CacheConfiguration<K, V> setTransactionManagerLookupClassName(String tmLookupClsName) {
