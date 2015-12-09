@@ -23,15 +23,16 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
 
     // Watchers definition.    
     let clusterWatcher = (value) => {
-        if (value) {
-            // TODO IGNITE-2052: need move $generatorXml to services.
-            ctrl.data = $generatorXml.cluster($scope.cluster, $scope.cfg)
-        } else {
+        delete ctrl.data;
 
-        }
-    }
+        if (!value)
+            return;
+
+        // TODO IGNITE-2052: need move $generatorXml to services.
+        ctrl.data = $generatorXml.cluster($scope.cluster, $scope.cfg)
+    };
 
     // Setup watchers. 
-    $scope.$watch('cfg', clusterWatcher, true)
+    $scope.$watch('cfg', clusterWatcher, true);
     $scope.$watch('cluster', clusterWatcher);
 }]

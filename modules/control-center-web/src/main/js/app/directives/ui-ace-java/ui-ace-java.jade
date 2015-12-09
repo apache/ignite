@@ -20,9 +20,9 @@ div
             label Generate:
         .col-xs-4.col-sm-3.col-md-3
             button.select-toggle.form-control(
-            	data-bs-select 
-            	data-bs-options='item.value as item.label for item in types' 
-            	data-sort='false'
-            	ng-model='type'
+                data-bs-select
+                data-bs-options='item.value as item.label for item in types'
+                data-sort='false'
+                ng-model='type'
             )
     div(ui-ace='{onLoad: onLoad, mode: "java"}' ng-model='ctrl.data')

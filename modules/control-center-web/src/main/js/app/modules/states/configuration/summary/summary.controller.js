@@ -22,11 +22,14 @@ export default [
     let igniteVersion = '1.5.0';
 
     $loading.start('loading');
+
     Resource.read().then(({clusters}) => {
         $scope.clusters = clusters;
+
         $loading.finish('loading');
+
         $scope.selectItem(clusters[0]);
-    })
+    });
 
     $scope.panelExpanded = $common.panelExpanded;
     $scope.tableVisibleRow = $table.tableVisibleRow;
@@ -59,26 +62,23 @@ export default [
     $scope.selectItem = (cluster) => {
         delete ctrl.cluster;
 
-        if (!cluster) {
+        if (!cluster)
             return;
-        }
 
         ctrl.cluster = cluster;
         $scope.cluster = cluster;
         $scope.selectedItem = cluster;
-    }
+    };
 
     let updateTab = (cluster) => {
-        if (!cluster) {
+        if (!cluster)
             return;
-        }
 
-        if (!$filter('hasPojo')(cluster) && $scope.tabsClient.activeTab === 3) {
+        if (!$filter('hasPojo')(cluster) && $scope.tabsClient.activeTab === 3)
             $scope.tabsClient.activeTab = 0;     
-        }
-    }
+    };
 
-    $scope.$watch('cluster', updateTab)
+    $scope.$watch('cluster', updateTab);
 
     // TODO IGNITE-2114: implemented as indendent logic for download.
     $scope.downloadConfiguration = function () {

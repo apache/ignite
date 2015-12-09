@@ -21,6 +21,7 @@ export default ['igniteLoading', [() => {
 	return {
 		restrict: 'E',
 		template,
-		replace: true
+		replace: true,
+		transclude: true
 	}
 }]]

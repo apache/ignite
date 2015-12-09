@@ -27,29 +27,27 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
         delete ctrl.class;
         delete ctrl.metadatas;
         delete ctrl.classes;
-    }
+    };
 
     // Watcher updata metadata when changes caches and checkers useConstructor and includeKeyFields
     let updateMetadatas = (value) => {
         delete ctrl.metadatas;
 
-        if (!ctrl.cluster || !ctrl.cluster.caches) {
+        if (!ctrl.cluster || !ctrl.cluster.caches)
             return;
-        }
-     
+
         // TODO IGNITE-2054: need move $generatorJava to services.
         ctrl.metadatas = $generatorJava.pojos(ctrl.cluster.caches, ctrl.useConstructor, ctrl.includeKeyFields);
-    }
+    };
 
     // Watcher update classes after
     let updateClasses = (value) => {
         delete ctrl.classes;
 
-        if (!value) {
+        if (!value)
             return;
-        }
 
-        let classes = ctrl.classes = []
+        let classes = ctrl.classes = [];
 
         _.forEach(ctrl.metadatas, (meta) => {
             classes.push(meta.keyType);
@@ -59,22 +57,16 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
 
     // Update pojos class.
     let updateClass = (value) => {
-        if (!value) {
+        if (!value || !ctrl.metadatas.length)
             return;
-        }
-
-        if (!ctrl.metadatas.length) {
-            return;
-        } 
 
         ctrl.class = ctrl.class || ctrl.metadatas[0].keyType || ctrl.metadatas[0].valueType;
-    }
+    };
 
     // Update pojos data.
     let updatePojosData = (value) => {    
-        if (!value) {
+        if (!value)
             return;
-        }
 
         _.forEach(ctrl.metadatas, (meta) => {
             if (meta.keyType === ctrl.class)
@@ -83,7 +75,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
             if (meta.valueType === ctrl.class)
                 return ctrl.data = meta.valueClass;
         })
-    }
+    };
 
     // Setup watchers. Watchers order is important. 
     $scope.$watch('ctrl.cluster.caches', cleanMetadatas);

@@ -28,13 +28,14 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
 
     // Watchers definition.    
     let clusterWatcher = (value) => {
-        if (value) {
-            // TODO IGNITE-2058: need move $generatorDocker to services.
-            ctrl.data = $generatorDocker.clusterDocker($scope.cluster, $scope.type);
-        } else {
+        delete ctrl.data;
 
-        }
-    }
+        if (!value)
+            return;
+
+        // TODO IGNITE-2058: need move $generatorDocker to services.
+        ctrl.data = $generatorDocker.clusterDocker($scope.cluster, $scope.type);
+    };
 
     // Setup watchers. 
     $scope.$watch('type', clusterWatcher);

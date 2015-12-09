@@ -42,14 +42,14 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     let clusterWatcher = (value) => {
         delete ctrl.data;
 
-        if (!value) {
+        if (!value)
             return;
-        }
 
         let type = $scope.type === FACTORY ? (!$scope.cfg ? SERVER_CFG : CLIENT_CFG) : false;
+
         // TODO IGNITE-2054: need move $generatorJava to services.
         ctrl.data = $generatorJava.cluster($scope.cluster, 'factory', type, $scope.cfg);
-    }
+    };
 
     // Setup watchers. 
     $scope.$watch('cfg', clusterWatcher, true);

@@ -26,13 +26,14 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
 
     // Watchers definition.    
     let clusterWatcher = (value) => {
-        if (value) {
-            // TODO IGNITE-2053: need move $generatorPom to services.
-            ctrl.data = $generatorPom.pom($scope.cluster, igniteVersion).asString();
-        } else {
+        delete ctrl.data;
 
-        }
-    }
+        if (!value)
+            return;
+
+        // TODO IGNITE-2053: need move $generatorPom to services.
+        ctrl.data = $generatorPom.pom($scope.cluster, igniteVersion).asString();
+    };
 
     // Setup watchers. 
     $scope.$watch('cluster', clusterWatcher);
