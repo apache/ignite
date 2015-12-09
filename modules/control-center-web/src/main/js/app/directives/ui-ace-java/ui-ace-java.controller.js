@@ -47,19 +47,11 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
         }
 
         let type = $scope.type === FACTORY ? (!$scope.cfg ? SERVER_CFG : CLIENT_CFG) : false;
-<<<<<<< HEAD
         // TODO IGNITE-2054: need move $generatorJava to services.
         ctrl.data = $generatorJava.cluster($scope.cluster, 'factory', type, $scope.cfg);
     }
 
     // Setup watchers. 
-=======
-        // TODO IGNITE-2054: need move $generatorJava to services
-        ctrl.data = $generatorJava.cluster($scope.cluster, 'factory', type, $scope.cfg);
-    }
-
-    // watches
->>>>>>> IGNITE-2033 develop derictive to pojos
     $scope.$watch('cfg', clusterWatcher, true);
     $scope.$watch('type', clusterWatcher);
     $scope.$watch('cluster', clusterWatcher);

@@ -15,23 +15,12 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-docker.jade!'
-import controller from './ui-ace-docker.controller'
+export default ['hasPojo', [() => {
+    let filter = (cache) => {
+        return cache.metadatas && cache.metadatas.length;
+    }
 
-export default ['igniteUiAceDocker', [() => {
-
-	return {
-		restrict: 'E',
-		scope: {
-			cluster: '=',
-			data: '=ngModel'
-		},
-		bindToController: {
-			cluster: '=',
-			data: '=ngModel'
-		},
-		template,
-		controller,
-		controllerAs: 'ctrl'
-	}
+    return ({caches} = {}) => {
+        return caches && _.chain(caches).filter(filter).first().value();
+    }
 }]]

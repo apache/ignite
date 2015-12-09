@@ -15,23 +15,30 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-docker.jade!'
-import controller from './ui-ace-docker.controller'
+export default ['ConfigurationSummaryResource', ['$timeout', '$q', '$http', ($timeout, $q, $http) => {
+	let api = '/api/v1/configuration/clusters/list';
 
-export default ['igniteUiAceDocker', [() => {
+	let service = {
+		read() {
+			return $http
+				.post(api)
+				.then(({data}) => data)
+				.then(({clusters, caches, igfss}) => {
+					if (!clusters || !clusters.length) {
+						return {};
+					}
 
-	return {
-		restrict: 'E',
-		scope: {
-			cluster: '=',
-			data: '=ngModel'
-		},
-		bindToController: {
-			cluster: '=',
-			data: '=ngModel'
-		},
-		template,
-		controller,
-		controllerAs: 'ctrl'
+					_.each(clusters, cluster => {
+						cluster.igfss = _.filter(igfss, ({_id}) => _.contains(cluster.igfss, _id));
+						cluster.caches = _.filter(caches, ({_id}) => _.contains(cluster.caches, _id));
+					})
+
+					return {clusters};
+				}, (err) => {
+					return $q.reject(err);
+				})
+		}
 	}
+
+	return service;
 }]]

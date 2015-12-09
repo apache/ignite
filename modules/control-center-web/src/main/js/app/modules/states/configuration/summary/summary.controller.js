@@ -15,10 +15,18 @@
  * limitations under the License.
  */
 
-export default ['$scope', '$http', '$common', '$loading', '$table', function($scope, $http, $common, $loading, $table) {
-    var ctrl = this;
+export default [
+    '$scope', '$http', '$common', '$loading', '$table', '$filter', 'ConfigurationSummaryResource',
+    function($scope, $http, $common, $loading, $table, $filter, Resource) {
+    let ctrl = this;
+    let igniteVersion = '1.5.0';
 
-    var igniteVersion = '1.5.0';
+    $loading.start('loading');
+    Resource.read().then(({clusters}) => {
+        $scope.clusters = clusters;
+        $loading.finish('loading');
+        $scope.selectItem(clusters[0]);
+    })
 
     $scope.panelExpanded = $common.panelExpanded;
     $scope.tableVisibleRow = $table.tableVisibleRow;
@@ -48,38 +56,38 @@ export default ['$scope', '$http', '$common', '$loading', '$table', function($sc
             $common.showError(errMsg);
         });
 
-    $scope.clusters = [];
+    $scope.selectItem = (cluster) => {
+        delete ctrl.cluster;
 
-    $scope.selectItem = function (cluster) {
-        if (!cluster)
+        if (!cluster) {
             return;
+        }
 
+        ctrl.cluster = cluster;
         $scope.cluster = cluster;
-
         $scope.selectedItem = cluster;
-    };
+    }
 
-    $scope.pojoAvailable = function() {
-        let cachesFilter = (cache) => {
-            return cache.metadatas && cache.metadatas.length;
+    let updateTab = (cluster) => {
+        if (!cluster) {
+            return;
         }
 
-        return $scope.cluster && $scope.cluster.caches && _.chain($scope.cluster.caches).filter(cachesFilter).first().value();
-    };
-
-    $scope.$watch('cluster', function() {
-        if (!$scope.pojoAvailable() &&  $scope.tabsClient.activeTab === 3) {
-             $scope.tabsClient.activeTab = 0;
+        if (!$filter('hasPojo')(cluster) && $scope.tabsClient.activeTab === 3) {
+            $scope.tabsClient.activeTab = 0;     
         }
-    })
+    }
 
+    $scope.$watch('cluster', updateTab)
+
+    // TODO IGNITE-2114: implemented as indendent logic for download.
     $scope.downloadConfiguration = function () {
-        var cluster = $scope.selectedItem;
+        var cluster = $scope.cluster;
         var clientNearCfg = $scope.backupItem.nearConfiguration;
 
         var zip = new JSZip();
 
-        zip.file('Dockerfile', $scope.dockerServer);
+        zip.file('Dockerfile', ctrl.data.docker);
 
         var builder = $generatorProperties.generateProperties(cluster);
 
@@ -110,7 +118,7 @@ export default ['$scope', '$http', '$common', '$loading', '$table', function($sc
         zip.file('README.txt', $generatorReadme.readme().asString());
         zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());
 
-        for (var meta of $generatorJava.pojos(cluster.caches, $scope.configServer.useConstructor, $scope.configServer.includeKeyFields)) {
+        for (var meta of ctrl.data.metadatas) {
             if (meta.keyClass)
                 zip.file(srcPath + meta.keyType.replace(/\./g, '/') + '.java', meta.keyClass);
 
@@ -121,50 +129,5 @@ export default ['$scope', '$http', '$common', '$loading', '$table', function($sc
 
         // Download archive.
         saveAs(blob, cluster.name + '-configuration.zip');
-    };
-
-    $loading.start('loadingSummaryScreen');
-
-    $http.post('/api/v1/configuration/clusters/list')
-        .success(function (data) {
-            $scope.clusters = data.clusters;
-
-            if ($scope.clusters.length > 0) {
-                // Populate clusters with caches.
-                _.forEach($scope.clusters, function (cluster) {
-                    cluster.caches = _.filter(data.caches, function (cache) {
-                        return _.contains(cluster.caches, cache._id);
-                    });
-
-                    cluster.igfss = _.filter(data.igfss, function (igfs) {
-                        return _.contains(cluster.igfss, igfs._id);
-                    });
-                });
-
-                var restoredId = sessionStorage.summarySelectedId;
-
-                var selectIdx = 0;
-
-                if (restoredId) {
-                    var idx = _.findIndex($scope.clusters, function (cluster) {
-                        return cluster._id === restoredId;
-                    });
-
-                    if (idx >= 0)
-                        selectIdx = idx;
-                    else
-                        delete sessionStorage.summarySelectedId;
-                }
-
-                $scope.selectItem($scope.clusters[selectIdx]);
-
-                $scope.$watch('selectedItem', function (val) {
-                    if (val)
-                        sessionStorage.summarySelectedId = val._id;
-                }, true);
-            }
-        })
-        .finally(function () {
-            $loading.finish('loadingSummaryScreen');
-        });
+    };    
 }]

@@ -16,7 +16,7 @@
 
 ul.nav(ng-class='$navClass', role='tablist')
     li(role='presentation' ng-repeat='$pane in $panes track by $index' ng-class='[ $isActive($pane, $index) ? $activeClass : "", $pane.disabled ? "disabled" : "" ]')
-        a.summary-tab(ng-show='$pane.title != "POJO" || pojoAvailable()' ng-switch='$pane.title' role='tab' data-toggle='tab' ng-click='!$pane.disabled && $setActive($pane.name || $index)' data-index='{{ $index }}' aria-controls='$pane.title') {{$pane.title}}
+        a.summary-tab(ng-show='$pane.title != "POJO" || (cluster | hasPojo)' ng-switch='$pane.title' role='tab' data-toggle='tab' ng-click='!$pane.disabled && $setActive($pane.name || $index)' data-index='{{ $index }}' aria-controls='$pane.title') {{$pane.title}}
             img(ng-switch-when='XML' src='/images/xml.png')
             img(ng-switch-when='Java' src='/images/java.png')
             img(ng-switch-when='POM' src='/images/xml.png')

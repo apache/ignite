@@ -15,23 +15,12 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-docker.jade!'
-import controller from './ui-ace-docker.controller'
+import template from './loading.jade!';
 
-export default ['igniteUiAceDocker', [() => {
-
+export default ['igniteLoading', [() => {
 	return {
 		restrict: 'E',
-		scope: {
-			cluster: '=',
-			data: '=ngModel'
-		},
-		bindToController: {
-			cluster: '=',
-			data: '=ngModel'
-		},
 		template,
-		controller,
-		controllerAs: 'ctrl'
+		replace: true
 	}
 }]]
