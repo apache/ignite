@@ -2383,5 +2383,5 @@ DOT_CLEANUP            = YES
 
 ;INPUT=Apache.Ignite.Core
 ;EXCLUDE=Apache.Ignite.Core/Impl
-;OUTPUT_DIRECTORY=bin/dotnetdoc
+;OUTPUT_DIRECTORY=doc
 ;PROJECT_LOGO=../../../assembly/docfiles/ignite_logo.png
