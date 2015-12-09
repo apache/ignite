@@ -291,8 +291,9 @@ SQLRETURN SQL_API SQLFreeStmt(SQLHSTMT stmt, SQLUSMALLINT option)
 
         case SQL_RESET_PARAMS:
         {
-            // Not supported yet.
-            // Falling through.
+            statement->UnbindAllParameters();
+
+            break;
         }
 
         default:
@@ -676,11 +677,16 @@ SQLRETURN SQL_API SQLBindParameter(SQLHSTMT     stmt,
     if (driverType == IGNITE_ODBC_C_TYPE_UNSUPPORTED)
         return SQL_ERROR;
 
-    ApplicationDataBuffer dataBuffer(driverType, buffer, bufferLen, resLen);
+    if (buffer)
+    {
+        ApplicationDataBuffer dataBuffer(driverType, buffer, bufferLen, resLen);
 
-    Parameter param(dataBuffer, paramSqlType, columnSize, decDigits);
+        Parameter param(dataBuffer, paramSqlType, columnSize, decDigits);
 
-    statement->BindParameter(paramIdx, param);
+        statement->BindParameter(paramIdx, param);
+    }
+    else
+        statement->UnbindParameter(paramIdx);
 
     return SQL_SUCCESS;
 }
