@@ -412,7 +412,7 @@ public class GridPortableTestClasses {
      */
     public static class Companies {
         /** Companies. */
-        private ArrayList<Company> companies = new ArrayList<>();
+        private List<Company> companies = new ArrayList<>();
 
         /**
          * @param idx Index.
