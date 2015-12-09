@@ -212,6 +212,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Collection: concurrent bag. */
         public const byte CollectionConcurrentBag = 6;
 
+        /** Collection: concurrent queue. */
+        public const byte CollectionConcurrentQueue = 7;
+
         /** Map: custom. */
         public const byte MapCustom = 0;
 
@@ -1100,6 +1103,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     colType = CollectionSortedSet;
                 else if (genType == typeof (ConcurrentBag<>))
                     colType = CollectionConcurrentBag;
+                else if (genType == typeof (ConcurrentQueue<>))
+                    colType = CollectionConcurrentQueue;
                 else
                     colType = CollectionCustom;
             }
@@ -1151,6 +1156,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     res = new SortedSet<object>();
                 else if (colType == CollectionConcurrentBag)
                     res = new ConcurrentBag<object>();
+                else if (colType == CollectionConcurrentQueue)
+                    res = new ConcurrentQueue<object>();
                 else
                     res = new ArrayList(len);
             }
