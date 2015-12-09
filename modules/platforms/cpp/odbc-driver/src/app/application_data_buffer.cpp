@@ -579,45 +579,56 @@ namespace ignite
 
                         std::stringstream converter(str);
 
-                        converter >> res;
+                        // Workaround for char types which are recognised as
+                        // symbolyc types and not numeric types.
+                        if (sizeof(T) == 1)
+                        {
+                            short tmp;
+
+                            converter >> tmp;
+
+                            res = static_cast<T>(tmp);
+                        }
+                        else
+                            converter >> res;
 
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<int8_t*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<signed char*>(buffer));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_BIT:
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<uint8_t*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<unsigned char*>(buffer));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<int16_t*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<signed short*>(buffer));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<uint16_t*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<unsigned short*>(buffer));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
                     {
-                        res = static_cast<T>(*reinterpret_cast<int32_t*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<signed long*>(buffer));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
                     {
-                        res = static_cast<T>(*reinterpret_cast<uint32_t*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<unsigned long*>(buffer));
                         break;
                     }
 
