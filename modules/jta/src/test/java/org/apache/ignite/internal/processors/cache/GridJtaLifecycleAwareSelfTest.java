@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.cache.configuration.Factory;
 import javax.transaction.TransactionManager;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
@@ -36,7 +37,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Test for {@link LifecycleAware} support for {@link CacheTmLookup}.
  */
-public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
+public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /** */
     private static final String CACHE_NAME = "cache";
 
@@ -44,7 +45,7 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
     private boolean near;
 
     /** */
-    private boolean configureGlobalTmLookup;
+    private TmConfigurationType tmConfigurationType;
 
     /**
      */
@@ -53,7 +54,7 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
         implements CacheTmLookup {
         /** */
         @IgniteInstanceResource
-        Ignite ignite;
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public void start() {
@@ -68,7 +69,33 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
         }
     }
 
+    /**
+     *
+     */
+    public static class TestTxFactory extends GridAbstractLifecycleAwareSelfTest.TestLifecycleAware
+        implements Factory<TransactionManager> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** {@inheritDoc} */
+        @Override public void start() {
+            super.start();
+
+            assertNotNull(ignite);
+        }
+
+        /** {@inheritDoc} */
+        @Override public TransactionManager create() {
+            return null;
+        }
+    }
+
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -84,10 +111,17 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
         ccfg.setName(CACHE_NAME);
 
-        if (configureGlobalTmLookup)
-            cfg.getTransactionConfiguration().setTxManagerLookupClassName(TestTxLookup.class.getName());
-        else
-            ccfg.setTransactionManagerLookupClassName(TestTxLookup.class.getName());
+        switch (tmConfigurationType){
+            case CACHE_LOOKUP:
+                ccfg.setTransactionManagerLookupClassName(TestTxLookup.class.getName());
+                break;
+            case GLOBAL_LOOKUP:
+                cfg.getTransactionConfiguration().setTxManagerLookupClassName(TestTxLookup.class.getName());
+                break;
+            case FACTORY:
+                cfg.getTransactionConfiguration().setTxManagerFactory(new TestTxFactory());
+                break;
+        }
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -95,6 +129,7 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("OverlyStrongTypeCast")
     @Override protected void afterGridStart(Ignite ignite) {
         TestTxLookup tmLookup =
             (TestTxLookup)((IgniteKernal) ignite).context().cache().internalCache(CACHE_NAME).context().jta().tmLookup();
@@ -106,17 +141,51 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
     /** {@inheritDoc} */
     @Override public void testLifecycleAware() throws Exception {
-        for (boolean nearEnabled : new boolean[] {true, false}) {
-            near = nearEnabled;
-
-            super.testLifecycleAware();
-        }
+        // No-op, see anothre tests.
     }
 
     /** {@inheritDoc} */
-    public void testLifecycleAwareGlobal() throws Exception {
-        configureGlobalTmLookup = true;
+    public void testCacheLookupLifecycleAware() throws Exception {
+        tmConfigurationType = TmConfigurationType.CACHE_LOOKUP;
 
-        super.testLifecycleAware();
+        checkLifecycleAware();
     }
+
+    /** {@inheritDoc} */
+    public void testGlobalLookupLifecycleAware() throws Exception {
+        tmConfigurationType = TmConfigurationType.GLOBAL_LOOKUP;
+
+        checkLifecycleAware();
+    }
+
+    /** {@inheritDoc} */
+    public void testFactoryLifecycleAware() throws Exception {
+        tmConfigurationType = TmConfigurationType.FACTORY;
+
+        checkLifecycleAware();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkLifecycleAware() throws Exception {
+        for (boolean nearEnabled : new boolean[] {true, false}) {
+            near = nearEnabled;
+
+            testLifecycleAware();
+        }
+    }
+
+    /**
+     *
+     */
+    private enum TmConfigurationType {
+        /** */
+        CACHE_LOOKUP,
+
+        /** */
+        GLOBAL_LOOKUP,
+
+        /** */
+        FACTORY}
 }

@@ -41,7 +41,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
      */
     public GridDhtDetachedCacheEntry(GridCacheContext ctx, KeyCacheObject key, int hash, CacheObject val,
         GridCacheMapEntry next, int hdrId) {
-        super(ctx, key, hash, val, next, hdrId);
+        super(ctx, key, hash, val);
     }
 
     /**

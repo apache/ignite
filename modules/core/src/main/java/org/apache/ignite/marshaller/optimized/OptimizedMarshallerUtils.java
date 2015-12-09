@@ -155,12 +155,22 @@ class OptimizedMarshallerUtils {
     static final JdkMarshaller JDK_MARSH = new JdkMarshaller();
 
     static {
+        long mapOff;
+
         try {
-            HASH_SET_MAP_OFF = UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("map"));
+            mapOff = UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("map"));
         }
         catch (NoSuchFieldException e) {
-            throw new IgniteException("Initialization failure.", e);
+            try {
+                // Workaround for legacy IBM JRE.
+                mapOff = UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("backingMap"));
+            }
+            catch (NoSuchFieldException e2) {
+                throw new IgniteException("Initialization failure.", e2);
+            }
         }
+
+        HASH_SET_MAP_OFF = mapOff;
     }
 
     /**

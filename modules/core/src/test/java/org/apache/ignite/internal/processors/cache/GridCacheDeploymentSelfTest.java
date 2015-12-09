@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -207,7 +208,9 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             }
 
             assertEquals(0, g1.cache(null).localSize());
-            assertEquals(0, g2.cache(null).localSize());
+
+            assertEquals(g2.configuration().getMarshaller() instanceof BinaryMarshaller ? 1 : 0,
+                g2.cache(null).localSize());
 
             startGrid(3);
         }
@@ -223,6 +226,10 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             depMode = CONTINUOUS;
 
             Ignite g1 = startGrid(1);
+
+            if (g1.configuration().getMarshaller() instanceof BinaryMarshaller)
+                fail("https://issues.apache.org/jira/browse/IGNITE-2106");
+
             Ignite g2 = startGrid(2);
 
             Ignite g0 = startGrid(GRID_NAME);
@@ -250,9 +257,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             stopGrid(GRID_NAME);
 
             assertEquals(1, g1.cache(null).localSize(CachePeekMode.ALL));
-            assertEquals(1, g1.cache(null).localSize(CachePeekMode.ALL));
 
-            assertEquals(1, g2.cache(null).localSize(CachePeekMode.ALL));
             assertEquals(1, g2.cache(null).localSize(CachePeekMode.ALL));
 
             startGrid(3);

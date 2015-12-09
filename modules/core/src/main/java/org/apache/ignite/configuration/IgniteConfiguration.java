@@ -46,8 +46,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
