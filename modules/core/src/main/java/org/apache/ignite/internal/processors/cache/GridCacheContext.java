@@ -242,7 +242,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private boolean depEnabled;
 
     /** */
-    private boolean deferredDelete;
+    private boolean deferredDel;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -512,7 +512,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void cache(GridCacheAdapter<K, V> cache) {
         this.cache = cache;
 
-        deferredDelete = cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
+        deferredDel = cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
             (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC);
     }
 
@@ -576,7 +576,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if entries should not be deleted from cache immediately.
      */
     public boolean deferredDelete() {
-        return deferredDelete;
+        return deferredDel;
     }
 
     /**

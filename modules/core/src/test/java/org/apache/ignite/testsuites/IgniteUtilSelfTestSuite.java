@@ -37,6 +37,7 @@ import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.util.GridLongListSelfTest;
+import org.apache.ignite.util.GridMessageCollectionTest;
 import org.apache.ignite.util.GridQueueSelfTest;
 import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
 import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
@@ -73,6 +74,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridLongListSelfTest.class);
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
         suite.addTestSuite(IgniteExceptionRegistrySelfTest.class);
+        suite.addTestSuite(GridMessageCollectionTest.class);
 
         // Metrics.
         suite.addTestSuite(ClusterMetricsSnapshotSerializeSelfTest.class);

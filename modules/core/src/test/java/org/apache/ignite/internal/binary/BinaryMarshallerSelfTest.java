@@ -80,6 +80,7 @@ import sun.misc.Unsafe;
 
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Binary marshaller tests.
@@ -324,6 +325,17 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         Object[] arr = new Object[] {1, 2, 3};
 
         assertArrayEquals(arr, marshalUnmarshal(arr));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testException() throws Exception {
+        Exception ex = new RuntimeException();
+
+        // Checks that Optimize marshaller will be used, because Throwable has writeObject method.
+        // Exception's stacktrace equals to zero-length array by default and generates at Throwable's writeObject method.
+        assertNotEquals(0, marshalUnmarshal(ex).getStackTrace().length);
     }
 
     /**

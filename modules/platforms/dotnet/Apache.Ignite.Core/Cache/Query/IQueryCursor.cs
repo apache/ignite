@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Cache.Query
     /// Query result cursor. Can be processed either in iterative mode, or by taking
     /// all entries using <see cref="IQueryCursor{T}.GetAll()"/> method.
     /// <para />
-    /// Note that you get enumerator or call <code>GetAll()</code> method only once during
+    /// Note that you get enumerator or call <c>GetAll()</c> method only once during
     /// cursor lifetime. Any further attempts to get enumerator or all entries will result 
     /// in exception.
     /// </summary>

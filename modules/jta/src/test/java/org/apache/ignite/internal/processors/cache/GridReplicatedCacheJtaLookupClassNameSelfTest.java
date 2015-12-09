@@ -22,9 +22,9 @@ import org.apache.ignite.cache.CacheMode;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- * JTA integration test using REPLICATED cache.
+ * Lookup class name based JTA integration test using REPLICATED cache.
  */
-public class GridCacheReplicatedJtaSelfTest extends GridCacheJtaSelfTest {
+public class GridReplicatedCacheJtaLookupClassNameSelfTest extends GridPartitionedCacheJtaLookupClassNameSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;

@@ -703,14 +703,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             return BinaryUtils.ReadMapEntry(ctx);
         }
-
-        /**
-         * <summary>Add element to array list.</summary>
-         * <param name="col">Array list.</param>
-         * <param name="elem">Element.</param>
-         */
-
-
+        
         /**
          * <summary>Read delegate.</summary>
          * <param name="ctx">Read context.</param>

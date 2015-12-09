@@ -43,7 +43,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Apache.Ignite.Core">
-      <HintPath>..\..\Apache.Ignite\bin\$(Platform)\$(Configuration)\Apache.Ignite.Core.dll</HintPath>
+      <HintPath Condition="Exists('..\..\Apache.Ignite')">..\..\Apache.Ignite\bin\$(Platform)\$(Configuration)\Apache.Ignite.Core.dll</HintPath>
+      <HintPath Condition="'$(Platform)' == 'x86' And Exists('..\..\bin\x86\Apache.Ignite.Core.dll')">..\..\bin\x86\Apache.Ignite.Core.dll</HintPath>
+      <HintPath Condition="'$(Platform)' == 'x64' And Exists('..\..\bin\Apache.Ignite.Core.dll')">..\..\bin\Apache.Ignite.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
