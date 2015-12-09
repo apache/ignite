@@ -119,6 +119,27 @@ $generatorJava.declareVariableCustom = function (res, varName, varFullType, varE
 };
 
 /**
+ * Add array variable declaration.
+ *
+ * @param res Resulting output with generated code.
+ * @param varName Variable name.
+ * @param varFullType Variable full class name to be added to imports.
+ * @param length Array length.
+ */
+$generatorJava.declareVariableArray = function (res, varName, varFullType, length) {
+    var varType = res.importClass(varFullType);
+
+    var varNew = !res.vars[varName];
+
+    if (varNew)
+        res.vars[varName] = true;
+
+    res.line((varNew ? (varType + '[] ') : '') + varName + ' = new ' + varType + '[' + length + '];');
+
+    res.needEmptyLine = true;
+};
+
+/**
  * Clear list of declared variables.
  *
  * @param res
