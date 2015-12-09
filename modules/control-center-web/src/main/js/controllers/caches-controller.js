@@ -135,15 +135,15 @@ consoleModule.controller('cachesController', [
 
                     var memoryMode = backupItem.memoryMode;
 
-                    var onHeapTired = memoryMode == 'ONHEAP_TIERED';
-                    var offHeapTired = memoryMode == 'OFFHEAP_TIERED';
+                    var onHeapTired = memoryMode === 'ONHEAP_TIERED';
+                    var offHeapTired = memoryMode === 'OFFHEAP_TIERED';
 
                     var offHeapMaxMemory = backupItem.offHeapMaxMemory;
 
-                    if (model == 'offHeapMaxMemory' && offHeapTired)
+                    if (model === 'offHeapMaxMemory' && offHeapTired)
                         return true;
 
-                    if (model == 'evictionPolicy.kind' && onHeapTired)
+                    if (model === 'evictionPolicy.kind' && onHeapTired)
                         return backupItem.swapEnabled || ($common.isDefined(offHeapMaxMemory) && offHeapMaxMemory >= 0);
                 }
 
@@ -166,9 +166,9 @@ consoleModule.controller('cachesController', [
 
                         if ($common.isDefined(model)) {
                             model.forEach(function (val, ix) {
-                                if (ix != index && val.split('=')[0] == key)
+                                if (ix !== index && val.split('=')[0] === key)
                                     exist = true;
-                            })
+                            });
                         }
 
                         if (exist)
@@ -186,7 +186,7 @@ consoleModule.controller('cachesController', [
                             var idx = _.indexOf(model, fx);
 
                             // Found duplicate.
-                            if (idx >= 0 && idx != index)
+                            if (idx >= 0 && idx !== index)
                                 return showPopoverMessage(null, null, $table.tableFieldId(index, 'SqlFx'), 'SQL function with such class name already exists!');
                         }
                 }
@@ -207,11 +207,11 @@ consoleModule.controller('cachesController', [
 
                 if ($common.isDefined(model)) {
                     var idx = _.findIndex(model, function (pair) {
-                        return pair.keyClass == pairValue.key && pair.valueClass == pairValue.value;
+                        return pair.keyClass === pairValue.key && pair.valueClass === pairValue.value;
                     });
 
                     // Found duplicate.
-                    if (idx >= 0 && idx != index)
+                    if (idx >= 0 && idx !== index)
                         return showPopoverMessage(null, null, $table.tableFieldId(index, 'ValueIndexedType'), 'Indexed type with such key and value classes already exists!');
                 }
 
@@ -244,7 +244,7 @@ consoleModule.controller('cachesController', [
                     $scope.caches = data.caches;
                     $scope.clusters = data.clusters;
                     $scope.metadatas = _.sortBy(_.map(validFilter(data.metadatas, true, false), function (meta) {
-                        return {value: meta._id, label: meta.valueType, kind: meta.kind, meta: meta}
+                        return {value: meta._id, label: meta.valueType, kind: meta.kind, meta: meta};
                     }), 'label');
 
                     // Load page descriptor.
@@ -324,28 +324,30 @@ consoleModule.controller('cachesController', [
                                 }
                             }, true);
 
-                            $scope.$watch('backupItem.metadatas', function (val) {
-                                var item = $scope.backupItem;
+                            $scope.$watchCollection('backupItem.metadatas', function (val, old) {
+                                if (!angular.equals(val, old)) {
+                                    var item = $scope.backupItem;
 
-                                var cacheStoreFactory = $common.isDefined(item) &&
-                                    $common.isDefined(item.cacheStoreFactory) &&
-                                    $common.isDefined(item.cacheStoreFactory.kind);
+                                    var cacheStoreFactory = $common.isDefined(item) &&
+                                        $common.isDefined(item.cacheStoreFactory) &&
+                                        $common.isDefined(item.cacheStoreFactory.kind);
 
-                                if (val && !cacheStoreFactory) {
-                                    if (_.findIndex(cacheMetadatas(item), $common.metadataForStoreConfigured) >= 0) {
-                                        item.cacheStoreFactory.kind = 'CacheJdbcPojoStoreFactory';
+                                    if (val && !cacheStoreFactory) {
+                                        if (_.findIndex(cacheMetadatas(item), $common.metadataForStoreConfigured) >= 0) {
+                                            item.cacheStoreFactory.kind = 'CacheJdbcPojoStoreFactory';
 
-                                        if (!item.readThrough && !item.writeThrough) {
-                                            item.readThrough = true;
-                                            item.writeThrough = true;
+                                            if (!item.readThrough && !item.writeThrough) {
+                                                item.readThrough = true;
+                                                item.writeThrough = true;
+                                            }
+
+                                            $timeout(function () {
+                                                $common.ensureActivePanel($scope.panels, 'store');
+                                            });
                                         }
-
-                                        $timeout(function () {
-                                            $common.ensureActivePanel($scope.panels, 'store');
-                                        });
                                     }
                                 }
-                            }, true);
+                            });
                         })
                         .error(function (errMsg) {
                             $common.showError(errMsg);
@@ -403,7 +405,7 @@ consoleModule.controller('cachesController', [
                     copyOnRead: true,
                     clusters: id && _.find($scope.clusters, {value: id}) ? [id] : [],
                     metadatas: id && _.find($scope.metadatas, {value: id}) ? [id] : []
-                }
+                };
             }
 
             // Add new cache.
@@ -422,11 +424,11 @@ consoleModule.controller('cachesController', [
                 if ($common.isEmptyString(item.name))
                     return showPopoverMessage($scope.panels, 'general', 'cacheName', 'Name should not be empty');
 
-                if (item.memoryMode == 'OFFHEAP_TIERED' && item.offHeapMaxMemory == null)
+                if (item.memoryMode === 'OFFHEAP_TIERED' && item.offHeapMaxMemory == null)
                     return showPopoverMessage($scope.panels, 'memory', 'offHeapMaxMemory',
                         'Off-heap max memory should be specified');
 
-                if (item.memoryMode == 'ONHEAP_TIERED' && item.offHeapMaxMemory > 0 &&
+                if (item.memoryMode === 'ONHEAP_TIERED' && item.offHeapMaxMemory > 0 &&
                         !$common.isDefined(item.evictionPolicy.kind)) {
                     return showPopoverMessage($scope.panels, 'memory', 'evictionPolicy', 'Eviction policy should not be configured');
                 }
@@ -434,7 +436,7 @@ consoleModule.controller('cachesController', [
                 var cacheStoreFactorySelected = item.cacheStoreFactory && item.cacheStoreFactory.kind;
 
                 if (cacheStoreFactorySelected) {
-                    if (item.cacheStoreFactory.kind == 'CacheJdbcPojoStoreFactory') {
+                    if (item.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
                         if ($common.isEmptyString(item.cacheStoreFactory.CacheJdbcPojoStoreFactory.dataSourceBean))
                             return showPopoverMessage($scope.panels, 'store', 'dataSourceBean',
                                 'Data source bean should not be empty');
@@ -444,7 +446,7 @@ consoleModule.controller('cachesController', [
                                 'Dialect should not be empty');
                     }
 
-                    if (item.cacheStoreFactory.kind == 'CacheJdbcBlobStoreFactory') {
+                    if (item.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory') {
                         if ($common.isEmptyString(item.cacheStoreFactory.CacheJdbcBlobStoreFactory.user))
                             return showPopoverMessage($scope.panels, 'store', 'user',
                                 'User should not be empty');
@@ -468,7 +470,7 @@ consoleModule.controller('cachesController', [
                         return showPopoverMessage($scope.panels, 'store', 'readThrough',
                             'Store is configured but read/write through are not enabled!');
 
-                    if (item.cacheStoreFactory.kind == 'CacheJdbcPojoStoreFactory') {
+                    if (item.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
                         if ($common.isDefined(item.metadatas)) {
                             var metadatas = cacheMetadatas($scope.backupItem);
 
