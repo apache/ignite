@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.jta;
 
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.configuration.Factory;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -43,11 +44,46 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
     /** */
     private final AtomicReference<CacheTmLookup> tmLookupRef = new AtomicReference<>();
 
+    /** */
+    private Factory<TransactionManager> tmFactory;
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
         if (cctx.txConfig() != null) {
+            tmFactory = cctx.txConfig().getTxManagerFactory();
+
+            if (tmFactory != null) {
+                cctx.kernalContext().resource().injectGeneric(tmFactory);
+
+                if (tmFactory instanceof LifecycleAware)
+                    ((LifecycleAware)tmFactory).start();
+
+                Object txMgr;
+
+                try {
+                    txMgr = tmFactory.create();
+                }
+                catch (Exception e) {
+                    throw new IgniteCheckedException("Failed to create transaction manager [tmFactory="
+                        + tmFactory + "]", e);
+                }
+
+                if (txMgr == null)
+                    throw new IgniteCheckedException("Failed to create transaction manager (transaction manager " +
+                        "factory created null-value transaction manager) [tmFactory=" + tmFactory + "]");
+
+                if (!(txMgr instanceof TransactionManager))
+                    throw new IgniteCheckedException("Failed to create transaction manager (transaction manager " +
+                        "factory created object that is not an instance of TransactionManager) [tmFactory="
+                        + tmFactory + ", txMgr=" + txMgr + "]");
+
+                jtaTm = (TransactionManager)txMgr;
+
+                return;
+            }
+
             String txLookupClsName = cctx.txConfig().getTxManagerLookupClassName();
 
             if (txLookupClsName != null)
@@ -61,6 +97,9 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
 
         if (tmLookup instanceof LifecycleAware)
             ((LifecycleAware)tmLookup).stop();
+
+        if (tmFactory instanceof LifecycleAware)
+            ((LifecycleAware)tmFactory).stop();
     }
 
     /**
