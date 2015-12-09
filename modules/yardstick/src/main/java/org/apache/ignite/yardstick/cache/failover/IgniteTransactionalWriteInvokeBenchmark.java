@@ -25,9 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -58,29 +60,49 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
     /** */
     private static final Long INITIAL_VALUE = 1L;
 
+    /** */
+    public static final int TIMEOUT_SEC = 20 * 60;
+
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
         assert args.keysCount() > 0 : "Count of keys: " + args.keysCount();
 
-        println(cfg, "Populating data...");
+        IgniteCountDownLatch latch = ignite().countDownLatch("DATA-POPULATED-LATCH-" + cacheName(), 1, true, true);
 
-        long start = System.nanoTime();
+        if (cfg.memberId() == 0) {
+            println(cfg, "Populating data for cache: " + cacheName());
 
-        try (IgniteDataStreamer<String, Long> dataLdr = ignite().dataStreamer(cacheName())) {
-            for (int k = 0; k < args.range() && !Thread.currentThread().isInterrupted(); k++) {
-                dataLdr.addData("key-" + k + "-master", INITIAL_VALUE);
+            long start = System.nanoTime();
 
-                for (int i = 0; i < args.keysCount(); i++)
-                    dataLdr.addData("key-" + k + "-" + i, INITIAL_VALUE);
+            try (IgniteDataStreamer<String, Long> dataLdr = ignite().dataStreamer(cacheName())) {
+                for (int k = 0; k < args.range() && !Thread.currentThread().isInterrupted(); k++) {
+                    dataLdr.addData("key-" + k + "-master", INITIAL_VALUE);
 
-                if (k % 100000 == 0)
-                    println(cfg, "Populated accounts: " + k);
+                    for (int i = 0; i < args.keysCount(); i++)
+                        dataLdr.addData("key-" + k + "-" + i, INITIAL_VALUE);
+
+                    if (k % 100000 == 0)
+                        println(cfg, "Populated accounts: " + k);
+                }
             }
-        }
 
-        println(cfg, "Finished populating data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
+            println(cfg, "Finished populating data in " + ((System.nanoTime() - start) / 1_000_000)
+                + " ms. for cache: " + cacheName());
+
+            latch.countDown();
+        }
+        else {
+            println(cfg, "Waiting for populating data in cache by driver with id 0: " + cacheName());
+
+            boolean success = latch.await(TIMEOUT_SEC, TimeUnit.SECONDS);
+
+            if (!success)
+                throw new IllegalStateException("Failed to wait that data populating finish.");
+
+            println(cfg, "Finished waiting for populating data in cache by driver with id 0: " + cacheName());
+        }
     }
 
     /** {@inheritDoc} */

@@ -17,25 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.cache.CacheMode;
+
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- * Factory for cache entries.
+ * Factory JTA integration test using REPLICATED cache.
  */
-public interface GridCacheMapEntryFactory {
-    /**
-     * @param ctx Cache registry.
-     * @param topVer Topology version.
-     * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
-     * @return New cache entry.
-     */
-    public GridCacheMapEntry create(
-        GridCacheContext ctx,
-        AffinityTopologyVersion topVer,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val
-    );
+public class GridReplicatedCacheJtaFactorySelfTest extends GridPartitionedCacheJtaFactorySelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return REPLICATED;
+    }
 }

@@ -17,25 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import javax.cache.configuration.Factory;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.objectweb.transaction.jta.TransactionManager;
 
 /**
- * Factory for cache entries.
+ * Factory JTA integration test using PARTITIONED cache.
  */
-public interface GridCacheMapEntryFactory {
-    /**
-     * @param ctx Cache registry.
-     * @param topVer Topology version.
-     * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
-     * @return New cache entry.
-     */
-    public GridCacheMapEntry create(
-        GridCacheContext ctx,
-        AffinityTopologyVersion topVer,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val
-    );
+public class GridPartitionedCacheJtaFactorySelfTest extends AbstarctCacheJtaSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void configureJta(IgniteConfiguration cfg) {
+        TransactionConfiguration txCfg = cfg.getTransactionConfiguration();
+
+        txCfg.setTxManagerFactory(new Factory<TransactionManager>() {
+            private static final long serialVersionUID = 0L;
+
+            @Override public TransactionManager create() {
+                return jotm.getTransactionManager();
+            }
+        });
+    }
 }
