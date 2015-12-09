@@ -529,9 +529,13 @@ namespace ignite
 
                         jstring msg = static_cast<jstring>(env->CallObjectMethod(err, m_Throwable_getMessage));
                         *errMsg = StringToChars(env, msg, errMsgLen);
-						
-                        jstring trace = static_cast<jstring>(env->CallStaticObjectMethod(c_X, m_X_getFullStackTrace, err));						
-                        *stackTrace = StringToChars(env, trace, stackTraceLen);
+
+                        jstring trace = NULL;
+
+                        if (c_X && m_X_getFullStackTrace) {
+                            trace = static_cast<jstring>(env->CallStaticObjectMethod(c_X, m_X_getFullStackTrace, err));
+                            *stackTrace = StringToChars(env, trace, stackTraceLen);
+                        }
 
                         if (errCls)
                             env->DeleteLocalRef(errCls);
