@@ -19,7 +19,7 @@
 consoleModule.controller('summaryController', [
     '$scope', '$http', '$common', '$loading', '$table',
     function ($scope, $http, $common, $loading, $table) {
-    var igniteVersion = '1.5.0';
+    var igniteVersion = '1.5.0-b1';
     $loading.start('loadingSummaryScreen');
 
     $scope.panelExpanded = $common.panelExpanded;

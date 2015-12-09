@@ -23,5 +23,5 @@ export default ['igniteCallout', [() => {
 		template,
 		replace: true,
 		transclude: true 
-	}
-}]]
+	};
+}]];

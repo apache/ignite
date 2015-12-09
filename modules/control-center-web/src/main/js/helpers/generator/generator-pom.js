@@ -62,10 +62,11 @@ $generatorPom.dependencies = function (res, cluster, deps) {
  *
  * @param cluster Cluster  to take info about dependencies.
  * @param igniteVersion Ignite version for Ignite dependencies.
+ * @param mvnRepositories, List of repositories to add to generated pom.
  * @param res Resulting output with generated pom.
  * @returns {string} Generated content.
  */
-$generatorPom.pom = function (cluster, igniteVersion, res) {
+$generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -126,12 +127,18 @@ $generatorPom.pom = function (cluster, igniteVersion, res) {
 
     res.needEmptyLine = true;
 
-    res.startBlock('<repositories>');
-    res.startBlock('<repository>');
-    $generatorPom.addProperty(res, 'id', 'GridGain External Repository');
-    $generatorPom.addProperty(res, 'url', 'http://www.gridgainsystems.com/nexus/content/repositories/gridgain_staging-1584');
-    res.endBlock('</repository>');
-    res.endBlock('</repositories>');
+    if (!$commonUtils.isEmptyArray(mvnRepositories)) {
+        res.startBlock('<repositories>');
+
+        _.forEach(mvnRepositories, function (repo) {
+            res.startBlock('<repository>');
+            $generatorPom.addProperty(res, 'id', repo.id);
+            $generatorPom.addProperty(res, 'url', repo.url);
+            res.endBlock('</repository>');
+        });
+
+        res.endBlock('</repositories>');
+    }
 
     res.needEmptyLine = true;
 

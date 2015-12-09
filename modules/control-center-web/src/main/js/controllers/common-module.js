@@ -750,17 +750,17 @@ consoleModule.service('$common', [
                 return true;
             },
             metadataForQueryConfigured: function (meta) {
-                var isEmpty = !isDefined(meta) || (isEmptyArray(meta.fields)
-                    && isEmptyArray(meta.aliases)
-                    && isEmptyArray(meta.indexes));
+                var isEmpty = !isDefined(meta) || (isEmptyArray(meta.fields) &&
+                    isEmptyArray(meta.aliases) &&
+                    isEmptyArray(meta.indexes));
 
                 return !isEmpty;
             },
             metadataForStoreConfigured: function (meta) {
-                var isEmpty = !isDefined(meta) || (isEmptyString(meta.databaseSchema)
-                    && isEmptyString(meta.databaseTable)
-                    && isEmptyArray(meta.keyFields)
-                    && isEmptyArray(meta.valueFields));
+                var isEmpty = !isDefined(meta) || (isEmptyString(meta.databaseSchema) &&
+                    isEmptyString(meta.databaseTable) &&
+                    isEmptyArray(meta.keyFields) &&
+                    isEmptyArray(meta.valueFields));
 
                 return !isEmpty;
             },
