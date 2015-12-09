@@ -795,7 +795,7 @@ public class PortableClassDescriptor {
      * @return {@code true} if to use, {@code false} otherwise.
      */
     private boolean initUseOptimizedMarshallerFlag() {
-        for (Class c = cls; !c.equals(Object.class); c = c.getSuperclass()) {
+        for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
             try {
                 Method writeObj = c.getDeclaredMethod("writeObject", ObjectOutputStream.class);
                 Method readObj = c.getDeclaredMethod("readObject", ObjectInputStream.class);

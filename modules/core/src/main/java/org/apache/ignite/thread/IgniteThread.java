@@ -88,7 +88,11 @@ public class IgniteThread extends Thread {
         this.gridName = gridName;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets name of the grid this thread belongs to.
+     *
+     * @return Name of the grid this thread belongs to.
+     */
     public String getGridName() {
         return gridName;
     }
