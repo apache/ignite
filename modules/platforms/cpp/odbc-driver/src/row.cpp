@@ -59,11 +59,14 @@ namespace ignite
     namespace odbc
     {
         Row::Row(ignite::impl::interop::InteropUnpooledMemory& pageData) :
-            pos(0), pageData(pageData), stream(&pageData), reader(&stream)
+            size(0), pos(0), rowBeginPos(0), pageData(pageData), stream(&pageData), reader(&stream)
         {
-            size = stream.ReadInt32();
+            if (pageData.Length() >= 4)
+            {
+                size = stream.ReadInt32();
 
-            rowBeginPos = stream.Position();
+                rowBeginPos = stream.Position();
+            }
         }
 
         Row::~Row()

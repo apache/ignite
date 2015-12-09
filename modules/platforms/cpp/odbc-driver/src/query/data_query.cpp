@@ -56,9 +56,7 @@ namespace ignite
                     return SQL_RESULT_ERROR;
 
                 if (!cursor->HasNext())
-                {
                     return SQL_RESULT_NO_DATA;
-                }
 
                 if (cursor->NeedDataUpdate())
                 {
@@ -66,6 +64,9 @@ namespace ignite
 
                     if (!success)
                         return SQL_RESULT_ERROR;
+
+                    if (!cursor->HasNext())
+                        return SQL_RESULT_NO_DATA;
                 }
                 else
                     cursor->Increment();

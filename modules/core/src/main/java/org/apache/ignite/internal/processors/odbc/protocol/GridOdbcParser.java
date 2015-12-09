@@ -33,7 +33,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 
 /**
@@ -172,14 +174,17 @@ public class GridOdbcParser implements GridNioParser {
                 String sql = reader.readString();
                 int argsNum = reader.readInt();
 
-                //TODO: Implement parameters reading.
-
                 System.out.println("Message EXECUTE_SQL_QUERY:");
                 System.out.println("cache: " + cache);
                 System.out.println("query: " + sql);
                 System.out.println("argsNum: " + argsNum);
 
-                res = new QueryExecuteRequest(cache, sql);
+                Object[] params = new Object[argsNum];
+
+                for (int i = 0; i < argsNum; ++i)
+                    params[i] = reader.readObjectDetached();
+
+                res = new QueryExecuteRequest(cache, sql, params);
                 break;
             }
 

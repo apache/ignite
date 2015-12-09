@@ -18,6 +18,7 @@
 #include <ignite/impl/interop/interop_input_stream.h>
 
 #include "ignite/odbc/result_page.h"
+#include "ignite/odbc/utility.h"
 
 namespace ignite
 {
@@ -43,10 +44,14 @@ namespace ignite
 
             int32_t dataToRead = stream.Remaining();
 
-            data.Reallocate(dataToRead);
             data.Length(dataToRead);
 
-            reader.GetStream()->ReadInt8Array(data.Data(), dataToRead);
+            if (dataToRead)
+            {
+                data.Reallocate(dataToRead);
+
+                reader.GetStream()->ReadInt8Array(data.Data(), dataToRead);
+            }
         }
     }
 }
