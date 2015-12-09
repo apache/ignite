@@ -17,7 +17,8 @@
 
 var gulp = require('gulp');
 var gulpJade = require('gulp-jade');
-var gulpSequence = require('gulp-sequence');
+var sequence = require('gulp-sequence');
+var connect = require('gulp-connect');
 
 var igniteModules = process.env.IGNITE_MODULES || './ignite_modules';
 
@@ -36,7 +37,7 @@ var jadeOptions = {
 };
 
 gulp.task('jade', function(cb) {
-    return gulpSequence('jade:source', 'jade:ignite_modules')(cb)
+    return sequence('jade:source', 'jade:ignite_modules')(cb)
 });
 
 gulp.task('jade:source', function (cb) {
@@ -44,11 +45,14 @@ gulp.task('jade:source', function (cb) {
 });
 
 gulp.task('jade:ignite_modules', function (cb) {
-    return gulp.src(igniteModulePaths).pipe(gulpJade(jadeOptions)).pipe(gulp.dest('./build/ignite_modules'));
+    return gulp.src(igniteModulePaths)
+        .pipe(gulpJade(jadeOptions))
+        .pipe(gulp.dest('./build/ignite_modules'))
+        .pipe(connect.reload());
 });
 
 gulp.task('jade:watch', function (cb) {
     return gulp.watch([igniteModulePaths, paths], function(glob) {
-        gulpSequence('jade', 'inject:plugins:html')(cb)
+        sequence('jade', 'inject:plugins:html')(cb)
     });
 });

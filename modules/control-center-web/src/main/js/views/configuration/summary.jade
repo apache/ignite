@@ -60,7 +60,7 @@ mixin pojos(side)
             .padding-dflt(ng-if='clusters.length == 0')
                 | You have no clusters configured. Please configure them &nbsp;
                 a(href='/configuration/clusters') here.
-            +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
+            +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
             div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)' role='tab')
                 .padding-top-dflt(ng-if='clusters.length > 0' bs-affix)
                     button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip data-title='Download configuration' data-placement='bottom') Download

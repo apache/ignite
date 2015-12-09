@@ -16,8 +16,8 @@
  */
 
 // Controller for SQL notebook screen.
-consoleModule.controller('sqlController', function ($scope, $controller, $http, $timeout, $common, $confirm,
-    $interval, $modal, $popover, $loading, $location, $anchorScroll, $state) {
+consoleModule.controller('sqlController', function ($animate, $scope, $controller, $http, $timeout, $common, $confirm,
+    $interval, $modal, $popover, $loading, $location, $anchorScroll, $state, uiGridExporterConstants) {
     // Initialize the super class and extend it.
     angular.extend(this, $controller('agent-download', {$scope: $scope}));
 
@@ -42,7 +42,11 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
         {value: 3600000, label: 'hours', short: 'h'}
     ];
 
-    $scope.exportDropdown = [{ 'text': 'Export all', 'click': 'exportAll(paragraph)'}];
+    $scope.exportDropdown = [
+        { 'text': 'Export all', 'click': 'exportCsvAll(paragraph)' }
+        //{ 'text': 'Export all to CSV', 'click': 'exportCsvAll(paragraph)' },
+        //{ 'text': 'Export all to PDF', 'click': 'exportPdfAll(paragraph)' }
+    ];
 
     $scope.metadata = [];
 
@@ -192,9 +196,19 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
         };
 
         Object.defineProperty(paragraph, 'gridOptions', { value: {
-            enableColResize: true,
-            columnDefs: [],
-            rowData: null
+            onRegisterApi: function(api) {
+                $animate.enabled(api.grid.element, false);
+
+                this.api = api;
+            },
+            enableGridMenu: false,
+            exporterMenuCsv: false,
+            exporterMenuPdf: false,
+            setRows: function(rows) {
+                this.height = Math.min(rows.length, 15) * 30 + 42 + 'px';
+
+                this.data = rows;
+            }
         }});
 
         Object.defineProperty(paragraph, 'chartHistory', {value: []});
@@ -394,10 +408,6 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
 
         if (paragraph.chart())
             _chartApplySettings(paragraph, true);
-        else
-            setTimeout(function () {
-                paragraph.gridOptions.api.sizeColumnsToFit();
-            });
     };
 
     $scope.resultEq = function(paragraph, result) {
@@ -475,19 +485,16 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
                 if (_notObjectType(col.fieldTypeName))
                     paragraph.chartColumns.push({value: idx, type: col.fieldTypeName, label: col.fieldName, aggFx: $scope.aggregateFxs[0]});
 
-                // Index for explain, execute and fieldName for scan.
-                var colValue = 'data[' +  (paragraph.queryArgs.query ? idx : '"' + col.fieldName + '"') + ']';
-
                 columnDefs.push({
-                    headerName: col.fieldName,
+                    displayName: col.fieldName,
                     headerTooltip: _fullColName(col),
-                    valueGetter: $common.isJavaBuildInClass(col.fieldTypeName) ? colValue : 'JSON.stringify(' + colValue + ')',
+                    field: paragraph.queryArgs.query ? '' + idx : col.fieldName,
                     minWidth: 50
                 });
             }
         });
 
-        paragraph.gridOptions.api.setColumnDefs(columnDefs);
+        paragraph.gridOptions.columnDefs = columnDefs;
 
         if (paragraph.chartColumns.length > 0) {
             paragraph.chartColumns.push(TIME_LINE);
@@ -512,10 +519,6 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
         paragraph.chartColumns = [];
 
         _rebuildColumns(paragraph);
-
-        setTimeout(function () {
-            paragraph.gridOptions.api.sizeColumnsToFit();
-        });
     };
 
     function _retainColumns(allCols, curCols, acceptableType, xAxis, unwantedCols) {
@@ -617,10 +620,7 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
             else
                 paragraph.rows = res.rows;
 
-            paragraph.gridOptions.api.setRowData(paragraph.rows);
-
-            if (!refreshMode)
-                setTimeout(function () { paragraph.gridOptions.api.sizeColumnsToFit(); });
+            paragraph.gridOptions.setRows(paragraph.rows);
 
             var chartHistory = paragraph.chartHistory;
 
@@ -676,9 +676,6 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
     };
 
     var _showLoading = function (paragraph, enable) {
-        if (paragraph.table())
-            paragraph.gridOptions.api.showLoading(enable);
-
         paragraph.loading = enable;
     };
 
@@ -790,7 +787,7 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
                         _updateChartsWithData(paragraph, _chartDatum(paragraph));
                 }
 
-                paragraph.gridOptions.api.setRowData(res.rows);
+                paragraph.gridOptions.setRows(res.rows);
 
                 _showLoading(paragraph, false);
 
@@ -851,11 +848,17 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
         $common.download('application/octet-stream;charset=utf-8', fileName, escape(csvContent));
     };
 
-    $scope.exportPage = function(paragraph) {
+    $scope.exportCsv = function(paragraph) {
         _export(paragraph.name + '.csv', paragraph.meta, paragraph.rows);
+
+        //paragraph.gridOptions.api.exporter.csvExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
     };
 
-    $scope.exportAll = function(paragraph) {
+    $scope.exportPdf = function(paragraph) {
+        paragraph.gridOptions.api.exporter.pdfExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
+    };
+
+    $scope.exportCsvAll = function(paragraph) {
         $http.post('/api/v1/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
             .success(function (item) {
                 _export(paragraph.name + '-all.csv', item.meta, item.rows);
@@ -863,6 +866,16 @@ consoleModule.controller('sqlController', function ($scope, $controller, $http, 
             .error(function (errMsg) {
                 $common.showError(errMsg);
             });
+    };
+
+    $scope.exportPdfAll = function(paragraph) {
+        //$http.post('/api/v1/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
+        //    .success(function (item) {
+        //        _export(paragraph.name + '-all.csv', item.meta, item.rows);
+        //    })
+        //    .error(function (errMsg) {
+        //        $common.showError(errMsg);
+        //    });
     };
 
     $scope.rateAsString = function (paragraph) {

@@ -127,6 +127,10 @@ consoleModule.controller('cachesController', [
                 statistics: {xml: '', java: '', allDefaults: true}
             };
 
+            function _cacheLbl () {
+                return this.name + ', ' + _.result(_.find($scope.cacheModes, {value: this.cacheMode}), 'label') + ', ' + _.result(_.find($scope.atomicities, {value: this.atomicityMode}), 'label');
+            }
+
             $scope.required = function (field) {
                 var backupItem = $scope.backupItem;
 
@@ -241,6 +245,13 @@ consoleModule.controller('cachesController', [
                     var validFilter = $filter('metadatasValidation');
 
                     $scope.spaces = data.spaces;
+
+                    data.caches.forEach(function (cache) {
+                        Object.defineProperty(cache, 'label', {
+                            get: _cacheLbl
+                        });
+                    });
+
                     $scope.caches = data.caches;
                     $scope.clusters = data.clusters;
                     $scope.metadatas = _.sortBy(_.map(validFilter(data.metadatas, true, false), function (meta) {
@@ -404,7 +415,8 @@ consoleModule.controller('cachesController', [
                     readFromBackup: true,
                     copyOnRead: true,
                     clusters: id && _.find($scope.clusters, {value: id}) ? [id] : [],
-                    metadatas: id && _.find($scope.metadatas, {value: id}) ? [id] : []
+                    metadatas: id && _.find($scope.metadatas, {value: id}) ? [id] : [],
+                    get label() { return angular.bind(this, _cacheLbl)(); }
                 };
             }
 

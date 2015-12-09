@@ -481,15 +481,15 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                         .input-tip
                                             button#newIndexType.select-toggle.form-control(bs-select ng-model='field.newIndexType' data-placeholder='Select index type' bs-options="item.value as item.label for item in indexType" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
 
-mixin main-table(title, rows, focusId, click, rowTemplate)
+mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
     .padding-bottom-dflt(ng-show='#{rows} && #{rows}.length > 0')
-        table.links(st-set-filter='#{rows}Search' st-table='displayedRows' st-safe-src='#{rows}')
+        table.links(st-table='displayedRows' st-safe-src='#{rows}')
             thead
                 tr
                     th
                         lable.labelHeader.labelFormField #{title}
                         .col-sm-3.pull-right(style='padding: 0')
-                            input.form-control(type='text' st-search='' placeholder='Filter #{rows}...')
+                            input.form-control(type='text' st-search='#{searchField}' placeholder='Filter #{rows}...')
                 tbody
                     tr
                         td

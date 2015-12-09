@@ -24,12 +24,13 @@ System.config({
     "angular-grid": "github:ceolter/ag-grid@2.3.5",
     "angular-loading": "github:darthwade/angular-loading@0.1.4",
     "angular-motion": "github:mgcrea/angular-motion@0.4.3",
-    "angular-nvd3": "github:krispo/angular-nvd3@1.0.4",
+    "angular-nvd3": "github:krispo/angular-nvd3@1.0.5",
     "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.8",
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.5",
     "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
     "angular-tree-control": "github:wix/angular-tree-control@0.2.22",
     "angular-ui-ace": "github:angular-ui/ui-ace@0.2.3",
+    "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.0.7",
     "angular-ui-router": "github:angular-ui/ui-router@0.2.15",
     "babel": "npm:babel-core@5.8.34",
     "babel-runtime": "npm:babel-runtime@5.8.34",
@@ -40,18 +41,22 @@ System.config({
     "core-js": "npm:core-js@1.2.6",
     "css": "github:systemjs/plugin-css@0.1.20",
     "file-saver": "github:eligrey/FileSaver.js@master",
-    "font-awesome": "npm:font-awesome@4.4.0",
+    "font-awesome": "npm:font-awesome@4.5.0",
     "jade": "github:johnsoftek/plugin-jade@0.5.1",
     "jquery": "github:components/jquery@2.1.4",
     "jszip": "github:Stuk/jszip@2.5.0",
     "lodash": "npm:lodash@3.10.1",
     "nvd3": "npm:nvd3@1.8.1",
+    "pdfmake": "github:bpampuch/pdfmake@0.1.20",
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
     "spinjs": "github:fgnass/spin.js@2.3.2",
     "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
       "angular-animate": "github:angular/bower-angular-animate@1.4.8",
       "angular-motion": "github:mgcrea/angular-motion@0.4.3",
       "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.8"
+    },
+    "github:angular-ui/bower-ui-grid@3.0.7": {
+      "pdfmake": "github:bpampuch/pdfmake@0.1.20"
     },
     "github:angular-ui/ui-ace@0.2.3": {
       "ace": "github:ajaxorg/ace-builds@1.2.2"
@@ -81,7 +86,7 @@ System.config({
       "assert": "npm:assert@1.3.0"
     },
     "github:jspm/nodelibs-buffer@0.1.0": {
-      "buffer": "npm:buffer@3.5.2"
+      "buffer": "npm:buffer@3.5.4"
     },
     "github:jspm/nodelibs-events@0.1.1": {
       "events": "npm:events@1.0.2"
@@ -121,7 +126,7 @@ System.config({
     "github:jspm/nodelibs-vm@0.1.0": {
       "vm-browserify": "npm:vm-browserify@0.0.4"
     },
-    "github:krispo/angular-nvd3@1.0.4": {
+    "github:krispo/angular-nvd3@1.0.5": {
       "angular": "github:angular/bower-angular@1.4.8",
       "d3": "npm:d3@3.5.10",
       "nvd3": "npm:nvd3@1.8.1"
@@ -177,12 +182,12 @@ System.config({
     "npm:babel-runtime@5.8.34": {
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
-    "npm:buffer@3.5.2": {
+    "npm:buffer@3.5.4": {
       "base64-js": "npm:base64-js@0.0.8",
       "child_process": "github:jspm/nodelibs-child_process@0.1.0",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
       "ieee754": "npm:ieee754@1.1.6",
-      "is-array": "npm:is-array@1.0.1",
+      "isarray": "npm:isarray@0.0.1",
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:center-align@0.1.2": {
@@ -240,7 +245,7 @@ System.config({
       "fs": "github:jspm/nodelibs-fs@0.1.2",
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
-    "npm:font-awesome@4.4.0": {
+    "npm:font-awesome@4.5.0": {
       "css": "github:systemjs/plugin-css@0.1.20"
     },
     "npm:graceful-readlink@1.0.1": {

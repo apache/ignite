@@ -38,7 +38,7 @@ include ../includes/controls
         div(ng-show='ui.ready')
             hr
             .padding-bottom-dflt(ng-show='metadatas && metadatas.length > 0')
-                table.links(st-set-filter='metadatasSearch' st-table='displayedRows' st-safe-src='metadatas')
+                table.links(st-table='displayedRows' st-safe-src='metadatas')
                     thead
                         tr
                             th
@@ -50,7 +50,7 @@ include ../includes/controls
                                             a.labelFormField(ng-if='ui.showValid' ng-click='toggleValid()') Key fields should be configured: {{(displayedRows | metadatasValidation:false:true).length}}&nbsp
                                             a.labelFormField(ng-if='!ui.showValid' ng-click='toggleValid()') Show all metadata: {{displayedRows.length}}&nbsp
                                 .col-sm-4
-                                    input.form-control.pull-right(type='text' st-search='' placeholder='Filter metadatas...')
+                                    input.form-control.pull-right(type='text' st-search='valueType' placeholder='Filter metadatas...')
                         tbody
                             tr
                                 td
