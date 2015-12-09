@@ -1141,8 +1141,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         ));
 
         Object[] arr = new Object[] {new Value(1), new Value(2), new Value(3)};
-        Collection<Value> col = Arrays.asList(new Value(4), new Value(5), new Value(6));
-        Map<Key, Value> map = F.asMap(new Key(10), new Value(10), new Key(20), new Value(20), new Key(30), new Value(30));
+        Collection<Value> col = new ArrayList<>(Arrays.asList(new Value(4), new Value(5), new Value(6)));
+        Map<Key, Value> map = new HashMap<>(F.asMap(new Key(10), new Value(10), new Key(20), new Value(20), new Key(30), new Value(30)));
 
         CollectionFieldsObject obj = new CollectionFieldsObject(arr, col, map);
 

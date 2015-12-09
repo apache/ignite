@@ -26,8 +26,11 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+
+import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
@@ -1236,20 +1239,20 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> Collection<T> readCollection(String fieldName,
-        Class<? extends Collection<T>> colCls) throws BinaryObjectException {
-        return findFieldByName(fieldName) ? readCollection0(colCls) : null;
+    @Nullable @Override public <T> Collection<T> readCollection(String fieldName, BinaryCollectionFactory<T> factory)
+        throws BinaryObjectException {
+        return findFieldByName(fieldName) ? readCollection0(factory) : null;
     }
 
     /**
      * @param fieldId Field ID.
-     * @param colCls Collection class.
+     * @param factory Collection factory.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable <T> Collection<T> readCollection(int fieldId, @Nullable Class<? extends Collection> colCls)
+    @Nullable <T> Collection<T> readCollection(int fieldId, @Nullable BinaryCollectionFactory<T> factory)
         throws BinaryObjectException {
-        return findFieldById(fieldId) ? (Collection<T>)readCollection0(colCls) : null;
+        return findFieldById(fieldId) ? (Collection<T>)readCollection0(factory) : null;
     }
 
     /** {@inheritDoc} */
@@ -1258,26 +1261,41 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> Collection<T> readCollection(Class<? extends Collection<T>> colCls)
+    @Nullable @Override public <T> Collection<T> readCollection(BinaryCollectionFactory<T> factory)
         throws BinaryObjectException {
-        return readCollection0(colCls);
+        return readCollection0(factory);
     }
 
     /**
      * Internal read collection routine.
      *
-     * @param cls Collection class.
+     * @param factory Collection factory.
      * @return Value.
      * @throws BinaryObjectException If failed.
      */
-    private Collection readCollection0(@Nullable Class<? extends Collection> cls)
+    private Collection readCollection0(@Nullable BinaryCollectionFactory factory)
         throws BinaryObjectException {
         switch (checkFlag(COL)) {
             case NORMAL:
-                return (Collection)PortableUtils.doReadCollection(in, ctx, ldr, this, true, cls);
+                return (Collection)PortableUtils.doReadCollection(in, ctx, ldr, this, true, factory);
 
-            case HANDLE:
-                return readHandleField();
+            case HANDLE: {
+                int handlePos = PortableUtils.positionForHandle(in) - in.readInt();
+
+                Object obj = getHandle(handlePos);
+
+                if (obj == null) {
+                    int retPos = in.position();
+
+                    streamPosition(handlePos);
+
+                    obj = readCollection0(factory);
+
+                    streamPosition(retPos);
+                }
+
+                return (Collection)obj;
+            }
 
             default:
                 return null;
@@ -1290,19 +1308,19 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K, V> Map<K, V> readMap(String fieldName, Class<? extends Map<K, V>> mapCls)
+    @Nullable @Override public <K, V> Map<K, V> readMap(String fieldName, BinaryMapFactory<K, V> factory)
         throws BinaryObjectException {
-        return findFieldByName(fieldName) ? readMap0(mapCls) : null;
+        return findFieldByName(fieldName) ? readMap0(factory) : null;
     }
 
     /**
      * @param fieldId Field ID.
-     * @param mapCls Map class.
+     * @param factory Factory.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable Map<?, ?> readMap(int fieldId, @Nullable Class<? extends Map> mapCls) throws BinaryObjectException {
-        return findFieldById(fieldId) ? readMap0(mapCls) : null;
+    @Nullable Map<?, ?> readMap(int fieldId, @Nullable BinaryMapFactory factory) throws BinaryObjectException {
+        return findFieldById(fieldId) ? readMap0(factory) : null;
     }
 
     /** {@inheritDoc} */
@@ -1311,25 +1329,40 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K, V> Map<K, V> readMap(Class<? extends Map<K, V>> mapCls)
+    @Nullable @Override public <K, V> Map<K, V> readMap(BinaryMapFactory<K, V> factory)
         throws BinaryObjectException {
-        return readMap0(mapCls);
+        return readMap0(factory);
     }
 
     /**
      * Internal read map routine.
      *
-     * @param cls Map class.
+     * @param factory Factory.
      * @return Value.
      * @throws BinaryObjectException If failed.
      */
-    private Map readMap0(@Nullable Class<? extends Map> cls) throws BinaryObjectException {
+    private Map readMap0(@Nullable BinaryMapFactory factory) throws BinaryObjectException {
         switch (checkFlag(MAP)) {
             case NORMAL:
-                return (Map)PortableUtils.doReadMap(in, ctx, ldr, this, true, cls);
+                return (Map)PortableUtils.doReadMap(in, ctx, ldr, this, true, factory);
 
-            case HANDLE:
-                return readHandleField();
+            case HANDLE: {
+                int handlePos = PortableUtils.positionForHandle(in) - in.readInt();
+
+                Object obj = getHandle(handlePos);
+
+                if (obj == null) {
+                    int retPos = in.position();
+
+                    streamPosition(handlePos);
+
+                    obj = readMap0(factory);
+
+                    streamPosition(retPos);
+                }
+
+                return (Map)obj;
+            }
 
             default:
                 return null;

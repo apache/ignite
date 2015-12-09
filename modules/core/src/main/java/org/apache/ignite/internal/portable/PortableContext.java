@@ -164,16 +164,9 @@ public class PortableContext implements Externalizable {
         colTypes.put(LinkedList.class, GridPortableMarshaller.LINKED_LIST);
         colTypes.put(HashSet.class, GridPortableMarshaller.HASH_SET);
         colTypes.put(LinkedHashSet.class, GridPortableMarshaller.LINKED_HASH_SET);
-        colTypes.put(TreeSet.class, GridPortableMarshaller.TREE_SET);
-        colTypes.put(ConcurrentSkipListSet.class, GridPortableMarshaller.CONC_SKIP_LIST_SET);
-        colTypes.put(ConcurrentLinkedQueue.class, GridPortableMarshaller.CONC_LINKED_QUEUE);
 
         mapTypes.put(HashMap.class, GridPortableMarshaller.HASH_MAP);
         mapTypes.put(LinkedHashMap.class, GridPortableMarshaller.LINKED_HASH_MAP);
-        mapTypes.put(TreeMap.class, GridPortableMarshaller.TREE_MAP);
-        mapTypes.put(ConcurrentHashMap.class, GridPortableMarshaller.CONC_HASH_MAP);
-        mapTypes.put(ConcurrentHashMap8.class, GridPortableMarshaller.CONC_HASH_MAP);
-        mapTypes.put(Properties.class, GridPortableMarshaller.PROPERTIES_MAP);
 
         // IDs range from [0..200] is used by Java SDK API and GridGain legacy API
 
@@ -210,14 +203,9 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(LinkedList.class, 0);
         registerPredefinedType(HashSet.class, 0);
         registerPredefinedType(LinkedHashSet.class, 0);
-        registerPredefinedType(TreeSet.class, 0);
-        registerPredefinedType(ConcurrentSkipListSet.class, 0);
 
         registerPredefinedType(HashMap.class, 0);
         registerPredefinedType(LinkedHashMap.class, 0);
-        registerPredefinedType(TreeMap.class, 0);
-        registerPredefinedType(ConcurrentHashMap.class, 0);
-        registerPredefinedType(ConcurrentHashMap8.class, 0);
 
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
