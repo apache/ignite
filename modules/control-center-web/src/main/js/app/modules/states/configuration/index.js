@@ -27,7 +27,7 @@ angular
 // Services.
 .service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {
-	// set up the states
+	// Setup the states.
 	$stateProvider
 	.state('base.configuration', {
 		url: '/configuration',
