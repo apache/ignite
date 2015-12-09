@@ -67,6 +67,31 @@ namespace ignite
                 }
 
                 /**
+                 * Copy constructor.
+                 */
+                TableMeta(const TableMeta& other) :
+                    catalogName(other.catalogName),
+                    schemaName(other.schemaName),
+                    tableName(other.tableName),
+                    tableType(other.tableType)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Copy operator.
+                 */
+                TableMeta& operator=(const TableMeta& other)
+                {
+                    catalogName = other.catalogName;
+                    schemaName = other.schemaName;
+                    tableName = other.tableName;
+                    tableType = other.tableType;
+
+                    return *this;
+                }
+
+                /**
                  * Read using reader.
                  * @param reader Reader.
                  */

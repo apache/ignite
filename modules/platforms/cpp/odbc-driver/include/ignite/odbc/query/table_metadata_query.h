@@ -89,6 +89,8 @@ namespace ignite
                 virtual bool DataAvailable() const;
 
             private:
+                IGNITE_NO_COPY_ASSIGNMENT(TableMetadataQuery);
+
                 /**
                  * Make get columns metadata requets and use response to set internal state.
                  *

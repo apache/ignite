@@ -41,7 +41,7 @@ namespace ignite
                 {
                     // No-op.
                 }
-            
+
                 /**
                  * Constructor.
                  *
@@ -65,6 +65,33 @@ namespace ignite
                 ~ColumnMeta()
                 {
                     // No-op.
+                }
+
+                /**
+                 * Copy constructor.
+                 */
+                ColumnMeta(const ColumnMeta& other) :
+                    schemaName(other.schemaName),
+                    tableName(other.tableName),
+                    columnName(other.columnName),
+                    typeName(other.typeName),
+                    dataType(other.dataType)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Copy operator.
+                 */
+                ColumnMeta& operator=(const ColumnMeta& other)
+                {
+                    schemaName = other.schemaName;
+                    tableName = other.tableName;
+                    columnName = other.columnName;
+                    typeName = other.typeName;
+                    dataType = other.dataType;
+
+                    return *this;
                 }
 
                 /**

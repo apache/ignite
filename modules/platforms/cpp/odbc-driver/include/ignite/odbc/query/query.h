@@ -39,14 +39,6 @@ namespace ignite
             {
             public:
                 /**
-                 * Constructor.
-                 */
-                Query() 
-                {
-                    // No-op.
-                }
-
-                /**
                  * Destructor.
                  */
                 virtual ~Query()
@@ -88,6 +80,15 @@ namespace ignite
                  * @return True if data is available.
                  */
                 virtual bool DataAvailable() const = 0;
+
+            protected:
+                /**
+                 * Constructor.
+                 */
+                Query() 
+                {
+                    // No-op.
+                }
             };
         }
     }

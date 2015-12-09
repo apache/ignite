@@ -68,6 +68,8 @@ namespace ignite
                 bool GetInfo(InfoType type, void* buf, short buflen, short* reslen) const;
 
             private:
+                IGNITE_NO_COPY_ASSIGNMENT(ConnectionInfo);
+
                 /** Associative array of string parameters. */
                 typedef std::map<InfoType, std::string> StringInfoMap;
 

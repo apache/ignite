@@ -120,7 +120,7 @@ namespace ignite
                     case SQL_TINYINT:
                     case SQL_BIT:
                     {
-                        writer.WriteBool(buffer.GetInt8());
+                        writer.WriteBool(buffer.GetInt8() != 0);
                         break;
                     }
 

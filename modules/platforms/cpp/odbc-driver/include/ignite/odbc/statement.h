@@ -176,6 +176,8 @@ namespace ignite
             bool DataAvailable() const;
 
         private:
+            IGNITE_NO_COPY_ASSIGNMENT(Statement)
+
             /**
              * Constructor.
              * Called by friend classes.

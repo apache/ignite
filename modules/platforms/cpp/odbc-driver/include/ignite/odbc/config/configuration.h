@@ -22,6 +22,8 @@
 #include <string>
 #include <map>
 
+#include <ignite/common/common.h>
+
 namespace ignite
 {
     namespace odbc
@@ -118,6 +120,8 @@ namespace ignite
                 }
 
             private:
+                IGNITE_NO_COPY_ASSIGNMENT(Configuration);
+
                 /** Map containing connect arguments. */
                 typedef std::map<std::string, std::string> ArgumentMap;
 

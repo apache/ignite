@@ -32,16 +32,18 @@
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_writer_impl.h"
 
+#ifdef ODBC_DEBUG
+
 extern FILE* log_file;
 void logInit(const char*);
 
-#ifdef ODBC_DEBUG
 #   define LOG_MSG(fmt, ...) \
     do { \
         logInit("D:\\odbc.log"); \
         fprintf(log_file, "%s: " fmt, __FUNCTION__, __VA_ARGS__); \
         fflush(log_file); \
     } while (false)
+
 #else
 #   define LOG_MSG(...)
 #endif

@@ -74,6 +74,8 @@ namespace ignite
             bool MoveToNext();
 
         private:
+            IGNITE_NO_COPY_ASSIGNMENT(Row);
+
             /**
              * Read column header and restores position if the column is of
              * complex type.

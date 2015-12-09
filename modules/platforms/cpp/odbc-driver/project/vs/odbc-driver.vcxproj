@@ -200,10 +200,10 @@
     <ClInclude Include="..\..\include\ignite\odbc\query\table_metadata_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\result_page.h" />
     <ClInclude Include="..\..\include\ignite\odbc\row.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />
     <ClInclude Include="..\..\include\ignite\odbc\type_traits.h" />
     <ClInclude Include="..\..\include\ignite\odbc\utility.h" />
-    <ClInclude Include="..\..\os\win\include\ignite\odbc\socket_client.h" />
     <ClInclude Include="result_page.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -87,6 +87,8 @@ namespace ignite
             Row* GetRow();
 
         private:
+            IGNITE_NO_COPY_ASSIGNMENT(Cursor);
+
             /** Cursor id. */
             int64_t queryId;
 

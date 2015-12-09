@@ -125,6 +125,8 @@ namespace ignite
             }
 
         private:
+            IGNITE_NO_COPY_ASSIGNMENT(Connection);
+
             /**
              * Constructor.
              */

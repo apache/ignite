@@ -20,6 +20,9 @@
     <Filter Include="Code\app">
       <UniqueIdentifier>{dbe40149-df23-4b89-92e4-16817775cd0e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\system">
+      <UniqueIdentifier>{7ab279dc-6586-4b32-aca7-0add0c0ab68a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\odbc.cpp">
@@ -52,9 +55,6 @@
     <ClCompile Include="..\..\src\row.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\os\win\src\socket_client.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\query\data_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
@@ -81,6 +81,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\app\parameter.cpp">
       <Filter>Code\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\socket_client.cpp">
+      <Filter>Code\system</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -123,9 +126,6 @@
     <ClInclude Include="..\..\include\ignite\odbc\utility.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\os\win\include\ignite\odbc\socket_client.h">
-      <Filter>Code</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\query.h">
       <Filter>Code\query</Filter>
     </ClInclude>
@@ -155,6 +155,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\app\parameter.h">
       <Filter>Code\app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\socket_client.h">
+      <Filter>Code\system</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

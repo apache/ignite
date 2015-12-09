@@ -36,6 +36,8 @@
 #include "ignite/odbc/connection.h"
 
 
+#ifdef ODBC_DEBUG
+
 FILE* log_file = NULL;
 
 void logInit(const char* path)
@@ -45,6 +47,8 @@ void logInit(const char* path)
         log_file = fopen(path, "w");
     }
 }
+
+#endif
 
 
 BOOL INSTAPI ConfigDSN(HWND     hwndParent,

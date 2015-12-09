@@ -114,6 +114,8 @@ namespace ignite
             }
 
         private:
+            IGNITE_NO_COPY_ASSIGNMENT(Parser);
+
             /**
              * Reset internal state of the parser.
              */
