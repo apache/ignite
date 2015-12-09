@@ -31,12 +31,12 @@ mixin chk(mdl, change, tip)
                     .settings-row(ng-repeat='field in metadataDb')
                         +form-row-custom(['col-xs-4 col-sm-3 col-md-3'], ['col-xs-8 col-sm-9 col-md-9'], 'preset')
             .metadata-content(ng-show='loadMeta.action == "schemas"')
-                table.table.metadata(st-table='loadMeta.displayedSchemas' st-safe-src='loadMeta.schemas' st-set-filter='schemasSearch')
+                table.table.metadata(st-table='loadMeta.displayedSchemas' st-safe-src='loadMeta.schemas')
                     thead
                         tr
                             th.header(colspan='2')
                                 .col-sm-4.pull-right
-                                    input.form-control(type='text' st-search='' placeholder='Filter schemas...' ng-model='loadMeta.displayedSchemasFilter' ng-change='selectSchema()')
+                                    input.form-control(type='text' st-search='name' placeholder='Filter schemas...' ng-model='loadMeta.displayedSchemasFilter' ng-change='selectSchema()')
                         tr
                             th(width='50px')
                                 +chk('loadMeta.allSchemasSelected',  'selectAllSchemas()', 'Select all schemas')
@@ -58,12 +58,12 @@ mixin chk(mdl, change, tip)
                     label.required Package:
                     span
                         input.form-control(id='metadataLoadPackage' type="text" ng-model='ui.packageName' placeholder='Package for POJOs generation' bs-tooltip='' data-title='Package that will be used for POJOs generation' data-placement='top' data-trigger='hover')
-                table.table.metadata(st-table='loadMeta.displayedTables' st-safe-src='loadMeta.tables' st-set-filter='tablesSearch')
+                table.table.metadata(st-table='loadMeta.displayedTables' st-safe-src='loadMeta.tables')
                     thead
                         tr
                             th.header(colspan='3')
                                 .col-sm-4.pull-right
-                                    input.form-control(type='text' st-search='' placeholder='Filter tables...' ng-model='loadMeta.displayedTablesFilter' ng-change='selectTable()')
+                                    input.form-control(type='text' st-search='label' placeholder='Filter tables...' ng-model='loadMeta.displayedTablesFilter' ng-change='selectTable()')
                         tr
                             th(width='50px')
                                 +chk('loadMeta.allTablesSelected',  'selectAllTables()', 'Select all tables')

@@ -358,15 +358,21 @@ consoleModule.controller('metadataController', [
 
                 $http.post('/api/v1/agent/metadata', $scope.preset)
                     .success(function (tables) {
-                        $scope.loadMeta.tables = tables;
-                        $scope.loadMeta.action = 'tables';
-                        $scope.loadMeta.button = 'Save';
+                        tables.forEach(function (tbl) {
+                            Object.defineProperty(tbl, 'label', {
+                                get: function () {
+                                    return this.schema + '.' + this.tbl;
+                                }
+                            });
 
-                        _.forEach(tables, function (tbl) {
                             tbl.use = $common.isDefined(_.find(tbl.cols, function (col) {
                                 return col.key;
                             }));
                         });
+
+                        $scope.loadMeta.tables = tables;
+                        $scope.loadMeta.action = 'tables';
+                        $scope.loadMeta.button = 'Save';
                     })
                     .error(function (errMsg) {
                         $common.showError(errMsg);

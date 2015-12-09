@@ -52,7 +52,7 @@ var igniteModulePaths = [
 ];
 
 gulp.task('copy', function(cb) {
-    var tasks = ['copy:legacy', 'copy:fonts', 'copy:ignite_modules'];
+    var tasks = ['copy:legacy', 'copy:font-awesome', 'copy:ui-grid', 'copy:ignite_modules'];
 
     if (util.env.debug || util.env.sourcemaps) {
         tasks.push('copy:css');
@@ -75,8 +75,15 @@ gulp.task('copy:css', function(cb) {
     return gulp.src(cssPaths, {base: './'}).pipe(gulp.dest('./build'));
 });
 
-gulp.task('copy:fonts', function(cb) {
+gulp.task('copy:font-awesome', function(cb) {
     return gulp.src('./node_modules/font-awesome/fonts/*', {base: './node_modules/font-awesome'}).pipe(gulp.dest('./build'));
+});
+
+gulp.task('copy:ui-grid', function(cb) {
+    return gulp.src(['jspm_packages/**/*-ui-grid@*/*.woff',
+        'jspm_packages/**/*-ui-grid@*/*.svg',
+        'jspm_packages/**/*-ui-grid@*/*.ttf',
+        'jspm_packages/**/*-ui-grid@*/*.eot'], {base: './'}).pipe(gulp.dest('./build'));
 });
 
 gulp.task('copy:ignite_modules', function(cb) {

@@ -17,7 +17,7 @@
 
 var consoleModule = angular.module('ignite-web-console',
     [
-        'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'agGrid', 'nvd3', 'dndLists'
+        'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'ui.grid', 'ui.grid.autoResize', 'ui.grid.exporter', 'nvd3', 'dndLists'
         /* ignite:modules */
         , 'ignite-console'
         , 'ignite-console.navbar'
@@ -1651,113 +1651,6 @@ consoleModule.service('ngCopy', ['$window', '$common', function ($window, $commo
     };
 }]);
 
-// Filter to decode name using map(value, label).
-consoleModule.filter('displayValue', function () {
-    return function (v, m, dflt) {
-        var i = _.findIndex(m, function (item) {
-            return item.value === v;
-        });
-
-        if (i >= 0) {
-            return m[i].label;
-        }
-
-        if (dflt) {
-            return dflt;
-        }
-
-        return 'Unknown value';
-    };
-});
-
-consoleModule.filter('clustersSearch', function() {
-    var discoveries = {
-        'Vm': 'static ips',
-        'Multicast': 'multicast',
-        'S3': 'aws s3',
-        'Cloud': 'apache jclouds',
-        'GoogleStorage': 'google cloud storage',
-        'Jdbc': 'jdbc',
-        'SharedFs': 'shared filesystem'
-    };
-
-    return function(array, query) {
-        if (!angular.isUndefined(array) && !angular.isUndefined(query) && !angular.isUndefined(query.$)) {
-            var filtredArray = [];
-
-            var matchString = query.$.toLowerCase();
-
-            angular.forEach(array, function (row) {
-                var label = (row.name + ', ' + discoveries[row.discovery.kind]).toLowerCase();
-
-                if (label.indexOf(matchString) >= 0)
-                    filtredArray.push(row);
-            });
-
-            return filtredArray;
-        } else
-            return array;
-    };
-});
-
-consoleModule.filter('cachesSearch', function() {
-    return function(array, query) {
-        if (!angular.isUndefined(array) && !angular.isUndefined(query) && !angular.isUndefined(query.$)) {
-            var filtredArray = [];
-
-            var matchString = query.$.toLowerCase();
-
-            angular.forEach(array, function (row) {
-                var label = (row.name + ', ' + row.cacheMode + ', ' + row.atomicityMode).toLowerCase();
-
-                if (label.indexOf(matchString) >= 0)
-                    filtredArray.push(row);
-            });
-
-            return filtredArray;
-        } else
-            return array;
-    };
-});
-
-consoleModule.filter('metadatasSearch', function() {
-    return function(array, query) {
-        if (!angular.isUndefined(array) && !angular.isUndefined(query) && !angular.isUndefined(query.$)) {
-            var filtredArray = [];
-
-            var matchString = query.$.toLowerCase();
-
-            angular.forEach(array, function (row) {
-                if (row.valueType.toLowerCase().indexOf(matchString) >= 0)
-                    filtredArray.push(row);
-            });
-
-            return filtredArray;
-        } else
-            return array;
-    };
-});
-
-consoleModule.filter('schemasSearch', function() {
-    return function(array, query) {
-        if (!angular.isUndefined(array) && !angular.isUndefined(query) && !angular.isUndefined(query.$)) {
-            var filtredArray = [];
-
-            var matchString = query.$.toLowerCase();
-
-            angular.forEach(array, function (row) {
-                var label = row.name.toLowerCase();
-
-                if (label.indexOf(matchString) >= 0)
-                    filtredArray.push(row);
-            });
-
-            return filtredArray;
-        } else
-            return array;
-    };
-});
-
 consoleModule.filter('tablesSearch', function() {
     return function(array, query) {
         if (!angular.isUndefined(array) && !angular.isUndefined(query) && !angular.isUndefined(query.$)) {
@@ -1767,26 +1660,6 @@ consoleModule.filter('tablesSearch', function() {
 
             angular.forEach(array, function (row) {
                 var label = (row.schema + '.' + row.tbl).toLowerCase();
-
-                if (label.indexOf(matchString) >= 0)
-                    filtredArray.push(row);
-            });
-
-            return filtredArray;
-        } else
-            return array;
-    };
-});
-
-consoleModule.filter('igfssSearch', function() {
-    return function(array, query) {
-        if (!angular.isUndefined(array) && !angular.isUndefined(query) && !angular.isUndefined(query.$)) {
-            var filtredArray = [];
-
-            var matchString = query.$.toLowerCase();
-
-            angular.forEach(array, function (row) {
-                var label = row.name.toLowerCase();
 
                 if (label.indexOf(matchString) >= 0)
                     filtredArray.push(row);

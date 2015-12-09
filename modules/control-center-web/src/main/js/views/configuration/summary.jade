@@ -43,7 +43,7 @@ mixin hard-link(ref, txt)
             | You have no clusters configured. Please configure them &nbsp;
             a(href='/configuration/clusters') here.
 
-        +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
+        +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
 
         div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)' role='tab')
             .padding-top-dflt(ng-if='clusters.length > 0' bs-affix)

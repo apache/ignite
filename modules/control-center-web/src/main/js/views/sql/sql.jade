@@ -152,10 +152,10 @@ mixin chart-settings(mdl)
                                             +result-toolbar
                                         .col-xs-4
                                             .btn-group.pull-right(ng-disabled='paragraph.loading')
-                                                button.btn.btn-primary.fieldButton(ng-click='exportPage(paragraph)' bs-tooltip data-title='{{actionTooltip(paragraph, "export", false)}}') Export
+                                                button.btn.btn-primary.fieldButton(ng-click='exportCsv(paragraph)' bs-tooltip data-title='{{actionTooltip(paragraph, "export", false)}}') Export
                                                 button.btn.btn-primary(id='export-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='exportDropdown' data-placement='bottom-right')
                                                     span.caret
-                                    .sql-table.ag-bootstrap(ag-grid='paragraph.gridOptions')
+                                    .grid(ui-grid='paragraph.gridOptions' ui-grid-auto-resize ui-grid-exporter ng-style='{ height: paragraph.gridOptions.height }')
                                 div(ng-show='paragraph.chart() && paragraph.nonEmpty()')
                                     div(ng-show='paragraph.queryExecute()')
                                         +chart-settings

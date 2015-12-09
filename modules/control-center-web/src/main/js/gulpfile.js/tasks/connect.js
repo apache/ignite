@@ -20,6 +20,7 @@ var connect = require('gulp-connect');
 var modrewrite = require('connect-modrewrite');
 
 var options = {
+    livereload: true,
 	root: './build',
 	middleware: function (connect, opt) {
 		return [modrewrite([

@@ -169,6 +169,10 @@ consoleModule.controller('clustersController', [
 
         $scope.clusters = [];
 
+        function _clusterLbl () {
+            return this.name + ', ' + _.result(_.find($scope.discoveries, {value: this.discovery.kind}), 'label');
+        }
+
         function selectFirstItem() {
             if ($scope.clusters.length > 0)
                 $scope.selectItem($scope.clusters[0]);
@@ -180,6 +184,12 @@ consoleModule.controller('clustersController', [
         $http.post('/api/v1/configuration/clusters/list')
             .success(function (data) {
                 $scope.spaces = data.spaces;
+
+                data.clusters.forEach(function (cluster) {
+                    Object.defineProperty(cluster, 'label', {
+                        get: _clusterLbl
+                    });
+                });
 
                 $scope.clusters = data.clusters;
 
@@ -309,7 +319,7 @@ consoleModule.controller('clustersController', [
                         $common.showError(errMsg);
                     });
             })
-            .error(function (errMsg) {
+            .catch(function (errMsg) {
                 $common.showError(errMsg);
             })
             .finally(function () {
@@ -361,6 +371,10 @@ consoleModule.controller('clustersController', [
             newItem.caches = id && _.find($scope.caches, {value: id}) ? [id] : [];
             newItem.igfss = id && _.find($scope.igfss, {value: id}) ? [id] : [];
             newItem.space = $scope.spaces[0]._id;
+
+            Object.defineProperty(newItem, 'label', {
+                get: _clusterLbl
+            });
 
             return newItem;
         }
