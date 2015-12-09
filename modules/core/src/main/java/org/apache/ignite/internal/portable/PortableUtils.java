@@ -609,10 +609,10 @@ public class PortableUtils {
         if (cls.isArray())
             return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class ? ENUM_ARR : OBJ_ARR;
 
-        if (Collection.class.isAssignableFrom(cls))
+        if (isSpecialCollection(cls))
             return COL;
 
-        if (Map.class.isAssignableFrom(cls))
+        if (isSpecialMap(cls))
             return MAP;
 
         return OBJ;
