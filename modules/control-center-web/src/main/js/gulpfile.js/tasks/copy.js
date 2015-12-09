@@ -91,7 +91,9 @@ gulp.task('copy:ignite_modules', function(cb) {
 });
 
 gulp.task('copy:watch', function(cb) {
-    gulp.watch([paths, legacyPaths, igniteModulePaths], function(glob) {
+    gulp.watch([legacyPaths, igniteModulePaths], function(glob) {
         sequence(['copy:base', 'copy:legacy', 'copy:ignite_modules'], 'inject:plugins:js')(cb);
     });
+
+    gulp.watch(paths, ['copy:base']);
 });

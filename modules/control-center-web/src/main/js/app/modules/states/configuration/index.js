@@ -17,12 +17,17 @@
  
 import angular from 'angular'
 
+import ConfigurationSummaryCtrl from './summary/summary.controller'
+import ConfigurationSummaryResource from './summary/summary.resource'
+
 angular
 .module('ignite-console.states.configuration', [
 	'ui.router'
 ])
+// Services.
+.service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {
-	// set up the states
+	// Setup the states.
 	$stateProvider
 	.state('base.configuration', {
 		url: '/configuration',
@@ -46,6 +51,11 @@ angular
 	})
 	.state('base.configuration.summary', {
 		url: '/summary',
-		templateUrl: '/configuration/summary.html'	
-	})	
+		templateUrl: '/configuration/summary.html',
+		controller: ConfigurationSummaryCtrl,
+		controllerAs: 'ctrl',
+		data: {
+			loading: 'Loading summary screen...'
+		}
+	})
 }]);

@@ -69,17 +69,29 @@ import './modules/userbar/main'
 import './modules/configuration/sidebar/main'
 // endignite
 
-// directives
+// Directives.
+import igniteLoading from './directives/loading/loading.directive'
 import igniteCallout from './directives/callout/callout.directive'
 import igniteCalloutCel from './directives/callout/callout-cel.directive'
+import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive'
+import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive'
+import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive'
+import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive'
+import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive'
+
+// Services.
+import IgniteUiAceOnLoad from './services/UiAceOnLoad/service'
+
+// Filters.
+import hasPojo from './filters/hasPojo/hasPojo.filter'
 
 angular
 .module('ignite-console', [
 	'ui.router',
-	// services
+	// Services.
 	'ignite-console.Auth',
 	'ignite-console.User',
-	// states
+	// States.
 	'ignite-console.states.login',
 	'ignite-console.states.logout',
 	'ignite-console.states.password',
@@ -87,16 +99,26 @@ angular
 	'ignite-console.states.sql',
 	'ignite-console.states.profile',
 	'ignite-console.states.admin',
-	//
+	// Common modules.
 	'ignite-console.navbar',
 	'ignite-console.userbar',
     'ignite-console.configuration.sidebar'
 ])
-// directives
+// Directives.
+.directive(...igniteLoading)
 .directive(...igniteCallout)
 .directive(...igniteCalloutCel)
+.directive(...igniteUiAceXml)
+.directive(...igniteUiAceJava)
+.directive(...igniteUiAcePom)
+.directive(...igniteUiAceDocker)
+.directive(...igniteUiAcePojos)
+// Services.
+.service(...IgniteUiAceOnLoad)
+// Filters.
+.filter(...hasPojo)
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {
-	// set up the states
+	// Set up the states.
 	$stateProvider
 		.state('base', {
 			url: '',
@@ -107,4 +129,7 @@ angular
 	$urlRouterProvider.when('/', '/configuration/clusters');
 
 	$locationProvider.html5Mode(true);
+}])
+.run(['$rootScope', '$state', ($root, $state) => {
+	$root.$state = $state;
 }]);

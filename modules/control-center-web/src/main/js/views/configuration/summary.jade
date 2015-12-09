@@ -19,28 +19,9 @@ include ../includes/controls
 mixin hard-link(ref, txt)
     a(style='color:#ec1c24' href=ref target='_blank') #{txt}
 
-mixin pojos(side)
-    div(bs-pane title='POJO' ng-show='pojoAvailable()')
-        .details-row
-            .col-xs-2.col-sm-2.col-md-2
-                label POJO class:
-            .col-xs-10.col-sm-10.col-md-10.summary-pojo-list
-                button.select-toggle.form-control(ng-model='config#{side}.pojoClass' bs-select bs-options='item for item in pojoClasses()' data-container='')
-            .col-xs-2.col-sm-2.col-md-2
-                label
-            .col-xs-10.col-sm-10.col-md-10
-                input(type='checkbox' ng-model='configServer.useConstructor')
-                | Generate constructors
-            .col-xs-2.col-sm-2.col-md-2
-                label
-            .col-xs-10.col-sm-10.col-md-10
-                input(type='checkbox' ng-model='configServer.includeKeyFields')
-                | Include key fields
-        div(ui-ace='{onLoad: aceInit, mode: "java"}' ng-model='config#{side}.pojoClassBody')
-
 .docs-header
     h1 Configurations Summary
-.docs-body(ng-controller='summaryController')
+.docs-body
     ignite-callout
         ignite-callout-cel(data-title='On This Screen')
             li Download XML Config
@@ -53,70 +34,49 @@ mixin pojos(side)
             li Deploy Ignite Servers
             li Connect Ignite Clients
             li Analyze with SQL
-            
-    div(dw-loading='loadingSummaryScreen' dw-loading-options='{text: "Loading summary screen...", className: "page-loading-overlay"}')
-        div(ng-show='ui.ready')
-            hr
-            .padding-dflt(ng-if='clusters.length == 0')
-                | You have no clusters configured. Please configure them &nbsp;
-                a(href='/configuration/clusters') here.
-            +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
-            div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)' role='tab')
-                .padding-top-dflt(ng-if='clusters.length > 0' bs-affix)
-                    button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip data-title='Download configuration' data-placement='bottom') Download
-                    hr
-                .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
-                    .panel.panel-default
-                        .panel-heading(role='tab' bs-collapse-toggle)
-                            i.fa(ng-class='panelExpanded(panels, "server") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
-                            label Server
-                        .panel-collapse(id='server' role='tabpanel' bs-collapse-target)
-                            .summary-tabs(bs-tabs data-bs-active-pane="tabsServer.activeTab" ng-show='selectedItem' template='configuration/summary-tabs.html')
-                                div(bs-pane title='XML')
-                                    div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='xmlServer')
-                                div(bs-pane title='Java')
-                                    .details-row
-                                        .col-xs-2.col-sm-2.col-md-1
-                                            label Generate:
-                                        .col-xs-4.col-sm-3.col-md-3
-                                            button.select-toggle.form-control(ng-model='configServer.javaClassServer' bs-select bs-options='item.value as item.label for item in javaClassItems' data-sort='false')
-                                    div(ui-ace='{onLoad: aceInit, mode: "java"}' ng-model='javaServer')
-                                div(bs-pane title='POM')
-                                    div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='pom')
-                                div(bs-pane title='Dockerfile')
-                                    .details-row
-                                        p
-                                            +hard-link('https://docs.docker.com/reference/builder', 'Docker')
-                                            | &nbsp;file is a text file with instructions to create Docker image.<br/>
-                                            | To build image you have to store following Docker file with your Ignite XML configuration to the same directory.<br>
-                                            | Also you could use predefined&nbsp;
-                                            +hard-link('https://ignite.apache.org/download.html#docker', 'Apache Ignite docker image')
-                                            | . For more information about using Ignite with Docker please read&nbsp;
-                                            +hard-link('http://apacheignite.readme.io/docs/docker-deployment', 'documentation')
-                                            |.
-                                        .col-xs-3.col-sm-2
-                                            label(for='os') Operation System:
-                                        .col-xs-5.col-sm-4
-                                            input#os.form-control(type='text' ng-model='configServer.os' placeholder='debian:8' data-min-length='0' data-html='1' data-auto-select='true' bs-typeahead retain-selection bs-options='os for os in oss')
-                                    div(ui-ace='{onLoad: aceInit, mode: "dockerfile"}' ng-model='dockerServer')
-                    .panel.panel-default
-                        .panel-heading(role='tab' bs-collapse-toggle)
-                            i.fa(ng-class='panelExpanded(panels, "client") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
-                            label Client
-                        .panel-collapse(id='client' role='tabpanel' bs-collapse-target)
-                            div(ng-show='selectedItem')
-                                .details-row(ng-repeat='field in clientFields')
-                                    +form-row-custom(['col-xs-4 col-sm-4 col-md-3'], ['col-xs-4 col-sm-4 col-md-3'], 'backupItem')
-                                .summary-tabs(bs-tabs data-bs-active-pane="tabsClient.activeTab" template='configuration/summary-tabs.html')
-                                    div(bs-pane title='XML')
-                                        div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='xmlClient')
-                                    div(bs-pane title='Java')
-                                        .details-row
-                                            .col-xs-2.col-sm-2.col-md-1
-                                                label Generate:
-                                            .col-xs-4.col-sm-3.col-md-3
-                                                button.select-toggle.form-control(ng-model='backupItem.javaClassClient' bs-select bs-options='item.value as item.label for item in javaClassItems' data-sort='false')
-                                        div(ui-ace='{onLoad: aceInit, mode: "java"}' ng-model='javaClient')
-                                    div(bs-pane title='POM')
-                                        div(ui-ace='{onLoad: aceInit, mode: "xml"}' ng-model='pom')
-                                    +pojos('Client')
+
+    ignite-loading
+        hr
+
+        .padding-dflt(ng-if='clusters.length == 0')
+            | You have no clusters configured. Please configure them &nbsp;
+            a(href='/configuration/clusters') here.
+
+        +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
+
+        div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)' role='tab')
+            .padding-top-dflt(ng-if='clusters.length > 0' bs-affix)
+                button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip data-title='Download configuration' data-placement='bottom') Download
+                hr
+            .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
+                .panel.panel-default
+                    .panel-heading(role='tab' bs-collapse-toggle)
+                        i.fa(ng-class='panelExpanded(panels, "server") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                        label Server
+                    .panel-collapse(id='server' role='tabpanel' bs-collapse-target)
+                        .summary-tabs(bs-tabs data-bs-active-pane="tabsServer.activeTab" template='configuration/summary-tabs.html')
+                            div(bs-pane title='XML')
+                                ignite-ui-ace-xml(data-cluster='cluster')
+                            div(bs-pane title='Java')
+                                ignite-ui-ace-java(data-cluster='cluster')
+                            div(bs-pane title='POM')
+                                ignite-ui-ace-pom(data-cluster='cluster')
+                            div(bs-pane title='Dockerfile')
+                                ignite-ui-ace-docker(data-cluster='cluster' ng-model='ctrl.data.docker')
+
+                .panel.panel-default
+                    .panel-heading(role='tab' bs-collapse-toggle)
+                        i.fa(ng-class='panelExpanded(panels, "client") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                        label Client
+                    .panel-collapse(id='client' role='tabpanel' bs-collapse-target)
+                        .details-row(ng-repeat='field in clientFields')
+                            +form-row-custom(['col-xs-4 col-sm-4 col-md-3'], ['col-xs-4 col-sm-4 col-md-3'], 'backupItem')
+                        .summary-tabs(bs-tabs data-bs-active-pane="tabsClient.activeTab" template='configuration/summary-tabs.html')
+                            div(bs-pane title='XML')
+                                ignite-ui-ace-xml(data-cluster='cluster' data-cluster-cfg='backupItem.nearConfiguration')
+                            div(bs-pane title='Java')
+                                ignite-ui-ace-java(data-cluster='cluster' data-cluster-cfg='backupItem.nearConfiguration')
+                            div(bs-pane title='POM')
+                                ignite-ui-ace-pom(data-cluster='cluster')
+                            div(bs-pane title='POJO' ng-show='cluster | hasPojo')
+                                ignite-ui-ace-pojos(data-cluster='cluster' ng-model='ctrl.data.metadatas')
