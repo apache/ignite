@@ -122,8 +122,10 @@ namespace Apache.Ignite.Core.Impl
 
             if (ClsCachePartialUpdateErr.Equals(clsName))
                 return ProcessCachePartialUpdateException(msg, stackTrace, reader);
-            
-            return new IgniteException("Java exception occurred [class=" + clsName + ", message=" + msg + ']');
+
+            return
+                new IgniteException(string.Format("Java exception occurred [class={0}, message={1}, stack tace={2}]",
+                    clsName, msg, stackTrace));
         }
 
         /// <summary>
