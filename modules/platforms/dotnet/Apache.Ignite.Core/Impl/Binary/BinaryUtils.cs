@@ -133,10 +133,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Type: map. */
         public const byte TypeDictionary = 25;
-
-        /** Type: map entry. */
-        public const byte TypeMapEntry = 26;
-
+        
         /** Type: binary object. */
         public const byte TypeBinary = 27;
 
@@ -1255,30 +1252,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             return res;
-        }
-
-        /**
-         * <summary>Write map entry.</summary>
-         * <param name="ctx">Write context.</param>
-         * <param name="val">Value.</param>
-         */
-        public static void WriteMapEntry(BinaryWriter ctx, DictionaryEntry val)
-        {
-            ctx.Write(val.Key);
-            ctx.Write(val.Value);
-        }
-
-        /**
-         * <summary>Read map entry.</summary>
-         * <param name="ctx">Context.</param>
-         * <returns>Map entry.</returns>
-         */
-        public static DictionaryEntry ReadMapEntry(BinaryReader ctx)
-        {
-            object key = ctx.Deserialize<object>();
-            object val = ctx.Deserialize<object>();
-
-            return new DictionaryEntry(key, val);
         }
 
         /**
