@@ -150,15 +150,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
                     break;
                 }
-
-                case "entry":
-                    assertEquals(((Map.Entry)expVal).getKey(), ((Map.Entry)actVal).getKey());
-                    assertEquals(((Map.Entry)expVal).getValue(), ((Map.Entry)actVal).getValue());
-                    break;
-
-                default:
-                    assertTrue(field.getName(), Objects.deepEquals(expVal, actVal));
-                    break;
             }
         }
     }
@@ -920,27 +911,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer deserialized = wrap(obj).build().deserialize();
 
         assertEquals(obj.foo, deserialized.foo);
-    }
-
-    /**
-     *
-     */
-    public void testMapEntryModification() {
-        TestObjectContainer obj = new TestObjectContainer();
-        obj.foo = ImmutableMap.of(1, "a").entrySet().iterator().next();
-
-        BinaryObjectBuilderImpl mutableObj = wrap(obj);
-
-        Map.Entry<Object, Object> entry = mutableObj.getField("foo");
-
-        assertEquals(1, entry.getKey());
-        assertEquals("a", entry.getValue());
-
-        entry.setValue("b");
-
-        TestObjectContainer res = mutableObj.build().deserialize();
-
-        assertEquals(new GridMapEntry<>(1, "b"), res.foo);
     }
 
     /**
