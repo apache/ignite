@@ -65,7 +65,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT_ARR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
@@ -309,24 +308,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     @Nullable Object unmarshalField(int fieldId) throws BinaryObjectException {
         return findFieldById(fieldId) ? PortableUtils.unmarshal(in, ctx, ldr, this) : null;
-    }
-
-    /**
-     * @param fieldId Field ID.
-     * @return Value.
-     * @throws BinaryObjectException On case of error.
-     */
-    @Nullable Map.Entry<?, ?> readMapEntry(int fieldId) throws BinaryObjectException {
-        if (findFieldById(fieldId)) {
-            Flag flag = checkFlag(MAP_ENTRY);
-
-            if (flag == Flag.NORMAL)
-                return PortableUtils.doReadMapEntry(in, ctx, ldr, this, true);
-            else if (flag == Flag.HANDLE)
-                return readHandleField();
-        }
-
-        return null;
     }
 
     /**
@@ -1614,11 +1595,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case MAP:
                 obj = PortableUtils.doReadMap(in, ctx, ldr, this, true, null);
-
-                break;
-
-            case MAP_ENTRY:
-                obj = PortableUtils.doReadMapEntry(in, ctx, ldr, this, true);
 
                 break;
 

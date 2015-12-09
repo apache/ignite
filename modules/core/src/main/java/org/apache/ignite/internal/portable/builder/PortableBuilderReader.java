@@ -344,12 +344,6 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 return;
             }
 
-            case GridPortableMarshaller.MAP_ENTRY:
-                skipValue();
-                skipValue();
-
-                return;
-
             case GridPortableMarshaller.PORTABLE_OBJ:
                 len = readInt() + 4;
 
@@ -448,7 +442,6 @@ public class PortableBuilderReader implements PortablePositionReadable {
             case GridPortableMarshaller.OBJ_ARR:
             case GridPortableMarshaller.COL:
             case GridPortableMarshaller.MAP:
-            case GridPortableMarshaller.MAP_ENTRY:
                 return new LazyCollection(pos);
 
             case GridPortableMarshaller.ENUM: {
@@ -745,9 +738,6 @@ public class PortableBuilderReader implements PortablePositionReadable {
 
             case GridPortableMarshaller.ENUM_ARR:
                 return new PortableEnumArrayLazyValue(this);
-
-            case GridPortableMarshaller.MAP_ENTRY:
-                return new PortableLazyMapEntry(this);
 
             case GridPortableMarshaller.PORTABLE_OBJ: {
                 int size = readInt();

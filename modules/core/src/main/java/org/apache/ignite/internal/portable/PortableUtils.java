@@ -26,7 +26,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.portable.builder.PortableLazyValue;
 import org.apache.ignite.internal.portable.streams.PortableInputStream;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -87,7 +86,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.LINKED_
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJECT_TYPE_ID;
@@ -263,7 +261,6 @@ public class PortableUtils {
         FIELD_TYPE_NAMES[PORTABLE_OBJ] = "Object";
         FIELD_TYPE_NAMES[COL] = "Collection";
         FIELD_TYPE_NAMES[MAP] = "Map";
-        FIELD_TYPE_NAMES[MAP_ENTRY] = "Entry";
         FIELD_TYPE_NAMES[CLASS] = "Class";
         FIELD_TYPE_NAMES[BYTE_ARR] = "byte[]";
         FIELD_TYPE_NAMES[SHORT_ARR] = "short[]";
@@ -617,9 +614,6 @@ public class PortableUtils {
 
         if (Map.class.isAssignableFrom(cls))
             return MAP;
-
-        if (Map.Entry.class.isAssignableFrom(cls))
-            return MAP_ENTRY;
 
         return OBJ;
     }
@@ -1003,8 +997,6 @@ public class PortableUtils {
             return BinaryWriteMode.PORTABLE;
         else if (Externalizable.class.isAssignableFrom(cls))
             return BinaryWriteMode.EXTERNALIZABLE;
-        else if (Map.Entry.class.isAssignableFrom(cls))
-            return BinaryWriteMode.MAP_ENTRY;
         else if (isSpecialCollection(cls))
             return BinaryWriteMode.COL;
         else if (isSpecialMap(cls))
@@ -1700,9 +1692,6 @@ public class PortableUtils {
             case MAP:
                 return doReadMap(in, ctx, ldr, handles, false, null);
 
-            case MAP_ENTRY:
-                return doReadMapEntry(in, ctx, ldr, handles, false);
-
             case PORTABLE_OBJ:
                 return doReadPortableObject(in, ctx);
 
@@ -1869,25 +1858,6 @@ public class PortableUtils {
         }
 
         return map;
-    }
-
-    /**
-     * @param deserialize Deserialize flag flag.
-     * @return Value.
-     * @throws BinaryObjectException In case of error.
-     */
-    public static Map.Entry<?, ?> doReadMapEntry(PortableInputStream in, PortableContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean deserialize) throws BinaryObjectException {
-        int hPos = positionForHandle(in);
-
-        Object val1 = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
-        Object val2 = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
-
-        GridMapEntry entry = new GridMapEntry<>(val1, val2);
-
-        handles.setHandle(entry, hPos);
-
-        return entry;
     }
 
     /**

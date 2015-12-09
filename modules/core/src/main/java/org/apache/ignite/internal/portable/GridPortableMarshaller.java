@@ -119,9 +119,6 @@ public class GridPortableMarshaller {
     public static final byte MAP = 25;
 
     /** */
-    public static final byte MAP_ENTRY = 26;
-
-    /** */
     public static final byte PORTABLE_OBJ = 27;
 
     /** */

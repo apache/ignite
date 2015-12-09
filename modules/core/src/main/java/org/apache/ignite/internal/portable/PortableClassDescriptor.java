@@ -206,7 +206,6 @@ public class PortableClassDescriptor {
             case OBJECT_ARR:
             case COL:
             case MAP:
-            case MAP_ENTRY:
             case PORTABLE_OBJ:
             case ENUM:
             case PORTABLE_ENUM:
@@ -534,11 +533,6 @@ public class PortableClassDescriptor {
 
             case MAP:
                 writer.doWriteMap((Map<?, ?>)obj);
-
-                break;
-
-            case MAP_ENTRY:
-                writer.doWriteMapEntry((Map.Entry<?, ?>)obj);
 
                 break;
 
