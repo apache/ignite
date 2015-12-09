@@ -53,6 +53,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="typeId">Type ID.</param>
         /// <param name="typeName">Type name.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
+        /// <param name="isEnum">Enum flag.</param>
         public BinaryTypeHolder(int typeId, string typeName, string affKeyFieldName, bool isEnum)
         {
             _typeId = typeId;
