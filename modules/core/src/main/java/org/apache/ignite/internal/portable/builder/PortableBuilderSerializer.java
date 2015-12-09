@@ -118,13 +118,7 @@ class PortableBuilderSerializer {
             writer.writeByte(GridPortableMarshaller.COL);
             writer.writeInt(c.size());
 
-            byte colType;
-
-            if (c instanceof GridConcurrentSkipListSet)
-                colType = GridPortableMarshaller.CONC_SKIP_LIST_SET;
-            else
-                colType = writer.context().collectionType(c.getClass());
-
+            byte colType = writer.context().collectionType(c.getClass());
 
             writer.writeByte(colType);
 

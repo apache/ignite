@@ -49,13 +49,11 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -68,9 +66,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_HASH_MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_LINKED_QUEUE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_SKIP_LIST_SET;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL;
@@ -99,7 +94,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJECT_
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROPERTIES_MAP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
@@ -107,8 +101,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TREE_MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TREE_SET;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.USER_COL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.USER_SET;
@@ -1800,21 +1792,6 @@ public class PortableUtils {
 
                     break;
 
-                case TREE_SET:
-                    col = new TreeSet<>();
-
-                    break;
-
-                case CONC_SKIP_LIST_SET:
-                    col = new ConcurrentSkipListSet<>();
-
-                    break;
-
-                case CONC_LINKED_QUEUE:
-                    col = new ConcurrentLinkedQueue<>();
-
-                    break;
-
                 case USER_SET:
                     col = U.newHashSet(size);
 
@@ -1872,23 +1849,8 @@ public class PortableUtils {
 
                     break;
 
-                case TREE_MAP:
-                    map = new TreeMap<>();
-
-                    break;
-
-                case CONC_HASH_MAP:
-                    map = new ConcurrentHashMap<>(size);
-
-                    break;
-
                 case USER_COL:
                     map = U.newHashMap(size);
-
-                    break;
-
-                case PROPERTIES_MAP:
-                    map = new Properties();
 
                     break;
 

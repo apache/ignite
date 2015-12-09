@@ -732,9 +732,6 @@ public class PortableBuilderReader implements PortablePositionReadable {
 
                     case GridPortableMarshaller.HASH_SET:
                     case GridPortableMarshaller.LINKED_HASH_SET:
-                    case GridPortableMarshaller.TREE_SET:
-                    case GridPortableMarshaller.CONC_SKIP_LIST_SET:
-                        return new PortableLazySet(this, size);
                 }
 
                 throw new BinaryObjectException("Unknown collection type: " + colType);
