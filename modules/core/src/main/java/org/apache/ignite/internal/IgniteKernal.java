@@ -136,6 +136,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridTimerTask;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -3083,16 +3084,27 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * @param clusterRestarted {@code True} if all cluster nodes restarted while client was disconnected.
      */
+    @SuppressWarnings("unchecked")
     public void onReconnected(final boolean clusterRestarted) {
         Throwable err = null;
 
         try {
             ctx.disconnected(false);
 
-            for (GridComponent comp : ctx.components())
-                comp.onReconnected(clusterRestarted);
+            GridCompoundFuture<?, ?> reconnectFut = new GridCompoundFuture<>();
 
-            ctx.cache().context().exchange().reconnectExchangeFuture().listen(new CI1<IgniteInternalFuture<?>>() {
+            for (GridComponent comp : ctx.components()) {
+                IgniteInternalFuture<?> fut = comp.onReconnected(clusterRestarted);
+
+                if (fut != null)
+                    reconnectFut.add((IgniteInternalFuture)fut);
+            }
+
+            reconnectFut.add((IgniteInternalFuture)ctx.cache().context().exchange().reconnectExchangeFuture());
+
+            reconnectFut.markInitialized();
+
+            reconnectFut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
                     try {
                         fut.get();
@@ -3215,7 +3227,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            return IgnitionEx.gridx(gridName);
+            return IgnitionEx.localIgnite();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

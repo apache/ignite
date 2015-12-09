@@ -125,9 +125,8 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
 
         startGrid(0);
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++)
             grid(0).cache(CACHE).put(new TestKey(String.valueOf(i)), i);
-        }
 
         readCnt.set(1);
 
@@ -135,9 +134,8 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
 
         readCnt.set(Integer.MAX_VALUE);
 
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 50; i++)
             assert grid(1).cache(CACHE).get(new TestKey(String.valueOf(i))) != null;
-        }
 
         stopGrid(0);
 

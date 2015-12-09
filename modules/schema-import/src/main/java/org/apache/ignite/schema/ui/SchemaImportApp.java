@@ -22,11 +22,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -86,40 +88,58 @@ import org.apache.ignite.schema.parser.DbMetadataReader;
 public class SchemaImportApp extends Application {
     /** Logger. */
     private static final Logger log = Logger.getLogger(SchemaImportApp.class.getName());
+
     /** */
     private static final String PREF_WINDOW_X = "window.x";
+
     /** */
     private static final String PREF_WINDOW_Y = "window.y";
+
     /** */
     private static final String PREF_WINDOW_WIDTH = "window.width";
+
     /** */
     private static final String PREF_WINDOW_HEIGHT = "window.height";
+
     /** */
     private static final String PREF_JDBC_DB_PRESET = "jdbc.db.preset";
+
     /** */
     private static final String PREF_JDBC_DRIVER_JAR = "jdbc.driver.jar";
+
     /** */
     private static final String PREF_JDBC_DRIVER_CLASS = "jdbc.driver.class";
+
     /** */
     private static final String PREF_JDBC_URL = "jdbc.url";
+
     /** */
     private static final String PREF_JDBC_USER = "jdbc.user";
+
     /** */
     private static final String PREF_OUT_FOLDER = "out.folder";
+
     /** */
     private static final String PREF_POJO_PACKAGE = "pojo.package";
+
     /** */
     private static final String PREF_POJO_INCLUDE = "pojo.include";
+
     /** */
     private static final String PREF_POJO_CONSTRUCTOR = "pojo.constructor";
+
     /** */
     private static final String PREF_XML_SINGLE = "xml.single";
+
     /** */
     private static final String PREF_NAMING_PATTERN = "naming.pattern";
+
     /** */
     private static final String PREF_NAMING_REPLACE = "naming.replace";
+
     /** Empty POJO fields model. */
     private static final ObservableList<PojoField> NO_FIELDS = FXCollections.emptyObservableList();
+
     /** Default presets for popular databases. */
     private final Preset[] presets = {
         new Preset("h2", "H2 Database", "h2.jar", "org.h2.Driver", "jdbc:h2:[database]", "sa"),
@@ -135,12 +155,16 @@ public class SchemaImportApp extends Application {
             "jdbc:postgresql://[host]:[port]/[database]", "sa"),
         new Preset("custom", "Custom server...", "custom-jdbc.jar", "org.custom.Driver", "jdbc:custom", "sa")
     };
+
     /** Application preferences. */
     private final Properties prefs = new Properties();
+
     /** File path for storing on local file system. */
     private final File prefsFile = new File(System.getProperty("user.home"), ".ignite-schema-import");
+
     /** */
     private final ExecutorService exec = Executors.newSingleThreadExecutor(new ThreadFactory() {
+        /** {@inheritDoc} */
         @Override public Thread newThread(Runnable r) {
             Thread t = new Thread(r, "ignite-schema-import-worker");
 
@@ -149,74 +173,109 @@ public class SchemaImportApp extends Application {
             return t;
         }
     });
+
     /** */
     private Stage owner;
+
     /** */
     private BorderPane rootPane;
+
     /** Header pane. */
     private BorderPane hdrPane;
+
     /** */
     private HBox dbIcon;
+
     /** */
     private HBox genIcon;
+
     /** */
     private Label titleLb;
+
     /** */
     private Label subTitleLb;
+
     /** */
     private Button prevBtn;
+
     /** */
     private Button nextBtn;
+
     /** */
     private ComboBox<Preset> rdbmsCb;
+
     /** */
     private TextField jdbcDrvJarTf;
+
     /** */
     private TextField jdbcDrvClsTf;
+
     /** */
     private TextField jdbcUrlTf;
+
     /** */
     private TextField userTf;
+
     /** */
     private PasswordField pwdTf;
+
     /** */
     private ComboBox<String> parseCb;
+
     /** */
     private ListView<SchemaDescriptor> schemaLst;
+
     /** */
     private GridPaneEx connPnl;
+
     /** */
     private StackPane connLayerPnl;
+
     /** */
     private TableView<PojoDescriptor> pojosTbl;
+
     /** */
     private TableView<PojoField> fieldsTbl;
+
     /** */
     private Node curTbl;
+
     /** */
     private TextField outFolderTf;
+
     /** */
     private TextField pkgTf;
+
     /** */
     private CheckBox pojoConstructorCh;
+
     /** */
     private CheckBox pojoIncludeKeysCh;
+
     /** */
     private CheckBox xmlSingleFileCh;
+
     /** */
     private TextField regexTf;
+
     /** */
     private TextField replaceTf;
+
     /** */
     private GridPaneEx genPnl;
+
     /** */
     private StackPane genLayerPnl;
+
     /** */
     private ProgressIndicator pi;
+
     /** */
     private ObservableList<SchemaDescriptor> schemas = FXCollections.emptyObservableList();
+
     /** List with POJOs descriptors. */
     private ObservableList<PojoDescriptor> pojos = FXCollections.emptyObservableList();
+
     /** Currently selected POJO. */
     private PojoDescriptor curPojo;
 
@@ -243,7 +302,20 @@ public class SchemaImportApp extends Application {
                 Object osxApp = appCls.getDeclaredMethod("getApplication").invoke(null);
 
                 appCls.getDeclaredMethod("setDockIconImage", java.awt.Image.class)
-                    .invoke(osxApp, SwingFXUtils.fromFXImage(Controls.image("ignite", 128), null));
+                        .invoke(osxApp, SwingFXUtils.fromFXImage(Controls.image("ignite", 128), null));
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+
+            // Workaround for JDK 7/JavaFX 2 application on Mac OSX El Capitan.
+            try {
+                Class<?> fontFinderCls = Class.forName("com.sun.t2k.MacFontFinder");
+
+                Field psNameToPathMap = fontFinderCls.getDeclaredField("psNameToPathMap");
+
+                psNameToPathMap.setAccessible(true);
+                psNameToPathMap.set(null, new HashMap<String, String>());
             }
             catch (Exception ignore) {
                 // No-op.
@@ -925,7 +997,7 @@ public class SchemaImportApp extends Application {
 
         TableColumn<PojoField, Boolean> useFldCol = Controls.customColumn("Use", "use",
             "Check to use this field for XML and POJO generation\n" +
-                "Note that NOT NULL columns cannot be unchecked", PojoFieldUseCell.cellFactory());
+            "Note that NOT NULL columns cannot be unchecked", PojoFieldUseCell.cellFactory());
         useFldCol.setMinWidth(50);
         useFldCol.setMaxWidth(50);
 
@@ -934,7 +1006,7 @@ public class SchemaImportApp extends Application {
 
         TableColumn<PojoField, Boolean> akCol = Controls.booleanColumn("AK", "affinityKey",
             "Check to annotate key filed with @AffinityKeyMapped annotation in generated POJO class\n" +
-                "Note that a class can have only ONE key field annotated with @AffinityKeyMapped annotation");
+            "Note that a class can have only ONE key field annotated with @AffinityKeyMapped annotation");
 
         TableColumn<PojoField, String> dbNameCol = Controls.tableColumn("DB Name", "dbName", "Field name in database");
 

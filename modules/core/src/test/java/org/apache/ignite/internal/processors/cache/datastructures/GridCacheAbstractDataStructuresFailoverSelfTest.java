@@ -43,12 +43,10 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
@@ -170,11 +168,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             while (U.currentTimeMillis() < stopTime)
                 assertEquals(10, atomic.get());
         }
-        catch (IgniteException e) {
-            if (X.hasCause(e, ClusterTopologyServerNotFoundException.class))
-                return;
-
-            throw e;
+        catch (IgniteException ignore) {
+            return; // Test that client does not hang.
         }
 
         fail();

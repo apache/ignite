@@ -179,18 +179,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry create(GridCacheContext ctx,
+            @Override public GridCacheMapEntry create(
+                GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
                 KeyCacheObject key,
                 int hash,
-                CacheObject val,
-                GridCacheMapEntry next,
-                int hdrId)
-            {
+                CacheObject val
+            ) {
                 if (ctx.useOffheapEntry())
-                    return new GridDhtAtomicOffHeapCacheEntry(ctx, topVer, key, hash, val, next, hdrId);
+                    return new GridDhtAtomicOffHeapCacheEntry(ctx, topVer, key, hash, val);
 
-                return new GridDhtAtomicCacheEntry(ctx, topVer, key, hash, val, next, hdrId);
+                return new GridDhtAtomicCacheEntry(ctx, topVer, key, hash, val);
             }
         });
 
@@ -824,25 +823,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         return resFut.chain(new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, Map<K, EntryProcessorResult<T>>>() {
             @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut) throws IgniteCheckedException {
-                Map<K, EntryProcessorResult<T>> resMap = fut.get();
+                Map<Object, EntryProcessorResult> resMap = (Map)fut.get();
 
-                if (resMap != null) {
-                    return F.viewReadOnly(resMap, new C1<EntryProcessorResult<T>, EntryProcessorResult<T>>() {
-                        @Override public EntryProcessorResult<T> apply(EntryProcessorResult<T> res) {
-                            if (res instanceof CacheInvokeResult) {
-                                CacheInvokeResult invokeRes = (CacheInvokeResult)res;
-
-                                if (invokeRes.result() != null)
-                                    res = CacheInvokeResult.fromResult((T)ctx.unwrapPortableIfNeeded(invokeRes.result(),
-                                        keepBinary, false));
-                            }
-
-                            return res;
-                        }
-                    });
-                }
-
-                return null;
+                return ctx.unwrapInvokeResult(resMap, keepBinary);
             }
         });
     }
@@ -2986,16 +2969,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *
      */
     private static class FinishedLockFuture extends GridFinishedFuture<Boolean> implements GridDhtFuture<Boolean> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * Empty constructor required by {@link Externalizable}.
-         */
-        public FinishedLockFuture() {
-            // No-op.
-        }
-
         /**
          * @param err Error.
          */

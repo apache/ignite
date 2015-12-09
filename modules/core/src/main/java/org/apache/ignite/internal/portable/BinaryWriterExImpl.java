@@ -17,16 +17,6 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
-import org.apache.ignite.internal.portable.streams.PortableOutputStream;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.ObjectOutput;
 import java.lang.reflect.InvocationTargetException;
@@ -37,6 +27,15 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
+import org.apache.ignite.internal.portable.streams.PortableOutputStream;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
@@ -317,7 +316,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 flags |= PortableUtils.FLAG_OFFSET_ONE_BYTE;
             else if (offsetByteCnt == PortableUtils.OFFSET_2)
                 flags |= PortableUtils.FLAG_OFFSET_TWO_BYTES;
-            
+
             // Write raw offset if needed.
             if (rawOffPos != 0) {
                 flags |= PortableUtils.FLAG_HAS_RAW;
@@ -1805,9 +1804,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             out.unsafeWriteByte(GridPortableMarshaller.HANDLE);
             out.unsafeWriteInt(pos - old);
-
-            if (obj.getClass().isArray())
-                System.out.println("CASE!");
 
             return true;
         }

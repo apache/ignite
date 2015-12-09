@@ -25,9 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -58,17 +60,22 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
     /** */
     private static final Long INITIAL_VALUE = 1L;
 
+    /** */
+    public static final int TIMEOUT_SEC = 20 * 60;
+
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
         assert args.keysCount() > 0 : "Count of keys: " + args.keysCount();
 
-        println(cfg, "Populating data...");
-
-        long start = System.nanoTime();
+        IgniteCountDownLatch latch = ignite().countDownLatch("DATA-POPULATED-LATCH-" + cacheName(), 1, true, true);
 
         if (cfg.memberId() == 0) {
+            println(cfg, "Populating data for cache: " + cacheName());
+
+            long start = System.nanoTime();
+
             try (IgniteDataStreamer<String, Long> dataLdr = ignite().dataStreamer(cacheName())) {
                 for (int k = 0; k < args.range() && !Thread.currentThread().isInterrupted(); k++) {
                     dataLdr.addData("key-" + k + "-master", INITIAL_VALUE);
@@ -80,9 +87,22 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
                         println(cfg, "Populated accounts: " + k);
                 }
             }
-        }
 
-        println(cfg, "Finished populating data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
+            println(cfg, "Finished populating data in " + ((System.nanoTime() - start) / 1_000_000)
+                + " ms. for cache: " + cacheName());
+
+            latch.countDown();
+        }
+        else {
+            println(cfg, "Waiting for populating data in cache by driver with id 0: " + cacheName());
+
+            boolean success = latch.await(TIMEOUT_SEC, TimeUnit.SECONDS);
+
+            if (!success)
+                throw new IllegalStateException("Failed to wait that data populating finish.");
+
+            println(cfg, "Finished waiting for populating data in cache by driver with id 0: " + cacheName());
+        }
     }
 
     /** {@inheritDoc} */
@@ -123,7 +143,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
                         Set<Long> values = new HashSet<>(map.values());
 
                         if (values.size() != 1)
-                            throw new IgniteConsistencyException("Found different values for keys [map="+map+"]");
+                            throw new IgniteConsistencyException("Found different values for keys [map=" + map + "]");
 
                         break;
                     case 1: // Invoke scenario.
@@ -137,7 +157,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
                         asyncCache.future().get(timeout);
 
                         for (String key : keys) {
-                            asyncCache.invoke(key, new IncrementCacheEntryProcessor(), cacheName());
+                            asyncCache.invoke(key, new IncrementWriteInvokeCacheEntryProcessor(), cacheName());
                             Object o = asyncCache.future().get(timeout);
 
                             if (o != null)
@@ -165,7 +185,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
     /**
      */
-    private static class IncrementCacheEntryProcessor implements CacheEntryProcessor<String, Long, Object> {
+    private static class IncrementWriteInvokeCacheEntryProcessor implements CacheEntryProcessor<String, Long, Object> {
         /** */
         private static final long serialVersionUID = 0;
 

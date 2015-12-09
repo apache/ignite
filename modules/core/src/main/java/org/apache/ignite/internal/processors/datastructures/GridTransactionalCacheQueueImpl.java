@@ -143,7 +143,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                         if (idx != null) {
                             checkRemoved(idx);
 
-                            Map<GridCacheQueueItemKey, T> putMap = new HashMap<>();
+                            Map<QueueItemKey, T> putMap = new HashMap<>();
 
                             for (T item : items) {
                                 putMap.put(itemKey(idx), item);

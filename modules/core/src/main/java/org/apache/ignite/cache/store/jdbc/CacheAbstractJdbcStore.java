@@ -49,6 +49,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheTypeFieldMetadata;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.store.CacheStore;
@@ -61,6 +62,7 @@ import org.apache.ignite.cache.store.jdbc.dialect.MySQLDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.OracleDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.SQLServerDialect;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -68,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleAware;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -77,10 +78,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.sql.Statement.EXECUTE_FAILED;
 import static java.sql.Statement.SUCCESS_NO_INFO;
-
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_BATCH_SIZE;
-import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_WRITE_ATTEMPTS;
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD;
+import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_WRITE_ATTEMPTS;
 
 /**
  * Implementation of {@link CacheStore} backed by JDBC.
@@ -1442,8 +1442,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @return Next index for parameters.
      * @throws CacheException If failed to set statement parameters.
      */
-    protected int fillKeyParameters(PreparedStatement stmt, int idx, EntryMapping em,
-        Object key) throws CacheException {
+    protected int fillKeyParameters(PreparedStatement stmt, int idx, EntryMapping em, Object key) throws CacheException {
         for (JdbcTypeField field : em.keyColumns()) {
             Object fieldVal = extractParameter(em.cacheName, em.keyType(), em.keyKind(), field.getJavaFieldName(), key);
 
@@ -1474,8 +1473,14 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      */
     protected int fillValueParameters(PreparedStatement stmt, int idx, EntryMapping em, Object val)
         throws CacheWriterException {
+        TypeKind valKind = em.valueKind();
+
+        // Object could be passed by cache in binary format in case of cache configured with setKeepBinaryInStore(true).
+        if (valKind == TypeKind.POJO && val instanceof BinaryObject)
+            valKind = TypeKind.BINARY;
+
         for (JdbcTypeField field : em.uniqValFlds) {
-            Object fieldVal = extractParameter(em.cacheName, em.valueType(), em.valueKind(), field.getJavaFieldName(), val);
+            Object fieldVal = extractParameter(em.cacheName, em.valueType(), valKind, field.getJavaFieldName(), val);
 
             fillParameter(stmt, idx++, field, fieldVal);
         }
