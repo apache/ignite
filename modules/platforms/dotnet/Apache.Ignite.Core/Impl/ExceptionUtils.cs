@@ -59,10 +59,10 @@ namespace Apache.Ignite.Core.Impl
         static ExceptionUtils()
         {
             // Common Java exceptions mapped to common .Net exceptions.
-            EXS["java.lang.IllegalArgumentException"] = (m, s) => new ArgumentException(FormatJavaErrorMessage(m, s));
-            EXS["java.lang.IllegalStateException"] = (m, s) => new InvalidOperationException(FormatJavaErrorMessage(m, s));
-            EXS["java.lang.UnsupportedOperationException"] = (m, s) => new NotImplementedException(FormatJavaErrorMessage(m, s));
-            EXS["java.lang.InterruptedException"] = (m, s) => new ThreadInterruptedException(FormatJavaErrorMessage(m, s));
+            EXS["java.lang.IllegalArgumentException"] = (m, s) => new ArgumentException(m);
+            EXS["java.lang.IllegalStateException"] = (m, s) => new InvalidOperationException(m);
+            EXS["java.lang.UnsupportedOperationException"] = (m, s) => new NotImplementedException(m);
+            EXS["java.lang.InterruptedException"] = (m, s) => new ThreadInterruptedException(m);
             
             // Generic Ignite exceptions.
             EXS["org.apache.ignite.IgniteException"] = (m, s) => new IgniteException(m, s);
@@ -93,8 +93,8 @@ namespace Apache.Ignite.Core.Impl
             EXS["org.apache.ignite.transactions.TransactionHeuristicException"] = (m, s) => new TransactionHeuristicException(m, s);
 
             // Security exceptions.
-            EXS["org.apache.ignite.IgniteAuthenticationException"] = (m, s) => new SecurityException(FormatJavaErrorMessage(m, s));
-            EXS["org.apache.ignite.plugin.security.GridSecurityException"] = (m, s) => new SecurityException(FormatJavaErrorMessage(m, s));
+            EXS["org.apache.ignite.IgniteAuthenticationException"] = (m, s) => new SecurityException(m);
+            EXS["org.apache.ignite.plugin.security.GridSecurityException"] = (m, s) => new SecurityException(m);
         }
 
         /// <summary>
@@ -185,17 +185,6 @@ namespace Apache.Ignite.Core.Impl
                 return new IgniteException("Failed to initialize JVM: " + msg + "\n" + stackTrace);
 
             return new IgniteException("Failed to initialize JVM.");
-        }
-
-        /// <summary>
-        /// Formats the java error message.
-        /// </summary>
-        /// <param name="msg">The message.</param>
-        /// <param name="javaStackTrace">The java stack trace.</param>
-        /// <returns>Concatenated string.</returns>
-        private static string FormatJavaErrorMessage(string msg, string javaStackTrace)
-        {
-            return string.Format("{0}\nJavaStackTrace: {1}", msg, javaStackTrace);
         }
 
         /// <summary>
