@@ -33,24 +33,24 @@ namespace Apache.Ignite.Core.Cache.Store
     /// <example>
     /// Here is an example:
     /// <code>
-    /// <bean class="org.apache.ignite.configuration.CacheConfiguration">
+    /// &lt;bean class="org.apache.ignite.configuration.CacheConfiguration">
     ///     ...
-    ///     <property name="cacheStoreFactory">
-    ///         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
-    ///             <property name="assemblyName" value="MyAssembly"/>
-    ///             <property name="className" value="MyApp.MyCacheStore"/>
-    ///             <property name="properties">
-    ///                 <map>
-    ///                     <entry key="IntProperty">
-    ///                         <value type="java.lang.Integer">42</value>
-    ///                     </entry>
-    ///                     <entry key="StringProperty" value="String value"/>
-    ///                 </map>
-    ///             </property>
-    ///         </bean>
-    ///     </property>
+    ///     &lt;property name="cacheStoreFactory">
+    ///         &lt;bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
+    ///             &lt;property name="assemblyName" value="MyAssembly"/>
+    ///             &lt;property name="className" value="MyApp.MyCacheStore"/>
+    ///             &lt;property name="properties">
+    ///                 &lt;map>
+    ///                     &lt;entry key="IntProperty">
+    ///                         &lt;value type="java.lang.Integer">42&lt;/value>
+    ///                     &lt;/entry>
+    ///                     &lt;entry key="StringProperty" value="String value"/>
+    ///                 &lt;/map>
+    ///             &lt;/property>
+    ///         &lt;/bean>
+    ///     &lt;/property>
     ///     ...
-    /// </bean>
+    /// &lt;/bean>
     /// </code>
     /// </example>
     /// Assemply name and class name are passed to <a target="_blank" href="http://msdn.microsoft.com/en-us/library/d133hta4.aspx"><b>System.Activator.CreateInstance(String, String)</b></a>
