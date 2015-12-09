@@ -19,7 +19,7 @@ export default [
     '$scope', '$http', '$common', '$loading', '$table', '$filter', 'ConfigurationSummaryResource',
     function($scope, $http, $common, $loading, $table, $filter, Resource) {
     let ctrl = this;
-    let igniteVersion = '1.5.0';
+    let igniteVersion = '1.5.0-b1';
 
     $loading.start('loading');
 
