@@ -232,7 +232,7 @@ namespace Apache.Ignite.Core.Transactions
         /// Removes metadata by name.
         /// </summary>
         /// <param name="name">Metadata name.</param>
-        /// <returns>Value of removed metadata or default value for <code>V</code> type.</returns>
+        /// <returns>Value of removed metadata or default value for <c>V</c> type.</returns>
         TV RemoveMeta<TV>(string name);
     }
 }
