@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -114,6 +115,22 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
         if (affAssignmentBytes != null) {
             affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, ldr);
+
+            // TODO IGNITE-2110: setting 'local' for nodes not needed when IGNITE-2110 is implemented.
+            int assignments = affAssignment.size();
+
+            for (int n = 0; n < assignments; n++) {
+                List<ClusterNode> nodes = affAssignment.get(n);
+
+                int size = nodes.size();
+
+                for (int i = 0; i < size; i++) {
+                    ClusterNode node = nodes.get(i);
+
+                    if (node instanceof TcpDiscoveryNode)
+                        ((TcpDiscoveryNode)node).local(node.id().equals(ctx.localNodeId()));
+                }
+            }
         }
     }
 
