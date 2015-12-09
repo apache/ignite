@@ -1415,7 +1415,7 @@ $generatorXml.generateDataSources = function (datasources, res) {
 
 $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
     if (clientNearCfg) {
-        res.line('<property name="clientMode" value="true" />');
+        res.line('<property name="clientMode" value="true"/>');
 
         res.line();
     }

@@ -44,6 +44,7 @@ System.config({
     "font-awesome": "npm:font-awesome@4.5.0",
     "jade": "github:johnsoftek/plugin-jade@0.5.1",
     "jquery": "github:components/jquery@2.1.4",
+    "json": "github:systemjs/plugin-json@0.1.0",
     "jszip": "github:Stuk/jszip@2.5.0",
     "lodash": "npm:lodash@3.10.1",
     "nvd3": "npm:nvd3@1.8.1",
