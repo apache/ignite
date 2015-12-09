@@ -608,7 +608,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /**
          * <summary>Read date.</summary>
          * <param name="stream">Stream.</param>
-         * <param name="local">Local flag.</param>
          * <returns>Date</returns>
          */
         public static DateTime? ReadTimestamp(IBinaryStream stream)

@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Cache.Query
         public bool Local { get; set; }
 
         /// <summary>
-        /// Optional page size. If set to <code>0</code>, then <code>CacheQueryConfiguration.pageSize</code> is used.
+        /// Optional page size. If set to <c>0</c>, then <c>CacheQueryConfiguration.pageSize</c> is used.
         /// </summary>
         public int PageSize { get; set; }
 

@@ -152,8 +152,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-
-        /** <inheritDoc /> */
         public bool IsEmpty()
         {
             return GetSize() == 0;

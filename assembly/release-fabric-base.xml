@@ -35,19 +35,6 @@
             <destName>ignite_x86.sln</destName>
         </file>
 
-        <!-- Copy .Net files. -->
-        <file>
-            <source>modules/platforms/dotnet/Apache.Ignite.slnrel</source>
-            <outputDirectory>/platforms/dotnet</outputDirectory>
-            <destName>Apache.Ignite.sln</destName>
-        </file>
-
-        <file>
-            <source>modules/platforms/dotnet/Apache.Ignite_x86.slnrel</source>
-            <outputDirectory>/platforms/dotnet</outputDirectory>
-            <destName>Apache.Ignite_x86.sln</destName>
-        </file>
-
         <!-- Other files. -->
         <file>
             <source>assembly/LICENSE_FABRIC</source>
