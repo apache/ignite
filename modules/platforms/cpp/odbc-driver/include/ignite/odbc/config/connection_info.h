@@ -22,6 +22,8 @@
 
 #include <map>
 
+#include <ignite/common/common.h>
+
 namespace ignite
 {
     namespace odbc
