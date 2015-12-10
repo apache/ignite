@@ -40,11 +40,13 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskSessionResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
@@ -271,12 +273,20 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * to allow pass {@link IgniteUtils#currentTimeMillis()}.
      *
      * @return Call timestamp.
-     * @throws InterruptedException If sleep was interrupted.
+     * @throws Exception If failed.
      */
-    private long startTimestamp() throws InterruptedException {
-        long tstamp = System.currentTimeMillis();
+    private long startTimestamp() throws Exception {
+        final long tstamp = U.currentTimeMillis();
 
         Thread.sleep(20);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return U.currentTimeMillis() > tstamp;
+            }
+        }, 5000);
+
+        assert U.currentTimeMillis() > tstamp;
 
         return tstamp;
     }

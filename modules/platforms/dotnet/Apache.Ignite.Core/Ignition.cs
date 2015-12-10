@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Starts Ignite with default configuration. By default this method will
-        /// use Ignite configuration defined in <code>IGNITE/config/default-config.xml</code>
+        /// use Ignite configuration defined in <c>{IGNITE_HOME}/config/default-config.xml</c>
         /// configuration file. If such file is not found, then all system defaults will be used.
         /// </summary>
         /// <returns>Started Ignite.</returns>
@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core
         /// node) can belong to a different grid. Ignite name defines what grid a particular Ignite
         /// instance (and correspondingly its node) belongs to.
         /// </summary>
-        /// <param name="name">Ignite name to which requested Ignite instance belongs. If <code>null</code>,
+        /// <param name="name">Ignite name to which requested Ignite instance belongs. If <c>null</c>,
         /// then Ignite instance belonging to a default no-name Ignite will be returned.
         /// </param>
         /// <returns>An instance of named grid.</returns>
@@ -477,15 +477,15 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Stops named grid. If <code>cancel</code> flag is set to <code>true</code> then
+        /// Stops named grid. If <c>cancel</c> flag is set to <c>true</c> then
         /// all jobs currently executing on local node will be interrupted. If
-        /// grid name is <code>null</code>, then default no-name Ignite will be stopped.
+        /// grid name is <c>null</c>, then default no-name Ignite will be stopped.
         /// </summary>
-        /// <param name="name">Grid name. If <code>null</code>, then default no-name Ignite will be stopped.</param>
-        /// <param name="cancel">If <code>true</code> then all jobs currently executing will be cancelled
-        /// by calling <code>ComputeJob.cancel</code>method.</param>
-        /// <returns><code>true</code> if named Ignite instance was indeed found and stopped, <code>false</code>
-        /// othwerwise (the instance with given <code>name</code> was not found).</returns>
+        /// <param name="name">Grid name. If <c>null</c>, then default no-name Ignite will be stopped.</param>
+        /// <param name="cancel">If <c>true</c> then all jobs currently executing will be cancelled
+        /// by calling <c>ComputeJob.cancel</c>method.</param>
+        /// <returns><c>true</c> if named Ignite instance was indeed found and stopped, <c>false</c>
+        /// othwerwise (the instance with given <c>name</c> was not found).</returns>
         public static bool Stop(string name, bool cancel)
         {
             lock (SyncRoot)
@@ -508,11 +508,11 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Stops <b>all</b> started grids. If <code>cancel</code> flag is set to <code>true</code> then
+        /// Stops <b>all</b> started grids. If <c>cancel</c> flag is set to <c>true</c> then
         /// all jobs currently executing on local node will be interrupted.
         /// </summary>
-        /// <param name="cancel">If <code>true</code> then all jobs currently executing will be cancelled
-        /// by calling <code>ComputeJob.cancel</code>method.</param>
+        /// <param name="cancel">If <c>true</c> then all jobs currently executing will be cancelled
+        /// by calling <c>ComputeJob.Cancel()</c> method.</param>
         public static void StopAll(bool cancel)
         {
             lock (SyncRoot)

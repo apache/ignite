@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.portable;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.portable.builder.PortableLazyValue;
 import org.apache.ignite.internal.portable.streams.PortableInputStream;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -35,8 +35,6 @@ import org.jsr166.ConcurrentHashMap8;
 import java.io.ByteArrayInputStream;
 import java.io.Externalizable;
 import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
@@ -50,7 +48,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -68,9 +65,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_HASH_MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_LINKED_QUEUE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_SKIP_LIST_SET;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL;
@@ -92,14 +86,12 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.LINKED_
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJECT_TYPE_ID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROPERTIES_MAP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
@@ -107,8 +99,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TREE_MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TREE_SET;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.USER_COL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.USER_SET;
@@ -271,7 +261,6 @@ public class PortableUtils {
         FIELD_TYPE_NAMES[PORTABLE_OBJ] = "Object";
         FIELD_TYPE_NAMES[COL] = "Collection";
         FIELD_TYPE_NAMES[MAP] = "Map";
-        FIELD_TYPE_NAMES[MAP_ENTRY] = "Entry";
         FIELD_TYPE_NAMES[CLASS] = "Class";
         FIELD_TYPE_NAMES[BYTE_ARR] = "byte[]";
         FIELD_TYPE_NAMES[SHORT_ARR] = "short[]";
@@ -620,14 +609,11 @@ public class PortableUtils {
         if (cls.isArray())
             return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class ? ENUM_ARR : OBJ_ARR;
 
-        if (Collection.class.isAssignableFrom(cls))
+        if (isSpecialCollection(cls))
             return COL;
 
-        if (Map.class.isAssignableFrom(cls))
+        if (isSpecialMap(cls))
             return MAP;
-
-        if (Map.Entry.class.isAssignableFrom(cls))
-            return MAP_ENTRY;
 
         return OBJ;
     }
@@ -1004,19 +990,16 @@ public class PortableUtils {
         else if (cls == Timestamp[].class)
             return BinaryWriteMode.TIMESTAMP_ARR;
         else if (cls.isArray())
-            return cls.getComponentType().isEnum() ?
-                BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
+            return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
         else if (cls == BinaryObjectImpl.class)
             return BinaryWriteMode.PORTABLE_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
             return BinaryWriteMode.PORTABLE;
         else if (Externalizable.class.isAssignableFrom(cls))
             return BinaryWriteMode.EXTERNALIZABLE;
-        else if (Map.Entry.class.isAssignableFrom(cls))
-            return BinaryWriteMode.MAP_ENTRY;
-        else if (Collection.class.isAssignableFrom(cls))
+        else if (isSpecialCollection(cls))
             return BinaryWriteMode.COL;
-        else if (Map.class.isAssignableFrom(cls))
+        else if (isSpecialMap(cls))
             return BinaryWriteMode.MAP;
         else if (cls.isEnum())
             return BinaryWriteMode.ENUM;
@@ -1024,6 +1007,27 @@ public class PortableUtils {
             return BinaryWriteMode.CLASS;
         else
             return BinaryWriteMode.OBJECT;
+    }
+
+    /**
+     * Check if class represents a collection which must be treated specially.
+     *
+     * @param cls Class.
+     * @return {@code True} if this is a special collection class.
+     */
+    private static boolean isSpecialCollection(Class cls) {
+        return ArrayList.class.equals(cls) || LinkedList.class.equals(cls) ||
+            HashSet.class.equals(cls) || LinkedHashSet.class.equals(cls);
+    }
+
+    /**
+     * Check if class represents a map which must be treated specially.
+     *
+     * @param cls Class.
+     * @return {@code True} if this is a special map class.
+     */
+    private static boolean isSpecialMap(Class cls) {
+        return HashMap.class.equals(cls) || LinkedHashMap.class.equals(cls);
     }
 
     /**
@@ -1688,9 +1692,6 @@ public class PortableUtils {
             case MAP:
                 return doReadMap(in, ctx, ldr, handles, false, null);
 
-            case MAP_ENTRY:
-                return doReadMapEntry(in, ctx, ldr, handles, false);
-
             case PORTABLE_OBJ:
                 return doReadPortableObject(in, ctx);
 
@@ -1738,13 +1739,13 @@ public class PortableUtils {
 
     /**
      * @param deserialize Deep flag.
-     * @param cls Collection class.
+     * @param factory Collection factory.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
     public static Collection<?> doReadCollection(PortableInputStream in, PortableContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean deserialize, @Nullable Class<? extends Collection> cls)
+        BinaryReaderHandlesHolder handles, boolean deserialize, BinaryCollectionFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
@@ -1756,20 +1757,8 @@ public class PortableUtils {
 
         Collection<Object> col;
 
-        if (cls != null) {
-            try {
-                Constructor<? extends Collection> cons = cls.getConstructor();
-
-                col = cons.newInstance();
-            }
-            catch (NoSuchMethodException ignored) {
-                throw new BinaryObjectException("Collection class doesn't have public default constructor: " +
-                    cls.getName());
-            }
-            catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-                throw new BinaryObjectException("Failed to instantiate collection: " + cls.getName(), e);
-            }
-        }
+        if (factory != null)
+            col = factory.create(size);
         else {
             switch (colType) {
                 case ARR_LIST:
@@ -1789,21 +1778,6 @@ public class PortableUtils {
 
                 case LINKED_HASH_SET:
                     col = U.newLinkedHashSet(size);
-
-                    break;
-
-                case TREE_SET:
-                    col = new TreeSet<>();
-
-                    break;
-
-                case CONC_SKIP_LIST_SET:
-                    col = new ConcurrentSkipListSet<>();
-
-                    break;
-
-                case CONC_LINKED_QUEUE:
-                    col = new ConcurrentLinkedQueue<>();
 
                     break;
 
@@ -1832,13 +1806,13 @@ public class PortableUtils {
 
     /**
      * @param deserialize Deep flag.
-     * @param cls Map class.
+     * @param factory Map factory.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
     public static Map<?, ?> doReadMap(PortableInputStream in, PortableContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean deserialize, @Nullable Class<? extends Map> cls)
+        BinaryReaderHandlesHolder handles, boolean deserialize, BinaryMapFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
@@ -1850,20 +1824,8 @@ public class PortableUtils {
 
         Map<Object, Object> map;
 
-        if (cls != null) {
-            try {
-                Constructor<? extends Map> cons = cls.getConstructor();
-
-                map = cons.newInstance();
-            }
-            catch (NoSuchMethodException ignored) {
-                throw new BinaryObjectException("Map class doesn't have public default constructor: " +
-                    cls.getName());
-            }
-            catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-                throw new BinaryObjectException("Failed to instantiate map: " + cls.getName(), e);
-            }
-        }
+        if (factory != null)
+            map = factory.create(size);
         else {
             switch (mapType) {
                 case HASH_MAP:
@@ -1876,23 +1838,8 @@ public class PortableUtils {
 
                     break;
 
-                case TREE_MAP:
-                    map = new TreeMap<>();
-
-                    break;
-
-                case CONC_HASH_MAP:
-                    map = new ConcurrentHashMap<>(size);
-
-                    break;
-
                 case USER_COL:
                     map = U.newHashMap(size);
-
-                    break;
-
-                case PROPERTIES_MAP:
-                    map = new Properties();
 
                     break;
 
@@ -1911,25 +1858,6 @@ public class PortableUtils {
         }
 
         return map;
-    }
-
-    /**
-     * @param deserialize Deserialize flag flag.
-     * @return Value.
-     * @throws BinaryObjectException In case of error.
-     */
-    public static Map.Entry<?, ?> doReadMapEntry(PortableInputStream in, PortableContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean deserialize) throws BinaryObjectException {
-        int hPos = positionForHandle(in);
-
-        Object val1 = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
-        Object val2 = deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize);
-
-        GridMapEntry entry = new GridMapEntry<>(val1, val2);
-
-        handles.setHandle(entry, hPos);
-
-        return entry;
     }
 
     /**

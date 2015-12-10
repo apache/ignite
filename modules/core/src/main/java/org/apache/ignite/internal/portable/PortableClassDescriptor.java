@@ -210,7 +210,6 @@ public class PortableClassDescriptor {
             case OBJECT_ARR:
             case COL:
             case MAP:
-            case MAP_ENTRY:
             case PORTABLE_OBJ:
             case ENUM:
             case PORTABLE_ENUM:
@@ -542,11 +541,6 @@ public class PortableClassDescriptor {
 
                 break;
 
-            case MAP_ENTRY:
-                writer.doWriteMapEntry((Map.Entry<?, ?>)obj);
-
-                break;
-
             case ENUM:
                 writer.doWriteEnum((Enum<?>)obj);
 
@@ -798,8 +792,9 @@ public class PortableClassDescriptor {
      *
      * @return {@code true} if to use, {@code false} otherwise.
      */
+    @SuppressWarnings("unchecked")
     private boolean initUseOptimizedMarshallerFlag() {
-        for (Class<?> c = cls; !c.equals(Object.class); c = c.getSuperclass()) {
+        for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
             try {
                 Method writeObj = c.getDeclaredMethod("writeObject", ObjectOutputStream.class);
                 Method readObj = c.getDeclaredMethod("readObject", ObjectInputStream.class);

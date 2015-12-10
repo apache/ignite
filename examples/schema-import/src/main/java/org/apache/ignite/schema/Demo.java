@@ -41,11 +41,13 @@ public class Demo {
      * Constructs and returns a fully configured instance of a {@link CacheJdbcPojoStoreFactory}.
      */
     private static class H2DemoStoreFactory<K, V> extends CacheJdbcPojoStoreFactory<K, V> {
-        /** Default constructor. */
-        H2DemoStoreFactory() {
+        /** {@inheritDoc} */
+        @Override public CacheJdbcPojoStore<K, V> create() {
             setDialect(new H2Dialect());
 
             setDataSource(JdbcConnectionPool.create("jdbc:h2:tcp://localhost/~/schema-import/demo", "sa", ""));
+
+            return super.create();
         }
     }
 

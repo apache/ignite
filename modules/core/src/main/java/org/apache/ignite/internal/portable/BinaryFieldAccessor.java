@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import sun.misc.Unsafe;
+
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -24,10 +29,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import sun.misc.Unsafe;
 
 /**
  * Field accessor to speedup access.
@@ -607,11 +608,6 @@ public abstract class BinaryFieldAccessor {
 
                     break;
 
-                case MAP_ENTRY:
-                    writer.writeMapEntryField((Map.Entry<?, ?>)val);
-
-                    break;
-
                 case PORTABLE_OBJ:
                     writer.writePortableObjectField((BinaryObjectImpl)val);
 
@@ -810,11 +806,6 @@ public abstract class BinaryFieldAccessor {
 
                 case MAP:
                     val = reader.readMap(id, null);
-
-                    break;
-
-                case MAP_ENTRY:
-                    val = reader.readMapEntry(id);
 
                     break;
 

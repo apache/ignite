@@ -151,8 +151,8 @@ namespace Apache.Ignite.Core.Events
 
         /// <summary>
         /// Gets security subject ID initiated this cache event, if available. This property is available only for <see 
-        /// cref="EventType.EventCacheObjectPut" />, <see cref="EventType.EventCacheObjectRemoved" /> and <see 
-        /// cref="EventType.EventCacheObjectRead" /> cache events. Subject ID will be set either to nodeId initiated 
+        /// cref="EventType.CacheObjectPut" />, <see cref="EventType.CacheObjectRemoved" /> and <see 
+        /// cref="EventType.CacheObjectRead" /> cache events. Subject ID will be set either to nodeId initiated 
         /// cache update or read or client ID initiated cache update or read. 
         /// </summary>
         public Guid? SubjectId { get { return _subjectId; } }
