@@ -67,6 +67,7 @@ import './modules/states/admin/index'
 import './modules/navbar/main'
 import './modules/userbar/main'
 import './modules/configuration/sidebar/main'
+import './modules/dialog/index'
 // endignite
 
 // Directives.
@@ -100,6 +101,7 @@ angular
 	'ignite-console.states.profile',
 	'ignite-console.states.admin',
 	// Common modules.
+	'ignite-console.dialog',
 	'ignite-console.navbar',
 	'ignite-console.userbar',
     'ignite-console.configuration.sidebar'

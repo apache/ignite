@@ -35,10 +35,6 @@ $ignite-block-callout-gradient-to: #ffffff;
         padding: 10px 5px 0 10px;
     }
 
-    span {
-        font-weight: bold;
-    }
-
     ul {
         padding: 5px 0 10px 20px;
         margin: 0 0 0 10px;
@@ -50,7 +46,7 @@ $ignite-block-callout-gradient-to: #ffffff;
         color: $brand-info;
     }
 
-    span {
+    b {
         color: $brand-info;
     }
 
@@ -63,7 +59,7 @@ $ignite-block-callout-gradient-to: #ffffff;
         color: $brand-success;
     }
 
-    span {
+    b {
         color: $brand-success;
     }
 

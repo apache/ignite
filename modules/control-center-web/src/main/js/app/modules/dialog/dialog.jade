@@ -14,7 +14,13 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-td.block-callout(width='50%')
-    i.fa.fa-check-square
-    b {{::title}}:
-    ul(ng-transclude='')
+.modal(tabindex='-1' role='dialog')
+    .modal-dialog
+        .modal-content
+            .modal-header
+                button.close(ng-click='$hide()' aria-hidden='true') &times;
+                h4.modal-title {{title}}
+            .modal-body(ng-show='content')
+                p(ng-bind-html='content.join("<br/>")' style='text-align: left;')
+            .modal-footer
+                button.btn.btn-primary(id='confirm-btn-confirm' ng-click='$hide()') Ok
