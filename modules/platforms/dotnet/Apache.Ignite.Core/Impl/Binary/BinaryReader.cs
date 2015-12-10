@@ -500,7 +500,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             IgniteArgumentCheck.NotNull(factory, "factory");
             IgniteArgumentCheck.NotNull(adder, "adder");
 
-            return BinaryUtils.ReadCollection(this, factory, adder);
+            return Read(r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */
