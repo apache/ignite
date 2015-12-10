@@ -21,13 +21,6 @@ namespace Apache.Ignite.Core.Binary
     using System.Collections;
 
     /// <summary>
-    /// Delegate for dictionary creation.
-    /// </summary>
-    /// <param name="size">Dictionary size.</param>
-    /// <returns>Dictionary.</returns>
-    public delegate IDictionary DictionaryFactory(int size);
-
-    /// <summary>
     /// Reader for binary objects. 
     /// </summary>
     public interface IBinaryReader 
@@ -235,10 +228,14 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Read named collection.
         /// </summary>
+        /// <typeparam name="TCollection">The type of the collection.</typeparam>
+        /// <typeparam name="TElement">The type of the element.</typeparam>
         /// <param name="fieldName">Field name.</param>
         /// <param name="factory">Factory.</param>
         /// <param name="adder">Adder.</param>
-        /// <returns>Collection.</returns>
+        /// <returns>
+        /// Collection.
+        /// </returns>
         TCollection ReadCollection<TCollection, TElement>(string fieldName, Func<int, TCollection> factory, 
             Action<TCollection, TElement> adder);
 
@@ -252,10 +249,17 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Read named dictionary.
         /// </summary>
+        /// <typeparam name="TDictionary">The type of the dictionary.</typeparam>
+        /// <typeparam name="TK">The type of the key.</typeparam>
+        /// <typeparam name="TV">The type of the value.</typeparam>
         /// <param name="fieldName">Field name.</param>
         /// <param name="factory">Factory.</param>
-        /// <returns>Dictionary.</returns>
-        IDictionary ReadDictionary(string fieldName, DictionaryFactory factory);
+        /// <param name="adder">Adder.</param>
+        /// <returns>
+        /// Dictionary.
+        /// </returns>
+        IDictionary ReadDictionary<TDictionary, TK, TV>(string fieldName, Func<int, TDictionary> factory,
+            Action<TDictionary, TK, TV> adder);
 
         /// <summary>
         /// Get raw reader. 

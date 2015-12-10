@@ -202,9 +202,13 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Read collection.
         /// </summary>
+        /// <typeparam name="TCollection">The type of the collection.</typeparam>
+        /// <typeparam name="TElement">The type of the element.</typeparam>
         /// <param name="factory">Factory.</param>
         /// <param name="adder">Adder.</param>
-        /// <returns>Collection.</returns>
+        /// <returns>
+        /// Collection.
+        /// </returns>
         TCollection ReadCollection<TCollection, TElement>(Func<int, TCollection> factory,
             Action<TCollection, TElement> adder);
 
@@ -217,8 +221,15 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Read dictionary.
         /// </summary>
+        /// <typeparam name="TDictionary">The type of the dictionary.</typeparam>
+        /// <typeparam name="TK">The type of the key.</typeparam>
+        /// <typeparam name="TV">The type of the value.</typeparam>
         /// <param name="factory">Factory.</param>
-        /// <returns>Dictionary.</returns>
-        IDictionary ReadDictionary(DictionaryFactory factory);
+        /// <param name="adder">Adder.</param>
+        /// <returns>
+        /// Dictionary.
+        /// </returns>
+        IDictionary ReadDictionary<TDictionary, TK, TV>(Func<int, TDictionary> factory,
+            Action<TDictionary, TK, TV> adder);
     }
 }

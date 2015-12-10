@@ -1331,14 +1331,22 @@ namespace Apache.Ignite.Core.Impl.Binary
             return valType == typeof(Hashtable) ? MapHashMap : MapCustom;
         }
 
-        /**
-         * <summary>Read dictionary.</summary>
-         * <param name="ctx">Context.</param>
-         * <param name="factory">Factory delegate.</param>
-         * <returns>Dictionary.</returns>
-         */
-        public static IDictionary ReadDictionary(BinaryReader ctx, DictionaryFactory factory)
+        /// <summary>
+        /// Read dictionary.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="factory">Factory delegate.</param>
+        /// <param name="adder">The adder.</param>
+        /// <returns>
+        /// Dictionary.
+        /// </returns>
+        public static TDictionary ReadDictionary<TDictionary, TK, TV>(BinaryReader ctx, Func<int, TDictionary> factory,
+            Action<TDictionary, TK, TV> adder)
         {
+            Debug.Assert(ctx != null);
+            Debug.Assert(factory != null);
+            Debug.Assert(adder != null);
+
             IBinaryStream stream = ctx.Stream;
 
             int len = stream.ReadInt();
@@ -1346,15 +1354,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             // Skip dictionary type as we can do nothing with it here.
             ctx.Stream.ReadByte();
 
-            var res = factory == null ? new Hashtable(len) : factory.Invoke(len);
+            var res = factory(len);
 
             for (int i = 0; i < len; i++)
-            {
-                object key = ctx.Deserialize<object>();
-                object val = ctx.Deserialize<object>();
-
-                res[key] = val;
-            }
+                adder(res, ctx.Deserialize<TK>(), ctx.Deserialize<TV>());
 
             return res;
         }
