@@ -266,6 +266,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        internal static IUnmanagedTarget ProcessorGetIgniteConfiguration(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = JNI.ProcessorGetIgniteConfiguration(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
+        }
+
         #endregion
 
         #region NATIVE METHODS: TARGET
