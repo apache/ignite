@@ -2340,6 +2340,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 // Check custom
                 writer.WriteCollection("stringCol", new StringCollection {"1", "2"});
+                writer.WriteDictionary("dict", (IDictionary<int, string>) new Dictionary<int, string> {{1, "2"}});
 
                 // Check raw
                 WriteRaw(writer.GetRawWriter());
@@ -2365,6 +2366,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 // Check custom
                 writer.WriteCollection(new StringCollection { "1", "2" });
+                writer.WriteDictionary((IDictionary<int, string>) new Dictionary<int, string> {{1, "2"}});
             }
 
             public void ReadBinary(IBinaryReader reader)
@@ -2392,6 +2394,10 @@ namespace Apache.Ignite.Core.Tests.Binary
                         Assert.AreEqual(2, count);
                         return new StringCollection();
                     }, (col, el) => col.Add(el)));
+
+                Assert.AreEqual(new Dictionary<int, string> {{1, "2"}},
+                    reader.ReadDictionary<Dictionary<int, string>, int, string>("dict",
+                        len => new Dictionary<int, string>(len), (dict, key, val) => dict[key] = val));
 
                 // Check raw
                 ReadRaw(reader.GetRawReader());
@@ -2423,6 +2429,10 @@ namespace Apache.Ignite.Core.Tests.Binary
                             Assert.AreEqual(2, count);
                             return new StringCollection();
                         }, (col, el) => col.Add(el)));
+
+                Assert.AreEqual(new Dictionary<int, string> { { 1, "2" } },
+                    reader.ReadDictionary<Dictionary<int, string>, int, string>(
+                        len => new Dictionary<int, string>(len), (dict, key, val) => dict[key] = val));
             }
         }
     }
