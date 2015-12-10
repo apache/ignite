@@ -1005,6 +1005,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (val == null)
                 WriteNullField();
+            else
             {
                 WriteByte(BinaryUtils.TypeDictionary);
                 BinaryUtils.WriteDictionary(val, this);

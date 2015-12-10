@@ -26,12 +26,15 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using NUnit.Framework;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// 
@@ -608,6 +611,23 @@ namespace Apache.Ignite.Core.Tests.Binary
             var newObjList = _marsh.Unmarshal<IList<string>>(data);
 
             CollectionAssert.AreEquivalent(list, newObjList);
+        }
+
+        /// <summary>
+        /// Check interoperable collections.
+        /// </summary>
+        [Test]
+        public void TestInteropCollections()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new List<BinaryTypeConfiguration>
+                {
+                    new BinaryTypeConfiguration(typeof (InteropCollections))
+                }
+            });
+
+            Assert.IsNotNull(marsh.Unmarshal<InteropCollections>(marsh.Marshal(new InteropCollections())));
         }
 
         /// <summary>
@@ -2293,6 +2313,31 @@ namespace Apache.Ignite.Core.Tests.Binary
             public static bool operator !=(ReflectiveStruct left, ReflectiveStruct right)
             {
                 return !left.Equals(right);
+            }
+        }
+
+        private class InteropCollections : IBinarizable
+        {
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                // Check nulls
+                writer.WriteCollection("null1", null);
+                writer.WriteCollection<string>("null2", null);
+                writer.WriteDictionary("null3", null);
+
+                // Check non-generic
+                writer.WriteCollection("arrayList", new ArrayList {1, "2"});
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                // Check nulls
+                Assert.IsNull(reader.ReadCollection("null1"));
+                Assert.IsNull(reader.ReadCollection<List<string>, string>("null2", i => null, (o, e) => Assert.Fail()));
+                Assert.IsNull(reader.ReadDictionary("null3"));
+
+                // Check non-generic
+                Assert.AreEqual(new ArrayList { 1, "2" }, reader.ReadCollection("arrayList"));
             }
         }
     }
