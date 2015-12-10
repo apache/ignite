@@ -2326,6 +2326,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteCollection("null1", null);
                 writer.WriteCollection<string>("null2", null);
                 writer.WriteDictionary("null3", null);
+                writer.WriteArray<InteropCollections>("null4", null);
 
                 // Check non-generic
                 writer.WriteCollection("arrayList", new ArrayList {1, "2"});
@@ -2348,6 +2349,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteCollection(null);
                 writer.WriteCollection<string>(null);
                 writer.WriteDictionary(null);
+                writer.WriteArray<InteropCollections>(null);
 
                 // Check non-generic
                 writer.WriteCollection(new ArrayList { 1, "2" });
@@ -2367,6 +2369,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.IsNull(reader.ReadCollection("null1"));
                 Assert.IsNull(reader.ReadCollection<List<string>, string>("null2", i => null, (o, e) => Assert.Fail()));
                 Assert.IsNull(reader.ReadDictionary("null3"));
+                Assert.IsNull(reader.ReadArray<InteropCollections>("null4"));
 
                 // Check non-generic
                 Assert.AreEqual(new ArrayList { 1, "2" }, reader.ReadCollection("arrayList"));
@@ -2394,6 +2397,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.IsNull(reader.ReadCollection());
                 Assert.IsNull(reader.ReadCollection<List<string>, string>(i => null, (o, e) => Assert.Fail()));
                 Assert.IsNull(reader.ReadDictionary());
+                Assert.IsNull(reader.ReadArray<InteropCollections>());
 
                 // Check non-generic
                 Assert.AreEqual(new ArrayList { 1, "2" }, reader.ReadCollection());
