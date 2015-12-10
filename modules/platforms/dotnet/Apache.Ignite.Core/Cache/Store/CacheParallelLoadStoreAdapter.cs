@@ -103,12 +103,12 @@ namespace Apache.Ignite.Core.Cache.Store
         /// Loads an object. Application developers should implement this method to customize the loading
         /// of a value for a cache entry.
         /// This method is called by a cache when a requested entry is not in the cache.
-        /// If the object can't be loaded <code>null</code> should be returned.
+        /// If the object can't be loaded <c>null</c> should be returned.
         /// </summary>
         /// <param name="key">The key identifying the object being loaded.</param>
         /// <returns>
         /// The value for the entry that is to be stored in the cache
-        /// or <code>null</code> if the object can't be loaded
+        /// or <c>null</c> if the object can't be loaded
         /// </returns>
         public virtual object Load(object key)
         {
