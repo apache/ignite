@@ -2337,6 +2337,28 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 // Check custom
                 writer.WriteCollection("stringCol", new StringCollection {"1", "2"});
+
+                // Check raw
+                WriteRaw(writer.GetRawWriter());
+            }
+
+            private void WriteRaw(IBinaryRawWriter writer)
+            {
+                // Check nulls
+                writer.WriteCollection(null);
+                writer.WriteCollection<string>(null);
+                writer.WriteDictionary(null);
+
+                // Check non-generic
+                writer.WriteCollection(new ArrayList { 1, "2" });
+
+                // Check generic
+                writer.WriteCollection(new List<string> { "1", "2" });
+                writer.WriteCollection(new LinkedList<string>(new[] { "1", "2" }));
+                writer.WriteCollection(new HashSet<string>(new[] { "1", "2" }));
+
+                // Check custom
+                writer.WriteCollection(new StringCollection { "1", "2" });
             }
 
             public void ReadBinary(IBinaryReader reader)
@@ -2361,6 +2383,34 @@ namespace Apache.Ignite.Core.Tests.Binary
                         Assert.AreEqual(2, count);
                         return new StringCollection();
                     }, (col, el) => col.Add(el)));
+
+                // Check raw
+                ReadRaw(reader.GetRawReader());
+            }
+
+            private void ReadRaw(IBinaryRawReader reader)
+            {
+                // Check nulls
+                Assert.IsNull(reader.ReadCollection());
+                Assert.IsNull(reader.ReadCollection<List<string>, string>(i => null, (o, e) => Assert.Fail()));
+                Assert.IsNull(reader.ReadDictionary());
+
+                // Check non-generic
+                Assert.AreEqual(new ArrayList { 1, "2" }, reader.ReadCollection());
+
+                // Check generic
+                Assert.AreEqual(new ArrayList { "1", "2" }, reader.ReadCollection());
+                Assert.AreEqual(new LinkedList<object>(new object[] { "1", "2" }), reader.ReadCollection());
+                Assert.AreEqual(new HashSet<object>(new object[] { "1", "2" }), reader.ReadCollection());
+
+                // Check custom
+                Assert.AreEqual(new StringCollection {"1", "2"},
+                    reader.ReadCollection<StringCollection, string>(
+                        count =>
+                        {
+                            Assert.AreEqual(2, count);
+                            return new StringCollection();
+                        }, (col, el) => col.Add(el)));
             }
         }
     }
