@@ -788,6 +788,7 @@ public class PortableClassDescriptor {
      *
      * @return {@code true} if to use, {@code false} otherwise.
      */
+    @SuppressWarnings("unchecked")
     private boolean initUseOptimizedMarshallerFlag() {
         for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
             try {

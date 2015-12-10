@@ -217,6 +217,13 @@ public class PortableContext implements Externalizable {
     }
 
     /**
+     * @return Ignite configuration.
+     */
+    public IgniteConfiguration configuration(){
+        return igniteCfg;
+    }
+
+    /**
      * @param marsh Portable marshaller.
      * @param cfg Configuration.
      * @throws BinaryObjectException In case of error.

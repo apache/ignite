@@ -286,7 +286,7 @@ public class IgnitionEx {
      *      {@code false} otherwise (if it was not started).
      */
     public static boolean stop(boolean cancel) {
-        return stop(null, cancel);
+        return stop(null, cancel, false);
     }
 
     /**
@@ -304,12 +304,19 @@ public class IgnitionEx {
      *      execution. If {@code false}, then jobs currently running will not be
      *      canceled. In either case, grid node will wait for completion of all
      *      jobs running on it before stopping.
+     * @param stopNotStarted If {@code true} and node start did not finish then interrupts starting thread.
      * @return {@code true} if named grid instance was indeed found and stopped,
      *      {@code false} otherwise (the instance with given {@code name} was
      *      not found).
      */
-    public static boolean stop(@Nullable String name, boolean cancel) {
+    public static boolean stop(@Nullable String name, boolean cancel, boolean stopNotStarted) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+
+        if (grid != null && stopNotStarted && grid.startLatch.getCount() != 0) {
+            grid.starterThreadInterrupted = true;
+
+            grid.starterThread.interrupt();
+        }
 
         if (grid != null && grid.state() == STARTED) {
             grid.stop(cancel);
@@ -963,7 +970,15 @@ public class IgnitionEx {
         boolean success = false;
 
         try {
-            grid.start(startCtx);
+            try {
+                grid.start(startCtx);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                if (grid.starterThreadInterrupted)
+                    Thread.interrupted();
+
+                throw e;
+            }
 
             notifyStateChange(name, STARTED);
 
@@ -1412,6 +1427,9 @@ public class IgnitionEx {
          */
         @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
         private Thread starterThread;
+
+        /** */
+        private boolean starterThreadInterrupted;
 
         /**
          * Creates un-started named instance.

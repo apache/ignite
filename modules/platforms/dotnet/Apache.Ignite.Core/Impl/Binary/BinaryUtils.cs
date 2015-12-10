@@ -1120,6 +1120,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 default:
                     return ReadCollection0<ArrayList, object>(ctx, len, count => new ArrayList(),
                         (list, item) => list.Add(item));
+                if (colType == CollectionLinkedList)
+                    res = new LinkedList<object>();
+                else
+                    res = new ArrayList(len);
             }
         }
 
