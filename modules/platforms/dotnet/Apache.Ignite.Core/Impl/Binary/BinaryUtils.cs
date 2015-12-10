@@ -196,6 +196,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Collection: linked list. */
         public const byte CollectionLinkedList = 2;
         
+        /** Collection: HashSet. */
+        public const byte CollectionHashSet = 3;
+        
+        /** Collection: LinkedHashSet. */
+        public const byte CollectionLinkedHashSet = 4;
+        
         /** Map: custom. */
         public const byte MapCustom = 0;
 
@@ -1105,17 +1111,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public static IEnumerable ReadCollection(BinaryReader ctx)
         {
-            IBinaryStream stream = ctx.Stream;
+            int len = ctx.ReadInt();
 
-            int len = stream.ReadInt();
-
-            byte colType = ctx.Stream.ReadByte();
+            byte colType = ctx.ReadByte();
 
             switch (colType)
             {
                 case CollectionLinkedList:
                     return ReadCollection0<LinkedList<object>, object>(ctx, len, count => new LinkedList<object>(),
                         (list, item) => list.AddLast(item));
+
+                case CollectionHashSet:
+                case CollectionLinkedHashSet:
+                    return ReadCollection0<HashSet<object>, object>(ctx, len, count => new HashSet<object>(),
+                        (list, item) => list.Add(item));
 
                 default:
                     return ReadCollection0<ArrayList, object>(ctx, len, count => new ArrayList(),
