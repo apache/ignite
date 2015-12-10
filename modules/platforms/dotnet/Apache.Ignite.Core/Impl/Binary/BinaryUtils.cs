@@ -1058,17 +1058,98 @@ namespace Apache.Ignite.Core.Impl.Binary
             return vals;
         }
 
-        /**
-         * <summary>Write collection.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         */
+        /// <summary>
+        /// Write collection.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
         public static void WriteCollection(IEnumerable val, BinaryWriter ctx)
         {
             Debug.Assert(val != null);
             Debug.Assert(ctx != null);
 
             WriteCollection(val, ctx, GetCollectionTypeCode(val.GetType()));
+        }
+
+        /// <summary>
+        /// Write collection.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        public static void WriteCollection<T>(IEnumerable<T> val, BinaryWriter ctx)
+        {
+            Debug.Assert(val != null);
+            Debug.Assert(ctx != null);
+
+            WriteCollection(val, ctx, GetCollectionTypeCode(val.GetType()));
+        }
+
+        /// <summary>
+        /// Write non-null collection with known type.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        /// <param name="colType">Collection type.</param>
+        public static void WriteCollection(IEnumerable val, BinaryWriter ctx, byte colType)
+        {
+            WriteCollection0(val, (writer, col) =>
+            {
+                var count = 0;
+
+                foreach (var elem in col)
+                {
+                    ctx.Write(elem);
+                    count++;
+                }
+
+                return count;
+            }, ctx, colType);
+        }
+
+        /// <summary>
+        /// Write non-null collection with known type.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        /// <param name="colType">Collection type.</param>
+        public static void WriteCollection<T>(IEnumerable<T> val, BinaryWriter ctx, byte colType)
+        {
+            WriteCollection0(val, (writer, col) =>
+            {
+                var count = 0;
+
+                foreach (var elem in col)
+                {
+                    ctx.Write(elem);
+                    count++;
+                }
+
+                return count;
+            }, ctx, colType);
+        }
+
+        private static void WriteCollection0<T>(T val, Func<BinaryWriter, T, int> writeAction, 
+            BinaryWriter ctx, byte colType)
+        {
+            Debug.Assert(val != null);
+            Debug.Assert(ctx != null);
+
+            var stream = ctx.Stream;
+
+            var countPos = stream.Position;
+
+            stream.WriteInt(0); // reserve for count
+
+            stream.WriteByte(colType);
+
+            var count = writeAction(ctx, val);
+
+            var endPos = stream.Position;
+
+            stream.Seek(countPos, SeekOrigin.Begin);
+            stream.WriteInt(count);
+
+            stream.Seek(endPos, SeekOrigin.Begin);
         }
 
         /// <summary>
@@ -1097,41 +1178,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 colType = type == typeof(ArrayList) ? CollectionArrayList : CollectionCustom;
 
             return colType;
-        }
-
-        /// <summary>
-        /// Write non-null collection with known type.
-        /// </summary>
-        /// <param name="val">Value.</param>
-        /// <param name="ctx">Write context.</param>
-        /// <param name="colType">Collection type.</param>
-        public static void WriteCollection(IEnumerable val, BinaryWriter ctx, byte colType)
-        {
-            Debug.Assert(val != null);
-            Debug.Assert(ctx != null);
-
-            var stream = ctx.Stream;
-
-            var countPos = stream.Position;
-
-            var count = 0;
-
-            stream.WriteInt(0); // reserve for count
-
-            stream.WriteByte(colType);
-
-            foreach (var elem in val)
-            {
-                ctx.Write(elem);
-                count++;
-            }
-
-            var endPos = stream.Position;
-
-            stream.Seek(countPos, SeekOrigin.Begin);
-            stream.WriteInt(count);
-
-            stream.Seek(endPos, SeekOrigin.Begin);
         }
 
         /// <summary>
