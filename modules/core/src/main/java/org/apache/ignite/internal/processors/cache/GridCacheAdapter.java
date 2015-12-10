@@ -4753,14 +4753,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         KeyCacheObject key = entry.key();
 
-        Object key0 = key.value(ctx.cacheObjectContext(), true);
-        Object val0 = val.value(ctx.cacheObjectContext(), true);
-
-        if (deserializePortable) {
-            key0 = ctx.unwrapPortableIfNeeded(key0, true);
-            val0 = ctx.unwrapPortableIfNeeded(val0, true);
-        }
-
+        Object key0 = ctx.unwrapPortableIfNeeded(key, !deserializePortable, true);
+        Object val0 = ctx.unwrapPortableIfNeeded(val, !deserializePortable, true);
+        
         return new CacheEntryImpl<>((K)key0, (V)val0, entry.version());
     }
 
