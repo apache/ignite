@@ -192,7 +192,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
             else {
                 U.warn(log, "Received message without registered handler (will ignore) [msg=" + cacheMsg +
-                    ", nodeId=" + nodeId + ']');
+                    ", nodeId=" + nodeId +
+                    ", locTopVer=" + cctx.exchange().readyAffinityVersion() +
+                    ", msgTopVer=" + cacheMsg.topologyVersion() +
+                    ", cacheDesc=" + cctx.cache().cacheDescriptor(cacheMsg.cacheId()) + ']');
             }
 
             return;

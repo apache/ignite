@@ -42,10 +42,12 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
+import sun.misc.Unsafe;
 
 import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
@@ -54,6 +56,9 @@ import static java.lang.reflect.Modifier.isTransient;
  * Portable class descriptor.
  */
 public class PortableClassDescriptor {
+    /** */
+    public static final Unsafe UNSAFE = GridUnsafe.unsafe();
+
     /** */
     private final PortableContext ctx;
 
@@ -228,7 +233,8 @@ public class PortableClassDescriptor {
                 break;
 
             case OBJECT:
-                ctor = constructor(cls);
+                // Must not use constructor to honor transient fields semantics.
+                ctor = null;
                 ArrayList<BinaryFieldAccessor> fields0 = new ArrayList<>();
                 stableFieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
 
@@ -748,10 +754,8 @@ public class PortableClassDescriptor {
      * @throws BinaryObjectException In case of error.
      */
     private Object newInstance() throws BinaryObjectException {
-        assert ctor != null;
-
         try {
-            return ctor.newInstance();
+            return ctor != null ? ctor.newInstance() : UNSAFE.allocateInstance(cls);
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
@@ -799,7 +803,7 @@ public class PortableClassDescriptor {
                     writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class)
                     return true;
             }
-            catch (NoSuchMethodException e) {
+            catch (NoSuchMethodException ignored) {
                 // No-op.
             }
         }
