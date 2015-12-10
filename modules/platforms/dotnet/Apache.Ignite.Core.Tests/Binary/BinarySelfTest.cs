@@ -25,6 +25,8 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Collections.Specialized;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
@@ -2332,6 +2334,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteCollection("list", new List<string> {"1", "2"});
                 writer.WriteCollection("linkedList", new LinkedList<string>(new[] {"1", "2"}));
                 writer.WriteCollection("hashSet", new HashSet<string>(new[] {"1", "2"}));
+
+                // Check custom
+                writer.WriteCollection("stringCol", new StringCollection {"1", "2"});
             }
 
             public void ReadBinary(IBinaryReader reader)
@@ -2348,6 +2353,14 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(new ArrayList { "1", "2" }, reader.ReadCollection("list"));
                 Assert.AreEqual(new LinkedList<object>(new object[] {"1", "2"}), reader.ReadCollection("linkedList"));
                 Assert.AreEqual(new HashSet<object>(new object[] {"1", "2"}), reader.ReadCollection("hashSet"));
+
+                // Check custom
+                Assert.AreEqual(new StringCollection {"1", "2"},
+                    reader.ReadCollection<StringCollection, string>("stringCol", count =>
+                    {
+                        Assert.AreEqual(2, count);
+                        return new StringCollection();
+                    }, (col, el) => col.Add(el)));
             }
         }
     }
