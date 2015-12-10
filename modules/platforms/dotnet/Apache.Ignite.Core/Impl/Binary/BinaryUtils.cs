@@ -1252,35 +1252,38 @@ namespace Apache.Ignite.Core.Impl.Binary
             return col;
         }
 
-        /**
-         * <summary>Write dictionary.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         */
+        /// <summary>
+        /// Write dictionary.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
         public static void WriteDictionary(IDictionary val, BinaryWriter ctx)
         {
-            var valType = val.GetType();
+            Debug.Assert(val != null);
+            Debug.Assert(ctx != null);
 
-            byte dictType;
-
-            if (valType.IsGenericType)
-            {
-                var genType = valType.GetGenericTypeDefinition();
-
-                dictType = genType == typeof (Dictionary<,>) ? MapHashMap : MapCustom;
-            }
-            else
-                dictType = valType == typeof (Hashtable) ? MapHashMap : MapCustom;
-
-            WriteDictionary(val, ctx, dictType);
+            WriteDictionary(val, ctx, GetDictionaryTypeCode(val.GetType()));
         }
 
-        /**
-         * <summary>Write non-null dictionary with known type.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         * <param name="dictType">Dictionary type.</param>
-         */
+        /// <summary>
+        /// Write dictionary.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        public static void WriteDictionary<TK, TV>(IDictionary<TK, TV> val, BinaryWriter ctx)
+        {
+            Debug.Assert(val != null);
+            Debug.Assert(ctx != null);
+
+            WriteDictionary(val, ctx, GetDictionaryTypeCode(val.GetType()));
+        }
+
+        /// <summary>
+        /// Write non-null dictionary with known type.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        /// <param name="dictType">Dictionary type.</param>
         public static void WriteDictionary(IDictionary val, BinaryWriter ctx, byte dictType)
         {
             ctx.Stream.WriteInt(val.Count);
@@ -1292,6 +1295,40 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ctx.Write(entry.Key);
                 ctx.Write(entry.Value);
             }
+        }
+
+        /// <summary>
+        /// Write non-null dictionary with known type.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        /// <param name="dictType">Dictionary type.</param>
+        public static void WriteDictionary<TK, TV>(IDictionary<TK, TV> val, BinaryWriter ctx, byte dictType)
+        {
+            ctx.Stream.WriteInt(val.Count);
+
+            ctx.Stream.WriteByte(dictType);
+
+            foreach (var entry in val)
+            {
+                ctx.Write(entry.Key);
+                ctx.Write(entry.Value);
+            }
+        }
+
+        /// <summary>
+        /// Gets the dictionary type code.
+        /// </summary>
+        /// <param name="valType">Type of the value.</param>
+        /// <returns></returns>
+        private static byte GetDictionaryTypeCode(Type valType)
+        {
+            Debug.Assert(valType != null);
+
+            if (valType.IsGenericType)
+                return valType.GetGenericTypeDefinition() == typeof (Dictionary<,>) ? MapHashMap : MapCustom;
+
+            return valType == typeof(Hashtable) ? MapHashMap : MapCustom;
         }
 
         /**

@@ -229,5 +229,17 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         /// <param name="val">Dictionary.</param>
         void WriteDictionary(IDictionary val);
+
+        /// <summary>
+        /// Writes a dictionary in interoperable form.
+        /// 
+        /// Use this method to communicate with other platforms 
+        /// or with nodes that need to read dictionary elements in binary form.
+        /// 
+        /// When there is no need for binarization or interoperability, please use <see cref="WriteObject{T}" />,
+        /// which will properly preserve generic dictionary type.
+        /// </summary>
+        /// <param name="val">Dictionary.</param>
+        void WriteDictionary<TK, TV>(IDictionary<TK, TV> val);
     }
 }
