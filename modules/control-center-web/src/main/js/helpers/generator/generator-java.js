@@ -1316,7 +1316,7 @@ $generatorJava.clusterMetadatas = function (caches, res) {
                     res.line(" * Create JDBC type for " + type + ".");
                     res.line(" *");
                     res.line(" * @param cacheName Cache name.");
-                    res.line(" * @returns Configured JDBC type.");
+                    res.line(" * @return Configured JDBC type.");
                     res.line(" */");
                     res.startBlock("private static JdbcType jdbcType" + type + "(String cacheName) {");
 
@@ -1339,7 +1339,8 @@ $generatorJava.clusterMetadatas = function (caches, res) {
                 if ($commonUtils.isDefinedAndNotEmpty(meta.fields)) {
                     res.line("/**");
                     res.line(" * Create SQL Query descriptor for " + type + ".");
-                    res.line(" * @returns Configured query entity.");
+                    res.line(" *");
+                    res.line(" * @return Configured query entity.");
                     res.line(" */");
                     res.startBlock("private static QueryEntity queryEntity" + type + "() {");
 
