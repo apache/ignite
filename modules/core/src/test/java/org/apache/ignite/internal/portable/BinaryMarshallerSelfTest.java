@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
@@ -380,6 +381,29 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         map.put(3, "str3");
 
         assertEquals(map, marshalUnmarshal(map));
+    }
+
+    /**
+     * Test serialization of custom collections.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testCustomCollections() throws Exception {
+        CustomCollections cc = new CustomCollections();
+
+        cc.list.add(1);
+        cc.customList.add(2);
+
+        CustomCollections copiedCc = marshalUnmarshal(cc);
+
+        assert copiedCc.customList.getClass().equals(CustomArrayList.class);
+
+        assertEquals(cc.list.size(), copiedCc.list.size());
+        assertEquals(cc.customList.size(), copiedCc.customList.size());
+
+        assertEquals(cc.list.get(0), copiedCc.list.get(0));
+        assertEquals(cc.customList.get(0), copiedCc.customList.get(0));
     }
 
     /**
@@ -3457,6 +3481,21 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             val2 = reader.readInt("val2");
             val3 = reader.readInt("val3");
         }
+    }
+
+    /**
+     * Custom array list.
+     */
+    private static class CustomArrayList extends ArrayList {
+        // No-op.
+    }
+
+    /**
+     * Holder for non-stadard collections.
+     */
+    private static class CustomCollections {
+        public List list = new ArrayList();
+        public List customList = new CustomArrayList();
     }
 
     /**
