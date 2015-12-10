@@ -51,7 +51,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -404,6 +406,27 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(cc.list.get(0), copiedCc.list.get(0));
         assertEquals(cc.customList.get(0), copiedCc.customList.get(0));
+    }
+
+    /**
+     * Test custom collections with factories.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testCustomCollectionsWithFactory() throws Exception {
+        CustomCollectionsWithFactory cc = new CustomCollectionsWithFactory();
+
+        cc.list.add(new DummyHolder(1));
+        cc.map.put(new DummyHolder(2), new DummyHolder(3));
+
+        CustomCollectionsWithFactory copiedCc = marshalUnmarshal(cc);
+
+        assertEquals(cc.list.size(), copiedCc.list.size());
+        assertEquals(cc.map.size(), copiedCc.map.size());
+
+        assertEquals(cc.list.get(0), copiedCc.list.get(0));
+        assertEquals(cc.map.get(new DummyHolder(2)), copiedCc.map.get(new DummyHolder(2)));
     }
 
     /**
@@ -3491,11 +3514,72 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Custom hash map.
+     */
+    private static class CustomHashMap extends HashMap {
+        // No-op.
+    }
+
+    /**
      * Holder for non-stadard collections.
      */
     private static class CustomCollections {
         public List list = new ArrayList();
         public List customList = new CustomArrayList();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static class CustomCollectionsWithFactory implements Binarylizable {
+        public List list = new CustomArrayList();
+        public Map map = new CustomHashMap();
+
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.writeCollection("list", list);
+            writer.writeMap("map", map);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            list = (List)reader.readCollection("list", new BinaryCollectionFactory<Object>() {
+                @Override public Collection<Object> create(int size) {
+                    return new CustomArrayList();
+                }
+            });
+
+            map = reader.readMap("map", new BinaryMapFactory<Object, Object>() {
+                @Override public Map<Object, Object> create(int size) {
+                    return new CustomHashMap();
+                }
+            });
+        }
+    }
+
+    /**
+     * Dummy value holder.
+     */
+    private static class DummyHolder {
+        /** Value. */
+        public int val;
+
+        /**
+         * Constructor.
+         *
+         * @param val Value.
+         */
+        public DummyHolder(int val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            return o != null && o instanceof DummyHolder && ((DummyHolder)o).val == val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val;
+        }
     }
 
     /**
