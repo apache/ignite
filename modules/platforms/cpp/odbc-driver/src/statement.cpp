@@ -18,6 +18,7 @@
 #include "ignite/odbc/query/data_query.h"
 #include "ignite/odbc/query/column_metadata_query.h"
 #include "ignite/odbc/query/table_metadata_query.h"
+#include "ignite/odbc/query/foreign_keys_query.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
@@ -123,6 +124,20 @@ namespace ignite
                 cache = connection.GetCache();
 
             currentQuery.reset(new query::TableMetadataQuery(connection, catalog, cache, table, tableType));
+
+            return currentQuery->Execute();
+        }
+
+        bool Statement::ExecuteGetForeignKeysQuery(const std::string& primaryCatalog,
+            const std::string& primarySchema, const std::string& primaryTable,
+            const std::string& foreignCatalog, const std::string& foreignSchema,
+            const std::string& foreignTable)
+        {
+            if (currentQuery.get())
+                currentQuery->Close();
+
+            currentQuery.reset(new query::ForeignKeysQuery(connection, primaryCatalog, primarySchema, 
+                primaryTable, foreignCatalog, foreignSchema, foreignTable));
 
             return currentQuery->Execute();
         }
