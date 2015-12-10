@@ -490,7 +490,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public IEnumerable ReadCollection()
         {
-            return BinaryUtils.ReadCollection(this);
+            return Read(BinaryUtils.ReadCollection, BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */
