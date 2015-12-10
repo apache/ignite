@@ -546,7 +546,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Object.
      */
     private Object deserializeValue(@Nullable CacheObjectContext coCtx) {
-        // TODO: IGNITE-1272 - Deserialize with proper class loader.
         BinaryReaderExImpl reader = reader(null);
 
         Object obj0 = reader.deserialize();
