@@ -948,10 +948,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeCollection);
 
-            if (val == null)
-                WriteNullField();
-            else
-                WriteCollection(val);
+            WriteCollection(val);
         }
 
         /** <inheritdoc /> */
@@ -967,8 +964,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Collection.</param>
         public void WriteCollection(IEnumerable val)
         {
-            WriteByte(BinaryUtils.TypeCollection);
-            BinaryUtils.WriteCollection(val, this);
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                WriteByte(BinaryUtils.TypeCollection);
+                BinaryUtils.WriteCollection(val, this);
+            }
         }
 
         /** <inheritdoc /> */
@@ -986,11 +988,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void WriteDictionary(string fieldName, IDictionary val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeDictionary);
-
-            if (val == null)
-                WriteNullField();
-            else
-                WriteDictionary(val);
+            WriteDictionary(val);
         }
 
         /// <summary>
@@ -999,8 +997,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(IDictionary val)
         {
-            WriteByte(BinaryUtils.TypeDictionary);
-            BinaryUtils.WriteDictionary(val, this);
+            if (val == null)
+                WriteNullField();
+            {
+                WriteByte(BinaryUtils.TypeDictionary);
+                BinaryUtils.WriteDictionary(val, this);
+            }
         }
 
         /// <summary>
