@@ -145,6 +145,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        internal static IUnmanagedTarget ProcessorCreateCache(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = JNI.ProcessorCreateCacheFromConfig(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
+        }
+
         internal static IUnmanagedTarget ProcessorGetOrCreateCache(IUnmanagedTarget target, string name)
         {
             sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
@@ -159,6 +166,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 Marshal.FreeHGlobal(new IntPtr(name0));
             }
+        }
+
+        internal static IUnmanagedTarget ProcessorGetOrCreateCache(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = JNI.ProcessorGetOrCreateCacheFromConfig(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
         }
 
         internal static IUnmanagedTarget ProcessorAffinity(IUnmanagedTarget target, string name)
