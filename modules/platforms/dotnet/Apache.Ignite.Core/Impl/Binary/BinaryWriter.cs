@@ -944,7 +944,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Collection.</param>
-        public void WriteCollection(string fieldName, ICollection val)
+        public void WriteCollection(string fieldName, IEnumerable val)
         {
             WriteFieldId(fieldName, BinaryUtils.TypeCollection);
 
@@ -954,14 +954,28 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteCollection(val);
         }
 
+        /** <inheritdoc /> */
+        public void WriteCollection<T>(string fieldName, IEnumerable<T> val)
+        {
+            // TODO
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Write collection.
         /// </summary>
         /// <param name="val">Collection.</param>
-        public void WriteCollection(ICollection val)
+        public void WriteCollection(IEnumerable val)
         {
             WriteByte(BinaryUtils.TypeCollection);
             BinaryUtils.WriteCollection(val, this);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteCollection<T>(IEnumerable<T> val)
+        {
+            // TODO
+            throw new NotImplementedException();
         }
 
         /// <summary>
