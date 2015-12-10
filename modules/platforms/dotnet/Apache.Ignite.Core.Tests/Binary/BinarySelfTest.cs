@@ -2342,7 +2342,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 WriteRaw(writer.GetRawWriter());
             }
 
-            private void WriteRaw(IBinaryRawWriter writer)
+            private static void WriteRaw(IBinaryRawWriter writer)
             {
                 // Check nulls
                 writer.WriteCollection(null);
@@ -2388,7 +2388,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 ReadRaw(reader.GetRawReader());
             }
 
-            private void ReadRaw(IBinaryRawReader reader)
+            private static void ReadRaw(IBinaryRawReader reader)
             {
                 // Check nulls
                 Assert.IsNull(reader.ReadCollection());
