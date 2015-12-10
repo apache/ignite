@@ -2335,6 +2335,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteCollection("list", new List<string> {"1", "2"});
                 writer.WriteCollection("linkedList", new LinkedList<string>(new[] {"1", "2"}));
                 writer.WriteCollection("hashSet", new HashSet<string>(new[] {"1", "2"}));
+                writer.WriteArray("arr", new InteropCollections[0]);
 
                 // Check custom
                 writer.WriteCollection("stringCol", new StringCollection {"1", "2"});
@@ -2358,6 +2359,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteCollection(new List<string> { "1", "2" });
                 writer.WriteCollection(new LinkedList<string>(new[] { "1", "2" }));
                 writer.WriteCollection(new HashSet<string>(new[] { "1", "2" }));
+                writer.WriteArray(new InteropCollections[0]);
 
                 // Check custom
                 writer.WriteCollection(new StringCollection { "1", "2" });
@@ -2378,6 +2380,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(new ArrayList { "1", "2" }, reader.ReadCollection("list"));
                 Assert.AreEqual(new LinkedList<object>(new object[] {"1", "2"}), reader.ReadCollection("linkedList"));
                 Assert.AreEqual(new HashSet<object>(new object[] {"1", "2"}), reader.ReadCollection("hashSet"));
+                Assert.AreEqual(new InteropCollections[0], reader.ReadArray<InteropCollections>("arr"));
 
                 // Check custom
                 Assert.AreEqual(new StringCollection {"1", "2"},
@@ -2406,6 +2409,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(new ArrayList { "1", "2" }, reader.ReadCollection());
                 Assert.AreEqual(new LinkedList<object>(new object[] { "1", "2" }), reader.ReadCollection());
                 Assert.AreEqual(new HashSet<object>(new object[] { "1", "2" }), reader.ReadCollection());
+                Assert.AreEqual(new InteropCollections[0], reader.ReadArray<InteropCollections>());
 
                 // Check custom
                 Assert.AreEqual(new StringCollection {"1", "2"},
