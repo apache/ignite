@@ -1128,13 +1128,20 @@ namespace Apache.Ignite.Core.Impl.Binary
             }, ctx, colType);
         }
 
-        private static void WriteCollection0<T>(T val, Func<BinaryWriter, T, int> writeAction, 
-            BinaryWriter ctx, byte colType)
+        /// <summary>
+        /// Writes the collection.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <param name="writer">The writer.</param>
+        /// <param name="colType">Type of the col.</param>
+        private static void WriteCollection0<T>(T val, Func<BinaryWriter, T, int> writeAction,
+                    BinaryWriter writer, byte colType)
         {
             Debug.Assert(val != null);
-            Debug.Assert(ctx != null);
+            Debug.Assert(writer != null);
 
-            var stream = ctx.Stream;
+            var stream = writer.Stream;
 
             var countPos = stream.Position;
 
@@ -1142,7 +1149,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             stream.WriteByte(colType);
 
-            var count = writeAction(ctx, val);
+            var count = writeAction(writer, val);
 
             var endPos = stream.Position;
 
