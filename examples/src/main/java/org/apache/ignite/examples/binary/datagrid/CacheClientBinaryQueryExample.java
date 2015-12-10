@@ -81,8 +81,8 @@ public class CacheClientBinaryQueryExample {
 
             employeeCacheCfg.setQueryEntities(Arrays.asList(createEmployeeQueryEntity()));
 
-            try (IgniteCache<Integer, Organization> orgCache = ignite.createCache(orgCacheCfg);
-                 IgniteCache<EmployeeKey, Employee> employeeCache = ignite.createCache(employeeCacheCfg)
+            try (IgniteCache<Integer, Organization> orgCache = ignite.getOrCreateCache(orgCacheCfg);
+                 IgniteCache<EmployeeKey, Employee> employeeCache = ignite.getOrCreateCache(employeeCacheCfg)
             ) {
                 if (ignite.cluster().forDataNodes(orgCache.getName()).nodes().isEmpty()) {
                     System.out.println();

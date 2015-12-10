@@ -19,14 +19,15 @@ package org.apache.ignite.internal.portable.builder;
 
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.portable.BinaryMetadata;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.BinaryObjectExImpl;
+import org.apache.ignite.internal.portable.BinaryWriterExImpl;
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableUtils;
-import org.apache.ignite.internal.portable.BinaryWriterExImpl;
-import org.apache.ignite.internal.util.*;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 /**
  *
@@ -118,13 +119,7 @@ class PortableBuilderSerializer {
             writer.writeByte(GridPortableMarshaller.COL);
             writer.writeInt(c.size());
 
-            byte colType;
-
-            if (c instanceof GridConcurrentSkipListSet)
-                colType = GridPortableMarshaller.CONC_SKIP_LIST_SET;
-            else
-                colType = writer.context().collectionType(c.getClass());
-
+            byte colType = writer.context().collectionType(c.getClass());
 
             writer.writeByte(colType);
 

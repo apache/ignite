@@ -2002,7 +2002,7 @@ public class IgniteConfiguration {
      *
      * @param cacheKeyCfg Cache key configuration.
      */
-    public void setCacheKeyCfg(CacheKeyConfiguration... cacheKeyCfg) {
+    public void setCacheKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
         this.cacheKeyCfg = cacheKeyCfg;
     }
 

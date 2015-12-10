@@ -15,8 +15,19 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.binary;
+
+import java.util.Map;
+
 /**
- * <!-- Package description. -->
- * Contains Optimized marshaller.
+ * Map factory.
  */
-package org.apache.ignite.marshaller.optimized;
+public interface BinaryMapFactory<K, V> {
+    /**
+     * Create collection.
+     *
+     * @param size Amount of elements in collection.
+     * @return Collection.
+     */
+    public Map<K, V> create(int size);
+}

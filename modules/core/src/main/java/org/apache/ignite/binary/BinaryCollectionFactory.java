@@ -15,8 +15,19 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.binary;
+
+import java.util.Collection;
+
 /**
- * <!-- Package description. -->
- * Contains Optimized marshaller.
+ * Collection factory.
  */
-package org.apache.ignite.marshaller.optimized;
+public interface BinaryCollectionFactory<K> {
+    /**
+     * Create collection.
+     *
+     * @param size Amount of elements in collection.
+     * @return Collection.
+     */
+    public Collection<K> create(int size);
+}

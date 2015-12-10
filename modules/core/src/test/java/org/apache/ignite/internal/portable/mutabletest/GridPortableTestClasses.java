@@ -31,6 +31,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+
+import org.apache.ignite.binary.BinaryMapFactory;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.binary.BinaryObject;
 
@@ -315,7 +321,10 @@ public class GridPortableTestClasses {
     /**
      *
      */
-    public static class Address {
+    public static class Address implements Serializable {
+        /** SUID. */
+        private static final long serialVersionUID = 0L;
+
         /** City. */
         public String city;
 
@@ -354,7 +363,10 @@ public class GridPortableTestClasses {
     /**
      *
      */
-    public static class Company {
+    public static class Company implements Serializable {
+        /** SUID. */
+        private static final long serialVersionUID = 0L;
+
         /** ID. */
         public int id;
 
@@ -396,28 +408,50 @@ public class GridPortableTestClasses {
     }
 
     /**
-     *
+     * Companies.
      */
-    public static class AddressBook {
-        /** */
-        private Map<String, List<Company>> companyByStreet = new TreeMap<>();
+    public static class Companies {
+        /** Companies. */
+        private List<Company> companies = new ArrayList<>();
 
         /**
-         * @param street Street.
+         * @param idx Index.
          * @return Company.
          */
-        public List<Company> findCompany(String street) {
-            return companyByStreet.get(street);
+        public Company get(int idx) {
+            return companies.get(idx);
         }
 
         /**
          * @param company Company.
          */
+        public void add(Company company) {
+            companies.add(company);
+        }
+
+        /**
+         * @return Size.
+         */
+        public int size() {
+            return companies.size();
+        }
+    }
+
+    /**
+     *
+     */
+    public static class Addresses implements Binarylizable {
+        /** */
+        private Map<String, Companies> companyByStreet = new TreeMap<>();
+
+        /**
+         * @param company Company.
+         */
         public void addCompany(Company company) {
-            List<Company> list = companyByStreet.get(company.address.street);
+            Companies list = companyByStreet.get(company.address.street);
 
             if (list == null) {
-                list = new ArrayList<>();
+                list = new Companies();
 
                 companyByStreet.put(company.address.street, list);
             }
@@ -428,16 +462,23 @@ public class GridPortableTestClasses {
         /**
          * @return map
          */
-        public Map<String, List<Company>> getCompanyByStreet() {
+        public Map<String, Companies> getCompanyByStreet() {
             return companyByStreet;
         }
 
-        /**
-         * @param companyByStreet map
-         */
-        public void setCompanyByStreet(Map<String, List<Company>> companyByStreet) {
-            this.companyByStreet = companyByStreet;
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.writeMap("companyByStreet", companyByStreet);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            companyByStreet = reader.readMap("companyByStreet", new BinaryMapFactory<String, Companies>() {
+                @Override public Map<String, Companies> create(int size) {
+                    return new TreeMap<>();
+                }
+            });
         }
     }
-
 }
