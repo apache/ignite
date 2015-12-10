@@ -1332,32 +1332,45 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Reads the dictionary.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns>
+        /// Dictionary.
+        /// </returns>
+        public static IDictionary ReadDictionary(BinaryReader reader)
+        {
+            return ReadDictionary<Hashtable, object, object>(reader, count => new Hashtable(count),
+                (dict, key, val) => dict[key] = val);
+        }
+
+        /// <summary>
         /// Read dictionary.
         /// </summary>
-        /// <param name="ctx">Context.</param>
+        /// <param name="reader">Context.</param>
         /// <param name="factory">Factory delegate.</param>
         /// <param name="adder">The adder.</param>
         /// <returns>
         /// Dictionary.
         /// </returns>
-        public static TDictionary ReadDictionary<TDictionary, TK, TV>(BinaryReader ctx, Func<int, TDictionary> factory,
+        public static TDictionary ReadDictionary<TDictionary, TK, TV>(BinaryReader reader, Func<int, TDictionary> factory,
             Action<TDictionary, TK, TV> adder)
         {
-            Debug.Assert(ctx != null);
+            Debug.Assert(reader != null);
             Debug.Assert(factory != null);
             Debug.Assert(adder != null);
 
-            IBinaryStream stream = ctx.Stream;
+            IBinaryStream stream = reader.Stream;
 
             int len = stream.ReadInt();
 
             // Skip dictionary type as we can do nothing with it here.
-            ctx.Stream.ReadByte();
+            reader.Stream.ReadByte();
 
             var res = factory(len);
 
             for (int i = 0; i < len; i++)
-                adder(res, ctx.Deserialize<TK>(), ctx.Deserialize<TV>());
+                adder(res, reader.Deserialize<TK>(), reader.Deserialize<TV>());
 
             return res;
         }

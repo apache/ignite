@@ -506,25 +506,28 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public IDictionary ReadDictionary(string fieldName)
         {
-            return ReadDictionary(fieldName, null);
+            return ReadField(fieldName, BinaryUtils.ReadDictionary, BinaryUtils.TypeDictionary);
         }
 
         /** <inheritdoc /> */
         public IDictionary ReadDictionary()
         {
-            return ReadDictionary((DictionaryFactory)null);
+            return Read(BinaryUtils.ReadDictionary, BinaryUtils.TypeDictionary);
         }
 
         /** <inheritdoc /> */
-        public IDictionary ReadDictionary(string fieldName, DictionaryFactory factory)
+        public TDictionary ReadDictionary<TDictionary, TK, TV>(string fieldName, Func<int, TDictionary> factory, 
+            Action<TDictionary, TK, TV> adder)
         {
-            return ReadField(fieldName, r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
+            return ReadField(fieldName, reader => BinaryUtils.ReadDictionary(reader, factory, adder), 
+                BinaryUtils.TypeDictionary);
         }
 
         /** <inheritdoc /> */
-        public IDictionary ReadDictionary(DictionaryFactory factory)
+        public TDictionary ReadDictionary<TDictionary, TK, TV>(Func<int, TDictionary> factory, 
+            Action<TDictionary, TK, TV> adder)
         {
-            return Read(r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
+            return Read(reader => BinaryUtils.ReadDictionary(reader, factory, adder), BinaryUtils.TypeDictionary);
         }
 
         /// <summary>

@@ -678,7 +678,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         private static object ReadDictionary(BinaryReader ctx, Type type)
         {
-            return BinaryUtils.ReadDictionary(ctx, null);
+            return BinaryUtils.ReadDictionary(ctx);
         }
 
         /**

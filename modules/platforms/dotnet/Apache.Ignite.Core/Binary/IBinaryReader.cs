@@ -258,7 +258,7 @@ namespace Apache.Ignite.Core.Binary
         /// <returns>
         /// Dictionary.
         /// </returns>
-        IDictionary ReadDictionary<TDictionary, TK, TV>(string fieldName, Func<int, TDictionary> factory,
+        TDictionary ReadDictionary<TDictionary, TK, TV>(string fieldName, Func<int, TDictionary> factory,
             Action<TDictionary, TK, TV> adder);
 
         /// <summary>
