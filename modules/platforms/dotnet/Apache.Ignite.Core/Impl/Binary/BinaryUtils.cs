@@ -1103,46 +1103,73 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Read collection.
+        /// Reads the collection.
         /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <returns>
-        /// Collection.
-        /// </returns>
-        public static IEnumerable ReadCollection(BinaryReader ctx)
+        /// <param name="reader">The reader.</param>
+        /// <returns>Collection.</returns>
+        public static IEnumerable ReadCollection(BinaryReader reader)
         {
-            int len = ctx.ReadInt();
+            int len = reader.ReadInt();
 
-            byte colType = ctx.ReadByte();
+            byte colType = reader.ReadByte();
 
             switch (colType)
             {
                 case CollectionLinkedList:
-                    return ReadCollection0<LinkedList<object>, object>(ctx, len, count => new LinkedList<object>(),
+                    return ReadCollection0<LinkedList<object>, object>(reader, len, count => new LinkedList<object>(),
                         (list, item) => list.AddLast(item));
 
                 case CollectionHashSet:
                 case CollectionLinkedHashSet:
-                    return ReadCollection0<HashSet<object>, object>(ctx, len, count => new HashSet<object>(),
+                    return ReadCollection0<HashSet<object>, object>(reader, len, count => new HashSet<object>(),
                         (list, item) => list.Add(item));
 
                 default:
-                    return ReadCollection0<ArrayList, object>(ctx, len, count => new ArrayList(),
+                    return ReadCollection0<ArrayList, object>(reader, len, count => new ArrayList(),
                         (list, item) => list.Add(item));
             }
         }
 
-        private static TCollection ReadCollection0<TCollection, TElement>(BinaryReader ctx, int count,
-            Func<int, TCollection> factory, Action<TCollection, TElement> adder)
+        /// <summary>
+        /// Reads the collection.
+        /// </summary>
+        /// <typeparam name="TCollection">The type of the collection.</typeparam>
+        /// <typeparam name="TElement">The type of the element.</typeparam>
+        /// <param name="reader">The reader.</param>
+        /// <param name="factory">The factory.</param>
+        /// <param name="adder">The adder.</param>
+        /// <returns>Collection.</returns>
+        public static TCollection ReadCollection<TCollection, TElement>(BinaryReader reader,
+                            Func<int, TCollection> factory, Action<TCollection, TElement> adder)
         {
-            Debug.Assert(ctx != null);
+            int len = reader.ReadInt();
+
+            reader.ReadByte();  // ignore collection type
+
+            return ReadCollection0(reader, len, factory, adder);
+        }
+
+        /// <summary>
+        /// Reads the collection.
+        /// </summary>
+        /// <typeparam name="TCollection">The type of the collection.</typeparam>
+        /// <typeparam name="TElement">The type of the element.</typeparam>
+        /// <param name="reader">The reader.</param>
+        /// <param name="count">The count.</param>
+        /// <param name="factory">The factory.</param>
+        /// <param name="adder">The adder.</param>
+        /// <returns>Collection.</returns>
+        private static TCollection ReadCollection0<TCollection, TElement>(BinaryReader reader, int count,
+                    Func<int, TCollection> factory, Action<TCollection, TElement> adder)
+        {
+            Debug.Assert(reader != null);
             Debug.Assert(factory != null);
             Debug.Assert(adder != null);
 
             var col = factory.Invoke(count);
 
             for (int i = 0; i < count; i++)
-                adder.Invoke(col, ctx.Deserialize<TElement>());
+                adder.Invoke(col, reader.Deserialize<TElement>());
 
             return col;
         }
