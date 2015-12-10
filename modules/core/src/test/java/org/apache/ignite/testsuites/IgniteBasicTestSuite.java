@@ -69,7 +69,7 @@ public class IgniteBasicTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Basic Test Suite");
 
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 300; i++) {
             suite.addTest(new TestSuite(IgniteMessagingWithClientTest.class));
         }
 
