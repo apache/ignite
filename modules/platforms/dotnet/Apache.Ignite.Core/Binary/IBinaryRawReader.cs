@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Binary
         /// Read collection.
         /// </summary>
         /// <returns>Collection.</returns>
-        ICollection ReadCollection();
+        IEnumerable ReadCollection();
 
         /// <summary>
         /// Read collection.

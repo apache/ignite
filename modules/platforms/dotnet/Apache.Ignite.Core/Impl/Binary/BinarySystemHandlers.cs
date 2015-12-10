@@ -670,7 +670,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         private static object ReadCollection(BinaryReader ctx, Type type)
         {
-            return BinaryUtils.ReadCollection(ctx, null, null);
+            return BinaryUtils.ReadCollection(ctx);
         }
 
         /**

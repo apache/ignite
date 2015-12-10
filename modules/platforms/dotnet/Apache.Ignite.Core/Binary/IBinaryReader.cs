@@ -21,20 +21,6 @@ namespace Apache.Ignite.Core.Binary
     using System.Collections;
 
     /// <summary>
-    /// Delegate for collection creation.
-    /// </summary>
-    /// <param name="size">Collection size.</param>
-    /// <returns>Collection.</returns>
-    public delegate ICollection CollectionFactory(int size);
-
-    /// <summary>
-    /// Delegate for adding element to collection.
-    /// </summary>
-    /// <param name="col">Collection.</param>
-    /// <param name="elem">Element to add.</param>
-    public delegate void CollectionAdder(ICollection col, object elem);
-
-    /// <summary>
     /// Delegate for dictionary creation.
     /// </summary>
     /// <param name="size">Dictionary size.</param>
@@ -244,7 +230,7 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Collection.</returns>
-        ICollection ReadCollection(string fieldName);
+        IEnumerable ReadCollection(string fieldName);
 
         /// <summary>
         /// Read named collection.
