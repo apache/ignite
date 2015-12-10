@@ -997,11 +997,30 @@ namespace Apache.Ignite.Core.Impl.Binary
             WriteDictionary(val);
         }
 
+        /** <inheritdoc /> */
+        public void WriteDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val)
+        {
+            WriteFieldId(fieldName, BinaryUtils.TypeDictionary);
+            WriteDictionary(val);
+        }
+
         /// <summary>
         /// Write dictionary.
         /// </summary>
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(IDictionary val)
+        {
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                WriteByte(BinaryUtils.TypeDictionary);
+                BinaryUtils.WriteDictionary(val, this);
+            }
+        }
+
+        /** <inheritdoc /> */
+        public void WriteDictionary<TK, TV>(IDictionary<TK, TV> val)
         {
             if (val == null)
                 WriteNullField();
