@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.portable;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -163,6 +168,43 @@ public class BinaryMetadata implements Externalizable {
         out.writeBoolean(isEnum);
     }
 
+    /**
+     * The object implements the writeExternal method to save its contents
+     * by calling the methods of DataOutput for its primitive values and strings or
+     * calling the writeExternal method for other objects.
+     *
+     * @serialData Overriding methods should use this tag to describe
+     *             the data layout of this Externalizable object.
+     *             List the sequence of element types and, if possible,
+     *             relate the element to a public/protected field and/or
+     *             method of this Externalizable class.
+     *
+     * @param out the stream to write the object to
+     * @exception IOException Includes any I/O exceptions that may occur
+     */
+    public void writeExternal(DataOutput out) throws IOException {
+        out.writeInt(typeId);
+
+        U.writeString(out, typeName);
+
+        for (Map.Entry<String, Integer> fieldEntry : fieldsMap().entrySet()) {
+            out.writeBoolean(true);
+            U.writeString(out, fieldEntry.getKey());
+            out.writeInt(fieldEntry.getValue());
+        }
+        out.writeBoolean(false);
+
+        U.writeString(out, affKeyFieldName);
+
+        for (PortableSchema schema : schemas) {
+            out.writeBoolean(true);
+            schema.writeExternal(out);
+        }
+        out.writeBoolean(false);
+
+        out.writeBoolean(isEnum);
+    }
+
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         typeId = in.readInt();
@@ -170,6 +212,39 @@ public class BinaryMetadata implements Externalizable {
         fields = U.readMap(in);
         affKeyFieldName = U.readString(in);
         schemas = U.readCollection(in);
+        isEnum = in.readBoolean();
+    }
+
+    /**
+     * The object implements the readExternal method to restore its
+     * contents by calling the methods of DataInput for primitive
+     * types and strings or calling readExternal for other objects.  The
+     * readExternal method must read the values in the same sequence
+     * and with the same types as were written by writeExternal.
+     *
+     * @param in the stream to read data from in order to restore the object
+     * @exception IOException if I/O errors occur
+     */
+    public void readExternal(DataInput in) throws IOException {
+        typeId = in.readInt();
+        typeName = U.readString(in);
+
+        fields = new HashMap<>();
+        while (in.readBoolean()) {
+            String fieldName = U.readString(in);
+            int fieldId = in.readInt();
+            fields.put(fieldName, fieldId);
+        }
+
+        affKeyFieldName = U.readString(in);
+
+        schemas = new ArrayList<>();
+        while (in.readBoolean()) {
+            PortableSchema schema = new PortableSchema();
+            schema.readExternal(in);
+            schemas.add(schema);
+        }
+
         isEnum = in.readBoolean();
     }
 
