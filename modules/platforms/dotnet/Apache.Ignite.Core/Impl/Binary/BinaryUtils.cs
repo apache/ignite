@@ -1096,15 +1096,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ctx.Write(elem);
         }
 
-        /**
-         * <summary>Read collection.</summary>
-         * <param name="ctx">Context.</param>
-         * <param name="factory">Factory delegate.</param>
-         * <param name="adder">Adder delegate.</param>
-         * <returns>Collection.</returns>
-         */
-        public static ICollection ReadCollection(BinaryReader ctx,
-            CollectionFactory factory, CollectionAdder adder)
+        /// <summary>
+        /// Read collection.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <returns>
+        /// Collection.
+        /// </returns>
+        public static IEnumerable ReadCollection(BinaryReader ctx)
         {
             IBinaryStream stream = ctx.Stream;
 
@@ -1112,25 +1111,31 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             byte colType = ctx.Stream.ReadByte();
 
-            ICollection res;
-
-            if (factory == null)
+            switch (colType)
             {
-                if (colType == CollectionLinkedList)
-                    res = new LinkedList<object>();
-                else
-                    res = new ArrayList(len);
+                case CollectionLinkedList:
+                    return ReadCollection0<LinkedList<object>, object>(ctx, len, count => new LinkedList<object>(),
+                        (list, item) => list.AddLast(item));
+
+                default:
+                    return ReadCollection0<ArrayList, object>(ctx, len, count => new ArrayList(),
+                        (list, item) => list.Add(item));
             }
-            else
-                res = factory.Invoke(len);
+        }
 
-            if (adder == null)
-                adder = (col, elem) => { ((ArrayList) col).Add(elem); };
+        private static TCollection ReadCollection0<TCollection, TElement>(BinaryReader ctx, int count,
+            Func<int, TCollection> factory, Action<TCollection, TElement> adder)
+        {
+            Debug.Assert(ctx != null);
+            Debug.Assert(factory != null);
+            Debug.Assert(adder != null);
 
-            for (int i = 0; i < len; i++)
-                adder.Invoke(res, ctx.Deserialize<object>());
+            var col = factory.Invoke(count);
 
-            return res;
+            for (int i = 0; i < count; i++)
+                adder.Invoke(col, ctx.Deserialize<TElement>());
+
+            return col;
         }
 
         /**

@@ -253,7 +253,8 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="factory">Factory.</param>
         /// <param name="adder">Adder.</param>
         /// <returns>Collection.</returns>
-        ICollection ReadCollection(string fieldName, CollectionFactory factory, CollectionAdder adder);
+        TCollection ReadCollection<TCollection, TElement>(string fieldName, Func<int, TCollection> factory, 
+            Action<TCollection, TElement> adder);
 
         /// <summary>
         /// Read named dictionary.
