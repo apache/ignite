@@ -167,6 +167,8 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     public void testSuccessTask() throws Exception {
+        generateEvents(null, new GridAllEventsSuccessTestJob()).get();
+
         long tstamp = startTimestamp();
 
         generateEvents(null, new GridAllEventsSuccessTestJob()).get();
@@ -288,7 +290,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
         assert U.currentTimeMillis() > tstamp;
 
-        return tstamp;
+        return U.currentTimeMillis();
     }
 
     /**
