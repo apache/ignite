@@ -93,7 +93,7 @@ public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
      */
     @ProbeBuilder
     public TestProbeBuilder probeConfiguration(TestProbeBuilder probe) {
-        probe.setHeader(Constants.IMPORT_PACKAGE, "*,org.apache.ignite.osgi.activators");
+        probe.setHeader(Constants.IMPORT_PACKAGE, "*,org.apache.ignite.osgi.activators;resolution:=\"optional\"");
 
         return probe;
     }

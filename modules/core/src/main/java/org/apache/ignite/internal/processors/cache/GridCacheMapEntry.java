@@ -136,14 +136,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @GridToStringInclude
     protected GridCacheVersion ver;
 
-    /** Next entry in the linked list. */
-    @GridToStringExclude
-    private volatile GridCacheMapEntry next0;
-
-    /** Next entry in the linked list. */
-    @GridToStringExclude
-    private volatile GridCacheMapEntry next1;
-
     /** Key hash code. */
     @GridToStringInclude
     private final int hash;
@@ -167,16 +159,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param key Cache key.
      * @param hash Key hash value.
      * @param val Entry value.
-     * @param next Next entry in the linked list.
-     * @param hdrId Header id.
      */
-    protected GridCacheMapEntry(GridCacheContext<?, ?> cctx,
+    protected GridCacheMapEntry(
+        GridCacheContext<?, ?> cctx,
         KeyCacheObject key,
         int hash,
-        CacheObject val,
-        GridCacheMapEntry next,
-        int hdrId)
-    {
+        CacheObject val
+    ) {
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
 
@@ -193,8 +182,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         synchronized (this) {
             value(val);
         }
-
-        next(hdrId, next);
 
         ver = cctx.versions().next();
 
@@ -3007,29 +2994,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     int hash() {
         return hash;
-    }
-
-    /**
-     * Gets next entry in bucket linked list within a hash map segment.
-     *
-     * @param segId Segment ID.
-     * @return Next entry.
-     */
-    GridCacheMapEntry next(int segId) {
-        return (segId & 1) == 0 ? next0 : next1;
-    }
-
-    /**
-     * Sets next entry in bucket linked list within a hash map segment.
-     *
-     * @param segId Segment ID.
-     * @param next Next entry.
-     */
-    void next(int segId, @Nullable GridCacheMapEntry next) {
-        if ((segId & 1) == 0)
-            next0 = next;
-        else
-            next1 = next;
     }
 
     /** {@inheritDoc} */

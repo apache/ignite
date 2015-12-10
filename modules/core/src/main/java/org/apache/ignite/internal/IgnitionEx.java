@@ -94,6 +94,7 @@ import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -285,7 +286,7 @@ public class IgnitionEx {
      *      {@code false} otherwise (if it was not started).
      */
     public static boolean stop(boolean cancel) {
-        return stop(null, cancel);
+        return stop(null, cancel, false);
     }
 
     /**
@@ -303,12 +304,19 @@ public class IgnitionEx {
      *      execution. If {@code false}, then jobs currently running will not be
      *      canceled. In either case, grid node will wait for completion of all
      *      jobs running on it before stopping.
+     * @param stopNotStarted If {@code true} and node start did not finish then interrupts starting thread.
      * @return {@code true} if named grid instance was indeed found and stopped,
      *      {@code false} otherwise (the instance with given {@code name} was
      *      not found).
      */
-    public static boolean stop(@Nullable String name, boolean cancel) {
+    public static boolean stop(@Nullable String name, boolean cancel, boolean stopNotStarted) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+
+        if (grid != null && stopNotStarted && grid.startLatch.getCount() != 0) {
+            grid.starterThreadInterrupted = true;
+
+            grid.starterThread.interrupt();
+        }
 
         if (grid != null && grid.state() == STARTED) {
             grid.stop(cancel);
@@ -962,7 +970,15 @@ public class IgnitionEx {
         boolean success = false;
 
         try {
-            grid.start(startCtx);
+            try {
+                grid.start(startCtx);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                if (grid.starterThreadInterrupted)
+                    Thread.interrupted();
+
+                throw e;
+            }
 
             notifyStateChange(name, STARTED);
 
@@ -1194,6 +1210,20 @@ public class IgnitionEx {
     }
 
     /**
+     * Gets a name of the grid, which is owner of current thread. An Exception is thrown if
+     * current thread is not an {@link IgniteThread}.
+     *
+     * @return Grid instance related to current thread
+     * @throws IllegalArgumentException Thrown to indicate, that current thread is not an {@link IgniteThread}.
+     */
+    public static IgniteKernal localIgnite() throws IllegalArgumentException {
+        if (Thread.currentThread() instanceof IgniteThread)
+            return gridx(((IgniteThread)Thread.currentThread()).getGridName());
+        else
+            throw new IllegalArgumentException("This method should be accessed under " + IgniteThread.class.getName());
+    }
+
+    /**
      * Gets grid instance without waiting its initialization.
      *
      * @param name Grid name.
@@ -1398,6 +1428,9 @@ public class IgnitionEx {
         @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
         private Thread starterThread;
 
+        /** */
+        private boolean starterThreadInterrupted;
+
         /**
          * Creates un-started named instance.
          *
@@ -1528,7 +1561,8 @@ public class IgnitionEx {
             }
 
             execSvc = new IgniteThreadPoolExecutor(
-                "pub-" + cfg.getGridName(),
+                "pub",
+                cfg.getGridName(),
                 cfg.getPublicThreadPoolSize(),
                 cfg.getPublicThreadPoolSize(),
                 DFLT_PUBLIC_KEEP_ALIVE_TIME,
@@ -1541,7 +1575,8 @@ public class IgnitionEx {
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
             sysExecSvc = new IgniteThreadPoolExecutor(
-                "sys-" + cfg.getGridName(),
+                "sys",
+                cfg.getGridName(),
                 cfg.getSystemThreadPoolSize(),
                 cfg.getSystemThreadPoolSize(),
                 DFLT_SYSTEM_KEEP_ALIVE_TIME,
@@ -1555,7 +1590,8 @@ public class IgnitionEx {
             // Note, that we do not pre-start threads here as management pool may
             // not be needed.
             mgmtExecSvc = new IgniteThreadPoolExecutor(
-                "mgmt-" + cfg.getGridName(),
+                "mgmt",
+                cfg.getGridName(),
                 cfg.getManagementThreadPoolSize(),
                 cfg.getManagementThreadPoolSize(),
                 0,
@@ -1566,7 +1602,8 @@ public class IgnitionEx {
             // Note, that we do not pre-start threads here as class loading pool may
             // not be needed.
             p2pExecSvc = new IgniteThreadPoolExecutor(
-                "p2p-" + cfg.getGridName(),
+                "p2p",
+                cfg.getGridName(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 0,
@@ -1574,7 +1611,8 @@ public class IgnitionEx {
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             igfsExecSvc = new IgniteThreadPoolExecutor(
-                "igfs-" + cfg.getGridName(),
+                "igfs",
+                cfg.getGridName(),
                 cfg.getIgfsThreadPoolSize(),
                 cfg.getIgfsThreadPoolSize(),
                 0,
@@ -1582,7 +1620,8 @@ public class IgnitionEx {
 
             if (myCfg.getConnectorConfiguration() != null) {
                 restExecSvc = new IgniteThreadPoolExecutor(
-                    "rest-" + myCfg.getGridName(),
+                    "rest",
+                    myCfg.getGridName(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     ConnectorConfiguration.DFLT_KEEP_ALIVE_TIME,
@@ -1591,14 +1630,16 @@ public class IgnitionEx {
             }
 
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
-                "utility-" + cfg.getGridName(),
+                "utility",
+                cfg.getGridName(),
                 myCfg.getUtilityCacheThreadPoolSize(),
                 DFLT_SYSTEM_MAX_THREAD_CNT,
                 myCfg.getUtilityCacheKeepAliveTime(),
                 new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
 
             marshCacheExecSvc = new IgniteThreadPoolExecutor(
-                "marshaller-cache-" + cfg.getGridName(),
+                "marshaller-cache",
+                cfg.getGridName(),
                 myCfg.getMarshallerCacheThreadPoolSize(),
                 DFLT_SYSTEM_MAX_THREAD_CNT,
                 myCfg.getMarshallerCacheKeepAliveTime(),

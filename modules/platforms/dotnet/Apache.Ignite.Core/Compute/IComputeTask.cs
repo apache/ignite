@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Compute
     ///     </item>
     ///     <item>
     ///         <description>Once job execution results become available method 
-    ///         <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{TJobRes}, IList{IComputeJobResult{TJobRes}})"/>
+    ///         <see cref="IComputeTask{A,T,R}.OnResult(IComputeJobResult{TJobRes}, IList{IComputeJobResult{TJobRes}})"/>
     ///         will be called for ech received job result. The policy returned by this method will
     ///         determine the way task reacts to every job result.
     ///         <para />

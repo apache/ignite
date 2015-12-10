@@ -67,8 +67,9 @@ public class PortableBuilderReader implements PortablePositionReadable {
         arr = objImpl.array();
         pos = objImpl.start();
 
-        // TODO: IGNITE-1272 - Is class loader needed here?
-        reader = new BinaryReaderExImpl(ctx, PortableHeapInputStream.create(arr, pos), null);
+        reader = new BinaryReaderExImpl(ctx,
+            PortableHeapInputStream.create(arr, pos),
+            ctx.configuration().getClassLoader());
 
         objMap = new HashMap<>();
     }
@@ -344,12 +345,6 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 return;
             }
 
-            case GridPortableMarshaller.MAP_ENTRY:
-                skipValue();
-                skipValue();
-
-                return;
-
             case GridPortableMarshaller.PORTABLE_OBJ:
                 len = readInt() + 4;
 
@@ -448,7 +443,6 @@ public class PortableBuilderReader implements PortablePositionReadable {
             case GridPortableMarshaller.OBJ_ARR:
             case GridPortableMarshaller.COL:
             case GridPortableMarshaller.MAP:
-            case GridPortableMarshaller.MAP_ENTRY:
                 return new LazyCollection(pos);
 
             case GridPortableMarshaller.ENUM: {
@@ -732,8 +726,6 @@ public class PortableBuilderReader implements PortablePositionReadable {
 
                     case GridPortableMarshaller.HASH_SET:
                     case GridPortableMarshaller.LINKED_HASH_SET:
-                    case GridPortableMarshaller.TREE_SET:
-                    case GridPortableMarshaller.CONC_SKIP_LIST_SET:
                         return new PortableLazySet(this, size);
                 }
 
@@ -748,9 +740,6 @@ public class PortableBuilderReader implements PortablePositionReadable {
 
             case GridPortableMarshaller.ENUM_ARR:
                 return new PortableEnumArrayLazyValue(this);
-
-            case GridPortableMarshaller.MAP_ENTRY:
-                return new PortableLazyMapEntry(this);
 
             case GridPortableMarshaller.PORTABLE_OBJ: {
                 int size = readInt();

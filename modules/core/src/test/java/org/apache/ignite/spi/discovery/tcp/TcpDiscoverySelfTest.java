@@ -1334,7 +1334,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testNodeShutdownOnRingMessageWorkerFailure() throws Exception {
         try {
-            TestMessageWorkerFailureSpi spi0 = new TestMessageWorkerFailureSpi();
+            TestMessageWorkerFailureSpi1 spi0 = new TestMessageWorkerFailureSpi1();
 
             nodeSpi.set(spi0);
 
@@ -1351,9 +1351,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             final UUID failedNodeId = ignite0.cluster().localNode().id();
 
             ignite1.events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event event) {
-                    if (event.type() == EventType.EVT_NODE_FAILED &&
-                        failedNodeId.equals(((DiscoveryEvent)event).eventNode().id()))
+                @Override public boolean apply(Event evt) {
+                    if (evt.type() == EventType.EVT_NODE_FAILED &&
+                        failedNodeId.equals(((DiscoveryEvent)evt).eventNode().id()))
                         disconnected.set(true);
 
                     latch.countDown();
@@ -1377,6 +1377,38 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             }
 
             fail();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+    /**
+     * @throws Exception If failed
+     */
+    public void testNodeShutdownOnRingMessageWorkerStartNotFinished() throws Exception {
+        try {
+            Ignite ignite0 = startGrid(0);
+
+            TestMessageWorkerFailureSpi2 spi0 = new TestMessageWorkerFailureSpi2();
+
+            nodeSpi.set(spi0);
+
+            try {
+                startGrid(1);
+
+                fail();
+            }
+            catch (Exception e) {
+                log.error("Expected error: " + e, e);
+            }
+
+            Ignite ignite1 = startGrid(1);
+
+            assertEquals(2, ignite1.cluster().nodes().size());
+            assertEquals(4, ignite1.cluster().topologyVersion());
+
+            assertEquals(2, ignite0.cluster().nodes().size());
+            assertEquals(4, ignite0.cluster().topologyVersion());
         }
         finally {
             stopAllGrids();
@@ -1952,10 +1984,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestMessageWorkerFailureSpi extends TcpDiscoverySpi {
+    private static class TestMessageWorkerFailureSpi1 extends TcpDiscoverySpi {
         /** */
         private volatile boolean stop;
-
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
@@ -1965,6 +1996,26 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 throw new RuntimeException("Failing ring message worker explicitly");
 
             super.writeToSocket(sock, msg, bout, timeout);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestMessageWorkerFailureSpi2 extends TcpDiscoverySpi {
+        /** */
+        private volatile boolean stop;
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
+            GridByteArrayOutputStream bout, long timeout) throws IOException, IgniteCheckedException {
+            if (stop)
+                throw new RuntimeException("Failing ring message worker explicitly");
+
+            super.writeToSocket(sock, msg, bout, timeout);
+
+            if (msg instanceof TcpDiscoveryNodeAddedMessage)
+                stop = true;
         }
     }
 

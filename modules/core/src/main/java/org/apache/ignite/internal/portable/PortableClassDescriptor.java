@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -43,10 +36,18 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.jetbrains.annotations.Nullable;
+import sun.misc.Unsafe;
 
 import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
@@ -55,6 +56,9 @@ import static java.lang.reflect.Modifier.isTransient;
  * Portable class descriptor.
  */
 public class PortableClassDescriptor {
+    /** */
+    public static final Unsafe UNSAFE = GridUnsafe.unsafe();
+
     /** */
     private final PortableContext ctx;
 
@@ -206,7 +210,6 @@ public class PortableClassDescriptor {
             case OBJECT_ARR:
             case COL:
             case MAP:
-            case MAP_ENTRY:
             case PORTABLE_OBJ:
             case ENUM:
             case PORTABLE_ENUM:
@@ -230,7 +233,8 @@ public class PortableClassDescriptor {
                 break;
 
             case OBJECT:
-                ctor = constructor(cls);
+                // Must not use constructor to honor transient fields semantics.
+                ctor = null;
                 ArrayList<BinaryFieldAccessor> fields0 = new ArrayList<>();
                 stableFieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
 
@@ -268,11 +272,11 @@ public class PortableClassDescriptor {
                         }
                     }
                 }
-                
+
                 fields = fields0.toArray(new BinaryFieldAccessor[fields0.size()]);
-                
+
                 stableSchema = schemaBuilder.build();
-                
+
                 break;
 
             default:
@@ -537,11 +541,6 @@ public class PortableClassDescriptor {
 
                 break;
 
-            case MAP_ENTRY:
-                writer.doWriteMapEntry((Map.Entry<?, ?>)obj);
-
-                break;
-
             case ENUM:
                 writer.doWriteEnum((Enum<?>)obj);
 
@@ -755,10 +754,8 @@ public class PortableClassDescriptor {
      * @throws BinaryObjectException In case of error.
      */
     private Object newInstance() throws BinaryObjectException {
-        assert ctor != null;
-
         try {
-            return ctor.newInstance();
+            return ctor != null ? ctor.newInstance() : UNSAFE.allocateInstance(cls);
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
@@ -795,20 +792,22 @@ public class PortableClassDescriptor {
      *
      * @return {@code true} if to use, {@code false} otherwise.
      */
+    @SuppressWarnings("unchecked")
     private boolean initUseOptimizedMarshallerFlag() {
-       boolean use;
+        for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+            try {
+                Method writeObj = c.getDeclaredMethod("writeObject", ObjectOutputStream.class);
+                Method readObj = c.getDeclaredMethod("readObject", ObjectInputStream.class);
 
-        try {
-            Method writeObj = cls.getDeclaredMethod("writeObject", ObjectOutputStream.class);
-            Method readObj = cls.getDeclaredMethod("readObject", ObjectInputStream.class);
-
-            use = !Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
-                writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class;
+                if (!Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
+                    writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class)
+                    return true;
+            }
+            catch (NoSuchMethodException ignored) {
+                // No-op.
+            }
         }
-        catch (NoSuchMethodException e) {
-            use = false;
-        }
 
-        return use;
+        return false;
     }
 }

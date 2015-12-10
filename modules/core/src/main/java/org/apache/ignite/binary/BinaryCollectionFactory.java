@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.binary;
 
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import java.util.Collection;
 
 /**
- * JTA integration test using REPLICATED cache.
+ * Collection factory.
  */
-public class GridCacheReplicatedJtaSelfTest extends GridCacheJtaSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
+public interface BinaryCollectionFactory<K> {
+    /**
+     * Create collection.
+     *
+     * @param size Amount of elements in collection.
+     * @return Collection.
+     */
+    public Collection<K> create(int size);
 }

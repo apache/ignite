@@ -65,9 +65,6 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
      * @throws Exception If failed.
      */
     public void testUsersClassLoader() throws Exception {
-        if (F.eq(GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME), BinaryMarshaller.class.getName()))
-            fail("https://issues.apache.org/jira/browse/IGNITE-1272");
-
         UsersClassLoader testClassLdr = (UsersClassLoader)grid(0).configuration().getClassLoader();
 
         Object val = testClassLdr.loadClass(TEST_VALUE).newInstance();

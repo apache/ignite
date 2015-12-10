@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Events
 
         /// <summary>
         /// Gets security subject ID initiated this task event, if available. This property is not available for 
-        /// <see cref="EventType.EventTaskSessionAttrSet" /> task event. 
+        /// <see cref="EventType.TaskSessionAttrSet" /> task event. 
         /// Subject ID will be set either to node ID or client ID initiated task execution. 
         /// </summary>
         public Guid? SubjectId { get { return _subjectId; } }

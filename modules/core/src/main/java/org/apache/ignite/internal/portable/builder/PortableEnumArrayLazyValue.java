@@ -50,8 +50,7 @@ class PortableEnumArrayLazyValue extends PortableAbstractLazyValue {
             Class cls;
 
             try {
-                // TODO: IGNITE-1272 - Is class loader needed here?
-                cls = U.forName(reader.readString(), null);
+                cls = U.forName(reader.readString(), reader.portableContext().configuration().getClassLoader());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);

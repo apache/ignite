@@ -153,7 +153,7 @@ public class IgniteTestResources {
      * @param prestart Prestart flag.
      */
     public void startThreads(boolean prestart) {
-        execSvc = new IgniteThreadPoolExecutor(nodeId.toString(), 40, 40, Long.MAX_VALUE,
+        execSvc = new IgniteThreadPoolExecutor(nodeId.toString(), null, 40, 40, Long.MAX_VALUE,
             new LinkedBlockingQueue<Runnable>());
 
         // Improve concurrency for testing.
