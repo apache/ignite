@@ -17,19 +17,18 @@
 
 package org.apache.ignite.examples.model;
 
+import java.io.Serializable;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
-
-import java.io.Serializable;
-import java.util.Random;
 
 /**
  * Person class.
  */
 public class Person implements Serializable {
     /** */
-    private static final Random RND = new Random();
+    private static final AtomicLong ID_GEN = new AtomicLong();
 
     /** Person ID (indexed). */
     @QuerySqlField(index = true)
@@ -59,13 +58,6 @@ public class Person implements Serializable {
     private transient AffinityKey<Long> key;
 
     /**
-     * Default empty constructor.
-     */
-    public Person() {
-        // No-op.
-    }
-
-    /**
      * Constructs person record.
      *
      * @param org       Organization.
@@ -76,7 +68,7 @@ public class Person implements Serializable {
      */
     public Person(Organization org, String firstName, String lastName, double salary, String resume) {
         // Generate unique ID for this person.
-        id = RND.nextLong();
+        id = ID_GEN.incrementAndGet();
 
         orgId = org.id;
 
