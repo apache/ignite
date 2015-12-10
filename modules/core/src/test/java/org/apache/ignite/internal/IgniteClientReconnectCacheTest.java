@@ -693,7 +693,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try {
-                    Ignition.start(getConfiguration(getTestGridName(SRV_CNT)));
+                    Ignition.start(optimize(getConfiguration(getTestGridName(SRV_CNT))));
 
                     fail();
 
