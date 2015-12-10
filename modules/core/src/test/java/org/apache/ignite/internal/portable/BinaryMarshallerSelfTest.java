@@ -23,8 +23,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
@@ -75,9 +77,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
 
@@ -2326,6 +2330,200 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertTrue(res.map == res.inner.map);
         assertTrue(res.col == res.inner.col);
         assertTrue(res.mEntry == res.inner.mEntry);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testProxy() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        SomeItf inItf = (SomeItf)Proxy.newProxyInstance(
+            BinaryMarshallerSelfTest.class.getClassLoader(), new Class[] {SomeItf.class},
+            new InvocationHandler() {
+                private NonSerializable obj = new NonSerializable(null);
+
+                @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
+                    if ("hashCode".equals(mtd.getName()))
+                        return obj.hashCode();
+
+                    obj.checkAfterUnmarshalled();
+
+                    return 17;
+                }
+            }
+        );
+
+        SomeItf outItf = marsh.unmarshal(marsh.marshal(inItf), null);
+
+        assertEquals(outItf.checkAfterUnmarshalled(), 17);
+    }
+
+    /**
+     *
+     */
+    private static interface SomeItf {
+        /**
+         * @return Check result.
+         */
+        int checkAfterUnmarshalled();
+    }
+
+    /**
+     * Some non-serializable class.
+     */
+    @SuppressWarnings( {"PublicField","TransientFieldInNonSerializableClass","FieldMayBeStatic"})
+    private static class NonSerializableA {
+        /** */
+        private final long longVal = 0x33445566778899AAL;
+
+        /** */
+        protected Short shortVal = (short)0xAABB;
+
+        /** */
+        public String[] strArr = {"AA","BB"};
+
+        /** */
+        public boolean flag1 = true;
+
+        /** */
+        public boolean flag2;
+
+        /** */
+        public Boolean flag3;
+
+        /** */
+        public Boolean flag4 = true;
+
+        /** */
+        public Boolean flag5 = false;
+
+        /** */
+        private transient int intVal = 0xAABBCCDD;
+
+        /**
+         * @param strArr Array.
+         * @param shortVal Short value.
+         */
+        @SuppressWarnings( {"UnusedDeclaration"})
+        private NonSerializableA(@Nullable String[] strArr, @Nullable Short shortVal) {
+            // No-op.
+        }
+
+        /**
+         * Checks correctness of the state after unmarshalling.
+         */
+        void checkAfterUnmarshalled() {
+            assertEquals(longVal, 0x33445566778899AAL);
+
+            assertEquals(shortVal.shortValue(), (short)0xAABB);
+
+            assertTrue(Arrays.equals(strArr, new String[] {"AA","BB"}));
+
+            assertEquals(0, intVal);
+
+            assertTrue(flag1);
+            assertFalse(flag2);
+            assertNull(flag3);
+            assertTrue(flag4);
+            assertFalse(flag5);
+        }
+    }
+
+    /**
+     * Some non-serializable class.
+     */
+    @SuppressWarnings( {"PublicField","TransientFieldInNonSerializableClass","PackageVisibleInnerClass"})
+    static class NonSerializableB extends NonSerializableA {
+        /** */
+        public Short shortValue = 0x1122;
+
+        /** */
+        public long longValue = 0x8877665544332211L;
+
+        /** */
+        private transient NonSerializableA[] aArr = {
+            new NonSerializableA(null, null),
+            new NonSerializableA(null, null),
+            new NonSerializableA(null, null)
+        };
+
+        /** */
+        protected Double doubleVal = 123.456;
+
+        /**
+         * Just to eliminate the default constructor.
+         */
+        private NonSerializableB() {
+            super(null, null);
+        }
+
+        /**
+         * Checks correctness of the state after unmarshalling.
+         */
+        @Override void checkAfterUnmarshalled() {
+            super.checkAfterUnmarshalled();
+
+            assertEquals(shortValue.shortValue(), 0x1122);
+
+            assertEquals(longValue, 0x8877665544332211L);
+
+            assertNull(aArr);
+
+            assertEquals(doubleVal, 123.456);
+        }
+    }
+
+    /**
+     * Some non-serializable class.
+     */
+    @SuppressWarnings( {"TransientFieldInNonSerializableClass","PublicField"})
+    private static class NonSerializable extends NonSerializableB {
+        /** */
+        private int idVal = -17;
+
+        /** */
+        private final NonSerializableA aVal = new NonSerializableB();
+
+        /** */
+        private transient NonSerializableB bVal = new NonSerializableB();
+
+        /** */
+        private NonSerializableA[] bArr = new NonSerializableA[] {
+            new NonSerializableB(),
+            new NonSerializableA(null, null)
+        };
+
+        /** */
+        public float floatVal = 567.89F;
+
+        /**
+         * Just to eliminate the default constructor.
+         *
+         * @param aVal Unused.
+         */
+        @SuppressWarnings( {"UnusedDeclaration"})
+        private NonSerializable(NonSerializableA aVal) {
+        }
+
+        /**
+         * Checks correctness of the state after unmarshalling.
+         */
+        @Override void checkAfterUnmarshalled() {
+            super.checkAfterUnmarshalled();
+
+            assertEquals(idVal, -17);
+
+            aVal.checkAfterUnmarshalled();
+
+            assertNull(bVal);
+
+            for (NonSerializableA a : bArr) {
+                a.checkAfterUnmarshalled();
+            }
+
+            assertEquals(floatVal, 567.89F);
+        }
     }
 
     /**
