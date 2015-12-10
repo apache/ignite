@@ -1065,27 +1065,38 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static void WriteCollection(IEnumerable val, BinaryWriter ctx)
         {
-            var valType = val.GetType();
-            
+            Debug.Assert(val != null);
+            Debug.Assert(ctx != null);
+
+            WriteCollection(val, ctx, GetCollectionTypeCode(val.GetType()));
+        }
+
+        /// <summary>
+        /// Gets the collection type code.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>Collection type code.</returns>
+        private static byte GetCollectionTypeCode(Type type)
+        {
             byte colType;
 
-            if (valType.IsGenericType)
+            if (type.IsGenericType)
             {
-                var genType = valType.GetGenericTypeDefinition();
+                var genType = type.GetGenericTypeDefinition();
 
-                if (genType == typeof (List<>))
+                if (genType == typeof(List<>))
                     colType = CollectionArrayList;
-                else if (genType == typeof (LinkedList<>))
+                else if (genType == typeof(LinkedList<>))
                     colType = CollectionLinkedList;
-                else if (genType == typeof (HashSet<>))
+                else if (genType == typeof(HashSet<>))
                     colType = CollectionHashSet;
                 else
                     colType = CollectionCustom;
             }
             else
-                colType = valType == typeof (ArrayList) ? CollectionArrayList : CollectionCustom;
+                colType = type == typeof(ArrayList) ? CollectionArrayList : CollectionCustom;
 
-            WriteCollection(val, ctx, colType);
+            return colType;
         }
 
         /// <summary>
@@ -1096,6 +1107,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="colType">Collection type.</param>
         public static void WriteCollection(IEnumerable val, BinaryWriter ctx, byte colType)
         {
+            Debug.Assert(val != null);
+            Debug.Assert(ctx != null);
+
             var stream = ctx.Stream;
 
             var countPos = stream.Position;
