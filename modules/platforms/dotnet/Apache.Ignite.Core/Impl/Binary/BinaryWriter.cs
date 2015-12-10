@@ -954,8 +954,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public void WriteCollection<T>(string fieldName, IEnumerable<T> val)
         {
-            // TODO
-            throw new NotImplementedException();
+            WriteFieldId(fieldName, BinaryUtils.TypeCollection);
+
+            WriteCollection(val);
         }
 
         /// <summary>
@@ -976,8 +977,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public void WriteCollection<T>(IEnumerable<T> val)
         {
-            // TODO
-            throw new NotImplementedException();
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                WriteByte(BinaryUtils.TypeCollection);
+                BinaryUtils.WriteCollection(val, this);
+            }
         }
 
         /// <summary>
