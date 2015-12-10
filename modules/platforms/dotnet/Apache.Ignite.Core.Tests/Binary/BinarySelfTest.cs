@@ -2327,6 +2327,11 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 // Check non-generic
                 writer.WriteCollection("arrayList", new ArrayList {1, "2"});
+
+                // Check generic
+                writer.WriteCollection("list", new List<string> {"1", "2"});
+                writer.WriteCollection("linkedList", new LinkedList<string>(new[] {"1", "2"}));
+                writer.WriteCollection("hashSet", new HashSet<string>(new[] {"1", "2"}));
             }
 
             public void ReadBinary(IBinaryReader reader)
@@ -2338,6 +2343,11 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 // Check non-generic
                 Assert.AreEqual(new ArrayList { 1, "2" }, reader.ReadCollection("arrayList"));
+
+                // Check generic
+                Assert.AreEqual(new ArrayList { "1", "2" }, reader.ReadCollection("list"));
+                Assert.AreEqual(new LinkedList<object>(new object[] {"1", "2"}), reader.ReadCollection("linkedList"));
+                Assert.AreEqual(new HashSet<object>(new object[] {"1", "2"}), reader.ReadCollection("hashSet"));
             }
         }
     }
