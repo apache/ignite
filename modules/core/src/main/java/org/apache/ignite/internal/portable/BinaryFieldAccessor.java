@@ -608,11 +608,6 @@ public abstract class BinaryFieldAccessor {
 
                     break;
 
-                case MAP_ENTRY:
-                    writer.writeMapEntryField((Map.Entry<?, ?>)val);
-
-                    break;
-
                 case PORTABLE_OBJ:
                     writer.writePortableObjectField((BinaryObjectImpl)val);
 
@@ -811,11 +806,6 @@ public abstract class BinaryFieldAccessor {
 
                 case MAP:
                     val = reader.readMap(id, null);
-
-                    break;
-
-                case MAP_ENTRY:
-                    val = reader.readMapEntry(id);
 
                     break;
 

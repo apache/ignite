@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -853,6 +854,34 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     public void testConfigInClassPath() throws Exception {
         try (Ignite ignite = Ignition.start("config/ignite-test-config.xml")) {
             assert "config-in-classpath".equals(ignite.name());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCurrentIgnite() throws Exception {
+        final String LEFT = "LEFT";
+        final String RIGHT = "RIGHT";
+        try {
+            Ignite iLEFT = startGrid(LEFT);
+            Ignite iRIGHT = startGrid(RIGHT);
+            waitForDiscovery(iLEFT, iRIGHT);
+
+            iLEFT.compute(iLEFT.cluster().forRemotes()).run(new IgniteRunnable() {
+                @Override public void run() {
+                    assert Ignition.localIgnite().name().equals(RIGHT);
+                }
+            });
+
+            iRIGHT.compute(iRIGHT.cluster().forRemotes()).run(new IgniteRunnable() {
+                @Override public void run() {
+                    assert Ignition.localIgnite().name().equals(LEFT);
+                }
+            });
+        }
+        finally {
+            stopAllGrids();
         }
     }
 

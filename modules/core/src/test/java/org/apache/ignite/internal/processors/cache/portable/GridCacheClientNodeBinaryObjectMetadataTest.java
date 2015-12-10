@@ -75,7 +75,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
         CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(TestObject1.class.getName(), "val2");
 
-        cfg.setCacheKeyCfg(keyCfg);
+        cfg.setCacheKeyConfiguration(keyCfg);
 
         bCfg.setTypeConfigurations(Arrays.asList(typeCfg));
 

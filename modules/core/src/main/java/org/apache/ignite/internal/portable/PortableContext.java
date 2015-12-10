@@ -17,6 +17,33 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
+import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
+
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
@@ -41,41 +68,11 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheKeyConfiguration;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Portable context.
@@ -162,16 +159,9 @@ public class PortableContext implements Externalizable {
         colTypes.put(LinkedList.class, GridPortableMarshaller.LINKED_LIST);
         colTypes.put(HashSet.class, GridPortableMarshaller.HASH_SET);
         colTypes.put(LinkedHashSet.class, GridPortableMarshaller.LINKED_HASH_SET);
-        colTypes.put(TreeSet.class, GridPortableMarshaller.TREE_SET);
-        colTypes.put(ConcurrentSkipListSet.class, GridPortableMarshaller.CONC_SKIP_LIST_SET);
-        colTypes.put(ConcurrentLinkedQueue.class, GridPortableMarshaller.CONC_LINKED_QUEUE);
 
         mapTypes.put(HashMap.class, GridPortableMarshaller.HASH_MAP);
         mapTypes.put(LinkedHashMap.class, GridPortableMarshaller.LINKED_HASH_MAP);
-        mapTypes.put(TreeMap.class, GridPortableMarshaller.TREE_MAP);
-        mapTypes.put(ConcurrentHashMap.class, GridPortableMarshaller.CONC_HASH_MAP);
-        mapTypes.put(ConcurrentHashMap8.class, GridPortableMarshaller.CONC_HASH_MAP);
-        mapTypes.put(Properties.class, GridPortableMarshaller.PROPERTIES_MAP);
 
         // IDs range from [0..200] is used by Java SDK API and GridGain legacy API
 
@@ -208,14 +198,9 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(LinkedList.class, 0);
         registerPredefinedType(HashSet.class, 0);
         registerPredefinedType(LinkedHashSet.class, 0);
-        registerPredefinedType(TreeSet.class, 0);
-        registerPredefinedType(ConcurrentSkipListSet.class, 0);
 
         registerPredefinedType(HashMap.class, 0);
         registerPredefinedType(LinkedHashMap.class, 0);
-        registerPredefinedType(TreeMap.class, 0);
-        registerPredefinedType(ConcurrentHashMap.class, 0);
-        registerPredefinedType(ConcurrentHashMap8.class, 0);
 
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
@@ -232,8 +217,16 @@ public class PortableContext implements Externalizable {
     }
 
     /**
+     * @return Ignite configuration.
+     */
+    public IgniteConfiguration configuration(){
+        return igniteCfg;
+    }
+
+    /**
      * @param marsh Portable marshaller.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @param cfg Configuration.
+     * @throws BinaryObjectException In case of error.
      */
     public void configure(BinaryMarshaller marsh, IgniteConfiguration cfg) throws BinaryObjectException {
         if (marsh == null)
@@ -265,7 +258,7 @@ public class PortableContext implements Externalizable {
      * @param globalIdMapper ID mapper.
      * @param globalSerializer Serializer.
      * @param typeCfgs Type configurations.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
     private void configure(
         BinaryIdMapper globalIdMapper,
@@ -313,9 +306,8 @@ public class PortableContext implements Externalizable {
             }
         }
 
-        for (TypeDescriptor desc : descs.descriptors()) {
+        for (TypeDescriptor desc : descs.descriptors())
             registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName, desc.isEnum);
-        }
 
         BinaryInternalIdMapper dfltMapper = BinaryInternalIdMapper.create(globalIdMapper);
 
@@ -327,6 +319,20 @@ public class PortableContext implements Externalizable {
 
             affKeyFieldNames.putIfAbsent(typeId, entry.getValue());
         }
+
+        addSystemClassAffinityKey(CollocatedSetItemKey.class);
+        addSystemClassAffinityKey(CollocatedQueueItemKey.class);
+    }
+
+    /**
+     * @param cls Class.
+     */
+    private void addSystemClassAffinityKey(Class<?> cls) {
+        String fieldName = affinityFieldName(cls);
+
+        assert fieldName != null : cls;
+
+        affKeyFieldNames.putIfAbsent(cls.getName().hashCode(), affinityFieldName(cls));
     }
 
     /**
@@ -400,7 +406,7 @@ public class PortableContext implements Externalizable {
     /**
      * @param cls Class.
      * @return Class descriptor.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
     public PortableClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize)
         throws BinaryObjectException {
@@ -722,7 +728,7 @@ public class PortableContext implements Externalizable {
      * @param serializer Serializer.
      * @param affKeyFieldName Affinity key field name.
      * @param isEnum If enum.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("ErrorNotRethrown")
     public void registerUserType(String clsName,
@@ -808,7 +814,7 @@ public class PortableContext implements Externalizable {
     /**
      * @param typeId Type ID.
      * @return Meta data.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @throws BinaryObjectException In case of error.
      */
     @Nullable public BinaryType metadata(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata(typeId) : null;
@@ -964,7 +970,7 @@ public class PortableContext implements Externalizable {
          * @param affKeyFieldName Affinity key field name.
          * @param isEnum Enum flag.
          * @param canOverride Whether this descriptor can be override.
-         * @throws org.apache.ignite.binary.BinaryObjectException If failed.
+         * @throws BinaryObjectException If failed.
          */
         private void add(String clsName,
             BinaryIdMapper idMapper,
@@ -1044,7 +1050,7 @@ public class PortableContext implements Externalizable {
          * Override portable class descriptor.
          *
          * @param other Other descriptor.
-         * @throws org.apache.ignite.binary.BinaryObjectException If failed.
+         * @throws BinaryObjectException If failed.
          */
         private void override(TypeDescriptor other) throws BinaryObjectException {
             assert clsName.equals(other.clsName);

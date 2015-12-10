@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid.store.auto;
+package org.apache.ignite.examples.util;
 
 import java.io.IOException;
 import java.io.StringReader;

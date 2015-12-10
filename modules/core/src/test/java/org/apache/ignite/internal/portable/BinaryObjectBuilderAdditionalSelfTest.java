@@ -21,6 +21,24 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.portable.builder.PortableBuilderEnum;
+import org.apache.ignite.internal.portable.mutabletest.GridBinaryMarshalerAwareTestClass;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.portable.IgniteBinaryImpl;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
+
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -35,27 +53,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteBinary;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.portable.builder.PortableBuilderEnum;
-import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.portable.mutabletest.GridBinaryMarshalerAwareTestClass;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.portable.IgniteBinaryImpl;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.Address;
-import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.AddressBook;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.Addresses;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.Companies;
 import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.Company;
 import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectAllTypes;
 import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectArrayList;
@@ -148,15 +150,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
                     break;
                 }
-
-                case "entry":
-                    assertEquals(((Map.Entry)expVal).getKey(), ((Map.Entry)actVal).getKey());
-                    assertEquals(((Map.Entry)expVal).getValue(), ((Map.Entry)actVal).getValue());
-                    break;
-
-                default:
-                    assertTrue(field.getName(), Objects.deepEquals(expVal, actVal));
-                    break;
             }
         }
     }
@@ -923,27 +916,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
-    public void testMapEntryModification() {
-        TestObjectContainer obj = new TestObjectContainer();
-        obj.foo = ImmutableMap.of(1, "a").entrySet().iterator().next();
-
-        BinaryObjectBuilderImpl mutableObj = wrap(obj);
-
-        Map.Entry<Object, Object> entry = mutableObj.getField("foo");
-
-        assertEquals(1, entry.getKey());
-        assertEquals("a", entry.getValue());
-
-        entry.setValue("b");
-
-        TestObjectContainer res = mutableObj.build().deserialize();
-
-        assertEquals(new GridMapEntry<>(1, "b"), res.foo);
-    }
-
-    /**
-     *
-     */
     public void testMapEntryOverride() {
         TestObjectContainer obj = new TestObjectContainer();
 
@@ -1116,30 +1088,39 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      *
      */
     public void testChangeMap() {
-        AddressBook addrBook = new AddressBook();
+        Addresses addrs = new Addresses();
 
-        addrBook.addCompany(new Company(1, "Google inc", 100, new Address("Saint-Petersburg", "Torzhkovskya", 1, 53), "occupation"));
-        addrBook.addCompany(new Company(2, "Apple inc", 100, new Address("Saint-Petersburg", "Torzhkovskya", 1, 54), "occupation"));
-        addrBook.addCompany(new Company(3, "Microsoft", 100, new Address("Saint-Petersburg", "Torzhkovskya", 1, 55), "occupation"));
-        addrBook.addCompany(new Company(4, "Oracle", 100, new Address("Saint-Petersburg", "Nevskiy", 1, 1), "occupation"));
+        addrs.addCompany(new Company(1, "Google inc", 100,
+            new Address("Saint-Petersburg", "Torzhkovskya", 1, 53), "occupation"));
 
-        BinaryObjectBuilderImpl mutableObj = wrap(addrBook);
+        addrs.addCompany(new Company(2, "Apple inc", 100,
+            new Address("Saint-Petersburg", "Torzhkovskya", 1, 54), "occupation"));
 
-        Map<String, List<BinaryObjectBuilderImpl>> map = mutableObj.getField("companyByStreet");
+        addrs.addCompany(new Company(3, "Microsoft", 100,
+            new Address("Saint-Petersburg", "Torzhkovskya", 1, 55), "occupation"));
 
-        List<BinaryObjectBuilderImpl> list = map.get("Torzhkovskya");
+        addrs.addCompany(new Company(4, "Oracle", 100,
+            new Address("Saint-Petersburg", "Nevskiy", 1, 1), "occupation"));
 
-        BinaryObjectBuilderImpl company = list.get(0);
+        BinaryObjectBuilderImpl binaryAddres = wrap(addrs);
+
+        Map<String, BinaryObjectBuilderImpl> map = binaryAddres.getField("companyByStreet");
+
+        BinaryObjectBuilderImpl binaryCompanies = map.get("Torzhkovskya");
+
+        List<BinaryObjectBuilderImpl> binaryCompaniesList = binaryCompanies.getField("companies");
+
+        BinaryObjectBuilderImpl company = binaryCompaniesList.get(0);
 
         assert "Google inc".equals(company.<String>getField("name"));
 
-        list.remove(0);
+        binaryCompaniesList.remove(0);
 
-        AddressBook res = mutableObj.build().deserialize();
+        Addresses res = binaryAddres.build().deserialize();
 
         assertEquals(Arrays.asList("Nevskiy", "Torzhkovskya"), new ArrayList<>(res.getCompanyByStreet().keySet()));
 
-        List<Company> torzhkovskyaCompanies = res.getCompanyByStreet().get("Torzhkovskya");
+        Companies torzhkovskyaCompanies = res.getCompanyByStreet().get("Torzhkovskya");
 
         assertEquals(2, torzhkovskyaCompanies.size());
         assertEquals("Apple inc", torzhkovskyaCompanies.get(0).name);

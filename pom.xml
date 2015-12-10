@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>1.5.0-b1-SNAPSHOT</version>
+    <version>1.5.0-b2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -80,6 +80,9 @@
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
         <module>modules/camel</module>
+        <module>modules/osgi-paxlogging</module>
+        <module>modules/osgi-karaf</module>
+        <module>modules/osgi</module>
     </modules>
 
     <profiles>
@@ -778,7 +781,7 @@
 
                                                 var pos = p.search("-");
 
-                                                if (pos > 0)
+                                                if (pos &gt; 0)
                                                 {
                                                     var suffix = p.substring(pos);
 
@@ -792,7 +795,7 @@
                                                     if (patch !== null)
                                                         ver += parseInt(patch[1]) * 100;
 
-                                                    if (suffix.search("final") > 0)
+                                                    if (suffix.search("final") &gt; 0)
                                                         ver += 10000;
 
                                                     var resVer = p.substring(0, pos) +"." + ver;

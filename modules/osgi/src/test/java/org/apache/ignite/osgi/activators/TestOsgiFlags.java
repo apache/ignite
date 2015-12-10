@@ -15,18 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+package org.apache.ignite.osgi.activators;
 
 /**
- * JTA integration test using REPLICATED cache.
+ * Interface to export the flags in OSGi.
  */
-public class GridCacheReplicatedJtaSelfTest extends GridCacheJtaSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
+public interface TestOsgiFlags {
+    /**
+     * @return The flag.
+     */
+    Boolean getOnBeforeStartInvoked();
+
+    /**
+     * @return The flag.
+     */
+    Boolean getOnAfterStartInvoked();
+
+    /**
+     * @return The flag.
+     */
+    Throwable getOnAfterStartThrowable();
+
+    /**
+     * @return The flag.
+     */
+    Boolean getOnBeforeStopInvoked();
+
+    /**
+     * @return The flag.
+     */
+    Boolean getOnAfterStopInvoked();
+
+    /**
+     * @return The flag.
+     */
+    Throwable getOnAfterStopThrowable();
 }

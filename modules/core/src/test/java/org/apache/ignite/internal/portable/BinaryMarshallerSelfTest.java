@@ -23,8 +23,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
@@ -40,6 +42,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
@@ -50,7 +53,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -72,14 +77,17 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
 
 import static org.apache.ignite.internal.portable.streams.PortableMemoryAllocator.INSTANCE;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Portable marshaller tests.
@@ -329,6 +337,17 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testException() throws Exception {
+        Exception ex = new RuntimeException();
+
+        // Checks that Optimize marshaller will be used, because Throwable has writeObject method.
+        // Exception's stacktrace equals to zero-length array by default and generates at Throwable's writeObject method.
+        assertNotEquals(0, marshalUnmarshal(ex).getStackTrace().length);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testCollection() throws Exception {
         testCollection(new ArrayList<Integer>(3));
         testCollection(new LinkedHashSet<Integer>());
@@ -368,6 +387,50 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         map.put(3, "str3");
 
         assertEquals(map, marshalUnmarshal(map));
+    }
+
+    /**
+     * Test serialization of custom collections.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testCustomCollections() throws Exception {
+        CustomCollections cc = new CustomCollections();
+
+        cc.list.add(1);
+        cc.customList.add(2);
+
+        CustomCollections copiedCc = marshalUnmarshal(cc);
+
+        assert copiedCc.customList.getClass().equals(CustomArrayList.class);
+
+        assertEquals(cc.list.size(), copiedCc.list.size());
+        assertEquals(cc.customList.size(), copiedCc.customList.size());
+
+        assertEquals(cc.list.get(0), copiedCc.list.get(0));
+        assertEquals(cc.customList.get(0), copiedCc.customList.get(0));
+    }
+
+    /**
+     * Test custom collections with factories.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testCustomCollectionsWithFactory() throws Exception {
+        CustomCollectionsWithFactory cc = new CustomCollectionsWithFactory();
+
+        cc.list.add(new DummyHolder(1));
+        cc.map.put(new DummyHolder(2), new DummyHolder(3));
+
+        CustomCollectionsWithFactory copiedCc = marshalUnmarshal(cc);
+
+        assertEquals(cc.list.size(), copiedCc.list.size());
+        assertEquals(cc.map.size(), copiedCc.map.size());
+
+        assertEquals(cc.list.get(0), copiedCc.list.get(0));
+        assertEquals(cc.map.get(new DummyHolder(2)), copiedCc.map.get(new DummyHolder(2)));
     }
 
     /**
@@ -1141,8 +1204,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         ));
 
         Object[] arr = new Object[] {new Value(1), new Value(2), new Value(3)};
-        Collection<Value> col = Arrays.asList(new Value(4), new Value(5), new Value(6));
-        Map<Key, Value> map = F.asMap(new Key(10), new Value(10), new Key(20), new Value(20), new Key(30), new Value(30));
+        Collection<Value> col = new ArrayList<>(Arrays.asList(new Value(4), new Value(5), new Value(6)));
+        Map<Key, Value> map = new HashMap<>(F.asMap(new Key(10), new Value(10), new Key(20), new Value(20), new Key(30), new Value(30)));
 
         CollectionFieldsObject obj = new CollectionFieldsObject(arr, col, map);
 
@@ -2270,6 +2333,200 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testProxy() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        SomeItf inItf = (SomeItf)Proxy.newProxyInstance(
+            BinaryMarshallerSelfTest.class.getClassLoader(), new Class[] {SomeItf.class},
+            new InvocationHandler() {
+                private NonSerializable obj = new NonSerializable(null);
+
+                @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
+                    if ("hashCode".equals(mtd.getName()))
+                        return obj.hashCode();
+
+                    obj.checkAfterUnmarshalled();
+
+                    return 17;
+                }
+            }
+        );
+
+        SomeItf outItf = marsh.unmarshal(marsh.marshal(inItf), null);
+
+        assertEquals(outItf.checkAfterUnmarshalled(), 17);
+    }
+
+    /**
+     *
+     */
+    private static interface SomeItf {
+        /**
+         * @return Check result.
+         */
+        int checkAfterUnmarshalled();
+    }
+
+    /**
+     * Some non-serializable class.
+     */
+    @SuppressWarnings( {"PublicField","TransientFieldInNonSerializableClass","FieldMayBeStatic"})
+    private static class NonSerializableA {
+        /** */
+        private final long longVal = 0x33445566778899AAL;
+
+        /** */
+        protected Short shortVal = (short)0xAABB;
+
+        /** */
+        public String[] strArr = {"AA","BB"};
+
+        /** */
+        public boolean flag1 = true;
+
+        /** */
+        public boolean flag2;
+
+        /** */
+        public Boolean flag3;
+
+        /** */
+        public Boolean flag4 = true;
+
+        /** */
+        public Boolean flag5 = false;
+
+        /** */
+        private transient int intVal = 0xAABBCCDD;
+
+        /**
+         * @param strArr Array.
+         * @param shortVal Short value.
+         */
+        @SuppressWarnings( {"UnusedDeclaration"})
+        private NonSerializableA(@Nullable String[] strArr, @Nullable Short shortVal) {
+            // No-op.
+        }
+
+        /**
+         * Checks correctness of the state after unmarshalling.
+         */
+        void checkAfterUnmarshalled() {
+            assertEquals(longVal, 0x33445566778899AAL);
+
+            assertEquals(shortVal.shortValue(), (short)0xAABB);
+
+            assertTrue(Arrays.equals(strArr, new String[] {"AA","BB"}));
+
+            assertEquals(0, intVal);
+
+            assertTrue(flag1);
+            assertFalse(flag2);
+            assertNull(flag3);
+            assertTrue(flag4);
+            assertFalse(flag5);
+        }
+    }
+
+    /**
+     * Some non-serializable class.
+     */
+    @SuppressWarnings( {"PublicField","TransientFieldInNonSerializableClass","PackageVisibleInnerClass"})
+    static class NonSerializableB extends NonSerializableA {
+        /** */
+        public Short shortValue = 0x1122;
+
+        /** */
+        public long longValue = 0x8877665544332211L;
+
+        /** */
+        private transient NonSerializableA[] aArr = {
+            new NonSerializableA(null, null),
+            new NonSerializableA(null, null),
+            new NonSerializableA(null, null)
+        };
+
+        /** */
+        protected Double doubleVal = 123.456;
+
+        /**
+         * Just to eliminate the default constructor.
+         */
+        private NonSerializableB() {
+            super(null, null);
+        }
+
+        /**
+         * Checks correctness of the state after unmarshalling.
+         */
+        @Override void checkAfterUnmarshalled() {
+            super.checkAfterUnmarshalled();
+
+            assertEquals(shortValue.shortValue(), 0x1122);
+
+            assertEquals(longValue, 0x8877665544332211L);
+
+            assertNull(aArr);
+
+            assertEquals(doubleVal, 123.456);
+        }
+    }
+
+    /**
+     * Some non-serializable class.
+     */
+    @SuppressWarnings( {"TransientFieldInNonSerializableClass","PublicField"})
+    private static class NonSerializable extends NonSerializableB {
+        /** */
+        private int idVal = -17;
+
+        /** */
+        private final NonSerializableA aVal = new NonSerializableB();
+
+        /** */
+        private transient NonSerializableB bVal = new NonSerializableB();
+
+        /** */
+        private NonSerializableA[] bArr = new NonSerializableA[] {
+            new NonSerializableB(),
+            new NonSerializableA(null, null)
+        };
+
+        /** */
+        public float floatVal = 567.89F;
+
+        /**
+         * Just to eliminate the default constructor.
+         *
+         * @param aVal Unused.
+         */
+        @SuppressWarnings( {"UnusedDeclaration"})
+        private NonSerializable(NonSerializableA aVal) {
+        }
+
+        /**
+         * Checks correctness of the state after unmarshalling.
+         */
+        @Override void checkAfterUnmarshalled() {
+            super.checkAfterUnmarshalled();
+
+            assertEquals(idVal, -17);
+
+            aVal.checkAfterUnmarshalled();
+
+            assertNull(bVal);
+
+            for (NonSerializableA a : bArr) {
+                a.checkAfterUnmarshalled();
+            }
+
+            assertEquals(floatVal, 567.89F);
+        }
+    }
+
+    /**
      * Object with class fields.
      */
     private static class ObjectWithClassFields {
@@ -2406,7 +2663,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     protected boolean compactFooter() {
         return true;
     }
-    
+
     /**
      * @param marsh Marshaller.
      * @return Portable context.
@@ -3444,6 +3701,82 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             val1 = reader.readInt("val1");
             val2 = reader.readInt("val2");
             val3 = reader.readInt("val3");
+        }
+    }
+
+    /**
+     * Custom array list.
+     */
+    private static class CustomArrayList extends ArrayList {
+        // No-op.
+    }
+
+    /**
+     * Custom hash map.
+     */
+    private static class CustomHashMap extends HashMap {
+        // No-op.
+    }
+
+    /**
+     * Holder for non-stadard collections.
+     */
+    private static class CustomCollections {
+        public List list = new ArrayList();
+        public List customList = new CustomArrayList();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static class CustomCollectionsWithFactory implements Binarylizable {
+        public List list = new CustomArrayList();
+        public Map map = new CustomHashMap();
+
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.writeCollection("list", list);
+            writer.writeMap("map", map);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            list = (List)reader.readCollection("list", new BinaryCollectionFactory<Object>() {
+                @Override public Collection<Object> create(int size) {
+                    return new CustomArrayList();
+                }
+            });
+
+            map = reader.readMap("map", new BinaryMapFactory<Object, Object>() {
+                @Override public Map<Object, Object> create(int size) {
+                    return new CustomHashMap();
+                }
+            });
+        }
+    }
+
+    /**
+     * Dummy value holder.
+     */
+    private static class DummyHolder {
+        /** Value. */
+        public int val;
+
+        /**
+         * Constructor.
+         *
+         * @param val Value.
+         */
+        public DummyHolder(int val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            return o != null && o instanceof DummyHolder && ((DummyHolder)o).val == val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val;
         }
     }
 

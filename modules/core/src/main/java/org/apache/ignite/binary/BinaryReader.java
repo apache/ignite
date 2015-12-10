@@ -242,11 +242,11 @@ public interface BinaryReader {
 
     /**
      * @param fieldName Field name.
-     * @param colCls Collection class.
+     * @param factory Collection factory.
      * @return Collection.
      * @throws BinaryObjectException In case of error.
      */
-    public <T> Collection<T> readCollection(String fieldName, Class<? extends Collection<T>> colCls)
+    public <T> Collection<T> readCollection(String fieldName, BinaryCollectionFactory<T> factory)
         throws BinaryObjectException;
 
     /**
@@ -258,12 +258,11 @@ public interface BinaryReader {
 
     /**
      * @param fieldName Field name.
-     * @param mapCls Map class.
+     * @param factory Map factory.
      * @return Map.
      * @throws BinaryObjectException In case of error.
      */
-    public <K, V> Map<K, V> readMap(String fieldName, Class<? extends Map<K, V>> mapCls)
-        throws BinaryObjectException;
+    public <K, V> Map<K, V> readMap(String fieldName, BinaryMapFactory<K, V> factory) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.

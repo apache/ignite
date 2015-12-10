@@ -1233,6 +1233,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         if (F.isEmpty(txEntry.entryProcessors()))
             return F.t(txEntry.op(), txEntry.value());
         else {
+            T2<GridCacheOperation, CacheObject> calcVal = txEntry.entryProcessorCalculatedValue();
+
+            if (calcVal != null)
+                return calcVal;
+
             boolean recordEvt = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ);
 
             CacheObject cacheVal = txEntry.hasValue() ? txEntry.value() :

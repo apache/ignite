@@ -73,7 +73,7 @@ public class GridPortableAffinityKeySelfTest extends GridCommonAbstractTest {
         CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(TestObject.class.getName(), "affKey");
         CacheKeyConfiguration keyCfg2 = new CacheKeyConfiguration("TestObject2", "affKey");
 
-        cfg.setCacheKeyCfg(keyCfg, keyCfg2);
+        cfg.setCacheKeyConfiguration(keyCfg, keyCfg2);
 
         cfg.setMarshaller(new BinaryMarshaller());
 

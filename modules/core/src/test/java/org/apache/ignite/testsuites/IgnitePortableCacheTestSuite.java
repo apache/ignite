@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccSelfTest;
@@ -27,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictio
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredSelfTest;
 import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
-import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheExpiryPolicyTestSuite;
 import org.apache.ignite.internal.processors.cache.portable.GridPortableCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.datastreaming.DataStreamProcessorPortableSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.datastreaming.GridDataStreamerImplSelfTest;
@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.portable.distributed.dht.Grid
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortablesNearPartitionedByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortablesPartitionedOnlyByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**

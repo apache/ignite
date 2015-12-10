@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-twitter</artifactId>
-    <version>1.5.0-b1-SNAPSHOT</version>
+    <version>1.5.0-b2-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -65,7 +65,7 @@
         <dependency>
             <groupId>com.twitter</groupId>
             <artifactId>hbc-twitter4j</artifactId>
-            <version>2.2.0</version>
+            <version>${twitter.hbc.version}</version>
         </dependency>
 
         <dependency>
@@ -118,4 +118,14 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -63,7 +63,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT_ARR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
@@ -762,23 +761,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @param e Map entry.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    void doWriteMapEntry(@Nullable Map.Entry<?, ?> e) throws BinaryObjectException {
-        if (e == null)
-            out.writeByte(NULL);
-        else {
-            if (tryWriteAsHandle(e))
-                return;
-
-            out.writeByte(MAP_ENTRY);
-            doWriteObject(e.getKey());
-            doWriteObject(e.getValue());
-        }
-    }
-
-    /**
      * @param val Value.
      */
     void doWriteEnum(@Nullable Enum<?> val) {
@@ -1216,14 +1198,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeMapField(@Nullable Map<?, ?> map) throws BinaryObjectException {
         doWriteMap(map);
-    }
-
-    /**
-     * @param e Map entry.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    void writeMapEntryField(@Nullable Map.Entry<?, ?> e) throws BinaryObjectException {
-        doWriteMapEntry(e);
     }
 
     /**

@@ -119,9 +119,6 @@ public class GridPortableMarshaller {
     public static final byte MAP = 25;
 
     /** */
-    public static final byte MAP_ENTRY = 26;
-
-    /** */
     public static final byte PORTABLE_OBJ = 27;
 
     /** */
@@ -167,28 +164,10 @@ public class GridPortableMarshaller {
     public static final byte LINKED_HASH_SET = 4;
 
     /** */
-    public static final byte TREE_SET = 5;
-
-    /** */
-    public static final byte CONC_SKIP_LIST_SET = 6;
-
-    /** */
-    public static final byte CONC_LINKED_QUEUE = 7;
-
-    /** */
     public static final byte HASH_MAP = 1;
 
     /** */
     public static final byte LINKED_HASH_MAP = 2;
-
-    /** */
-    public static final byte TREE_MAP = 3;
-
-    /** */
-    public static final byte CONC_HASH_MAP = 4;
-
-    /** */
-    public static final byte PROPERTIES_MAP = 5;
 
     /** */
     public static final int OBJECT_TYPE_ID = -1;
