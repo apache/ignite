@@ -34,6 +34,16 @@ namespace ignite
             class ColumnMeta
             {
             public:
+#ifdef _DEBUG
+                /**
+                 * Convert attribute ID to string containing its name.
+                 * Debug function.
+                 * @param type Attribute ID.
+                 * @return Null-terminated string containing attribute name.
+                 */
+                static const char* AttrIdToString(uint16_t id);
+#endif
+
                 /**
                  * Default constructor.
                  */
@@ -144,6 +154,24 @@ namespace ignite
                 {
                     return dataType;
                 }
+
+                /**
+                 * Try to get attribute of a string type.
+                 *
+                 * @param fieldId Field ID.
+                 * @param value Output attribute value.
+                 * @return True if the attribute supported and false otherwise.
+                 */
+                bool GetAttribute(uint16_t fieldId, std::string& value) const;
+
+                /**
+                 * Try to get attribute of a integer type.
+                 *
+                 * @param fieldId Field ID.
+                 * @param value Output attribute value.
+                 * @return True if the attribute supported and false otherwise.
+                 */
+                bool GetAttribute(uint16_t fieldId, int64_t& value) const;
 
             private:
                 /** Schema name. */

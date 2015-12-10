@@ -175,6 +175,20 @@ namespace ignite
              */
             bool DataAvailable() const;
 
+            /**
+             * Get column attribute.
+             *
+             * @param colIdx Column index.
+             * @param attrId Attribute ID.
+             * @param strbuf Buffer for string attribute value.
+             * @param buflen String buffer size.
+             * @param reslen Buffer to put resulting string length to.
+             * @param numbuf Numeric value buffer.
+             * @return True on success and false otherwise.
+             */
+            bool GetColumnAttribute(uint16_t colIdx, uint16_t attrId, char* strbuf,
+                int16_t buflen, int16_t* reslen, int64_t* numbuf);
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Statement)
 

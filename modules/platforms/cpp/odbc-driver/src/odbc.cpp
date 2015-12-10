@@ -695,6 +695,64 @@ SQLRETURN SQL_API SQLBindParameter(SQLHSTMT     stmt,
     return SQL_SUCCESS;
 }
 
+SQLRETURN SQL_API SQLNativeSql(SQLHDBC      conn,
+                               SQLCHAR*     inQuery,
+                               SQLINTEGER   inQueryLen,
+                               SQLCHAR*     outQueryBuffer,
+                               SQLINTEGER   outQueryBufferLen,
+                               SQLINTEGER*  outQueryLen)
+{
+    using namespace ignite::utility;
+
+    LOG_MSG("SQLNativeSql called\n");
+
+    std::string in = SqlStringToString(inQuery, inQueryLen);
+
+    CopyStringToBuffer(in, reinterpret_cast<char*>(outQueryBuffer),
+        static_cast<size_t>(outQueryBufferLen));
+
+    *outQueryLen = std::min(outQueryBufferLen, static_cast<SQLINTEGER>(in.size()));
+
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLColAttribute(SQLHSTMT        stmt,
+                                  SQLUSMALLINT    columnNum,
+                                  SQLUSMALLINT    fieldId,
+                                  SQLPOINTER      strAttr,
+                                  SQLSMALLINT     bufferLen,
+                                  SQLSMALLINT*    strAttrLen,
+                                  SQLLEN*         numericAttr)
+{
+    using ignite::odbc::Statement;
+    using ignite::odbc::meta::ColumnMetaVector;
+    using ignite::odbc::meta::ColumnMeta;
+
+    LOG_MSG("SQLColAttribute called: %d (%s)\n", fieldId, ColumnMeta::AttrIdToString(fieldId));
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    if (fieldId == SQL_DESC_COUNT)
+    {
+        SQLSMALLINT val = 0;
+
+        SQLRETURN res = SQLNumResultCols(stmt, &val);
+
+        if (res == SQL_SUCCESS)
+            *numericAttr = val;
+
+        return res;
+    }
+
+    bool success = statement->GetColumnAttribute(columnNum, fieldId,
+        reinterpret_cast<char*>(strAttr), bufferLen, strAttrLen, numericAttr);
+
+    return success ? SQL_SUCCESS : SQL_ERROR;
+}
+
 //
 // ==== Not implemented ====
 //
@@ -997,301 +1055,185 @@ SQLRETURN SQL_API SQLBulkOperations(SQLHSTMT       stmt,
     return SQL_SUCCESS;
 }
 
-///// SQLTablePrivileges /////
-
-SQLRETURN SQL_API SQLTablePrivileges(SQLHSTMT arg0,
-    UCHAR * arg1,
-    SWORD arg2,
-    UCHAR * arg3,
-    SWORD arg4,
-    UCHAR * arg5,
-    SWORD arg6)
-{
-    LOG_MSG("SQLTablePrivileges called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLBindParam /////
-
-SQLRETURN SQL_API SQLBindParam(SQLHSTMT arg0,
-    SQLUSMALLINT arg1,
-    SQLSMALLINT arg2,
-    SQLSMALLINT arg3,
-    SQLUINTEGER arg4,
-    SQLSMALLINT arg5,
-    SQLPOINTER arg6,
-    SQLINTEGER * arg7)
-{
-    LOG_MSG("SQLBindParam called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLColAttribute /////
-
-SQLRETURN SQL_API SQLColAttribute(SQLHSTMT arg0,
-    SQLUSMALLINT arg1,
-    SQLUSMALLINT arg2,
-    SQLPOINTER arg3,
-    SQLSMALLINT arg4,
-    UNALIGNED SQLSMALLINT * arg5,
-    SQLPOINTER arg6)
-{
-    LOG_MSG("SQLColAttribute called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLCopyDesc /////
-
-SQLRETURN SQL_API SQLCopyDesc(SQLHDESC arg0,
-    SQLHDESC arg1)
-{
-    LOG_MSG("SQLCopyDesc called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLEndTran /////
-
-SQLRETURN SQL_API SQLEndTran(SQLSMALLINT arg0,
-    SQLHANDLE arg1,
-    SQLSMALLINT arg2)
-{
-    LOG_MSG("SQLEndTran called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLGetDescField /////
-
-SQLRETURN SQL_API SQLGetDescField(SQLHDESC arg0,
-    SQLSMALLINT arg1,
-    SQLSMALLINT arg2,
-    SQLPOINTER arg3,
-    SQLINTEGER arg4,
-    UNALIGNED SQLINTEGER * arg5)
-{
-    LOG_MSG("SQLGetDescField called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLGetDescRec /////
-
-SQLRETURN SQL_API SQLGetDescRec(SQLHDESC arg0,
-    SQLSMALLINT arg1,
-    SQLCHAR * arg2,
-    SQLSMALLINT arg3,
-    UNALIGNED SQLSMALLINT * arg4,
-    UNALIGNED SQLSMALLINT * arg5,
-    UNALIGNED SQLSMALLINT * arg6,
-    UNALIGNED SQLINTEGER  * arg7,
-    UNALIGNED SQLSMALLINT * arg8,
-    UNALIGNED SQLSMALLINT * arg9,
-    UNALIGNED SQLSMALLINT * arg10)
-{
-    LOG_MSG("SQLGetDescRec called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLGetDiagField /////
-
-SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT arg0,
-    SQLHANDLE arg1,
-    SQLSMALLINT arg2,
-    SQLSMALLINT arg3,
-    SQLPOINTER arg4,
-    SQLSMALLINT arg5,
-    UNALIGNED SQLSMALLINT * arg6)
+SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
+                                  SQLHANDLE     handle,
+                                  SQLSMALLINT   recNum,
+                                  SQLSMALLINT   diagId,
+                                  SQLPOINTER    diagInfo,
+                                  SQLSMALLINT   bufferLen,
+                                  SQLSMALLINT*  resLen)
 {
     LOG_MSG("SQLGetDiagField called\n");
     return(SQL_NO_DATA_FOUND);
 }
 
-///// SQLGetDiagRec /////
-
-SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT arg0,
-    SQLHANDLE arg1,
-    SQLSMALLINT arg2,
-    SQLCHAR * arg3,
-    UNALIGNED SQLINTEGER * arg4,
-    SQLCHAR * arg5,
-    SQLSMALLINT arg6,
-    UNALIGNED SQLSMALLINT * arg7)
+SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
+                                SQLHANDLE       handle,
+                                SQLSMALLINT     recNum,
+                                SQLCHAR*        sqlState,
+                                SQLINTEGER*     nativeError,
+                                SQLCHAR*        msgText,
+                                SQLSMALLINT     bufferLen,
+                                SQLSMALLINT*    resLen)
 {
     LOG_MSG("SQLGetDiagRec called\n");
     return(SQL_NO_DATA_FOUND);
 }
 
-///// SQLSetDescField /////
+SQLRETURN SQL_API SQLTablePrivileges(SQLHSTMT      stmt,
+                                     SQLCHAR*      catalogName,
+                                     SQLSMALLINT   catalogNameLen,
+                                     SQLCHAR*      schemaName,
+                                     SQLSMALLINT   schemaNameLen,
+                                     SQLCHAR*      tableName,
+                                     SQLSMALLINT   tableNameLen)
+{
+    LOG_MSG("SQLTablePrivileges called\n");
+    return SQL_SUCCESS;
+}
 
-SQLRETURN SQL_API SQLSetDescField(SQLHDESC arg0,
-    SQLSMALLINT arg1,
-    SQLSMALLINT arg2,
-    SQLPOINTER arg3,
-    SQLINTEGER arg4)
+SQLRETURN SQL_API SQLCopyDesc(SQLHDESC src, SQLHDESC dst)
+{
+    LOG_MSG("SQLCopyDesc called\n");
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLEndTran(SQLSMALLINT    handleType,
+                             SQLHANDLE      handle,
+                             SQLSMALLINT    completionType)
+{
+    LOG_MSG("SQLEndTran called\n");
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLGetDescField(SQLHDESC      descr,
+                                  SQLSMALLINT   recNum,
+                                  SQLSMALLINT   fieldId,
+                                  SQLPOINTER    buffer,
+                                  SQLINTEGER    bufferLen,
+                                  SQLINTEGER*   resLen)
+{
+    LOG_MSG("SQLGetDescField called\n");
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLGetDescRec(SQLHDESC        DescriptorHandle,
+                                SQLSMALLINT     RecNumber,
+                                SQLCHAR*        nameBuffer,
+                                SQLSMALLINT     nameBufferLen,
+                                SQLSMALLINT*    strLen,
+                                SQLSMALLINT*    type,
+                                SQLSMALLINT*    subType,
+                                SQLLEN*         len,
+                                SQLSMALLINT*    precision,
+                                SQLSMALLINT*    scale,
+                                SQLSMALLINT*    nullable)
+{
+    LOG_MSG("SQLGetDescRec called\n");
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLSetDescField(SQLHDESC      descr,
+                                  SQLSMALLINT   recNum,
+                                  SQLSMALLINT   fieldId,
+                                  SQLPOINTER    buffer,
+                                  SQLINTEGER    bufferLen)
 {
     LOG_MSG("SQLSetDescField called\n");
     return SQL_SUCCESS;
 }
 
-///// SQLSetDescRec /////
-
-SQLRETURN SQL_API SQLSetDescRec(SQLHDESC arg0,
-    SQLSMALLINT arg1,
-    SQLSMALLINT arg2,
-    SQLSMALLINT arg3,
-    SQLINTEGER arg4,
-    SQLSMALLINT arg5,
-    SQLSMALLINT arg6,
-    SQLPOINTER arg7,
-    UNALIGNED SQLINTEGER * arg8,
-    UNALIGNED SQLINTEGER * arg9)
+SQLRETURN SQL_API SQLSetDescRec(SQLHDESC      descr,
+                                SQLSMALLINT   recNum,
+                                SQLSMALLINT   type,
+                                SQLSMALLINT   subType,
+                                SQLLEN        len,
+                                SQLSMALLINT   precision,
+                                SQLSMALLINT   scale,
+                                SQLPOINTER    buffer,
+                                SQLLEN*       resLen,
+                                SQLLEN*       id)
 {
     LOG_MSG("SQLSetDescRec called\n");
     return SQL_SUCCESS;
 }
 
-///// SQLSetParam /////
-
-SQLRETURN SQL_API SQLSetParam(SQLHSTMT arg0,
-    UWORD arg1,
-    SWORD arg2,
-    SWORD arg3,
-    UDWORD arg4,
-    SWORD arg5,
-    PTR arg6,
-    UNALIGNED SDWORD * arg7)
-{
-    LOG_MSG("SQLSetParam called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLTransact /////
-
-SQLRETURN SQL_API SQLTransact(HENV arg0,
-    SQLHDBC arg1,
-    UWORD arg2)
-{
-    LOG_MSG("SQLTransact called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLColumnPrivileges /////
-
-SQLRETURN SQL_API SQLColumnPrivileges(SQLHSTMT arg0,
-    UCHAR * arg1,
-    SWORD arg2,
-    UCHAR * arg3,
-    SWORD arg4,
-    UCHAR * arg5,
-    SWORD arg6,
-    UCHAR * arg7,
-    SWORD arg8)
+SQLRETURN SQL_API SQLColumnPrivileges(SQLHSTMT      stmt,
+                                      SQLCHAR*      catalogName,
+                                      SQLSMALLINT   catalogNameLen,
+                                      SQLCHAR*      schemaName,
+                                      SQLSMALLINT   schemaNameLen,
+                                      SQLCHAR*      tableName,
+                                      SQLSMALLINT   tableNameLen,
+                                      SQLCHAR*      columnName,
+                                      SQLSMALLINT   columnNameLen)
 {
     LOG_MSG("SQLColumnPrivileges called\n");
     return SQL_SUCCESS;
 }
 
-///// SQLDataSources /////
-
-SQLRETURN SQL_API SQLDataSources(HENV arg0,
-    UWORD arg1,
-    UCHAR * arg2,
-    SWORD arg3,
-    SWORD * arg4,
-    UCHAR * arg5,
-    SWORD arg6,
-    SWORD * arg7)
-{
-    LOG_MSG("SQLDataSources called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLDescribeParam /////
-
-SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT arg0,
-    UWORD arg1,
-    UNALIGNED SWORD * arg2,
-    UNALIGNED UDWORD * arg3,
-    UNALIGNED SWORD * arg4,
-    UNALIGNED SWORD * arg5)
+SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT     stmt,
+                                   SQLUSMALLINT paramNum,
+                                   SQLSMALLINT* dataType,
+                                   SQLULEN*     paramSize,
+                                   SQLSMALLINT* decimalDigits,
+                                   SQLSMALLINT* nullable)
 {
     LOG_MSG("SQLDescribeParam called\n");
     return SQL_SUCCESS;
 }
 
-///// SQLForeignKeys /////
-
-SQLRETURN SQL_API SQLForeignKeys(SQLHSTMT arg0,
-    UCHAR * arg1,
-    SWORD arg2,
-    UCHAR * arg3,
-    SWORD arg4,
-    UCHAR * arg5,
-    SWORD arg6,
-    UCHAR * arg7,
-    SWORD arg8,
-    UCHAR * arg9,
-    SWORD arg10,
-    UCHAR * arg11,
-    SWORD arg12)
+SQLRETURN SQL_API SQLForeignKeys(SQLHSTMT       stmt,
+                                 SQLCHAR*       primaryCatalogName,
+                                 SQLSMALLINT    primaryCatalogNameLen,
+                                 SQLCHAR*       primarySchemaName,
+                                 SQLSMALLINT    primarySchemaNameLen,
+                                 SQLCHAR*       primaryTableName,
+                                 SQLSMALLINT    primaryTableNameLen,
+                                 SQLCHAR*       foreignCatalogName,
+                                 SQLSMALLINT    foreignCatalogNameLen,
+                                 SQLCHAR*       foreignSchemaName,
+                                 SQLSMALLINT    foreignSchemaNameLen,
+                                 SQLCHAR*       foreignTableName,
+                                 SQLSMALLINT    foreignTableNameLen)
 {
     LOG_MSG("SQLForeignKeys called\n");
     return SQL_SUCCESS;
 }
 
-///// SQLNativeSql /////
-
-SQLRETURN SQL_API SQLNativeSql(SQLHDBC arg0,
-    UCHAR * arg1,
-    SDWORD arg2,
-    UCHAR * arg3,
-    SDWORD arg4,
-    UNALIGNED SDWORD * arg5)
-{
-    LOG_MSG("SQLNativeSql called\n");
-    return SQL_SUCCESS;
-}
-
-///// SQLNumParams /////
-
-SQLRETURN SQL_API SQLNumParams(SQLHSTMT arg0,
-    UNALIGNED SWORD * arg1)
+SQLRETURN SQL_API SQLNumParams(SQLHSTMT stmt, SQLSMALLINT* paramCnt)
 {
     LOG_MSG("SQLNumParams called\n");
     return SQL_SUCCESS;
 }
 
-///// SQLParamOptions /////
-
-SQLRETURN SQL_API SQLParamOptions(SQLHSTMT arg0,
-    UDWORD arg1,
-    UNALIGNED UDWORD * arg2)
+SQLRETURN SQL_API SQLParamOptions(SQLHSTMT  stmt,
+                                  SQLULEN   paramSetSize,
+                                  SQLULEN*  paramsProcessed)
 {
     LOG_MSG("SQLParamOptions called\n");
     return SQL_SUCCESS;
 }
 
-///// SQLPrimaryKeys /////
-
-SQLRETURN SQL_API SQLPrimaryKeys(SQLHSTMT arg0,
-    UCHAR * arg1,
-    SWORD arg2,
-    UCHAR * arg3,
-    SWORD arg4,
-    UCHAR * arg5,
-    SWORD arg6)
+SQLRETURN SQL_API SQLPrimaryKeys(SQLHSTMT       stmt,
+                                 SQLCHAR*       catalogName,
+                                 SQLSMALLINT    catalogNameLen,
+                                 SQLCHAR*       schemaName,
+                                 SQLSMALLINT    schemaNameLen,
+                                 SQLCHAR*       tableName,
+                                 SQLSMALLINT    tableNameLen)
 {
     LOG_MSG("SQLPrimaryKeys called\n");
     return SQL_SUCCESS;
 }
 
-///// SQLProcedures /////
-
-SQLRETURN SQL_API SQLProcedures(SQLHSTMT arg0,
-    UCHAR * arg1,
-    SWORD arg2,
-    UCHAR * arg3,
-    SWORD arg4,
-    UCHAR * arg5,
-    SWORD arg6)
+SQLRETURN SQL_API SQLProcedures(SQLHSTMT        stmt,
+                                SQLCHAR*        catalogName,
+                                SQLSMALLINT     catalogNameLen,
+                                SQLCHAR*        schemaName,
+                                SQLSMALLINT     schemaNameLen,
+                                SQLCHAR*        tableName,
+                                SQLSMALLINT     tableNameLen)
 {
     LOG_MSG("SQLProcedures called\n");
     return SQL_SUCCESS;

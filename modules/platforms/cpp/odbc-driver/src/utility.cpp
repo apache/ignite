@@ -67,7 +67,7 @@ namespace ignite
             writer.WriteString(str.data(), static_cast<int32_t>(str.size()));
         }
 
-        std::string SqlStringToString(const unsigned char* sqlStr, int16_t sqlStrLen)
+        std::string SqlStringToString(const unsigned char* sqlStr, int32_t sqlStrLen)
         {
             std::string res;
 

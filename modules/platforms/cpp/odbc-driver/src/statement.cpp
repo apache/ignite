@@ -159,6 +159,53 @@ namespace ignite
         {
             return currentQuery.get() && currentQuery->DataAvailable();
         }
+
+        bool Statement::GetColumnAttribute(uint16_t colIdx, uint16_t attrId, char* strbuf,
+            int16_t buflen, int16_t* reslen, int64_t* numbuf)
+        {
+            const meta::ColumnMetaVector *meta = GetMeta();
+
+            if (!meta)
+                return false;
+
+            if (colIdx > meta->size() + 1 || colIdx < 1)
+                return false;
+
+            const meta::ColumnMeta& columnMeta = meta->at(colIdx - 1);
+
+            bool found = false;
+
+            if (numbuf)
+            {
+                found = columnMeta.GetAttribute(attrId, *numbuf);
+
+                if (found)
+                    LOG_MSG("Numeric attribute. Value: %lld\n", *numbuf);
+            }
+
+            if (!found)
+            {
+                std::string out;
+
+                found = columnMeta.GetAttribute(attrId, out);
+
+                if (found)
+                    LOG_MSG("String attribute. Value: %s\n", out.c_str());
+
+                size_t outSize = out.size();
+
+                if (found && strbuf)
+                    outSize = utility::CopyStringToBuffer(out, strbuf, buflen);
+
+                if (found && strbuf)
+                    *reslen = static_cast<int16_t>(outSize);
+            }
+
+            if (!found)
+                LOG_MSG("Not found !!! \n");
+
+            return found;
+        }
     }
 }
 

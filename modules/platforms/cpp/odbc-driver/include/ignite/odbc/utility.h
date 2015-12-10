@@ -146,7 +146,7 @@ namespace ignite
          * @param sqlStrLen SQL string length.
          * @return Standard string containing the same data.
          */
-        std::string SqlStringToString(const unsigned char* sqlStr, int16_t sqlStrLen);
+        std::string SqlStringToString(const unsigned char* sqlStr, int32_t sqlStrLen);
     }
 }
 

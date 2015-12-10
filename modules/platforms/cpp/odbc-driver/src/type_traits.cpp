@@ -26,6 +26,15 @@
 
 #include "ignite/odbc/type_traits.h"
 
+namespace
+{
+    /** Default display size. */
+    enum { DEFAULT_DISPLAY_SIZE = 34 };
+
+    /** Default variable size data display size. */
+    enum { DEFAULT_VARDATA_DISPLAY_SIZE = 1024 };
+}
+
 namespace ignite
 {
     namespace odbc
@@ -218,6 +227,243 @@ namespace ignite
             int16_t BinaryTypeNullability(int8_t binaryType)
             {
                 return SQL_NULLABLE_UNKNOWN;
+            }
+
+            int32_t SqlTypeDisplaySize(int16_t type)
+            {
+                switch (type)
+                {
+                    case SQL_VARCHAR:
+                    case SQL_CHAR:
+                    case SQL_WCHAR:
+                    case SQL_BINARY:
+                        return DEFAULT_VARDATA_DISPLAY_SIZE;
+
+                    case SQL_BIT:
+                        return 1;
+
+                    case SQL_TINYINT:
+                        return 4;
+
+                    case SQL_SMALLINT:
+                        return 6;
+
+                    case SQL_INTEGER:
+                        return 11;
+
+                    case SQL_BIGINT:
+                        return 20;
+
+                    case SQL_REAL:
+                        return 14;
+
+                    case SQL_FLOAT:
+                    case SQL_DOUBLE:
+                        return 24;
+
+                    case SQL_TYPE_DATE:
+                        return 10;
+
+                    case SQL_TYPE_TIME:
+                        return 8;
+
+                    case SQL_TYPE_TIMESTAMP:
+                        return 19;
+
+                    case SQL_GUID:
+                        return 36;
+
+                    case SQL_DECIMAL:
+                    case SQL_NUMERIC:
+                    default:
+                        return DEFAULT_DISPLAY_SIZE;
+                }
+            }
+
+            int32_t BinaryTypeDisplaySize(int8_t type)
+            {
+                int16_t sqlType = BinaryToSqlType(type);
+
+                return SqlTypeDisplaySize(sqlType);
+            }
+
+            int32_t SqlTypeColumnSize(int16_t type)
+            {
+                switch (type)
+                {
+                    case SQL_VARCHAR:
+                    case SQL_CHAR:
+                    case SQL_WCHAR:
+                    case SQL_BINARY:
+                        return DEFAULT_VARDATA_DISPLAY_SIZE;
+
+                    case SQL_BIT:
+                        return 1;
+
+                    case SQL_TINYINT:
+                        return 3;
+
+                    case SQL_SMALLINT:
+                        return 5;
+
+                    case SQL_INTEGER:
+                        return 10;
+
+                    case SQL_BIGINT:
+                        return 19;
+
+                    case SQL_REAL:
+                        return 7;
+
+                    case SQL_FLOAT:
+                    case SQL_DOUBLE:
+                        return 15;
+
+                    case SQL_TYPE_DATE:
+                        return 10;
+
+                    case SQL_TYPE_TIME:
+                        return 8;
+
+                    case SQL_TYPE_TIMESTAMP:
+                        return 19;
+
+                    case SQL_GUID:
+                        return 36;
+
+                    case SQL_DECIMAL:
+                    case SQL_NUMERIC:
+                    default:
+                        return DEFAULT_DISPLAY_SIZE;
+                }
+            }
+
+            int32_t BinaryTypeColumnSize(int8_t type)
+            {
+                int16_t sqlType = BinaryToSqlType(type);
+
+                return SqlTypeColumnSize(sqlType);
+            }
+
+            int32_t SqlTypeTransferLength(int16_t type)
+            {
+                switch (type)
+                {
+                    case SQL_VARCHAR:
+                    case SQL_CHAR:
+                    case SQL_WCHAR:
+                    case SQL_BINARY:
+                        return DEFAULT_VARDATA_DISPLAY_SIZE;
+
+                    case SQL_BIT:
+                    case SQL_TINYINT:
+                        return 1;
+
+                    case SQL_SMALLINT:
+                        return 2;
+
+                    case SQL_INTEGER:
+                        return 4;
+
+                    case SQL_BIGINT:
+                        return 8;
+
+                    case SQL_REAL:
+                    case SQL_FLOAT:
+                        return 4;
+
+                    case SQL_DOUBLE:
+                        return 8;
+
+                    case SQL_TYPE_DATE:
+                    case SQL_TYPE_TIME:
+                        return 6;
+
+                    case SQL_TYPE_TIMESTAMP:
+                        return 16;
+
+                    case SQL_GUID:
+                        return 16;
+
+                    case SQL_DECIMAL:
+                    case SQL_NUMERIC:
+                    default:
+                        return DEFAULT_DISPLAY_SIZE;
+                }
+            }
+
+            int32_t BinaryTypeTransferLength(int8_t type)
+            {
+                int16_t sqlType = BinaryToSqlType(type);
+
+                return SqlTypeTransferLength(sqlType);
+            }
+
+            int32_t SqlTypeNumPrecRadix(int16_t type)
+            {
+                switch (type)
+                {
+                    case SQL_REAL:
+                    case SQL_FLOAT:
+                    case SQL_DOUBLE:
+                        return 2;
+
+                    case SQL_BIT:
+                    case SQL_TINYINT:
+                    case SQL_SMALLINT:
+                    case SQL_INTEGER:
+                    case SQL_BIGINT:
+                        return 10;
+
+                    default:
+                        return 0;
+                }
+            }
+
+            int32_t BinaryTypeNumPrecRadix(int8_t type)
+            {
+                int16_t sqlType = BinaryToSqlType(type);
+
+                return SqlTypeNumPrecRadix(sqlType);
+            }
+
+            int32_t SqlTypeDecimalDigits(int16_t type)
+            {
+                // Not implemented for the NUMERIC and DECIMAL data types.
+                return -1;
+            }
+
+            int32_t BinaryTypeDecimalDigits(int8_t type)
+            {
+                int16_t sqlType = BinaryToSqlType(type);
+
+                return SqlTypeDecimalDigits(sqlType);
+            }
+
+            bool SqlTypeUnsigned(int16_t type)
+            {
+                switch (type)
+                {
+                    case SQL_BIT:
+                    case SQL_TINYINT:
+                    case SQL_SMALLINT:
+                    case SQL_INTEGER:
+                    case SQL_BIGINT:
+                    case SQL_REAL:
+                    case SQL_FLOAT:
+                    case SQL_DOUBLE:
+                        return false;
+
+                    default:
+                        return true;
+                }
+            }
+
+            bool BinaryTypeUnsigned(int8_t type)
+            {
+                int16_t sqlType = BinaryToSqlType(type);
+
+                return SqlTypeUnsigned(sqlType);
             }
         }
     }

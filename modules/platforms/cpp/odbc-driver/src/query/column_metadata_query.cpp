@@ -185,28 +185,29 @@ namespace ignite
 
                         case COLUMN_SIZE:
                         {
-                            //TODO: buffer.PutInt16(type_traits::BinaryTypeColumnSize(columnType));
-                            buffer.PutNull(); 
+                            buffer.PutInt16(type_traits::BinaryTypeColumnSize(columnType));
                             break;
                         }
 
                         case BUFFER_LENGTH:
                         {
-                            buffer.PutNull();
+                            buffer.PutInt16(type_traits::BinaryTypeTransferLength(columnType));
                             break;
                         }
 
                         case DECIMAL_DIGITS:
                         {
-                            //TODO: buffer.PutInt16(type_traits::BinaryTypeDecimalDigits(columnType));
-                            buffer.PutNull();
+                            int32_t decDigits = type_traits::BinaryTypeDecimalDigits(columnType);
+                            if (decDigits < 0)
+                                buffer.PutNull();
+                            else
+                                buffer.PutInt16(static_cast<int16_t>(decDigits));
                             break;
                         }
 
                         case NUM_PREC_RADIX:
                         {
-                            //TODO: buffer.PutInt16(type_traits::BinaryTypePrecRadix(columnType));
-                            buffer.PutNull();
+                            buffer.PutInt16(type_traits::BinaryTypeNumPrecRadix(columnType));
                             break;
                         }
 

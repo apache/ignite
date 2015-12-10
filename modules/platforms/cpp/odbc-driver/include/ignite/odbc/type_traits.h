@@ -139,6 +139,102 @@ namespace ignite
              *         column accepts NULL values.
              */
             int16_t BinaryTypeNullability(int8_t binaryType);
+
+            /**
+             * Get SQL type display size.
+             *
+             * @param type SQL type.
+             * @return Display size.
+             */
+            int32_t SqlTypeDisplaySize(int16_t type);
+
+            /**
+             * Get binary type display size.
+             *
+             * @param type Binary type.
+             * @return Display size.
+             */
+            int32_t BinaryTypeDisplaySize(int8_t type);
+
+            /**
+             * Get SQL type column size.
+             *
+             * @param type SQL type.
+             * @return Column size.
+             */
+            int32_t SqlTypeColumnSize(int16_t type);
+
+            /**
+             * Get binary type column size.
+             *
+             * @param type Binary type.
+             * @return Column size.
+             */
+            int32_t BinaryTypeColumnSize(int8_t type);
+
+            /**
+             * Get SQL type transfer octet length.
+             *
+             * @param type SQL type.
+             * @return Transfer octet length.
+             */
+            int32_t SqlTypeTransferLength(int16_t type);
+
+            /**
+             * Get binary type transfer octet length.
+             *
+             * @param type Binary type.
+             * @return Transfer octet length.
+             */
+            int32_t BinaryTypeTransferLength(int8_t type);
+
+            /**
+             * Get SQL type numeric precision radix.
+             *
+             * @param type SQL type.
+             * @return Numeric precision radix.
+             */
+            int32_t SqlTypeNumPrecRadix(int8_t type);
+
+            /**
+             * Get binary type numeric precision radix.
+             *
+             * @param type Binary type.
+             * @return Numeric precision radix.
+             */
+            int32_t BinaryTypeNumPrecRadix(int8_t type);
+
+            /**
+             * Get SQL type decimal digits.
+             *
+             * @param type SQL type.
+             * @return Decimal digits.
+             */
+            int32_t SqlTypeDecimalDigits(int16_t type);
+
+            /**
+             * Get binary type decimal digits.
+             *
+             * @param type Binary type.
+             * @return Decimal digits.
+             */
+            int32_t BinaryTypeDecimalDigits(int8_t type);
+
+            /**
+             * Checks if the SQL type is unsigned.
+             *
+             * @param type SQL type.
+             * @return True if unsigned or non-numeric.
+             */
+            bool SqlTypeUnsigned(int16_t type);
+
+            /**
+             * Checks if the binary type is unsigned.
+             *
+             * @param type Binary type.
+             * @return True if unsigned or non-numeric.
+             */
+            bool BinaryTypeUnsigned(int8_t type);
         }
     }
 }
