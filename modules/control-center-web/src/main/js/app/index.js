@@ -67,6 +67,7 @@ import './modules/states/admin/index'
 import './modules/navbar/main'
 import './modules/userbar/main'
 import './modules/configuration/sidebar/main'
+import './modules/terms/main'
 // endignite
 
 // Directives.
@@ -102,7 +103,8 @@ angular
 	// Common modules.
 	'ignite-console.navbar',
 	'ignite-console.userbar',
-    'ignite-console.configuration.sidebar'
+    'ignite-console.configuration.sidebar',
+    'ignite-console.terms'
 ])
 // Directives.
 .directive(...igniteLoading)
