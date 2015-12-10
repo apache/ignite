@@ -1063,7 +1063,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
          */
-        public static void WriteCollection(ICollection val, BinaryWriter ctx)
+        public static void WriteCollection(IEnumerable val, BinaryWriter ctx)
         {
             var valType = val.GetType();
             
@@ -1077,6 +1077,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     colType = CollectionArrayList;
                 else if (genType == typeof (LinkedList<>))
                     colType = CollectionLinkedList;
+                else if (genType == typeof (HashSet<>))
+                    colType = CollectionHashSet;
                 else
                     colType = CollectionCustom;
             }
@@ -1086,20 +1088,36 @@ namespace Apache.Ignite.Core.Impl.Binary
             WriteCollection(val, ctx, colType);
         }
 
-        /**
-         * <summary>Write non-null collection with known type.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         * <param name="colType">Collection type.</param>
-         */
-        public static void WriteCollection(ICollection val, BinaryWriter ctx, byte colType)
+        /// <summary>
+        /// Write non-null collection with known type.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        /// <param name="colType">Collection type.</param>
+        public static void WriteCollection(IEnumerable val, BinaryWriter ctx, byte colType)
         {
-            ctx.Stream.WriteInt(val.Count);
+            var stream = ctx.Stream;
 
-            ctx.Stream.WriteByte(colType);
+            var countPos = stream.Position;
 
-            foreach (object elem in val)
+            var count = 0;
+
+            stream.WriteInt(0); // reserve for count
+
+            stream.WriteByte(colType);
+
+            foreach (var elem in val)
+            {
                 ctx.Write(elem);
+                count++;
+            }
+
+            var endPos = stream.Position;
+
+            stream.Seek(countPos, SeekOrigin.Begin);
+            stream.WriteInt(count);
+
+            stream.Seek(endPos, SeekOrigin.Begin);
         }
 
         /// <summary>

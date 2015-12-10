@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Raw writer for binary objects. 
@@ -203,7 +204,19 @@ namespace Apache.Ignite.Core.Binary
         /// which will properly preserve generic collection type.
         /// </summary>
         /// <param name="val">Collection.</param>
-        void WriteCollection(ICollection val);
+        void WriteCollection(IEnumerable val);
+
+        /// <summary>
+        /// Writes a collection in interoperable form.
+        /// 
+        /// Use this method to communicate with other platforms 
+        /// or with nodes that need to read collection elements in binary form.
+        /// 
+        /// When there is no need for binarization or interoperability, please use <see cref="WriteObject{T}" />,
+        /// which will properly preserve generic collection type.
+        /// </summary>
+        /// <param name="val">Collection.</param>
+        void WriteCollection<T>(IEnumerable<T> val);
 
         /// <summary>
         /// Writes a dictionary in interoperable form.
