@@ -2330,6 +2330,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 // Check non-generic
                 writer.WriteCollection("arrayList", new ArrayList {1, "2"});
+                writer.WriteDictionary("hashtable", new Hashtable {{1, "2"}});
 
                 // Check generic
                 writer.WriteCollection("list", new List<string> {"1", "2"});
@@ -2354,6 +2355,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 // Check non-generic
                 writer.WriteCollection(new ArrayList { 1, "2" });
+                writer.WriteDictionary(new Hashtable { { 1, "2" } });
 
                 // Check generic
                 writer.WriteCollection(new List<string> { "1", "2" });
@@ -2375,6 +2377,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 // Check non-generic
                 Assert.AreEqual(new ArrayList { 1, "2" }, reader.ReadCollection("arrayList"));
+                Assert.AreEqual(new Hashtable { { 1, "2" } }, reader.ReadDictionary("hashtable"));
 
                 // Check generic
                 Assert.AreEqual(new ArrayList { "1", "2" }, reader.ReadCollection("list"));
@@ -2404,6 +2407,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 // Check non-generic
                 Assert.AreEqual(new ArrayList { 1, "2" }, reader.ReadCollection());
+                Assert.AreEqual(new Hashtable { { 1, "2" } }, reader.ReadDictionary());
 
                 // Check generic
                 Assert.AreEqual(new ArrayList { "1", "2" }, reader.ReadCollection());
