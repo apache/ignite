@@ -284,7 +284,12 @@ namespace Apache.Ignite.Core.Configuration
                 writer.WriteInt(QueryEntities.Count);
 
                 foreach (var entity in QueryEntities)
+                {
+                    if (entity == null)
+                        throw new InvalidOperationException("Invalid cache configuration: QueryEntity can't be null.");
+
                     entity.Write(writer);
+                }
             }
             else
                 writer.WriteInt(0);

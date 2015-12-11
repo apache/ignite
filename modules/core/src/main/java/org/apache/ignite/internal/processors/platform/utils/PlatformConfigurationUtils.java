@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.BinaryRawReaderEx;
@@ -141,7 +142,28 @@ public class PlatformConfigurationUtils {
         if (storeFactory != null)
             ccfg.setCacheStoreFactory(new PlatformDotNetCacheStoreFactoryNative(storeFactory));
 
+        int qryEntCnt = in.readInt();
+
+        if (qryEntCnt > 0) {
+            ArrayList entities = new ArrayList(qryEntCnt);
+
+            for (int i = 0; i < qryEntCnt; i++)
+                entities.add(readQueryEntity(in));
+
+            ccfg.setQueryEntities(entities);
+        }
+
         return ccfg;
+    }
+
+    /**
+     * Reads the query entity.
+     *
+     * @param in Stream.
+     * @return QueryEntity.
+     */
+    public static QueryEntity readQueryEntity(BinaryRawReaderEx in) {
+
     }
 
     /**

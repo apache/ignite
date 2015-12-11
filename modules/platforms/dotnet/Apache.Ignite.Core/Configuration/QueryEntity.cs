@@ -19,6 +19,7 @@
 // ReSharper disable MemberCanBePrivate.Global
 namespace Apache.Ignite.Core.Configuration
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -101,7 +102,12 @@ namespace Apache.Ignite.Core.Configuration
                 writer.WriteInt(Indexes.Count);
 
                 foreach (var index in Indexes)
+                {
+                    if (index == null)
+                        throw new InvalidOperationException("Invalid cache configuration: QueryIndex can't be null.");
+
                     index.Write(writer);
+                }
             }
             else
                 writer.WriteInt(0);
