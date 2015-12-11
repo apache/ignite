@@ -102,16 +102,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 AffinityTopologyVersion topVer,
                 KeyCacheObject key,
                 int hash,
-                CacheObject val,
-                GridCacheMapEntry next,
-                int hdrId
+                CacheObject val
             ) {
                 // Can't hold any locks here - this method is invoked when
                 // holding write-lock on the whole cache map.
                 if (ctx.useOffheapEntry())
-                    return new GridNearOffHeapCacheEntry(ctx, key, hash, val, next, hdrId);
+                    return new GridNearOffHeapCacheEntry(ctx, key, hash, val);
 
-                return new GridNearCacheEntry(ctx, key, hash, val, next, hdrId);
+                return new GridNearCacheEntry(ctx, key, hash, val);
             }
         });
     }

@@ -109,7 +109,7 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = startGrid(1);
 
-        Integer key = 70;
+        Integer key = primaryKey(ignite1.cache(null));
 
         // Want test scenario when ignite1 is new primary node, but ignite0 is still partition owner.
         assertTrue(aff.isPrimary(ignite1.cluster().localNode(), key));

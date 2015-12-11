@@ -18,11 +18,11 @@ package org.apache.ignite.internal.processors.odbc.protocol;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
-import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
-import org.apache.ignite.internal.portable.streams.PortableInputStream;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.binary.*;
+import org.apache.ignite.internal.binary.streams.PortableHeapInputStream;
+import org.apache.ignite.internal.binary.streams.PortableHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.PortableInputStream;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.GridOdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.GridOdbcTableMeta;
 import org.apache.ignite.internal.processors.odbc.request.*;
@@ -33,9 +33,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 
 /**

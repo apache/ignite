@@ -3220,8 +3220,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         try {
                             txFut.get();
 
-                            return new GridCacheReturn(cacheCtx, true, keepBinary,
-                                implicitRes.value(), implicitRes.success());
+                            Object res = implicitRes.value();
+
+                            if (implicitRes.invokeResult()) {
+                                assert res == null || res instanceof Map : implicitRes;
+
+                                res = cacheCtx.unwrapInvokeResult((Map)res, keepBinary);
+                            }
+
+                            return new GridCacheReturn(cacheCtx, true, keepBinary, res, implicitRes.success());
                         }
                         catch (IgniteCheckedException | RuntimeException e) {
                             rollbackAsync();

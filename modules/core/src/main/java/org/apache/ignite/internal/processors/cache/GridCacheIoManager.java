@@ -192,7 +192,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
             else {
                 U.warn(log, "Received message without registered handler (will ignore) [msg=" + cacheMsg +
-                    ", nodeId=" + nodeId + ']');
+                    ", nodeId=" + nodeId +
+                    ", locTopVer=" + cctx.exchange().readyAffinityVersion() +
+                    ", msgTopVer=" + cacheMsg.topologyVersion() +
+                    ", cacheDesc=" + cctx.cache().cacheDescriptor(cacheMsg.cacheId()) + ']');
             }
 
             return;
@@ -562,7 +565,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             default:
                 throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
-                    + msg + "]");
+                    + msg + "]", msg.classError());
         }
     }
 

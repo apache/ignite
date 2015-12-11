@@ -405,81 +405,89 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (isDone())
             return;
 
-        assert !m.empty();
+        boolean set = cctx.tm().setTxTopologyHint(tx);
 
-        final ClusterNode n = m.node();
+        try {
+            assert !m.empty();
 
-        GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
-            futId,
-            tx.topologyVersion(),
-            tx,
-            null,
-            m.writes(),
-            m.near(),
-            txMapping.transactionNodes(),
-            m.last(),
-            tx.onePhaseCommit(),
-            tx.needReturnValue() && tx.implicit(),
-            tx.implicitSingle(),
-            m.explicitLock(),
-            tx.subjectId(),
-            tx.taskNameHash(),
-            m.clientFirst(),
-            tx.activeCachesDeploymentEnabled());
+            final ClusterNode n = m.node();
 
-        for (IgniteTxEntry txEntry : m.writes()) {
-            if (txEntry.op() == TRANSFORM)
-                req.addDhtVersion(txEntry.txKey(), null);
-        }
+            GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
+                futId,
+                tx.topologyVersion(),
+                tx,
+                null,
+                m.writes(),
+                m.near(),
+                txMapping.transactionNodes(),
+                m.last(),
+                tx.onePhaseCommit(),
+                tx.needReturnValue() && tx.implicit(),
+                tx.implicitSingle(),
+                m.explicitLock(),
+                tx.subjectId(),
+                tx.taskNameHash(),
+                m.clientFirst(),
+                tx.activeCachesDeploymentEnabled());
 
-        // Must lock near entries separately.
-        if (m.near()) {
-            try {
-                tx.optimisticLockEntries(req.writes());
-
-                tx.userPrepare();
+            for (IgniteTxEntry txEntry : m.writes()) {
+                if (txEntry.op() == TRANSFORM)
+                    req.addDhtVersion(txEntry.txKey(), null);
             }
-            catch (IgniteCheckedException e) {
-                onError(e);
-            }
-        }
 
-        final MiniFuture fut = new MiniFuture(m, mappings);
+            // Must lock near entries separately.
+            if (m.near()) {
+                try {
+                    tx.optimisticLockEntries(req.writes());
 
-        req.miniId(fut.futureId());
-
-        add(fut); // Append new future.
-
-        // If this is the primary node for the keys.
-        if (n.isLocal()) {
-            // At this point, if any new node joined, then it is
-            // waiting for this transaction to complete, so
-            // partition reassignments are not possible here.
-            IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
-
-            prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
-                @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
-                    try {
-                        fut.onResult(n.id(), prepFut.get());
-                    }
-                    catch (IgniteCheckedException e) {
-                        fut.onResult(e);
-                    }
+                    tx.userPrepare();
                 }
-            });
-        }
-        else {
-            try {
-                cctx.io().send(n, req, tx.ioPolicy());
+                catch (IgniteCheckedException e) {
+                    onError(e);
+                }
             }
-            catch (ClusterTopologyCheckedException e) {
-                e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
 
-                fut.onResult(e);
+            final MiniFuture fut = new MiniFuture(m, mappings);
+
+            req.miniId(fut.futureId());
+
+            add(fut); // Append new future.
+
+            // If this is the primary node for the keys.
+            if (n.isLocal()) {
+                // At this point, if any new node joined, then it is
+                // waiting for this transaction to complete, so
+                // partition reassignments are not possible here.
+                IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
+
+                prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
+                    @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
+                        try {
+                            fut.onResult(n.id(), prepFut.get());
+                        }
+                        catch (IgniteCheckedException e) {
+                            fut.onResult(e);
+                        }
+                    }
+                });
             }
-            catch (IgniteCheckedException e) {
-                fut.onResult(e);
+            else {
+                try {
+                    cctx.io().send(n, req, tx.ioPolicy());
+                }
+                catch (ClusterTopologyCheckedException e) {
+                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
+                    fut.onResult(e);
+                }
+                catch (IgniteCheckedException e) {
+                    fut.onResult(e);
+                }
             }
+        }
+        finally {
+            if (set)
+                cctx.tm().setTxTopologyHint(null);
         }
     }
 

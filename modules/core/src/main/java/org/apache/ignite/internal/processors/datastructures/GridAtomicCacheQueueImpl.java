@@ -55,7 +55,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             checkRemoved(idx);
 
-            GridCacheQueueItemKey key = itemKey(idx);
+            QueueItemKey key = itemKey(idx);
 
             cache.getAndPut(key, item);
 
@@ -78,7 +78,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
                 checkRemoved(idx);
 
-                GridCacheQueueItemKey key = itemKey(idx);
+                QueueItemKey key = itemKey(idx);
 
                 T data = (T)cache.getAndRemove(key);
 
@@ -115,7 +115,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             checkRemoved(idx);
 
-            Map<GridCacheQueueItemKey, T> putMap = new HashMap<>();
+            Map<QueueItemKey, T> putMap = new HashMap<>();
 
             for (T item : items) {
                 putMap.put(itemKey(idx), item);
@@ -140,7 +140,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
         if (idx != null) {
             checkRemoved(idx);
 
-            GridCacheQueueItemKey key = itemKey(idx);
+            QueueItemKey key = itemKey(idx);
 
             if (cache.remove(key))
                 return;

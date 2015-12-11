@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.PortableUtils;
+import org.apache.ignite.internal.binary.PortableUtils;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -219,6 +219,8 @@ import org.apache.ignite.internal.util.typedef.F;
      */
     private Collection<Object> unwrapPortables(ArrayList<Object> col, boolean keepPortable, boolean cpy) {
         int size = col.size();
+
+        col = new ArrayList<>(col);
 
         for (int i = 0; i < size; i++) {
             Object o = col.get(i);
