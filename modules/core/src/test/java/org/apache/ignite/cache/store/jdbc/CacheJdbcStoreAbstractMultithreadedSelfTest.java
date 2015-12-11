@@ -137,7 +137,10 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
         return c;
     }
 
-    /** */
+    /**
+     * @return Cache configuration.
+     * @throws Exception If failed.
+     */
     protected CacheConfiguration cacheConfiguration() throws Exception {
         CacheConfiguration cc = defaultCacheConfiguration();
 

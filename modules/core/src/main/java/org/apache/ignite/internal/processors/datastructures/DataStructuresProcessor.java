@@ -57,15 +57,16 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -504,8 +505,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private <T> T getAtomic(final IgniteOutClosureX<T> c,
-        DataStructureInfo dsInfo,
-        boolean create,
+        final DataStructureInfo dsInfo,
+        final boolean create,
         Class<? extends T> cls)
         throws IgniteCheckedException
     {
@@ -527,39 +528,26 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         if (dataStructure != null)
             return dataStructure;
 
-        while (true) {
-            try {
+        return retryTopologySafe(new IgniteOutClosureX<T>() {
+            @Override public T applyx() throws IgniteCheckedException {
                 if (!create)
                     return c.applyx();
 
                 try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    err = utilityCache.invoke(DATA_STRUCTURES_KEY, new AddAtomicProcessor(dsInfo)).get();
+                    IgniteCheckedException err =
+                        utilityCache.invoke(DATA_STRUCTURES_KEY, new AddAtomicProcessor(dsInfo)).get();
 
                     if (err != null)
                         throw err;
 
-                    dataStructure = c.applyx();
+                    T dataStructure = c.applyx();
 
                     tx.commit();
 
                     return dataStructure;
                 }
             }
-            catch (IgniteTxRollbackCheckedException ignore) {
-                // Safe to retry right away.
-            }
-            catch (IgniteCheckedException e) {
-                ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
-
-                if (topErr == null)
-                    throw e;
-
-                IgniteInternalFuture<?> fut = topErr.retryReadyFuture();
-
-                if (fut != null)
-                    fut.get();
-            }
-        }
+        });
     }
 
     /**
@@ -597,10 +585,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @param afterRmv Optional closure to run after data structure removed.
      * @throws IgniteCheckedException If failed.
      */
-    private <T> void removeDataStructure(IgniteOutClosureX<T> c,
+    private <T> void removeDataStructure(final IgniteOutClosureX<T> c,
         String name,
         DataStructureType type,
-        @Nullable IgniteInClosureX<T> afterRmv)
+        @Nullable final IgniteInClosureX<T> afterRmv)
         throws IgniteCheckedException
     {
         Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
@@ -608,52 +596,42 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         if (dsMap == null || !dsMap.containsKey(name))
             return;
 
-        DataStructureInfo dsInfo = new DataStructureInfo(name, type, null);
+        final DataStructureInfo dsInfo = new DataStructureInfo(name, type, null);
 
         IgniteCheckedException err = validateDataStructure(dsMap, dsInfo, false);
 
         if (err != null)
             throw err;
 
-        while (true) {
-            try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                T2<Boolean, IgniteCheckedException> res =
-                    utilityCache.invoke(DATA_STRUCTURES_KEY, new RemoveDataStructureProcessor(dsInfo)).get();
+        retryTopologySafe(new IgniteOutClosureX<Void>() {
+            @Override public Void applyx() throws IgniteCheckedException {
+                try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                    T2<Boolean, IgniteCheckedException> res =
+                        utilityCache.invoke(DATA_STRUCTURES_KEY, new RemoveDataStructureProcessor(dsInfo)).get();
 
-                err = res.get2();
+                    IgniteCheckedException err = res.get2();
 
-                if (err != null)
-                    throw err;
+                    if (err != null)
+                        throw err;
 
-                assert res.get1() != null;
+                    assert res.get1() != null;
 
-                boolean exists = res.get1();
+                    boolean exists = res.get1();
 
-                if (!exists)
-                    return;
+                    if (!exists)
+                        return null;
 
-                T rmvInfo = c.applyx();
+                    T rmvInfo = c.applyx();
 
-                tx.commit();
+                    tx.commit();
 
-                if (afterRmv != null && rmvInfo != null)
-                    afterRmv.applyx(rmvInfo);
+                    if (afterRmv != null && rmvInfo != null)
+                        afterRmv.applyx(rmvInfo);
+
+                    return null;
+                }
             }
-            catch (IgniteTxRollbackCheckedException ignore) {
-                // Safe to retry right away.
-            }
-            catch (IgniteCheckedException e) {
-                ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
-
-                if (topErr == null)
-                    throw e;
-
-                IgniteInternalFuture<?> fut = topErr.retryReadyFuture();
-
-                if (fut != null)
-                    fut.get();
-            }
-        }
+        });
     }
 
     /**
@@ -1000,7 +978,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private <T> T getCollection(final IgniteClosureX<GridCacheContext, T> c,
-        DataStructureInfo dsInfo,
+        final DataStructureInfo dsInfo,
         boolean create)
         throws IgniteCheckedException
     {
@@ -1028,41 +1006,29 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             return c.applyx(cacheCtx);
         }
 
-        while (true) {
-            try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                T2<String, IgniteCheckedException> res =
-                    utilityCache.invoke(DATA_STRUCTURES_KEY, new AddCollectionProcessor(dsInfo)).get();
+        return retryTopologySafe(new IgniteOutClosureX<T>() {
+            @Override public T applyx() throws IgniteCheckedException {
+                try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                    T2<String, IgniteCheckedException> res =
+                        utilityCache.invoke(DATA_STRUCTURES_KEY, new AddCollectionProcessor(dsInfo)).get();
 
-                err = res.get2();
+                    IgniteCheckedException err = res.get2();
 
-                if (err != null)
-                    throw err;
+                    if (err != null)
+                        throw err;
 
-                String cacheName = res.get1();
+                    String cacheName = res.get1();
 
-                final GridCacheContext cacheCtx = ctx.cache().internalCache(cacheName).context();
+                    final GridCacheContext cacheCtx = ctx.cache().internalCache(cacheName).context();
 
-                T col = c.applyx(cacheCtx);
+                    T col = c.applyx(cacheCtx);
 
-                tx.commit();
+                    tx.commit();
 
-                return col;
+                    return col;
+                }
             }
-            catch (IgniteTxRollbackCheckedException ignore) {
-                // Safe to retry right away.
-            }
-            catch (IgniteCheckedException e) {
-                ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
-
-                if (topErr == null)
-                    throw e;
-
-                IgniteInternalFuture<?> fut = topErr.retryReadyFuture();
-
-                if (fut != null)
-                    fut.get();
-            }
-        }
+        });
     }
 
     /**
@@ -1654,6 +1620,37 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                 (col.cfg.getNodeFilter() != null && col.cfg.getNodeFilter().equals(cfg.getNodeFilter()))))
                 return col.cacheName;
         }
+
+        return null;
+    }
+
+    /**
+     * @param c Closure to run.
+     * @throws IgniteCheckedException If failed.
+     * @return Closure return value.
+     */
+    private static <T> T retryTopologySafe(IgniteOutClosureX<T> c) throws IgniteCheckedException {
+        for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
+            try {
+                return c.applyx();
+            }
+            catch (IgniteCheckedException e) {
+                if (i == GridCacheAdapter.MAX_RETRIES - 1)
+                    throw e;
+
+                ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
+
+                if (topErr == null || (topErr instanceof ClusterTopologyServerNotFoundException))
+                    throw e;
+
+                IgniteInternalFuture<?> fut = topErr.retryReadyFuture();
+
+                if (fut != null)
+                    fut.get();
+            }
+        }
+
+        assert false;
 
         return null;
     }
