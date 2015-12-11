@@ -22,21 +22,20 @@ header#header.header
     .container
         h1.navbar-brand
             a(href='/') Apache Ignite Web Console
-        .navbar-collapse.collapse(ng-if='$root.user' ng-controller='activeLink' )
-            ul.nav.navbar-nav
-                li
-                    a.dropdown-toggle(ignite-configuration-sidebar ng-class='{active: isActive("/configuration.*")}' data-toggle='dropdown' bs-dropdown='sidebar.items' data-placement='bottom-right') Configuration
+        .navbar-collapse.collapse(ng-if='$root.user')
+            ul.nav.navbar-nav(ignite-configuration-sidebar ignite-navbar)
+                li(ng-class='{active: $state.includes("base.configuration")}')
+                    a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='sidebar.items' data-placement='bottom-right') Configuration
                         span.caret
 
-                li(ng-controller='notebooks')
-                    a.dropdown-toggle(ng-hide='$root.notebooks.length == 0' ng-class='{active: isActive("/sql")}' data-toggle='dropdown' bs-dropdown='notebookDropdown' data-placement='bottom-left') SQL
+                li(ng-class='{active: $state.includes("base.sql")}' ng-controller='notebooks')
+                    a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='notebookDropdown' data-placement='bottom-left') SQL
                         span.caret
-                    a(ng-hide='$root.notebooks.length > 0' ng-click='inputNotebookName()') SQL
 
-                li(ignite-navbar ng-repeat='item in navbar.items')
-                    a(ng-class='{active: isActive(item.href)}' ng-href='{{::item.href}}') {{::item.title}}
+                li(ui-sref-active='active'  ng-repeat='item in navbar.items')
+                    a(ui-sref='{{::item.sref}}') {{::item.text}}
 
-            ul.nav.navbar-nav.pull-right(ignite-userbar)
-                li
-                    a.dropdown-toggle(data-toggle='dropdown' ng-class='{active: isActive("/profile") || isActive("/admin")}' bs-dropdown='userbar.items' data-placement='bottom-right') {{user.username}}
+            ul.nav.navbar-nav.pull-right(ignite-settings)
+                li(ng-class='{active: $state.includes("settings")}')
+                    a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='settings.items' data-placement='bottom-right') {{user.username}}
                         span.caret

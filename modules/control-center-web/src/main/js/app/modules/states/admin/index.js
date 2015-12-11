@@ -24,7 +24,7 @@ angular
 .config(['$stateProvider', function($stateProvider) {
 	// set up the states
 	$stateProvider
-	.state('base.admin', {
+	.state('settings.admin', {
 		url: '/admin',
 		templateUrl: '/settings/admin.html'
 	})

@@ -103,6 +103,13 @@ consoleModule.config(function($modalProvider) {
     });
 });
 
+// Dropdowns configuration.
+consoleModule.config(function($dropdownProvider) {
+    angular.extend($dropdownProvider.defaults, {
+        templateUrl: 'templates/dropdown.html'
+    });
+});
+
 // Common functions to be used in controllers.
 consoleModule.service('$common', [
     '$alert', '$popover', '$timeout', '$focus', '$window', function ($alert, $popover, $timeout, $focus, $window) {
@@ -1884,22 +1891,6 @@ consoleModule.directive('onClickFocus', function ($focus) {
     };
 });
 
-// Navigation bar controller.
-consoleModule.controller('activeLink', [
-    '$scope', function ($scope) {
-        $scope.configurationDropdown = [
-            {"text": "Clusters", "href": "/configuration/clusters"},
-            {"text": "Caches", "href": "/configuration/caches"},
-            {"text": "Metadata", "href": "/configuration/metadata"},
-            {"text": "IGFS", "href": "/configuration/igfs"},
-            {"text": "Summary", "href": "/configuration/summary"}
-        ];
-
-        $scope.isActive = function (path) {
-            return new RegExp(path).test(window.location.pathname);
-        };
-    }]);
-
 consoleModule.controller('resetPassword', [
     '$scope', '$modal', '$http', '$common', '$focus', 'Auth', '$state',
     function ($scope, $modal, $http, $common, $focus, Auth, $state) {
@@ -2108,9 +2099,11 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
 
     $scope.$root.rebuildDropdown = function() {
         $scope.notebookDropdown = [
-            {text: 'Create new notebook', click: 'inputNotebookName()'},
-            {divider: true}
+            {text: 'Create new notebook', click: 'inputNotebookName()'}
         ];
+
+        if ($scope.$root.notebooks.length > 0)
+            $scope.notebookDropdown.push({divider: true});
 
         _.forEach($scope.$root.notebooks, function (notebook) {
             $scope.notebookDropdown.push({

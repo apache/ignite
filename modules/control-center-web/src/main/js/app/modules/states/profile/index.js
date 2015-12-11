@@ -24,7 +24,7 @@ angular
 .config(['$stateProvider', function($stateProvider) {
 	// set up the states
 	$stateProvider
-	.state('base.profile', {
+	.state('settings.profile', {
 		url: '/profile',
 		templateUrl: '/settings/profile.html'
 	})

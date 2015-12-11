@@ -65,7 +65,7 @@ import './modules/states/admin/index'
 
 // ignite:modules
 import './modules/navbar/main'
-import './modules/userbar/main'
+import './modules/settings/main'
 import './modules/configuration/sidebar/main'
 import './modules/terms/main'
 // endignite
@@ -124,6 +124,11 @@ angular
 	$stateProvider
 		.state('base', {
 			url: '',
+			abstract: true,
+			templateUrl: '/base.html'
+		})
+		.state('settings', {
+			url: '/settings',
 			abstract: true,
 			templateUrl: '/base.html'
 		});

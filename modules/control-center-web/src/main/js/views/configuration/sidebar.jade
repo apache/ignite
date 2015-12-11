@@ -17,9 +17,9 @@
 .row
     .col-xs-3.col-sm-3.col-md-2.border-right.section-left.greedy
         .sidebar-nav(bs-affix)
-            ul.menu(ignite-configuration-sidebar ng-controller='activeLink')
+            ul.menu(ignite-configuration-sidebar)
                 li(ng-repeat='item in sidebar.items')
-                    a(ng-class='{active: isActive("{{::item.href}}$")}' href='{{::item.href}}')
+                    a(ui-sref-active='active' ui-sref='{{::item.sref}}')
                         span.fa-stack
                             i.fa.fa-circle-thin.fa-stack-2x
                             i.fa.fa-stack-1x {{::$index + 1}}

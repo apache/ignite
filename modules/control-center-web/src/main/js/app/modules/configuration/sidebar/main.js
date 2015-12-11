@@ -23,10 +23,10 @@ angular
 ])
 .provider('igniteConfigurationSidebar', function() {
     var items = [
-        { text: 'Clusters', href: '/configuration/clusters' },
-        { text: 'Caches', href: '/configuration/caches' },
-        { text: 'Metadata', href: '/configuration/metadata' },
-        { text: 'IGFS', href: '/configuration/igfs' }
+        { text: 'Clusters', sref: 'base.configuration.clusters' },
+        { text: 'Caches', sref: 'base.configuration.caches' },
+        { text: 'Metadata', sref: 'base.configuration.metadata' },
+        { text: 'IGFS', sref: 'base.configuration.igfs' }
     ];
 
     this.push = function(data) {
@@ -36,7 +36,7 @@ angular
     this.$get = [function() {
         var r = angular.copy(items);
 
-        r.push({ text: 'Summary', href: '/configuration/summary' });
+        r.push({ text: 'Summary', sref: 'base.configuration.summary' });
 
         return r;
     }]
