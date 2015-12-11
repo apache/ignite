@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.ValueTypeName, y.ValueTypeName);
 
             CollectionAssert.AreEqual(x.FieldNames, y.FieldNames);
-            CollectionAssert.AreEqual(x.Aliases, y.Indexes);
+            CollectionAssert.AreEqual(x.Aliases, y.Aliases);
 
             AssertConfigsAreEqual(x.Indexes, y.Indexes);
         }
@@ -329,7 +329,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                         ValueTypeName = "java.lang.String",
                         FieldNames = new[]
                         {
-                            new KeyValuePair<string, string>("len", "Integer")
+                            new KeyValuePair<string, string>("length", "Integer"),
+                            new KeyValuePair<string, string>("name", "String"),
+                            new KeyValuePair<string, string>("location", "String")
                         },
                         Aliases = new Dictionary<string, string> {{"length", "len"}},
                         Indexes = new[]
@@ -344,7 +346,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                             },
                             new QueryIndex
                             {
-                                IndexType = QueryIndexType.GeoSpatial,
+                                IndexType = QueryIndexType.FullText,
                                 Fields = new[]
                                 {
                                     new KeyValuePair<string, bool>("location", true)
