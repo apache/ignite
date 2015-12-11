@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void ContinuousQueryFilterReleaseCallbackDelegate(void* target, long filterPtr);
 
         private delegate void DataStreamerTopologyUpdateCallbackDelegate(void* target, long ldrPtr, long topVer, int topSize);
-        private delegate void DataStreamerStreamReceiverInvokeCallbackDelegate(void* target, long ptr, void* cache, long memPtr, byte keepBinary);
+        private delegate void DataStreamerStreamReceiverInvokeCallbackDelegate(void* target, long ptr, void* cache, long memPtr, byte keepPortable);
 
         private delegate void FutureByteResultCallbackDelegate(void* target, long futPtr, int res);
         private delegate void FutureBoolResultCallbackDelegate(void* target, long futPtr, int res);

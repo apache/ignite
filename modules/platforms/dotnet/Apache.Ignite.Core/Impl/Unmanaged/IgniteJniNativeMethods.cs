@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithAsync")]
         public static extern void* CacheWithAsync(void* ctx, void* obj);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithKeepBinary")]
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithKeepPortable")]
         public static extern void* CacheWithKeepBinary(void* ctx, void* obj);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheClear")]
@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesWithAsync")]
         public static extern void* ServicesWithAsync(void* ctx, void* target);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesWithServerKeepBinary")]
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesWithServerKeepPortable")]
         public static extern void* ServicesWithServerKeepBinary(void* ctx, void* target);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesCancel")]
