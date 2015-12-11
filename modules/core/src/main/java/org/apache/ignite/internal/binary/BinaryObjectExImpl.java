@@ -98,7 +98,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      *
      * @return Schema.
      */
-    protected abstract PortableSchema createSchema();
+    protected abstract BinarySchema createSchema();
 
     /** {@inheritDoc} */
     @Override public BinaryObject clone() throws CloneNotSupportedException {

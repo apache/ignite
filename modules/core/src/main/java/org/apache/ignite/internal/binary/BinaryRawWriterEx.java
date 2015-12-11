@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.binary.streams.PortableOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.jetbrains.annotations.Nullable;
@@ -35,7 +35,7 @@ public interface BinaryRawWriterEx extends BinaryRawWriter, AutoCloseable {
     /**
      * @return Output stream.
      */
-    public PortableOutputStream out();
+    public BinaryOutputStream out();
 
     /**
      * Cleans resources.

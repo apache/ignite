@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.mutabletest.GridPortableTestClasses;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.binary.builder.PortableBuilderEnum;
+import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
@@ -128,11 +128,11 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
             switch (field.getName()) {
                 case "anEnum":
-                    assertEquals(((PortableBuilderEnum)actVal).getOrdinal(), ((Enum)expVal).ordinal());
+                    assertEquals(((BinaryBuilderEnum)actVal).getOrdinal(), ((Enum)expVal).ordinal());
                     break;
 
                 case "enumArr": {
-                    PortableBuilderEnum[] actArr = (PortableBuilderEnum[])actVal;
+                    BinaryBuilderEnum[] actArr = (BinaryBuilderEnum[])actVal;
                     Enum[] expArr = (Enum[])expVal;
 
                     assertEquals(expArr.length, actArr.length);
@@ -847,8 +847,8 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         BinaryObjectBuilderImpl mutObj = wrap(obj);
 
-        PortableBuilderEnum[] arr = mutObj.getField("enumArr");
-        arr[0] = new PortableBuilderEnum(mutObj.typeId(), GridPortableTestClasses.TestObjectEnum.B);
+        BinaryBuilderEnum[] arr = mutObj.getField("enumArr");
+        arr[0] = new BinaryBuilderEnum(mutObj.typeId(), GridPortableTestClasses.TestObjectEnum.B);
 
         GridPortableTestClasses.TestObjectAllTypes res = mutObj.build().deserialize();
 

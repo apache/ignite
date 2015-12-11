@@ -45,7 +45,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
 
@@ -81,7 +81,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -101,7 +101,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
 
@@ -137,7 +137,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -173,7 +173,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -205,7 +205,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             typeCfg));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
 
@@ -229,7 +229,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
 
@@ -262,7 +262,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -281,7 +281,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
 
@@ -314,7 +314,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -347,7 +347,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -378,7 +378,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("org.apache.ignite.binary.testjar.*"),
             typeCfg));
 
-        PortableContext ctx = portableContext(marsh);
+        BinaryContext ctx = portableContext(marsh);
 
         Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
 
@@ -397,8 +397,8 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @param marsh Marshaller.
      * @return Portable context.
      */
-    protected PortableContext portableContext(BinaryMarshaller marsh) {
-        GridPortableMarshaller impl = U.field(marsh, "impl");
+    protected BinaryContext portableContext(BinaryMarshaller marsh) {
+        GridBinaryMarshaller impl = U.field(marsh, "impl");
 
         return impl.context();
     }
@@ -451,7 +451,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         iCfg.setBinaryConfiguration(bCfg);
 
-        PortableContext ctx = new PortableContext(BinaryNoopMetadataHandler.instance(), iCfg);
+        BinaryContext ctx = new BinaryContext(BinaryNoopMetadataHandler.instance(), iCfg);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

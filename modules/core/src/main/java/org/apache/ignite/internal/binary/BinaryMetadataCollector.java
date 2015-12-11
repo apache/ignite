@@ -51,7 +51,7 @@ class BinaryMetadataCollector implements BinaryWriter {
     private final Map<String, Integer> meta = new HashMap<>();
 
     /** Schema builder. */
-    private PortableSchema.Builder schemaBuilder = PortableSchema.Builder.newBuilder();
+    private BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
 
     /**
      * Constructor.
@@ -76,7 +76,7 @@ class BinaryMetadataCollector implements BinaryWriter {
     /**
      * @return Schemas.
      */
-    PortableSchema schema() {
+    BinarySchema schema() {
         return schemaBuilder.build();
     }
 
@@ -267,8 +267,8 @@ class BinaryMetadataCollector implements BinaryWriter {
         if (oldFieldTypeId != null && !oldFieldTypeId.equals(fieldTypeId)) {
             throw new BinaryObjectException(
                 "Field is written twice with different types [" + "typeName=" + typeName + ", fieldName=" + name +
-                ", fieldTypeName1=" + PortableUtils.fieldTypeName(oldFieldTypeId) +
-                ", fieldTypeName2=" + PortableUtils.fieldTypeName(fieldTypeId) + ']'
+                ", fieldTypeName1=" + BinaryUtils.fieldTypeName(oldFieldTypeId) +
+                ", fieldTypeName2=" + BinaryUtils.fieldTypeName(fieldTypeId) + ']'
             );
         }
 
