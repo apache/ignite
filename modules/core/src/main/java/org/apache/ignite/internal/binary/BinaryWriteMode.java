@@ -138,7 +138,7 @@ public enum BinaryWriteMode {
     /** */
     ENUM(GridBinaryMarshaller.ENUM),
 
-    /** Portable enum. */
+    /** Binary enum. */
     PORTABLE_ENUM(GridBinaryMarshaller.ENUM),
 
     /** */

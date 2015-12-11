@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class GridCacheBinaryStoreObjectsSelfTest extends GridCacheBinaryStoreAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean keepPortableInStore() {
+    @Override protected boolean keepBinaryInStore() {
         return false;
     }
 

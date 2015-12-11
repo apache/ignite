@@ -58,7 +58,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
     /*
      * Constructor.
      *
-     * @param objImpl Portable object
+     * @param objImpl Binary object
      */
     BinaryBuilderReader(BinaryObjectImpl objImpl) {
         ctx = objImpl.context();
@@ -89,7 +89,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
     }
 
     /**
-     * @return Portable context.
+     * @return Binary context.
      */
     public BinaryContext portableContext() {
         return ctx;

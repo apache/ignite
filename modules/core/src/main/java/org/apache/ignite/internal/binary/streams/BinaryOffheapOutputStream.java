@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.binary.streams;
 
 /**
- * Portable offheap output stream.
+ * Binary offheap output stream.
  */
 public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
     /** Pointer. */

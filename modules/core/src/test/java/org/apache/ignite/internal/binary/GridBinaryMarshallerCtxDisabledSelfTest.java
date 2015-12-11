@@ -48,7 +48,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
 
         BinaryContext context = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg);
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", context, cfg);
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", context, cfg);
 
         SimpleObject simpleObj = new SimpleObject();
 
@@ -68,12 +68,12 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
 
         assertEquals(simpleObj, marsh.unmarshal(marsh.marshal(simpleObj), null));
 
-        SimpleBinary simplePortable = new SimpleBinary();
+        SimpleBinary simpleBinary = new SimpleBinary();
 
-        simplePortable.str = "portable";
-        simplePortable.arr = new long[] {100, 200, 300};
+        simpleBinary.str = "portable";
+        simpleBinary.arr = new long[] {100, 200, 300};
 
-        assertEquals(simplePortable, marsh.unmarshal(marsh.marshal(simplePortable), null));
+        assertEquals(simpleBinary, marsh.unmarshal(marsh.marshal(simpleBinary), null));
 
         SimpleExternalizable simpleExtr = new SimpleExternalizable();
 

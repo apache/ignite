@@ -169,7 +169,7 @@ import org.jetbrains.annotations.Nullable;
  * to any participating grid nodes. However, in case of redeployment, caches will be cleared and
  * all entries will be removed. This behavior is useful during development, but should not be
  * used in production.
- * <h1 class="header">Portable Objects</h1>
+ * <h1 class="header">Binary Objects</h1>
  * If an object is defined as portable Ignite cache will automatically store it in portable (i.e. binary)
  * format. User can choose to work either with the portable format or with the deserialized form (assuming
  * that class definitions are present in the classpath). By default, cache works with deserialized form
@@ -186,14 +186,14 @@ import org.jetbrains.annotations.Nullable;
  * You won't be able to work with deserialized form if class definition for the {@code Value} is not on
  * classpath. Even if you have the class definition, you should always avoid full deserialization if it's not
  * needed for performance reasons. To work with portable format directly you should create special projection
- * using {@link #keepPortable()} method:
+ * using {@link #keepBinary()} method:
  * <pre>
- * IgniteInternalCache<Integer, GridPortableObject> prj = Ignition.grid().cache(null).keepBinary();
+ * IgniteInternalCache<Integer, GridBinaryObject> prj = Ignition.grid().cache(null).keepBinary();
  *
  * // Value is not deserialized and returned in portable format.
- * GridPortableObject po = prj.get(1);
+ * GridBinaryObject po = prj.get(1);
  * </pre>
- * See {@link #keepPortable()} method JavaDoc for more details.
+ * See {@link #keepBinary()} method JavaDoc for more details.
  */
 public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
@@ -231,7 +231,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * so keys and values will be returned from cache API methods without changes. Therefore,
      * signature of the projection can contain only following types:
      * <ul>
-     *     <li><code>org.gridgain.grid.binary.PortableObject</code> for portable classes</li>
+     *     <li><code>org.gridgain.grid.binary.BinaryObject</code> for portable classes</li>
      *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
      *     <li>Arrays of primitives (byte[], int[], ...)</li>
      *     <li>{@link String} and array of {@link String}s</li>
@@ -249,19 +249,19 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * (which will be stored in portable format), you should acquire following projection
      * to avoid deserialization:
      * <pre>
-     * IgniteInternalCache<Integer, GridPortableObject> prj = cache.keepBinary();
+     * IgniteInternalCache<Integer, GridBinaryObject> prj = cache.keepBinary();
      *
      * // Value is not deserialized and returned in portable format.
-     * GridPortableObject po = prj.get(1);
+     * GridBinaryObject po = prj.get(1);
      * </pre>
      * <p>
      * Note that this method makes sense only if cache is working in portable mode
-     * (<code>org.apache.ignite.configuration.CacheConfiguration#isPortableEnabled()</code> returns {@code true}. If not,
+     * (<code>org.apache.ignite.configuration.CacheConfiguration#isBinaryEnabled()</code> returns {@code true}. If not,
      * this method is no-op and will return current projection.
      *
      * @return New internal cache instance for portable objects.
      */
-    public <K1, V1> IgniteInternalCache<K1, V1> keepPortable();
+    public <K1, V1> IgniteInternalCache<K1, V1> keepBinary();
 
     /**
      * Returns {@code true} if this map contains no key-value mappings.

@@ -30,7 +30,7 @@ public enum GridClientCacheFlag {
      * Disable deserialization of portable objects on get operations.
      * If set and portable marshaller is used, {@link GridClientData#get(Object)}
      * and {@link GridClientData#getAll(Collection)} methods will return
-     * instances of {@code PortableObject} class instead of user objects.
+     * instances of {@code BinaryObject} class instead of user objects.
      * Use this flag if you don't have corresponding class on your client of
      * if you want to get access to some individual fields, but do not want to
      * fully deserialize the object.

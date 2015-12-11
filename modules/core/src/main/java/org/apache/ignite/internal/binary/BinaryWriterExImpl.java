@@ -41,7 +41,7 @@ import java.util.UUID;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Portable writer implementation.
+ * Binary writer implementation.
  */
 public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, ObjectOutput {
     /** Length: integer. */
@@ -748,7 +748,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void doWritePortableEnum(BinaryEnumObjectImpl val) {
+    void doWriteBinaryEnum(BinaryEnumObjectImpl val) {
         assert val != null;
 
         int typeId = val.typeId();
@@ -819,9 +819,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @param po Portable object.
+     * @param po Binary object.
      */
-    public void doWritePortableObject(@Nullable BinaryObjectImpl po) {
+    public void doWriteBinaryObject(@Nullable BinaryObjectImpl po) {
         if (po == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -1176,11 +1176,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @param po Portable object.
+     * @param po Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    void writePortableObjectField(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
-        doWritePortableObject(po);
+    void writeBinaryObjectField(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
+        doWriteBinaryObject(po);
     }
 
     /** {@inheritDoc} */
@@ -1760,7 +1760,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @return Portable context.
+     * @return Binary context.
      */
     public BinaryContext context() {
         return ctx;

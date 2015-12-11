@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary.noncompact;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderSelfTest;
 
 /**
- * Portable builder test for objects with non-compact footer.
+ * Binary builder test for objects with non-compact footer.
  */
 public class BinaryObjectBuilderNonCompactSelfTest extends BinaryObjectBuilderSelfTest {
     /** {@inheritDoc} */

@@ -53,7 +53,7 @@ import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
 
 /**
- * Portable class descriptor.
+ * Binary class descriptor.
  */
 public class BinaryClassDescriptor {
     /** */
@@ -547,7 +547,7 @@ public class BinaryClassDescriptor {
                 break;
 
             case PORTABLE_ENUM:
-                writer.doWritePortableEnum((BinaryEnumObjectImpl)obj);
+                writer.doWriteBinaryEnum((BinaryEnumObjectImpl)obj);
 
                 break;
 
@@ -562,7 +562,7 @@ public class BinaryClassDescriptor {
                 break;
 
             case PORTABLE_OBJ:
-                writer.doWritePortableObject((BinaryObjectImpl)obj);
+                writer.doWriteBinaryObject((BinaryObjectImpl)obj);
 
                 break;
 

@@ -78,7 +78,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
     protected String taskName;
 
     /** Whether to deserialize portable objects. */
-    protected boolean deserializePortable;
+    protected boolean deserializeBinary;
 
     /** Skip values flag. */
     protected boolean skipVals;
@@ -103,7 +103,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
      *          if called on backup node.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize portable flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
@@ -117,7 +117,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
         boolean forcePrimary,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean canRemap,
@@ -134,7 +134,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
         this.forcePrimary = forcePrimary;
         this.subjId = subjId;
         this.taskName = taskName;
-        this.deserializePortable = deserializePortable;
+        this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.canRemap = canRemap;

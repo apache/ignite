@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 
 /**
- * Portable schema registry. Contains all well-known object schemas.
+ * Binary schema registry. Contains all well-known object schemas.
  * <p>
  * We rely on the fact that usually object has only few different schemas. For this reason we inline several
  * of them with optional fallback to normal hash map lookup.

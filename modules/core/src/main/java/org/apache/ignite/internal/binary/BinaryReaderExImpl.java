@@ -81,11 +81,11 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
 
 /**
- * Portable reader implementation.
+ * Binary reader implementation.
  */
 @SuppressWarnings("unchecked")
 public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, BinaryReaderHandlesHolder, ObjectInput {
-    /** Portable context. */
+    /** Binary context. */
     private final BinaryContext ctx;
 
     /** Input stream. */
@@ -312,10 +312,10 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /**
      * @param fieldId Field ID.
-     * @return Portable object.
+     * @return Binary object.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable BinaryObject readPortableObject(int fieldId) throws BinaryObjectException {
+    @Nullable BinaryObject readBinaryObject(int fieldId) throws BinaryObjectException {
         if (findFieldById(fieldId)) {
             if (checkFlag(PORTABLE_OBJ) == Flag.NULL)
                 return null;
@@ -1599,7 +1599,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case PORTABLE_OBJ:
-                obj = BinaryUtils.doReadPortableObject(in, ctx);
+                obj = BinaryUtils.doReadBinaryObject(in, ctx);
 
                 ((BinaryObjectImpl)obj).context(ctx);
 

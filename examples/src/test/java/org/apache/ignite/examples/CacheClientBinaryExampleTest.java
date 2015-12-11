@@ -33,14 +33,14 @@ public class CacheClientBinaryExampleTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPortablePutGetExample() throws Exception {
+    public void testBinaryPutGetExample() throws Exception {
         CacheClientBinaryPutGetExample.main(new String[] {});
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPortableQueryExample() throws Exception {
+    public void testBinaryQueryExample() throws Exception {
         CacheClientBinaryQueryExample.main(new String[] {});
     }
 }

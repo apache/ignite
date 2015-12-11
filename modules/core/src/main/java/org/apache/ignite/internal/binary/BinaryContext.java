@@ -75,7 +75,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 /**
- * Portable context.
+ * Binary context.
  */
 public class BinaryContext implements Externalizable {
     /** */
@@ -224,7 +224,7 @@ public class BinaryContext implements Externalizable {
     }
 
     /**
-     * @param marsh Portable marshaller.
+     * @param marsh Binary marshaller.
      * @param cfg Configuration.
      * @throws BinaryObjectException In case of error.
      */
@@ -675,7 +675,7 @@ public class BinaryContext implements Externalizable {
     }
 
     /**
-     * @return Portable context.
+     * @return Binary context.
      * @throws ObjectStreamException In case of error.
      */
     protected Object readResolve() throws ObjectStreamException {
@@ -695,7 +695,7 @@ public class BinaryContext implements Externalizable {
     /**
      * @param cls Class.
      * @param id Type ID.
-     * @return GridPortableClassDescriptor.
+     * @return GridBinaryClassDescriptor.
      */
     public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id) {
         String typeName = typeName(cls.getName());

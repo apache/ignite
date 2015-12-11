@@ -94,7 +94,7 @@ public class CacheOperationContext implements Serializable {
     }
 
     /**
-     * See {@link IgniteInternalCache#keepPortable()}.
+     * See {@link IgniteInternalCache#keepBinary()}.
      *
      * @return New instance of CacheOperationContext with keep portable flag.
      */

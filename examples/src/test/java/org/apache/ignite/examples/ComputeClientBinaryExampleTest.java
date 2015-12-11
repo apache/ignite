@@ -31,7 +31,7 @@ public class ComputeClientBinaryExampleTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPortableTaskExecutionExample() throws Exception {
+    public void testBinaryTaskExecutionExample() throws Exception {
         ComputeClientBinaryTaskExecutionExample.main(new String[] {});
     }
 }

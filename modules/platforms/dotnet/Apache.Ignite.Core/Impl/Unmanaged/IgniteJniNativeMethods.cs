@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern int Reallocate(long memPtr, int cap);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteIgnitionStart")]
-        public static extern void* IgnitionStart(void* ctx, sbyte* cfgPath, sbyte* gridName, int factoryId, 
+        public static extern void* IgnitionStart(void* ctx, sbyte* cfgPath, sbyte* gridName, int factoryId,
             long dataPtr);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteIgnitionStop")]
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern void* ProcessorAffinity(void* ctx, void* obj, sbyte* name);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorDataStreamer")]
-        public static extern void* ProcessorDataStreamer(void* ctx, void* obj, sbyte* name, 
+        public static extern void* ProcessorDataStreamer(void* ctx, void* obj, sbyte* name,
             [MarshalAs(UnmanagedType.U1)] bool keepBinary);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorTransactions")]
@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithAsync")]
         public static extern void* CacheWithAsync(void* ctx, void* obj);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithKeepPortable")]
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheWithKeepBinary")]
         public static extern void* CacheWithKeepBinary(void* ctx, void* obj);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheClear")]
@@ -194,7 +194,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern bool DataStreamerAllowOverwriteGet(void* ctx, void* obj);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerAllowOverwriteSet")]
-        public static extern void DataStreamerAllowOverwriteSet(void* ctx, void* obj, 
+        public static extern void DataStreamerAllowOverwriteSet(void* ctx, void* obj,
             [MarshalAs(UnmanagedType.U1)] bool val);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerSkipStoreGet")]
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern bool DataStreamerSkipStoreGet(void* ctx, void* obj);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerSkipStoreSet")]
-        public static extern void DataStreamerSkipStoreSet(void* ctx, void* obj, 
+        public static extern void DataStreamerSkipStoreSet(void* ctx, void* obj,
             [MarshalAs(UnmanagedType.U1)] bool val);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteDataStreamerPerNodeBufferSizeGet")]
@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesWithAsync")]
         public static extern void* ServicesWithAsync(void* ctx, void* target);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesWithServerKeepPortable")]
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesWithServerKeepBinary")]
         public static extern void* ServicesWithServerKeepBinary(void* ctx, void* target);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteServicesCancel")]

@@ -147,7 +147,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testAddMissingPortable() throws Exception {
+    public void testAddMissingBinary() throws Exception {
         try {
             portables = true;
 
@@ -182,7 +182,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testAddPortableDataFromMap() throws Exception {
+    public void testAddBinaryDataFromMap() throws Exception {
         try {
             portables = true;
 
@@ -220,8 +220,8 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
                 assertEquals(k, v.val());
             }
 
-            // Read random keys. Take values as PortableObject.
-            IgniteCache<Integer, BinaryObject> c2 = ((IgniteCacheProxy)c).keepPortable();
+            // Read random keys. Take values as BinaryObject.
+            IgniteCache<Integer, BinaryObject> c2 = ((IgniteCacheProxy)c).keepBinary();
 
             for (int i = 0; i < 100; i ++) {
                 Integer k = rnd.nextInt(KEYS_COUNT);

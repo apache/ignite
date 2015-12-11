@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.binary.streams;
 
 /**
- * Portable heap output stream.
+ * Binary heap output stream.
  */
 public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
     /** Allocator. */

@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import sun.misc.Unsafe;
 
 /**
- * Portable abstract stream.
+ * Binary abstract stream.
  */
 public abstract class BinaryAbstractStream implements BinaryStream {
     /** Byte: zero. */

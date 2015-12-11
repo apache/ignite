@@ -36,7 +36,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Portable meta data test.
+ * Binary meta data test.
  */
 public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
     /** */
@@ -189,7 +189,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPortableMarshalAware() throws Exception {
+    public void testBinaryMarshalAware() throws Exception {
         portables().toBinary(new TestObject2());
 
         BinaryType meta = portables().type(TestObject2.class);

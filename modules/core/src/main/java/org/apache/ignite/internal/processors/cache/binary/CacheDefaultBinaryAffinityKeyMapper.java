@@ -37,7 +37,7 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
         CacheObjectBinaryProcessorImpl proc = (CacheObjectBinaryProcessorImpl)kernal.context().cacheObjects();
 
         try {
-            key = proc.toPortable(key);
+            key = proc.toBinary(key);
         }
         catch (IgniteException e) {
             U.error(log, "Failed to marshal key to portable: " + key, e);

@@ -58,7 +58,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Portable utils.
+ * Binary utils.
  */
 public class BinaryUtils {
     /** */
@@ -70,7 +70,7 @@ public class BinaryUtils {
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
 
-    /** Portable classes. */
+    /** Binary classes. */
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
     /** Flag: user type. */
@@ -547,7 +547,7 @@ public class BinaryUtils {
 
     /**
      * @param cls Class.
-     * @return Portable field type.
+     * @return Binary field type.
      */
     public static byte typeByClass(Class<?> cls) {
         Byte type = PLAIN_CLASS_TO_FLAG.get(cls);
@@ -576,7 +576,7 @@ public class BinaryUtils {
      * @param cls Class to check.
      * @return Whether type is portable.
      */
-    public static boolean isPortableType(Class<?> cls) {
+    public static boolean isBinaryType(Class<?> cls) {
         assert cls != null;
 
         return BinaryObject.class.isAssignableFrom(cls) ||
@@ -1249,7 +1249,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static BinaryObject doReadPortableObject(BinaryInputStream in, BinaryContext ctx) {
+    public static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx) {
         if (in.offheapPointer() > 0) {
             int len = in.readInt();
 
@@ -1343,7 +1343,7 @@ public class BinaryUtils {
     /**
      * Resolve the class.
      *
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      * @param typeId Type ID.
      * @param clsName Class name.
      * @param ldr Class loaded.
@@ -1377,11 +1377,11 @@ public class BinaryUtils {
      * Read portable enum.
      *
      * @param in Input stream.
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      * @param type Plain type.
      * @return Enum.
      */
-    private static BinaryEnumObjectImpl doReadPortableEnum(BinaryInputStream in, BinaryContext ctx,
+    private static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
         return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
     }
@@ -1390,10 +1390,10 @@ public class BinaryUtils {
      * Read portable enum array.
      *
      * @param in Input stream.
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      * @return Enum array.
      */
-    private static Object[] doReadPortableEnumArray(BinaryInputStream in, BinaryContext ctx) {
+    private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
         Object[] arr = (Object[]) Array.newInstance(BinaryObject.class, len);
@@ -1404,7 +1404,7 @@ public class BinaryUtils {
             if (flag == GridBinaryMarshaller.NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadPortableEnum(in, ctx, doReadEnumType(in));
+                arr[i] = doReadBinaryEnum(in, ctx, doReadEnumType(in));
         }
 
         return arr;
@@ -1645,15 +1645,15 @@ public class BinaryUtils {
                 return doReadMap(in, ctx, ldr, handles, false, null);
 
             case GridBinaryMarshaller.PORTABLE_OBJ:
-                return doReadPortableObject(in, ctx);
+                return doReadBinaryObject(in, ctx);
 
             case GridBinaryMarshaller.ENUM:
-                return doReadPortableEnum(in, ctx, doReadEnumType(in));
+                return doReadBinaryEnum(in, ctx, doReadEnumType(in));
 
             case GridBinaryMarshaller.ENUM_ARR:
                 doReadEnumType(in); // Simply skip this part as we do not need it.
 
-                return doReadPortableEnumArray(in, ctx);
+                return doReadBinaryEnumArray(in, ctx);
 
             case GridBinaryMarshaller.CLASS:
                 return doReadClass(in, ctx, ldr);

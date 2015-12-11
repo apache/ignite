@@ -150,7 +150,7 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
 
                                 c.put(new TestObject(rnd.nextInt(10000)), new TestObject(rnd.nextInt(10000)));
 
-                                IgniteCache<Object, Object> p2 = ((IgniteCacheProxy<Object, Object>)c).keepPortable();
+                                IgniteCache<Object, Object> p2 = ((IgniteCacheProxy<Object, Object>)c).keepBinary();
 
                                 BinaryObject v = (BinaryObject)p2.get(new TestObject(rnd.nextInt(10000)));
 
@@ -165,7 +165,7 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
                                 // Put/get int -> portable.
                                 c.put(rnd.nextInt(10000), new TestObject(rnd.nextInt(10000)));
 
-                                IgniteCache<Integer, BinaryObject> p4 = ((IgniteCacheProxy<Object, Object>)c).keepPortable();
+                                IgniteCache<Integer, BinaryObject> p4 = ((IgniteCacheProxy<Object, Object>)c).keepBinary();
 
                                 BinaryObject v1 = p4.get(rnd.nextInt(10000));
 

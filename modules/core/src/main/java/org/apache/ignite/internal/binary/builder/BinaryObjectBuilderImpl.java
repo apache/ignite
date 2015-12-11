@@ -70,7 +70,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** */
     private Map<Integer, Object> readCache;
 
-    /** Position of object in source array, or -1 if object is not created from PortableObject. */
+    /** Position of object in source array, or -1 if object is not created from BinaryObject. */
     private final int start;
 
     /** Flags. */
@@ -79,7 +79,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** Total header length */
     private final int hdrLen;
 
-    /** Context of PortableObject reading process. Or {@code null} if object is not created from PortableObject. */
+    /** Context of BinaryObject reading process. Or {@code null} if object is not created from BinaryObject. */
     private final BinaryBuilderReader reader;
 
     /** */
@@ -87,7 +87,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
     /**
      * @param clsName Class name.
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      */
     public BinaryObjectBuilderImpl(BinaryContext ctx, String clsName) {
         this(ctx, ctx.typeId(clsName), BinaryContext.typeName(clsName));
@@ -542,7 +542,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /**
      * Creates builder initialized by specified portable object.
      *
-     * @param obj Portable object to initialize builder.
+     * @param obj Binary object to initialize builder.
      * @return New builder.
      */
     public static BinaryObjectBuilderImpl wrap(BinaryObject obj) {

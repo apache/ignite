@@ -49,7 +49,7 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        bCfg.setClassNames(Collections.singletonList(TestPortable.class.getName()));
+        bCfg.setClassNames(Collections.singletonList(TestBinary.class.getName()));
 
         cfg.setBinaryConfiguration(bCfg);
 
@@ -67,7 +67,7 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
         CacheTypeMetadata meta = new CacheTypeMetadata();
 
         meta.setKeyType(Integer.class);
-        meta.setValueType(TestPortable.class.getName());
+        meta.setValueType(TestBinary.class.getName());
 
         Map<String, Class<?>> idx = new HashMap<>();
 
@@ -91,13 +91,13 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
      * @throws Exception If failed.
      */
     public void testIndexReferences() throws Exception {
-        IgniteCache<Integer, TestPortable> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestBinary> cache = grid(0).cache(null);
 
         String fieldOneVal = "123";
         int fieldTwoVal = 123;
         int key = 0;
 
-        cache.put(key, new TestPortable(fieldOneVal, fieldTwoVal));
+        cache.put(key, new TestBinary(fieldOneVal, fieldTwoVal));
 
         IgniteCache<Integer, BinaryObject> prj = grid(0).cache(null).withKeepBinary();
 
@@ -107,7 +107,7 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
         assertEquals(new Integer(fieldTwoVal), cacheVal.field("fieldTwo"));
 
         List<?> row = F.first(prj.query(new SqlFieldsQuery("select _val from " +
-            "TestPortable where _key = ?").setArgs(key)).getAll());
+            "TestBinary where _key = ?").setArgs(key)).getAll());
 
         assertEquals(1, row.size());
 
@@ -121,7 +121,7 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
     /**
      * Test portable object.
      */
-    private static class TestPortable {
+    private static class TestBinary {
         /** */
         private String fieldOne;
 
@@ -131,7 +131,7 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
         /**
          *
          */
-        private TestPortable() {
+        private TestBinary() {
             // No-op.
         }
 
@@ -139,7 +139,7 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
          * @param fieldOne Field one.
          * @param fieldTwo Field two.
          */
-        private TestPortable(String fieldOne, int fieldTwo) {
+        private TestBinary(String fieldOne, int fieldTwo) {
             this.fieldOne = fieldOne;
             this.fieldTwo = fieldTwo;
         }

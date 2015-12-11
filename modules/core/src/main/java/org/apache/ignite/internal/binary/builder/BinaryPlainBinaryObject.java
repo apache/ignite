@@ -30,7 +30,7 @@ public class BinaryPlainBinaryObject implements BinaryLazyValue {
     private final BinaryObject portableObj;
 
     /**
-     * @param portableObj Portable object.
+     * @param portableObj Binary object.
      */
     public BinaryPlainBinaryObject(BinaryObject portableObj) {
         this.portableObj = portableObj;
@@ -48,6 +48,6 @@ public class BinaryPlainBinaryObject implements BinaryLazyValue {
         if (val instanceof BinaryObjectOffheapImpl)
             val = ((BinaryObjectOffheapImpl)val).heapCopy();
 
-        writer.doWritePortableObject((BinaryObjectImpl)val);
+        writer.doWriteBinaryObject((BinaryObjectImpl)val);
     }
 }

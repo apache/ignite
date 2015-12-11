@@ -46,7 +46,7 @@ public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
     }
 
     /**
-     * @param reader PortableBuilderReader.
+     * @param reader BinaryBuilderReader.
      */
     public BinaryBuilderEnum(BinaryBuilderReader reader) {
         int typeId = reader.readInt();

@@ -87,8 +87,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
-        assertEquals(400, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(300, typeMappers.get("GridBinaryTestClass1").typeId("GridBinaryTestClass1"));
+        assertEquals(400, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
         assertEquals(500, typeMappers.get("InnerClass").typeId("InnerClass"));
     }
 
@@ -143,8 +143,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
-        assertEquals(400, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(300, typeMappers.get("GridBinaryTestClass1").typeId("GridBinaryTestClass1"));
+        assertEquals(400, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
         assertEquals(500, typeMappers.get("InnerClass").typeId("InnerClass"));
     }
 
@@ -179,8 +179,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
-        assertEquals(400, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(300, typeMappers.get("GridBinaryTestClass1").typeId("GridBinaryTestClass1"));
+        assertEquals(400, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
         assertEquals(500, typeMappers.get("InnerClass").typeId("InnerClass"));
     }
 
@@ -190,7 +190,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
     public void testOverride() throws Exception {
         BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
 
-        typeCfg.setTypeName("GridPortableTestClass2");
+        typeCfg.setTypeName("GridBinaryTestClass2");
         typeCfg.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 100;
@@ -217,7 +217,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
-        assertEquals(100, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(100, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
     }
 
     /**
@@ -268,8 +268,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
-        assertEquals(400, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(300, typeMappers.get("GridBinaryTestClass1").typeId("GridBinaryTestClass1"));
+        assertEquals(400, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
     }
 
     /**
@@ -320,8 +320,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
-        assertEquals(400, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(300, typeMappers.get("GridBinaryTestClass1").typeId("GridBinaryTestClass1"));
+        assertEquals(400, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
     }
 
     /**
@@ -353,8 +353,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
-        assertEquals(400, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(300, typeMappers.get("GridBinaryTestClass1").typeId("GridBinaryTestClass1"));
+        assertEquals(400, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
     }
 
     /**
@@ -362,7 +362,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      */
     public void testOverrideJar() throws Exception {
         BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(
-            "org.apache.ignite.binary.testjar.GridPortableTestClass2");
+            "org.apache.ignite.binary.testjar.GridBinaryTestClass2");
 
         typeCfg.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
@@ -390,12 +390,12 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(100, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(100, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
     }
 
     /**
      * @param marsh Marshaller.
-     * @return Portable context.
+     * @return Binary context.
      */
     protected BinaryContext portableContext(BinaryMarshaller marsh) {
         GridBinaryMarshaller impl = U.field(marsh, "impl");
@@ -457,7 +457,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, iCfg);
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
 
         return marsh;
     }

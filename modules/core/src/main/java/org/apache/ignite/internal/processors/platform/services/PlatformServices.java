@@ -61,22 +61,22 @@ public class PlatformServices extends PlatformAbstractTarget {
     private final IgniteServices services;
 
     /** Server keep portable flag. */
-    private final boolean srvKeepPortable;
+    private final boolean srvKeepBinary;
 
     /**
      * Ctor.
      *
      * @param platformCtx Context.
      * @param services Services facade.
-     * @param srvKeepPortable Server keep portable flag.
+     * @param srvKeepBinary Server keep portable flag.
      */
-    public PlatformServices(PlatformContext platformCtx, IgniteServices services, boolean srvKeepPortable) {
+    public PlatformServices(PlatformContext platformCtx, IgniteServices services, boolean srvKeepBinary) {
         super(platformCtx);
 
         assert services != null;
 
         this.services = services;
-        this.srvKeepPortable = srvKeepPortable;
+        this.srvKeepBinary = srvKeepBinary;
     }
 
     /**
@@ -88,7 +88,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         if (services.isAsync())
             return this;
 
-        return new PlatformServices(platformCtx, services.withAsync(), srvKeepPortable);
+        return new PlatformServices(platformCtx, services.withAsync(), srvKeepBinary);
     }
 
     /**
@@ -96,8 +96,8 @@ public class PlatformServices extends PlatformAbstractTarget {
      *
      * @return Services with server "keep portable" mode enabled.
      */
-    public PlatformServices withServerKeepPortable() {
-        return srvKeepPortable ? this : new PlatformServices(platformCtx, services, true);
+    public PlatformServices withServerKeepBinary() {
+        return srvKeepBinary ? this : new PlatformServices(platformCtx, services, true);
     }
 
     /**
@@ -135,7 +135,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 ServiceConfiguration cfg = new ServiceConfiguration();
 
                 cfg.setName(reader.readString());
-                cfg.setService(new PlatformDotNetServiceImpl(reader.readObjectDetached(), platformCtx, srvKeepPortable));
+                cfg.setService(new PlatformDotNetServiceImpl(reader.readObjectDetached(), platformCtx, srvKeepBinary));
                 cfg.setTotalCount(reader.readInt());
                 cfg.setMaxPerNodeCount(reader.readInt());
                 cfg.setCacheName(reader.readString());
@@ -157,7 +157,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 int totalCnt = reader.readInt();
                 int maxPerNodeCnt = reader.readInt();
 
-                services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepPortable),
+                services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
                     totalCnt, maxPerNodeCnt);
 
                 return TRUE;
@@ -218,7 +218,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = null;
 
                 try {
-                    Object result = ((PlatformDotNetService)arg).invokeMethod(mthdName, srvKeepPortable, args);
+                    Object result = ((PlatformDotNetService)arg).invokeMethod(mthdName, srvKeepBinary, args);
 
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }
