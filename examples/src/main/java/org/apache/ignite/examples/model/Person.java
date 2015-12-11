@@ -58,6 +58,13 @@ public class Person implements Serializable {
     private transient AffinityKey<Long> key;
 
     /**
+     * Default constructor.
+     */
+    public Person() {
+        // No-op.
+    }
+
+    /**
      * Constructs person record.
      *
      * @param org       Organization.
@@ -74,8 +81,27 @@ public class Person implements Serializable {
 
         this.firstName = firstName;
         this.lastName = lastName;
-        this.resume = resume;
         this.salary = salary;
+        this.resume = resume;
+    }
+
+    /**
+     * Constructs person record.
+     *
+     * @param id Person ID.
+     * @param orgId Organization ID.
+     * @param firstName First name.
+     * @param lastName Last name.
+     * @param salary    Salary.
+     * @param resume    Resume text.
+     */
+    public Person(Long id, Long orgId, String firstName, String lastName, double salary, String resume) {
+        this.id = id;
+        this.orgId = orgId;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.salary = salary;
+        this.resume = resume;
     }
 
     /**
@@ -109,11 +135,11 @@ public class Person implements Serializable {
      * {@inheritDoc}
      */
     @Override public String toString() {
-        return "Person [firstName=" + firstName +
-                ", lastName=" + lastName +
-                ", id=" + id +
+        return "Person [id=" + id +
                 ", orgId=" + orgId +
-                ", resume=" + resume +
-                ", salary=" + salary + ']';
+                ", lastName=" + lastName +
+                ", firstName=" + firstName +
+                ", salary=" + salary +
+                ", resume=" + resume + ']';
     }
 }
