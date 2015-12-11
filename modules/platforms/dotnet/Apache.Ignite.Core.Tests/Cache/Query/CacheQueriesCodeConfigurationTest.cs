@@ -62,20 +62,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                                 ValueTypeName = typeName,
                                 FieldNames = new[]
                                 {
-                                    new KeyValuePair<string, string>("name", "java.lang.String"),
-                                    new KeyValuePair<string, string>("age", "java.lang.Integer")
+                                    new KeyValuePair<string, string>("Name", "java.lang.String"),
+                                    new KeyValuePair<string, string>("Age", "java.lang.Integer")
                                 },
                                 Indexes = new[]
                                 {
                                     new QueryIndex
                                     {
                                         IndexType = QueryIndexType.FullText,
-                                        FieldName = "name"
+                                        FieldName = "Name"
                                     },
                                     new QueryIndex
                                     {
                                         IndexType = QueryIndexType.Sorted,
-                                        FieldName = "age"
+                                        FieldName = "Age"
                                     }
                                 }
                             }
