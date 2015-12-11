@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Configuration
 {
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
@@ -55,7 +56,10 @@ namespace Apache.Ignite.Core.Configuration
         /// <param name="reader">The reader.</param>
         internal QueryIndex(IBinaryRawReader reader)
         {
-            throw new System.NotImplementedException();
+            Name = reader.ReadString();
+            IndexType = (QueryIndexType) reader.ReadByte();
+            Fields = Enumerable.Range(0, reader.ReadInt()).Select(x =>
+                new KeyValuePair<string, bool>(reader.ReadString(), reader.ReadBoolean())).ToList();
         }
 
         /// <summary>
@@ -63,7 +67,21 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         internal void Write(IBinaryRawWriter writer)
         {
-            
+            writer.WriteString(Name);
+            writer.WriteByte((byte) IndexType);
+
+            if (Fields != null)
+            {
+                writer.WriteInt(Fields.Count);
+
+                foreach (var field in Fields)
+                {
+                    writer.WriteString(field.Key);
+                    writer.WriteBoolean(field.Value);
+                }
+            }
+            else
+                writer.WriteInt(0);
         }
     }
 }
