@@ -234,7 +234,7 @@ namespace ignite
             JniMethod M_PLATFORM_CACHE_WITH_NO_RETRIES = JniMethod("withNoRetries", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_WITH_EXPIRY_PLC = JniMethod("withExpiryPolicy", "(JJJ)Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
-            JniMethod M_PLATFORM_CACHE_WITH_KEEP_PORTABLE = JniMethod("withKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
+            JniMethod M_PLATFORM_CACHE_WITH_KEEP_BINARY = JniMethod("withKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_CLEAR = JniMethod("clear", "()V", false);
             JniMethod M_PLATFORM_CACHE_REMOVE_ALL = JniMethod("removeAll", "()V", false);
             JniMethod M_PLATFORM_CACHE_ITERATOR = JniMethod("iterator", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCacheIterator;", false);
@@ -372,7 +372,7 @@ namespace ignite
 
             const char* C_PLATFORM_SERVICES = "org/apache/ignite/internal/processors/platform/services/PlatformServices";
 			JniMethod M_PLATFORM_SERVICES_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
-			JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE = JniMethod("withServerKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
+			JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_BINARY = JniMethod("withServerKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL = JniMethod("cancel", "(Ljava/lang/String;)V", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL_ALL = JniMethod("cancelAll", "()V", false);
 			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("dotNetServiceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
@@ -555,7 +555,7 @@ namespace ignite
                 m_PlatformCache_withNoRetries = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_NO_RETRIES);
                 m_PlatformCache_withExpiryPolicy = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_EXPIRY_PLC);
                 m_PlatformCache_withAsync = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_ASYNC);
-                m_PlatformCache_withKeepBinary = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_KEEP_PORTABLE);
+                m_PlatformCache_withKeepBinary = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_KEEP_BINARY);
                 m_PlatformCache_clear = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_CLEAR);
                 m_PlatformCache_removeAll = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_REMOVE_ALL);
                 m_PlatformCache_iterator = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_ITERATOR);
@@ -609,7 +609,7 @@ namespace ignite
 
 				c_PlatformServices = FindClass(env, C_PLATFORM_SERVICES);
 				m_PlatformServices_withAsync = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_ASYNC);
-				m_PlatformServices_withServerKeepBinary = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE);
+				m_PlatformServices_withServerKeepBinary = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_SERVER_KEEP_BINARY);
 				m_PlatformServices_cancel = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_CANCEL);
 				m_PlatformServices_cancelAll = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_CANCEL_ALL);
 				m_PlatformServices_serviceProxy = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_SERVICE_PROXY);

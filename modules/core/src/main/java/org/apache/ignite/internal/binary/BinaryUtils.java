@@ -71,7 +71,7 @@ public class BinaryUtils {
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
 
     /** Binary classes. */
-    private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
+    private static final Collection<Class<?>> BINARY_CLS = new HashSet<>();
 
     /** Flag: user type. */
     public static final short FLAG_USR_TYP = 0x0001;
@@ -166,32 +166,32 @@ public class BinaryUtils {
             PLAIN_TYPE_FLAG[b] = true;
         }
 
-        PORTABLE_CLS.add(Byte.class);
-        PORTABLE_CLS.add(Short.class);
-        PORTABLE_CLS.add(Integer.class);
-        PORTABLE_CLS.add(Long.class);
-        PORTABLE_CLS.add(Float.class);
-        PORTABLE_CLS.add(Double.class);
-        PORTABLE_CLS.add(Character.class);
-        PORTABLE_CLS.add(Boolean.class);
-        PORTABLE_CLS.add(String.class);
-        PORTABLE_CLS.add(UUID.class);
-        PORTABLE_CLS.add(Date.class);
-        PORTABLE_CLS.add(Timestamp.class);
-        PORTABLE_CLS.add(BigDecimal.class);
-        PORTABLE_CLS.add(byte[].class);
-        PORTABLE_CLS.add(short[].class);
-        PORTABLE_CLS.add(int[].class);
-        PORTABLE_CLS.add(long[].class);
-        PORTABLE_CLS.add(float[].class);
-        PORTABLE_CLS.add(double[].class);
-        PORTABLE_CLS.add(char[].class);
-        PORTABLE_CLS.add(boolean[].class);
-        PORTABLE_CLS.add(String[].class);
-        PORTABLE_CLS.add(UUID[].class);
-        PORTABLE_CLS.add(Date[].class);
-        PORTABLE_CLS.add(Timestamp[].class);
-        PORTABLE_CLS.add(BigDecimal[].class);
+        BINARY_CLS.add(Byte.class);
+        BINARY_CLS.add(Short.class);
+        BINARY_CLS.add(Integer.class);
+        BINARY_CLS.add(Long.class);
+        BINARY_CLS.add(Float.class);
+        BINARY_CLS.add(Double.class);
+        BINARY_CLS.add(Character.class);
+        BINARY_CLS.add(Boolean.class);
+        BINARY_CLS.add(String.class);
+        BINARY_CLS.add(UUID.class);
+        BINARY_CLS.add(Date.class);
+        BINARY_CLS.add(Timestamp.class);
+        BINARY_CLS.add(BigDecimal.class);
+        BINARY_CLS.add(byte[].class);
+        BINARY_CLS.add(short[].class);
+        BINARY_CLS.add(int[].class);
+        BINARY_CLS.add(long[].class);
+        BINARY_CLS.add(float[].class);
+        BINARY_CLS.add(double[].class);
+        BINARY_CLS.add(char[].class);
+        BINARY_CLS.add(boolean[].class);
+        BINARY_CLS.add(String[].class);
+        BINARY_CLS.add(UUID[].class);
+        BINARY_CLS.add(Date[].class);
+        BINARY_CLS.add(Timestamp[].class);
+        BINARY_CLS.add(BigDecimal[].class);
 
         FIELD_TYPE_NAMES = new String[104];
 
@@ -210,7 +210,7 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIMESTAMP] = "Timestamp";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM] = "Enum";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ] = "Object";
-        FIELD_TYPE_NAMES[GridBinaryMarshaller.PORTABLE_OBJ] = "Object";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.BINARY_OBJ] = "Object";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.COL] = "Collection";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.MAP] = "Map";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.CLASS] = "Class";
@@ -580,7 +580,7 @@ public class BinaryUtils {
         assert cls != null;
 
         return BinaryObject.class.isAssignableFrom(cls) ||
-            PORTABLE_CLS.contains(cls) ||
+            BINARY_CLS.contains(cls) ||
             cls.isEnum() ||
             (cls.isArray() && cls.getComponentType().isEnum());
     }
@@ -944,9 +944,9 @@ public class BinaryUtils {
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
         else if (cls == BinaryObjectImpl.class)
-            return BinaryWriteMode.PORTABLE_OBJ;
+            return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
-            return BinaryWriteMode.PORTABLE;
+            return BinaryWriteMode.BINARY;
         else if (Externalizable.class.isAssignableFrom(cls))
             return BinaryWriteMode.EXTERNALIZABLE;
         else if (isSpecialCollection(cls))
@@ -1644,7 +1644,7 @@ public class BinaryUtils {
             case GridBinaryMarshaller.MAP:
                 return doReadMap(in, ctx, ldr, handles, false, null);
 
-            case GridBinaryMarshaller.PORTABLE_OBJ:
+            case GridBinaryMarshaller.BINARY_OBJ:
                 return doReadBinaryObject(in, ctx);
 
             case GridBinaryMarshaller.ENUM:

@@ -119,7 +119,7 @@ public class GridBinaryMarshaller {
     public static final byte MAP = 25;
 
     /** */
-    public static final byte PORTABLE_OBJ = 27;
+    public static final byte BINARY_OBJ = 27;
 
     /** */
     public static final byte ENUM = 28;

@@ -829,7 +829,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             out.unsafeEnsure(1 + 4 + poArr.length + 4);
 
-            out.unsafeWriteByte(GridBinaryMarshaller.PORTABLE_OBJ);
+            out.unsafeWriteByte(GridBinaryMarshaller.BINARY_OBJ);
             out.unsafeWriteInt(poArr.length);
             out.writeByteArray(poArr);
             out.unsafeWriteInt(po.start());
