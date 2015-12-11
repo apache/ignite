@@ -113,12 +113,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
 
-    /** */
-    private static final int MAX_UPDATE_RETRIES = 100;
-
-    /** */
-    private static final long RETRY_DELAY = 1;
-
     /** Initialization latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
@@ -282,7 +276,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
         for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
             GridCacheRemovable obj = e.getValue();
 
@@ -297,6 +291,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         for (GridCacheContext cctx : ctx.cache().context().cacheContexts())
             cctx.dataStructures().onReconnected(clusterRestarted);
+
+        return null;
     }
 
     /**
@@ -986,6 +982,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     hdr.id(),
                     name,
                     hdr.collocated(),
+                    cctx.binaryMarshaller(),
                     hdr.head(),
                     hdr.tail(),
                     0);

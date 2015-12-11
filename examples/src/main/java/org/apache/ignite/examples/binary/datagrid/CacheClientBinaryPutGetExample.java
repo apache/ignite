@@ -68,7 +68,7 @@ public class CacheClientBinaryPutGetExample {
             cfg.setName(CACHE_NAME);
             cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
-            try (IgniteCache<Integer, Organization> cache = ignite.createCache(cfg)) {
+            try (IgniteCache<Integer, Organization> cache = ignite.getOrCreateCache(cfg)) {
                 if (ignite.cluster().forDataNodes(cache.getName()).nodes().isEmpty()) {
                     System.out.println();
                     System.out.println(">>> This example requires remote cache node nodes to be started.");

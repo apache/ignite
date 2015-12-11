@@ -45,7 +45,6 @@ import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -1113,7 +1112,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets class name of transaction manager finder for integration for JEE app servers.
      *
      * @return Transaction manager finder.
-     * @deprecated Use {@link TransactionConfiguration#getTxManagerLookupClassName()} instead.
+     * @deprecated Use {@link TransactionConfiguration#getTxManagerFactory()} instead.
      */
     @Deprecated
     public String getTransactionManagerLookupClassName() {
@@ -1126,7 +1125,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
      *      receive JTA transaction manager.
      * @return {@code this} for chaining.
-     * @deprecated Use {@link TransactionConfiguration#setTxManagerLookupClassName(String)} instead.
+     * @deprecated Use {@link TransactionConfiguration#setTxManagerFactory(Factory)} instead.
      */
     @Deprecated
     public CacheConfiguration<K, V> setTransactionManagerLookupClassName(String tmLookupClsName) {
@@ -1872,7 +1871,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
             TypeDescriptor desc = processKeyAndValueClasses(keyCls, valCls);
 
-            qryEntities.add(convert(desc));
+            QueryEntity converted = convert(desc);
+
+            boolean dup = false;
+
+            for (QueryEntity entity : qryEntities) {
+                if (F.eq(entity.getValueType(), converted.getValueType())) {
+                    dup = true;
+
+                    break;
+                }
+            }
+
+            if (!dup)
+                qryEntities.add(converted);
         }
 
         return this;
@@ -1968,10 +1980,21 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
         if (this.qryEntities == null)
             this.qryEntities = new ArrayList<>(qryEntities);
-        else if (indexedTypes != null)
-            this.qryEntities.addAll(qryEntities);
-        else
-            throw new CacheException("Query entities can be set only once.");
+
+        for (QueryEntity entity : qryEntities) {
+            boolean found = false;
+
+            for (QueryEntity existing : this.qryEntities) {
+                if (F.eq(entity.getValueType(), existing.getValueType())) {
+                    found = true;
+
+                    break;
+                }
+            }
+
+            if (!found)
+                this.qryEntities.add(entity);
+        }
 
         return this;
     }

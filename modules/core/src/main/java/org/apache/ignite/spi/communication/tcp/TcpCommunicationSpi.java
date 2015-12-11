@@ -360,7 +360,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         clients.remove(id, rmv)) {
                         rmv.forceClose();
 
-                        if (!isNodeStopping()) {
+                        if (!stopping) {
                             GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
 
                             if (recoveryData != null) {
@@ -837,6 +837,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** Context initialization latch. */
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
+
+    /** Stopping flag (set to {@code true} when SPI gets stopping signal). */
+    private volatile boolean stopping;
 
     /** metrics listener. */
     private final GridNioMetricsListener metricsLsnr = new GridNioMetricsListener() {
@@ -1507,7 +1510,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         nioSrvr.start();
 
-        commWorker = new CommunicationWorker();
+        commWorker = new CommunicationWorker(gridName);
 
         commWorker.start();
 
@@ -1758,7 +1761,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
-        assert isNodeStopping();
+        assert stopping;
 
         unregisterMBean();
 
@@ -1794,6 +1797,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override protected void onContextDestroyed0() {
+        stopping = true;
+
         if (ctxInitLatch.getCount() > 0)
             // Safety.
             ctxInitLatch.countDown();
@@ -1976,7 +1981,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             GridCommunicationClient client = clients.get(nodeId);
 
             if (client == null) {
-                if (isNodeStopping())
+                if (stopping)
                     throw new IgniteSpiException("Node is stopping.");
 
                 // Do not allow concurrent connects.
@@ -2298,21 +2303,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (sockSndBuf > 0)
                         ch.socket().setSendBufferSize(sockSndBuf);
 
+                    if (getSpiContext().node(node.id()) == null) {
+                        U.closeQuiet(ch);
+
+                        throw new ClusterTopologyCheckedException("Failed to send message " +
+                            "(node left topology): " + node);
+                    }
+
                     GridNioRecoveryDescriptor recoveryDesc = recoveryDescriptor(node);
 
                     if (!recoveryDesc.reserve()) {
                         U.closeQuiet(ch);
 
                         return null;
-                    }
-
-                    if (getSpiContext().node(node.id()) == null) {
-                        recoveryDesc.release();
-
-                        U.closeQuiet(ch);
-
-                        throw new ClusterTopologyCheckedException("Failed to send message, " +
-                            "node left cluster: " + node);
                     }
 
                     long rcvCnt = -1;
@@ -2784,18 +2787,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return Node ID message.
      */
     private NodeIdMessage nodeIdMessage() {
-        ClusterNode localNode = getLocalNode();
+        ClusterNode locNode = getLocalNode();
 
         UUID id;
 
-        if (localNode == null) {
+        if (locNode == null) {
             U.warn(log, "Local node is not started or fully initialized [isStopping=" +
                     getSpiContext().isStopping() + ']');
 
             id = new UUID(0, 0);
         }
         else
-            id = localNode.id();
+            id = locNode.id();
 
         return new NodeIdMessage(id);
     }
@@ -3021,9 +3024,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private final BlockingQueue<GridNioRecoveryDescriptor> q = new LinkedBlockingQueue<>();
 
         /**
-         *
+         * @param gridName Grid name.
          */
-        private CommunicationWorker() {
+        private CommunicationWorker(String gridName) {
             super(gridName, "tcp-comm-worker", log);
         }
 

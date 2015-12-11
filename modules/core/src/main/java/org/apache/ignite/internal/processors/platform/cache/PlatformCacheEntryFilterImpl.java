@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;

@@ -138,7 +138,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * so keys and values will be returned from cache API methods without changes. Therefore,
      * signature of the cache can contain only following types:
      * <ul>
-     *     <li><code>org.apache.ignite.portable.PortableObject</code> for portable classes</li>
+     *     <li><code>org.apache.ignite.binary.PortableObject</code> for portable classes</li>
      *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
      *     <li>Arrays of primitives (byte[], int[], ...)</li>
      *     <li>{@link String} and array of {@link String}s</li>

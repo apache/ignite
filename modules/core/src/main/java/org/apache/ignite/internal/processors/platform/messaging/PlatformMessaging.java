@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.platform.messaging;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;

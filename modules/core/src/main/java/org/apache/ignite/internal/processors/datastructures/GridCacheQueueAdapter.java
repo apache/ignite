@@ -58,9 +58,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected static final long QUEUE_REMOVED_IDX = Long.MIN_VALUE;
 
     /** */
-    protected static final long RETRY_DELAY = 1;
-
-    /** */
     private static final int DFLT_CLEAR_BATCH_SIZE = 100;
 
     /** Logger. */
@@ -98,6 +95,9 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     @GridToStringExclude
     private final Semaphore writeSem;
 
+    /** */
+    private final boolean binaryMarsh;
+
     /**
      * @param queueName Queue name.
      * @param hdr Queue hdr.
@@ -112,6 +112,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         collocated = hdr.collocated();
         queueKey = new GridCacheQueueHeaderKey(queueName);
         cache = cctx.kernalContext().cache().internalCache(cctx.name());
+        binaryMarsh = cctx.binaryMarshaller();
 
         log = cctx.logger(getClass());
 
@@ -369,7 +370,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
             checkRemoved(t.get1());
 
-            removeKeys(cache, id, queueName, collocated, t.get1(), t.get2(), batchSize);
+            removeKeys(cache, id, queueName, collocated, binaryMarsh, t.get1(), t.get2(), batchSize);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -407,6 +408,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param id Queue unique ID.
      * @param name Queue name.
      * @param collocated Collocation flag.
+     * @param binaryMarsh {@code True} if binary marshaller is configured.
      * @param startIdx Start item index.
      * @param endIdx End item index.
      * @param batchSize Batch size.
@@ -418,14 +420,15 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         IgniteUuid id,
         String name,
         boolean collocated,
+        boolean binaryMarsh,
         long startIdx,
         long endIdx,
         int batchSize)
         throws IgniteCheckedException {
-        Set<GridCacheQueueItemKey> keys = new HashSet<>(batchSize > 0 ? batchSize : 10);
+        Set<QueueItemKey> keys = new HashSet<>(batchSize > 0 ? batchSize : 10);
 
         for (long idx = startIdx; idx < endIdx; idx++) {
-            keys.add(itemKey(id, name, collocated, idx));
+            keys.add(itemKey(id, name, collocated, binaryMarsh, idx));
 
             if (batchSize > 0 && keys.size() == batchSize) {
                 cache.removeAll(keys);
@@ -536,8 +539,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param idx Item index.
      * @return Item key.
      */
-    protected GridCacheQueueItemKey itemKey(Long idx) {
-        return itemKey(id, queueName, collocated(), idx);
+    protected QueueItemKey itemKey(Long idx) {
+        return itemKey(id, queueName, collocated(), binaryMarsh, idx);
     }
 
     /** {@inheritDoc} */
@@ -558,11 +561,18 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param id Queue unique ID.
      * @param queueName Queue name.
      * @param collocated Collocation flag.
+     * @param binaryMarsh {@code True} if binary marshaller is configured.
      * @param idx Item index.
      * @return Item key.
      */
-    private static GridCacheQueueItemKey itemKey(IgniteUuid id, String queueName, boolean collocated, long idx) {
-        return collocated ? new CollocatedItemKey(id, queueName, idx) : new GridCacheQueueItemKey(id, queueName, idx);
+    private static QueueItemKey itemKey(IgniteUuid id,
+        String queueName,
+        boolean collocated,
+        boolean binaryMarsh,
+        long idx) {
+        return collocated ?
+            (binaryMarsh ? new CollocatedQueueItemKey(id, queueName, idx) : new CollocatedItemKey(id, queueName, idx)) :
+            new GridCacheQueueItemKey(id, queueName, idx);
     }
 
     /**

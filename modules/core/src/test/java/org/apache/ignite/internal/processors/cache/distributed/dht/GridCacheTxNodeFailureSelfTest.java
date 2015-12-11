@@ -295,6 +295,8 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
             // Check that thread successfully finished.
             fut.get();
 
+            awaitPartitionMapExchange();
+
             // Check there are no hanging transactions.
             assertEquals(0, ((IgniteEx)ignite(0)).context().cache().context().tm().idMapSize());
             assertEquals(0, ((IgniteEx)ignite(2)).context().cache().context().tm().idMapSize());

@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -80,8 +81,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
@@ -338,6 +337,13 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         cacheCtx.config().isLoadPreviousValue() &&
                         !txEntry.skipStore();
 
+                    boolean evt = retVal || txEntry.op() == TRANSFORM;
+
+                    EntryProcessor entryProc = null;
+
+                    if (evt && txEntry.op() == TRANSFORM)
+                        entryProc = F.first(txEntry.entryProcessors()).get1();
+
                     CacheObject val = cached.innerGet(
                         tx,
                         /*swap*/true,
@@ -345,11 +351,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         /*fail fast*/false,
                         /*unmarshal*/true,
                         /*metrics*/retVal,
-                        /*event*/retVal,
+                        /*event*/evt,
                         /*tmp*/false,
-                        null,
-                        null,
-                        null,
+                        tx.subjectId(),
+                        entryProc,
+                        tx.resolveTaskName(),
                         null,
                         txEntry.keepBinary());
 
@@ -365,25 +371,45 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             Object procRes = null;
                             Exception err = null;
 
-                             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                                try {
-                                    CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(
-                                        txEntry.context(), key, val, txEntry.cached().version(), txEntry.keepBinary());
+                            boolean modified = false;
 
+                             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
+                                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(
+                                     txEntry.context(), key, val, txEntry.cached().version(), txEntry.keepBinary());
+
+                                 try {
                                     EntryProcessor<Object, Object, Object> processor = t.get1();
 
                                     procRes = processor.process(invokeEntry, t.get2());
 
-                                    val = cacheCtx.toCacheObject(invokeEntry.getValue());
+                                    val = cacheCtx.toCacheObject(invokeEntry.getValue(true));
                                 }
                                 catch (Exception e) {
                                     err = e;
 
                                     break;
                                 }
+
+                                 modified |= invokeEntry.modified();
                             }
 
-                            txEntry.entryProcessorCalculatedValue(val);
+                            if (modified)
+                                val = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(val));
+
+                            GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
+
+                            if (op == NOOP) {
+                                if (expiry != null) {
+                                    long ttl = CU.toTtl(expiry.getExpiryForAccess());
+
+                                    txEntry.ttl(ttl);
+
+                                    if (ttl == CU.TTL_ZERO)
+                                        op = DELETE;
+                                }
+                            }
+
+                            txEntry.entryProcessorCalculatedValue(new T2<>(op, op == NOOP ? null : val));
 
                             if (retVal) {
                                 if (err != null || procRes != null)
@@ -602,13 +628,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
                     IgniteInternalFuture<IgniteInternalTx> fut = null;
 
-                    if (prepErr == null)
-                        fut = tx.commitAsync();
-                    else if (!cctx.kernalContext().isStopping())
-                        fut = tx.rollbackAsync();
-
-                    if (fut != null) {
-                        fut.listen(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
+                    CIX1<IgniteInternalFuture<IgniteInternalTx>> responseClo =
+                        new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                             @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
                                 try {
                                     if (replied.compareAndSet(false, true))
@@ -618,8 +639,33 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                     U.error(log, "Failed to send prepare response for transaction: " + tx, e);
                                 }
                             }
-                        });
+                        };
+
+                    if (prepErr == null) {
+                        try {
+                            fut = tx.commitAsync();
+                        }
+                        catch (RuntimeException | Error e) {
+                            Exception hEx = new IgniteTxHeuristicCheckedException("Commit produced a runtime " +
+                                "exception: " + CU.txString(tx), e);
+
+                            res.error(hEx);
+
+                            tx.systemInvalidate(true);
+
+                            fut = tx.rollbackAsync();
+
+                            fut.listen(responseClo);
+
+                            throw e;
+                        }
+
                     }
+                    else if (!cctx.kernalContext().isStopping())
+                        fut = tx.rollbackAsync();
+
+                    if (fut != null)
+                        fut.listen(responseClo);
                 }
             }
             else {
@@ -1187,7 +1233,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         assert req.transactionNodes() != null;
 
                         try {
-                            cctx.io().send(nearMapping.node(), req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                            cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
                         }
                         catch (ClusterTopologyCheckedException e) {
                             fut.onNodeLeft(e);
@@ -1282,10 +1328,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         entry.cached().partition());
 
                     if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.EVICTED) {
-                        CacheObject procVal = entry.entryProcessorCalculatedValue();
+                        T2<GridCacheOperation, CacheObject> procVal = entry.entryProcessorCalculatedValue();
 
-                        entry.op(procVal == null ? DELETE : UPDATE);
-                        entry.value(procVal, true, false);
+                        assert procVal != null : entry;
+
+                        entry.op(procVal.get1());
+                        entry.value(procVal.get2(), true, false);
                         entry.entryProcessors(null);
                     }
                 }

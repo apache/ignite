@@ -105,7 +105,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Transient field for calculated entry processor value. */
     @GridDirectTransient
-    private CacheObject entryProcessorCalcVal;
+    private T2<GridCacheOperation, CacheObject> entryProcessorCalcVal;
 
     /** Transform closure bytes. */
     @GridToStringExclude
@@ -888,14 +888,16 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return Entry processor calculated value.
      */
-    public CacheObject entryProcessorCalculatedValue() {
+    public T2<GridCacheOperation, CacheObject> entryProcessorCalculatedValue() {
         return entryProcessorCalcVal;
     }
 
     /**
      * @param entryProcessorCalcVal Entry processor calculated value.
      */
-    public void entryProcessorCalculatedValue(CacheObject entryProcessorCalcVal) {
+    public void entryProcessorCalculatedValue(T2<GridCacheOperation, CacheObject> entryProcessorCalcVal) {
+        assert entryProcessorCalcVal != null;
+
         this.entryProcessorCalcVal = entryProcessorCalcVal;
     }
 

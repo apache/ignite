@@ -33,15 +33,5 @@ namespace Apache.Ignite.Core.Impl
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false, 
             ThrowOnUnmappableChar = true)]
         internal static extern IntPtr LoadLibrary(string path);
-
-        /// <summary>
-        /// Get procedure address with WinAPI.
-        /// </summary>
-        /// <param name="ptr">DLL pointer.</param>
-        /// <param name="name">Procedure name.</param>
-        /// <returns>Procedure address.</returns>
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false, 
-            ThrowOnUnmappableChar = true)]
-        internal static extern IntPtr GetProcAddress(IntPtr ptr, string name);
     }
 }

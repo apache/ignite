@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,8 +46,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -4127,8 +4127,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testIgniteCacheIterator() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1756");
-
         IgniteCache<String, Integer> cache = jcache(0);
 
         Iterator<Cache.Entry<String, Integer>> it = cache.iterator();
