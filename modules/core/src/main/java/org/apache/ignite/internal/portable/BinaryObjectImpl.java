@@ -17,6 +17,16 @@
 
 package org.apache.ignite.internal.portable;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -32,17 +42,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
@@ -543,6 +542,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /**
      * Runs value deserialization regardless of whether obj already has the deserialized value.
      * Will set obj if descriptor is configured to keep deserialized values.
+     * @param coCtx CacheObjectContext.
+     * @return Object.
      */
     private Object deserializeValue(@Nullable CacheObjectContext coCtx) {
         // TODO: IGNITE-1272 - Deserialize with proper class loader.
@@ -575,6 +576,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Reader.
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx) {
-        return new BinaryReaderExImpl(ctx, PortableHeapInputStream.create(arr, start), null, rCtx);
+        return new BinaryReaderExImpl(ctx,
+            PortableHeapInputStream.create(arr, start),
+            ctx.configuration().getClassLoader(),
+            rCtx);
     }
 }

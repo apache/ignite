@@ -76,10 +76,6 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
                 private void readObject(ObjectInputStream is) throws IOException {
                     throw new IOException();
                 }
-
-                private void writeObject(ObjectOutputStream os) throws IOException {
-                    throw new IOException();
-                }
             })).getAll();
 
             assertTrue("Request unmarshalling failed, but error response was not sent.", portableMarshaller());

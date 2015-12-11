@@ -25,6 +25,7 @@ consoleModule.controller('cachesController', [
             angular.extend(this, $controller('save-remove', {$scope: $scope}));
 
             $scope.ui = $common.formUI();
+            $scope.selectedItemWatchGuard = false;
 
             $scope.joinTip = $common.joinTip;
             $scope.getModel = $common.getModel;
@@ -336,7 +337,9 @@ consoleModule.controller('cachesController', [
                             }, true);
 
                             $scope.$watchCollection('backupItem.metadatas', function (val, old) {
-                                if (!angular.equals(val, old)) {
+                                if ($scope.selectedItemWatchGuard)
+                                    $scope.selectedItemWatchGuard = false;
+                                else {
                                     var item = $scope.backupItem;
 
                                     var cacheStoreFactory = $common.isDefined(item) &&
@@ -376,6 +379,7 @@ consoleModule.controller('cachesController', [
                 function selectItem() {
                     $table.tableReset();
 
+                    $scope.selectedItemWatchGuard = true;
                     $scope.selectedItem = angular.copy(item);
 
                     try {

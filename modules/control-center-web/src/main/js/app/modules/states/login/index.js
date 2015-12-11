@@ -31,8 +31,11 @@ angular
 		templateUrl: '/login.html'
 	});
 }])
-.run(['$rootScope', '$state', 'Auth', function($root, $state, Auth) {
+.run(['$rootScope', '$state', 'Auth', 'igniteTerms', function($root, $state, Auth, igniteTerms) {
 	$root.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        if (toState.name === igniteTerms.termsState)
+            return;
+
 		if (!Auth.authorized && (toState.name !== 'login' && !_.startsWith(toState.name, 'password.'))) {
 			event.preventDefault();
 

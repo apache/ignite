@@ -133,9 +133,6 @@ public enum BinaryWriteMode {
     MAP(GridPortableMarshaller.MAP),
 
     /** */
-    MAP_ENTRY(GridPortableMarshaller.MAP_ENTRY),
-
-    /** */
     PORTABLE_OBJ(GridPortableMarshaller.OBJ),
 
     /** */

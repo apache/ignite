@@ -28,7 +28,7 @@ export default [
 
         $loading.finish('loading');
 
-        $scope.selectItem(clusters[0]);
+        $scope.selectItem(_.first(clusters));
     });
 
     $scope.panelExpanded = $common.panelExpanded;

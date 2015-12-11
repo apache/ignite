@@ -39,7 +39,7 @@ public class GridCacheAffinityRoutingPortableSelfTest extends GridCacheAffinityR
 
         CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(AffinityTestKey.class.getName(), "affKey");
 
-        cfg.setCacheKeyCfg(keyCfg);
+        cfg.setCacheKeyConfiguration(keyCfg);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 

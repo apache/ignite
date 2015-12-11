@@ -16,7 +16,5 @@
 
 .container.container-footer
     footer
-        center
-            p Apache Ignite Web Console, version 1.0.0 beta
-            p © 2015 The Apache Software Foundation.
-            p Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation.
+        center(ignite-terms)
+            p(ng-repeat='item in terms.footerRows' ng-bind-html='item')

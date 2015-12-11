@@ -66,6 +66,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -2165,22 +2166,22 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (ignite != null) {
                         U.error(log, "TcpDiscoverSpi's message worker thread failed abnormally. " +
-                            "Stopping the grid in order to prevent cluster wide instability.", e);
+                            "Stopping the node in order to prevent cluster wide instability.", e);
 
                         new Thread(new Runnable() {
                             @Override public void run() {
                                 try {
-                                    ignite.close();
+                                    IgnitionEx.stop(ignite.name(), true, true);
 
-                                    U.log(log, "Stopped the grid successfully in response to TcpDiscoverySpi's " +
+                                    U.log(log, "Stopped the node successfully in response to TcpDiscoverySpi's " +
                                         "message worker thread abnormal termination.");
                                 }
                                 catch (Throwable e) {
-                                    U.error(log, "Failed to stop the grid in response to TcpDiscoverySpi's " +
+                                    U.error(log, "Failed to stop the node in response to TcpDiscoverySpi's " +
                                         "message worker thread abnormal termination.", e);
                                 }
                             }
-                        }).start();
+                        }, "node-stop-thread").start();
                     }
                 }
 

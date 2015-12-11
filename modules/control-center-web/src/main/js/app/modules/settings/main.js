@@ -19,7 +19,7 @@ angular
 .module('ignite-console.userbar', [
 
 ])
-.provider('igniteUserbar', function() {
+.provider('igniteSettings', function() {
     var items = [];
 
     this.push = function(data) {
@@ -30,32 +30,32 @@ angular
         return items;
     }]
 })
-.directive('igniteUserbar', function() {
+.directive('igniteSettings', function() {
     return {
         restrict: 'A',
-        controller: ['$rootScope', 'igniteUserbar', function ($root, igniteUserbar) {
+        controller: ['$rootScope', 'igniteSettings', function ($root, igniteSettings) {
             var ctrl = this;
 
-            ctrl.items = [{text: 'Profile', href: '/profile'}];
-            ctrl.customItems = igniteUserbar;
+            ctrl.items = [{text: 'Profile', sref: 'settings.profile'}];
+            ctrl.customItems = igniteSettings;
 
-            var _rebuildUserbar = function (event, user) {
+            var _rebuildSettings = function (event, user) {
                 ctrl.items.splice(1);
 
                 if (!user.becomeUsed && user.admin)
-                    ctrl.items.push({text: 'Admin Panel', href: '/admin'});
+                    ctrl.items.push({text: 'Admin Panel', sref: 'settings.admin'});
 
                 ctrl.items.push.apply(ctrl.items, ctrl.customItems);
 
                 if (!user.becomeUsed)
-                    ctrl.items.push({text: 'Log Out', href: '/logout'});
+                    ctrl.items.push({text: 'Log Out', sref: 'logout'});
             };
 
             if ($root.user)
-                _rebuildUserbar(undefined, $root.user);
+                _rebuildSettings(undefined, $root.user);
 
-            $root.$on('user', _rebuildUserbar);
+            $root.$on('user', _rebuildSettings);
         }],
-        controllerAs: 'userbar'
+        controllerAs: 'settings'
     }
 });

@@ -20,14 +20,15 @@ div
             label POJO class:
         .col-xs-10.col-sm-10.col-md-10.summary-pojo-list
             button.select-toggle.form-control(ng-model='ctrl.class' bs-select bs-options='item for item in ctrl.classes' data-container='')
+    .details-row.checkbox
         .col-xs-2.col-sm-2.col-md-2
-            label
         .col-xs-10.col-sm-10.col-md-10
-            input(type='checkbox' ng-model='ctrl.useConstructor')
-            | Generate constructors
+            label
+                input(type='checkbox' ng-model='ctrl.useConstructor')
+                | Generate constructors
         .col-xs-2.col-sm-2.col-md-2
-            label
         .col-xs-10.col-sm-10.col-md-10
-            input(type='checkbox' ng-model='ctrl.includeKeyFields')
-            | Include key fields
+            label
+                input(type='checkbox' ng-model='ctrl.includeKeyFields')
+                | Include key fields
     div(ui-ace='{onLoad: onLoad, mode: "java"}' ng-model='ctrl.data')

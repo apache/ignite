@@ -48,9 +48,14 @@ hr {
     margin: 20px 0;
 }
 
-a.active {
+.theme-line a.active {
     font-weight: bold;
     font-size: 1.1em;
+}
+
+.theme-line a:focus {
+    text-decoration: underline;
+    outline: none;
 }
 
 .navbar-default .navbar-brand, .navbar-default .navbar-brand:hover {
@@ -87,7 +92,11 @@ a.active {
 }
 
 ul.navbar-nav, .sidebar-nav {
-    li > a.active:not(.dropdown-toggle) {
+    li.active > a {
+        color: $link-color;
+    }
+
+    li.active > a:not(.dropdown-toggle) {
         cursor: default;
         pointer-events: none;
     }
@@ -99,17 +108,10 @@ ul.navbar-nav, .sidebar-nav {
     ul {
         padding: 0;
         list-style: none;
-        font-size: $font-size-base;
         margin: 3px 0 0;
 
         li {
             line-height: $input-height;
-
-            span.fa-stack {
-                margin-right: 5px;
-                font-size: 12px;
-                height: 26px;
-            }
 
             a {
                 font-size: 18px;
@@ -119,11 +121,15 @@ ul.navbar-nav, .sidebar-nav {
                 overflow: hidden;
                 -o-text-overflow: ellipsis;
                 text-overflow: ellipsis;
+
+                span.fa-stack {
+                    margin-right: 5px;
+                    font-size: 12px;
+                    height: 26px;
+                }
             }
 
-            a:hover {
-                color: $link-hover-color;
-            }
+            a:hover { color: $link-hover-color; }
 
             a.active {
                 color: $link-color;
@@ -298,9 +304,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .container-footer {
     margin-top: 20px;
+    margin-bottom: 20px;
 
     p {
         font-size: 12px;
+        margin-bottom: 0;
     }
 }
 
@@ -384,7 +392,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .greedy {
     min-height: 100%;
-    height: #{"calc(100vh - 290px)"};
+    height: #{"calc(100vh - 270px)"};
 }
 
 @media (min-width: 768px) {
@@ -955,6 +963,10 @@ button.form-control {
     border: thin dotted $ignite-border-color;
 
     text-align: left;
+
+    hr {
+        margin: 7px 0;
+    }
 }
 
 .group-legend {
