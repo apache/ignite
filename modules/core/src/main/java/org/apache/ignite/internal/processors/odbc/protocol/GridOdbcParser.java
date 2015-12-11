@@ -40,7 +40,6 @@ import java.util.Collection;
  * ODBC protocol parser.
  */
 public class GridOdbcParser implements GridNioParser {
-
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
 

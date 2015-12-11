@@ -14,15 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.handlers;
+package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.odbc.GridOdbcColumnMeta;
-import org.apache.ignite.internal.processors.odbc.GridOdbcTableMeta;
 import org.apache.ignite.internal.processors.odbc.request.*;
 import org.apache.ignite.internal.processors.odbc.response.*;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -39,7 +38,13 @@ import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest
 /**
  * SQL query handler.
  */
-public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
+public class GridOdbcCommandHandler {
+    /** Kernal context. */
+    protected final GridKernalContext ctx;
+
+    /** Log. */
+    protected final IgniteLogger log;
+
     /** Supported commands. */
     private static final Collection<Integer> SUPPORTED_COMMANDS =
             U.sealList(EXECUTE_SQL_QUERY, FETCH_SQL_QUERY, CLOSE_SQL_QUERY, GET_COLUMNS_META, GET_TABLES_META);
@@ -53,40 +58,47 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
     /**
      * @param ctx Context.
      */
-    public GridOdbcQueryCommandHandler(GridKernalContext ctx) {
-        super(ctx);
+    public GridOdbcCommandHandler(GridKernalContext ctx) {
+        this.ctx = ctx;
+
+        log = ctx.log(getClass());
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<Integer> supportedCommands() {
+    /**
+     * @return Collection of supported commands.
+     */
+    public Collection<Integer> supportedCommands() {
         return SUPPORTED_COMMANDS;
     }
 
-    /** {@inheritDoc} */
-    @Override public GridOdbcResponse handle(GridOdbcRequest req) {
+    /**
+     * @param req Request.
+     * @return Response.
+     */
+    public GridOdbcResponse handle(GridOdbcRequest req) {
         assert req != null;
 
         assert SUPPORTED_COMMANDS.contains(req.command());
 
         switch (req.command()) {
             case EXECUTE_SQL_QUERY: {
-                return ExecuteQuery((QueryExecuteRequest)req, qryCurs);
+                return executeQuery((QueryExecuteRequest)req, qryCurs);
             }
 
             case FETCH_SQL_QUERY: {
-                return FetchQuery((QueryFetchRequest)req, qryCurs);
+                return fetchQuery((QueryFetchRequest)req, qryCurs);
             }
 
             case CLOSE_SQL_QUERY: {
-                return CloseQuery((QueryCloseRequest)req, qryCurs);
+                return closeQuery((QueryCloseRequest)req, qryCurs);
             }
 
             case GET_COLUMNS_META: {
-                return GetColumnsMeta((QueryGetColumnsMetaRequest) req);
+                return getColumnsMeta((QueryGetColumnsMetaRequest) req);
             }
 
             case GET_TABLES_META: {
-                return GetTablesMeta((QueryGetTablesMetaRequest) req);
+                return getTablesMeta((QueryGetTablesMetaRequest) req);
             }
         }
 
@@ -149,7 +161,7 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
      * @param qryCurs Queries cursors.
      * @return Response.
      */
-    private GridOdbcResponse ExecuteQuery(QueryExecuteRequest req,
+    private GridOdbcResponse executeQuery(QueryExecuteRequest req,
                                           ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
         long qryId = qryIdGen.getAndIncrement();
 
@@ -190,7 +202,7 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
      * @param qryCurs Queries cursors.
      * @return Response.
      */
-    private GridOdbcResponse CloseQuery(QueryCloseRequest req,
+    private GridOdbcResponse closeQuery(QueryCloseRequest req,
                                         ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
         try {
             QueryCursor cur = qryCurs.get(req.queryId()).get1();
@@ -219,7 +231,7 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
      * @param qryCurs Queries cursors.
      * @return Response.
      */
-    private GridOdbcResponse FetchQuery(QueryFetchRequest req,
+    private GridOdbcResponse fetchQuery(QueryFetchRequest req,
                                         ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
         try {
             Iterator cur = qryCurs.get(req.queryId()).get2();
@@ -243,7 +255,7 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
      * @param req Get columns metadata request.
      * @return Response.
      */
-    private GridOdbcResponse GetColumnsMeta(QueryGetColumnsMetaRequest req) {
+    private GridOdbcResponse getColumnsMeta(QueryGetColumnsMetaRequest req) {
         try {
             List<GridOdbcColumnMeta> meta = new ArrayList<>();
 
@@ -277,7 +289,7 @@ public class GridOdbcQueryCommandHandler extends GridOdbcCommandHandlerAdapter {
      * @param req Get tables metadata request.
      * @return Response.
      */
-    private GridOdbcResponse GetTablesMeta(QueryGetTablesMetaRequest req) {
+    private GridOdbcResponse getTablesMeta(QueryGetTablesMetaRequest req) {
         try {
             List<GridOdbcTableMeta> meta = new ArrayList<>();
 

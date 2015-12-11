@@ -19,38 +19,27 @@ package org.apache.ignite.internal.processors.odbc;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcCommandHandler;
-import org.apache.ignite.internal.processors.odbc.handlers.GridOdbcQueryCommandHandler;
 import org.apache.ignite.internal.processors.odbc.protocol.GridTcpOdbcServer;
 import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
 import org.apache.ignite.internal.processors.odbc.response.GridOdbcResponse;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.marshaller.Marshaller;
 
 /**
  * ODBC processor.
  */
 public class GridOdbcProcessor extends GridProcessorAdapter {
-
     /** OBCD TCP Server. */
     private GridTcpOdbcServer srv;
 
     /** Busy lock. */
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
 
-    /** Start Latch. */
-    private final CountDownLatch startLatch = new CountDownLatch(1);
-
-    /** Command handlers. */
-    protected final Map<Integer, GridOdbcCommandHandler> handlers = new HashMap<>();
+    /** Command handler. */
+    private GridOdbcCommandHandler handler;
 
     /** Protocol handler. */
     private final GridOdbcProtocolHandler protoHnd = new GridOdbcProtocolHandler() {
@@ -89,44 +78,23 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     private GridOdbcResponse handleRequest(final GridOdbcRequest req) throws IgniteCheckedException {
-        if (startLatch.getCount() > 0) {
-            try {
-                startLatch.await();
-            }
-            catch (InterruptedException e) {
-                throw new IgniteCheckedException("Failed to handle request " +
-                        "(protocol handler was interrupted when awaiting grid start).", e);
-            }
-        }
-
         if (log.isDebugEnabled())
             log.debug("Received request from client: " + req);
-
-//        if (ctx.security().enabled()) {
-            // TODO: Implement security checks.
-//        }
-
-        GridOdbcCommandHandler hnd = handlers.get(req.command());
 
         GridOdbcResponse rsp;
 
         try {
-            rsp = hnd == null ? null : hnd.handle(req);
+            rsp = handler == null ? null : handler.handle(req);
 
             if (rsp == null)
                 throw new IgniteCheckedException("Failed to find registered handler for command: " + req.command());
         }
         catch (Exception e) {
-            if (!X.hasCause(e, VisorClusterGroupEmptyException.class))
-                LT.error(log, e, "Failed to handle request: " + req.command());
-
             if (log.isDebugEnabled())
                 log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
 
             rsp = new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
         }
-
-        assert rsp != null;
 
         return rsp;
     }
@@ -144,8 +112,14 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         if (isOdbcEnabled()) {
 
-            // Register handlers.
-            addHandler(new GridOdbcQueryCommandHandler(ctx));
+            Marshaller marsh = ctx.config().getMarshaller();
+
+            if (marsh != null && !(marsh instanceof BinaryMarshaller))
+                throw new IgniteCheckedException("Failed to start processor " +
+                        "(ODBC may only be used with BinaryMarshaller).");
+
+            // Register handler.
+            handler = new GridOdbcCommandHandler(ctx);
 
             srv.start(protoHnd);
         }
@@ -161,7 +135,6 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws IgniteCheckedException {
         if (isOdbcEnabled()) {
-            startLatch.countDown();
 
             if (log.isDebugEnabled())
                 log.debug("ODBC processor started.");
@@ -169,13 +142,9 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
     @Override public void onKernalStop(boolean cancel) {
         if (isOdbcEnabled()) {
             busyLock.writeLock();
-
-            // Safety.
-            startLatch.countDown();
 
             if (log.isDebugEnabled())
                 log.debug("ODBC processor stopped.");
@@ -187,21 +156,5 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
      */
     public boolean isOdbcEnabled() {
         return ctx.config().getOdbcConfiguration().isEnabled();
-    }
-
-    /**
-     * @param hnd Command handler.
-     */
-    private void addHandler(GridOdbcCommandHandler hnd) {
-        assert !handlers.containsValue(hnd);
-
-        if (log.isDebugEnabled())
-            log.debug("Added ODBC command handler: " + hnd);
-
-        for (int cmd : hnd.supportedCommands()) {
-            assert !handlers.containsKey(cmd) : cmd;
-
-            handlers.put(cmd, hnd);
-        }
     }
 }
