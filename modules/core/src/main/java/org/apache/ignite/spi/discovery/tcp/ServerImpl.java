@@ -2025,7 +2025,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             private boolean skipMsg = discardId != null;
 
             /** Skip custom messages flag. */
-            private boolean skipCustomMsg;
+            private boolean skipCustomMsg = customDiscardId != null;
 
             /** Internal iterator. */
             private Iterator<TcpDiscoveryAbstractMessage> msgIt = msgs.iterator();
