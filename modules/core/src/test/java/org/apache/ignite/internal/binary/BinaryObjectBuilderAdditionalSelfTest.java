@@ -108,7 +108,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * @return Binaries API.
      */
-    protected IgniteBinary portables() {
+    protected IgniteBinary binaries() {
         return grid(0).binary();
     }
 
@@ -931,7 +931,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         mutableObj.build();
 
-        BinaryType metadata = portables().type(GridBinaryTestClasses.TestObjectContainer.class);
+        BinaryType metadata = binaries().type(GridBinaryTestClasses.TestObjectContainer.class);
 
         assertEquals("String", metadata.fieldTypeName("xx567"));
     }
@@ -947,7 +947,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         mutableObj.build();
 
-        BinaryType metadata = portables().type(GridBinaryTestClasses.TestObjectContainer.class);
+        BinaryType metadata = binaries().type(GridBinaryTestClasses.TestObjectContainer.class);
 
         assertEquals("String", metadata.fieldTypeName("xx567"));
     }
@@ -971,7 +971,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         mutableObj.build();
 
-        BinaryType metadata = portables().type(c.getClass());
+        BinaryType metadata = binaries().type(c.getClass());
 
         assertTrue(metadata.fieldNames().containsAll(Arrays.asList("intField", "intArrField", "arrField", "strField",
             "colField", "mapField", "enumField", "enumArrField")));
@@ -1239,7 +1239,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      * @return Object in portable format.
      */
     private BinaryObject toBinary(Object obj) {
-        return portables().toBinary(obj);
+        return binaries().toBinary(obj);
     }
 
     /**
@@ -1256,7 +1256,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      */
     private BinaryObjectBuilderImpl newWrapper(Class<?> aCls) {
         CacheObjectBinaryProcessorImpl processor = (CacheObjectBinaryProcessorImpl)(
-            (IgniteBinaryImpl)portables()).processor();
+            (IgniteBinaryImpl)binaries()).processor();
 
         return new BinaryObjectBuilderImpl(processor.portableContext(), processor.typeId(aCls.getName()),
             aCls.getSimpleName());

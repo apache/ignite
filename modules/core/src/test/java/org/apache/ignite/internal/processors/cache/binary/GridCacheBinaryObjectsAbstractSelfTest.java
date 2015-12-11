@@ -836,9 +836,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
                     Ignite ignite = e.unwrap(Ignite.class);
 
-                    IgniteBinary portables = ignite.binary();
+                    IgniteBinary binaries = ignite.binary();
 
-                    BinaryObjectBuilder builder = portables.builder(val);
+                    BinaryObjectBuilder builder = binaries.builder(val);
 
                     builder.setField("val", 2);
 

@@ -176,7 +176,7 @@ import org.apache.ignite.internal.util.typedef.F;
     }
 
     /**
-     * Unwrap array of portables if needed.
+     * Unwrap array of binaries if needed.
      *
      * @param arr Array.
      * @param keepBinary Keep portable flag.
