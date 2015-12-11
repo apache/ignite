@@ -85,6 +85,9 @@
     <ClCompile Include="..\..\os\win\src\socket_client.cpp">
       <Filter>Code\system</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\query\foreign_keys_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -158,6 +161,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\socket_client.h">
       <Filter>Code\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\foreign_keys_query.h">
+      <Filter>Code\query</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

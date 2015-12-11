@@ -138,7 +138,7 @@ namespace ignite
             /**
              * Get tables metadata.
              *
-             * @param schema Catalog search pattern.
+             * @param catalog Catalog search pattern.
              * @param schema Schema search pattern.
              * @param table Table search pattern.
              * @param tableType Table type search pattern.
@@ -146,6 +146,22 @@ namespace ignite
              */
             bool ExecuteGetTablesMetaQuery(const std::string& catalog, const std::string& schema,
                 const std::string& table, const std::string& tableType);
+
+            /**
+             * Get foreign keys.
+             *
+             * @param primaryCatalog Primary key catalog name.
+             * @param primarySchema Primary key schema name.
+             * @param primaryTable Primary key table name.
+             * @param foreignCatalog Foreign key catalog name.
+             * @param foreignSchema Foreign key schema name.
+             * @param foreignTable Foreign key table name.
+             * @return True on success.
+             */
+            bool ExecuteGetForeignKeysQuery(const std::string& primaryCatalog, 
+                const std::string& primarySchema, const std::string& primaryTable,
+                const std::string& foreignCatalog, const std::string& foreignSchema,
+                const std::string& foreignTable);
 
             /**
              * Close statement.

@@ -18,6 +18,7 @@
 #include "ignite/odbc/query/data_query.h"
 #include "ignite/odbc/query/column_metadata_query.h"
 #include "ignite/odbc/query/table_metadata_query.h"
+#include "ignite/odbc/query/foreign_keys_query.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
@@ -127,6 +128,20 @@ namespace ignite
             return currentQuery->Execute();
         }
 
+        bool Statement::ExecuteGetForeignKeysQuery(const std::string& primaryCatalog,
+            const std::string& primarySchema, const std::string& primaryTable,
+            const std::string& foreignCatalog, const std::string& foreignSchema,
+            const std::string& foreignTable)
+        {
+            if (currentQuery.get())
+                currentQuery->Close();
+
+            currentQuery.reset(new query::ForeignKeysQuery(connection, primaryCatalog, primarySchema, 
+                primaryTable, foreignCatalog, foreignSchema, foreignTable));
+
+            return currentQuery->Execute();
+        }
+
         bool Statement::Close()
         {
             if (!currentQuery.get())
@@ -176,21 +191,13 @@ namespace ignite
             bool found = false;
 
             if (numbuf)
-            {
                 found = columnMeta.GetAttribute(attrId, *numbuf);
-
-                if (found)
-                    LOG_MSG("Numeric attribute. Value: %lld\n", *numbuf);
-            }
 
             if (!found)
             {
                 std::string out;
 
                 found = columnMeta.GetAttribute(attrId, out);
-
-                if (found)
-                    LOG_MSG("String attribute. Value: %s\n", out.c_str());
 
                 size_t outSize = out.size();
 
@@ -200,9 +207,6 @@ namespace ignite
                 if (found && strbuf)
                     *reslen = static_cast<int16_t>(outSize);
             }
-
-            if (!found)
-                LOG_MSG("Not found !!! \n");
 
             return found;
         }

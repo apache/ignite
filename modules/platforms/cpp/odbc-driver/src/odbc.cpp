@@ -794,6 +794,7 @@ SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
     return success ? SQL_SUCCESS : SQL_ERROR;
 }
 
+
 SQLRETURN SQL_API SQLRowCount(SQLHSTMT stmt, SQLLEN* rowCnt)
 {
     using ignite::odbc::Statement;
@@ -813,6 +814,50 @@ SQLRETURN SQL_API SQLRowCount(SQLHSTMT stmt, SQLLEN* rowCnt)
         *rowCnt = static_cast<SQLLEN>(res);
 
     return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLForeignKeys(SQLHSTMT       stmt,
+                                 SQLCHAR*       primaryCatalogName,
+                                 SQLSMALLINT    primaryCatalogNameLen,
+                                 SQLCHAR*       primarySchemaName,
+                                 SQLSMALLINT    primarySchemaNameLen,
+                                 SQLCHAR*       primaryTableName,
+                                 SQLSMALLINT    primaryTableNameLen,
+                                 SQLCHAR*       foreignCatalogName,
+                                 SQLSMALLINT    foreignCatalogNameLen,
+                                 SQLCHAR*       foreignSchemaName,
+                                 SQLSMALLINT    foreignSchemaNameLen,
+                                 SQLCHAR*       foreignTableName,
+                                 SQLSMALLINT    foreignTableNameLen)
+{
+    using ignite::odbc::Statement;
+    using ignite::utility::SqlStringToString;
+
+    LOG_MSG("SQLForeignKeys called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    std::string primaryCatalog = SqlStringToString(primaryCatalogName, primaryCatalogNameLen);
+    std::string primarySchema = SqlStringToString(primarySchemaName, primarySchemaNameLen);
+    std::string primaryTable = SqlStringToString(primaryTableName, primaryTableNameLen);
+    std::string foreignCatalog = SqlStringToString(foreignCatalogName, foreignCatalogNameLen);
+    std::string foreignSchema = SqlStringToString(foreignSchemaName, foreignSchemaNameLen);
+    std::string foreignTable = SqlStringToString(foreignTableName, foreignTableNameLen);
+
+    LOG_MSG("primaryCatalog: %s\n", primaryCatalog.c_str());
+    LOG_MSG("primarySchema: %s\n", primarySchema.c_str());
+    LOG_MSG("primaryTable: %s\n", primaryTable.c_str());
+    LOG_MSG("foreignCatalog: %s\n", foreignCatalog.c_str());
+    LOG_MSG("foreignSchema: %s\n", foreignSchema.c_str());
+    LOG_MSG("foreignTable: %s\n", foreignTable.c_str());
+
+    bool success = statement->ExecuteGetForeignKeysQuery(primaryCatalog, primarySchema,
+        primaryTable, foreignCatalog, foreignSchema, foreignTable);
+
+    return success ? SQL_SUCCESS : SQL_ERROR;
 }
 
 //
@@ -1221,24 +1266,6 @@ SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT     stmt,
                                    SQLSMALLINT* nullable)
 {
     LOG_MSG("SQLDescribeParam called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLForeignKeys(SQLHSTMT       stmt,
-                                 SQLCHAR*       primaryCatalogName,
-                                 SQLSMALLINT    primaryCatalogNameLen,
-                                 SQLCHAR*       primarySchemaName,
-                                 SQLSMALLINT    primarySchemaNameLen,
-                                 SQLCHAR*       primaryTableName,
-                                 SQLSMALLINT    primaryTableNameLen,
-                                 SQLCHAR*       foreignCatalogName,
-                                 SQLSMALLINT    foreignCatalogNameLen,
-                                 SQLCHAR*       foreignSchemaName,
-                                 SQLSMALLINT    foreignSchemaNameLen,
-                                 SQLCHAR*       foreignTableName,
-                                 SQLSMALLINT    foreignTableNameLen)
-{
-    LOG_MSG("SQLForeignKeys called\n");
     return SQL_SUCCESS;
 }
 
