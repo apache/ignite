@@ -19,14 +19,14 @@
 FROM java:7
 
 # Ignite version
-ENV IGNITE_VERSION 1.5.0-b1
+ENV IGNITE_VERSION 1.2.0-incubating
 
 WORKDIR /opt/ignite
 
-ADD http://www.us.apache.org/dist/ignite/1.5.0-b1/apache-ignite-fabric-1.5.0-b1-bin.zip /opt/ignite/ignite.zip
+ADD http://www.us.apache.org/dist/ignite/1.2.0/apache-ignite-fabric-1.2.0-incubating-bin.zip /opt/ignite/ignite.zip
 
 # Ignite home
-ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric-1.5.0-b1-bin
+ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric-1.2.0-incubating-bin
 
 RUN unzip ignite.zip
 

@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -16,24 +15,26 @@
 # limitations under the License.
 #
 
-if [ -z $GIT_REPO ]; then
-  echo Users git repo is not provided.
+# Start from a Java image.
+FROM java:7
 
-  exit 0
-fi
+# Ignite version
+ENV IGNITE_VERSION 1.4.0
 
-git clone $GIT_REPO user-repo
+WORKDIR /opt/ignite
 
-cd user-repo
+ADD http://www.us.apache.org/dist/ignite/1.4.0/apache-ignite-fabric-1.4.0-bin.zip /opt/ignite/ignite.zip
 
-if [ ! -z $GIT_BRANCH ]; then
-  git checkout $GIT_BRANCH
-fi
+# Ignite home
+ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric-1.4.0-bin
 
-if [ ! -z "$BUILD_CMD" ]; then
-  echo "Starting to execute build command: $BUILD_CMD"
+RUN unzip ignite.zip
 
-  eval "$BUILD_CMD"
-else
-  mvn clean package
-fi
+RUN rm ignite.zip
+
+# Copy sh files and set permission
+ADD ./run.sh $IGNITE_HOME/
+
+RUN chmod +x $IGNITE_HOME/run.sh
+
+CMD $IGNITE_HOME/run.sh
