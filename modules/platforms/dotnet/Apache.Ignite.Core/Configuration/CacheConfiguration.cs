@@ -31,103 +31,103 @@ namespace Apache.Ignite.Core.Configuration
     /// </summary>
     public class CacheConfiguration
     {
-        /** Default size of rebalance thread pool. */
+        /// <summary> Default size of rebalance thread pool. </summary>
         public const int DefaultRebalanceThreadPoolSize = 2;
 
-        /** Default rebalance timeout.*/
+        /// <summary> Default rebalance timeout.</summary>
         public static readonly TimeSpan DefaultRebalanceTimeout = TimeSpan.FromMilliseconds(10000);
 
-        /** Time to wait between rebalance messages to avoid overloading CPU. */
+        /// <summary> Time to wait between rebalance messages to avoid overloading CPU. </summary>
         public static readonly TimeSpan DefaultRebalanceThrottle = TimeSpan.Zero;
 
-        /** Default number of backups. */
+        /// <summary> Default number of backups. </summary>
         public const int DefaultBackups = 0;
 
-        /** Default caching mode. */
+        /// <summary> Default caching mode. </summary>
         public const CacheMode DefaultCacheMode = CacheMode.Partitioned;
 
-        /** Default atomicity mode. */
+        /// <summary> Default atomicity mode. </summary>
         public const CacheAtomicityMode DefaultAtomicityMode = CacheAtomicityMode.Atomic;
 
-        /** Default lock timeout. */
+        /// <summary> Default lock timeout. </summary>
         public static readonly TimeSpan DefaultLockTimeout = TimeSpan.Zero;
 
-        /** Initial default cache size. */
+        /// <summary> Initial default cache size. </summary>
         public const int DefaultStartSize = 1500000;
 
-        /** Default cache size to use with eviction policy. */
+        /// <summary> Default cache size to use with eviction policy. </summary>
         public const int DefaultCacheSize = 100000;
 
-        /** Default value for 'invalidate' flag that indicates if this is invalidation-based cache. */
+        /// <summary> Default value for 'invalidate' flag that indicates if this is invalidation-based cache. </summary>
         public const bool DefaultInvalidate = false;
 
-        /** Default rebalance mode for distributed cache. */
+        /// <summary> Default rebalance mode for distributed cache. </summary>
         public const CacheRebalanceMode DefaultRebalanceMode = CacheRebalanceMode.Async;
 
-        /** Default rebalance batch size in bytes. */
+        /// <summary> Default rebalance batch size in bytes. </summary>
         public const int DefaultRebalanceBatchSize = 512*1024; // 512K
 
-        /** Default maximum eviction queue ratio. */
+        /// <summary> Default maximum eviction queue ratio. </summary>
         public const float DefaultMaxEvictionOverflowRatio = 10;
 
-        /** Default eviction synchronized flag. */
+        /// <summary> Default eviction synchronized flag. </summary>
         public const bool DefaultEvictSynchronized = false;
 
-        /** Default eviction key buffer size for batching synchronized evicts. */
+        /// <summary> Default eviction key buffer size for batching synchronized evicts. </summary>
         public const int DefaultEvictSynchronizedKeyBufferSize = 1024;
 
-        /** Default synchronous eviction timeout. */
+        /// <summary> Default synchronous eviction timeout. </summary>
         public static readonly TimeSpan DefaultEvictSynchronizedTimeout = TimeSpan.FromMilliseconds(10000);
 
-        /** Default synchronous eviction concurrency level. */
+        /// <summary> Default synchronous eviction concurrency level. </summary>
         public const int DefaultEvictSynchronizedConcurrencyLevel = 4;
 
-        /** Default value for eager ttl flag. */
+        /// <summary> Default value for eager ttl flag. </summary>
         public const bool DefaultEagerTtl = true;
 
-        /** Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. */
+        /// <summary> Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. </summary>
         public const long DefaultOffHeapMaxMemory = -1;
 
-        /** Default value for 'swapEnabled' flag. */
+        /// <summary> Default value for 'swapEnabled' flag. </summary>
         public const bool DefaultEnableSwap = false;
 
-        /** Default value for 'maxConcurrentAsyncOps'. */
+        /// <summary> Default value for 'maxConcurrentAsyncOps'. </summary>
         public const int DefaultMaxConcurrentAsyncOperations = 500;
 
-        /** Default value for 'writeBehindEnabled' flag. */
+        /// <summary> Default value for 'writeBehindEnabled' flag. </summary>
         public const bool DefaultWriteBehindEnabled = false;
 
-        /** Default flush size for write-behind cache store. */
+        /// <summary> Default flush size for write-behind cache store. </summary>
         public const int DefaultWriteBehindFlushSize = 10240; // 10K
 
-        /** Default flush frequency for write-behind cache store. */
+        /// <summary> Default flush frequency for write-behind cache store. </summary>
         public static readonly TimeSpan DefaultWriteBehindFlushFrequency = TimeSpan.FromMilliseconds(5000);
 
-        /** Default count of flush threads for write-behind cache store. */
+        /// <summary> Default count of flush threads for write-behind cache store. </summary>
         public const int DefaultWriteFromBehindFlushThreadCount = 1;
 
-        /** Default batch size for write-behind cache store. */
+        /// <summary> Default batch size for write-behind cache store. </summary>
         public const int DefaultWriteBehindBatchSize = 512;
 
-        /** Default value for load previous value flag. */
+        /// <summary> Default value for load previous value flag. </summary>
         public const bool DefaultLoadPreviousValue = false;
 
-        /** Default memory mode. */
+        /// <summary> Default memory mode. </summary>
         public const CacheMemoryMode DefaultMemoryMode = CacheMemoryMode.OnheapTiered;
 
-        /** Default value for 'readFromBackup' flag. */
+        /// <summary> Default value for 'readFromBackup' flag. </summary>
         public const bool DefaultReadFromBackup = true;
 
-        /** Default timeout after which long query warning will be printed. */
+        /// <summary> Default timeout after which long query warning will be printed. </summary>
         public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
 
-        /** Default size for onheap SQL row cache size. */
+        /// <summary> Default size for onheap SQL row cache size. </summary>
         public const int DefaultSqlOnheapRowCacheSize = 10*1024;
 
-        /** Default value for keep portable in store behavior .*/
+        /// <summary> Default value for keep portable in store behavior .</summary>
         public const bool DefaultKeepPortableInStore = true;
 
-        /** Default value for 'copyOnRead' flag. */
+        /// <summary> Default value for 'copyOnRead' flag. </summary>
         public const bool DefaultCopyOnRead = true;
 
         /// <summary>
@@ -138,8 +138,16 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
         /// </summary>
+        public CacheConfiguration() : this((string) null)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
+        /// </summary>
         /// <param name="name">The name.</param>
-        public CacheConfiguration(string name = null)
+        public CacheConfiguration(string name)
         {
             Name = name;
 
