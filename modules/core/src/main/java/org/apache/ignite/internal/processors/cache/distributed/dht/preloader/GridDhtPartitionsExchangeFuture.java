@@ -910,8 +910,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      *
      */
     private void dumpPendingObjects() {
-        U.warn(log, "Failed to wait for partition release future. Dumping pending objects that might be the cause: " +
-            cctx.localNodeId());
+        U.warn(log, "Failed to wait for partition release future [topVer=" + topologyVersion() +
+            ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
 
         cctx.exchange().dumpPendingObjects();
     }
