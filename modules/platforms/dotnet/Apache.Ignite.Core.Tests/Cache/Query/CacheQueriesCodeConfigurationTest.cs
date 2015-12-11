@@ -59,12 +59,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         {
                             new QueryEntity
                             {
-                                KeyTypeName = "Integer",
                                 ValueTypeName = typeName,
                                 FieldNames = new[]
                                 {
-                                    new KeyValuePair<string, string>("Name", "String"),
-                                    new KeyValuePair<string, string>("Age", "Integer")
+                                    new KeyValuePair<string, string>("name", "java.lang.String"),
+                                    new KeyValuePair<string, string>("age", "java.lang.Integer")
                                 },
                                 Indexes = new[]
                                 {
