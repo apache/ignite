@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains classes specific to portable builder API.
+ * Contains classes specific to binary builder API.
  */
 package org.apache.ignite.internal.binary.builder;

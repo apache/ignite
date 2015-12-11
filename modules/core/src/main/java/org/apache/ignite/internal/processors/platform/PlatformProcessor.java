@@ -102,11 +102,11 @@ public interface PlatformProcessor extends GridProcessor {
      * Get data streamer.
      *
      * @param cacheName Cache name.
-     * @param keepPortable Portable flag.
+     * @param keepBinary Binary flag.
      * @return Data streamer.
      * @throws IgniteCheckedException If failed.
      */
-    public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepPortable) throws IgniteCheckedException;
+    public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Get transactions.
@@ -166,10 +166,10 @@ public interface PlatformProcessor extends GridProcessor {
      * Register cache store.
      *
      * @param store Store.
-     * @param convertPortable Convert portable flag.
+     * @param convertBinary Convert binary flag.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerStore(PlatformCacheStore store, boolean convertPortable) throws IgniteCheckedException;
+    public void registerStore(PlatformCacheStore store, boolean convertBinary) throws IgniteCheckedException;
 
     /**
      * Get or create AtomicLong.

@@ -94,7 +94,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
-    public void testPortableMetadataOnClient() throws Exception {
+    public void testBinaryMetadataOnClient() throws Exception {
         Ignite ignite0 = ignite(gridCount() - 1);
 
         assertTrue(ignite0.configuration().isClientMode());

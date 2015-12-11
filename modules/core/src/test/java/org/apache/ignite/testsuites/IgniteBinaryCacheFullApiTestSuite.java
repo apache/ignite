@@ -22,7 +22,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Cache full API suite with portable marshaller.
+ * Cache full API suite with binary marshaller.
  */
 public class IgniteBinaryCacheFullApiTestSuite extends TestSuite {
     /**

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.binary.streams;
 
 /**
- * Portable stream.
+ * Binary stream.
  */
 public interface BinaryStream {
     /**

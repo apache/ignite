@@ -25,13 +25,13 @@ import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 public class ComputeClientBinaryExampleTest extends GridAbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected String defaultConfig() {
-        return "examples/config/portable/example-ignite-portable.xml";
+        return "examples/config/binary/example-ignite-binary.xml";
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPortableTaskExecutionExample() throws Exception {
+    public void testBinaryTaskExecutionExample() throws Exception {
         ComputeClientBinaryTaskExecutionExample.main(new String[] {});
     }
 }

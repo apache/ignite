@@ -29,7 +29,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Internal portable object interface.
+ * Internal binary object interface.
  */
 public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     /**
@@ -245,7 +245,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
             return toString(ctx, new IdentityHashMap<BinaryObject, Integer>());
         }
         catch (BinaryObjectException e) {
-            throw new IgniteException("Failed to create string representation of portable object.", e);
+            throw new IgniteException("Failed to create string representation of binary object.", e);
         }
     }
 }

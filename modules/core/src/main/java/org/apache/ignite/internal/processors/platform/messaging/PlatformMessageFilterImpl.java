@@ -46,7 +46,7 @@ public class PlatformMessageFilterImpl extends PlatformAbstractPredicate impleme
     /**
      * Constructor.
      *
-     * @param pred .Net portable predicate.
+     * @param pred .Net binary predicate.
      * @param ptr Pointer to predicate in the native platform.
      * @param ctx Kernal context.
      */

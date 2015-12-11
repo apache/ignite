@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.binary;
 
 /**
- * Compact offsets tests for heap portable objects.
+ * Compact offsets tests for heap binary objects.
  */
 public class BinaryFooterOffsetsHeapSelfTest extends BinaryFooterOffsetsAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected BinaryObjectExImpl toPortable(BinaryMarshaller marsh, Object obj) throws Exception {
+    @Override protected BinaryObjectExImpl toBinary(BinaryMarshaller marsh, Object obj) throws Exception {
         byte[] bytes = marsh.marshal(obj);
 
         return new BinaryObjectImpl(ctx, bytes, 0);

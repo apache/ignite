@@ -36,8 +36,8 @@
 
     <repositories>
         <repository>
-            <id>ignite-portables-test-repo</id>
-            <url>file://${basedir}/src/test/portables/repo</url>
+            <id>ignite-binaries-test-repo</id>
+            <url>file://${basedir}/src/test/binaries/repo</url>
         </repository>
     </repositories>
 

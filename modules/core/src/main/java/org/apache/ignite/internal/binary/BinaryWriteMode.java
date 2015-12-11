@@ -133,13 +133,13 @@ public enum BinaryWriteMode {
     MAP(GridBinaryMarshaller.MAP),
 
     /** */
-    PORTABLE_OBJ(GridBinaryMarshaller.OBJ),
+    BINARY_OBJ(GridBinaryMarshaller.OBJ),
 
     /** */
     ENUM(GridBinaryMarshaller.ENUM),
 
-    /** Portable enum. */
-    PORTABLE_ENUM(GridBinaryMarshaller.ENUM),
+    /** Binary enum. */
+    BINARY_ENUM(GridBinaryMarshaller.ENUM),
 
     /** */
     ENUM_ARR(GridBinaryMarshaller.ENUM_ARR),
@@ -148,7 +148,7 @@ public enum BinaryWriteMode {
     CLASS(GridBinaryMarshaller.CLASS),
 
     /** */
-    PORTABLE(GridBinaryMarshaller.PORTABLE_OBJ),
+    BINARY(GridBinaryMarshaller.BINARY_OBJ),
 
     /** */
     EXTERNALIZABLE(GridBinaryMarshaller.OBJ),

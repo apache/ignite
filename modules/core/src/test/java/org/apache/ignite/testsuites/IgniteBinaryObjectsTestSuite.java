@@ -56,7 +56,7 @@ import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryO
 import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalSelfTest;
 
 /**
- * Test for portable objects stored in cache.
+ * Test for binary objects stored in cache.
  */
 public class IgniteBinaryObjectsTestSuite extends TestSuite {
     /**

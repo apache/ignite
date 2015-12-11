@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary.streams;
 import java.util.Arrays;
 
 /**
- * Portable off-heap input stream.
+ * Binary off-heap input stream.
  */
 public final class BinaryHeapInputStream extends BinaryAbstractInputStream {
     /**

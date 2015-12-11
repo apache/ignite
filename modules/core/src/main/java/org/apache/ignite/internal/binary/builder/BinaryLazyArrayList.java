@@ -160,7 +160,7 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
             for (Object o : delegate)
                 ctx.writeValue(writer, o);
 
-            // PortableBuilderImpl might have been written. It could override reader's position.
+            // BinaryBuilderImpl might have been written. It could override reader's position.
             reader.position(oldPos);
         }
     }

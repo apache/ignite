@@ -96,10 +96,10 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
         IgniteInternalFuture<?> fut;
 
         try {
-            // Update portable metadata concurrently with client nodes start.
+            // Update binary metadata concurrently with client nodes start.
             fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    IgniteBinary portables = ignite(0).binary();
+                    IgniteBinary binaries = ignite(0).binary();
 
                     IgniteCache<Object, Object> cache = ignite(0).cache(null).withKeepBinary();
 
@@ -108,12 +108,12 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
                     for (int i = 0; i < 1000; i++) {
                         log.info("Iteration: " + i);
 
-                        String type = "portable-type-" + i;
+                        String type = "binary-type-" + i;
 
                         allTypes.add(type);
 
                         for (int f = 0; f < 10; f++) {
-                            BinaryObjectBuilder builder = portables.builder(type);
+                            BinaryObjectBuilder builder = binaries.builder(type);
 
                             String fieldName = "f" + f;
 
@@ -145,7 +145,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
         assertFalse(allTypes.isEmpty());
 
-        log.info("Expected portable types: " + allTypes.size());
+        log.info("Expected binary types: " + allTypes.size());
 
         assertEquals(7, ignite(0).cluster().nodes().size());
 
@@ -156,9 +156,9 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
             assertEquals((Object)client, ignite(i).configuration().isClientMode());
 
-            IgniteBinary portables = ignite(i).binary();
+            IgniteBinary binaries = ignite(i).binary();
 
-            Collection<BinaryType> metaCol = portables.types();
+            Collection<BinaryType> metaCol = binaries.types();
 
             assertEquals(allTypes.size(), metaCol.size());
 
@@ -182,12 +182,12 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
     public void testFailoverOnStart() throws Exception {
         startGrids(4);
 
-        IgniteBinary portables = ignite(0).binary();
+        IgniteBinary binaries = ignite(0).binary();
 
         IgniteCache<Object, Object> cache = ignite(0).cache(null).withKeepBinary();
 
         for (int i = 0; i < 1000; i++) {
-            BinaryObjectBuilder builder = portables.builder("type-" + i);
+            BinaryObjectBuilder builder = binaries.builder("type-" + i);
 
             builder.setField("f0", i);
 
@@ -232,9 +232,9 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
             assertEquals((Object) client, ignite(i).configuration().isClientMode());
 
-            portables = ignite(i).binary();
+            binaries = ignite(i).binary();
 
-            final IgniteBinary p0 = portables;
+            final IgniteBinary p0 = binaries;
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
@@ -244,7 +244,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
                 }
             }, getTestTimeout());
 
-            Collection<BinaryType> metaCol = portables.types();
+            Collection<BinaryType> metaCol = binaries.types();
 
             assertEquals(1000, metaCol.size());
 
@@ -278,12 +278,12 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
         assertFalse(ignite1.configuration().isClientMode());
 
-        IgniteBinary portables = ignite(1).binary();
+        IgniteBinary binaries = ignite(1).binary();
 
         IgniteCache<Object, Object> cache = ignite(1).cache(null).withKeepBinary();
 
         for (int i = 0; i < 100; i++) {
-            BinaryObjectBuilder builder = portables.builder("type-" + i);
+            BinaryObjectBuilder builder = binaries.builder("type-" + i);
 
             builder.setField("f0", i);
 

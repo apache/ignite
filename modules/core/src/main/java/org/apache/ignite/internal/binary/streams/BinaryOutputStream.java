@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.binary.streams;
 
 /**
- * Portable output stream.
+ * Binary output stream.
  */
 public interface BinaryOutputStream extends BinaryStream, AutoCloseable {
     /**

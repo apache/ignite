@@ -58,7 +58,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Portable utils.
+ * Binary utils.
  */
 public class BinaryUtils {
     /** */
@@ -70,8 +70,8 @@ public class BinaryUtils {
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
 
-    /** Portable classes. */
-    private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
+    /** Binary classes. */
+    private static final Collection<Class<?>> BINARY_CLS = new HashSet<>();
 
     /** Flag: user type. */
     public static final short FLAG_USR_TYP = 0x0001;
@@ -166,32 +166,32 @@ public class BinaryUtils {
             PLAIN_TYPE_FLAG[b] = true;
         }
 
-        PORTABLE_CLS.add(Byte.class);
-        PORTABLE_CLS.add(Short.class);
-        PORTABLE_CLS.add(Integer.class);
-        PORTABLE_CLS.add(Long.class);
-        PORTABLE_CLS.add(Float.class);
-        PORTABLE_CLS.add(Double.class);
-        PORTABLE_CLS.add(Character.class);
-        PORTABLE_CLS.add(Boolean.class);
-        PORTABLE_CLS.add(String.class);
-        PORTABLE_CLS.add(UUID.class);
-        PORTABLE_CLS.add(Date.class);
-        PORTABLE_CLS.add(Timestamp.class);
-        PORTABLE_CLS.add(BigDecimal.class);
-        PORTABLE_CLS.add(byte[].class);
-        PORTABLE_CLS.add(short[].class);
-        PORTABLE_CLS.add(int[].class);
-        PORTABLE_CLS.add(long[].class);
-        PORTABLE_CLS.add(float[].class);
-        PORTABLE_CLS.add(double[].class);
-        PORTABLE_CLS.add(char[].class);
-        PORTABLE_CLS.add(boolean[].class);
-        PORTABLE_CLS.add(String[].class);
-        PORTABLE_CLS.add(UUID[].class);
-        PORTABLE_CLS.add(Date[].class);
-        PORTABLE_CLS.add(Timestamp[].class);
-        PORTABLE_CLS.add(BigDecimal[].class);
+        BINARY_CLS.add(Byte.class);
+        BINARY_CLS.add(Short.class);
+        BINARY_CLS.add(Integer.class);
+        BINARY_CLS.add(Long.class);
+        BINARY_CLS.add(Float.class);
+        BINARY_CLS.add(Double.class);
+        BINARY_CLS.add(Character.class);
+        BINARY_CLS.add(Boolean.class);
+        BINARY_CLS.add(String.class);
+        BINARY_CLS.add(UUID.class);
+        BINARY_CLS.add(Date.class);
+        BINARY_CLS.add(Timestamp.class);
+        BINARY_CLS.add(BigDecimal.class);
+        BINARY_CLS.add(byte[].class);
+        BINARY_CLS.add(short[].class);
+        BINARY_CLS.add(int[].class);
+        BINARY_CLS.add(long[].class);
+        BINARY_CLS.add(float[].class);
+        BINARY_CLS.add(double[].class);
+        BINARY_CLS.add(char[].class);
+        BINARY_CLS.add(boolean[].class);
+        BINARY_CLS.add(String[].class);
+        BINARY_CLS.add(UUID[].class);
+        BINARY_CLS.add(Date[].class);
+        BINARY_CLS.add(Timestamp[].class);
+        BINARY_CLS.add(BigDecimal[].class);
 
         FIELD_TYPE_NAMES = new String[104];
 
@@ -210,7 +210,7 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIMESTAMP] = "Timestamp";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM] = "Enum";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ] = "Object";
-        FIELD_TYPE_NAMES[GridBinaryMarshaller.PORTABLE_OBJ] = "Object";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.BINARY_OBJ] = "Object";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.COL] = "Collection";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.MAP] = "Map";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.CLASS] = "Class";
@@ -547,7 +547,7 @@ public class BinaryUtils {
 
     /**
      * @param cls Class.
-     * @return Portable field type.
+     * @return Binary field type.
      */
     public static byte typeByClass(Class<?> cls) {
         Byte type = PLAIN_CLASS_TO_FLAG.get(cls);
@@ -571,16 +571,16 @@ public class BinaryUtils {
     }
 
     /**
-     * Tells whether provided type is portable.
+     * Tells whether provided type is binary.
      *
      * @param cls Class to check.
-     * @return Whether type is portable.
+     * @return Whether type is binary.
      */
-    public static boolean isPortableType(Class<?> cls) {
+    public static boolean isBinaryType(Class<?> cls) {
         assert cls != null;
 
         return BinaryObject.class.isAssignableFrom(cls) ||
-            PORTABLE_CLS.contains(cls) ||
+            BINARY_CLS.contains(cls) ||
             cls.isEnum() ||
             (cls.isArray() && cls.getComponentType().isEnum());
     }
@@ -632,7 +632,7 @@ public class BinaryUtils {
     }
 
     /**
-     * Get portable object length.
+     * Get binary object length.
      *
      * @param in Input stream.
      * @param start Start position.
@@ -801,7 +801,7 @@ public class BinaryUtils {
             // Check type name.
             if (!F.eq(oldMeta.typeName(), newMeta.typeName())) {
                 throw new BinaryObjectException(
-                    "Two portable types have duplicate type ID [" + "typeId=" + oldMeta.typeId() +
+                    "Two binary types have duplicate type ID [" + "typeId=" + oldMeta.typeId() +
                         ", typeName1=" + oldMeta.typeName() + ", typeName2=" + newMeta.typeName() + ']'
                 );
             }
@@ -944,9 +944,9 @@ public class BinaryUtils {
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
         else if (cls == BinaryObjectImpl.class)
-            return BinaryWriteMode.PORTABLE_OBJ;
+            return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
-            return BinaryWriteMode.PORTABLE;
+            return BinaryWriteMode.BINARY;
         else if (Externalizable.class.isAssignableFrom(cls))
             return BinaryWriteMode.EXTERNALIZABLE;
         else if (isSpecialCollection(cls))
@@ -1249,7 +1249,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static BinaryObject doReadPortableObject(BinaryInputStream in, BinaryContext ctx) {
+    public static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx) {
         if (in.offheapPointer() > 0) {
             int len = in.readInt();
 
@@ -1343,7 +1343,7 @@ public class BinaryUtils {
     /**
      * Resolve the class.
      *
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      * @param typeId Type ID.
      * @param clsName Class name.
      * @param ldr Class loaded.
@@ -1374,26 +1374,26 @@ public class BinaryUtils {
     }
 
     /**
-     * Read portable enum.
+     * Read binary enum.
      *
      * @param in Input stream.
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      * @param type Plain type.
      * @return Enum.
      */
-    private static BinaryEnumObjectImpl doReadPortableEnum(BinaryInputStream in, BinaryContext ctx,
+    private static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
         return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
     }
 
     /**
-     * Read portable enum array.
+     * Read binary enum array.
      *
      * @param in Input stream.
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      * @return Enum array.
      */
-    private static Object[] doReadPortableEnumArray(BinaryInputStream in, BinaryContext ctx) {
+    private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
         Object[] arr = (Object[]) Array.newInstance(BinaryObject.class, len);
@@ -1404,7 +1404,7 @@ public class BinaryUtils {
             if (flag == GridBinaryMarshaller.NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadPortableEnum(in, ctx, doReadEnumType(in));
+                arr[i] = doReadBinaryEnum(in, ctx, doReadEnumType(in));
         }
 
         return arr;
@@ -1644,16 +1644,16 @@ public class BinaryUtils {
             case GridBinaryMarshaller.MAP:
                 return doReadMap(in, ctx, ldr, handles, false, null);
 
-            case GridBinaryMarshaller.PORTABLE_OBJ:
-                return doReadPortableObject(in, ctx);
+            case GridBinaryMarshaller.BINARY_OBJ:
+                return doReadBinaryObject(in, ctx);
 
             case GridBinaryMarshaller.ENUM:
-                return doReadPortableEnum(in, ctx, doReadEnumType(in));
+                return doReadBinaryEnum(in, ctx, doReadEnumType(in));
 
             case GridBinaryMarshaller.ENUM_ARR:
                 doReadEnumType(in); // Simply skip this part as we do not need it.
 
-                return doReadPortableEnumArray(in, ctx);
+                return doReadBinaryEnumArray(in, ctx);
 
             case GridBinaryMarshaller.CLASS:
                 return doReadClass(in, ctx, ldr);

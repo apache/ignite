@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary.streams;
 import org.apache.ignite.binary.BinaryObjectException;
 
 /**
- * Portable abstract input stream.
+ * Binary abstract input stream.
  */
 public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
     implements BinaryInputStream {
