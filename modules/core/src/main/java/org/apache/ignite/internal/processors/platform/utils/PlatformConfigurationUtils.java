@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.BinaryRawReaderEx;
@@ -44,7 +45,10 @@ import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Configuration utils.
@@ -145,7 +149,7 @@ public class PlatformConfigurationUtils {
         int qryEntCnt = in.readInt();
 
         if (qryEntCnt > 0) {
-            ArrayList entities = new ArrayList(qryEntCnt);
+            Collection<QueryEntity> entities = new ArrayList<>(qryEntCnt);
 
             for (int i = 0; i < qryEntCnt; i++)
                 entities.add(readQueryEntity(in));
@@ -163,7 +167,62 @@ public class PlatformConfigurationUtils {
      * @return QueryEntity.
      */
     public static QueryEntity readQueryEntity(BinaryRawReaderEx in) {
+        QueryEntity res = new QueryEntity();
 
+        res.setKeyType(in.readString());
+        res.setValueType(in.readString());
+
+        // Fields
+        int cnt = in.readInt();
+
+        if (cnt > 0) {
+            LinkedHashMap<String, String> fields = new LinkedHashMap<>(cnt);
+
+            for (int i = 0; i < cnt; i++)
+                fields.put(in.readString(), in.readString());
+
+            res.setFields(fields);
+        }
+
+        // Aliases
+        cnt = in.readInt();
+
+        if (cnt > 0) {
+            Map<String, String> aliases = new HashMap<>(cnt);
+
+            for (int i = 0; i < cnt; i++)
+                aliases.put(in.readString(), in.readString());
+
+            res.setAliases(aliases);
+        }
+
+        // Indexes
+        cnt = in.readInt();
+
+        if (cnt > 0) {
+            Collection<QueryIndex> indexes = new ArrayList<>(cnt);
+
+            for (int i = 0; i < cnt; i++)
+                indexes.add(readQueryIndex(in));
+
+            res.setIndexes(indexes);
+        }
+
+        return res;
+    }
+
+    /**
+     * Reads the query index.
+     *
+     * @param in Reader.
+     * @return Query index.
+     */
+    public static QueryIndex readQueryIndex(BinaryRawReaderEx in) {
+        QueryIndex res = new QueryIndex();
+
+        // TODO
+
+        return res;
     }
 
     /**
