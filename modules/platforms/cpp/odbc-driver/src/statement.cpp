@@ -191,21 +191,13 @@ namespace ignite
             bool found = false;
 
             if (numbuf)
-            {
                 found = columnMeta.GetAttribute(attrId, *numbuf);
-
-                if (found)
-                    LOG_MSG("Numeric attribute. Value: %lld\n", *numbuf);
-            }
 
             if (!found)
             {
                 std::string out;
 
                 found = columnMeta.GetAttribute(attrId, out);
-
-                if (found)
-                    LOG_MSG("String attribute. Value: %s\n", out.c_str());
 
                 size_t outSize = out.size();
 
@@ -215,9 +207,6 @@ namespace ignite
                 if (found && strbuf)
                     *reslen = static_cast<int16_t>(outSize);
             }
-
-            if (!found)
-                LOG_MSG("Not found !!! \n");
 
             return found;
         }
