@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-import template from './dialog.jade!'
+export default ['igniteDialogContent', ['$compile', ($compile) => {
 
-export default ['IgniteDialog', ['$modal', ($modal) => {
-	let defaults = {
-		template: template(),
-		placement: 'center',
-		show: false
-	}
+	let link = ($scope, $element, $attrs, igniteDialog) => {
+		igniteDialog.content = $element.html();
+		$element.hide();
+	};
 
-	return function(options) {
-		options = _.extend({}, defaults, options);
-
-		return $modal(options);
-	}
+	return {
+		scope: {},
+		restrict: 'E',
+		link,
+		require: '^igniteDialog'
+	};
 }]];

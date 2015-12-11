@@ -15,20 +15,17 @@
  * limitations under the License.
  */
 
-import controller from './dialog.controller';
+export default ['igniteDialogTitle', [() => {
 
-const template = "<a ng-transclude='' ng-click='ctrl.show()'></a>";
-
-export default ['igniteDialog', [() => {
+	let link = ($scope, $element, $attrs, igniteDialog) => {
+		igniteDialog.title = $element.text();
+		$element.hide();
+	}
 
 	return {
 		scope: {},
 		restrict: 'E',
-		template,
-		controller,
-		controllerAs: 'ctrl',
-		replace: true,
-		transclude: true,
+		link,
 		require: '^igniteDialog'
 	};
 }]];

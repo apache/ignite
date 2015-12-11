@@ -28,7 +28,22 @@ mixin hard-link(ref, txt)
             li Download Java Code
             li Download Docker File
             li 
-                a(bs-modal='moreInfo' data-placement='center' data-template-url='/templates/message.html') More info
+                ignite-dialog More info
+                    ignite-dialog-title Summary screen
+                    ignite-dialog-content 
+                        | Configurations available in XML, Java and Dockerfile format for Server and Client mode.&nbsp;
+                        br
+                        | Database table POJO classes for cluster's metadata available on "POJO" tab.&nbsp;
+                        br
+                        | Use "Download" button to receive configurations in ZIP file.&nbsp;
+                        br
+                        | Go back to change configuration on&nbsp;
+                        a(href='/configuration/clusters') clusters
+                        | &nbsp;,&nbsp;
+                        a(href='/configuration/caches') caches
+                        | &nbsp;or&nbsp; 
+                        a(href='/configuration/metadata') metadata
+                        | &nbsp;screen.
                     
         ignite-callout-cel(data-title='Next Steps')
             li Deploy Ignite Servers

@@ -15,12 +15,26 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteDialog', function($scope, Dialog) {
+export default ['$rootScope' ,'$scope', 'IgniteDialog', function($root, $scope, Dialog) {
     let ctrl = this;
 
-    let dialog = new Dialog();
+    let dialog = new Dialog({
+        scope: $scope
+    });
 
     ctrl.show = () => {
         dialog.$promise.then(dialog.show);
-    }
-}]
+    }; 
+
+    $scope.$watch(() => ctrl.title, () => {
+        $scope.title = ctrl.title
+    });
+
+    $scope.$watch(() => ctrl.content, () => {
+        $scope.content = ctrl.content
+    });
+
+    $root.$on('$stateChangeStart', () => {
+        dialog.hide();
+    })
+}];

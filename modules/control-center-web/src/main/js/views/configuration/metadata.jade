@@ -24,7 +24,16 @@ include ../includes/controls
             li Manually enter Metadata
             li Load Metadata from Database
             li
-                a(bs-modal='moreInfo' data-placement='center' data-template-url='/templates/message.html') More info
+                ignite-dialog More info
+                    ignite-dialog-title Metadata screen
+                    ignite-dialog-content 
+                        | Metadata can be assigned to specified&nbsp;
+                        a(href='/configuration/caches') caches
+                        | .&nbsp;
+                        br
+                        | Generated cluster with caches with metadata configuration available on&nbsp;
+                        a(href='/configuration/summary') summary
+                        | &nbsp;screen.
                     
         ignite-callout-cel(data-title='Next Steps')
             li Continue to&nbsp;
