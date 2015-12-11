@@ -326,7 +326,31 @@ namespace Apache.Ignite.Core.Tests.Cache
                     new QueryEntity
                     {
                         KeyTypeName = "Integer",
-                        ValueTypeName = "String"
+                        ValueTypeName = "java.lang.String",
+                        FieldNames = new[]
+                        {
+                            new KeyValuePair<string, string>("len", "Integer")
+                        },
+                        Aliases = new Dictionary<string, string> {{"length", "len"}},
+                        Indexes = new[]
+                        {
+                            new QueryIndex
+                            {
+                                Name = "index1",
+                                Fields = new[]
+                                {
+                                    new KeyValuePair<string, bool>("name", false)
+                                }
+                            },
+                            new QueryIndex
+                            {
+                                IndexType = QueryIndexType.GeoSpatial,
+                                Fields = new[]
+                                {
+                                    new KeyValuePair<string, bool>("location", true)
+                                }
+                            },
+                        }
                     }
                 }
             };
