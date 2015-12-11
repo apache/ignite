@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             [MarshalAs(UnmanagedType.U1)] bool create);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetIgniteConfiguration")]
-        public static extern void* ProcessorGetIgniteConfiguration(void* ctx, void* obj, long memPtr);
+        public static extern void ProcessorGetIgniteConfiguration(void* ctx, void* obj, long memPtr);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutLong")]
         public static extern long TargetInStreamOutLong(void* ctx, void* target, int opType, long memPtr);
