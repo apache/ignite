@@ -586,9 +586,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             TypeId id;
 
-            boolean portableVal = ctx.cacheObjects().isBinaryObject(val);
+            boolean binaryVal = ctx.cacheObjects().isBinaryObject(val);
 
-            if (portableVal) {
+            if (binaryVal) {
                 int typeId = ctx.cacheObjects().typeId(val);
 
                 id = new TypeId(space, typeId);
@@ -604,7 +604,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null || !desc.registered())
                 return;
 
-            if (!portableVal && !desc.valueClass().isAssignableFrom(valCls))
+            if (!binaryVal && !desc.valueClass().isAssignableFrom(valCls))
                 throw new IgniteCheckedException("Failed to update index due to class name conflict" +
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
@@ -1304,7 +1304,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Processes declarative metadata for portable object.
+     * Processes declarative metadata for binary object.
      *
      * @param meta Declared metadata.
      * @param d Type descriptor.
@@ -1382,7 +1382,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Processes declarative metadata for portable object.
+     * Processes declarative metadata for binary object.
      *
      * @param qryEntity Declared metadata.
      * @param d Type descriptor.
@@ -1404,7 +1404,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Processes declarative metadata for portable object.
+     * Processes declarative metadata for binary object.
      *
      * @param qryEntity Declared metadata.
      * @param d Type descriptor.
@@ -1485,7 +1485,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Builds portable object property.
+     * Builds binary object property.
      *
      * @param pathStr String representing path to the property. May contains dots '.' to identify
      *      nested fields.
@@ -1859,14 +1859,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     return null;
 
                 if (!ctx.cacheObjects().isBinaryObject(obj))
-                    throw new IgniteCheckedException("Non-portable object received as a result of property extraction " +
+                    throw new IgniteCheckedException("Non-binary object received as a result of property extraction " +
                         "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
             }
             else {
                 int isKeyProp0 = isKeyProp;
 
                 if (isKeyProp0 == 0) {
-                    // Key is allowed to be a non-portable object here.
+                    // Key is allowed to be a non-binary object here.
                     // We check key before value consistently with ClassProperty.
                     if (key instanceof BinaryObject && ((BinaryObject)key).hasField(propName))
                         isKeyProp = isKeyProp0 = 1;

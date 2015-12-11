@@ -80,7 +80,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         bCfg.setTypeConfigurations(Arrays.asList(
             new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration(Value.class.getName()),
-            new BinaryTypeConfiguration("org.gridgain.grid.internal.util.portable.mutabletest.*"),
+            new BinaryTypeConfiguration("org.gridgain.grid.internal.util.binary.mutabletest.*"),
             customTypeCfg));
 
         cfg.setBinaryConfiguration(bCfg);
@@ -909,11 +909,11 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testSetBinaryObject() {
-        BinaryObject portableObj = builder(GridBinaryTestClasses.TestObjectContainer.class.getName())
+        BinaryObject binaryObj = builder(GridBinaryTestClasses.TestObjectContainer.class.getName())
             .setField("foo", toBinary(new GridBinaryTestClasses.TestObjectAllTypes()))
             .build();
 
-        assertTrue(portableObj.<GridBinaryTestClasses.TestObjectContainer>deserialize().foo instanceof GridBinaryTestClasses.TestObjectAllTypes);
+        assertTrue(binaryObj.<GridBinaryTestClasses.TestObjectContainer>deserialize().foo instanceof GridBinaryTestClasses.TestObjectAllTypes);
     }
 
     /**

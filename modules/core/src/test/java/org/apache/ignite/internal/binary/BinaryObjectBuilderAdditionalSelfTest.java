@@ -1236,7 +1236,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
     /**
      * @param obj Object.
-     * @return Object in portable format.
+     * @return Object in binary format.
      */
     private BinaryObject toBinary(Object obj) {
         return binaries().toBinary(obj);
@@ -1258,7 +1258,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         CacheObjectBinaryProcessorImpl processor = (CacheObjectBinaryProcessorImpl)(
             (IgniteBinaryImpl)binaries()).processor();
 
-        return new BinaryObjectBuilderImpl(processor.portableContext(), processor.typeId(aCls.getName()),
+        return new BinaryObjectBuilderImpl(processor.binaryContext(), processor.typeId(aCls.getName()),
             aCls.getSimpleName());
     }
 }

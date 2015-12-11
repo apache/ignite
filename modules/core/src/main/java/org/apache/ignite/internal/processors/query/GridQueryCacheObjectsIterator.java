@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Deserializes portable objects if needed.
+ * Deserializes binary objects if needed.
  */
 public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoCloseable {
     /** */
@@ -39,7 +39,7 @@ public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoClo
     /**
      * @param iter Iterator.
      * @param cctx Cache context.
-     * @param keepBinary Keep portable.
+     * @param keepBinary Keep binary.
      */
     public GridQueryCacheObjectsIterator(Iterator<List<?>> iter, GridCacheContext<?,?> cctx, boolean keepBinary) {
         this.iter = iter;

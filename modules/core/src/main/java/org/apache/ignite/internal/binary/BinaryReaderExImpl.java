@@ -185,7 +185,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         start = in.position();
 
-        // Perform full header parsing in case of portable object.
+        // Perform full header parsing in case of binary object.
         if (!skipHdrCheck && (in.readByte() == GridBinaryMarshaller.OBJ)) {
             // Ensure protocol is fine.
             BinaryUtils.checkProtocolVersion(in.readByte());

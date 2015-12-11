@@ -27,11 +27,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMa
  */
 public class CacheObjectBinaryContext extends CacheObjectContext {
     /** */
-    private boolean portableEnabled;
+    private boolean binaryEnabled;
 
     /**
      * @param kernalCtx Kernal context.
-     * @param portableEnabled Binary enabled flag.
+     * @param binaryEnabled Binary enabled flag.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
      * @param depEnabled {@code true} if deployment is enabled for the given cache.
@@ -39,18 +39,18 @@ public class CacheObjectBinaryContext extends CacheObjectContext {
     public CacheObjectBinaryContext(GridKernalContext kernalCtx,
         boolean cpyOnGet,
         boolean storeVal,
-        boolean portableEnabled,
+        boolean binaryEnabled,
         boolean depEnabled) {
-        super(kernalCtx, portableEnabled ? new CacheDefaultBinaryAffinityKeyMapper() :
+        super(kernalCtx, binaryEnabled ? new CacheDefaultBinaryAffinityKeyMapper() :
             new GridCacheDefaultAffinityKeyMapper(), cpyOnGet, storeVal, depEnabled);
 
-        this.portableEnabled = portableEnabled;
+        this.binaryEnabled = binaryEnabled;
     }
 
     /**
      * @return Binary enabled flag.
      */
-    public boolean portableEnabled() {
-        return portableEnabled;
+    public boolean binaryEnabled() {
+        return binaryEnabled;
     }
 }

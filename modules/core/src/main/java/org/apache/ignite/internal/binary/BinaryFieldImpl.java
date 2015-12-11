@@ -24,7 +24,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryField;
 
 /**
- * Implementation of portable field descriptor.
+ * Implementation of binary field descriptor.
  */
 public class BinaryFieldImpl implements BinaryField {
     /** Type ID. */

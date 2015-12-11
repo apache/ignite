@@ -84,11 +84,11 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectBuilder builder(BinaryObject portableObj) {
+    @Override public BinaryObjectBuilder builder(BinaryObject binaryObj) {
         guard();
 
         try {
-            return proc.builder(portableObj);
+            return proc.builder(binaryObj);
         }
         finally {
             unguard();

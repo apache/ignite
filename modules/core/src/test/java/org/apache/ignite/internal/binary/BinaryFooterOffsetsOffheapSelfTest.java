@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 import sun.misc.Unsafe;
 
 /**
- * Compact offsets tests for offheap portable objects.
+ * Compact offsets tests for offheap binary objects.
  */
 public class BinaryFooterOffsetsOffheapSelfTest extends BinaryFooterOffsetsAbstractSelfTest {
     /** Unsafe instance. */

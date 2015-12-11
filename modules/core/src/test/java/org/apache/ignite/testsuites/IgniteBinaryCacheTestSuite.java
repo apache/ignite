@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSel
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Cache suite with portable marshaller.
+ * Cache suite with binary marshaller.
  */
 public class IgniteBinaryCacheTestSuite extends TestSuite {
     /**

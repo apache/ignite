@@ -608,7 +608,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*skip tx*/false,
             /*subj id*/null,
             /*task name*/null,
-            /*deserialize portable*/false,
+            /*deserialize binary*/false,
             /*skip values*/true,
             /*can remap*/true
         );
@@ -634,7 +634,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*skip tx*/false,
             /*subj id*/null,
             /*task name*/null,
-            /*deserialize portable*/false,
+            /*deserialize binary*/false,
             /*skip values*/true,
             /*can remap*/true
         ).chain(new CX1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
@@ -1498,7 +1498,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param skipTx Skip tx.
      * @param subjId Subj Id.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize portable.
+     * @param deserializeBinary Deserialize binary.
      * @param skipVals Skip values.
      * @param canRemap Can remap flag.
      * @return Future for the get operation.
@@ -1544,7 +1544,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param skipTx Skip tx.
      * @param subjId Subj Id.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize portable.
+     * @param deserializeBinary Deserialize binary.
      * @param skipVals Skip values.
      * @param canRemap Can remap flag.
      * @return Future for the get operation.
@@ -1582,7 +1582,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param checkTx Check tx.
      * @param subjId Subj Id.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize portable.
+     * @param deserializeBinary Deserialize binary.
      * @param forcePrimary Froce primary.
      * @param expiry Expiry policy.
      * @param skipVals Skip values.
@@ -1625,7 +1625,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param checkTx Check local transaction flag.
      * @param subjId Subject ID.
      * @param taskName Task name/
-     * @param deserializeBinary Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects.
@@ -3842,7 +3842,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param key Key.
-     * @param deserializeBinary Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
@@ -4513,7 +4513,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param key Key.
-     * @param deserializeBinary Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @return Cached value.
      * @throws IgniteCheckedException If failed.
      */
@@ -4524,7 +4524,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param key Key.
-     * @param deserializeBinary Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @return Read operation future.
      */
     public final IgniteInternalFuture<V> getAsync(final K key, boolean deserializeBinary) {
@@ -4549,7 +4549,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param keys Keys.
-     * @param deserializeBinary Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @return Map of cached values.
      * @throws IgniteCheckedException If read failed.
      */
@@ -4561,7 +4561,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param keys Keys.
-     * @param deserializeBinary Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @return Read future.
      */
     public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
@@ -4662,7 +4662,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param it Internal entry iterator.
-     * @param deserializeBinary Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @return Public API iterator.
      */
     protected Iterator<Cache.Entry<K, V>> iterator(final Iterator<GridCacheEntryEx> it,
@@ -4724,7 +4724,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param entry Internal entry.
-     * @param deserializeBinary Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @return Public API entry.
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry removed.

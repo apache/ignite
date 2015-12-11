@@ -44,7 +44,7 @@ public class BinaryConfiguration {
     private boolean compactFooter = DFLT_COMPACT_FOOTER;
 
     /**
-     * Sets class names of portable objects explicitly.
+     * Sets class names of binary objects explicitly.
      *
      * @param clsNames Class names.
      */

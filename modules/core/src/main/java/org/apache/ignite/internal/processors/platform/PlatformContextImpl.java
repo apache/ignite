@@ -384,7 +384,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /**
-     * Write portable metadata.
+     * Write binary metadata.
      *
      * @param writer Writer.
      * @param typeId Type id.

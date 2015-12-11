@@ -145,7 +145,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         BinaryClassDescriptor desc = ctx.descriptorForClass(cls, false);
 
         if (desc == null)
-            throw new BinaryObjectException("Object is not portable: [class=" + cls + ']');
+            throw new BinaryObjectException("Object is not binary: [class=" + cls + ']');
 
         if (desc.excluded()) {
             out.writeByte(GridBinaryMarshaller.NULL);

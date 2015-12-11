@@ -279,7 +279,7 @@ public class BinaryContext implements Externalizable {
                 String clsName = typeCfg.getTypeName();
 
                 if (clsName == null)
-                    throw new BinaryObjectException("Class name is required for portable type configuration.");
+                    throw new BinaryObjectException("Class name is required for binary type configuration.");
 
                 BinaryIdMapper idMapper = globalIdMapper;
 
@@ -685,7 +685,7 @@ public class BinaryContext implements Externalizable {
             if (g == null)
                 throw new IllegalStateException("Failed to find grid for name: " + gridName);
 
-            return ((CacheObjectBinaryProcessorImpl)g.context().cacheObjects()).portableContext();
+            return ((CacheObjectBinaryProcessorImpl)g.context().cacheObjects()).binaryContext();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
@@ -1047,7 +1047,7 @@ public class BinaryContext implements Externalizable {
         }
 
         /**
-         * Override portable class descriptor.
+         * Override binary class descriptor.
          *
          * @param other Other descriptor.
          * @throws BinaryObjectException If failed.

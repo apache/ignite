@@ -34,7 +34,7 @@ import java.util.Date;
 import java.util.UUID;
 
 /**
- * Contains tests for portable object fields.
+ * Contains tests for binary object fields.
  */
 public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTest {
     /** Marshaller. */
@@ -80,12 +80,12 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Get portable context for the current marshaller.
+     * Get binary context for the current marshaller.
      *
      * @param marsh Marshaller.
      * @return Binary context.
      */
-    protected static BinaryContext portableContext(BinaryMarshaller marsh) {
+    protected static BinaryContext binaryContext(BinaryMarshaller marsh) {
         GridBinaryMarshaller impl = U.field(marsh, "impl");
 
         return impl.context();
@@ -526,7 +526,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Convert object to portable object.
+     * Convert object to binary object.
      *
      * @param marsh Marshaller.
      * @param obj Object.

@@ -289,7 +289,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /**
-     * Convert object to portable form.
+     * Convert object to binary form.
      *
      * @param src Source object.
      * @return Result.

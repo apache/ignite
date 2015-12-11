@@ -39,7 +39,7 @@ public class PlatformDotNetServiceImpl extends PlatformAbstractService implement
      *
      * @param svc Service.
      * @param ctx Context.
-     * @param srvKeepBinary Whether to keep objects portable on server if possible.
+     * @param srvKeepBinary Whether to keep objects binary on server if possible.
      */
     public PlatformDotNetServiceImpl(Object svc, PlatformContext ctx, boolean srvKeepBinary) {
         super(svc, ctx, srvKeepBinary);

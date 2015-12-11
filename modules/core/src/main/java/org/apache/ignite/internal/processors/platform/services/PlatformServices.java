@@ -60,7 +60,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     /** */
     private final IgniteServices services;
 
-    /** Server keep portable flag. */
+    /** Server keep binary flag. */
     private final boolean srvKeepBinary;
 
     /**
@@ -68,7 +68,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      *
      * @param platformCtx Context.
      * @param services Services facade.
-     * @param srvKeepBinary Server keep portable flag.
+     * @param srvKeepBinary Server keep binary flag.
      */
     public PlatformServices(PlatformContext platformCtx, IgniteServices services, boolean srvKeepBinary) {
         super(platformCtx);
@@ -92,9 +92,9 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /**
-     * Gets services with server "keep portable" mode enabled.
+     * Gets services with server "keep binary" mode enabled.
      *
-     * @return Services with server "keep portable" mode enabled.
+     * @return Services with server "keep binary" mode enabled.
      */
     public PlatformServices withServerKeepBinary() {
         return srvKeepBinary ? this : new PlatformServices(platformCtx, services, true);

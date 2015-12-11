@@ -571,10 +571,10 @@ public class BinaryUtils {
     }
 
     /**
-     * Tells whether provided type is portable.
+     * Tells whether provided type is binary.
      *
      * @param cls Class to check.
-     * @return Whether type is portable.
+     * @return Whether type is binary.
      */
     public static boolean isBinaryType(Class<?> cls) {
         assert cls != null;
@@ -632,7 +632,7 @@ public class BinaryUtils {
     }
 
     /**
-     * Get portable object length.
+     * Get binary object length.
      *
      * @param in Input stream.
      * @param start Start position.
@@ -801,7 +801,7 @@ public class BinaryUtils {
             // Check type name.
             if (!F.eq(oldMeta.typeName(), newMeta.typeName())) {
                 throw new BinaryObjectException(
-                    "Two portable types have duplicate type ID [" + "typeId=" + oldMeta.typeId() +
+                    "Two binary types have duplicate type ID [" + "typeId=" + oldMeta.typeId() +
                         ", typeName1=" + oldMeta.typeName() + ", typeName2=" + newMeta.typeName() + ']'
                 );
             }
@@ -1374,7 +1374,7 @@ public class BinaryUtils {
     }
 
     /**
-     * Read portable enum.
+     * Read binary enum.
      *
      * @param in Input stream.
      * @param ctx Binary context.
@@ -1387,7 +1387,7 @@ public class BinaryUtils {
     }
 
     /**
-     * Read portable enum array.
+     * Read binary enum array.
      *
      * @param in Input stream.
      * @param ctx Binary context.

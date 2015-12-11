@@ -179,7 +179,7 @@ import org.apache.ignite.internal.util.typedef.F;
      * Unwrap array of binaries if needed.
      *
      * @param arr Array.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @param cpy Copy.
      * @return Result.
      */
@@ -196,7 +196,7 @@ import org.apache.ignite.internal.util.typedef.F;
      * Unwraps map.
      *
      * @param map Map to unwrap.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Unwrapped collection.
      */
     private Map<Object, Object> unwrapBinariesIfNeeded(Map<Object, Object> map, boolean keepBinary, boolean cpy) {

@@ -34,7 +34,7 @@ public class GridCacheBinaryStoreBinariesSelfTest extends GridCacheBinaryStoreAb
         assert idxs != null;
 
         for (int idx : idxs)
-            map.put(portable(new Key(idx)), portable(new Value(idx)));
+            map.put(binary(new Key(idx)), binary(new Value(idx)));
     }
 
     /** {@inheritDoc} */
@@ -45,7 +45,7 @@ public class GridCacheBinaryStoreBinariesSelfTest extends GridCacheBinaryStoreAb
         assertEquals(idxs.length, map.size());
 
         for (int idx : idxs) {
-            Object val = map.get(portable(new Key(idx)));
+            Object val = map.get(binary(new Key(idx)));
 
             assertTrue(String.valueOf(val), val instanceof BinaryObject);
 
@@ -60,7 +60,7 @@ public class GridCacheBinaryStoreBinariesSelfTest extends GridCacheBinaryStoreAb
      * @param obj Object.
      * @return Binary object.
      */
-    private Object portable(Object obj) {
+    private Object binary(Object obj) {
         return grid().binary().toBinary(obj);
     }
 }

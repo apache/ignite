@@ -771,7 +771,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         assert e != null;
 
         if (e.getMessage() != null) {
-            throw new IgniteCheckedException("Cache store must work with portable objects if binary are " +
+            throw new IgniteCheckedException("Cache store must work with binary objects if binary are " +
                 "enabled for cache [cacheName=" + cctx.namex() + ']', e);
         }
         else

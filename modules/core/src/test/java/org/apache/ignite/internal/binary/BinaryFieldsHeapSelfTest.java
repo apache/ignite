@@ -25,6 +25,6 @@ public class BinaryFieldsHeapSelfTest extends BinaryFieldsAbstractSelfTest {
     @Override protected BinaryObjectExImpl toBinary(BinaryMarshaller marsh, Object obj) throws Exception {
         byte[] bytes = marsh.marshal(obj);
 
-        return new BinaryObjectImpl(portableContext(marsh), bytes, 0);
+        return new BinaryObjectImpl(binaryContext(marsh), bytes, 0);
     }
 }

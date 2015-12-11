@@ -337,7 +337,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      * Internal store initialization routine.
      *
      * @param store Store.
-     * @param convertBinary Convert portable flag.
+     * @param convertBinary Convert binary flag.
      * @throws IgniteCheckedException If failed.
      */
     private void registerStore0(PlatformCacheStore store, boolean convertBinary) throws IgniteCheckedException {
@@ -357,14 +357,14 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         /** Store. */
         private final PlatformCacheStore store;
 
-        /** Convert portable flag. */
+        /** Convert binary flag. */
         private final boolean convertBinary;
 
         /**
          * Constructor.
          *
          * @param store Store.
-         * @param convertBinary Convert portable flag.
+         * @param convertBinary Convert binary flag.
          */
         private StoreInfo(PlatformCacheStore store, boolean convertBinary) {
             this.store = store;

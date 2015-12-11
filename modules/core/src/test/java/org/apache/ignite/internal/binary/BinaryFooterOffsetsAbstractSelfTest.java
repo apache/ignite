@@ -129,7 +129,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
 
         BinaryObjectExImpl portObj = toBinary(marsh, obj);
 
-        // 1. Test portable object content.
+        // 1. Test binary object content.
         assert portObj.hasField("field1");
         assert portObj.hasField("field2");
 
@@ -162,7 +162,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     }
 
     /**
-     * Convert object to portable object.
+     * Convert object to binary object.
      *
      * @param marsh Marshaller.
      * @param obj Object.

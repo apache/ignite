@@ -73,7 +73,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private final IgniteLogger log;
 
-    /** Class name in case of portable query. */
+    /** Class name in case of binary query. */
     private final String clsName;
 
     /** */
@@ -126,7 +126,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param filter Scan filter.
      * @param part Partition.
      * @param incMeta Include metadata flag.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
@@ -169,7 +169,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param clsName Class name.
      * @param clause Clause.
      * @param incMeta Include metadata flag.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @param subjId Security subject ID.
      * @param taskHash Task hash.
      */
@@ -238,16 +238,16 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
-     * @return {@code True} if portable should not be deserialized.
+     * @return {@code True} if binary should not be deserialized.
      */
     public boolean keepBinary() {
         return keepBinary;
     }
 
     /**
-     * Forces query to keep portable object representation even if query was created on plain projection.
+     * Forces query to keep binary object representation even if query was created on plain projection.
      *
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
     public void keepBinary(boolean keepBinary) {
         this.keepBinary = keepBinary;

@@ -56,7 +56,7 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
     /**
      * Constructor.
      *
-     * @param pred .Net portable receiver.
+     * @param pred .Net binary receiver.
      * @param ptr Pointer to receiver in the native platform.
      * @param ctx Kernal context.
      */

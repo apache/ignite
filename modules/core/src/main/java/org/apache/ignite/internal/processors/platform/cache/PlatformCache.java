@@ -202,7 +202,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      *
      * @param platformCtx Context.
      * @param cache Underlying cache.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
     public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepBinary) {
         super(platformCtx);
@@ -224,9 +224,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /**
-     * Gets cache with "keep portable" flag.
+     * Gets cache with "keep binary" flag.
      *
-     * @return Cache with "keep portable" flag set.
+     * @return Cache with "keep binary" flag set.
      */
     public PlatformCache withKeepBinary() {
         if (keepBinary)

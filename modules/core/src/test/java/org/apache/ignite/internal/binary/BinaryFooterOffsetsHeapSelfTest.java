@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.binary;
 
 /**
- * Compact offsets tests for heap portable objects.
+ * Compact offsets tests for heap binary objects.
  */
 public class BinaryFooterOffsetsHeapSelfTest extends BinaryFooterOffsetsAbstractSelfTest {
     /** {@inheritDoc} */

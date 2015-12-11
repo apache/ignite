@@ -134,7 +134,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         BinaryUtils.checkProtocolVersion(ver);
 
         int typeId = reader.readIntPositioned(start + GridBinaryMarshaller.TYPE_ID_POS);
-        ctx = reader.portableContext();
+        ctx = reader.binaryContext();
         hashCode = reader.readIntPositioned(start + GridBinaryMarshaller.HASH_CODE_POS);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
@@ -525,7 +525,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     }
 
     /**
-     * Removes field from portable object.
+     * Removes field from binary object.
      *
      * @param name Field name.
      * @return {@code this} instance for chaining.
@@ -540,7 +540,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     }
 
     /**
-     * Creates builder initialized by specified portable object.
+     * Creates builder initialized by specified binary object.
      *
      * @param obj Binary object to initialize builder.
      * @return New builder.

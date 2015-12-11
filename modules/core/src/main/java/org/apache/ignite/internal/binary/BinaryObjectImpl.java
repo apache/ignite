@@ -142,7 +142,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.processor()).portableContext();
+        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.processor()).binaryContext();
     }
 
     /** {@inheritDoc} */
@@ -156,7 +156,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /**
-     * @return Detached portable object.
+     * @return Detached binary object.
      */
     public BinaryObject detach() {
         if (!detachAllowed || detached())

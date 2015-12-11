@@ -70,7 +70,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
 
         SimpleBinary simpleBinary = new SimpleBinary();
 
-        simpleBinary.str = "portable";
+        simpleBinary.str = "binary";
         simpleBinary.arr = new long[] {100, 200, 300};
 
         assertEquals(simpleBinary, marsh.unmarshal(marsh.marshal(simpleBinary), null));
@@ -85,7 +85,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
 
     /**
      * Marshaller context with no storage. Platform has to work in such environment as well by marshalling class name of
-     * a portable object.
+     * a binary object.
      */
     private static class MarshallerContextWithNoStorage extends MarshallerContextAdapter {
         /** */

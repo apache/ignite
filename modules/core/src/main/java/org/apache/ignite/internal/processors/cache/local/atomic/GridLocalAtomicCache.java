@@ -540,7 +540,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param swapOrOffheap {@code True} if swap of off-heap storage are enabled.
      * @param storeEnabled Store enabled flag.
      * @param taskName Task name.
-     * @param deserializeBinary Deserialize portable .
+     * @param deserializeBinary Deserialize binary .
      * @param skipVals Skip value flag.
      * @return Key-value map.
      * @throws IgniteCheckedException If failed.

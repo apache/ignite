@@ -143,7 +143,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Data streamer should add portable object that weren't registered explicitly.
+     * Data streamer should add binary object that weren't registered explicitly.
      *
      * @throws Exception If failed.
      */
@@ -177,7 +177,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Data streamer should correctly load portable entries from HashMap in case of grids with more than one node
+     * Data streamer should correctly load binary entries from HashMap in case of grids with more than one node
      *  and with GridOptimizedMarshaller that requires serializable.
      *
      * @throws Exception If failed.

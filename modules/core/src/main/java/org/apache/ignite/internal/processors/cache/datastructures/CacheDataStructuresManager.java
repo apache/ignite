@@ -311,7 +311,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      *
      * @param key Key.
      * @param rmv {@code True} if entry was removed.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
     public void onEntryUpdated(KeyCacheObject key, boolean rmv, boolean keepBinary) {
         // No need to notify data structures manager for a user cache since all DS objects are stored

@@ -41,10 +41,10 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** .Net portable service. */
+    /** .Net binary service. */
     protected Object svc;
 
-    /** Whether to keep objects portable on server if possible. */
+    /** Whether to keep objects binary on server if possible. */
     protected boolean srvKeepBinary;
 
     /** Pointer to deployed service. */
@@ -65,7 +65,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
      *
      * @param svc Service.
      * @param ctx Context.
-     * @param srvKeepBinary Whether to keep objects portable on server if possible.
+     * @param srvKeepBinary Whether to keep objects binary on server if possible.
      */
     public PlatformAbstractService(Object svc, PlatformContext ctx, boolean srvKeepBinary) {
         assert svc != null;

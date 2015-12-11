@@ -234,7 +234,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     }
 
     /**
-     * Create portable marshaller.
+     * Create binary marshaller.
      *
      * @return Marshaller.
      */

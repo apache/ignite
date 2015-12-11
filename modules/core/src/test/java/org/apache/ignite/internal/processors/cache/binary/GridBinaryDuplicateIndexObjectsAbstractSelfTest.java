@@ -35,7 +35,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObject;
 
 /**
- * Tests that portable object is the same in cache entry and in index.
+ * Tests that binary object is the same in cache entry and in index.
  */
 public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
@@ -119,7 +119,7 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
     }
 
     /**
-     * Test portable object.
+     * Test binary object.
      */
     private static class TestBinary {
         /** */

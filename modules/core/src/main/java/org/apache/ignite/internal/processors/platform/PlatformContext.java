@@ -260,7 +260,7 @@ public interface PlatformContext {
      *
      * @param rcv Native receiver.
      * @param ptr Pointer.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Stream receiver.
      */
     public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepBinary);

@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Implementation of portable processor.
+ * Implementation of binary processor.
  */
 package org.apache.ignite.internal.processors.cache.binary;

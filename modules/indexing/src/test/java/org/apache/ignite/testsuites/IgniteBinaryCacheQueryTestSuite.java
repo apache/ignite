@@ -51,7 +51,7 @@ import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Cache query suite with portable marshaller.
+ * Cache query suite with binary marshaller.
  */
 public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
     /**

@@ -43,7 +43,7 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     @GridToStringInclude
     protected V val;
 
-    /** Keep portable flag. */
+    /** Keep binary flag. */
     private boolean keepBinary;
 
     /**
@@ -108,7 +108,7 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     /**
      * Returns the value stored in the cache when this entry was created.
      *
-     * @param keepBinary Flag to keep portable if needed.
+     * @param keepBinary Flag to keep binary if needed.
      * @return the value corresponding to this entry
      */
     public V getValue(boolean keepBinary) {

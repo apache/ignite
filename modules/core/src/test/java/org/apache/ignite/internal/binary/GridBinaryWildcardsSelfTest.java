@@ -40,19 +40,19 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNames() throws Exception {
-        BinaryMarshaller marsh = portableMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        BinaryContext ctx = portableContext(marsh);
+        BinaryContext ctx = binaryContext(marsh);
 
         Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("gridportabletestclass2".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
         assertTrue(typeIds.containsKey("innerclass".hashCode()));
     }
 
@@ -60,7 +60,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesWithMapper() throws Exception {
-        BinaryMarshaller marsh = portableMarshaller(new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -81,7 +81,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        BinaryContext ctx = portableContext(marsh);
+        BinaryContext ctx = binaryContext(marsh);
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -96,19 +96,19 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurations() throws Exception {
-        BinaryMarshaller marsh = portableMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        BinaryContext ctx = portableContext(marsh);
+        BinaryContext ctx = binaryContext(marsh);
 
         Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("gridportabletestclass2".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
         assertTrue(typeIds.containsKey("innerclass".hashCode()));
     }
 
@@ -116,7 +116,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsWithGlobalMapper() throws Exception {
-        BinaryMarshaller marsh = portableMarshaller(new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -137,7 +137,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        BinaryContext ctx = portableContext(marsh);
+        BinaryContext ctx = binaryContext(marsh);
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -152,7 +152,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsWithNonGlobalMapper() throws Exception {
-        BinaryMarshaller marsh = portableMarshaller(new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -173,7 +173,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        BinaryContext ctx = portableContext(marsh);
+        BinaryContext ctx = binaryContext(marsh);
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -201,19 +201,19 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = portableMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             typeCfg));
 
-        BinaryContext ctx = portableContext(marsh);
+        BinaryContext ctx = binaryContext(marsh);
 
         Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
         assertTrue(typeIds.containsKey("innerclass".hashCode()));
-        assertFalse(typeIds.containsKey("gridportabletestclass2".hashCode()));
+        assertFalse(typeIds.containsKey("gridbinarytestclass2".hashCode()));
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -224,26 +224,26 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesJar() throws Exception {
-        BinaryMarshaller marsh = portableMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.binary.testjar.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        BinaryContext ctx = portableContext(marsh);
+        BinaryContext ctx = binaryContext(marsh);
 
         Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("gridportabletestclass2".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClassNamesWithMapperJar() throws Exception {
-        BinaryMarshaller marsh = portableMarshaller(new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -262,7 +262,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        BinaryContext ctx = portableContext(marsh);
+        BinaryContext ctx = binaryContext(marsh);
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -276,26 +276,26 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsJar() throws Exception {
-        BinaryMarshaller marsh = portableMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.binary.testjar.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        BinaryContext ctx = portableContext(marsh);
+        BinaryContext ctx = binaryContext(marsh);
 
         Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("gridportabletestclass2".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsWithGlobalMapperJar() throws Exception {
-        BinaryMarshaller marsh = portableMarshaller(new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -314,7 +314,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        BinaryContext ctx = portableContext(marsh);
+        BinaryContext ctx = binaryContext(marsh);
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -328,7 +328,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsWithNonGlobalMapperJar() throws Exception {
-        BinaryMarshaller marsh = portableMarshaller(new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -347,7 +347,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration("unknown.*")
         ));
 
-        BinaryContext ctx = portableContext(marsh);
+        BinaryContext ctx = binaryContext(marsh);
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -374,17 +374,17 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = portableMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.binary.testjar.*"),
             typeCfg));
 
-        BinaryContext ctx = portableContext(marsh);
+        BinaryContext ctx = binaryContext(marsh);
 
         Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridportabletestclass1".hashCode()));
+        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -397,7 +397,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @param marsh Marshaller.
      * @return Binary context.
      */
-    protected BinaryContext portableContext(BinaryMarshaller marsh) {
+    protected BinaryContext binaryContext(BinaryMarshaller marsh) {
         GridBinaryMarshaller impl = U.field(marsh, "impl");
 
         return impl.context();
@@ -406,36 +406,36 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected BinaryMarshaller portableMarshaller()
+    protected BinaryMarshaller binaryMarshaller()
         throws IgniteCheckedException {
-        return portableMarshaller(null, null, null);
+        return binaryMarshaller(null, null, null);
     }
 
     /**
      *
      */
-    protected BinaryMarshaller portableMarshaller(Collection<BinaryTypeConfiguration> cfgs)
+    protected BinaryMarshaller binaryMarshaller(Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return portableMarshaller(null, null, cfgs);
+        return binaryMarshaller(null, null, cfgs);
     }
 
     /**
      *
      */
-    protected BinaryMarshaller portableMarshaller(BinaryIdMapper mapper, Collection<BinaryTypeConfiguration> cfgs)
+    protected BinaryMarshaller binaryMarshaller(BinaryIdMapper mapper, Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return portableMarshaller(mapper, null, cfgs);
+        return binaryMarshaller(mapper, null, cfgs);
     }
 
     /**
      *
      */
-    protected BinaryMarshaller portableMarshaller(BinarySerializer serializer, Collection<BinaryTypeConfiguration> cfgs)
+    protected BinaryMarshaller binaryMarshaller(BinarySerializer serializer, Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return portableMarshaller(null, serializer, cfgs);
+        return binaryMarshaller(null, serializer, cfgs);
     }
 
-    protected BinaryMarshaller portableMarshaller(
+    protected BinaryMarshaller binaryMarshaller(
         BinaryIdMapper mapper,
         BinarySerializer serializer,
         Collection<BinaryTypeConfiguration> cfgs
