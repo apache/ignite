@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -16,34 +15,26 @@
 # limitations under the License.
 #
 
-function download {
-  wget -O ignite.zip $1
+# Start from a Java image.
+FROM java:7
 
-  unzip ignite.zip -d ignite
+# Ignite version
+ENV IGNITE_VERSION 1.0.0-incubating
 
-  rm ignite.zip
+WORKDIR /opt/ignite
 
-  exit 0
-}
+ADD http://www.us.apache.org/dist/ignite/1.0.0/ignite-fabric-1.0.0-incubating.zip /opt/ignite/ignite.zip
 
-if [ ! -z $IGNITE_URL ]; then
-  download $IGNITE_URL
-fi
+# Ignite home
+ENV IGNITE_HOME /opt/ignite/ignite-fabric-1.0.0-incubating
 
-if [ ! -z $IGNITE_VERSION ]; then
-  if [[ $IGNITE_VERSION  =~ [0-9]*\.[0-9]*\.0 ]]; then
-    download http://apache-mirror.rbc.ru/pub/apache/ignite/${IGNITE_VERSION}/apache-ignite-fabric-${IGNITE_VERSION}-bin.zip
-  else
-    download http://www.gridgain.com/media/gridgain-community-fabric-${IGNITE_VERSION}.zip
-  fi
-fi
+RUN unzip ignite.zip
 
-if [ -z $IGNITE_SOURCE ] || [ $IGNITE_SOURCE = "COMMUNITY" ]; then
-  download http://tiny.cc/updater/download_community.php
-fi
+RUN rm ignite.zip
 
-if [ $IGNITE_SOURCE = "APACHE" ]; then
-  download http://tiny.cc/updater/download_ignite.php
-fi
+# Copy sh files and set permission
+ADD ./run.sh $IGNITE_HOME/
 
-echo "Unsupported IGNITE_SOURCE type: ${IGNITE_SOURCE}"
+RUN chmod +x $IGNITE_HOME/run.sh
+
+CMD $IGNITE_HOME/run.sh
