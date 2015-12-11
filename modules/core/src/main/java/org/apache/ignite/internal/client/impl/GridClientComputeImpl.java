@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.client.util.GridClientUtils.applyFilter
  */
 class GridClientComputeImpl extends GridClientAbstractProjection<GridClientComputeImpl> implements GridClientCompute {
     /** */
-    private static final ThreadLocal<Boolean> KEEP_PORTABLES = new ThreadLocal<Boolean>() {
+    private static final ThreadLocal<Boolean> KEEP_BINARIES = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }
@@ -125,9 +125,9 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
     @Override public <R> GridClientFuture<R> executeAsync(final String taskName, final Object taskArg) {
         A.notNull(taskName, "taskName");
 
-        final boolean keepBinaries = KEEP_PORTABLES.get();
+        final boolean keepBinaries = KEEP_BINARIES.get();
 
-        KEEP_PORTABLES.set(false);
+        KEEP_BINARIES.set(false);
 
         return withReconnectHandling(new ClientProjectionClosure<R>() {
             @Override public GridClientFuture<R> apply(GridClientConnection conn, UUID destNodeId)
@@ -148,9 +148,9 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
         Object affKey, final Object taskArg) {
         A.notNull(taskName, "taskName");
 
-        final boolean keepBinaries = KEEP_PORTABLES.get();
+        final boolean keepBinaries = KEEP_BINARIES.get();
 
-        KEEP_PORTABLES.set(false);
+        KEEP_BINARIES.set(false);
 
         return withReconnectHandling(new ClientProjectionClosure<R>() {
             @Override public GridClientFuture<R> apply(GridClientConnection conn, UUID destNodeId)
@@ -255,7 +255,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
 
     /** {@inheritDoc} */
     @Override public GridClientCompute withKeepBinaries() {
-        KEEP_PORTABLES.set(true);
+        KEEP_BINARIES.set(true);
 
         return this;
     }

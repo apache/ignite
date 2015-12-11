@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridBinaryMarshaller {
     /** */
-    public static final ThreadLocal<Boolean> KEEP_PORTABLES = new ThreadLocal<Boolean>() {
+    public static final ThreadLocal<Boolean> KEEP_BINARIES = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
             return true;
         }

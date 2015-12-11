@@ -35,7 +35,7 @@ public enum GridClientCacheFlag {
      * if you want to get access to some individual fields, but do not want to
      * fully deserialize the object.
      */
-    KEEP_PORTABLES;
+    KEEP_BINARIES;
 
     /** */
     private static final GridClientCacheFlag[] VALS = values();

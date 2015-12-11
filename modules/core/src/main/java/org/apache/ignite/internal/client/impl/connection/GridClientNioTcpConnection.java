@@ -79,7 +79,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_PORTABLES;
+import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES;
 import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.CONN_IDLE;
 import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.FAILED;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.APPEND;
@@ -667,7 +667,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         req.keys((Iterable<Object>)keys);
         req.cacheFlagsOn(encodeCacheFlags(flags));
 
-        return makeRequest(req, destNodeId, flags.contains(KEEP_PORTABLES));
+        return makeRequest(req, destNodeId, flags.contains(KEEP_BINARIES));
     }
 
     /** {@inheritDoc} */

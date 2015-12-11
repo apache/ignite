@@ -1603,7 +1603,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 ((BinaryObjectImpl)obj).context(ctx);
 
-                if (!GridBinaryMarshaller.KEEP_PORTABLES.get())
+                if (!GridBinaryMarshaller.KEEP_BINARIES.get())
                     obj = ((BinaryObject)obj).deserialize();
 
                 break;
