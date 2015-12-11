@@ -21,6 +21,7 @@
 namespace Apache.Ignite.Core.Configuration
 {
     using System;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
@@ -523,5 +524,10 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the factory for underlying persistent storage for read-through and write-through operations.
         /// </summary>
         public ICacheStoreFactory CacheStoreFactory { get; set; }
+
+        /// <summary>
+        /// Gets or sets the query entity configuration.
+        /// </summary>
+        public ICollection<QueryEntity> QueryEntities { get; set; }
     }
 }
