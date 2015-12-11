@@ -34,11 +34,6 @@ namespace Apache.Ignite.Core.Configuration
         }
 
         /// <summary>
-        /// Gets or sets a collection of fields to be indexed, with their respective Ascending flags.
-        /// </summary>
-        public ICollection<KeyValuePair<string, bool>> Fields { get; set; }
-
-        /// <summary>
         /// Gets or sets the index name.
         /// Will be set automatically if not specified.
         /// </summary>
@@ -48,6 +43,11 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the type of the index.
         /// </summary>
         public QueryIndexType IndexType { get; set; }
+
+        /// <summary>
+        /// Gets or sets a collection of fields to be indexed, with their respective Ascending flags.
+        /// </summary>
+        public ICollection<KeyValuePair<string, bool>> Fields { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex"/> class.
