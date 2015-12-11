@@ -27,7 +27,6 @@ import java.net.Socket;
  * ODBC configuration.
  */
 public class OdbcConfiguration {
-
     /** Default TCP server port. */
     public static final int DFLT_TCP_PORT = 11443;
 
@@ -37,26 +36,11 @@ public class OdbcConfiguration {
     /** Default TCP direct buffer flag. */
     public static final boolean DFLT_TCP_DIRECT_BUF = false;
 
-    /** Default server start flag. */
-    public static final boolean DFLT_ENABLED = true;
-
     /** Default ODBC idle timeout. */
     public static final int DFLT_IDLE_TIMEOUT = 7000;
 
-    /** Default size of ODBC thread pool. */
-    public static final int DFLT_ODBC_CORE_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
-
-    /** Default max size of ODBC thread pool. */
-    public static final int DFLT_ODBC_MAX_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
-
-    /** Default keep alive time for ODBC thread pool. */
-    public static final long DFLT_KEEP_ALIVE_TIME = 0;
-
     /** Default socket send and receive buffer size. */
     public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
-
-    /** TCP host. */
-    private String host;
 
     /** TCP port. */
     private int port = DFLT_TCP_PORT;
@@ -66,9 +50,6 @@ public class OdbcConfiguration {
 
     /** ODBC TCP direct buffer flag. */
     private boolean directBuf = DFLT_TCP_DIRECT_BUF;
-
-    /** Enable flag, default is disabled. */
-    private boolean enabled = DFLT_ENABLED;
 
     /** ODBC TCP send buffer size. */
     private int sndBufSize = DFLT_SOCK_BUF_SIZE;
@@ -84,15 +65,6 @@ public class OdbcConfiguration {
 
     /** Idle timeout. */
     private long idleTimeout = DFLT_IDLE_TIMEOUT;
-
-    /** SSL enable flag, default is disabled. */
-    private boolean sslEnabled;
-
-    /** SSL need client auth flag. */
-    private boolean sslClientAuth;
-
-    /** SSL context factory for ODBC server. */
-    private Factory<SSLContext> sslFactory;
 
     /**
      * Creates ODBC server configuration with all default values.
@@ -112,41 +84,12 @@ public class OdbcConfiguration {
 
         idleTimeout = cfg.getIdleTimeout();
         directBuf = cfg.isDirectBuffer();
-        host = cfg.getHost();
         noDelay = cfg.isNoDelay();
-        enabled = cfg.isEnabled();
         port = cfg.getPort();
         rcvBufSize = cfg.getReceiveBufferSize();
         selectorCnt = cfg.getSelectorCount();
         sndBufSize = cfg.getSendBufferSize();
         sndQueueLimit = cfg.getSendQueueLimit();
-        sslClientAuth = cfg.isSslClientAuth();
-        sslFactory = cfg.getSslFactory();
-        sslEnabled = cfg.isSslEnabled();
-    }
-
-    /**
-     * Gets host for TCP ODBC server. This can be either an IP address or a domain name.
-     * <p>
-     * If not defined, system-wide local address will be used
-     * (see {@link IgniteConfiguration#getLocalHost()}.
-     * <p>
-     * You can also use {@code 0.0.0.0} value to bind to all
-     * locally-available IP addresses.
-     *
-     * @return TCP host.
-     */
-    public String getHost() {
-        return host;
-    }
-
-    /**
-     * Sets host for TCP ODBC server.
-     *
-     * @param host TCP host.
-     */
-    public void setHost(String host) {
-        this.host = host;
     }
 
     /**
@@ -313,89 +256,4 @@ public class OdbcConfiguration {
     public void setIdleTimeout(long idleTimeout) {
         this.idleTimeout = idleTimeout;
     }
-
-    /**
-     * Whether secure socket layer should be enabled on ODBC server.
-     * <p>
-     * Note that if this flag is set to {@code true}, an instance of {@link Factory} that will
-     * be used to create an instance of {@code SSLContext} should be provided, otherwise
-     * ODBC server will fail to start.
-     *
-     * @return {@code True} if SSL should be enabled.
-     */
-    public boolean isSslEnabled() {
-        return sslEnabled;
-    }
-
-    /**
-     * Sets whether Secure Socket Layer should be enabled for ODBC TCP server.
-     * <p/>
-     * Note that if this flag is set to {@code true}, then a valid instance of {@link Factory} that will
-     * be used to create an instance of {@code SSLContext} should be provided in {@link IgniteConfiguration}.
-     * Otherwise, ODBC server will fail to start.
-     *
-     * @param sslEnabled {@code True} if SSL should be enabled.
-     */
-    public void setSslEnabled(boolean sslEnabled) {
-        this.sslEnabled = sslEnabled;
-    }
-
-    /**
-     * Whether ODBC server should be enabled.
-     *
-     * @return {@code True} if ODBC should be enabled.
-     */
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    /**
-     * Sets whether ODBC Server should be enabled.
-     *
-     * @param enabled {@code True} if ODBC should be enabled.
-     */
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    /**
-     * Gets a flag indicating whether or not remote clients will be required to have a valid SSL certificate which
-     * validity will be verified with trust manager.
-     *
-     * @return Whether or not client authentication is required.
-     */
-    public boolean isSslClientAuth() {
-        return sslClientAuth;
-    }
-
-    /**
-     * Sets flag indicating whether or not SSL client authentication is required.
-     *
-     * @param sslClientAuth Whether or not client authentication is required.
-     */
-    public void setSslClientAuth(boolean sslClientAuth) {
-        this.sslClientAuth = sslClientAuth;
-    }
-
-    /**
-     * Gets context factory that will be used for creating a secure socket layer of ODBC server.
-     *
-     * @return SSL context factory instance.
-     * @see SslContextFactory
-     */
-    public Factory<SSLContext> getSslFactory() {
-        return sslFactory;
-    }
-
-    /**
-     * Sets instance of {@link Factory} that will be used to create an instance of {@code SSLContext}
-     * for Secure Socket Layer on ODBC server. This factory will only be used if
-     * {@link #setSslEnabled(boolean)} is set to {@code true}.
-     *
-     * @param sslFactory Instance of {@link Factory}
-     */
-    public void setSslFactory(Factory<SSLContext> sslFactory) {
-        this.sslFactory = sslFactory;
-    }
-
 }

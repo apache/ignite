@@ -24,14 +24,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.odbc.GridOdbcProtocolHandler;
 import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
 import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
-import org.jetbrains.annotations.Nullable;
 
-import javax.cache.configuration.Factory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteOrder;
@@ -86,26 +81,9 @@ public class GridTcpOdbcServer {
         try {
             host = resolveOdbcTcpHost(ctx.config());
 
-            SSLContext sslCtx = null;
-
-            if (cfg.isSslEnabled()) {
-                Factory<SSLContext> igniteFactory = ctx.config().getSslContextFactory();
-
-                Factory<SSLContext> factory = cfg.getSslFactory();
-
-                if (factory == null && igniteFactory == null)
-                    // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
-                    throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
-
-                if (factory != null)
-                    sslCtx = factory.create();
-                else
-                    sslCtx = igniteFactory.create();
-            }
-
             int odbcPort = cfg.getPort();
 
-            if (startTcpServer(host, odbcPort, lsnr, parser, sslCtx, cfg)) {
+            if (startTcpServer(host, odbcPort, lsnr, parser, cfg)) {
                 port = odbcPort;
 
                 System.out.println("ODBC Server has started on TCP port " + port);
@@ -115,11 +93,6 @@ public class GridTcpOdbcServer {
 
             U.warn(log, "Failed to start " + name() + " (possibly all ports in range are in use) " +
                     "[odbcPort=" + odbcPort + ", host=" + host + ']');
-        }
-        catch (SSLException e) {
-            U.warn(log, "Failed to start " + name() + " on port " + port + ": " + e.getMessage(),
-                    "Failed to start " + name() + " on port " + port + ". Check if SSL context factory is " +
-                            "properly configured.");
         }
         catch (IOException e) {
             U.warn(log, "Failed to start " + name() + " on port " + port + ": " + e.getMessage(),
@@ -169,31 +142,13 @@ public class GridTcpOdbcServer {
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridOdbcRequest> lsnr,
-                                   GridNioParser parser, @Nullable SSLContext sslCtx, OdbcConfiguration cfg) {
+                                   GridNioParser parser, OdbcConfiguration cfg) {
         try {
             GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
 
             GridNioFilter[] filters;
 
-            if (sslCtx != null) {
-                GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx,
-                        cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log);
-
-                sslFilter.directMode(false);
-
-                boolean auth = cfg.isSslClientAuth();
-
-                sslFilter.wantClientAuth(auth);
-
-                sslFilter.needClientAuth(auth);
-
-                filters = new GridNioFilter[] {
-                        codec,
-                        sslFilter
-                };
-            }
-            else
-                filters = new GridNioFilter[] { codec };
+            filters = new GridNioFilter[] { codec };
 
             srv = GridNioServer.<GridOdbcRequest>builder()
                     .address(hostAddr)

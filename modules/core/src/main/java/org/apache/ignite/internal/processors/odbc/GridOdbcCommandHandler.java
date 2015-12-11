@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.odbc.request.*;
 import org.apache.ignite.internal.processors.odbc.response.*;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import java.util.*;
@@ -45,10 +44,6 @@ public class GridOdbcCommandHandler {
     /** Log. */
     protected final IgniteLogger log;
 
-    /** Supported commands. */
-    private static final Collection<Integer> SUPPORTED_COMMANDS =
-            U.sealList(EXECUTE_SQL_QUERY, FETCH_SQL_QUERY, CLOSE_SQL_QUERY, GET_COLUMNS_META, GET_TABLES_META);
-
     /** Query ID sequence. */
     private static final AtomicLong qryIdGen = new AtomicLong();
 
@@ -65,20 +60,11 @@ public class GridOdbcCommandHandler {
     }
 
     /**
-     * @return Collection of supported commands.
-     */
-    public Collection<Integer> supportedCommands() {
-        return SUPPORTED_COMMANDS;
-    }
-
-    /**
      * @param req Request.
      * @return Response.
      */
     public GridOdbcResponse handle(GridOdbcRequest req) {
         assert req != null;
-
-        assert SUPPORTED_COMMANDS.contains(req.command());
 
         switch (req.command()) {
             case EXECUTE_SQL_QUERY: {
@@ -102,7 +88,7 @@ public class GridOdbcCommandHandler {
             }
         }
 
-        throw null;
+        return null;
     }
 
     /**

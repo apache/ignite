@@ -155,6 +155,6 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
      * @return Whether or not ODBC is enabled.
      */
     public boolean isOdbcEnabled() {
-        return ctx.config().getOdbcConfiguration().isEnabled();
+        return ctx.config().getOdbcConfiguration() != null;
     }
 }
