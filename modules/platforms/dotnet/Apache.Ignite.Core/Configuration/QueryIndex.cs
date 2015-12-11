@@ -17,11 +17,27 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
+    using System.Collections.Generic;
+
     /// <summary>
     /// Represents cache query index configuration.
     /// </summary>
     public class QueryIndex
     {
-        
+        /// <summary>
+        /// Gets or sets a collection of fields to be indexed, with their respective Ascending flags.
+        /// </summary>
+        public ICollection<KeyValuePair<string, bool>> Fields { get; set; }
+
+        /// <summary>
+        /// Gets or sets the index name.
+        /// Will be set automatically if not specified.
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of the index.
+        /// </summary>
+        public QueryIndexType IndexType { get; set; }
     }
 }
