@@ -58,7 +58,9 @@ namespace Apache.Ignite.Core.Configuration
         {
             Name = reader.ReadString();
             IndexType = (QueryIndexType) reader.ReadByte();
-            Fields = Enumerable.Range(0, reader.ReadInt()).Select(x =>
+
+            var count = reader.ReadInt();
+            Fields = count == 0 ? null : Enumerable.Range(0, count).Select(x =>
                 new KeyValuePair<string, bool>(reader.ReadString(), reader.ReadBoolean())).ToList();
         }
 

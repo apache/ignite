@@ -231,7 +231,9 @@ namespace Apache.Ignite.Core.Configuration
             WriteBehindFlushThreadCount = reader.ReadInt();
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
             CacheStoreFactory = reader.ReadObject<ICacheStoreFactory>();
-            QueryEntities = Enumerable.Range(0, reader.ReadInt()).Select(x => new QueryEntity(reader)).ToList();
+
+            var count = reader.ReadInt();
+            QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
         }
 
         /// <summary>

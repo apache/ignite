@@ -77,13 +77,16 @@ namespace Apache.Ignite.Core.Configuration
             KeyTypeName = reader.ReadString();
             ValueTypeName = reader.ReadString();
 
-            FieldNames = Enumerable.Range(0, reader.ReadInt()).Select(x =>
-                new KeyValuePair<string, string>(reader.ReadString(), reader.ReadString())).ToList();
+            var count = reader.ReadInt();
+            FieldNames = count == 0 ? null : Enumerable.Range(0, count).Select(x =>
+                    new KeyValuePair<string, string>(reader.ReadString(), reader.ReadString())).ToList();
 
-            Aliases = Enumerable.Range(0, reader.ReadInt())
+            count = reader.ReadInt();
+            Aliases = count == 0 ? null : Enumerable.Range(0, count)
                 .ToDictionary(x => reader.ReadString(), x => reader.ReadString());
 
-            Indexes = Enumerable.Range(0, reader.ReadInt()).Select(x => new QueryIndex(reader)).ToList();
+            count = reader.ReadInt();
+            Indexes = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryIndex(reader)).ToList();
         }
 
         /// <summary>
