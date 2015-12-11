@@ -74,7 +74,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Portables API.
+     * @return Binaries API.
      */
     protected IgniteBinary portables() {
         return grid().binary();

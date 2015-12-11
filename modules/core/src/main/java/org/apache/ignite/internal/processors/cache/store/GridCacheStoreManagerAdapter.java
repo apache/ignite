@@ -684,7 +684,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         if (store != null) {
-            Collection<Object> keys0 = cctx.unwrapPortablesIfNeeded(keys, !convertPortable());
+            Collection<Object> keys0 = cctx.unwrapBinariesIfNeeded(keys, !convertPortable());
 
             if (log.isDebugEnabled())
                 log.debug("Removing values from cache store [keys=" + keys0 + ']');

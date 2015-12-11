@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  * <li>Dynamically change structure of the classes without having to restart the cluster.</li>
  * <li>Index into portable objects for querying purposes.</li>
  * </ul>
- * <h1 class="header">Working With Portables Directly</h1>
+ * <h1 class="header">Working With Binaries Directly</h1>
  * Once an object is defined as portable,
  * Ignite will always store it in memory in the portable (i.e. binary) format.
  * User can choose to work either with the portable format or with the deserialized form

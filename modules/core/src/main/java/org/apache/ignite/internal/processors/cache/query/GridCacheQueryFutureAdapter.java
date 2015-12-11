@@ -402,7 +402,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
                 data = dedupIfRequired((Collection<Object>)data);
 
-                data = cctx.unwrapPortablesIfNeeded((Collection<Object>)data, qry.query().keepPortable());
+                data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepPortable());
 
                 synchronized (mux) {
                     enqueue(data);
