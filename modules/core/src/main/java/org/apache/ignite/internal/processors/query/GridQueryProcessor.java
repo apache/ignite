@@ -205,7 +205,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     Class<?> keyCls = U.classForName(qryEntity.getKeyType(), Object.class);
                     Class<?> valCls = U.classForName(qryEntity.getValueType(), null);
 
-                    String simpleValType = valCls == null ? qryEntity.getValueType() : typeName(valCls);
+                    String simpleValType = valCls == null ? typeName(qryEntity.getValueType()) : typeName(valCls);
 
                     desc.name(simpleValType);
 
@@ -979,6 +979,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         return typeName;
+    }
+
+    /**
+     * Gets type name by class.
+     *
+     * @param clsName Class name.
+     * @return Type name.
+     */
+    public static String typeName(String clsName) {
+        int packageEnd = clsName.lastIndexOf('.');
+
+        if (packageEnd >= 0 && packageEnd < clsName.length() - 1)
+            clsName = clsName.substring(packageEnd + 1);
+
+        if (clsName.endsWith("[]")) {
+            clsName = clsName.substring(0, clsName.length() - 2) + "_array";
+        }
+
+        return clsName;
     }
 
     /**
