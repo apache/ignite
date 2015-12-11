@@ -22,10 +22,12 @@
         <details>
             <![CDATA[Aggregate feature for installing all Apache Ignite module + their dependencies.
             
-            NOTE: Due to a bug in Apache Karaf (KARAF-4129), you must install the ignite-log4j feature explicitly and then either:
+            NOTE #1: Due to a bug in Apache Karaf (KARAF-4129), you must install the ignite-log4j feature explicitly and then either:
             - manually refresh the pax-logging-api framework bundle  - or - 
             - restart the Apache Karaf container.
-            You may safely ignore the 'Resource has no uri' exception if you follow this method.]]>
+            You may safely ignore the 'Resource has no uri' exception if you follow this method.
+
+            NOTE #2: This feature *does not* include components that depend on LGPL software (e.g. ignite-hibernate).]]>
         </details>
         <feature>ignite-core</feature>
         <feature>ignite-aop</feature>
@@ -33,7 +35,6 @@
         <feature>ignite-camel</feature>
         <feature>ignite-flume</feature>
         <feature>ignite-indexing</feature>
-        <feature>ignite-hibernate</feature>
         <feature>ignite-jcl</feature>
         <feature>ignite-jms11</feature>
         <feature>ignite-jta</feature>
@@ -104,7 +105,9 @@
         <details>
             <![CDATA[The Apache Ignite Hibernate module + dependencies. 
             
-            Installing this feature will trigger the installation of the 'hibernate' feature from the Apache Karaf distribution.]]>
+            Installing this feature will trigger the installation of the 'hibernate' feature from the Apache Karaf distribution.
+
+            NOTE: Take into account that certain parts of Hibernate are offered under the LGPL license.]]>
         </details>
         <feature>hibernate</feature>
         <bundle start="true">mvn:org.apache.ignite/ignite-hibernate/${project.version}</bundle>

@@ -15,40 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.model;
+package org.apache.ignite.binary;
 
-import java.io.Serializable;
-import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import java.util.Map;
 
 /**
- * Organization class.
+ * Map factory.
  */
-public class Organization implements Serializable {
-    /** */
-    private static final AtomicLong ID_GEN = new AtomicLong();
-
-    /** Organization ID (indexed). */
-    @QuerySqlField(index = true)
-    public Long id;
-
-    /** Organization name (indexed). */
-    @QuerySqlField(index = true)
-    public String name;
-
+public interface BinaryMapFactory<K, V> {
     /**
-     * Create organization.
+     * Create collection.
      *
-     * @param name Organization name.
+     * @param size Amount of elements in collection.
+     * @return Collection.
      */
-    public Organization(String name) {
-        id = ID_GEN.incrementAndGet();
-
-        this.name = name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return "Organization [id=" + id + ", name=" + name + ']';
-    }
+    public Map<K, V> create(int size);
 }
