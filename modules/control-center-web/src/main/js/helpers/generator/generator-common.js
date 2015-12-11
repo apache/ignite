@@ -441,6 +441,21 @@ $generatorCommon.IGFS_IPC_CONFIGURATION = {
     }
 };
 
+// Check that cache has datasource.
+$generatorCommon.cacheHasDatasource = function (cache) {
+    if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
+        var factoryKind = cache.cacheStoreFactory.kind;
+
+        var storeFactory = cache.cacheStoreFactory[factoryKind];
+
+        if (storeFactory && storeFactory.dialect) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
 $generatorCommon.loadOfPropertiesNeeded = function (cluster, res) {
-    return res.datasources.length > 0 || cluster.sslEnabled;
+    return $commonUtils.isDefined(_.find(cluster.caches, $generatorCommon.cacheHasDatasource)) || cluster.sslEnabled;
 };
