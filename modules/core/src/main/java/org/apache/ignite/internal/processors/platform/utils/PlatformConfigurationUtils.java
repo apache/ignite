@@ -436,6 +436,7 @@ import java.util.Map;
     /**
      * Write query entity.
      *
+     * @param writer Writer.
      * @param queryEntity Query entity.
      */
     private static void writeQueryEntity(BinaryRawWriter writer, QueryEntity queryEntity) {
@@ -443,6 +444,58 @@ import java.util.Map;
 
         writer.writeString(queryEntity.getKeyType());
         writer.writeString(queryEntity.getValueType());
+
+        // Fields
+        LinkedHashMap<String, String> fields = queryEntity.getFields();
+
+        if (fields != null) {
+            writer.writeInt(fields.size());
+
+            for (Map.Entry<String, String> field : fields.entrySet()) {
+                writer.writeString(field.getKey());
+                writer.writeString(field.getValue());
+            }
+        }
+        else
+            writer.writeInt(0);
+
+        // Aliases
+        Map<String, String> aliases = queryEntity.getAliases();
+
+        if (aliases != null) {
+            writer.writeInt(aliases.size());
+
+            for (Map.Entry<String, String> alias : aliases.entrySet()) {
+                writer.writeString(alias.getKey());
+                writer.writeString(alias.getValue());
+            }
+        }
+        else
+            writer.writeInt(0);
+
+        // Indexes
+        Collection<QueryIndex> indexes = queryEntity.getIndexes();
+
+        if (indexes != null) {
+            writer.writeInt(indexes.size());
+
+            for (QueryIndex index : indexes)
+                writeQueryIndex(writer, index);
+        }
+        else
+            writer.writeInt(0);
+    }
+
+    /**
+     * Writer query index.
+     *
+     * @param writer Writer.
+     * @param index Index.
+     */
+    private static void writeQueryIndex(BinaryRawWriter writer, QueryIndex index) {
+        assert index != null;
+
+
     }
 
     /**
