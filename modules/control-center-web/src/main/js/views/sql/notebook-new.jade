@@ -22,8 +22,9 @@
                 h4.modal-title New SQL notebook
             form.form-horizontal(name='ui.inputForm' novalidate)
                 .modal-body.row
-                    .col-sm-9.login.col-sm-offset-1
-                        label.required.labelFormField Name:&nbsp;
+                    .login
+                        .col-sm-3
+                            label.required.labelFormField Name:&nbsp;
                         .col-sm-9
                             input.form-control(id='create-notebook' type='text' ng-model='name' required on-enter='ui.inputForm.$valid && createNewNotebook(name)' auto-focus)
             .modal-footer
