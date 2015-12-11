@@ -30,11 +30,11 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Fulltext index.
         /// </summary>
-        Fulltext,
+        FullText,
 
         /// <summary>
         /// Geo-spatial index.
         /// </summary>
-        Geospatial
+        GeoSpatial
     }
 }
