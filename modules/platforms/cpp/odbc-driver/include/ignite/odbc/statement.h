@@ -189,6 +189,14 @@ namespace ignite
             bool GetColumnAttribute(uint16_t colIdx, uint16_t attrId, char* strbuf,
                 int16_t buflen, int16_t* reslen, int64_t* numbuf);
 
+            /**
+             * Get number of rows affected by the statement.
+             *
+             * @param rowCnt Number of rows affected by the statement.
+             * @return True on success.
+             */
+            bool AffectedRows(int64_t& rowCnt) const;
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Statement)
 

@@ -81,6 +81,13 @@ namespace ignite
                  */
                 virtual bool DataAvailable() const = 0;
 
+                /**
+                 * Get number of rows affected by the statement.
+                 *
+                 * @return Number of rows affected by the statement.
+                 */
+                virtual int64_t AffectedRows() const = 0;
+
             protected:
                 /**
                  * Constructor.

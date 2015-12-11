@@ -111,6 +111,13 @@ namespace ignite
                 return cursor.get() && cursor->HasNext();
             }
 
+            int64_t DataQuery::AffectedRows() const
+            {
+                // We are only support SELECT statements so we should not
+                // return anything particullar.
+                return 0;
+            }
+
             bool DataQuery::MakeRequestExecute()
             {
                 const std::string& cacheName = connection.GetCache();

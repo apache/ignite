@@ -735,6 +735,7 @@ SQLRETURN SQL_API SQLColAttribute(SQLHSTMT        stmt,
     if (!statement)
         return SQL_INVALID_HANDLE;
 
+    // This is a special case
     if (fieldId == SQL_DESC_COUNT)
     {
         SQLSMALLINT val = 0;
@@ -751,6 +752,67 @@ SQLRETURN SQL_API SQLColAttribute(SQLHSTMT        stmt,
         reinterpret_cast<char*>(strAttr), bufferLen, strAttrLen, numericAttr);
 
     return success ? SQL_SUCCESS : SQL_ERROR;
+}
+
+SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
+                                 SQLUSMALLINT   columnNum, 
+                                 SQLCHAR*       columnNameBuf,
+                                 SQLSMALLINT    columnNameBufLen,
+                                 SQLSMALLINT*   columnNameLen,
+                                 SQLSMALLINT*   dataType, 
+                                 SQLULEN*       columnSize,
+                                 SQLSMALLINT*   decimalDigits, 
+                                 SQLSMALLINT*   nullable)
+{
+    using ignite::odbc::Statement;
+
+    LOG_MSG("SQLDescribeCol called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    bool success = statement->GetColumnAttribute(columnNum, SQL_DESC_NAME,
+        reinterpret_cast<char*>(columnNameBuf), columnNameBufLen, columnNameLen, 0);
+
+    int64_t dataTypeRes;
+    int64_t columnSizeRes;
+    int64_t decimalDigitsRes;
+    int64_t nullableRes;
+
+    success = success && statement->GetColumnAttribute(columnNum, SQL_DESC_TYPE, 0, 0, 0, &dataTypeRes);
+    success = success && statement->GetColumnAttribute(columnNum, SQL_DESC_PRECISION, 0, 0, 0, &columnSizeRes);
+    success = success && statement->GetColumnAttribute(columnNum, SQL_DESC_SCALE, 0, 0, 0, &decimalDigitsRes);
+    success = success && statement->GetColumnAttribute(columnNum, SQL_DESC_NULLABLE, 0, 0, 0, &nullableRes);
+
+    *dataType = static_cast<SQLSMALLINT>(dataTypeRes);
+    *columnSize = static_cast<SQLULEN>(columnSizeRes);
+    *decimalDigits = static_cast<SQLSMALLINT>(decimalDigitsRes);
+    *nullable = static_cast<SQLSMALLINT>(nullableRes);
+
+    return success ? SQL_SUCCESS : SQL_ERROR;
+}
+
+SQLRETURN SQL_API SQLRowCount(SQLHSTMT stmt, SQLLEN* rowCnt)
+{
+    using ignite::odbc::Statement;
+
+    LOG_MSG("SQLRowCount called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    int64_t res;
+
+    bool success = statement->AffectedRows(res);
+
+    if (success)
+        *rowCnt = static_cast<SQLLEN>(res);
+
+    return SQL_SUCCESS;
 }
 
 //
@@ -787,20 +849,6 @@ SQLRETURN SQL_API SQLConnect(SQLHDBC        conn,
     return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
-                                 SQLUSMALLINT   columnNumber, 
-                                 SQLCHAR*       columnName,
-                                 SQLSMALLINT    bufferLength, 
-                                 SQLSMALLINT*   nameLength,
-                                 SQLSMALLINT*   dataType, 
-                                 SQLULEN*       columnSize,
-                                 SQLSMALLINT*   decimalDigits, 
-                                 SQLSMALLINT*   nullable)
-{
-    LOG_MSG("SQLDescribeCol called\n");
-    return SQL_SUCCESS;
-}
-
 SQLRETURN SQL_API SQLError(SQLHENV      env,
                            SQLHDBC      conn,
                            SQLHSTMT     stmt,
@@ -820,13 +868,6 @@ SQLRETURN SQL_API SQLGetCursorName(SQLHSTMT     stmt,
                                    SQLSMALLINT* nameResLen)
 {
     LOG_MSG("SQLGetCursorName called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLRowCount(SQLHSTMT  stmt,
-                              SQLLEN*   rowCnt)
-{
-    LOG_MSG("SQLRowCount called\n");
     return SQL_SUCCESS;
 }
 

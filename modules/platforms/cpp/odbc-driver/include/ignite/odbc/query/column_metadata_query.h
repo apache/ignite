@@ -79,13 +79,20 @@ namespace ignite
                  * @return True on success.
                  */
                 virtual bool Close();
-                
+
                 /**
                  * Check if data is available.
                  *
                  * @return True if data is available.
                  */
                 virtual bool DataAvailable() const;
+
+                /**
+                 * Get number of rows affected by the statement.
+                 *
+                 * @return Number of rows affected by the statement.
+                 */
+                virtual int64_t AffectedRows() const;
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(ColumnMetadataQuery);

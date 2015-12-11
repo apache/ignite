@@ -247,6 +247,11 @@ namespace ignite
                 return cursor != meta.end();
             }
 
+            int64_t ColumnMetadataQuery::AffectedRows() const
+            {
+                return 0;
+            }
+
             bool ColumnMetadataQuery::MakeRequestGetColumnsMeta()
             {
                 QueryGetColumnsMetaRequest req(schema, table, column);

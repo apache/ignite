@@ -171,6 +171,11 @@ namespace ignite
                 return cursor != meta.end();
             }
 
+            int64_t TableMetadataQuery::AffectedRows() const
+            {
+                return 0;
+            }
+
             bool TableMetadataQuery::MakeRequestGetTablesMeta()
             {
                 QueryGetTablesMetaRequest req(catalog, schema, table, tableType);

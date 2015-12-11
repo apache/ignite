@@ -206,6 +206,16 @@ namespace ignite
 
             return found;
         }
+
+        bool Statement::AffectedRows(int64_t& rowCnt) const
+        {
+            if (!currentQuery.get())
+                return false;
+
+            rowCnt = currentQuery->AffectedRows();
+
+            return true;
+        }
     }
 }
 

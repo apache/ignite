@@ -82,6 +82,13 @@ namespace ignite
                  */
                 virtual bool DataAvailable() const;
 
+                /**
+                 * Get number of rows affected by the statement.
+                 *
+                 * @return Number of rows affected by the statement.
+                 */
+                virtual int64_t AffectedRows() const;
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataQuery);
 
