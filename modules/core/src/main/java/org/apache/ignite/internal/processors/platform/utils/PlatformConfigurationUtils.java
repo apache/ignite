@@ -495,7 +495,21 @@ import java.util.Map;
     private static void writeQueryIndex(BinaryRawWriter writer, QueryIndex index) {
         assert index != null;
 
+        writer.writeString(index.getName());
+        writer.writeByte((byte)index.getIndexType().ordinal());
 
+        LinkedHashMap<String, Boolean> fields = index.getFields();
+
+        if (fields != null) {
+            writer.writeInt(fields.size());
+
+            for (Map.Entry<String, Boolean> field : fields.entrySet()) {
+                writer.writeString(field.getKey());
+                writer.writeBoolean(field.getValue());
+            }
+        }
+        else
+            writer.writeInt(0);
     }
 
     /**
