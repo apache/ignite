@@ -25,7 +25,7 @@ Schema Import Utility Demo
 
 3. Paste content of "examples/schema-import/bin/db-init.sql" into H2 Console and execute.
 
-4. Start Schema Import utility: "bin/ignite-schema-import.sh examples/schema-import/bin/schema-import.properties"
+4. Start Schema Import utility: "IGNITE_HOME/bin/ignite-schema-import.sh examples/schema-import/bin/schema-import.properties"
    Schema Utility will start with predefined settings for this demo.
    Click "Next", "Generate" and answer "Yes" to all override warnings.
 
