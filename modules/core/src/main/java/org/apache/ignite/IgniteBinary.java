@@ -198,7 +198,7 @@ import org.jetbrains.annotations.Nullable;
  *         ...
  *         &lt;property name="typeConfigurations"&gt;
  *             &lt;list&gt;
- *                 &lt;bean class="org.apache.ignite.portable.PortableTypeConfiguration"&gt;
+ *                 &lt;bean class="org.apache.ignite.binary.PortableTypeConfiguration"&gt;
  *                     &lt;property name="className" value="org.apache.ignite.examples.client.portable.EmployeeKey"/&gt;
  *                     &lt;property name="affinityKeyFieldName" value="organizationId"/&gt;
  *                 &lt;/bean&gt;
