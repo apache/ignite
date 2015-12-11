@@ -67,8 +67,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                                 },
                                 Indexes = new[]
                                 {
-                                    new QueryIndex {IndexType = QueryIndexType.FullText, FieldName = "Name"},
-                                    new QueryIndex {IndexType = QueryIndexType.Sorted, FieldName = "Age"}
+                                    new QueryIndex
+                                    {
+                                        IndexType = QueryIndexType.FullText,
+                                        FieldName = "name"
+                                    },
+                                    new QueryIndex
+                                    {
+                                        IndexType = QueryIndexType.Sorted,
+                                        FieldName = "age"
+                                    }
                                 }
                             }
                         }
@@ -90,7 +98,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     Assert.AreEqual(2, cursor.GetAll().Single().Key);
                 }
 
-                using (var cursor = cache.Query(new TextQuery(typeof (QueryPerson), "*nol*")))
+                using (var cursor = cache.Query(new TextQuery(typeof (QueryPerson), "Ar*")))
                 {
                     Assert.AreEqual(1, cursor.GetAll().Single().Key);
                 }
