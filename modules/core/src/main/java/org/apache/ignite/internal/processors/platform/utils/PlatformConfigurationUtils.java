@@ -427,7 +427,7 @@ import java.util.Map;
             writer.writeInt(qryEntities.size());
 
             for (QueryEntity e : qryEntities)
-                writeQueryEntity(e);
+                writeQueryEntity(writer, e);
         }
         else
             writer.writeInt(0);
@@ -438,8 +438,11 @@ import java.util.Map;
      *
      * @param queryEntity Query entity.
      */
-    private static void writeQueryEntity(QueryEntity queryEntity) {
+    private static void writeQueryEntity(BinaryRawWriter writer, QueryEntity queryEntity) {
+        assert queryEntity != null;
 
+        writer.writeString(queryEntity.getKeyType());
+        writer.writeString(queryEntity.getValueType());
     }
 
     /**
