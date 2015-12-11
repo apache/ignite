@@ -54,7 +54,7 @@ import java.util.Map;
 /**
  * Configuration utils.
  */
-public class PlatformConfigurationUtils {
+@SuppressWarnings("unchecked") public class PlatformConfigurationUtils {
     /**
      * Write .Net configuration to the stream.
      *
@@ -167,7 +167,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return QueryEntity.
      */
-    public static QueryEntity readQueryEntity(BinaryRawReaderEx in) {
+    public static QueryEntity readQueryEntity(BinaryRawReader in) {
         QueryEntity res = new QueryEntity();
 
         res.setKeyType(in.readString());
@@ -218,7 +218,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @return Query index.
      */
-    public static QueryIndex readQueryIndex(BinaryRawReaderEx in) {
+    public static QueryIndex readQueryIndex(BinaryRawReader in) {
         QueryIndex res = new QueryIndex();
 
         res.setName(in.readString());
@@ -419,6 +419,27 @@ public class PlatformConfigurationUtils {
             writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());
         else
             writer.writeObject(null);
+
+        Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
+
+        if (qryEntities != null)
+        {
+            writer.writeInt(qryEntities.size());
+
+            for (QueryEntity e : qryEntities)
+                writeQueryEntity(e);
+        }
+        else
+            writer.writeInt(0);
+    }
+
+    /**
+     * Write query entity.
+     *
+     * @param queryEntity Query entity.
+     */
+    private static void writeQueryEntity(QueryEntity queryEntity) {
+
     }
 
     /**
@@ -492,9 +513,7 @@ public class PlatformConfigurationUtils {
 
             w.writeByte((byte)(isMulticast ? 2 : 1));
 
-            TcpDiscoveryVmIpFinder vmFinder = (TcpDiscoveryVmIpFinder) finder;
-
-            Collection<InetSocketAddress> addrs = vmFinder.getRegisteredAddresses();
+            Collection<InetSocketAddress> addrs = finder.getRegisteredAddresses();
 
             w.writeInt(addrs.size());
 
@@ -502,7 +521,7 @@ public class PlatformConfigurationUtils {
                 w.writeString(a.toString());
 
             if (isMulticast) {
-                TcpDiscoveryMulticastIpFinder multiFinder = (TcpDiscoveryMulticastIpFinder) vmFinder;
+                TcpDiscoveryMulticastIpFinder multiFinder = (TcpDiscoveryMulticastIpFinder) finder;
 
                 w.writeString(multiFinder.getLocalAddress());
                 w.writeString(multiFinder.getMulticastGroup());
