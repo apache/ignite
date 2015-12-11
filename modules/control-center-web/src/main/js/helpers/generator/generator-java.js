@@ -1999,8 +1999,8 @@ $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
 };
 
 // Generate loading of secret properties file.
-$generatorJava.loadSecretProperties = function (cluster, res) {
-    if ($generatorCommon.loadOfPropertiesNeeded(cluster, res)) {
+$generatorJava.tryLoadSecretProperties = function (cluster, res) {
+    if ($generatorCommon.secretPropertiesNeeded(cluster, res)) {
         res.importClass('org.apache.ignite.configuration.IgniteConfiguration');
 
         $generatorJava.declareVariableCustom(res, 'res', 'java.net.URL', 'IgniteConfiguration.class.getResource("/secret.properties")');
@@ -2049,7 +2049,7 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
             res.startBlock('public static IgniteConfiguration createConfiguration() throws Exception {');
         }
 
-        $generatorJava.loadSecretProperties(cluster, res);
+        $generatorJava.tryLoadSecretProperties(cluster, res);
 
         res.mergeLines(resCfg);
 
@@ -2144,7 +2144,7 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
         res.needEmptyLine = true;
 
         if ($commonUtils.isDefinedAndNotEmpty(cluster.caches)) {
-            $generatorJava.loadSecretProperties(cluster, res);
+            $generatorJava.tryLoadSecretProperties(cluster, res);
 
             res.line('// Example of near cache creation on client node.');
 
