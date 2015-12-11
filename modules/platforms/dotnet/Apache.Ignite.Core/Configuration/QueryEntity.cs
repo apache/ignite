@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Configuration
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Query entity is a description of cache entry (composed of key and value) 
@@ -48,12 +49,17 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets the type of the key.
         /// This is a shortcut for <see cref="KeyTypeName"/>. 
-        /// Getter may throw an exception if there is an unknow type name.
+        /// Getter will return null for non-primitive types.
         /// </summary>
         public Type KeyType
         {
-            get { throw new NotImplementedException(); }
-            set { throw new NotImplementedException(); }
+            get { return JavaTypes.GetDotNetType(KeyTypeName); }
+            set
+            {
+                KeyTypeName = value == null
+                    ? null
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+            }
         }
 
         /// <summary>
@@ -61,6 +67,23 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         public string ValueTypeName { get; set; }
 
+        /// <summary>
+        /// Gets or sets the type of the value.
+        /// This is a shortcut for <see cref="ValueTypeName"/>. 
+        /// Getter will return null for non-primitive types.
+        /// </summary>
+        public Type ValueType
+        {
+            get { return JavaTypes.GetDotNetType(KeyTypeName); }
+            set
+            {
+                ValueTypeName = value == null
+                    ? null
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+            }
+        }
+
+        // TODO: KeyValuePair sucks, replace with QueryField or something.
         /// <summary>
         /// Gets or sets query fields, a map from field name to Java type name. 
         /// The order of fields is important as it defines the order of columns returned by the 'select *' queries.

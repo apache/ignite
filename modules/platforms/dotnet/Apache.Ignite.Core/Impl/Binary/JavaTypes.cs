@@ -1,0 +1,79 @@
+﻿/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+namespace Apache.Ignite.Core.Impl.Binary
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+
+    /// <summary>
+    /// Provides mapping between Java and .NET basic types.
+    /// </summary>
+    internal static class JavaTypes
+    {
+        /** */
+        private static readonly Dictionary<string, Type> JavaToNet = new Dictionary<string, Type>
+        {
+            {"java.lang.Integer", typeof (int)},
+            {"java.lang.Long", typeof (long)},
+            {"java.lang.Byte", typeof (byte)},
+            {"java.lang.Short", typeof (short)},
+            {"java.lang.Float", typeof (float)},
+            {"java.lang.Double", typeof (double)},
+            {"java.lang.Character", typeof (char)},
+            {"java.lang.Boolean", typeof (bool)},
+            {"java.lang.String", typeof (string)},
+        };
+
+        /** */
+        private static readonly Dictionary<Type, string> NetToJava = JavaToNet.ToDictionary(x => x.Value, x => x.Key);
+
+        /** */
+        private static readonly string MappedTypes = string.Join(", ", NetToJava.Keys.Select(x => x.Name));
+
+        /// <summary>
+        /// Gets the corresponding Java type name.
+        /// </summary>
+        public static string GetJavaTypeName(Type type)
+        {
+            string res;
+
+            return NetToJava.TryGetValue(type, out res) ? res : null;
+        }
+
+        /// <summary>
+        /// Gets .NET type that corresponds to specified Java type name.
+        /// </summary>
+        /// <param name="javaTypeName">Name of the java type.</param>
+        /// <returns></returns>
+        public static Type GetDotNetType(string javaTypeName)
+        {
+            Type res;
+
+            return JavaToNet.TryGetValue(javaTypeName, out res) ? res : null;
+        }
+
+        /// <summary>
+        /// Gets the supported types as a comma-separated string.
+        /// </summary>
+        public static string SupportedTypesString
+        {
+            get { return MappedTypes; }
+        }
+    }
+}

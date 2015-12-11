@@ -59,7 +59,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         {
                             new QueryEntity
                             {
-                                ValueTypeName = typeName,
+                                KeyType = typeof(int),
+                                ValueType = typeof (QueryPerson),
                                 FieldNames = new[]
                                 {
                                     new KeyValuePair<string, string>("Name", "java.lang.String"),
