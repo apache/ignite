@@ -17,11 +17,40 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
+    using System.Collections.Generic;
+
     /// <summary>
     /// Query entity is a description of cache entry (composed of key and value) 
     /// in a way of how it must be indexed and can be queried.
     /// </summary>
     public class QueryEntity
     {
+        /// <summary>
+        /// Gets or sets key type name.
+        /// </summary>
+        public string KeyType { get; set; }
+
+        /// <summary>
+        /// Gets or sets value type name.
+        /// </summary>
+        public string ValueType { get; set; }
+
+        /// <summary>
+        /// Gets or sets query fields for this query pair. The order of fields is important as it defines the
+        /// order of columns returned by the 'select *' queries.
+        /// </summary>
+        public ICollection<KeyValuePair<string, string>> Fields { get; set; }
+
+        /// <summary>
+        /// Gets or sets field name aliases: mapping from full name in dot notation to an alias 
+        /// that will be used as SQL column name.
+        /// Example: {"parent.name" -> "parentName"}.
+        /// </summary>
+        public IDictionary<string, string> Aliases { get; set; }
+
+        /// <summary>
+        /// Gets or sets the query indexes.
+        /// </summary>
+        public ICollection<QueryIndex> Indexes { get; set; }
     }
 }
