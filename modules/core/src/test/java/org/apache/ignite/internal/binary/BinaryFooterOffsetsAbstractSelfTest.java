@@ -40,13 +40,13 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     protected BinaryMarshaller marsh;
 
     /** Portable context. */
-    protected PortableContext ctx;
+    protected BinaryContext ctx;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ctx = new PortableContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
+        ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
 
         marsh = new BinaryMarshaller();
 
