@@ -39,30 +39,6 @@ namespace Apache.Ignite.Core.Configuration
             // No-op.
         }
 
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="QueryEntity"/> class.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        internal QueryEntity(IBinaryRawReader reader)
-        {
-            KeyTypeName = reader.ReadString();
-            ValueTypeName = reader.ReadString();
-
-            FieldNames = Enumerable.Range(0, reader.ReadInt()).Select(x =>
-                new KeyValuePair<string, string>(reader.ReadString(), reader.ReadString())).ToList();
-
-            Aliases = Enumerable.Range(0, reader.ReadInt())
-                .ToDictionary(x => reader.ReadString(), x => reader.ReadString());
-
-            Indexes = Enumerable.Range(0, reader.ReadInt()).Select(x => new QueryIndex(reader)).ToList();
-        }
-
-        internal void Write(IBinaryRawWriter writer)
-        {
-
-        }
-
         /// <summary>
         /// Gets or sets key type name.
         /// </summary>
@@ -90,5 +66,64 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the query indexes.
         /// </summary>
         public ICollection<QueryIndex> Indexes { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryEntity"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        internal QueryEntity(IBinaryRawReader reader)
+        {
+            KeyTypeName = reader.ReadString();
+            ValueTypeName = reader.ReadString();
+
+            FieldNames = Enumerable.Range(0, reader.ReadInt()).Select(x =>
+                new KeyValuePair<string, string>(reader.ReadString(), reader.ReadString())).ToList();
+
+            Aliases = Enumerable.Range(0, reader.ReadInt())
+                .ToDictionary(x => reader.ReadString(), x => reader.ReadString());
+
+            Indexes = Enumerable.Range(0, reader.ReadInt()).Select(x => new QueryIndex(reader)).ToList();
+        }
+
+        /// <summary>
+        /// Writes this instance.
+        /// </summary>
+        internal void Write(IBinaryRawWriter writer)
+        {
+            writer.WriteString(KeyTypeName);
+            writer.WriteString(ValueTypeName);
+
+            WritePairs(writer, FieldNames);
+            WritePairs(writer, Aliases);
+
+            if (Indexes != null)
+            {
+                writer.WriteInt(Indexes.Count);
+
+                foreach (var index in Indexes)
+                    index.Write(writer);
+            }
+            else
+                writer.WriteInt(0);
+        }
+
+        /// <summary>
+        /// Writes pairs.
+        /// </summary>
+        private static void WritePairs(IBinaryRawWriter writer, ICollection<KeyValuePair<string, string>> pairs)
+        {
+            if (pairs != null)
+            {
+                writer.WriteInt(pairs.Count);
+
+                foreach (var field in pairs)
+                {
+                    writer.WriteString(field.Key);
+                    writer.WriteString(field.Value);
+                }
+            }
+            else
+                writer.WriteInt(0);
+        }
     }
 }

@@ -34,15 +34,6 @@ namespace Apache.Ignite.Core.Configuration
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="QueryIndex"/> class.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        internal QueryIndex(IBinaryRawReader reader)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        /// <summary>
         /// Gets or sets a collection of fields to be indexed, with their respective Ascending flags.
         /// </summary>
         public ICollection<KeyValuePair<string, bool>> Fields { get; set; }
@@ -57,5 +48,22 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the type of the index.
         /// </summary>
         public QueryIndexType IndexType { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryIndex"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        internal QueryIndex(IBinaryRawReader reader)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        /// <summary>
+        /// Writes this instance.
+        /// </summary>
+        internal void Write(IBinaryRawWriter writer)
+        {
+            
+        }
     }
 }
