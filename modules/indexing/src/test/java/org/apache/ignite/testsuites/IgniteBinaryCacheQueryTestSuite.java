@@ -53,7 +53,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 /**
  * Cache query suite with portable marshaller.
  */
-public class IgnitePortableCacheQueryTestSuite extends TestSuite {
+public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
     /**
      * @return Suite.
      * @throws Exception In case of error.

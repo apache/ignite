@@ -22,7 +22,7 @@ import org.apache.ignite.binary.BinaryObject;
 /**
  * Tests for cache store with binary.
  */
-public class GridCacheBinaryStorePortablesSelfTest extends GridCacheBinaryStoreAbstractSelfTest {
+public class GridCacheBinaryStoreBinariesSelfTest extends GridCacheBinaryStoreAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean keepPortableInStore() {
         return true;

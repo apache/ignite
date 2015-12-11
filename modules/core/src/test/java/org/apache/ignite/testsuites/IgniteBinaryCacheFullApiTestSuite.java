@@ -15,10 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary.test;
+package org.apache.ignite.testsuites;
+
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
+ * Cache full API suite with portable marshaller.
  */
-public class GridPortableTestClass2 {
-    // No-op.
+public class IgniteBinaryCacheFullApiTestSuite extends TestSuite {
+    /**
+     * @return Suite.
+     * @throws Exception In case of error.
+     */
+    public static TestSuite suite() throws Exception {
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+
+        return IgniteCacheFullApiSelfTestSuite.suite();
+    }
 }

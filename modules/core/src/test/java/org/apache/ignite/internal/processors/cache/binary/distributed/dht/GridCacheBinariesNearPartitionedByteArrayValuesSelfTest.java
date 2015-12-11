@@ -14,24 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.binary.distributed.dht;
 
-package org.apache.ignite.testsuites;
-
-import junit.framework.TestSuite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAbstractNearPartitionedByteArrayValuesSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Cache full API suite with portable marshaller.
+ *
  */
-public class IgnitePortableCacheFullApiTestSuite extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception In case of error.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+public class GridCacheBinariesNearPartitionedByteArrayValuesSelfTest
+    extends GridCacheAbstractNearPartitionedByteArrayValuesSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean peerClassLoading() {
+        return false;
+    }
 
-        return IgniteCacheFullApiSelfTestSuite.suite();
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setMarshaller(new BinaryMarshaller());
+
+        return cfg;
     }
 }

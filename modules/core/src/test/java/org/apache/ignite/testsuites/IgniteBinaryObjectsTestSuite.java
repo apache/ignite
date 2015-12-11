@@ -24,8 +24,8 @@ import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryMarshallerCtxDisabledSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
-import org.apache.ignite.internal.binary.GridPortableMetaDataSelfTest;
-import org.apache.ignite.internal.binary.GridPortableWildcardsSelfTest;
+import org.apache.ignite.internal.binary.GridBinaryMetaDataSelfTest;
+import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetad
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreObjectsSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStorePortablesSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicOffheapTieredSelfTest;
@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryO
 /**
  * Test for portable objects stored in cache.
  */
-public class IgnitePortableObjectsTestSuite extends TestSuite {
+public class IgniteBinaryObjectsTestSuite extends TestSuite {
     /**
      * @return Suite.
      * @throws Exception If failed.
@@ -75,9 +75,9 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryFooterOffsetsHeapSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsOffheapSelfTest.class);
         suite.addTestSuite(BinaryEnumsSelfTest.class);
-        suite.addTestSuite(GridPortableMetaDataSelfTest.class);
+        suite.addTestSuite(GridBinaryMetaDataSelfTest.class);
         suite.addTestSuite(GridBinaryAffinityKeySelfTest.class);
-        suite.addTestSuite(GridPortableWildcardsSelfTest.class);
+        suite.addTestSuite(GridBinaryWildcardsSelfTest.class);
 
         // Tests for objects with non-compact footers.
         suite.addTestSuite(BinaryMarshallerNonCompactSelfTest.class);
@@ -103,7 +103,7 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledOffheapTieredSelfTest.class);
 
         suite.addTestSuite(GridCacheBinaryStoreObjectsSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryStorePortablesSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryStoreBinariesSelfTest.class);
 
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);

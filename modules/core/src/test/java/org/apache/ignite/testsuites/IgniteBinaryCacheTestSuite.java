@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCa
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheOffHeapTieredEvictionAtomicBinarySelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheOffHeapTieredEvictionBinarySelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheOffHeapTieredBinarySelfTest;
-import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCachePortablesNearPartitionedByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesNearPartitionedByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -49,7 +49,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 /**
  * Cache suite with portable marshaller.
  */
-public class IgnitePortableCacheTestSuite extends TestSuite {
+public class IgniteBinaryCacheTestSuite extends TestSuite {
     /**
      * @return Suite.
      * @throws Exception In case of error.
@@ -81,7 +81,7 @@ public class IgnitePortableCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheOffHeapTieredEvictionBinarySelfTest.class);
 
         suite.addTestSuite(GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest.class);
-        suite.addTestSuite(GridCachePortablesNearPartitionedByteArrayValuesSelfTest.class);
+        suite.addTestSuite(GridCacheBinariesNearPartitionedByteArrayValuesSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredBinarySelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredAtomicBinarySelfTest.class);
 

@@ -15,10 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary.test.subpackage;
+package org.apache.ignite.internal.binary.test;
 
 /**
  */
-public class GridPortableTestClass3 {
-    // No-op.
+public class GridBinaryTestClass1 {
+    /**
+     */
+    private static class InnerClass {
+        // No-op.
+    }
 }

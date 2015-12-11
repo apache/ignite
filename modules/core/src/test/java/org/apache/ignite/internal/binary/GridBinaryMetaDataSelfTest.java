@@ -38,7 +38,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Portable meta data test.
  */
-public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
+public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
     /** */
     private static int idx;
 
