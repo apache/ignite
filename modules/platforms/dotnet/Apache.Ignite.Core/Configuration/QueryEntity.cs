@@ -28,16 +28,16 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets key type name.
         /// </summary>
-        public string KeyType { get; set; }
+        public string KeyTypeName { get; set; }
 
         /// <summary>
         /// Gets or sets value type name.
         /// </summary>
-        public string ValueType { get; set; }
+        public string ValueTypeName { get; set; }
 
         /// <summary>
-        /// Gets or sets query fields for this query pair. The order of fields is important as it defines the
-        /// order of columns returned by the 'select *' queries.
+        /// Gets or sets query fields, a map from field name to type name. 
+        /// The order of fields is important as it defines the order of columns returned by the 'select *' queries.
         /// </summary>
         public ICollection<KeyValuePair<string, string>> Fields { get; set; }
 
