@@ -51,6 +51,20 @@ namespace Apache.Ignite.Core.Configuration
         public ICollection<KeyValuePair<string, bool>> Fields { get; set; }
 
         /// <summary>
+        /// Gets or sets the name of the field for this index.
+        /// This property is a shortcut to <see cref="Fields"/>: 
+        /// getter returns name of the first field, and setter overwrites the collection.
+        /// </summary>
+        /// <value>
+        /// The name of the field.
+        /// </value>
+        public string FieldName
+        {
+            get { return Fields == null ? null : Fields.First().Key; }
+            set { Fields = new[] {new KeyValuePair<string, bool>(value, false)}; }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
