@@ -346,6 +346,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                             },
                             new QueryIndex
                             {
+                                Name= "index2",
                                 IndexType = QueryIndexType.FullText,
                                 Fields = new[]
                                 {
