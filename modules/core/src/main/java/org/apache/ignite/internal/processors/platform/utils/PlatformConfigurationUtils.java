@@ -226,7 +226,14 @@ public class PlatformConfigurationUtils {
 
         int cnt = in.readInt();
 
-        // TODO
+        if (cnt > 0) {
+            LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>(cnt);
+
+            for (int i = 0; i < cnt; i++)
+                fields.put(in.readString(), in.readBoolean());
+
+            res.setFields(fields);
+        }
 
         return res;
     }
