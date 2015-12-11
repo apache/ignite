@@ -963,6 +963,10 @@ button.form-control {
     border: thin dotted $ignite-border-color;
 
     text-align: left;
+
+    hr {
+        margin: 7px 0;
+    }
 }
 
 .group-legend {
