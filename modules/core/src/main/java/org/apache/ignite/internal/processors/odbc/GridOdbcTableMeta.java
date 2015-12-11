@@ -1,6 +1,6 @@
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
 import java.io.IOException;
 
