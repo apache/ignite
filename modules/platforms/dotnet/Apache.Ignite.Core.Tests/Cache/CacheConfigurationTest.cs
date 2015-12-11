@@ -308,7 +308,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 KeepBinaryInStore = true,
                 LockTimeout = TimeSpan.FromSeconds(11),
                 MaxEvictionOverflowRatio = 0.5f,
-                MemoryMode = CacheMemoryMode.OffheapValues,
+                MemoryMode = CacheMemoryMode.OnheapTiered,
                 ReadFromBackup = true,
                 RebalanceBatchSize = 12,
                 RebalanceDelay = TimeSpan.FromSeconds(13),
@@ -320,7 +320,15 @@ namespace Apache.Ignite.Core.Tests.Cache
                 SqlOnheapRowCacheSize = 17,
                 WriteBehindBatchSize = 18,
                 WriteBehindEnabled = false,
-                WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync
+                WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync,
+                QueryEntities = new[]
+                {
+                    new QueryEntity
+                    {
+                        KeyTypeName = "Integer",
+                        ValueTypeName = "String"
+                    }
+                }
             };
         }
 
