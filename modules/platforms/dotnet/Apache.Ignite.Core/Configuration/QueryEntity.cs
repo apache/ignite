@@ -25,6 +25,8 @@ namespace Apache.Ignite.Core.Configuration
     /// </summary>
     public class QueryEntity
     {
+        // TODO: KeyType, ValueType, Fields
+
         /// <summary>
         /// Gets or sets key type name.
         /// </summary>
@@ -39,7 +41,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets query fields, a map from field name to type name. 
         /// The order of fields is important as it defines the order of columns returned by the 'select *' queries.
         /// </summary>
-        public ICollection<KeyValuePair<string, string>> Fields { get; set; }
+        public ICollection<KeyValuePair<string, string>> FieldNames { get; set; }
 
         /// <summary>
         /// Gets or sets field name aliases: mapping from full name in dot notation to an alias 
