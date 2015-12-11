@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Configuration
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
@@ -230,6 +231,7 @@ namespace Apache.Ignite.Core.Configuration
             WriteBehindFlushThreadCount = reader.ReadInt();
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
             CacheStoreFactory = reader.ReadObject<ICacheStoreFactory>();
+            QueryEntities = Enumerable.Range(0, reader.ReadInt()).Select(x => new QueryEntity(reader)).ToList();
         }
 
         /// <summary>
@@ -276,6 +278,16 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt(WriteBehindFlushThreadCount);
             writer.WriteInt((int) WriteSynchronizationMode);
             writer.WriteObject(CacheStoreFactory);
+
+            if (QueryEntities != null)
+            {
+                writer.WriteInt(QueryEntities.Count);
+
+                foreach (var entity in QueryEntities)
+                    entity.Write(writer);
+            }
+            else
+                writer.WriteInt(0);
         }
 
         /// <summary>
