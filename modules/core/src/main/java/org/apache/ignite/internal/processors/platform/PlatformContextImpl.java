@@ -175,8 +175,11 @@ public class PlatformContextImpl implements PlatformContext {
 
     /** {@inheritDoc} */
     @Override public BinaryRawReaderEx reader(PlatformInputStream in) {
-        // TODO: IGNITE-1272 - Is class loader needed here?
-        return new BinaryReaderExImpl(marsh.context(), in, null, null, true);
+        return new BinaryReaderExImpl(marsh.context(),
+            in,
+            ctx.config().getClassLoader(),
+            null,
+            true);
     }
 
     /** {@inheritDoc} */

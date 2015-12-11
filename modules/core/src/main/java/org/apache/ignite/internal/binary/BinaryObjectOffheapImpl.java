@@ -410,7 +410,6 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @return Deserialized value.
      */
     private Object deserializeValue() {
-        // TODO: IGNITE-1272 - Deserialize with proper class loader.
         return reader(null).deserialize();
     }
 
@@ -425,6 +424,9 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
         stream.position(start);
 
-        return new BinaryReaderExImpl(ctx, stream, null, rCtx);
+        return new BinaryReaderExImpl(ctx,
+            stream,
+            ctx.configuration().getClassLoader(),
+            rCtx);
     }
 }

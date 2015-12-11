@@ -161,8 +161,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             Class cls;
 
             try {
-                // TODO: IGNITE-1272 - Is class loader needed here?
-                cls = U.forName(clsNameToWrite, null);
+                cls = U.forName(clsNameToWrite, ctx.configuration().getClassLoader());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsNameToWrite, e);
