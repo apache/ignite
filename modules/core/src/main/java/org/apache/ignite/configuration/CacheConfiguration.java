@@ -365,13 +365,16 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private IgnitePredicate<ClusterNode> nodeFilter;
 
     /** */
+    private String sqlSchema;
+
+    /** */
     private boolean sqlEscapeAll;
 
     /** */
-    private transient Class<?>[] indexedTypes;
+    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
 
     /** */
-    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
+    private transient Class<?>[] indexedTypes;
 
     /** */
     private boolean snapshotableIdx;
@@ -467,6 +470,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         rebalanceTimeout = cc.getRebalanceTimeout();
         rebalanceThrottle = cc.getRebalanceThrottle();
         snapshotableIdx = cc.isSnapshotableIndex();
+        sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
         sqlOnheapRowCacheSize = cc.getSqlOnheapRowCacheSize();
@@ -1780,6 +1784,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.longQryWarnTimeout = longQryWarnTimeout;
 
         return this;
+    }
+
+    /**
+     * @return Schema name for current cache according to SQL ANSI-99. Could not be {@code null}.
+     */
+    public String getSqlSchema() {
+        return sqlSchema;
+    }
+
+    /**
+     * Sets sql schema to be used for current cache. This name will correspond to SQL ANSI-99 standard.
+     * Nonquoted identifiers are not case sensitive. Quoted identifiers are case sensitive.
+     * <p/>
+     * When sqlSchema is not specified, quoted {@code cacheName} is used instead.
+     *
+     * @param sqlSchema Schema name for current cache according to SQL ANSI-99. Should not be {@code null}.
+     */
+    public void setSqlSchema(String sqlSchema) {
+        A.ensure((sqlSchema == null), "Schema could not be null");
+
+        this.sqlSchema = sqlSchema;
     }
 
     /**
