@@ -45,27 +45,24 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Entry processor */
-    protected static String TEST_ENT_PROCESSOR =
-        GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) != null ?
-            GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) :
-            "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessor";
-
     /** Test value. */
     protected static String TEST_VALUE = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue";
 
     /** */
-    private DeploymentMode depMode;
+    protected DeploymentMode depMode;
 
     /** */
-    private boolean cliendMode;
+    protected boolean clientMode;
+
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (cliendMode)
-            cfg.setClientMode(cliendMode);
+        cfg.setClientMode(clientMode);
+
+        if (clientMode)
+            cfg.setClassLoader(getExternalClassLoader());
 
         cfg.setDeploymentMode(depMode);
 
@@ -97,6 +94,22 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
         cfg.setBackups(1);
 
         return cfg;
+    }
+
+    /**
+     * @return Cache.
+     */
+    protected IgniteCache getCache(){
+        return grid(1).cache(null);
+    }
+
+    /**
+     * @return Entry Processor.
+     */
+    protected String getEntryProcessor(){
+       return GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) != null ?
+            GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) :
+            "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessor";
     }
 
     protected CacheAtomicityMode atomicityMode() {
@@ -144,26 +157,28 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
      */
     private void doTestInvoke() throws Exception {
         try {
-            cliendMode = false;
+            clientMode = false;
             startGrid(0);
 
-            cliendMode = true;
+            clientMode = true;
             startGrid(1);
 
-            ClassLoader ldr = getExternalClassLoader();
-
-            Class procCls = ldr.loadClass(TEST_ENT_PROCESSOR);
-            Class valCls = ldr.loadClass(TEST_VALUE);
+            Class procCls = grid(1).configuration().getClassLoader().loadClass(getEntryProcessor());
+            Class valCls = grid(1).configuration().getClassLoader().loadClass(TEST_VALUE);
 
             assertTrue(grid(1).configuration().isClientMode());
+            assertFalse(grid(0).configuration().isClientMode());
 
-            IgniteCache cache = grid(1).cache(null);
+            IgniteCache cache = getCache();
 
             cache.put("key", valCls.newInstance());
 
             Boolean res = (Boolean)cache.invoke("key", (CacheEntryProcessor)procCls.newInstance());
 
             assertTrue(res);
+
+            // Checks that get produces no exceptions.
+            cache.get("key");
         }
         finally {
             stopAllGrids();
@@ -175,20 +190,19 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
      */
     private void doTestInvokeAll() throws Exception {
         try {
-            cliendMode = false;
+            clientMode = false;
             startGrid(0);
 
-            cliendMode = true;
+            clientMode = true;
             startGrid(1);
 
-            ClassLoader ldr = getExternalClassLoader();
-
-            Class procCls = ldr.loadClass(TEST_ENT_PROCESSOR);
-            Class valCls = ldr.loadClass(TEST_VALUE);
+            Class procCls = grid(1).configuration().getClassLoader().loadClass(getEntryProcessor());
+            Class valCls = grid(1).configuration().getClassLoader().loadClass(TEST_VALUE);
 
             assertTrue(grid(1).configuration().isClientMode());
+            assertFalse(grid(0).configuration().isClientMode());
 
-            IgniteCache cache = grid(1).cache(null);
+            IgniteCache cache = getCache();
 
             HashSet keys = new HashSet();
 
@@ -207,6 +221,13 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
 
             for (EntryProcessorResult result : res.values())
                 assertTrue((Boolean)result.get());
+
+            // Checks that get produces no exceptions.
+            for (int i = 0; i < 3; i++) {
+                String key = "key" + i;
+
+                cache.get(key);
+            }
         }
         finally {
             stopAllGrids();

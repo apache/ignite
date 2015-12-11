@@ -88,14 +88,14 @@ namespace Apache.Ignite.Core.Datastream
         /// <summary>
         /// Flag value indicating that this data streamer assumes that there could be concurrent updates to the cache. 
         /// <para />
-        /// Default is <code>false</code>.
+        /// Default is <c>false</c>.
         /// </summary>
         bool AllowOverwrite { get; set; }
 
         /// <summary>
         /// Flag indicating that write-through behavior should be disabled for data loading.
         /// <para />
-        /// Default is <code>false</code>.
+        /// Default is <c>false</c>.
         /// </summary>
         bool SkipStore { get; set; }
 
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Datastream
         /// <para />
         /// Setter must be called before any add/remove operation.
         /// <para />
-        /// Default is <code>1024</code>.
+        /// Default is <c>1024</c>.
         /// </summary>
         int PerNodeBufferSize { get; set; }
 
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Datastream
         /// <para />
         /// Setter must be called before any add/remove operation.
         /// <para />
-        /// Default is <code>16</code>.
+        /// Default is <c>16</c>.
         /// </summary>
         int PerNodeParallelOperations { get; set; }
 
@@ -123,9 +123,9 @@ namespace Apache.Ignite.Core.Datastream
         /// Note that there is no guarantee that data will be delivered after this concrete
         /// attempt (e.g., it can fail when topology is changing), but it won't be lost anyway.
         /// <para />
-        /// If set to <code>0</code>, automatic flush is disabled.
+        /// If set to <c>0</c>, automatic flush is disabled.
         /// <para />
-        /// Default is <code>0</code> (disabled).
+        /// Default is <c>0</c> (disabled).
         /// </summary>
         long AutoFlushFrequency { get; set; }
 

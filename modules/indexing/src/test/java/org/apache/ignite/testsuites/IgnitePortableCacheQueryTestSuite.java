@@ -34,8 +34,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePartitionedQueryMu
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryEvictsMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryOffheapMultiThreadedSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableDuplicateIndexObjectPartitionedAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableDuplicateIndexObjectPartitionedTransactionalSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCachePortableDuplicateIndexObjectPartitionedAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCachePortableDuplicateIndexObjectPartitionedTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryAtomicNearEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryAtomicP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryAtomicSelfTest;
@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheCon
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 

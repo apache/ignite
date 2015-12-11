@@ -17,17 +17,16 @@
 
 package org.apache.ignite.examples.model;
 
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-
 import java.io.Serializable;
-import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  * Organization class.
  */
 public class Organization implements Serializable {
     /** */
-    private static final Random RND = new Random();
+    private static final AtomicLong ID_GEN = new AtomicLong();
 
     /** Organization ID (indexed). */
     @QuerySqlField(index = true)
@@ -38,19 +37,12 @@ public class Organization implements Serializable {
     public String name;
 
     /**
-     * Default empty constructor.
-     */
-    public Organization() {
-        // No-op.
-    }
-
-    /**
      * Create organization.
      *
      * @param name Organization name.
      */
     public Organization(String name) {
-        id = RND.nextLong();
+        id = ID_GEN.incrementAndGet();
 
         this.name = name;
     }

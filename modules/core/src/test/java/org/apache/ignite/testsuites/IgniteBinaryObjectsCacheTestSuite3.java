@@ -18,7 +18,9 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
@@ -34,6 +36,11 @@ public class IgniteBinaryObjectsCacheTestSuite3 {
         GridTestProperties.setProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME,
             "org.apache.ignite.tests.p2p.CacheDeploymentPortableEntryProcessor");
 
-        return IgniteCacheTestSuite3.suite();
+        TestSuite suite = IgniteCacheTestSuite3.suite();
+
+        suite.addTestSuite(GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest.class);
+
+        return suite;
     }
 }

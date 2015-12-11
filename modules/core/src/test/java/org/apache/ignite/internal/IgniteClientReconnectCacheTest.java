@@ -693,7 +693,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try {
-                    Ignition.start(getConfiguration(getTestGridName(SRV_CNT)));
+                    Ignition.start(optimize(getConfiguration(getTestGridName(SRV_CNT))));
 
                     fail();
 
@@ -724,7 +724,13 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         TestTcpDiscoverySpi srvSpi = spi(srv);
 
         try {
-            assertTrue(joinLatch.await(5000, MILLISECONDS));
+            if (!joinLatch.await(10_000, MILLISECONDS)) {
+                log.error("Failed to wait for join event, will dump threads.");
+
+                U.dumpThreads(log);
+
+                fail("Failed to wait for join event.");
+            }
 
             U.sleep(1000);
 
@@ -971,7 +977,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                     info("Disconnected: " + evt);
 
                     disconnectLatch.countDown();
-                } else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                }
+                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
                     info("Reconnected: " + evt);
 
                     reconnectLatch.countDown();
@@ -1096,7 +1103,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         for (int iter = 0; iter < 3; iter++) {
             log.info("Iteration: " + iter);
 
-            reconnectClientNodes(clients, grid(0), null);
+            reconnectClientNodes(log, clients, grid(0), null);
 
             for (Ignite client : clients) {
                 IgniteCache<Object, Object> cache = client.cache(null);

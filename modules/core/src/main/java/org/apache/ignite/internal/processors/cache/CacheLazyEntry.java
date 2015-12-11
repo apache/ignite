@@ -77,7 +77,7 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      * @param valObj Cache object
      * @param val Cache value.
      */
-    public CacheLazyEntry(GridCacheContext<K, V> ctx, 
+    public CacheLazyEntry(GridCacheContext<K, V> ctx,
         KeyCacheObject keyObj,
         K key,
         CacheObject valObj,
@@ -102,6 +102,16 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
 
     /** {@inheritDoc} */
     @Override public V getValue() {
+        return getValue(keepPortable);
+    }
+
+    /**
+     * Returns the value stored in the cache when this entry was created.
+     *
+     * @param keepPortable Flag to keep portable if needed.
+     * @return the value corresponding to this entry
+     */
+    public V getValue(boolean keepPortable) {
         if (val == null)
             val = (V)cctx.unwrapPortableIfNeeded(valObj, keepPortable, false);
 

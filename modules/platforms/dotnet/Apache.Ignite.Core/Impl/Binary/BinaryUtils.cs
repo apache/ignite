@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -133,10 +132,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Type: map. */
         public const byte TypeDictionary = 25;
-
-        /** Type: map entry. */
-        public const byte TypeMapEntry = 26;
-
+        
         /** Type: binary object. */
         public const byte TypeBinary = 27;
 
@@ -199,34 +195,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Collection: linked list. */
         public const byte CollectionLinkedList = 2;
-
-        /** Collection: hash set. */
-        public const byte CollectionHashSet = 3;
-
-        /** Collection: hash set. */
-        public const byte CollectionLinkedHashSet = 4;
-
-        /** Collection: sorted set. */
-        public const byte CollectionSortedSet = 5;
-
-        /** Collection: concurrent bag. */
-        public const byte CollectionConcurrentBag = 6;
-
+        
         /** Map: custom. */
         public const byte MapCustom = 0;
 
         /** Map: hash map. */
         public const byte MapHashMap = 1;
-
-        /** Map: linked hash map. */
-        public const byte MapLinkedHashMap = 2;
-
-        /** Map: sorted map. */
-        public const byte MapSortedMap = 3;
-
-        /** Map: concurrent hash map. */
-        public const byte MapConcurrentHashMap = 4;
-
+        
         /** Byte "0". */
         public const byte ByteZero = 0;
 
@@ -611,7 +586,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /**
          * <summary>Read date.</summary>
          * <param name="stream">Stream.</param>
-         * <param name="local">Local flag.</param>
          * <returns>Date</returns>
          */
         public static DateTime? ReadTimestamp(IBinaryStream stream)
@@ -1097,10 +1071,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     colType = CollectionArrayList;
                 else if (genType == typeof (LinkedList<>))
                     colType = CollectionLinkedList;
-                else if (genType == typeof (SortedSet<>))
-                    colType = CollectionSortedSet;
-                else if (genType == typeof (ConcurrentBag<>))
-                    colType = CollectionConcurrentBag;
                 else
                     colType = CollectionCustom;
             }
@@ -1148,10 +1118,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (colType == CollectionLinkedList)
                     res = new LinkedList<object>();
-                else if (colType == CollectionSortedSet)
-                    res = new SortedSet<object>();
-                else if (colType == CollectionConcurrentBag)
-                    res = new ConcurrentBag<object>();
                 else
                     res = new ArrayList(len);
             }
@@ -1182,14 +1148,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var genType = valType.GetGenericTypeDefinition();
 
-                if (genType == typeof (Dictionary<,>))
-                    dictType = MapHashMap;
-                else if (genType == typeof (SortedDictionary<,>))
-                    dictType = MapSortedMap;
-                else if (genType == typeof (ConcurrentDictionary<,>))
-                    dictType = MapConcurrentHashMap;
-                else
-                    dictType = MapCustom;
+                dictType = genType == typeof (Dictionary<,>) ? MapHashMap : MapCustom;
             }
             else
                 dictType = valType == typeof (Hashtable) ? MapHashMap : MapCustom;
@@ -1222,29 +1181,16 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="factory">Factory delegate.</param>
          * <returns>Dictionary.</returns>
          */
-        public static IDictionary ReadDictionary(BinaryReader ctx,
-            DictionaryFactory factory)
+        public static IDictionary ReadDictionary(BinaryReader ctx, DictionaryFactory factory)
         {
             IBinaryStream stream = ctx.Stream;
 
             int len = stream.ReadInt();
 
-            byte colType = ctx.Stream.ReadByte();
+            // Skip dictionary type as we can do nothing with it here.
+            ctx.Stream.ReadByte();
 
-            IDictionary res;
-
-            if (factory == null)
-            {
-                if (colType == MapSortedMap)
-                    res = new SortedDictionary<object, object>();
-                else if (colType == MapConcurrentHashMap)
-                    res = new ConcurrentDictionary<object, object>(Environment.ProcessorCount, len);
-                else
-                    res = new Hashtable(len);
-            }
-            else
-                res = factory.Invoke(len);
-
+            var res = factory == null ? new Hashtable(len) : factory.Invoke(len);
 
             for (int i = 0; i < len; i++)
             {
@@ -1255,30 +1201,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             return res;
-        }
-
-        /**
-         * <summary>Write map entry.</summary>
-         * <param name="ctx">Write context.</param>
-         * <param name="val">Value.</param>
-         */
-        public static void WriteMapEntry(BinaryWriter ctx, DictionaryEntry val)
-        {
-            ctx.Write(val.Key);
-            ctx.Write(val.Value);
-        }
-
-        /**
-         * <summary>Read map entry.</summary>
-         * <param name="ctx">Context.</param>
-         * <returns>Map entry.</returns>
-         */
-        public static DictionaryEntry ReadMapEntry(BinaryReader ctx)
-        {
-            object key = ctx.Deserialize<object>();
-            object val = ctx.Deserialize<object>();
-
-            return new DictionaryEntry(key, val);
         }
 
         /**
