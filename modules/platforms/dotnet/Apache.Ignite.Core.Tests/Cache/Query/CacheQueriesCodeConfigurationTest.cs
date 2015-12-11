@@ -18,6 +18,10 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System.Collections.Generic;
+    using System.Linq;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
@@ -32,24 +36,34 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSqlQuery()
         {
+            var cacheName = "personCache";
+            var typeName = typeof (QueryPerson).Name;
+
             var cfg = new IgniteConfiguration
             {
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    TypeConfigurations = new[]
+                    {
+                        new BinaryTypeConfiguration(typeof (QueryPerson))
+                    }
+                },
                 CacheConfiguration = new[]
                 {
                     new CacheConfiguration
                     {
-                        Name = "personCache",
+                        Name = cacheName,
                         QueryEntities = new[]
                         {
                             new QueryEntity
                             {
                                 KeyTypeName = "Integer",
-                                ValueTypeName = "QueryPerson",
-                                FieldNames = new []
+                                ValueTypeName = typeName,
+                                FieldNames = new[]
                                 {
-                                    new KeyValuePair<string, string>("Name", "String"), 
+                                    new KeyValuePair<string, string>("Name", "String"),
                                     new KeyValuePair<string, string>("Age", "Integer")
                                 },
                                 Indexes = new[]
@@ -59,13 +73,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                                 }
                             }
                         }
-                    } 
+                    }
                 }
             };
 
             using (var ignite = Ignition.Start(cfg))
             {
-                // TODO
+                var cache = ignite.GetCache<int, QueryPerson>(cacheName);
+
+                Assert.IsNotNull(cache);
+
+                cache[1] = new QueryPerson("Arnold", 10);
+                cache[2] = new QueryPerson("John", 20);
+
+                using (var cursor = cache.Query(new SqlQuery(typeof (QueryPerson), "age > 10")))
+                {
+                    Assert.AreEqual(2, cursor.GetAll().Single().Key);
+                }
+
+                using (var cursor = cache.Query(new TextQuery(typeof (QueryPerson), "*nol*")))
+                {
+                    Assert.AreEqual(1, cursor.GetAll().Single().Key);
+                }
             }
         }
     }
