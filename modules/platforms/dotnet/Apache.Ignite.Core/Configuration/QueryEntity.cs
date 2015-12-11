@@ -15,9 +15,13 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
 namespace Apache.Ignite.Core.Configuration
 {
     using System.Collections.Generic;
+    using System.Linq;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Query entity is a description of cache entry (composed of key and value) 
@@ -26,6 +30,38 @@ namespace Apache.Ignite.Core.Configuration
     public class QueryEntity
     {
         // TODO: KeyType, ValueType, Fields
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryEntity"/> class.
+        /// </summary>
+        public QueryEntity()
+        {
+            // No-op.
+        }
+
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryEntity"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        internal QueryEntity(IBinaryRawReader reader)
+        {
+            KeyTypeName = reader.ReadString();
+            ValueTypeName = reader.ReadString();
+
+            FieldNames = Enumerable.Range(0, reader.ReadInt()).Select(x =>
+                new KeyValuePair<string, string>(reader.ReadString(), reader.ReadString())).ToList();
+
+            Aliases = Enumerable.Range(0, reader.ReadInt())
+                .ToDictionary(x => reader.ReadString(), x => reader.ReadString());
+
+            Indexes = Enumerable.Range(0, reader.ReadInt()).Select(x => new QueryIndex(reader)).ToList();
+        }
+
+        internal void Write(IBinaryRawWriter writer)
+        {
+
+        }
 
         /// <summary>
         /// Gets or sets key type name.

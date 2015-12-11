@@ -18,12 +18,30 @@
 namespace Apache.Ignite.Core.Configuration
 {
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Represents cache query index configuration.
     /// </summary>
     public class QueryIndex
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryIndex"/> class.
+        /// </summary>
+        public QueryIndex()
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryIndex"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        internal QueryIndex(IBinaryRawReader reader)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /// <summary>
         /// Gets or sets a collection of fields to be indexed, with their respective Ascending flags.
         /// </summary>
