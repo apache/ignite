@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.BinaryRawReaderEx;
@@ -219,6 +220,11 @@ public class PlatformConfigurationUtils {
      */
     public static QueryIndex readQueryIndex(BinaryRawReaderEx in) {
         QueryIndex res = new QueryIndex();
+
+        res.setName(in.readString());
+        res.setIndexType(QueryIndexType.values()[in.readByte()]);
+
+        int cnt = in.readInt();
 
         // TODO
 
