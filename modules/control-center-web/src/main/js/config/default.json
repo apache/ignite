@@ -1,0 +1,25 @@
+{
+    "server": {
+        "port": 3000,
+        "https-port": 8443,
+        "ssl": false,
+        "key": "keys/test.key",
+        "cert": "keys/test.crt",
+        "keyPassphrase": "password"
+    },
+    "mongoDB": {
+        "url": "mongodb://localhost/web-control-center"
+    },
+    "agent-server": {
+        "port": 3001,
+        "ssl": true,
+        "key": "keys/test.key",
+        "cert": "keys/test.crt",
+        "keyPassphrase": "password"
+    },
+    "smtp": {
+        "service": "",
+        "username": "",
+        "password": ""
+    }
+}

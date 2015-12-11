@@ -1,0 +1,244 @@
+{
+  "name": "ignite-web-console",
+  "version": "1.0.0",
+  "description": "Interactive Web console for configuration, executing SQL queries and monitoring of Apache Ignite Cluster",
+  "private": true,
+  "scripts": {
+    "start": "jspm i && gulp build --debug && node serve"
+  },
+  "author": "",
+  "contributors": [
+    {
+      "name": "",
+      "email": ""
+    }
+  ],
+  "license": "Apache-2.0",
+  "keywords": "grid",
+  "homepage": "https://ignite.apache.org/",
+  "engines": {
+    "node": ">=0.12.4"
+  },
+  "dependencies": {
+    "async": "1.5.0",
+    "body-parser": "~1.14.1",
+    "bootstrap-sass": "^3.3.6",
+    "connect-modrewrite": "^0.8.2",
+    "connect-mongo": "^0.8.1",
+    "cookie-parser": "~1.4.0",
+    "debug": "~2.2.0",
+    "ejs": "^2.3.4",
+    "express": "~4.13.3",
+    "express-force-ssl": "^0.3.0",
+    "express-session": "^1.12.0",
+    "font-awesome": "^4.4.0",
+    "gulp": "^3.9.0",
+    "gulp-concat": "^2.6.0",
+    "gulp-connect": "^2.2.0",
+    "gulp-environments": "^0.1.1",
+    "gulp-inject": "^3.0.0",
+    "gulp-jade": "^1.1.0",
+    "gulp-rimraf": "^0.2.0",
+    "gulp-sass": "^2.1.0",
+    "gulp-sequence": "^0.4.1",
+    "gulp-util": "^3.0.7",
+    "jade": "~1.11.0",
+    "jszip": "^2.5.0",
+    "lodash": "3.10.1",
+    "mongoose": "^4.2.8",
+    "mongoose-deep-populate": "2.0.3",
+    "nconf": "^0.8.2",
+    "nodemailer": "1.10.0",
+    "passport": "^0.3.2",
+    "passport-local": "^1.0.0",
+    "passport-local-mongoose": "3.1.0",
+    "require-dir": "^0.3.0",
+    "serve-favicon": "~2.3.0",
+    "ws": "~0.8.0"
+  },
+  "devDependencies": {
+    "jspm": "^0.16.15",
+    "mocha": "~2.3.3",
+    "morgan": "~1.6.1",
+    "should": "~7.1.1",
+    "supertest": "^1.1.0"
+  },
+  "jspm": {
+    "dependencies": {
+      "ace": "github:ajaxorg/ace-builds@^1.2.2",
+      "angular": "github:angular/bower-angular@^1.4.8",
+      "angular-animate": "github:angular/bower-angular-animate@^1.4.8",
+      "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@^1.3.0",
+      "angular-loading": "github:darthwade/angular-loading@^0.1.4",
+      "angular-motion": "github:mgcrea/angular-motion@^0.4.3",
+      "angular-nvd3": "github:krispo/angular-nvd3@^1.0.4",
+      "angular-sanitize": "github:angular/bower-angular-sanitize@^1.4.8",
+      "angular-smart-table": "github:lorenzofox3/Smart-Table@^2.1.4",
+      "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
+      "angular-tree-control": "github:wix/angular-tree-control@^0.2.22",
+      "angular-ui-ace": "github:angular-ui/ui-ace@^0.2.3",
+      "angular-ui-grid": "github:angular-ui/bower-ui-grid@^3.0.7",
+      "angular-ui-router": "github:angular-ui/ui-router@^0.2.15",
+      "blob": "github:eligrey/Blob.js@master",
+      "bootstrap-carousel": "github:twbs/bootstrap@^3.3.6",
+      "css": "github:systemjs/plugin-css@^0.1.20",
+      "file-saver": "github:eligrey/FileSaver.js@master",
+      "font-awesome": "npm:font-awesome@^4.4.0",
+      "jade": "github:johnsoftek/plugin-jade@^0.5.1",
+      "jquery": "github:components/jquery@^2.1.4",
+      "json": "github:systemjs/plugin-json@^0.1.0",
+      "jszip": "github:Stuk/jszip@^2.5.0",
+      "lodash": "npm:lodash@^3.10.1",
+      "pdfmake": "github:bpampuch/pdfmake@^0.1.20",
+      "query-command-supported": "github:zenorocha/document.queryCommandSupported@^1.0.0"
+    },
+    "devDependencies": {
+      "babel": "npm:babel-core@^5.8.24",
+      "babel-runtime": "npm:babel-runtime@^5.8.24",
+      "clean-css": "npm:clean-css@^3.4.8",
+      "core-js": "npm:core-js@^1.1.4"
+    },
+    "overrides": {
+      "github:Stuk/jszip@2.5.0": {
+        "format": "global",
+        "main": "./dist/jszip"
+      },
+      "github:bpampuch/pdfmake@0.1.20": {
+        "format": "global",
+        "main": "vfs_fonts",
+        "shim": {
+          "vfs_fonts": {
+            "deps": [
+              "./pdfmake"
+            ],
+            "exports": "pdfMake"
+          }
+        }
+      },
+      "github:zenorocha/document.queryCommandSupported@1.0.0": {
+        "format": "global"
+      },
+      "github:krispo/angular-nvd3@1.0.4": {
+        "main": "dist/angular-nvd3",
+        "dependencies": {
+          "angular": "^1",
+          "nvd3": "npm:nvd3@1.8.1",
+          "d3": "npm:d3@3.5.10"
+        },
+        "shim": {
+          "dist/angular-nvd3": {
+            "deps": [
+              "angular",
+              "d3",
+              "nvd3"
+            ]
+          }
+        }
+      },
+      "github:components/jquery@2.1.4": {
+        "format": "global"
+      },
+      "github:ajaxorg/ace-builds@1.2.2": {
+        "format": "global",
+        "main": "theme-chrome",
+        "shim": {
+          "theme-chrome": {
+            "exports": "ace",
+            "deps": [
+              "./ace",
+              "./mode-xml",
+              "./mode-java",
+              "./mode-sql",
+              "./ext-language_tools",
+              "./mode-dockerfile"
+            ]
+          },
+          "ace": {
+            "exports": "ace"
+          },
+          "mode-xml": {
+            "deps": [
+              "./ace"
+            ]
+          },
+          "mode-java": {
+            "deps": [
+              "./ace"
+            ]
+          },
+          "mode-sql": {
+            "deps": [
+              "./ace"
+            ]
+          },
+          "ext-language_tools": {
+            "deps": [
+              "./ace"
+            ]
+          },
+          "worker-xml": {
+            "deps": [
+              "./ace"
+            ]
+          },
+          "mode-dockerfile": {
+            "deps": [
+              "./ace"
+            ]
+          }
+        }
+      },
+      "github:angular/bower-angular@1.4.8": {
+        "dependencies": {
+          "jquery": "github:components/jquery@^2.1.4"
+        },
+        "shim": {
+          "angular": {
+            "deps": [
+              "jquery"
+            ]
+          }
+        }
+      },
+      "github:darthwade/angular-loading@0.1.4": {
+        "dependencies": {
+          "spinjs": "github:fgnass/spin.js@^2.3.2"
+        }
+      },
+      "github:angular-ui/bower-ui-grid@3.0.7": {
+        "dependencies": {
+          "pdfmake": "github:bpampuch/pdfmake@^0.1.20"
+        }
+      },
+      "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
+        "main": "dist/angular-strap.tpl",
+        "dependencies": {
+          "angular-animate": "github:angular/bower-angular-animate@^1.4.8",
+          "angular-motion": "github:mgcrea/angular-motion@^0.4.3",
+          "angular-sanitize": "github:angular/bower-angular-sanitize@^1.4.8"
+        },
+        "shim": {
+          "dist/angular-strap.tpl": {
+            "deps": [
+              "./angular-strap"
+            ]
+          }
+        }
+      },
+      "github:angular-ui/ui-ace@0.2.3": {
+        "dependencies": {
+          "ace": "github:ajaxorg/ace-builds@^1.2.2"
+        }
+      },
+      "github:eligrey/FileSaver.js@master": {
+        "format": "global",
+        "dependencies": {
+          "blob": "github:eligrey/Blob.js@master"
+        }
+      },
+      "github:eligrey/Blob.js@master": {
+        "format": "global"
+      }
+    }
+  }
+}

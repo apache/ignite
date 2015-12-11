@@ -80,7 +80,7 @@ public class DatabaseMetadataParser {
      * @throws SQLException If schemas loading failed.
      */
     public static ObservableList<SchemaDescriptor> schemas(Connection conn) throws SQLException  {
-        List<String> dbSchemas = dialect(conn).schemas(conn);
+        Collection<String> dbSchemas = DbMetadataReader.getInstance().schemas(conn);
 
         List<SchemaDescriptor> uiSchemas = new ArrayList<>(dbSchemas.size());
 
@@ -94,20 +94,18 @@ public class DatabaseMetadataParser {
      * Parse database metadata.
      *
      * @param conn Connection to database.
-     * @param schemas Collection of schema names to load.
+     * @param schemas Collection of schema names to process.
      * @param tblsOnly If {@code true} then process tables only else process tables and views.
      * @return Collection of POJO descriptors.
      * @throws SQLException If parsing failed.
      */
     public static ObservableList<PojoDescriptor> parse(Connection conn, List<String> schemas, boolean tblsOnly)
         throws SQLException {
-        DatabaseMetadataDialect dialect = dialect(conn);
-
         Map<String, PojoDescriptor> parents = new HashMap<>();
 
         Map<String, Collection<PojoDescriptor>> childrens = new HashMap<>();
 
-        for (DbTable tbl : dialect.tables(conn, schemas, tblsOnly)) {
+        for (DbTable tbl : DbMetadataReader.getInstance().metadata(conn, schemas, tblsOnly)) {
             String schema = tbl.schema();
 
             PojoDescriptor parent = parents.get(schema);

@@ -850,6 +850,7 @@
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/maven-metadata-local.xml</exclude>
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/1.1/test1-1.1.pom</exclude>
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/maven-metadata-local.xml</exclude>
+                                        <exclude>src/main/js/package.json</exclude>
                                         <!--shmem-->
                                         <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
                                         <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
