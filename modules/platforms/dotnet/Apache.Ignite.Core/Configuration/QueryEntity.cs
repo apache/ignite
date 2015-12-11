@@ -41,17 +41,28 @@ namespace Apache.Ignite.Core.Configuration
         }
 
         /// <summary>
-        /// Gets or sets key type name.
+        /// Gets or sets key Java type name.
         /// </summary>
         public string KeyTypeName { get; set; }
 
         /// <summary>
-        /// Gets or sets value type name.
+        /// Gets or sets the type of the key.
+        /// This is a shortcut for <see cref="KeyTypeName"/>. 
+        /// Getter may throw an exception if there is an unknow type name.
+        /// </summary>
+        public Type KeyType
+        {
+            get { throw new NotImplementedException(); }
+            set { throw new NotImplementedException(); }
+        }
+
+        /// <summary>
+        /// Gets or sets value Java type name.
         /// </summary>
         public string ValueTypeName { get; set; }
 
         /// <summary>
-        /// Gets or sets query fields, a map from field name to type name. 
+        /// Gets or sets query fields, a map from field name to Java type name. 
         /// The order of fields is important as it defines the order of columns returned by the 'select *' queries.
         /// </summary>
         public ICollection<KeyValuePair<string, string>> FieldNames { get; set; }
