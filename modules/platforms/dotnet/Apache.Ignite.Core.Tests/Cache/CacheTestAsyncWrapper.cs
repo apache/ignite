@@ -431,6 +431,42 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> ScanQuery()
+        {
+            return _cache.ScanQuery();
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> ScanQuery(ICacheEntryFilter<TK, TV> filter)
+        {
+            return _cache.ScanQuery(filter);
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> SqlQuery(string sql, params object[] args)
+        {
+            return _cache.SqlQuery(sql, args);
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> SqlQuery(string sql, bool local, params object[] args)
+        {
+            return _cache.SqlQuery(sql, local, args);
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> TextQuery(string text)
+        {
+            return _cache.TextQuery(text);
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<ICacheEntry<TK, TV>> TextQuery(string text, bool local)
+        {
+            return _cache.TextQuery(text, local);
+        }
+
+        /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
             return _cache.QueryFields(qry);

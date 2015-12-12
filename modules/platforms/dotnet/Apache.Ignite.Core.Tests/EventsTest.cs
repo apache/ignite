@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
@@ -654,7 +653,7 @@ namespace Apache.Ignite.Core.Tests
 
             cache.Put(1, 1);
 
-            cache.Query(new ScanQuery<int, int>()).GetAll();
+            cache.ScanQuery().GetAll();
         }
 
         /// <summary>

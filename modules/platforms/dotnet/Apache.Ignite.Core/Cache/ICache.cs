@@ -673,6 +673,61 @@ namespace Apache.Ignite.Core.Cache
         IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry);
 
         /// <summary>
+        /// Runs a scan query over the cache.
+        /// </summary>
+        /// <returns>
+        /// Cursor.
+        /// </returns>
+        IQueryCursor<ICacheEntry<TK, TV>> ScanQuery();
+
+        /// <summary>
+        /// Runs a scan query over the cache.
+        /// </summary>
+        /// <param name="filter">The filter.</param>
+        /// <returns>
+        /// Cursor.
+        /// </returns>
+        IQueryCursor<ICacheEntry<TK, TV>> ScanQuery(ICacheEntryFilter<TK, TV> filter);
+
+        /// <summary>
+        /// Runs an SQL query over the cache.
+        /// </summary>
+        /// <param name="sql">The SQL.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns>
+        /// Cursor.
+        /// </returns>
+        IQueryCursor<ICacheEntry<TK, TV>> SqlQuery(string sql, params object[] args);
+
+        /// <summary>
+        /// Runs an SQL query over the cache.
+        /// </summary>
+        /// <param name="sql">The SQL.</param>
+        /// <param name="local">Whether query should be executed locally.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns>Cursor.</returns>
+        IQueryCursor<ICacheEntry<TK, TV>> SqlQuery(string sql, bool local, params object[] args);
+
+        /// <summary>
+        /// Runs a text query over the cache.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <returns>
+        /// Cursor.
+        /// </returns>
+        IQueryCursor<ICacheEntry<TK, TV>> TextQuery(string text);
+
+        /// <summary>
+        /// Runs a text query over the cache.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <param name="local">Whether query should be executed locally.</param>
+        /// <returns>
+        /// Cursor.
+        /// </returns>
+        IQueryCursor<ICacheEntry<TK, TV>> TextQuery(string text, bool local);
+
+        /// <summary>
         /// Queries separate entry fields.
         /// </summary>
         /// <param name="qry">SQL fields query.</param>
