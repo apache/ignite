@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
