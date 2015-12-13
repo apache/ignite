@@ -35,28 +35,6 @@ namespace Apache.Ignite.Core.Binary
         }
 
         /// <summary>
-        /// Copying constructor.
-        /// </summary>
-        /// <param name="cfg">Configuration to copy.</param>
-        public BinaryConfiguration(BinaryConfiguration cfg)
-        {
-            DefaultIdMapper = cfg.DefaultIdMapper;
-            DefaultNameMapper = cfg.DefaultNameMapper;
-            DefaultKeepDeserialized = cfg.DefaultKeepDeserialized;
-            DefaultSerializer = cfg.DefaultSerializer;
-
-            TypeNames = cfg.TypeNames != null ? new List<string>(cfg.TypeNames) : null;
-
-            if (cfg.TypeConfigurations != null)
-            {
-                TypeConfigurations = new List<BinaryTypeConfiguration>(cfg.TypeConfigurations.Count);
-
-                foreach (BinaryTypeConfiguration typeCfg in cfg.TypeConfigurations)
-                    TypeConfigurations.Add(new BinaryTypeConfiguration(typeCfg));
-            }
-        }
-
-        /// <summary>
         /// Type configurations.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]

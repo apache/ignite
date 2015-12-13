@@ -143,18 +143,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             TestUtils.JvmDebug = true;
 
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            cfg.GridName = GridName;
-            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-            cfg.SpringConfigUrl = "config\\native-client-test-cache-store.xml";
-
-            BinaryConfiguration portCfg = new BinaryConfiguration();
-
-            portCfg.TypeNames = new List<string> { typeof(Key).FullName, typeof(Value).FullName };
-
-            cfg.BinaryConfiguration = portCfg;
+            var cfg = new IgniteConfiguration
+            {
+                GridName = GridName,
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
+                SpringConfigUrl = "config\\native-client-test-cache-store.xml",
+                BinaryConfiguration = new BinaryConfiguration {Types = new[] {typeof (Key), typeof (Value)}}
+            };
 
             Ignition.Start(cfg);
         }

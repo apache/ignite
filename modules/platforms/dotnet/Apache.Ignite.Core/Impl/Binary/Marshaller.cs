@@ -88,10 +88,16 @@ namespace Apache.Ignite.Core.Impl.Binary
                 foreach (BinaryTypeConfiguration typeCfg in typeCfgs)
                     AddUserType(cfg, typeCfg, typeResolver, dfltSerializer);
 
-            ICollection<string> types = cfg.TypeNames;
+            var typeNames = cfg.TypeNames;
+
+            if (typeNames != null)
+                foreach (string typeName in typeNames)
+                    AddUserType(cfg, new BinaryTypeConfiguration(typeName), typeResolver, dfltSerializer);
+
+            var types = cfg.Types;
 
             if (types != null)
-                foreach (string type in types)
+                foreach (var type in cfg.Types)
                     AddUserType(cfg, new BinaryTypeConfiguration(type), typeResolver, dfltSerializer);
 
             if (cfg.DefaultSerializer == null)
