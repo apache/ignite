@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {"java.lang.Character", typeof (char)},
             {"java.lang.Boolean", typeof (bool)},
             {"java.lang.String", typeof (string)},
-        };
+        };  // TODO: Decimal? unsigned?
 
         /** */
         private static readonly Dictionary<Type, string> NetToJava = JavaToNet.ToDictionary(x => x.Value, x => x.Key);

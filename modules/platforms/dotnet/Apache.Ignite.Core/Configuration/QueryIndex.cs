@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets a collection of fields to be indexed, with their respective Ascending flags.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<KeyValuePair<string, bool>> Fields { get; set; }
+        public ICollection<KeyValuePair<string, bool>> Fields { get; set; }  // TODO: ICollection<QueryField>
 
         /// <summary>
         /// Gets or sets the name of the field for this index.
