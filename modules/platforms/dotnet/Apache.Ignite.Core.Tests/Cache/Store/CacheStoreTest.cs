@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
