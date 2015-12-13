@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.datagrid;
 
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
@@ -89,15 +90,19 @@ public class CacheContinuousQueryExample {
                 // Execute query.
                 try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
                     // Iterate through existing data.
-                    for (Cache.Entry<Integer, String> e : cur)
-                        System.out.println("Queried existing entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
+                    try {
+                        for (Cache.Entry<Integer, String> e : cur)
+                            System.out.println("Queried existing entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
 
-                    // Add a few more keys and watch more query notifications.
-                    for (int i = keyCnt; i < keyCnt + 10; i++)
-                        cache.put(i, Integer.toString(i));
+                        // Add a few more keys and watch more query notifications.
+                        for (int i = keyCnt; i < keyCnt + 10; i++)
+                            cache.put(i, Integer.toString(i));
 
-                    // Wait for a while while callback is notified about remaining puts.
-                    Thread.sleep(2000);
+                        // Wait for a while while callback is notified about remaining puts.
+                        Thread.sleep(2000);
+                    } catch (CacheException e){
+                        System.out.println("Failed to run continuous query examples.");
+                    }
                 }
             }
         }
