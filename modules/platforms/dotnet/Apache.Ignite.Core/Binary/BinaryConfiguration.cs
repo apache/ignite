@@ -35,6 +35,15 @@ namespace Apache.Ignite.Core.Binary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryConfiguration"/> class.
+        /// </summary>
+        /// <param name="binaryTypes">Binary types to register.</param>
+        public BinaryConfiguration(params Type[] binaryTypes)
+        {
+            Types = binaryTypes;
+        }
+
+        /// <summary>
         /// Type configurations.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]

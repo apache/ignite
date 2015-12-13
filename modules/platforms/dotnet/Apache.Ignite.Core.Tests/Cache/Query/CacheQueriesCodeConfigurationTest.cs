@@ -37,19 +37,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestSqlQuery()
         {
             var cacheName = "personCache";
-            var typeName = typeof (QueryPerson).Name;
 
             var cfg = new IgniteConfiguration
             {
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new[]
-                    {
-                        new BinaryTypeConfiguration(typeof (QueryPerson))
-                    }
-                },
+                BinaryConfiguration = new BinaryConfiguration(typeof (QueryPerson)),
                 CacheConfiguration = new[]
                 {
                     new CacheConfiguration
