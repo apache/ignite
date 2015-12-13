@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Configuration
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
 
@@ -48,6 +49,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets a collection of fields to be indexed, with their respective Ascending flags.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<KeyValuePair<string, bool>> Fields { get; set; }
 
         /// <summary>

@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             BinaryConfiguration portCfg = new BinaryConfiguration();
 
-            portCfg.Types = new List<string> { typeof(Key).FullName, typeof(Value).FullName };
+            portCfg.TypeNames = new List<string> { typeof(Key).FullName, typeof(Value).FullName };
 
             cfg.BinaryConfiguration = portCfg;
 

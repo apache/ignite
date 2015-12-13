@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Binary
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
 
@@ -44,7 +45,7 @@ namespace Apache.Ignite.Core.Binary
             DefaultKeepDeserialized = cfg.DefaultKeepDeserialized;
             DefaultSerializer = cfg.DefaultSerializer;
 
-            Types = cfg.Types != null ? new List<string>(cfg.Types) : null;
+            TypeNames = cfg.TypeNames != null ? new List<string>(cfg.TypeNames) : null;
 
             if (cfg.TypeConfigurations != null)
             {
@@ -65,7 +66,13 @@ namespace Apache.Ignite.Core.Binary
         /// Binarizable types. Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<string> Types { get; set; }
+        public ICollection<string> TypeNames { get; set; }
+
+        /// <summary>
+        /// Binarizable types. Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<Type> Types { get; set; }
 
         /// <summary>
         /// Default name mapper.

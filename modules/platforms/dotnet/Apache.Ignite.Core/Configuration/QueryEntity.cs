@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Configuration
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -88,6 +89,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets query fields, a map from field name to Java type name. 
         /// The order of fields is important as it defines the order of columns returned by the 'select *' queries.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<KeyValuePair<string, string>> FieldNames { get; set; }
 
         /// <summary>
@@ -95,11 +97,13 @@ namespace Apache.Ignite.Core.Configuration
         /// that will be used as SQL column name.
         /// Example: {"parent.name" -> "parentName"}.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public IDictionary<string, string> Aliases { get; set; }
 
         /// <summary>
         /// Gets or sets the query indexes.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<QueryIndex> Indexes { get; set; }
 
         /// <summary>

@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 foreach (BinaryTypeConfiguration typeCfg in typeCfgs)
                     AddUserType(cfg, typeCfg, typeResolver, dfltSerializer);
 
-            ICollection<string> types = cfg.Types;
+            ICollection<string> types = cfg.TypeNames;
 
             if (types != null)
                 foreach (string type in types)
