@@ -176,22 +176,26 @@ public class BinaryMetadata implements Externalizable {
 
         U.writeString(out, typeName);
 
-        for (Map.Entry<String, Integer> fieldEntry : fieldsMap().entrySet()) {
-            out.writeBoolean(true);
-            U.writeString(out, fieldEntry.getKey());
-            out.writeInt(fieldEntry.getValue());
+        if (fields == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(fields.size());
+            for (Map.Entry<String, Integer> fieldEntry : fields.entrySet()) {
+                U.writeString(out, fieldEntry.getKey());
+                out.writeInt(fieldEntry.getValue());
+            }
         }
-        out.writeBoolean(false);
 
         U.writeString(out, affKeyFieldName);
 
-        if (schemas != null) {
+        if (schemas == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(fields.size());
             for (BinarySchema schema : schemas) {
-                out.writeBoolean(true);
                 schema.writeTo(out);
             }
         }
-        out.writeBoolean(false);
 
         out.writeBoolean(isEnum);
     }
@@ -215,20 +219,30 @@ public class BinaryMetadata implements Externalizable {
         typeId = in.readInt();
         typeName = U.readString(in);
 
-        fields = new HashMap<>();
-        while (in.readBoolean()) {
-            String fieldName = U.readString(in);
-            int fieldId = in.readInt();
-            fields.put(fieldName, fieldId);
+        int fieldsSize = in.readInt();
+        if (fieldsSize == -1)
+            fields = null;
+        else {
+            fields = new HashMap<>();
+            for (int i = 0; i < fieldsSize; i++) {
+                String fieldName = U.readString(in);
+                int fieldId = in.readInt();
+                fields.put(fieldName, fieldId);
+            }
         }
 
         affKeyFieldName = U.readString(in);
 
-        schemas = new ArrayList<>();
-        while (in.readBoolean()) {
-            BinarySchema schema = new BinarySchema();
-            schema.readFrom(in);
-            schemas.add(schema);
+        int schemasSize = in.readInt();
+        if (schemasSize == -1)
+            schemas = null;
+        else {
+            schemas = new ArrayList<>();
+            for (int i = 0; i < schemasSize; i++) {
+                BinarySchema schema = new BinarySchema();
+                schema.readFrom(in);
+                schemas.add(schema);
+            }
         }
 
         isEnum = in.readBoolean();

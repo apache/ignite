@@ -221,7 +221,7 @@ public class BinarySchema implements Externalizable {
      * calling the writeTo method for other objects.
      *
      * @param out the stream to write the object to.
-     * @exception IOException Includes any I/O exceptions that may occur.
+     * @throws IOException Includes any I/O exceptions that may occur.
      */
     public void writeTo(DataOutput out) throws IOException {
         out.writeInt(schemaId);
@@ -245,7 +245,7 @@ public class BinarySchema implements Externalizable {
      * and with the same types as were written by writeTo.
      *
      * @param in the stream to read data from in order to restore the object
-     * @exception IOException if I/O errors occur
+     * @throws IOException if I/O errors occur
      */
     public void readFrom(DataInput in) throws IOException {
         schemaId = in.readInt();
