@@ -867,7 +867,7 @@ namespace ignite
 
                 try {
                     if (!JVM.GetJvm()) {
-                        // 1. Create JVM itself.    
+                        // 1. Create JVM itself.
                         CreateJvm(opts, optsLen, &jvm, &env);
 
                         // 2. Populate members;

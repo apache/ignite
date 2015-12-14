@@ -73,11 +73,11 @@ extern "C" {
     void*IGNITE_CALL IgniteProcessorDataStreamer(gcj::JniContext* ctx, void* obj, char* name, bool keepPortable) {
         return ctx->ProcessorDataStreamer(static_cast<jobject>(obj), name, keepPortable);
     }
-    
+
     void* IGNITE_CALL IgniteProcessorTransactions(gcj::JniContext* ctx, void* obj) {
         return ctx->ProcessorTransactions(static_cast<jobject>(obj));
     }
-        
+
     void* IGNITE_CALL IgniteProcessorCompute(gcj::JniContext* ctx, void* obj, void* prj) {
         return ctx->ProcessorCompute(static_cast<jobject>(obj), static_cast<jobject>(prj));
     }
@@ -117,7 +117,7 @@ extern "C" {
     void IGNITE_CALL IgniteTargetInObjectStreamOutStream(gcj::JniContext* ctx, void* obj, int opType, void* arg, long long inMemPtr, long long outMemPtr) {
         ctx->TargetInObjectStreamOutStream(static_cast<jobject>(obj), opType, arg, inMemPtr, outMemPtr);
     }
-    
+
     long long IGNITE_CALL IgniteTargetOutLong(gcj::JniContext* ctx, void* obj, int opType) {
         return ctx->TargetOutLong(static_cast<jobject>(obj), opType);
     }
@@ -317,7 +317,7 @@ extern "C" {
 
     long long IGNITE_CALL IgniteTransactionsStart(gcj::JniContext* ctx, void* obj, int concurrency, int isolation, long long timeout, int txSize) {
         return ctx->TransactionsStart(static_cast<jobject>(obj), concurrency, isolation, timeout, txSize);
-    }   
+    }
 
     int IGNITE_CALL IgniteTransactionsCommit(gcj::JniContext* ctx, void* obj, long long id) {
         return ctx->TransactionsCommit(static_cast<jobject>(obj), id);
@@ -362,7 +362,7 @@ extern "C" {
     void IGNITE_CALL IgniteThrowToJava(gcj::JniContext* ctx, char* err) {
         ctx->ThrowToJava(err);
     }
-    
+
     int IGNITE_CALL IgniteHandlersSize() {
         return sizeof(gcj::JniHandlers);
     }
@@ -393,8 +393,8 @@ extern "C" {
 
     bool IGNITE_CALL IgniteEventsIsEnabled(gcj::JniContext* ctx, void* obj, int type) {
         return ctx->EventsIsEnabled(static_cast<jobject>(obj), type);
-    }    
-    
+    }
+
 	void* IGNITE_CALL IgniteServicesWithAsync(gcj::JniContext* ctx, void* obj) {
 		return ctx->ServicesWithAsync(static_cast<jobject>(obj));
     }

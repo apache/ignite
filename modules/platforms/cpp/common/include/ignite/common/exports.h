@@ -45,7 +45,7 @@ extern "C" {
     void* IGNITE_CALL IgniteProcessorServices(gcj::JniContext* ctx, void* obj, void* prj);
     void* IGNITE_CALL IgniteProcessorExtensions(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProcessorAtomicLong(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create);
-    
+
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr);
     void IGNITE_CALL IgniteTargetInStreamOutStream(gcj::JniContext* ctx, void* obj, int opType, long long inMemPtr, long long outMemPtr);
     void* IGNITE_CALL IgniteTargetInStreamOutObject(gcj::JniContext* ctx, void* obj, int opType, long long memPtr);
@@ -123,7 +123,7 @@ extern "C" {
     void IGNITE_CALL IgniteRelease(void* obj);
 
     void IGNITE_CALL IgniteThrowToJava(gcj::JniContext* ctx, char* errMsg);
-    
+
     int IGNITE_CALL IgniteHandlersSize();
 
     void* IGNITE_CALL IgniteCreateContext(char** opts, int optsLen, gcj::JniHandlers* cbs);
@@ -135,7 +135,7 @@ extern "C" {
     bool IGNITE_CALL IgniteEventsStopLocalListen(gcj::JniContext* ctx, void* obj, long long hnd);
     void IGNITE_CALL IgniteEventsLocalListen(gcj::JniContext* ctx, void* obj, long long hnd, int type);
     bool IGNITE_CALL IgniteEventsIsEnabled(gcj::JniContext* ctx, void* obj, int type);
-        
+
 	void* IGNITE_CALL IgniteServicesWithAsync(gcj::JniContext* ctx, void* obj);
 	void* IGNITE_CALL IgniteServicesWithServerKeepPortable(gcj::JniContext* ctx, void* obj);
 	void IGNITE_CALL IgniteServicesCancel(gcj::JniContext* ctx, void* obj, char* name);
