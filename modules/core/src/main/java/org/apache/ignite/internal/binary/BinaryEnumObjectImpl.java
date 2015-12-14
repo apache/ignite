@@ -45,7 +45,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** Context. */
     @GridDirectTransient
-    private PortableContext ctx;
+    private BinaryContext ctx;
 
     /** Type ID. */
     private int typeId;
@@ -71,7 +71,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
      * @param clsName Class name.
      * @param ord Ordinal.
      */
-    public BinaryEnumObjectImpl(PortableContext ctx, int typeId, @Nullable String clsName, int ord) {
+    public BinaryEnumObjectImpl(BinaryContext ctx, int typeId, @Nullable String clsName, int ord) {
         assert ctx != null;
 
         this.ctx = ctx;
@@ -110,7 +110,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T deserialize() throws BinaryObjectException {
-        Class cls = PortableUtils.resolveClass(ctx, typeId, clsName, null, true);
+        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, null, true);
 
         return BinaryEnumCache.get(cls, ord);
     }
@@ -167,7 +167,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
             return type.typeName() + "[ordinal=" + ord  + ']';
         }
         else {
-            if (typeId == GridPortableMarshaller.UNREGISTERED_TYPE_ID)
+            if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
                 return "BinaryEnum[clsName=" + clsName + ", ordinal=" + ord + ']';
             else
                 return "BinaryEnum[typeId=" + typeId + ", ordinal=" + ord + ']';
@@ -185,7 +185,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ctx = (PortableContext)in.readObject();
+        ctx = (BinaryContext)in.readObject();
 
         typeId = in.readInt();
         clsName = (String)in.readObject();
@@ -219,7 +219,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.processor()).portableContext();
+        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.processor()).binaryContext();
     }
 
     /** {@inheritDoc} */

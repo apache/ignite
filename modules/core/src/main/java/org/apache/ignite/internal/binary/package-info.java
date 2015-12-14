@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains portable APIs internal implementation.
+ * Contains binary APIs internal implementation.
  */
 package org.apache.ignite.internal.binary;

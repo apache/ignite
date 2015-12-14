@@ -91,7 +91,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param tx Transaction.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
@@ -106,7 +106,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         @Nullable IgniteTxLocalEx tx,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean canRemap,
@@ -119,7 +119,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             forcePrimary,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             expiryPlc,
             skipVals,
             canRemap,
@@ -423,7 +423,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializePortable);
+                            !deserializeBinary);
 
                         if (res != null) {
                             v = res.get1();
@@ -443,7 +443,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializePortable);
+                            !deserializeBinary);
                     }
                 }
 
@@ -472,7 +472,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                                     null,
                                     taskName,
                                     expiryPlc,
-                                    !deserializePortable);
+                                    !deserializeBinary);
 
                                 if (res != null) {
                                     v = res.get1();
@@ -492,7 +492,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                                     null,
                                     taskName,
                                     expiryPlc,
-                                    !deserializePortable);
+                                    !deserializeBinary);
                             }
 
                             // Entry was not in memory or in swap, so we remove it from cache.
@@ -544,9 +544,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
                         }
                         else {
-                            K key0 = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable, false);
+                            K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false);
                             V val0 = !skipVals ?
-                                (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable, false) :
+                                (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
                                 (V)Boolean.TRUE;
 
                             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
@@ -681,7 +681,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             info.ttl(),
                             info.expireTime(),
                             true,
-                            !deserializePortable,
+                            !deserializeBinary,
                             topVer,
                             subjId);
                     }
@@ -699,7 +699,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             val,
                             skipVals,
                             keepCacheObjects,
-                            deserializePortable,
+                            deserializeBinary,
                             false);
                 }
                 catch (GridCacheEntryRemovedException ignore) {

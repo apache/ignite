@@ -21,8 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.streams.PortableOffheapInputStream;
-import org.apache.ignite.internal.binary.streams.PortableOffheapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -44,23 +43,9 @@ import java.util.Date;
 import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.BOOLEAN;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.BYTE;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.CHAR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.DATE;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.DECIMAL;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.DOUBLE;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.FLOAT;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.INT;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.LONG;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.NULL;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.SHORT;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.STRING;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.TIMESTAMP;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.UUID;
 
 /**
- *  Portable object implementation over offheap memory
+ *  Binary object implementation over offheap memory
  */
 public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizable, CacheObject {
     /** */
@@ -70,7 +55,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
-    private final PortableContext ctx;
+    private final BinaryContext ctx;
 
     /** */
     private final long ptr;
@@ -94,7 +79,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @param start Object start.
      * @param size Memory size.
      */
-    public BinaryObjectOffheapImpl(PortableContext ctx, long ptr, int start, int size) {
+    public BinaryObjectOffheapImpl(BinaryContext ctx, long ptr, int start, int size) {
         this.ctx = ctx;
         this.ptr = ptr;
         this.start = start;
@@ -110,26 +95,26 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return UNSAFE.getInt(ptr + start + GridPortableMarshaller.TYPE_ID_POS);
+        return UNSAFE.getInt(ptr + start + GridBinaryMarshaller.TYPE_ID_POS);
     }
 
     /** {@inheritDoc} */
     @Override public int length() {
-        return UNSAFE.getInt(ptr + start + GridPortableMarshaller.TOTAL_LEN_POS);
+        return UNSAFE.getInt(ptr + start + GridBinaryMarshaller.TOTAL_LEN_POS);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return UNSAFE.getInt(ptr + start + GridPortableMarshaller.HASH_CODE_POS);
+        return UNSAFE.getInt(ptr + start + GridBinaryMarshaller.HASH_CODE_POS);
     }
 
     /** {@inheritDoc} */
     @Override protected int schemaId() {
-        return UNSAFE.getInt(ptr + start + GridPortableMarshaller.SCHEMA_ID_POS);
+        return UNSAFE.getInt(ptr + start + GridBinaryMarshaller.SCHEMA_ID_POS);
     }
 
     /** {@inheritDoc} */
-    @Override protected PortableSchema createSchema() {
+    @Override protected BinarySchema createSchema() {
         return reader(null).getOrCreateSchema();
     }
 
@@ -156,7 +141,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType type() throws BinaryObjectException {
         if (ctx == null)
-            throw new BinaryObjectException("PortableContext is not set for the object.");
+            throw new BinaryObjectException("BinaryContext is not set for the object.");
 
         return ctx.metadata(typeId());
     }
@@ -179,88 +164,88 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         Object val;
 
         // Calculate field position.
-        int schemaOffset = PortablePrimitives.readInt(ptr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        int schemaOffset = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
-        short flags = PortablePrimitives.readShort(ptr, start + GridPortableMarshaller.FLAGS_POS);
+        short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
-        int fieldIdLen = PortableUtils.isCompactFooter(flags) ? 0 : PortableUtils.FIELD_ID_LEN;
-        int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
+        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
+        int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
 
         int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
 
         int fieldPos;
 
-        if (fieldOffsetLen == PortableUtils.OFFSET_1)
-            fieldPos = start + ((int)PortablePrimitives.readByte(ptr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffsetLen == PortableUtils.OFFSET_2)
-            fieldPos = start + ((int)PortablePrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
+        if (fieldOffsetLen == BinaryUtils.OFFSET_1)
+            fieldPos = start + ((int)BinaryPrimitives.readByte(ptr, fieldOffsetPos) & 0xFF);
+        else if (fieldOffsetLen == BinaryUtils.OFFSET_2)
+            fieldPos = start + ((int)BinaryPrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
         else
-            fieldPos = start + PortablePrimitives.readInt(ptr, fieldOffsetPos);
+            fieldPos = start + BinaryPrimitives.readInt(ptr, fieldOffsetPos);
 
         // Read header and try performing fast lookup for well-known types (the most common types go first).
-        byte hdr = PortablePrimitives.readByte(ptr, fieldPos);
+        byte hdr = BinaryPrimitives.readByte(ptr, fieldPos);
 
         switch (hdr) {
-            case GridPortableMarshaller.INT:
-                val = PortablePrimitives.readInt(ptr, fieldPos + 1);
+            case GridBinaryMarshaller.INT:
+                val = BinaryPrimitives.readInt(ptr, fieldPos + 1);
 
                 break;
 
-            case GridPortableMarshaller.LONG:
-                val = PortablePrimitives.readLong(ptr, fieldPos + 1);
+            case GridBinaryMarshaller.LONG:
+                val = BinaryPrimitives.readLong(ptr, fieldPos + 1);
 
                 break;
 
-            case GridPortableMarshaller.BOOLEAN:
-                val = PortablePrimitives.readBoolean(ptr, fieldPos + 1);
+            case GridBinaryMarshaller.BOOLEAN:
+                val = BinaryPrimitives.readBoolean(ptr, fieldPos + 1);
 
                 break;
 
-            case GridPortableMarshaller.SHORT:
-                val = PortablePrimitives.readShort(ptr, fieldPos + 1);
+            case GridBinaryMarshaller.SHORT:
+                val = BinaryPrimitives.readShort(ptr, fieldPos + 1);
 
                 break;
 
-            case GridPortableMarshaller.BYTE:
-                val = PortablePrimitives.readByte(ptr, fieldPos + 1);
+            case GridBinaryMarshaller.BYTE:
+                val = BinaryPrimitives.readByte(ptr, fieldPos + 1);
 
                 break;
 
-            case GridPortableMarshaller.CHAR:
-                val = PortablePrimitives.readChar(ptr, fieldPos + 1);
+            case GridBinaryMarshaller.CHAR:
+                val = BinaryPrimitives.readChar(ptr, fieldPos + 1);
 
                 break;
 
-            case GridPortableMarshaller.FLOAT:
-                val = PortablePrimitives.readFloat(ptr, fieldPos + 1);
+            case GridBinaryMarshaller.FLOAT:
+                val = BinaryPrimitives.readFloat(ptr, fieldPos + 1);
 
                 break;
 
-            case GridPortableMarshaller.DOUBLE:
-                val = PortablePrimitives.readDouble(ptr, fieldPos + 1);
+            case GridBinaryMarshaller.DOUBLE:
+                val = BinaryPrimitives.readDouble(ptr, fieldPos + 1);
 
                 break;
 
-            case GridPortableMarshaller.STRING: {
-                int dataLen = PortablePrimitives.readInt(ptr, fieldPos + 1);
-                byte[] data = PortablePrimitives.readByteArray(ptr, fieldPos + 5, dataLen);
+            case GridBinaryMarshaller.STRING: {
+                int dataLen = BinaryPrimitives.readInt(ptr, fieldPos + 1);
+                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 5, dataLen);
 
                 val = new String(data, UTF_8);
 
                 break;
             }
 
-            case GridPortableMarshaller.DATE: {
-                long time = PortablePrimitives.readLong(ptr, fieldPos + 1);
+            case GridBinaryMarshaller.DATE: {
+                long time = BinaryPrimitives.readLong(ptr, fieldPos + 1);
 
                 val = new Date(time);
 
                 break;
             }
 
-            case GridPortableMarshaller.TIMESTAMP: {
-                long time = PortablePrimitives.readLong(ptr, fieldPos + 1);
-                int nanos = PortablePrimitives.readInt(ptr, fieldPos + 1 + 8);
+            case GridBinaryMarshaller.TIMESTAMP: {
+                long time = BinaryPrimitives.readLong(ptr, fieldPos + 1);
+                int nanos = BinaryPrimitives.readInt(ptr, fieldPos + 1 + 8);
 
                 Timestamp ts = new Timestamp(time);
 
@@ -271,20 +256,20 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 break;
             }
 
-            case GridPortableMarshaller.UUID: {
-                long most = PortablePrimitives.readLong(ptr, fieldPos + 1);
-                long least = PortablePrimitives.readLong(ptr, fieldPos + 1 + 8);
+            case GridBinaryMarshaller.UUID: {
+                long most = BinaryPrimitives.readLong(ptr, fieldPos + 1);
+                long least = BinaryPrimitives.readLong(ptr, fieldPos + 1 + 8);
 
                 val = new UUID(most, least);
 
                 break;
             }
 
-            case GridPortableMarshaller.DECIMAL: {
-                int scale = PortablePrimitives.readInt(ptr, fieldPos + 1);
+            case GridBinaryMarshaller.DECIMAL: {
+                int scale = BinaryPrimitives.readInt(ptr, fieldPos + 1);
 
-                int dataLen = PortablePrimitives.readInt(ptr, fieldPos + 5);
-                byte[] data = PortablePrimitives.readByteArray(ptr, fieldPos + 9, dataLen);
+                int dataLen = BinaryPrimitives.readInt(ptr, fieldPos + 5);
+                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 9, dataLen);
 
                 BigInteger intVal = new BigInteger(data);
 
@@ -299,17 +284,17 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 break;
             }
 
-            case GridPortableMarshaller.NULL:
+            case GridBinaryMarshaller.NULL:
                 val = null;
 
                 break;
 
             default:
-                PortableOffheapInputStream stream = new PortableOffheapInputStream(ptr, size, false);
+                BinaryOffheapInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
 
                 stream.position(fieldPos);
 
-                val = PortableUtils.unmarshal(stream, ctx, null);
+                val = BinaryUtils.unmarshal(stream, ctx, null);
 
                 break;
         }
@@ -420,7 +405,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @return Reader.
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx) {
-        PortableOffheapInputStream stream = new PortableOffheapInputStream(ptr, size, false);
+        BinaryOffheapInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
 
         stream.position(start);
 

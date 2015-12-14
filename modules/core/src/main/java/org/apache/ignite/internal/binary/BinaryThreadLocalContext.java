@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.binary.streams.PortableMemoryAllocatorChunk;
-import org.apache.ignite.internal.binary.streams.PortableMemoryAllocator;
-import org.apache.ignite.internal.binary.streams.PortableMemoryAllocatorChunk;
+import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorChunk;
+import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator;
 
 /**
  * Contains thread-local data for binary marshalling.
@@ -33,7 +32,7 @@ public class BinaryThreadLocalContext {
     };
 
     /** Memory chunk. */
-    private final PortableMemoryAllocatorChunk chunk = PortableMemoryAllocator.INSTANCE.chunk();
+    private final BinaryMemoryAllocatorChunk chunk = BinaryMemoryAllocator.INSTANCE.chunk();
 
     /** Schema holder. */
     private final BinaryWriterSchemaHolder schema = new BinaryWriterSchemaHolder();
@@ -57,7 +56,7 @@ public class BinaryThreadLocalContext {
     /**
      * @return Memory chunk.
      */
-    public PortableMemoryAllocatorChunk chunk() {
+    public BinaryMemoryAllocatorChunk chunk() {
         return chunk;
     }
 

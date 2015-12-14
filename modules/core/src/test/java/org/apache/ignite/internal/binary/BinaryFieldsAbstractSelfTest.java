@@ -34,7 +34,7 @@ import java.util.Date;
 import java.util.UUID;
 
 /**
- * Contains tests for portable object fields.
+ * Contains tests for binary object fields.
  */
 public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTest {
     /** Marshaller. */
@@ -43,11 +43,11 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Create marshaller.
      *
-     * @return Portable marshaller.
+     * @return Binary marshaller.
      * @throws Exception If failed.
      */
     protected BinaryMarshaller createMarshaller() throws Exception {
-        PortableContext ctx = new PortableContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
@@ -67,7 +67,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, iCfg);
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
 
         return marsh;
     }
@@ -80,13 +80,13 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Get portable context for the current marshaller.
+     * Get binary context for the current marshaller.
      *
      * @param marsh Marshaller.
-     * @return Portable context.
+     * @return Binary context.
      */
-    protected static PortableContext portableContext(BinaryMarshaller marsh) {
-        GridPortableMarshaller impl = U.field(marsh, "impl");
+    protected static BinaryContext binaryContext(BinaryMarshaller marsh) {
+        GridBinaryMarshaller impl = U.field(marsh, "impl");
 
         return impl.context();
     }
@@ -478,7 +478,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Get test context.
      *
-     * @param marsh Portable marshaller.
+     * @param marsh Binary marshaller.
      * @param fieldName Field name.
      * @return Test context.
      * @throws Exception If failed.
@@ -486,7 +486,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     private TestContext context(BinaryMarshaller marsh, String fieldName) throws Exception {
         TestObject obj = createObject();
 
-        BinaryObjectExImpl portObj = toPortable(marsh, obj);
+        BinaryObjectExImpl portObj = toBinary(marsh, obj);
 
         BinaryField field = portObj.type().field(fieldName);
 
@@ -496,7 +496,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Get test context with nested test object.
      *
-     * @param marsh Portable marshaller.
+     * @param marsh Binary marshaller.
      * @param fieldName Field name.
      * @return Test context.
      * @throws Exception If failed.
@@ -506,7 +506,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
         TestObject obj = createObject();
         TestOuterObject outObj = new TestOuterObject(obj);
 
-        BinaryObjectExImpl portOutObj = toPortable(marsh, outObj);
+        BinaryObjectExImpl portOutObj = toBinary(marsh, outObj);
         BinaryObjectExImpl portObj = portOutObj.field("fInner");
 
         assert portObj != null;
@@ -526,14 +526,14 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Convert object to portable object.
+     * Convert object to binary object.
      *
      * @param marsh Marshaller.
      * @param obj Object.
-     * @return Portable object.
+     * @return Binary object.
      * @throws Exception If failed.
      */
-    protected abstract BinaryObjectExImpl toPortable(BinaryMarshaller marsh, Object obj) throws Exception;
+    protected abstract BinaryObjectExImpl toBinary(BinaryMarshaller marsh, Object obj) throws Exception;
 
     /**
      * Outer test object.
@@ -696,7 +696,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
         /** Object. */
         public final TestObject obj;
 
-        /** Portable object. */
+        /** Binary object. */
         public final BinaryObjectExImpl portObj;
 
         /** Field. */
@@ -706,7 +706,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
          * Constructor.
          *
          * @param obj Object.
-         * @param portObj Portable object.
+         * @param portObj Binary object.
          * @param field Field.
          */
         public TestContext(TestObject obj, BinaryObjectExImpl portObj, BinaryField field) {

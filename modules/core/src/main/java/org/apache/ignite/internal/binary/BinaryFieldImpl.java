@@ -24,7 +24,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryField;
 
 /**
- * Implementation of portable field descriptor.
+ * Implementation of binary field descriptor.
  */
 public class BinaryFieldImpl implements BinaryField {
     /** Type ID. */
@@ -32,7 +32,7 @@ public class BinaryFieldImpl implements BinaryField {
 
     /** Well-known object schemas. */
     @GridToStringExclude
-    private final PortableSchemaRegistry schemas;
+    private final BinarySchemaRegistry schemas;
 
     /** Field name. */
     private final String fieldName;
@@ -47,7 +47,7 @@ public class BinaryFieldImpl implements BinaryField {
      * @param fieldName Field name.
      * @param fieldId Field ID.
      */
-    public BinaryFieldImpl(int typeId, PortableSchemaRegistry schemas, String fieldName, int fieldId) {
+    public BinaryFieldImpl(int typeId, BinarySchemaRegistry schemas, String fieldName, int fieldId) {
         assert typeId != 0;
         assert schemas != null;
         assert fieldName != null;
@@ -68,7 +68,7 @@ public class BinaryFieldImpl implements BinaryField {
     @Override public boolean exists(BinaryObject obj) {
         BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
-        return fieldOrder(obj0) != PortableSchema.ORDER_NOT_FOUND;
+        return fieldOrder(obj0) != BinarySchema.ORDER_NOT_FOUND;
     }
 
     /** {@inheritDoc} */
@@ -78,7 +78,7 @@ public class BinaryFieldImpl implements BinaryField {
 
         int order = fieldOrder(obj0);
 
-        return order != PortableSchema.ORDER_NOT_FOUND ? (T)obj0.fieldByOrder(order) : null;
+        return order != BinarySchema.ORDER_NOT_FOUND ? (T)obj0.fieldByOrder(order) : null;
     }
 
     /**
@@ -96,7 +96,7 @@ public class BinaryFieldImpl implements BinaryField {
 
         int schemaId = obj.schemaId();
 
-        PortableSchema schema = schemas.schema(schemaId);
+        BinarySchema schema = schemas.schema(schemaId);
 
         if (schema == null) {
             schema = obj.createSchema();

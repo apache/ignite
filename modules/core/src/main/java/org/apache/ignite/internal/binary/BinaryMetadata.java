@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Portable metadata which is passed over a wire.
+ * Binary metadata which is passed over a wire.
  */
 public class BinaryMetadata implements Externalizable {
     /** */
@@ -50,7 +50,7 @@ public class BinaryMetadata implements Externalizable {
     private String affKeyFieldName;
 
     /** Schemas associated with type. */
-    private Collection<PortableSchema> schemas;
+    private Collection<BinarySchema> schemas;
 
     /** Whether this is enum type. */
     private boolean isEnum;
@@ -73,7 +73,7 @@ public class BinaryMetadata implements Externalizable {
      * @param isEnum Enum flag.
      */
     public BinaryMetadata(int typeId, String typeName, @Nullable Map<String, Integer> fields,
-        @Nullable String affKeyFieldName, @Nullable Collection<PortableSchema> schemas, boolean isEnum) {
+        @Nullable String affKeyFieldName, @Nullable Collection<BinarySchema> schemas, boolean isEnum) {
         assert typeName != null;
 
         this.typeId = typeId;
@@ -119,7 +119,7 @@ public class BinaryMetadata implements Externalizable {
     @Nullable public String fieldTypeName(String fieldName) {
         Integer typeId = fields != null ? fields.get(fieldName) : null;
 
-        return typeId != null ? PortableUtils.fieldTypeName(typeId) : null;
+        return typeId != null ? BinaryUtils.fieldTypeName(typeId) : null;
     }
 
     /**
@@ -132,8 +132,8 @@ public class BinaryMetadata implements Externalizable {
     /**
      * @return Schemas.
      */
-    public Collection<PortableSchema> schemas() {
-        return schemas != null ? schemas : Collections.<PortableSchema>emptyList();
+    public Collection<BinarySchema> schemas() {
+        return schemas != null ? schemas : Collections.<BinarySchema>emptyList();
     }
 
     /**
@@ -146,10 +146,10 @@ public class BinaryMetadata implements Externalizable {
     /**
      * Wrap metadata into binary type.
      *
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      * @return Binary type.
      */
-    public BinaryTypeImpl wrap(PortableContext ctx) {
+    public BinaryTypeImpl wrap(BinaryContext ctx) {
         return new BinaryTypeImpl(ctx, this);
     }
 

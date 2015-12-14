@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.binary.streams.PortableOutputStream;
-import org.apache.ignite.internal.binary.streams.PortableOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 /**
  * Binary writer schema holder.
@@ -66,7 +65,7 @@ public class BinaryWriterSchemaHolder {
      * @param builder Builder.
      * @param fieldCnt Fields count.
      */
-    public void build(PortableSchema.Builder builder, int fieldCnt) {
+    public void build(BinarySchema.Builder builder, int fieldCnt) {
         for (int curIdx = idx - fieldCnt * 2; curIdx < idx; curIdx += 2)
             builder.addField(data[curIdx]);
     }
@@ -79,7 +78,7 @@ public class BinaryWriterSchemaHolder {
      * @param compactFooter Whether footer should be written in compact form.
      * @return Amount of bytes dedicated to each field offset. Could be 1, 2 or 4.
      */
-    public int write(PortableOutputStream out, int fieldCnt, boolean compactFooter) {
+    public int write(BinaryOutputStream out, int fieldCnt, boolean compactFooter) {
         int startIdx = idx - fieldCnt * 2;
         assert startIdx >= 0;
 
@@ -95,19 +94,19 @@ public class BinaryWriterSchemaHolder {
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteByte((byte)data[curIdx]);
 
-                res = PortableUtils.OFFSET_1;
+                res = BinaryUtils.OFFSET_1;
             }
             else if (lastOffset < MAX_OFFSET_2) {
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteShort((short) data[curIdx]);
 
-                res = PortableUtils.OFFSET_2;
+                res = BinaryUtils.OFFSET_2;
             }
             else {
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteInt(data[curIdx]);
 
-                res = PortableUtils.OFFSET_4;
+                res = BinaryUtils.OFFSET_4;
             }
         }
         else {
@@ -117,7 +116,7 @@ public class BinaryWriterSchemaHolder {
                     out.unsafeWriteByte((byte) data[curIdx++]);
                 }
 
-                res = PortableUtils.OFFSET_1;
+                res = BinaryUtils.OFFSET_1;
             }
             else if (lastOffset < MAX_OFFSET_2) {
                 for (int curIdx = startIdx; curIdx < idx;) {
@@ -125,7 +124,7 @@ public class BinaryWriterSchemaHolder {
                     out.unsafeWriteShort((short) data[curIdx++]);
                 }
 
-                res = PortableUtils.OFFSET_2;
+                res = BinaryUtils.OFFSET_2;
             }
             else {
                 for (int curIdx = startIdx; curIdx < idx;) {
@@ -133,7 +132,7 @@ public class BinaryWriterSchemaHolder {
                     out.unsafeWriteInt(data[curIdx++]);
                 }
 
-                res = PortableUtils.OFFSET_4;
+                res = BinaryUtils.OFFSET_4;
             }
         }
 

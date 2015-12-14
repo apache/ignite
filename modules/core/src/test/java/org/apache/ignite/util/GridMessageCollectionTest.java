@@ -24,6 +24,9 @@ import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 import static java.util.UUID.randomUUID;
 import static org.apache.ignite.internal.util.GridMessageCollection.of;
@@ -34,6 +37,23 @@ import static org.apache.ignite.internal.util.GridMessageCollection.of;
 public class GridMessageCollectionTest extends TestCase {
     /** */
     private byte proto;
+
+    /**
+     * @param proto Protocol version.
+     * @return Writer.
+     */
+    protected MessageWriter writer(byte proto) {
+        return new DirectMessageWriter(proto);
+    }
+
+    /**
+     * @param msgFactory Message factory.
+     * @param proto Protocol version.
+     * @return Writer.
+     */
+    protected MessageReader reader(MessageFactory msgFactory, byte proto) {
+        return new DirectMessageReader(msgFactory, proto);
+    }
 
     /**
      *
@@ -88,17 +108,19 @@ public class GridMessageCollectionTest extends TestCase {
     private void doTestMarshal(Message m) {
         ByteBuffer buf = ByteBuffer.allocate(8 * 1024);
 
-        DirectMessageWriter w = new DirectMessageWriter(proto);
-
-        m.writeTo(buf, w);
+        m.writeTo(buf, writer(proto));
 
         buf.flip();
 
-        DirectMessageReader r = new DirectMessageReader(new GridIoMessageFactory(null), proto);
+        byte type = buf.get();
 
-        r.setBuffer(buf);
+        assertEquals(m.directType(), type);
 
-        Message mx = r.readMessage(null);
+        GridIoMessageFactory msgFactory = new GridIoMessageFactory(null);
+
+        Message mx = msgFactory.create(type);
+
+        mx.readFrom(buf, reader(msgFactory, proto));
 
         assertEquals(m, mx);
     }

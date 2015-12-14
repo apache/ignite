@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.binary;
 
 /**
- * Field tests for heap-based portables.
+ * Field tests for heap-based binaries.
  */
 public class BinaryFieldsHeapSelfTest extends BinaryFieldsAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected BinaryObjectExImpl toPortable(BinaryMarshaller marsh, Object obj) throws Exception {
+    @Override protected BinaryObjectExImpl toBinary(BinaryMarshaller marsh, Object obj) throws Exception {
         byte[] bytes = marsh.marshal(obj);
 
-        return new BinaryObjectImpl(portableContext(marsh), bytes, 0);
+        return new BinaryObjectImpl(binaryContext(marsh), bytes, 0);
     }
 }

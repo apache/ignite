@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary.noncompact;
 import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
 
 /**
- * Field tests for heap-based portables with non-compact footer.
+ * Field tests for heap-based binaries with non-compact footer.
  */
 public class BinaryFieldsHeapNonCompactSelfTest extends BinaryFieldsHeapSelfTest {
     /** {@inheritDoc} */

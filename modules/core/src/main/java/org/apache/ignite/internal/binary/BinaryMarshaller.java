@@ -36,7 +36,7 @@ import sun.misc.Unsafe;
  */
 public class BinaryMarshaller extends AbstractMarshaller {
     /** */
-    private GridPortableMarshaller impl;
+    private GridBinaryMarshaller impl;
 
     /**
      * Checks whether {@code BinaryMarshaller} is able to work on the current JVM.
@@ -79,15 +79,15 @@ public class BinaryMarshaller extends AbstractMarshaller {
     }
 
     /**
-     * Sets {@link PortableContext}.
+     * Sets {@link BinaryContext}.
      * <p/>
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      */
     @SuppressWarnings("UnusedDeclaration")
-    private void setPortableContext(PortableContext ctx, IgniteConfiguration cfg) {
+    private void setBinaryContext(BinaryContext ctx, IgniteConfiguration cfg) {
         ctx.configure(this, cfg);
 
-        impl = new GridPortableMarshaller(ctx);
+        impl = new GridBinaryMarshaller(ctx);
     }
 
     /** {@inheritDoc} */
@@ -116,7 +116,7 @@ public class BinaryMarshaller extends AbstractMarshaller {
     @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
-        // we have to fully read the InputStream because GridPortableMarshaller requires support of a method that
+        // we have to fully read the InputStream because GridBinaryMarshaller requires support of a method that
         // returns number of bytes remaining.
         try {
             byte[] arr = new byte[4096];

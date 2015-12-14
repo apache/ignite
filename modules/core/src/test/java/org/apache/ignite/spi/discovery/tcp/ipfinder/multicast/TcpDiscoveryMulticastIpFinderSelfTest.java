@@ -84,19 +84,27 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
             ipFinder3.setLocalAddress(locAddr);
 
             ipFinder1.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host1", 1001)));
-            ipFinder2.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host2", 1002)));
-            ipFinder3.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host3", 1003)));
 
             Collection<InetSocketAddress> addrs1 = ipFinder1.getRegisteredAddresses();
+
+            ipFinder2.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host2", 1002)));
+
             Collection<InetSocketAddress> addrs2 = ipFinder2.getRegisteredAddresses();
+
+            ipFinder3.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host3", 1003)));
+
             Collection<InetSocketAddress> addrs3 = ipFinder3.getRegisteredAddresses();
 
             info("Addrs1: " + addrs1);
             info("Addrs2: " + addrs2);
             info("Addrs2: " + addrs3);
 
-            assertEquals(1, ipFinder1.getRegisteredAddresses().size());
-            assertEquals(2, ipFinder2.getRegisteredAddresses().size());
+            assertEquals(1, addrs1.size());
+            assertEquals(2, addrs2.size());
+            assertEquals(3, addrs3.size());
+
+            assertEquals(3, ipFinder1.getRegisteredAddresses().size());
+            assertEquals(3, ipFinder2.getRegisteredAddresses().size());
             assertEquals(3, ipFinder3.getRegisteredAddresses().size());
         }
         finally {
