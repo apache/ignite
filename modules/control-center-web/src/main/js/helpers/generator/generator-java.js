@@ -85,11 +85,13 @@ $generatorJava.declareVariable = function (res, varName, varFullType, varFullAct
     if (varFullActualType && varFullGenericType1) {
         var varActualType = res.importClass(varFullActualType);
         var varGenericType1 = res.importClass(varFullGenericType1);
+        var varGenericType2 = null;
 
         if (varFullGenericType2)
-            var varGenericType2 = res.importClass(varFullGenericType2);
+            varGenericType2 = res.importClass(varFullGenericType2);
 
-        res.line((varNew ? (varType + '<' + varGenericType1 + (varGenericType2 ? ', ' + varGenericType2 : '') + '> ') : '') + varName + ' = new ' + varActualType + '<>();');
+        res.line((varNew ? (varType + '<' + varGenericType1 + (varGenericType2 ? ', ' + varGenericType2 : '') + '> ') : '') +
+            varName + ' = new ' + varActualType + '<>();');
     }
     else
         res.line((varNew ? (varType + ' ') : '') + varName + ' = new ' + varType + '();');
