@@ -322,7 +322,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public <K1, V1> IgniteCache<K1, V1> withKeepBinary() {
-        return keepPortable();
+        return keepBinary();
     }
 
     /** {@inheritDoc} */
@@ -455,13 +455,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         final CacheQuery<Map.Entry<K,V>> qry;
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
-        boolean isKeepPortable = opCtx != null && opCtx.isKeepBinary();
+        boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
 
         if (filter instanceof ScanQuery) {
             IgniteBiPredicate<K, V> p = ((ScanQuery)filter).getFilter();
 
             qry = ctx.queries().createScanQuery(p != null ? p : ACCEPT_ALL, ((ScanQuery)filter).getPartition(),
-                isKeepPortable);
+                isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
@@ -476,7 +476,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         else if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
 
-            qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), isKeepPortable);
+            qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
@@ -489,7 +489,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 }, false);
         }
         else if (filter instanceof SpiQuery) {
-            qry = ctx.queries().createSpiQuery(isKeepPortable);
+            qry = ctx.queries().createSpiQuery(isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
@@ -1718,30 +1718,30 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * Creates projection that will operate with portable objects. <p> Projection returned by this method will force
-     * cache not to deserialize portable objects, so keys and values will be returned from cache API methods without
-     * changes. Therefore, signature of the projection can contain only following types: <ul> <li>{@code PortableObject}
-     * for portable classes</li> <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+     * Creates projection that will operate with binary objects. <p> Projection returned by this method will force
+     * cache not to deserialize binary objects, so keys and values will be returned from cache API methods without
+     * changes. Therefore, signature of the projection can contain only following types: <ul> <li>{@code BinaryObject}
+     * for binary classes</li> <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
      * <li>Arrays of primitives (byte[], int[], ...)</li> <li>{@link String} and array of {@link String}s</li>
      * <li>{@link UUID} and array of {@link UUID}s</li> <li>{@link Date} and array of {@link Date}s</li> <li>{@link
      * java.sql.Timestamp} and array of {@link java.sql.Timestamp}s</li> <li>Enums and array of enums</li> <li> Maps,
-     * collections and array of objects (but objects inside them will still be converted if they are portable) </li>
+     * collections and array of objects (but objects inside them will still be converted if they are binary) </li>
      * </ul> <p> For example, if you use {@link Integer} as a key and {@code Value} class as a value (which will be
-     * stored in portable format), you should acquire following projection to avoid deserialization:
+     * stored in binary format), you should acquire following projection to avoid deserialization:
      * <pre>
-     * IgniteInternalCache<Integer, GridPortableObject> prj = cache.keepBinary();
+     * IgniteInternalCache<Integer, GridBinaryObject> prj = cache.keepBinary();
      *
-     * // Value is not deserialized and returned in portable format.
-     * GridPortableObject po = prj.get(1);
+     * // Value is not deserialized and returned in binary format.
+     * GridBinaryObject po = prj.get(1);
      * </pre>
-     * <p> Note that this method makes sense only if cache is working in portable mode ({@code
-     * CacheConfiguration#isPortableEnabled()} returns {@code true}. If not, this method is no-op and will return
+     * <p> Note that this method makes sense only if cache is working in binary mode ({@code
+     * CacheConfiguration#isBinaryEnabled()} returns {@code true}. If not, this method is no-op and will return
      * current projection.
      *
-     * @return Projection for portable objects.
+     * @return Projection for binary objects.
      */
     @SuppressWarnings("unchecked")
-    public <K1, V1> IgniteCache<K1, V1> keepPortable() {
+    public <K1, V1> IgniteCache<K1, V1> keepBinary() {
         GridCacheGateway<K, V> gate = this.gate;
 
         CacheOperationContext prev = onEnter(gate, opCtx);

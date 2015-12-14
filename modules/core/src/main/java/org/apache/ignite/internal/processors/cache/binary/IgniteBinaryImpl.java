@@ -64,7 +64,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
         guard();
 
         try {
-            return (T)proc.marshalToPortable(obj);
+            return (T)proc.marshalToBinary(obj);
         }
         finally {
             unguard();
@@ -84,11 +84,11 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectBuilder builder(BinaryObject portableObj) {
+    @Override public BinaryObjectBuilder builder(BinaryObject binaryObj) {
         guard();
 
         try {
-            return proc.builder(portableObj);
+            return proc.builder(binaryObj);
         }
         finally {
             unguard();
@@ -156,7 +156,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /**
-     * @return Portable processor.
+     * @return Binary processor.
      */
     public IgniteCacheObjectProcessor processor() {
         return proc;

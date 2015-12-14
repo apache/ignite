@@ -41,7 +41,7 @@ public class GridBinaryCacheEntryMemorySizeSelfTest extends GridCacheEntryMemory
 
         BinaryContext pCtx = new BinaryContext(BinaryNoopMetadataHandler.instance(), iCfg);
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", pCtx, iCfg);
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", pCtx, iCfg);
 
         return marsh;
     }

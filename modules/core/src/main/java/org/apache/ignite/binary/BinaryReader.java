@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Reader for portable objects used in {@link Binarylizable} implementations.
+ * Reader for binary objects used in {@link Binarylizable} implementations.
  * Useful for the cases when user wants a fine-grained control over serialization.
  * <p>
  * Note that Ignite never writes full strings for field or type names. Instead,

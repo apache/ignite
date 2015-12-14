@@ -43,7 +43,7 @@ import org.jsr166.LongAdder8;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
- * Test for portable objects stored in cache.
+ * Test for binary objects stored in cache.
  */
 public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends GridCommonAbstractTest {
     /** */

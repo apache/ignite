@@ -24,11 +24,11 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Portable objects marshaller.
+ * Binary objects marshaller.
  */
 public class GridBinaryMarshaller {
     /** */
-    public static final ThreadLocal<Boolean> KEEP_PORTABLES = new ThreadLocal<Boolean>() {
+    public static final ThreadLocal<Boolean> KEEP_BINARIES = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
             return true;
         }
@@ -119,7 +119,7 @@ public class GridBinaryMarshaller {
     public static final byte MAP = 25;
 
     /** */
-    public static final byte PORTABLE_OBJ = 27;
+    public static final byte BINARY_OBJ = 27;
 
     /** */
     public static final byte ENUM = 28;
@@ -230,7 +230,7 @@ public class GridBinaryMarshaller {
 
     /**
      * @param bytes Bytes array.
-     * @return Portable object.
+     * @return Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
@@ -242,7 +242,7 @@ public class GridBinaryMarshaller {
 
     /**
      * @param in Input stream.
-     * @return Portable object.
+     * @return Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")

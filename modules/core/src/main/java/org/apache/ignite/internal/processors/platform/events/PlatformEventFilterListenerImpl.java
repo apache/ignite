@@ -79,7 +79,7 @@ public class PlatformEventFilterListenerImpl implements PlatformEventFilterListe
     /**
      * Constructor.
      *
-     * @param pred .Net portable predicate.
+     * @param pred .Net binary predicate.
      */
     public PlatformEventFilterListenerImpl(Object pred, final int... types) {
         assert pred != null;

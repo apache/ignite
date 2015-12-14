@@ -88,7 +88,7 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(MemcacheRestExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(MonteCarloExamplesMultiNodeSelfTest.class));
 
-        // Portable.
+        // Binary.
         suite.addTest(new TestSuite(CacheClientBinaryExampleTest.class));
         suite.addTest(new TestSuite(ComputeClientBinaryExampleTest.class));
 

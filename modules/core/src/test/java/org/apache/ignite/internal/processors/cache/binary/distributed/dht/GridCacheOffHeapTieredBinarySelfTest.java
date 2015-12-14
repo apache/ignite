@@ -28,7 +28,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
  */
 public class GridCacheOffHeapTieredBinarySelfTest extends GridCacheOffHeapTieredSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean portableEnabled() {
+    @Override protected boolean binaryEnabled() {
         return true;
     }
 

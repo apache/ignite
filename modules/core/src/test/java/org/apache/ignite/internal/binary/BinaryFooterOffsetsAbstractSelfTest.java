@@ -39,7 +39,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     /** Marshaller. */
     protected BinaryMarshaller marsh;
 
-    /** Portable context. */
+    /** Binary context. */
     protected BinaryContext ctx;
 
     /** {@inheritDoc} */
@@ -62,7 +62,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, iCfg);
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
     }
 
     /**
@@ -127,9 +127,9 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     private void check(int len) throws Exception {
         TestObject obj = new TestObject(len);
 
-        BinaryObjectExImpl portObj = toPortable(marsh, obj);
+        BinaryObjectExImpl portObj = toBinary(marsh, obj);
 
-        // 1. Test portable object content.
+        // 1. Test binary object content.
         assert portObj.hasField("field1");
         assert portObj.hasField("field2");
 
@@ -162,14 +162,14 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     }
 
     /**
-     * Convert object to portable object.
+     * Convert object to binary object.
      *
      * @param marsh Marshaller.
      * @param obj Object.
-     * @return Portable object.
+     * @return Binary object.
      * @throws Exception If failed.
      */
-    protected abstract BinaryObjectExImpl toPortable(BinaryMarshaller marsh, Object obj) throws Exception;
+    protected abstract BinaryObjectExImpl toBinary(BinaryMarshaller marsh, Object obj) throws Exception;
 
     /**
      * Test object.

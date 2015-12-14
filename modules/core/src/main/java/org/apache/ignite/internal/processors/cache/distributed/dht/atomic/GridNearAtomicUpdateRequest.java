@@ -151,7 +151,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /** */
     private boolean clientReq;
 
-    /** Keep portable flag. */
+    /** Keep binary flag. */
     private boolean keepBinary;
 
     /**
@@ -341,7 +341,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     }
 
     /**
-     * @return Keep portable flag.
+     * @return Keep binary flag.
      */
     public boolean keepBinary() {
         return keepBinary;

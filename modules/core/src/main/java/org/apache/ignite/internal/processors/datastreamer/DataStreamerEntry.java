@@ -85,7 +85,7 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
     public <K, V> Map.Entry<K, V> toEntry(final GridCacheContext ctx, final boolean keepBinary) {
         return new Map.Entry<K, V>() {
             @Override public K getKey() {
-                return (K)ctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepBinary, false);
+                return (K)ctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
             }
 
             @Override public V setValue(V val) {
@@ -93,7 +93,7 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
             }
 
             @Override public V getValue() {
-                return (V)ctx.cacheObjectContext().unwrapPortableIfNeeded(val, keepBinary, false);
+                return (V)ctx.cacheObjectContext().unwrapBinaryIfNeeded(val, keepBinary, false);
             }
         };
     }

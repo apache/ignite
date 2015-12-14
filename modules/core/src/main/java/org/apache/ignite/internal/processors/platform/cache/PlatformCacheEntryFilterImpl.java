@@ -43,7 +43,7 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
     /**
      * Constructor.
      *
-     * @param pred .Net portable predicate.
+     * @param pred .Net binary predicate.
      * @param ptr Pointer to predicate in the native platform.
      * @param ctx Kernal context.
      */

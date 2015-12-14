@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary.noncompact;
 import org.apache.ignite.internal.binary.BinaryFieldsOffheapSelfTest;
 
 /**
- * Field tests for offheap-based portables with non-compact footer.
+ * Field tests for offheap-based binaries with non-compact footer.
  */
 public class BinaryFieldsOffheapNonCompactSelfTest extends BinaryFieldsOffheapSelfTest {
     /** {@inheritDoc} */

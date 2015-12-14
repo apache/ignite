@@ -44,7 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- * Test for portable object affinity key.
+ * Test for binary object affinity key.
  */
 public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
     /** */

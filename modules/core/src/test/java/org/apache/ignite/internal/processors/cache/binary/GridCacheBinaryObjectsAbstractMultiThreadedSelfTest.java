@@ -49,7 +49,7 @@ import org.jsr166.LongAdder8;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
- * Test for portable objects stored in cache.
+ * Test for binary objects stored in cache.
  */
 public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** */
@@ -146,11 +146,11 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
 
                         switch (threadId) {
                             case 0:
-                                // Put/get/remove portable -> portable.
+                                // Put/get/remove binary -> binary.
 
                                 c.put(new TestObject(rnd.nextInt(10000)), new TestObject(rnd.nextInt(10000)));
 
-                                IgniteCache<Object, Object> p2 = ((IgniteCacheProxy<Object, Object>)c).keepPortable();
+                                IgniteCache<Object, Object> p2 = ((IgniteCacheProxy<Object, Object>)c).keepBinary();
 
                                 BinaryObject v = (BinaryObject)p2.get(new TestObject(rnd.nextInt(10000)));
 
@@ -162,10 +162,10 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
                                 break;
 
                             case 1:
-                                // Put/get int -> portable.
+                                // Put/get int -> binary.
                                 c.put(rnd.nextInt(10000), new TestObject(rnd.nextInt(10000)));
 
-                                IgniteCache<Integer, BinaryObject> p4 = ((IgniteCacheProxy<Object, Object>)c).keepPortable();
+                                IgniteCache<Integer, BinaryObject> p4 = ((IgniteCacheProxy<Object, Object>)c).keepBinary();
 
                                 BinaryObject v1 = p4.get(rnd.nextInt(10000));
 

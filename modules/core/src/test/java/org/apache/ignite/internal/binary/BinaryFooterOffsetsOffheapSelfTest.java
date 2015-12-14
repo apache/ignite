@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 import sun.misc.Unsafe;
 
 /**
- * Compact offsets tests for offheap portable objects.
+ * Compact offsets tests for offheap binary objects.
  */
 public class BinaryFooterOffsetsOffheapSelfTest extends BinaryFooterOffsetsAbstractSelfTest {
     /** Unsafe instance. */
@@ -46,7 +46,7 @@ public class BinaryFooterOffsetsOffheapSelfTest extends BinaryFooterOffsetsAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected BinaryObjectExImpl toPortable(BinaryMarshaller marsh, Object obj) throws Exception {
+    @Override protected BinaryObjectExImpl toBinary(BinaryMarshaller marsh, Object obj) throws Exception {
         byte[] arr = marsh.marshal(obj);
 
         long ptr = UNSAFE.allocateMemory(arr.length);

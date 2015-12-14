@@ -284,7 +284,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
         GridCacheContext cctx = cache0.context();
 
-        boolean binary = cctx.cacheObjects().isPortableEnabled(null);
+        boolean binary = cctx.cacheObjects().isBinaryEnabled(null);
 
         for (Map.Entry<TestKey, TestValue> e : map.entrySet()) {
             GridCacheEntryEx entry = cache0.peekEx(e.getKey());
@@ -335,7 +335,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
         GridCacheContext cctx = cache0.context();
 
-        boolean binary = cctx.cacheObjects().isPortableEnabled(null);
+        boolean binary = cctx.cacheObjects().isBinaryEnabled(null);
 
         for (Map.Entry<TestKey, byte[]> e : map.entrySet()) {
             GridCacheEntryEx entry = cache0.peekEx(e.getKey());

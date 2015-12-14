@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Schema describing portable object content. We rely on the following assumptions:
+ * Schema describing binary object content. We rely on the following assumptions:
  * - When amount of fields in the object is low, it is better to inline these values into int fields thus allowing
  * for quick comparisons performed within already fetched L1 cache line.
  * - When there are more fields, we store them inside a hash map.

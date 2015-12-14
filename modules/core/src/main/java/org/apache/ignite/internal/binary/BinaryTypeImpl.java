@@ -25,7 +25,7 @@ import java.util.Collection;
  * Binary type implementation.
  */
 public class BinaryTypeImpl implements BinaryType {
-    /** Portable context. */
+    /** Binary context. */
     private final BinaryContext ctx;
 
     /** Type metadata. */
@@ -34,7 +34,7 @@ public class BinaryTypeImpl implements BinaryType {
     /**
      * Constructor.
      *
-     * @param ctx Portable context.
+     * @param ctx Binary context.
      * @param meta Type  metadata.
      */
     public BinaryTypeImpl(BinaryContext ctx, BinaryMetadata meta) {

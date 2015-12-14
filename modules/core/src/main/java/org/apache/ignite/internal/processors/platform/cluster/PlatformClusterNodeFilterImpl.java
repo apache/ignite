@@ -44,7 +44,7 @@ public class PlatformClusterNodeFilterImpl extends PlatformAbstractPredicate imp
     /**
      * Constructor.
      *
-     * @param pred .Net portable predicate.
+     * @param pred .Net binary predicate.
      * @param ctx Kernal context.
      */
     public PlatformClusterNodeFilterImpl(Object pred, PlatformContext ctx) {

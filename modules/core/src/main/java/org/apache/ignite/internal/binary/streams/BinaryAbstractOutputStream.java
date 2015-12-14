@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.binary.streams;
 
 /**
- * Base portable output stream.
+ * Base binary output stream.
  */
 public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     implements BinaryOutputStream {
