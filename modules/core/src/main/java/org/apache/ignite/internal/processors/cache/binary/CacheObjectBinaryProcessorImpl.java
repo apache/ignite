@@ -457,10 +457,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public String affinityField(String keyType) {
-        if (portableCtx == null)
+        if (binaryCtx == null)
             return null;
 
-        return portableCtx.affinityKeyFieldName(typeId(keyType));
+        return binaryCtx.affinityKeyFieldName(typeId(keyType));
     }
 
     /** {@inheritDoc} */
