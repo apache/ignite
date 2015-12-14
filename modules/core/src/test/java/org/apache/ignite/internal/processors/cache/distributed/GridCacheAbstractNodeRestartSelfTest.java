@@ -88,6 +88,9 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     private static final int DFLT_RETRIES = 10;
 
     /** */
+    private static final int LOG_FREQ = 1000;
+
+    /** */
     private static final Random RAND = new Random();
 
     /** */
@@ -631,8 +634,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         Collection<Thread> threads = new LinkedList<>();
 
         try {
-            final int logFreq = 20;
-
             final AtomicInteger putCntr = new AtomicInteger();
 
             final CyclicBarrier barrier = new CyclicBarrier(putThreads + restartThreads);
@@ -665,7 +666,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                 int c = putCntr.incrementAndGet();
 
-                                if (c % logFreq == 0)
+                                if (c % LOG_FREQ == 0)
                                     info(">>> Put iteration [cnt=" + c + ", key=" + key + ']');
                             }
                         }
@@ -705,7 +706,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                 int c = ++cnt;
 
-                                if (c % logFreq == 0)
+                                if (c % LOG_FREQ == 0)
                                     info(">>> Restart iteration: " + c);
                             }
                         }
@@ -756,8 +757,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         Collection<Thread> threads = new LinkedList<>();
 
         try {
-            final int logFreq = 20;
-
             final AtomicInteger txCntr = new AtomicInteger();
 
             final CyclicBarrier barrier = new CyclicBarrier(putThreads + restartThreads);
@@ -799,7 +798,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                     try (Transaction tx = txs.txStart(txConcurrency(), REPEATABLE_READ)) {
                                         c = txCntr.incrementAndGet();
 
-                                        if (c % logFreq == 0) {
+                                        if (c % LOG_FREQ == 0) {
                                             info(">>> Tx iteration started [cnt=" + c +
                                                 ", keys=" + keys +
                                                 ", locNodeId=" + locNodeId + ']');
@@ -823,7 +822,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                     // It is ok if primary node leaves grid.
                                 }
 
-                                if (c % logFreq == 0) {
+                                if (c % LOG_FREQ == 0) {
                                     info(">>> Tx iteration finished [cnt=" + c +
                                         ", cacheSize=" + cache.localSize() +
                                         ", keys=" + keys +
@@ -864,7 +863,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                 int c = ++cnt;
 
-                                if (c % logFreq == 0)
+                                if (c % LOG_FREQ == 0)
                                     info(">>> Restart iteration: " + c);
                             }
 
@@ -913,8 +912,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         Collection<Thread> threads = new LinkedList<>();
 
         try {
-            final int logFreq = 20;
-
             final AtomicInteger txCntr = new AtomicInteger();
 
             final CyclicBarrier barrier = new CyclicBarrier(putThreads + restartThreads);
@@ -955,7 +952,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     c = txCntr.incrementAndGet();
 
-                                    if (c % logFreq == 0)
+                                    if (c % LOG_FREQ == 0)
                                         info(">>> Tx iteration started [cnt=" + c + ", keys=" + keys + ", " +
                                             "locNodeId=" + locNodeId + ']');
 
@@ -972,7 +969,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                     // It is ok if primary node leaves grid.
                                 }
 
-                                if (c % logFreq == 0) {
+                                if (c % LOG_FREQ == 0) {
                                     info(">>> Tx iteration finished [cnt=" + c +
                                         ", keys=" + keys + ", " +
                                         "locNodeId=" + locNodeId + ']');
@@ -1010,7 +1007,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                 int c = ++cnt;
 
-                                if (c % logFreq == 0)
+                                if (c % LOG_FREQ == 0)
                                     info(">>> Restart iteration: " + c);
                             }
                         }

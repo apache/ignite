@@ -95,6 +95,6 @@ public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest
      * @return Features list.
      */
     @Override protected List<String> featuresToInstall() {
-        return Arrays.asList("ignite-all");
+        return Arrays.asList("ignite-all", "ignite-hibernate");
     }
 }

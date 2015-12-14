@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -222,14 +222,22 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
     public void testDeployment4() throws Exception {
+        doDeployment4(false);
+    }
+
+    /** @throws Exception If failed. */
+    @SuppressWarnings("unchecked")
+    public void testDeployment4BackupLeavesGrid() throws Exception {
+        doDeployment4(true);
+    }
+
+    /** @throws Exception If failed. */
+    @SuppressWarnings("unchecked")
+    private void doDeployment4(boolean backupLeavesGrid) throws Exception {
         try {
             depMode = CONTINUOUS;
 
             Ignite g1 = startGrid(1);
-
-            if (g1.configuration().getMarshaller() instanceof BinaryMarshaller)
-                fail("https://issues.apache.org/jira/browse/IGNITE-2106");
-
             Ignite g2 = startGrid(2);
 
             Ignite g0 = startGrid(GRID_NAME);
@@ -248,7 +256,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()) &&
+                    g1.affinity(null).isBackup((backupLeavesGrid ? g0 : g1).cluster().localNode(), key))
                     break;
             }
 
