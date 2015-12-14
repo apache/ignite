@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -120,6 +121,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     private final boolean keepCacheObjects;
 
     /** */
+    @GridToStringInclude
     private ClusterNode node;
 
     /**
