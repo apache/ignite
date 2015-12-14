@@ -3233,7 +3233,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         boolean wait = waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return cache.localPeek(key, ONHEAP) == null;
+                return cache.localPeek(key) == null;
             }
         }, ttl + 1000);
 
@@ -3814,12 +3814,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return cache.localPeek(key, ONHEAP) == null;
+                return cache.localPeek(key) == null;
             }
         }, ttl + 1000);
 
         // Peek will actually remove entry from cache.
-        assertNull(cache.localPeek(key, ONHEAP));
+        assertNull(cache.localPeek(key));
 
         assert cache.localSize() == 0;
 
