@@ -381,6 +381,8 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     private void checkUnlocked(final Integer key) throws Exception {
         idxSpi.forceFail(false);
 
+        awaitPartitionMapExchange();
+
         info("Check key: " + key);
 
         for (int i = 0; i < gridCount(); i++) {
