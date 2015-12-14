@@ -311,10 +311,15 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      *
      * @param key Key.
      * @param rmv {@code True} if entry was removed.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
-    public void onEntryUpdated(KeyCacheObject key, boolean rmv, boolean keepPortable) {
-        Object key0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepPortable, false);
+    public void onEntryUpdated(KeyCacheObject key, boolean rmv, boolean keepBinary) {
+        // No need to notify data structures manager for a user cache since all DS objects are stored
+        // in system caches.
+        if (cctx.userCache())
+            return;
+
+        Object key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
 
         if (key0 instanceof SetItemKey)
             onSetItemUpdated((SetItemKey)key0, rmv);

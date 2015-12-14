@@ -519,13 +519,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * @param o Object.
-     * @return {@code true} If it is a portable object.
+     * @return {@code true} If it is a binary object.
      */
-    private boolean isPortable(CacheObject o) {
+    private boolean isBinary(CacheObject o) {
         if (ctx == null)
             return false;
 
-        return ctx.cacheObjects().isPortableObject(o);
+        return ctx.cacheObjects().isBinaryObject(o);
     }
 
     /**
@@ -534,7 +534,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Object class.
      */
     private Class<?> getClass(CacheObjectContext coctx, CacheObject o) {
-        return isPortable(o) ?
+        return isBinary(o) ?
             Object.class :
             o.value(coctx, false).getClass();
     }
@@ -1045,7 +1045,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         twoStepQry.pageSize(qry.getPageSize());
 
-        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(queryTwoStep(cctx, twoStepQry, cctx.keepPortable()));
+        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(queryTwoStep(cctx, twoStepQry, cctx.keepBinary()));
 
         cursor.fieldsMeta(meta);
 

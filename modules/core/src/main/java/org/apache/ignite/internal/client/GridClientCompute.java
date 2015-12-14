@@ -416,5 +416,5 @@ public interface GridClientCompute {
     /**
      * Sets keep binary flag for the next task execution in the current thread.
      */
-    public GridClientCompute withKeepPortables();
+    public GridClientCompute withKeepBinaries();
 }

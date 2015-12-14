@@ -22,9 +22,8 @@ import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.streams.PortableOutputStream;
-import org.apache.ignite.internal.binary.streams.PortableHeapOutputStream;
-import org.apache.ignite.internal.binary.streams.PortableOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,48 +39,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.BOOLEAN;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.BOOLEAN_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.BYTE;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.BYTE_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.CHAR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.CHAR_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.CLASS;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.COL;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.DATE;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.DATE_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.DECIMAL;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.DECIMAL_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.DFLT_HDR_LEN;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.DOUBLE;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.DOUBLE_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.ENUM;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.ENUM_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.FLOAT;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.FLOAT_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.INT;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.INT_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.LONG;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.LONG_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.MAP;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.NULL;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.OBJ;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.OBJ_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.OPTM_MARSH;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.PORTABLE_OBJ;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.PROTO_VER;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.SHORT;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.SHORT_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.STRING;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.STRING_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.TIMESTAMP;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.TIMESTAMP_ARR;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.UUID;
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.UUID_ARR;
 
 /**
- * Portable writer implementation.
+ * Binary writer implementation.
  */
 public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, ObjectOutput {
     /** Length: integer. */
@@ -91,10 +51,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     private static final int INIT_CAP = 1024;
 
     /** */
-    private final PortableContext ctx;
+    private final BinaryContext ctx;
 
     /** Output stream. */
-    private final PortableOutputStream out;
+    private final BinaryOutputStream out;
 
     /** Schema. */
     private final BinaryWriterSchemaHolder schema;
@@ -112,7 +72,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     private BinaryWriterHandles handles;
 
     /** Schema ID. */
-    private int schemaId = PortableUtils.schemaInitialId();
+    private int schemaId = BinaryUtils.schemaInitialId();
 
     /** Amount of written fields. */
     private int fieldCnt;
@@ -123,7 +83,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param ctx Context.
      */
-    public BinaryWriterExImpl(PortableContext ctx) {
+    public BinaryWriterExImpl(BinaryContext ctx) {
         this(ctx, BinaryThreadLocalContext.get());
     }
 
@@ -131,8 +91,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param ctx Context.
      * @param tlsCtx TLS context.
      */
-    public BinaryWriterExImpl(PortableContext ctx, BinaryThreadLocalContext tlsCtx) {
-        this(ctx, new PortableHeapOutputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryThreadLocalContext tlsCtx) {
+        this(ctx, new BinaryHeapOutputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
     }
 
     /**
@@ -140,7 +100,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param out Output stream.
      * @param handles Handles.
      */
-    public BinaryWriterExImpl(PortableContext ctx, PortableOutputStream out, BinaryWriterSchemaHolder schema,
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema,
         BinaryWriterHandles handles) {
         this.ctx = ctx;
         this.out = out;
@@ -182,19 +142,19 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         Class<?> cls = obj.getClass();
 
-        PortableClassDescriptor desc = ctx.descriptorForClass(cls, false);
+        BinaryClassDescriptor desc = ctx.descriptorForClass(cls, false);
 
         if (desc == null)
-            throw new BinaryObjectException("Object is not portable: [class=" + cls + ']');
+            throw new BinaryObjectException("Object is not binary: [class=" + cls + ']');
 
         if (desc.excluded()) {
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
 
             return;
         }
 
         if (desc.useOptimizedMarshaller()) {
-            out.writeByte(GridPortableMarshaller.OPTM_MARSH);
+            out.writeByte(GridBinaryMarshaller.OPTM_MARSH);
 
             try {
                 byte[] arr = ctx.optimizedMarsh().marshal(obj);
@@ -227,7 +187,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             }
 
             if (replacedObj == null) {
-                out.writeByte(GridPortableMarshaller.NULL);
+                out.writeByte(GridBinaryMarshaller.NULL);
 
                 return;
             }
@@ -269,7 +229,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param clsName Class name (optional).
      */
     public void preWrite(@Nullable String clsName) {
-        out.position(out.position() + GridPortableMarshaller.DFLT_HDR_LEN);
+        out.position(out.position() + GridBinaryMarshaller.DFLT_HDR_LEN);
 
         if (clsName != null)
             doWriteString(clsName);
@@ -288,11 +248,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         if (userType) {
             if (ctx.isCompactFooter()) {
-                flags = PortableUtils.FLAG_USR_TYP | PortableUtils.FLAG_COMPACT_FOOTER;
+                flags = BinaryUtils.FLAG_USR_TYP | BinaryUtils.FLAG_COMPACT_FOOTER;
                 useCompactFooter = true;
             }
             else {
-                flags = PortableUtils.FLAG_USR_TYP;
+                flags = BinaryUtils.FLAG_USR_TYP;
                 useCompactFooter = false;
             }
         }
@@ -309,18 +269,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             offset = out.position() - start;
 
             // Write the schema.
-            flags |= PortableUtils.FLAG_HAS_SCHEMA;
+            flags |= BinaryUtils.FLAG_HAS_SCHEMA;
 
             int offsetByteCnt = schema.write(out, fieldCnt, useCompactFooter);
 
-            if (offsetByteCnt == PortableUtils.OFFSET_1)
-                flags |= PortableUtils.FLAG_OFFSET_ONE_BYTE;
-            else if (offsetByteCnt == PortableUtils.OFFSET_2)
-                flags |= PortableUtils.FLAG_OFFSET_TWO_BYTES;
+            if (offsetByteCnt == BinaryUtils.OFFSET_1)
+                flags |= BinaryUtils.FLAG_OFFSET_ONE_BYTE;
+            else if (offsetByteCnt == BinaryUtils.OFFSET_2)
+                flags |= BinaryUtils.FLAG_OFFSET_TWO_BYTES;
 
             // Write raw offset if needed.
             if (rawOffPos != 0) {
-                flags |= PortableUtils.FLAG_HAS_RAW;
+                flags |= BinaryUtils.FLAG_HAS_RAW;
 
                 out.writeInt(rawOffPos - start);
             }
@@ -331,7 +291,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 offset = rawOffPos - start;
 
                 // If there is no schema, we are free to write raw offset to schema offset.
-                flags |= PortableUtils.FLAG_HAS_RAW;
+                flags |= BinaryUtils.FLAG_HAS_RAW;
             }
             else {
                 finalSchemaId = 0;
@@ -344,10 +304,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         out.unsafePosition(start);
 
-        out.unsafeWriteByte(GridPortableMarshaller.OBJ);
-        out.unsafeWriteByte(GridPortableMarshaller.PROTO_VER);
+        out.unsafeWriteByte(GridBinaryMarshaller.OBJ);
+        out.unsafeWriteByte(GridBinaryMarshaller.PROTO_VER);
         out.unsafeWriteShort(flags);
-        out.unsafeWriteInt(registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID);
+        out.unsafeWriteInt(registered ? typeId : GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
         out.unsafeWriteInt(hashCode);
         out.unsafeWriteInt(retPos - start);
         out.unsafeWriteInt(finalSchemaId);
@@ -389,11 +349,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     public void doWriteDecimal(@Nullable BigDecimal val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4 + 4);
 
-            out.unsafeWriteByte(GridPortableMarshaller.DECIMAL);
+            out.unsafeWriteByte(GridBinaryMarshaller.DECIMAL);
 
             BigInteger intVal = val.unscaledValue();
 
@@ -417,12 +377,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     public void doWriteString(@Nullable String val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             byte[] strArr = val.getBytes(UTF_8);
 
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.STRING);
+            out.unsafeWriteByte(GridBinaryMarshaller.STRING);
             out.unsafeWriteInt(strArr.length);
 
             out.writeByteArray(strArr);
@@ -434,10 +394,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     public void doWriteUuid(@Nullable UUID uuid) {
         if (uuid == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 8 + 8);
-            out.unsafeWriteByte(GridPortableMarshaller.UUID);
+            out.unsafeWriteByte(GridBinaryMarshaller.UUID);
             out.unsafeWriteLong(uuid.getMostSignificantBits());
             out.unsafeWriteLong(uuid.getLeastSignificantBits());
         }
@@ -448,10 +408,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     public void doWriteDate(@Nullable Date date) {
         if (date == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 8);
-            out.unsafeWriteByte(GridPortableMarshaller.DATE);
+            out.unsafeWriteByte(GridBinaryMarshaller.DATE);
             out.unsafeWriteLong(date.getTime());
         }
     }
@@ -461,10 +421,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     public void doWriteTimestamp(@Nullable Timestamp ts) {
         if (ts== null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 8 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.TIMESTAMP);
+            out.unsafeWriteByte(GridBinaryMarshaller.TIMESTAMP);
             out.unsafeWriteLong(ts.getTime());
             out.unsafeWriteInt(ts.getNanos() % 1000000);
         }
@@ -478,7 +438,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     public void doWriteObject(@Nullable Object obj) throws BinaryObjectException {
         if (obj == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, out, schema, handles());
 
@@ -491,10 +451,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteByteArray(@Nullable byte[] val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.BYTE_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.BYTE_ARR);
             out.unsafeWriteInt(val.length);
 
             out.writeByteArray(val);
@@ -506,10 +466,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteShortArray(@Nullable short[] val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.SHORT_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.SHORT_ARR);
             out.unsafeWriteInt(val.length);
 
             out.writeShortArray(val);
@@ -521,10 +481,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteIntArray(@Nullable int[] val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.INT_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.INT_ARR);
             out.unsafeWriteInt(val.length);
 
             out.writeIntArray(val);
@@ -536,10 +496,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteLongArray(@Nullable long[] val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.LONG_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.LONG_ARR);
             out.unsafeWriteInt(val.length);
 
             out.writeLongArray(val);
@@ -551,10 +511,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteFloatArray(@Nullable float[] val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.FLOAT_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.FLOAT_ARR);
             out.unsafeWriteInt(val.length);
 
             out.writeFloatArray(val);
@@ -566,10 +526,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteDoubleArray(@Nullable double[] val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.DOUBLE_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.DOUBLE_ARR);
             out.unsafeWriteInt(val.length);
 
             out.writeDoubleArray(val);
@@ -581,10 +541,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteCharArray(@Nullable char[] val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.CHAR_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.CHAR_ARR);
             out.unsafeWriteInt(val.length);
 
             out.writeCharArray(val);
@@ -596,10 +556,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteBooleanArray(@Nullable boolean[] val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.BOOLEAN_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.BOOLEAN_ARR);
             out.unsafeWriteInt(val.length);
 
             out.writeBooleanArray(val);
@@ -611,10 +571,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteDecimalArray(@Nullable BigDecimal[] val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.DECIMAL_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.DECIMAL_ARR);
             out.unsafeWriteInt(val.length);
 
             for (BigDecimal str : val)
@@ -627,10 +587,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteStringArray(@Nullable String[] val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.STRING_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.STRING_ARR);
             out.unsafeWriteInt(val.length);
 
             for (String str : val)
@@ -643,10 +603,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteUuidArray(@Nullable UUID[] val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.UUID_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.UUID_ARR);
             out.unsafeWriteInt(val.length);
 
             for (UUID uuid : val)
@@ -659,10 +619,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteDateArray(@Nullable Date[] val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.DATE_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.DATE_ARR);
             out.unsafeWriteInt(val.length);
 
             for (Date date : val)
@@ -675,10 +635,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
       */
      void doWriteTimestampArray(@Nullable Timestamp[] val) {
          if (val == null)
-             out.writeByte(GridPortableMarshaller.NULL);
+             out.writeByte(GridBinaryMarshaller.NULL);
          else {
              out.unsafeEnsure(1 + 4);
-             out.unsafeWriteByte(GridPortableMarshaller.TIMESTAMP_ARR);
+             out.unsafeWriteByte(GridBinaryMarshaller.TIMESTAMP_ARR);
              out.unsafeWriteInt(val.length);
 
              for (Timestamp ts : val)
@@ -692,20 +652,20 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteObjectArray(@Nullable Object[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             if (tryWriteAsHandle(val))
                 return;
 
-            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType(), false);
+            BinaryClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType(), false);
 
             out.unsafeEnsure(1 + 4);
-            out.unsafeWriteByte(GridPortableMarshaller.OBJ_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.OBJ_ARR);
 
             if (desc.registered())
                 out.unsafeWriteInt(desc.typeId());
             else {
-                out.unsafeWriteInt(GridPortableMarshaller.UNREGISTERED_TYPE_ID);
+                out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
 
                 doWriteString(val.getClass().getComponentType().getName());
             }
@@ -723,13 +683,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteCollection(@Nullable Collection<?> col) throws BinaryObjectException {
         if (col == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             if (tryWriteAsHandle(col))
                 return;
 
             out.unsafeEnsure(1 + 4 + 1);
-            out.unsafeWriteByte(GridPortableMarshaller.COL);
+            out.unsafeWriteByte(GridBinaryMarshaller.COL);
             out.unsafeWriteInt(col.size());
             out.unsafeWriteByte(ctx.collectionType(col.getClass()));
 
@@ -744,13 +704,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteMap(@Nullable Map<?, ?> map) throws BinaryObjectException {
         if (map == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             if (tryWriteAsHandle(map))
                 return;
 
             out.unsafeEnsure(1 + 4 + 1);
-            out.unsafeWriteByte(GridPortableMarshaller.MAP);
+            out.unsafeWriteByte(GridBinaryMarshaller.MAP);
             out.unsafeWriteInt(map.size());
             out.unsafeWriteByte(ctx.mapType(map.getClass()));
 
@@ -766,18 +726,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteEnum(@Nullable Enum<?> val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass(), false);
+            BinaryClassDescriptor desc = ctx.descriptorForClass(val.getClass(), false);
 
             out.unsafeEnsure(1 + 4);
 
-            out.unsafeWriteByte(GridPortableMarshaller.ENUM);
+            out.unsafeWriteByte(GridBinaryMarshaller.ENUM);
 
             if (desc.registered())
                 out.unsafeWriteInt(desc.typeId());
             else {
-                out.unsafeWriteInt(GridPortableMarshaller.UNREGISTERED_TYPE_ID);
+                out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
                 doWriteString(val.getClass().getName());
             }
 
@@ -788,17 +748,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void doWritePortableEnum(BinaryEnumObjectImpl val) {
+    void doWriteBinaryEnum(BinaryEnumObjectImpl val) {
         assert val != null;
 
         int typeId = val.typeId();
 
         out.unsafeEnsure(1 + 4);
 
-        out.unsafeWriteByte(GridPortableMarshaller.ENUM);
+        out.unsafeWriteByte(GridBinaryMarshaller.ENUM);
         out.unsafeWriteInt(typeId);
 
-        if (typeId == GridPortableMarshaller.UNREGISTERED_TYPE_ID)
+        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             doWriteString(val.className());
 
         out.writeInt(val.enumOrdinal());
@@ -811,18 +771,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         assert val == null || val.getClass().getComponentType().isEnum();
 
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType(), false);
+            BinaryClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType(), false);
 
             out.unsafeEnsure(1 + 4);
 
-            out.unsafeWriteByte(GridPortableMarshaller.ENUM_ARR);
+            out.unsafeWriteByte(GridBinaryMarshaller.ENUM_ARR);
 
             if (desc.registered())
                 out.unsafeWriteInt(desc.typeId());
             else {
-                out.unsafeWriteInt(GridPortableMarshaller.UNREGISTERED_TYPE_ID);
+                out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
 
                 doWriteString(val.getClass().getComponentType().getName());
             }
@@ -840,18 +800,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void doWriteClass(@Nullable Class val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            PortableClassDescriptor desc = ctx.descriptorForClass(val, false);
+            BinaryClassDescriptor desc = ctx.descriptorForClass(val, false);
 
             out.unsafeEnsure(1 + 4);
 
-            out.unsafeWriteByte(GridPortableMarshaller.CLASS);
+            out.unsafeWriteByte(GridBinaryMarshaller.CLASS);
 
             if (desc.registered())
                 out.unsafeWriteInt(desc.typeId());
             else {
-                out.unsafeWriteInt(GridPortableMarshaller.UNREGISTERED_TYPE_ID);
+                out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
 
                 doWriteString(val.getClass().getName());
             }
@@ -859,17 +819,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @param po Portable object.
+     * @param po Binary object.
      */
-    public void doWritePortableObject(@Nullable BinaryObjectImpl po) {
+    public void doWriteBinaryObject(@Nullable BinaryObjectImpl po) {
         if (po == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             byte[] poArr = po.array();
 
             out.unsafeEnsure(1 + 4 + poArr.length + 4);
 
-            out.unsafeWriteByte(GridPortableMarshaller.PORTABLE_OBJ);
+            out.unsafeWriteByte(GridBinaryMarshaller.BINARY_OBJ);
             out.unsafeWriteInt(poArr.length);
             out.writeByteArray(poArr);
             out.unsafeWriteInt(po.start());
@@ -882,7 +842,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     void writeByteFieldPrimitive(byte val) {
         out.unsafeEnsure(1 + 1);
 
-        out.unsafeWriteByte(GridPortableMarshaller.BYTE);
+        out.unsafeWriteByte(GridBinaryMarshaller.BYTE);
         out.unsafeWriteByte(val);
     }
 
@@ -891,7 +851,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeByteField(@Nullable Byte val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeByteFieldPrimitive(val);
     }
@@ -909,7 +869,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     void writeShortFieldPrimitive(short val) {
         out.unsafeEnsure(1 + 2);
 
-        out.unsafeWriteByte(GridPortableMarshaller.SHORT);
+        out.unsafeWriteByte(GridBinaryMarshaller.SHORT);
         out.unsafeWriteShort(val);
     }
 
@@ -918,7 +878,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeShortField(@Nullable Short val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeShortFieldPrimitive(val);
     }
@@ -929,7 +889,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     void writeIntFieldPrimitive(int val) {
         out.unsafeEnsure(1 + 4);
 
-        out.unsafeWriteByte(GridPortableMarshaller.INT);
+        out.unsafeWriteByte(GridBinaryMarshaller.INT);
         out.unsafeWriteInt(val);
     }
 
@@ -938,7 +898,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeIntField(@Nullable Integer val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeIntFieldPrimitive(val);
     }
@@ -949,7 +909,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     void writeLongFieldPrimitive(long val) {
         out.unsafeEnsure(1 + 8);
 
-        out.unsafeWriteByte(GridPortableMarshaller.LONG);
+        out.unsafeWriteByte(GridBinaryMarshaller.LONG);
         out.unsafeWriteLong(val);
     }
 
@@ -958,7 +918,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeLongField(@Nullable Long val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeLongFieldPrimitive(val);
     }
@@ -969,7 +929,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     void writeFloatFieldPrimitive(float val) {
         out.unsafeEnsure(1 + 4);
 
-        out.unsafeWriteByte(GridPortableMarshaller.FLOAT);
+        out.unsafeWriteByte(GridBinaryMarshaller.FLOAT);
         out.unsafeWriteFloat(val);
     }
 
@@ -978,7 +938,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeFloatField(@Nullable Float val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeFloatFieldPrimitive(val);
     }
@@ -989,7 +949,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     void writeDoubleFieldPrimitive(double val) {
         out.unsafeEnsure(1 + 8);
 
-        out.unsafeWriteByte(GridPortableMarshaller.DOUBLE);
+        out.unsafeWriteByte(GridBinaryMarshaller.DOUBLE);
         out.unsafeWriteDouble(val);
     }
 
@@ -998,7 +958,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeDoubleField(@Nullable Double val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeDoubleFieldPrimitive(val);
     }
@@ -1009,7 +969,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     void writeCharFieldPrimitive(char val) {
         out.unsafeEnsure(1 + 2);
 
-        out.unsafeWriteByte(GridPortableMarshaller.CHAR);
+        out.unsafeWriteByte(GridBinaryMarshaller.CHAR);
         out.unsafeWriteChar(val);
     }
 
@@ -1018,7 +978,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeCharField(@Nullable Character val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeCharFieldPrimitive(val);
     }
@@ -1029,7 +989,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     void writeBooleanFieldPrimitive(boolean val) {
         out.unsafeEnsure(1 + 1);
 
-        out.unsafeWriteByte(GridPortableMarshaller.BOOLEAN);
+        out.unsafeWriteByte(GridBinaryMarshaller.BOOLEAN);
         out.unsafeWriteBoolean(val);
     }
 
@@ -1038,7 +998,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeBooleanField(@Nullable Boolean val) {
         if (val == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeBooleanFieldPrimitive(val);
     }
@@ -1216,11 +1176,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @param po Portable object.
+     * @param po Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    void writePortableObjectField(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
-        doWritePortableObject(po);
+    void writeBinaryObjectField(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
+        doWriteBinaryObject(po);
     }
 
     /** {@inheritDoc} */
@@ -1380,7 +1340,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeObjectDetached(@Nullable Object obj) throws BinaryObjectException {
         if (obj == null)
-            out.writeByte(GridPortableMarshaller.NULL);
+            out.writeByte(GridBinaryMarshaller.NULL);
         else {
             BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, out, schema, null);
 
@@ -1601,7 +1561,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /** {@inheritDoc} */
-    @Override public PortableOutputStream out() {
+    @Override public BinaryOutputStream out() {
         return out;
     }
 
@@ -1698,7 +1658,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         int fieldOff = out.position() - start;
 
         // Advance schema hash.
-        schemaId = PortableUtils.updateSchemaId(schemaId, fieldId);
+        schemaId = BinaryUtils.updateSchemaId(schemaId, fieldId);
 
         schema.push(fieldId, fieldOff);
 
@@ -1736,8 +1696,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @return Current writer's schema.
      */
-    public PortableSchema currentSchema() {
-        PortableSchema.Builder builder = PortableSchema.Builder.newBuilder();
+    public BinarySchema currentSchema() {
+        BinarySchema.Builder builder = BinarySchema.Builder.newBuilder();
 
         if (schema != null)
             schema.build(builder, fieldCnt);
@@ -1778,7 +1738,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         else {
             out.unsafeEnsure(1 + 4);
 
-            out.unsafeWriteByte(GridPortableMarshaller.HANDLE);
+            out.unsafeWriteByte(GridBinaryMarshaller.HANDLE);
             out.unsafeWriteInt(pos - old);
 
             return true;
@@ -1800,9 +1760,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @return Portable context.
+     * @return Binary context.
      */
-    public PortableContext context() {
+    public BinaryContext context() {
         return ctx;
     }
 }

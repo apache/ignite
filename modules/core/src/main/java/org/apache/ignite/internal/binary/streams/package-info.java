@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains portable APIs implementation for streams.
+ * Contains binary APIs implementation for streams.
  */
 package org.apache.ignite.internal.binary.streams;

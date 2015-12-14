@@ -38,7 +38,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
-import org.apache.ignite.internal.binary.GridPortableMarshaller;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilterImpl;
@@ -94,7 +94,7 @@ public class PlatformContextImpl implements PlatformContext {
     private final GridKernalContext ctx;
 
     /** Marshaller. */
-    private final GridPortableMarshaller marsh;
+    private final GridBinaryMarshaller marsh;
 
     /** Memory manager. */
     private final PlatformMemoryManagerImpl mem;
@@ -175,8 +175,11 @@ public class PlatformContextImpl implements PlatformContext {
 
     /** {@inheritDoc} */
     @Override public BinaryRawReaderEx reader(PlatformInputStream in) {
-        // TODO: IGNITE-1272 - Is class loader needed here?
-        return new BinaryReaderExImpl(marsh.context(), in, null, null, true);
+        return new BinaryReaderExImpl(marsh.context(),
+            in,
+            ctx.config().getClassLoader(),
+            null,
+            true);
     }
 
     /** {@inheritDoc} */
@@ -381,7 +384,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /**
-     * Write portable metadata.
+     * Write binary metadata.
      *
      * @param writer Writer.
      * @param typeId Type id.
@@ -609,8 +612,8 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepPortable) {
-        return new PlatformStreamReceiverImpl(rcv, ptr, keepPortable, this);
+    @Override public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepBinary) {
+        return new PlatformStreamReceiverImpl(rcv, ptr, keepBinary, this);
     }
 
     /** {@inheritDoc} */

@@ -29,7 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.PortableContext;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -264,9 +264,9 @@ public class IgniteTestResources {
         marsh.setContext(new MarshallerContextTestImpl());
 
         if (marsh instanceof BinaryMarshaller) {
-            PortableContext ctx = new PortableContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
+            BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
 
-            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, new IgniteConfiguration());
+            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, new IgniteConfiguration());
         }
 
         return marsh;

@@ -64,7 +64,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     /**
      * @param cacheCtx Cache context.
      * @param keys Keys to get.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects
      * @param skipStore Skip store flag.
@@ -73,7 +73,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     public <K, V> IgniteInternalFuture<Map<K, V>> getAllAsync(
         GridCacheContext cacheCtx,
         Collection<KeyCacheObject> keys,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         boolean skipVals,
         boolean keepCacheObjects,
         boolean skipStore);

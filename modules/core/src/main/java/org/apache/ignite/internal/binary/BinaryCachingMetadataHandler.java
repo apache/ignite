@@ -54,7 +54,7 @@ public class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
                 BinaryMetadata oldMeta = ((BinaryTypeImpl)oldType).metadata();
                 BinaryMetadata newMeta = ((BinaryTypeImpl)type).metadata();
 
-                BinaryMetadata mergedMeta = PortableUtils.mergeMetadata(oldMeta, newMeta);
+                BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta);
 
                 BinaryType mergedType = mergedMeta.wrap(((BinaryTypeImpl)oldType).context());
 

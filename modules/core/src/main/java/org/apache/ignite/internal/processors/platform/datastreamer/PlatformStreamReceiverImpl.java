@@ -43,7 +43,7 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
     private static final long serialVersionUID = 0L;
 
     /** */
-    private boolean keepPortable;
+    private boolean keepBinary;
 
     /**
      * Constructor.
@@ -56,16 +56,16 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
     /**
      * Constructor.
      *
-     * @param pred .Net portable receiver.
+     * @param pred .Net binary receiver.
      * @param ptr Pointer to receiver in the native platform.
      * @param ctx Kernal context.
      */
-    public PlatformStreamReceiverImpl(Object pred, long ptr, boolean keepPortable, PlatformContext ctx) {
+    public PlatformStreamReceiverImpl(Object pred, long ptr, boolean keepBinary, PlatformContext ctx) {
         super(pred, ptr, ctx);
 
         assert pred != null;
 
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc} */
@@ -89,8 +89,8 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
 
             out.synchronize();
 
-            ctx.gateway().dataStreamerStreamReceiverInvoke(ptr, new PlatformCache(ctx, cache, keepPortable),
-                mem.pointer(), keepPortable);
+            ctx.gateway().dataStreamerStreamReceiverInvoke(ptr, new PlatformCache(ctx, cache, keepBinary),
+                mem.pointer(), keepBinary);
         }
     }
 
@@ -107,13 +107,13 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        out.writeBoolean(keepPortable);
+        out.writeBoolean(keepBinary);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        keepPortable = in.readBoolean();
+        keepBinary = in.readBoolean();
     }
 }

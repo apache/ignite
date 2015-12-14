@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary.noncompact;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsOffheapSelfTest;
 
 /**
- * Compact offsets tests for offheap portable objects with non-compact footer.
+ * Compact offsets tests for offheap binary objects with non-compact footer.
  */
 public class BinaryFooterOffsetsOffheapNonCompactSelfTest extends BinaryFooterOffsetsOffheapSelfTest {
     /** {@inheritDoc} */

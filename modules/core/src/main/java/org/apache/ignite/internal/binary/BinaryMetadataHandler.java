@@ -21,7 +21,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 
 /**
- * Portable meta data handler.
+ * Binary meta data handler.
  */
 public interface BinaryMetadataHandler {
     /**

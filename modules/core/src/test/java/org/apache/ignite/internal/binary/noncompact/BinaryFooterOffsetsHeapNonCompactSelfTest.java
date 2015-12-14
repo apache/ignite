@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary.noncompact;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
 
 /**
- * Compact offsets tests for heap portable objects with non-compact footer.
+ * Compact offsets tests for heap binary objects with non-compact footer.
  */
 public class BinaryFooterOffsetsHeapNonCompactSelfTest extends BinaryFooterOffsetsHeapSelfTest {
     /** {@inheritDoc} */

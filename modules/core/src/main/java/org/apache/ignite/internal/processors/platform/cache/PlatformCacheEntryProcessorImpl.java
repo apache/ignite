@@ -52,13 +52,13 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
     /** Indicates that remove has been called on an entry  */
     private static final byte ENTRY_STATE_REMOVED = 2;
 
-    /** Indicates error in processor that is written as portable.  */
-    private static final byte ENTRY_STATE_ERR_PORTABLE = 3;
+    /** Indicates error in processor that is written as binary.  */
+    private static final byte ENTRY_STATE_ERR_BINARY = 3;
 
     /** Indicates error in processor that is written as string.  */
     private static final byte ENTRY_STATE_ERR_STRING = 4;
 
-    /** Native portable processor */
+    /** Native binary processor */
     private Object proc;
 
     /** Pointer to processor in the native platform. */
@@ -74,7 +74,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
     /**
      * Constructor.
      *
-     * @param proc Native portable processor
+     * @param proc Native binary processor
      * @param ptr Pointer to processor in the native platform.
      */
     public PlatformCacheEntryProcessorImpl(Object proc, long ptr) {
@@ -184,7 +184,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
 
                 break;
 
-            case ENTRY_STATE_ERR_PORTABLE:
+            case ENTRY_STATE_ERR_BINARY:
                 // Full exception
                 Object nativeErr = reader.readObjectDetached();
 
