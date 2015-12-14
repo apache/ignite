@@ -31,13 +31,13 @@
     </parent>
 
     <artifactId>ignite-core</artifactId>
-    <version>1.5.0-b1-SNAPSHOT</version>
+    <version>1.5.0-b2-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <repositories>
         <repository>
-            <id>ignite-portables-test-repo</id>
-            <url>file://${basedir}/src/test/portables/repo</url>
+            <id>ignite-binaries-test-repo</id>
+            <url>file://${basedir}/src/test/binaries/repo</url>
         </repository>
     </repositories>
 
@@ -194,14 +194,14 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite.portable</groupId>
+            <groupId>org.apache.ignite.binary</groupId>
             <artifactId>test1</artifactId>
             <version>1.1</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite.portable</groupId>
+            <groupId>org.apache.ignite.binary</groupId>
             <artifactId>test2</artifactId>
             <version>1.1</version>
             <scope>test</scope>

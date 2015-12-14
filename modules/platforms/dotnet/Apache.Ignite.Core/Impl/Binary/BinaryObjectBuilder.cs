@@ -972,13 +972,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     }
 
                     break;
-
-                case BinaryUtils.TypeMapEntry:
-                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
-                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
-
-                    break;
-
+                    
                 case BinaryUtils.TypeBinary:
                     TransferArray(inStream, outStream, 1); // Data array.
                     TransferBytes(inStream, outStream, 4); // Offset in array.

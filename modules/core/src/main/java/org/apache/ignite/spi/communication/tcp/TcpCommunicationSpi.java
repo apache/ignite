@@ -1510,7 +1510,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         nioSrvr.start();
 
-        commWorker = new CommunicationWorker();
+        commWorker = new CommunicationWorker(gridName);
 
         commWorker.start();
 
@@ -3024,9 +3024,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private final BlockingQueue<GridNioRecoveryDescriptor> q = new LinkedBlockingQueue<>();
 
         /**
-         *
+         * @param gridName Grid name.
          */
-        private CommunicationWorker() {
+        private CommunicationWorker(String gridName) {
             super(gridName, "tcp-comm-worker", log);
         }
 

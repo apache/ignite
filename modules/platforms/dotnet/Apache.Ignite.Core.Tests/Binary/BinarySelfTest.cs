@@ -1028,6 +1028,20 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckObject(marsh, new OuterObjectType(), new InnerObjectType());
         }
 
+        [Test]
+        public void TestStructsReflective()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[] {new BinaryTypeConfiguration(typeof (ReflectiveStruct))}
+            });
+
+            var obj = new ReflectiveStruct(15, 28.8);
+            var res = marsh.Unmarshal<ReflectiveStruct>(marsh.Marshal(obj));
+
+            Assert.AreEqual(res, obj);
+        }
+
         /**
          * <summary>Test handles.</summary>
          */
@@ -2226,6 +2240,59 @@ namespace Apache.Ignite.Core.Tests.Binary
             public override int GetHashCode()
             {
                 return Foo;
+            }
+        }
+
+        private struct ReflectiveStruct : IEquatable<ReflectiveStruct>
+        {
+            private readonly int _x;
+            private readonly double _y;
+
+            public ReflectiveStruct(int x, double y)
+            {
+                _x = x;
+                _y = y;
+            }
+
+            public int X
+            {
+                get { return _x; }
+            }
+
+            public double Y
+            {
+                get { return _y; }
+            }
+
+            public bool Equals(ReflectiveStruct other)
+            {
+                return _x == other._x && _y.Equals(other._y);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj))
+                    return false;
+
+                return obj is ReflectiveStruct && Equals((ReflectiveStruct) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (_x*397) ^ _y.GetHashCode();
+                }
+            }
+
+            public static bool operator ==(ReflectiveStruct left, ReflectiveStruct right)
+            {
+                return left.Equals(right);
+            }
+
+            public static bool operator !=(ReflectiveStruct left, ReflectiveStruct right)
+            {
+                return !left.Equals(right);
             }
         }
     }

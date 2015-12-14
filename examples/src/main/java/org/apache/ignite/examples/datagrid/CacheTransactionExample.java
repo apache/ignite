@@ -59,7 +59,7 @@ public class CacheTransactionExample {
 
             cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-            try (IgniteCache<Integer, Account> cache = ignite.getOrCreateCache(cfg, new NearCacheConfiguration<Integer, Account>())) {
+            try (IgniteCache<Integer, Account> cache = ignite.getOrCreateCache(cfg)) {
                 // Initialize.
                 cache.put(1, new Account(1, 100));
                 cache.put(2, new Account(1, 200));

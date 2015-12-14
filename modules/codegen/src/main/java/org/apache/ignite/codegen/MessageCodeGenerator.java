@@ -169,6 +169,7 @@ public class MessageCodeGenerator {
 
 //        gen.generateAndWrite(GridNearAtomicUpdateRequest.class);
 
+//        gen.generateAndWrite(GridMessageCollection.class);
 //        gen.generateAndWrite(DataStreamerEntry.class);
 
 //        gen.generateAndWrite(GridDistributedLockRequest.class);

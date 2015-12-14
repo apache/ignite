@@ -178,18 +178,17 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry create(GridCacheContext ctx,
+            @Override public GridCacheMapEntry create(
+                GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
                 KeyCacheObject key,
                 int hash,
-                CacheObject val,
-                GridCacheMapEntry next,
-                int hdrId)
-            {
+                CacheObject val
+            ) {
                 if (ctx.useOffheapEntry())
-                    return new GridDhtOffHeapCacheEntry(ctx, topVer, key, hash, val, next, hdrId);
+                    return new GridDhtOffHeapCacheEntry(ctx, topVer, key, hash, val);
 
-                return new GridDhtCacheEntry(ctx, topVer, key, hash, val, next, hdrId);
+                return new GridDhtCacheEntry(ctx, topVer, key, hash, val);
             }
         });
     }
@@ -626,7 +625,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean skipTx,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         boolean skipVals,
         boolean canRemap
     ) {
@@ -637,7 +636,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             /*don't check local tx. */false,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             forcePrimary,
             null,
             skipVals,
@@ -1165,7 +1164,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         assert primary || backup;
 
         if (primary && backup)
-            return iterator(map.entries0().iterator(), !ctx.keepPortable());
+            return iterator(map.entries0().iterator(), !ctx.keepBinary());
         else {
             final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -1229,7 +1228,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
             };
 
-            return iterator(it, !ctx.keepPortable());
+            return iterator(it, !ctx.keepBinary());
         }
     }
 

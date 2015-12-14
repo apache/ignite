@@ -25,9 +25,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.portable.BinaryObjectImpl;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -258,7 +258,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      */
     protected Object executeJavaTask(BinaryRawReaderEx reader, boolean async) {
         String taskName = reader.readString();
-        boolean keepPortable = reader.readBoolean();
+        boolean keepBinary = reader.readBoolean();
         Object arg = reader.readObjectDetached();
 
         Collection<UUID> nodeIds = readNodeIds(reader);
@@ -268,7 +268,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
         if (async)
             compute0 = compute0.withAsync();
 
-        if (!keepPortable && arg instanceof BinaryObjectImpl)
+        if (!keepBinary && arg instanceof BinaryObjectImpl)
             arg = ((BinaryObject)arg).deserialize();
 
         Object res = compute0.execute(taskName, arg);
@@ -278,23 +278,23 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 private static final long serialVersionUID = 0L;
 
                 @Override public Object apply(IgniteFuture fut) {
-                    return toPortable(fut.get());
+                    return toBinary(fut.get());
                 }
             }));
 
             return null;
         }
         else
-            return toPortable(res);
+            return toBinary(res);
     }
 
     /**
-     * Convert object to portable form.
+     * Convert object to binary form.
      *
      * @param src Source object.
      * @return Result.
      */
-    private Object toPortable(Object src) {
+    private Object toBinary(Object src) {
         return platformCtx.kernalContext().grid().binary().toBinary(src);
     }
 

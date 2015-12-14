@@ -250,20 +250,25 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             Debug.Assert(field != null);
 
-            var module = Assembly.GetExecutingAssembly().GetModules()[0];
+            var declaringType = field.DeclaringType;
 
-            var method = new DynamicMethod(string.Empty, null, new[] { field.DeclaringType, field.FieldType }, module,
-                true);
+            Debug.Assert(declaringType != null);  // static fields are not supported
+
+            var method = new DynamicMethod(string.Empty, null, new[] { typeof(object), field.FieldType }, 
+                declaringType, true);
 
             var il = method.GetILGenerator();
-
+            
             il.Emit(OpCodes.Ldarg_0);
+
+            if (declaringType.IsValueType)
+                il.Emit(OpCodes.Unbox, declaringType);   // modify boxed copy
+
             il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Stfld, field);
             il.Emit(OpCodes.Ret);
 
             return method;
         }
-
     }
 }

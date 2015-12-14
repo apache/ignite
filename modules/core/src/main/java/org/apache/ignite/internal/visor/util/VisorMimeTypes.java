@@ -276,7 +276,7 @@ public class VisorMimeTypes {
         mimeTypes.put("htm", "text/html");
         mimeTypes.put("docm", "application/vnd.ms-word.document.macroenabled.12");
         mimeTypes.put("xdssc", "application/dssc+xml");
-        mimeTypes.put("pbm", "image/x-portable-bitmap");
+        mimeTypes.put("pbm", "image/x-binary-bitmap");
         mimeTypes.put("fdf", "application/vnd.fdf");
         mimeTypes.put("ggt", "application/vnd.geogebra.tool");
         mimeTypes.put("cii", "application/vnd.anser-web-certificate-issue-initiation");
@@ -760,7 +760,7 @@ public class VisorMimeTypes {
         mimeTypes.put("otf", "application/x-font-otf");
         mimeTypes.put("clkx", "application/vnd.crick.clicker");
         mimeTypes.put("xbd", "application/vnd.fujixerox.docuworks.binder");
-        mimeTypes.put("ppm", "image/x-portable-pixmap");
+        mimeTypes.put("ppm", "image/x-binary-pixmap");
         mimeTypes.put("wav", "audio/x-wav");
         mimeTypes.put("ssml", "application/ssml+xml");
         mimeTypes.put("p7b", "application/x-pkcs7-certificates");
@@ -808,7 +808,7 @@ public class VisorMimeTypes {
         mimeTypes.put("xenc", "application/xenc+xml");
         mimeTypes.put("wpl", "application/vnd.ms-wpl");
         mimeTypes.put("dxf", "image/vnd.dxf");
-        mimeTypes.put("pgm", "image/x-portable-graymap");
+        mimeTypes.put("pgm", "image/x-binary-graymap");
         mimeTypes.put("spot", "text/vnd.in3d.spot");
         mimeTypes.put("odt", "application/vnd.oasis.opendocument.text");
         mimeTypes.put("azs", "application/vnd.airzip.filesecure.azs");
@@ -817,7 +817,7 @@ public class VisorMimeTypes {
         mimeTypes.put("dd2", "application/vnd.oma.dd2+xml");
         mimeTypes.put("semf", "application/vnd.semf");
         mimeTypes.put("semd", "application/vnd.semd");
-        mimeTypes.put("pnm", "image/x-portable-anymap");
+        mimeTypes.put("pnm", "image/x-binary-anymap");
         mimeTypes.put("sema", "application/vnd.sema");
         mimeTypes.put("wma", "audio/x-ms-wma");
         mimeTypes.put("cww", "application/prs.cww");

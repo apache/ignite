@@ -70,8 +70,8 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Override public void onReconnected(boolean clusterRestarted) {
-        // No-op.
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) {
+        return null;
     }
 
     /** {@inheritDoc} */
