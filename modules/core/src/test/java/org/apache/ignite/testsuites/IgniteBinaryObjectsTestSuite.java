@@ -19,17 +19,17 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.binary.BinaryEnumsSelfTest;
-import org.apache.ignite.internal.binary.GridBinaryAffinityKeySelfTest;
-import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
-import org.apache.ignite.internal.binary.BinaryObjectBuilderSelfTest;
-import org.apache.ignite.internal.binary.GridBinaryMarshallerCtxDisabledSelfTest;
-import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
-import org.apache.ignite.internal.binary.GridBinaryMetaDataSelfTest;
-import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
-import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
-import org.apache.ignite.internal.binary.BinaryFooterOffsetsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsOffheapSelfTest;
+import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
+import org.apache.ignite.internal.binary.BinaryFooterOffsetsOffheapSelfTest;
+import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
+import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
+import org.apache.ignite.internal.binary.BinaryObjectBuilderSelfTest;
+import org.apache.ignite.internal.binary.GridBinaryAffinityKeySelfTest;
+import org.apache.ignite.internal.binary.GridBinaryMarshallerCtxDisabledSelfTest;
+import org.apache.ignite.internal.binary.GridBinaryMetaDataSelfTest;
+import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFieldsHeapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFieldsOffheapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFooterOffsetsHeapNonCompactSelfTest;
@@ -37,11 +37,10 @@ import org.apache.ignite.internal.binary.noncompact.BinaryFooterOffsetsOffheapNo
 import org.apache.ignite.internal.binary.noncompact.BinaryMarshallerNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderAdditionalNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetadataUpdateChangingTopologySelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreObjectsSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataTest;
-import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreObjectsSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicOffheapTieredSelfTest;
@@ -54,6 +53,9 @@ import org.apache.ignite.internal.processors.cache.binary.distributed.replicated
 import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsAtomicLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetadataUpdateChangingTopologySelfTest;
+import org.apache.ignite.internal.processors.cache.portable.BinaryAtomicCacheLocalEntriesSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.BinaryTxCacheLocalEntriesSelfTest;
 
 /**
  * Test for binary objects stored in cache.
@@ -108,6 +110,9 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);
         suite.addTestSuite(IgniteBinaryMetadataUpdateChangingTopologySelfTest.class);
+
+        suite.addTestSuite(BinaryTxCacheLocalEntriesSelfTest.class);
+        suite.addTestSuite(BinaryAtomicCacheLocalEntriesSelfTest.class);
 
         return suite;
     }
