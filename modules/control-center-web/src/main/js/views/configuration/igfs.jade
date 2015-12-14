@@ -23,7 +23,18 @@ include ../includes/controls
         ignite-callout-cel(data-title='On This Screen')
             li Configure IGFS file systems
             li
-                a(bs-modal='moreInfo' data-placement='center' data-template-url='/templates/message.html') More info
+                ignite-dialog More info
+                    ignite-dialog-title IGFS screen
+                    ignite-dialog-content 
+                        | Manage your IGFS file systems on current screen.
+                        br
+                        | IGFS can be assigned to specified&nbsp;
+                        a(href='/configuration/clusters') clusters
+                        | .&nbsp;
+                        br
+                        | Generated cluster with IGFS available on&nbsp;
+                        a(href='/configuration/summary') summary
+                        | &nbsp;screen.
                     
         ignite-callout-cel(data-title='Next Steps')
             li Continue to&nbsp;

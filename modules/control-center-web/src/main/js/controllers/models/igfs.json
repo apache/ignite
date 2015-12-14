@@ -1,12 +1,4 @@
 {
-  "moreInfo": {
-    "title": "IGFS screen",
-    "content": [
-      "Manage your IGFS file systems on current screen.",
-      "IGFS can be assigned to specified <a href='/configuration/clusters'>clusters</a>.",
-      "Generated cluster with IGFS available on <a href='/configuration/summary'>summary</a> screen."
-    ]
-  },
   "general": [
     {
       "label": "General",
