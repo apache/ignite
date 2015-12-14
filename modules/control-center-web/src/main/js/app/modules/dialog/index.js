@@ -18,7 +18,7 @@
 import igniteDialog from './dialog.directive';
 import igniteDialogTitle from './dialog-title.directive';
 import igniteDialogContent from './dialog-content.directive';
-import IgniteDialog from './dialog.service';
+import IgniteDialog from './dialog.factory';
 
 angular
 .module('ignite-console.dialog', [
@@ -27,4 +27,4 @@ angular
 .factory(...IgniteDialog)
 .directive(...igniteDialog)
 .directive(...igniteDialogTitle)
-.directive(...igniteDialogContent)
+.directive(...igniteDialogContent);

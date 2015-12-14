@@ -1619,6 +1619,16 @@ a {
     left: -50%;
 }
 
+.dw-loading.dw-loading-overlay {
+    z-index: 1030;
+}
+
+.modal {
+    .dw-loading.dw-loading-overlay {
+        z-index: 9999;
+    }
+}
+
 .panel-tip-container {
     display: inline-block;
 }

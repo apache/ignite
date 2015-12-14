@@ -87,7 +87,7 @@ System.config({
       "assert": "npm:assert@1.3.0"
     },
     "github:jspm/nodelibs-buffer@0.1.0": {
-      "buffer": "npm:buffer@3.5.4"
+      "buffer": "npm:buffer@3.5.5"
     },
     "github:jspm/nodelibs-events@0.1.1": {
       "events": "npm:events@1.0.2"
@@ -183,17 +183,17 @@ System.config({
     "npm:babel-runtime@5.8.34": {
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
-    "npm:buffer@3.5.4": {
+    "npm:buffer@3.5.5": {
       "base64-js": "npm:base64-js@0.0.8",
       "child_process": "github:jspm/nodelibs-child_process@0.1.0",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
       "ieee754": "npm:ieee754@1.1.6",
-      "isarray": "npm:isarray@0.0.1",
+      "isarray": "npm:isarray@1.0.0",
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:center-align@0.1.2": {
       "align-text": "npm:align-text@0.1.3",
-      "lazy-cache": "npm:lazy-cache@0.2.4"
+      "lazy-cache": "npm:lazy-cache@0.2.7"
     },
     "npm:clean-css@3.4.8": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
@@ -286,6 +286,9 @@ System.config({
     "npm:kind-of@2.0.1": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "is-buffer": "npm:is-buffer@1.1.0"
+    },
+    "npm:lazy-cache@0.2.7": {
+      "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:lodash@3.10.1": {
       "process": "github:jspm/nodelibs-process@0.1.2"

@@ -16,9 +16,9 @@
  */
 
 export default ['igniteDialogContent', ['$compile', ($compile) => {
-
 	let link = ($scope, $element, $attrs, igniteDialog) => {
 		igniteDialog.content = $element.html();
+
 		$element.hide();
 	};
 

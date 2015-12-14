@@ -22,7 +22,7 @@ export default ['IgniteDialog', ['$modal', ($modal) => {
 		template: template(),
 		placement: 'center',
 		show: false
-	}
+	};
 
 	return function(options) {
 		options = _.extend({}, defaults, options);

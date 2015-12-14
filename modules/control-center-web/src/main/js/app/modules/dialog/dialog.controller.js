@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-export default ['$rootScope' ,'$scope', 'IgniteDialog', function($root, $scope, Dialog) {
+export default ['$rootScope' ,'$scope', 'IgniteDialog', function($root, $scope, IgniteDialog) {
     let ctrl = this;
 
-    let dialog = new Dialog({
+    let dialog = new IgniteDialog({
         scope: $scope
     });
 
