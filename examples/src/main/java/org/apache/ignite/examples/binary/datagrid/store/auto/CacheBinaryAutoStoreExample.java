@@ -18,10 +18,8 @@
 package org.apache.ignite.examples.binary.datagrid.store.auto;
 
 import java.sql.Types;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
@@ -96,7 +94,7 @@ public class CacheBinaryAutoStoreExample {
         cfg.setAtomicityMode(TRANSACTIONAL);
 
         // This option will allow to start remote nodes without having user classes in classpath.
-        cfg.setKeepBinaryInStore(true);
+        cfg.setStoreKeepBinary(true);
 
         cfg.setReadThrough(true);
         cfg.setWriteThrough(true);
