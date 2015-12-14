@@ -100,7 +100,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     private GridLongList filteredEvts;
 
     /** Keep binary. */
-    private boolean keepBinary;
+    private boolean keepPortable;
 
     /**
      * Required by {@link Message}.
@@ -137,7 +137,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         this.part = part;
         this.updateCntr = updateCntr;
         this.topVer = topVer;
-        this.keepBinary = keepBinary;
+        this.keepPortable = keepBinary;
     }
 
     /**
@@ -211,7 +211,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @return Keep binary flag.
      */
     boolean isKeepBinary() {
-        return keepBinary;
+        return keepPortable;
     }
 
     /**
@@ -334,7 +334,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeBoolean("keepBinary", keepBinary))
+                if (!writer.writeBoolean("keepPortable", keepPortable))
                     return false;
 
                 writer.incrementState();
@@ -425,7 +425,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 4:
-                keepBinary = reader.readBoolean("keepBinary");
+                keepPortable = reader.readBoolean("keepPortable");
 
                 if (!reader.isLastRead())
                     return false;
