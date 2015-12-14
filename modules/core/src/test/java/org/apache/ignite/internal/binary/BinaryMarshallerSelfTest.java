@@ -2299,41 +2299,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCyclicReferencesMarshalling() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller();
-
-        SimpleObject obj = simpleObject();
-
-        obj.bArr = obj.inner.bArr;
-        obj.cArr = obj.inner.cArr;
-        obj.boolArr = obj.inner.boolArr;
-        obj.sArr = obj.inner.sArr;
-        obj.strArr = obj.inner.strArr;
-        obj.iArr = obj.inner.iArr;
-        obj.lArr = obj.inner.lArr;
-        obj.fArr = obj.inner.fArr;
-        obj.dArr = obj.inner.dArr;
-        obj.dateArr = obj.inner.dateArr;
-        obj.uuidArr = obj.inner.uuidArr;
-        obj.objArr = obj.inner.objArr;
-        obj.bdArr = obj.inner.bdArr;
-        obj.map = obj.inner.map;
-        obj.col = obj.inner.col;
-        obj.mEntry = obj.inner.mEntry;
-
-        SimpleObject res = (SimpleObject)marshalUnmarshal(obj, marsh);
-
-        assertEquals(obj, res);
-
-        assertTrue(res.objArr == res.inner.objArr);
-        assertTrue(res.map == res.inner.map);
-        assertTrue(res.col == res.inner.col);
-        assertTrue(res.mEntry == res.inner.mEntry);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testProxy() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
@@ -2799,8 +2764,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         inner.map.put(2, "str2");
         inner.map.put(3, "str3");
 
-        inner.mEntry = inner.map.entrySet().iterator().next();
-
         SimpleObject outer = new SimpleObject();
 
         outer.b = 2;
@@ -2842,8 +2805,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         outer.map.put(4, "str4");
         outer.map.put(5, "str5");
         outer.map.put(6, "str6");
-
-        outer.mEntry = outer.map.entrySet().iterator().next();
 
         return outer;
     }
@@ -3142,9 +3103,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** */
         private TestEnum[] enumArr;
-
-        /** */
-        private Map.Entry<Integer, String> mEntry;
 
         /** */
         private SimpleObject inner;
