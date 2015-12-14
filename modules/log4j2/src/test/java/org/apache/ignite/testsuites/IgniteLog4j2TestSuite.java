@@ -31,7 +31,7 @@ public class IgniteLog4j2TestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Log4j2 Logging Test Suite");
 
-        suite.addTest(new TestSuite(Log4j2LoggerSelfTest.class));
+//        suite.addTest(new TestSuite(Log4j2LoggerSelfTest.class));
 
         return suite;
     }

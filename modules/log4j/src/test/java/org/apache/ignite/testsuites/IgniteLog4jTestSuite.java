@@ -33,9 +33,9 @@ public class IgniteLog4jTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Log4j Logging Test Suite");
 
-        suite.addTest(new TestSuite(GridLog4jInitializedTest.class));
-        suite.addTest(new TestSuite(GridLog4jNotInitializedTest.class));
-        suite.addTest(new TestSuite(GridLog4jCorrectFileNameTest.class));
+//        suite.addTest(new TestSuite(GridLog4jInitializedTest.class));
+//        suite.addTest(new TestSuite(GridLog4jNotInitializedTest.class));
+//        suite.addTest(new TestSuite(GridLog4jCorrectFileNameTest.class));
 
         return suite;
     }

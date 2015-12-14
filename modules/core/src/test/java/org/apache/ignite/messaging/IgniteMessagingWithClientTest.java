@@ -78,7 +78,7 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
      * @throws Exception If failed.
      */
     public void testMessageSendWithClientJoin() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-996");
+//        fail("https://issues.apache.org/jira/browse/IGNITE-996");
 
         startGrid(0);
 
@@ -104,8 +104,10 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
 
                     iter++;
 
+                    log.info("??? Starting grid");
                     try (Ignite ignite = startGrid(2)) {
                         assertTrue(ignite.configuration().isClientMode());
+                        log.info("??? Stopping grid");
                     }
                 }
 
@@ -136,6 +138,7 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
             stop.set(true);
         }
 
+        log.info("??? fut.get()");
         fut.get();
     }
 

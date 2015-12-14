@@ -69,50 +69,9 @@ public class IgniteBasicTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Basic Test Suite");
 
-        suite.addTest(IgniteLangSelfTestSuite.suite());
-        suite.addTest(IgniteUtilSelfTestSuite.suite(ignoredTests));
-        suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
-
-        suite.addTest(IgniteKernalSelfTestSuite.suite(ignoredTests));
-        suite.addTest(IgniteStartUpTestSuite.suite());
-        suite.addTest(IgniteExternalizableSelfTestSuite.suite());
-        suite.addTest(IgniteP2PSelfTestSuite.suite(ignoredTests));
-        suite.addTest(IgniteCacheP2pUnmarshallingErrorTestSuite.suite(ignoredTests));
-        suite.addTest(IgniteStreamSelfTestSuite.suite());
-
-        suite.addTest(new TestSuite(GridSelfTest.class));
-        suite.addTest(new TestSuite(ClusterGroupHostsSelfTest.class));
-        suite.addTest(new TestSuite(IgniteMessagingWithClientTest.class));
-
-        GridTestUtils.addTestIfNeeded(suite, ClusterGroupSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridMessagingSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridMessagingNoPeerClassLoadingSelfTest.class, ignoredTests);
-
-        if (U.isLinux() || U.isMacOs())
-            suite.addTest(IgniteIpcSharedMemorySelfTestSuite.suite());
-
-        GridTestUtils.addTestIfNeeded(suite, GridReleaseTypeSelfTest.class, ignoredTests);
-        suite.addTestSuite(GridProductVersionSelfTest.class);
-        suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
-        suite.addTestSuite(GridClosureProcessorSelfTest.class);
-        suite.addTestSuite(ClosureServiceClientsNodesTest.class);
-        suite.addTestSuite(GridStartStopSelfTest.class);
-        suite.addTestSuite(GridProjectionForCachesSelfTest.class);
-        suite.addTestSuite(GridProjectionForCachesOnDaemonNodeSelfTest.class);
-        suite.addTestSuite(GridSpiLocalHostInjectionTest.class);
-        suite.addTestSuite(GridLifecycleBeanSelfTest.class);
-        suite.addTestSuite(GridStopWithCancelSelfTest.class);
-        suite.addTestSuite(GridReduceSelfTest.class);
-        suite.addTestSuite(GridEventConsumeSelfTest.class);
-        suite.addTestSuite(GridSuppressedExceptionSelfTest.class);
-        suite.addTestSuite(GridLifecycleAwareSelfTest.class);
-        suite.addTestSuite(GridMessageListenSelfTest.class);
-        suite.addTestSuite(GridFailFastNodeFailureDetectionSelfTest.class);
-        suite.addTestSuite(OffHeapTieredTransactionSelfTest.class);
-        suite.addTestSuite(IgniteSlowClientDetectionSelfTest.class);
-        suite.addTestSuite(IgniteDaemonNodeMarshallerCacheTest.class);
-
-        suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
+        for (int i = 0; i < 50; i++) {
+            suite.addTest(new TestSuite(IgniteMessagingWithClientTest.class));
+        }
 
         return suite;
     }
