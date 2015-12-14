@@ -160,29 +160,18 @@ public class BinaryMetadata implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(typeId);
-        U.writeString(out, typeName);
-        U.writeMap(out, fields);
-        U.writeString(out, affKeyFieldName);
-        U.writeCollection(out, schemas);
-        out.writeBoolean(isEnum);
+        writeTo(out);
     }
 
     /**
-     * The object implements the writeExternal method to save its contents
+     * The object implements the writeTo method to save its contents
      * by calling the methods of DataOutput for its primitive values and strings or
-     * calling the writeExternal method for other objects.
+     * calling the writeTo method for other objects.
      *
-     * @serialData Overriding methods should use this tag to describe
-     *             the data layout of this Externalizable object.
-     *             List the sequence of element types and, if possible,
-     *             relate the element to a public/protected field and/or
-     *             method of this Externalizable class.
-     *
-     * @param out the stream to write the object to
-     * @exception IOException Includes any I/O exceptions that may occur
+     * @param out the stream to write the object to.
+     * @exception IOException Includes any I/O exceptions that may occur.
      */
-    public void writeExternal(DataOutput out) throws IOException {
+    public void writeTo(DataOutput out) throws IOException {
         out.writeInt(typeId);
 
         U.writeString(out, typeName);
@@ -196,9 +185,11 @@ public class BinaryMetadata implements Externalizable {
 
         U.writeString(out, affKeyFieldName);
 
-        for (PortableSchema schema : schemas) {
-            out.writeBoolean(true);
-            schema.writeExternal(out);
+        if (schemas != null) {
+            for (BinarySchema schema : schemas) {
+                out.writeBoolean(true);
+                schema.writeTo(out);
+            }
         }
         out.writeBoolean(false);
 
@@ -207,25 +198,20 @@ public class BinaryMetadata implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        typeId = in.readInt();
-        typeName = U.readString(in);
-        fields = U.readMap(in);
-        affKeyFieldName = U.readString(in);
-        schemas = U.readCollection(in);
-        isEnum = in.readBoolean();
+        readFrom(in);
     }
 
     /**
-     * The object implements the readExternal method to restore its
+     * The object implements the readFrom method to restore its
      * contents by calling the methods of DataInput for primitive
      * types and strings or calling readExternal for other objects.  The
-     * readExternal method must read the values in the same sequence
-     * and with the same types as were written by writeExternal.
+     * readFrom method must read the values in the same sequence
+     * and with the same types as were written by writeTo.
      *
-     * @param in the stream to read data from in order to restore the object
-     * @exception IOException if I/O errors occur
+     * @param in the stream to read data from in order to restore the object.
+     * @exception IOException if I/O errors occur.
      */
-    public void readExternal(DataInput in) throws IOException {
+    public void readFrom(DataInput in) throws IOException {
         typeId = in.readInt();
         typeName = U.readString(in);
 
@@ -240,8 +226,8 @@ public class BinaryMetadata implements Externalizable {
 
         schemas = new ArrayList<>();
         while (in.readBoolean()) {
-            PortableSchema schema = new PortableSchema();
-            schema.readExternal(in);
+            BinarySchema schema = new BinarySchema();
+            schema.readFrom(in);
             schemas.add(schema);
         }
 
