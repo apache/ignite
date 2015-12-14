@@ -2025,7 +2025,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             private boolean skipMsg = discardId != null;
 
             /** Skip custom messages flag. */
-            private boolean skipCustomMsg;
+            private boolean skipCustomMsg = customDiscardId != null;
 
             /** Internal iterator. */
             private Iterator<TcpDiscoveryAbstractMessage> msgIt = msgs.iterator();
@@ -3228,7 +3228,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 boolean rmtMarshCompactFooterBool = rmtMarshCompactFooter != null ? rmtMarshCompactFooter : false;
 
                 if (locMarshCompactFooterBool != rmtMarshCompactFooterBool) {
-                    String errMsg = "Local node's portable marshaller \"compactFooter\" property differs from " +
+                    String errMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
                         "the same property on remote node (make sure all nodes in topology have the same value " +
                         "of \"compactFooter\" property) [locMarshallerCompactFooter=" + locMarshCompactFooterBool +
                         ", rmtMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
@@ -3243,7 +3243,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         log.debug(errMsg);
 
                     try {
-                        String sndMsg = "Local node's portable marshaller \"compactFooter\" property differs from " +
+                        String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
                             "the same property on remote node (make sure all nodes in topology have the same value " +
                             "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
                             ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +

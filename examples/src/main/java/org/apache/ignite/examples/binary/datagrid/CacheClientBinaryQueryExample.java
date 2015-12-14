@@ -137,9 +137,9 @@ public class CacheClientBinaryQueryExample {
 
         fields.put("name", String.class.getName());
         fields.put("salary", Long.class.getName());
-        fields.put("address.zip", Integer.class.getName());
+        fields.put("addr.zip", Integer.class.getName());
         fields.put("organizationId", Integer.class.getName());
-        fields.put("address.street", Integer.class.getName());
+        fields.put("addr.street", Integer.class.getName());
 
         employeeEntity.setFields(fields);
 
