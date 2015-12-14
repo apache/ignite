@@ -936,7 +936,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     /**
      * Simple cursor from a single node.
      */
-    private static class SimpleCursor implements Cursor {
+    private static class UnicastCursor implements Cursor {
         /** */
         final int rangeId;
 
@@ -948,7 +948,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
          * @param nodes Remote nodes.
          * @param rangeStreams Range streams.
          */
-        private SimpleCursor(int rangeId, Collection<ClusterNode> nodes, Map<ClusterNode,RangeStream> rangeStreams) {
+        private UnicastCursor(int rangeId, Collection<ClusterNode> nodes, Map<ClusterNode,RangeStream> rangeStreams) {
             assert nodes.size() == 1;
 
             this.rangeId = rangeId;
@@ -981,7 +981,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     /**
      * Merge cursor from multiple nodes.
      */
-    private class MergeCursor implements Cursor, Comparator<RangeStream> {
+    private class BroadcastCursor implements Cursor, Comparator<RangeStream> {
         /** */
         final int rangeId;
 
@@ -999,7 +999,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
          * @param nodes Remote nodes.
          * @param rangeStreams Range streams.
          */
-        private MergeCursor(int rangeId, Collection<ClusterNode> nodes, Map<ClusterNode,RangeStream> rangeStreams) {
+        private BroadcastCursor(int rangeId, Collection<ClusterNode> nodes, Map<ClusterNode,RangeStream> rangeStreams) {
             assert nodes.size() > 1;
 
             this.rangeId = rangeId;
@@ -1275,8 +1275,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             }
 
             fut = new DoneFuture<>(nodes.size() == 1 ?
-                new SimpleCursor(rangeId, nodes, rangeStreams) :
-                new MergeCursor(rangeId, nodes, rangeStreams));
+                new UnicastCursor(rangeId, nodes, rangeStreams) :
+                new BroadcastCursor(rangeId, nodes, rangeStreams));
 
             res.add(fut);
 
