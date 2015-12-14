@@ -81,7 +81,7 @@ public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscover
         for (InetSocketAddress addr : initAddrs)
             assert addrs.contains(addr) : "Address is missing (got inconsistent addrs collection): " + addr;
 
-        finder.unregisterAddresses(Collections.singletonList(node1));
+        finder.unregisterAddresses(Collections.singletonList(node2));
 
         addrs = finder.getRegisteredAddresses();
 

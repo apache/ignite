@@ -836,13 +836,18 @@ public class BinaryUtils {
 
                 if (oldFieldType == null)
                     changed = true;
-                else if (!F.eq(oldFieldType, newField.getValue())) {
-                    throw new BinaryObjectException(
-                        "Binary type has different field types [" + "typeName=" + oldMeta.typeName() +
-                            ", fieldName=" + newField.getKey() +
-                            ", fieldTypeName1=" + fieldTypeName(oldFieldType) +
-                            ", fieldTypeName2=" + fieldTypeName(newField.getValue()) + ']'
-                    );
+                else {
+                    String oldFieldTypeName = fieldTypeName(oldFieldType);
+                    String newFieldTypeName = fieldTypeName(newField.getValue());
+
+                    if (!F.eq(oldFieldTypeName, newFieldTypeName)) {
+                        throw new BinaryObjectException(
+                            "Binary type has different field types [" + "typeName=" + oldMeta.typeName() +
+                                ", fieldName=" + newField.getKey() +
+                                ", fieldTypeName1=" + oldFieldTypeName +
+                                ", fieldTypeName2=" + newFieldTypeName + ']'
+                        );
+                    }
                 }
             }
 

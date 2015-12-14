@@ -3244,20 +3244,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     public void dumpDebugInfo() {
-        boolean client = ctx.clientNode();
+        GridKernalContextImpl ctx = this.ctx;
 
-        ClusterNode locNode = ctx.discovery().localNode();
+        if (ctx != null) {
+            boolean client = ctx.clientNode();
 
-        UUID routerId = locNode instanceof TcpDiscoveryNode ? ((TcpDiscoveryNode)locNode).clientRouterNodeId() : null;
+            ClusterNode locNode = ctx.discovery().localNode();
 
-        U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
-            ", name=" + ctx.gridName() +
-            ", order=" + locNode.order() +
-            ", topVer=" + ctx.discovery().topologyVersion() +
-            ", client=" + client +
-            (client && routerId != null ? ", routerId=" + routerId : "") + ']');
+            UUID routerId = locNode instanceof TcpDiscoveryNode ? ((TcpDiscoveryNode)locNode).clientRouterNodeId() : null;
 
-        ctx.cache().context().exchange().dumpDebugInfo();
+            U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
+                ", name=" + ctx.gridName() +
+                ", order=" + locNode.order() +
+                ", topVer=" + ctx.discovery().topologyVersion() +
+                ", client=" + client +
+                (client && routerId != null ? ", routerId=" + routerId : "") + ']');
+
+            ctx.cache().context().exchange().dumpDebugInfo();
+        }
+        else
+            U.warn(log, "Dumping debug info for node, context is not initialized [name=" + gridName + ']');
     }
 
     /** {@inheritDoc} */

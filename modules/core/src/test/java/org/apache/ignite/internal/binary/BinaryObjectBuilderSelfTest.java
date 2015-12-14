@@ -909,11 +909,19 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testSetBinaryObject() {
+        // Prepare marshaller context.
+        CacheObjectBinaryProcessorImpl proc = ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects());
+
+        proc.marshal(new GridBinaryTestClasses.TestObjectContainer());
+        proc.marshal(new GridBinaryTestClasses.TestObjectAllTypes());
+
+        // Actual test.
         BinaryObject binaryObj = builder(GridBinaryTestClasses.TestObjectContainer.class.getName())
             .setField("foo", toBinary(new GridBinaryTestClasses.TestObjectAllTypes()))
             .build();
 
-        assertTrue(binaryObj.<GridBinaryTestClasses.TestObjectContainer>deserialize().foo instanceof GridBinaryTestClasses.TestObjectAllTypes);
+        assertTrue(binaryObj.<GridBinaryTestClasses.TestObjectContainer>deserialize().foo instanceof
+            GridBinaryTestClasses.TestObjectAllTypes);
     }
 
     /**
