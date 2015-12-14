@@ -142,12 +142,12 @@ public class GridSqlQuerySplitter {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
-        Set<String> spaces = new HashSet<>();
+        Set<String> schemas = new HashSet<>();
 
         // Map query will be direct reference to the original query AST.
         // Thus all the modifications will be performed on the original AST, so we should be careful when
         // nullifying or updating things, have to make sure that we will not need them in the original form later.
-        final GridSqlSelect mapQry = wrapUnion(collectAllSpaces(GridSqlQueryParser.parse(stmt), spaces, igniteH2Indexing));
+        final GridSqlSelect mapQry = wrapUnion(collectAllSpaces(GridSqlQueryParser.parse(stmt), schemas));
 
         final boolean explain = mapQry.explain();
 
@@ -241,6 +241,10 @@ public class GridSqlQuerySplitter {
 
         map.parameterIndexes(toIntArray(paramIdxs));
 
+        Set<String> spaces = new HashSet<>(schemas.size());
+        for (String schema : schemas) {
+            spaces.add(igniteH2Indexing.space(schema));
+        }
         // Build resulting two step query.
         GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(spaces, rdc, rdcQry.simpleQuery()).addMapQuery(map);
 
@@ -292,26 +296,25 @@ public class GridSqlQuerySplitter {
 
     /**
      * @param qry Query.
-     * @param spaces Space names.
-     * @param igniteH2Indexing Indexing implementation.
+     * @param schemas Shemas' names.
      * @return Query.
      */
-    private static GridSqlQuery collectAllSpaces(GridSqlQuery qry, Set<String> spaces, IgniteH2Indexing igniteH2Indexing) {
+    private static GridSqlQuery collectAllSpaces(GridSqlQuery qry, Set<String> schemas) {
         if (qry instanceof GridSqlUnion) {
             GridSqlUnion union = (GridSqlUnion)qry;
 
-            collectAllSpaces(union.left(), spaces, igniteH2Indexing);
-            collectAllSpaces(union.right(), spaces, igniteH2Indexing);
+            collectAllSpaces(union.left(), schemas);
+            collectAllSpaces(union.right(), schemas);
         }
         else {
             GridSqlSelect select = (GridSqlSelect)qry;
 
-            collectAllSpacesInFrom(select.from(), spaces, igniteH2Indexing);
+            collectAllSpacesInFrom(select.from(), schemas);
 
             for (GridSqlElement el : select.columns(false))
-                collectAllSpacesInSubqueries(el, spaces, igniteH2Indexing);
+                collectAllSpacesInSubqueries(el, schemas);
 
-            collectAllSpacesInSubqueries(select.where(), spaces, igniteH2Indexing);
+            collectAllSpacesInSubqueries(select.where(), schemas);
         }
 
         return qry;
@@ -319,27 +322,26 @@ public class GridSqlQuerySplitter {
 
     /**
      * @param from From element.
-     * @param spaces Space names.
-     * @param igniteH2Indexing Indexing implementation.
+     * @param schemas Shemas' names.
      */
-    private static void collectAllSpacesInFrom(GridSqlElement from, Set<String> spaces, IgniteH2Indexing igniteH2Indexing) {
+    private static void collectAllSpacesInFrom(GridSqlElement from, Set<String> schemas) {
         assert from != null;
 
         if (from instanceof GridSqlJoin) {
             // Left and right.
-            collectAllSpacesInFrom(from.child(0), spaces, igniteH2Indexing);
-            collectAllSpacesInFrom(from.child(1), spaces, igniteH2Indexing);
+            collectAllSpacesInFrom(from.child(0), schemas);
+            collectAllSpacesInFrom(from.child(1), schemas);
         }
         else if (from instanceof GridSqlTable) {
             String schema = ((GridSqlTable)from).schema();
 
             if (schema != null)
-                spaces.add(igniteH2Indexing.space(schema));
+                schemas.add(schema);
         }
         else if (from instanceof GridSqlSubquery)
-            collectAllSpaces(((GridSqlSubquery)from).select(), spaces, igniteH2Indexing);
+            collectAllSpaces(((GridSqlSubquery)from).select(), schemas);
         else if (from instanceof GridSqlAlias)
-            collectAllSpacesInFrom(from.child(), spaces, igniteH2Indexing);
+            collectAllSpacesInFrom(from.child(), schemas);
         else if (!(from instanceof GridSqlFunction))
             throw new IllegalStateException(from.getClass().getName() + " : " + from.getSQL());
     }
@@ -347,19 +349,18 @@ public class GridSqlQuerySplitter {
     /**
      * Searches spaces in subqueries in SELECT and WHERE clauses.
      * @param el Element.
-     * @param spaces Space names.
-     * @param igniteH2Indexing Indexing implementation.
+     * @param schemas Schemas' names.
      */
-    private static void collectAllSpacesInSubqueries(GridSqlElement el, Set<String> spaces, IgniteH2Indexing igniteH2Indexing) {
+    private static void collectAllSpacesInSubqueries(GridSqlElement el, Set<String> schemas) {
         if (el instanceof GridSqlAlias)
             el = el.child();
 
         if (el instanceof GridSqlOperation || el instanceof GridSqlFunction) {
             for (GridSqlElement child : el)
-                collectAllSpacesInSubqueries(child, spaces, igniteH2Indexing);
+                collectAllSpacesInSubqueries(child, schemas);
         }
         else if (el instanceof GridSqlSubquery)
-            collectAllSpaces(((GridSqlSubquery)el).select(), spaces, igniteH2Indexing);
+            collectAllSpaces(((GridSqlSubquery)el).select(), schemas);
     }
 
     /**

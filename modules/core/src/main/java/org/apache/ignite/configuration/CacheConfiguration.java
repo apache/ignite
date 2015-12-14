@@ -1787,6 +1787,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * TODO
+     *
      * @return Schema name for current cache according to SQL ANSI-99. Could not be {@code null}.
      */
     public String getSqlSchema() {
@@ -1803,6 +1805,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setSqlSchema(String sqlSchema) {
         A.ensure((sqlSchema == null), "Schema could not be null");
+        A.ensure((sqlSchema.isEmpty()), "Schema could not be empty");
 
         this.sqlSchema = sqlSchema;
     }
