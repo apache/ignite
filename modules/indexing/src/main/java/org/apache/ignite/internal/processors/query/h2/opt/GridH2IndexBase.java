@@ -203,17 +203,16 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * Filters rows from expired ones and using predicate.
      *
      * @param iter Iterator over rows.
+     * @param filter Optional filter.
      * @return Filtered iterator.
      */
-    protected Iterator<GridH2Row> filter(Iterator<GridH2Row> iter) {
+    protected Iterator<GridH2Row> filter(Iterator<GridH2Row> iter, IndexingQueryFilter filter) {
         IgniteBiPredicate<Object, Object> p = null;
 
-        IndexingQueryFilter f = filter();
-
-        if (f != null) {
+        if (filter != null) {
             String spaceName = getTable().spaceName();
 
-            p = f.forSpace(spaceName);
+            p = filter.forSpace(spaceName);
         }
 
         return new FilteringIterator(iter, U.currentTimeMillis(), p);
@@ -222,7 +221,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * @return Filter for currently running query or {@code null} if none.
      */
-    protected IndexingQueryFilter filter() {
+    protected static IndexingQueryFilter threadLocalFilter() {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
         return qctx == null ? null : qctx.filter();

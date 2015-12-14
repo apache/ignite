@@ -68,7 +68,7 @@ import org.h2.index.Cursor;
 import org.h2.index.IndexCondition;
 import org.h2.index.IndexLookupBatch;
 import org.h2.index.IndexType;
-import org.h2.index.SingleRowCursor;
+import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
@@ -287,7 +287,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
                     assert !msg.bounds().isEmpty() : "empty bounds";
 
-                    src = new RangeSource(msg.bounds(), snapshot0);
+                    src = new RangeSource(msg.bounds(), snapshot0, qctx.filter());
                 }
                 else {
                     // This is request to fetch next portion of data.
@@ -397,7 +397,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public long getRowCount(@Nullable Session ses) {
-        IndexingQueryFilter f = filter();
+        IndexingQueryFilter f = threadLocalFilter();
 
         // Fast path if we don't need to perform any filtering.
         if (f == null || f.forSpace((getTable()).spaceName()) == null)
@@ -495,7 +495,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     private Iterator<GridH2Row> doFind(@Nullable SearchRow first, boolean includeFirst, @Nullable SearchRow last) {
         ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t = treeForRead();
 
-        return doFind0(t, first, includeFirst, last);
+        return doFind0(t, first, includeFirst, last, threadLocalFilter());
     }
 
     /**
@@ -503,13 +503,15 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @param first Lower bound.
      * @param includeFirst Whether lower bound should be inclusive.
      * @param last Upper bound always inclusive.
+     * @param filter Filter.
      * @return Iterator over rows in given range.
      */
     private Iterator<GridH2Row> doFind0(
         ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t,
         @Nullable SearchRow first,
         boolean includeFirst,
-        @Nullable SearchRow last
+        @Nullable SearchRow last,
+        IndexingQueryFilter filter
     ) {
         includeFirst &= first != null;
 
@@ -519,7 +521,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         if (range == null)
             return new GridEmptyIterator<>();
 
-        return filter(range.values().iterator());
+        return filter(range.values().iterator(), filter);
     }
 
     /**
@@ -584,16 +586,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session ses, boolean first) {
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree = treeForRead();
-
-        Iterator<GridH2Row> iter = filter(first ? tree.values().iterator() : tree.descendingMap().values().iterator());
-
-        GridSearchRowPointer res = null;
-
-        if (iter.hasNext())
-            res = iter.next();
-
-        return new SingleRowCursor((Row)res);
+        throw DbException.throwInternalError();
     }
 
     /** {@inheritDoc} */
@@ -1537,14 +1530,19 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         /** */
         final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
+        /** */
+        final IndexingQueryFilter filter;
+
         /**
          * @param bounds Bounds.
          * @param tree Snapshot.
          */
         RangeSource(
             Iterable<GridH2RowRangeBounds> bounds,
-            ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree
+            ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree,
+            IndexingQueryFilter filter
         ) {
+            this.filter = filter;
             this.tree = tree;
             boundsIter = bounds.iterator();
         }
@@ -1601,7 +1599,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
                 ConcurrentNavigableMap<GridSearchRowPointer,GridH2Row> t = tree != null ? tree : treeForRead();
 
-                curRange = doFind0(t, first, true, last);
+                curRange = doFind0(t, first, true, last, filter);
 
                 if (!curRange.hasNext()) {
                     // We have to return empty range.
