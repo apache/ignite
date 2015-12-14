@@ -56,7 +56,11 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
-        spi.setIpFinder(new TcpDiscoveryMulticastIpFinder());
+        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
+
+        ipFinder.setAddressRequestAttempts(10);
+
+        spi.setIpFinder(ipFinder);
 
         Boolean clientFlag = client.get();
 
@@ -133,13 +137,13 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         srv.close();
 
-        assertTrue(disconnectLatch.await(10, SECONDS));
+        assertTrue(disconnectLatch.await(30, SECONDS));
 
         discoPort.set(TcpDiscoverySpi.DFLT_PORT + 100);
 
         startGrid(1);
 
-        assertTrue(reconnectLatch.await(10, SECONDS));
+        assertTrue(reconnectLatch.await(30, SECONDS));
     }
 
     /**
