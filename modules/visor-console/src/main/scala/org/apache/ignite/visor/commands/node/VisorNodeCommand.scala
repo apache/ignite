@@ -207,7 +207,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
                             t += ("Current job wait time", formatNumber(m.getCurrentJobWaitTime) + "ms")
                             t += ("Average job wait time", formatDouble(m.getAverageJobWaitTime) + "ms")
                             t += ("Maximum job execute time", formatNumber(m.getMaximumJobExecuteTime) + "ms")
-                            t += ("Curent job execute time", formatNumber(m.getCurrentJobExecuteTime) + "ms")
+                            t += ("Current job execute time", formatNumber(m.getCurrentJobExecuteTime) + "ms")
                             t += ("Average job execute time", formatDouble(m.getAverageJobExecuteTime) + "ms")
                             t += ("Total busy time", formatNumber(m.getTotalBusyTime) + "ms")
                             t += ("Busy time %", formatDouble(m.getBusyTimePercentage * 100) + "%")
