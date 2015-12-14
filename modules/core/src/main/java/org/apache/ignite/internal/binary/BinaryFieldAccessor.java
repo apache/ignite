@@ -103,8 +103,8 @@ public abstract class BinaryFieldAccessor {
             case TIMESTAMP_ARR:
             case ENUM_ARR:
             case OBJECT_ARR:
-            case PORTABLE_OBJ:
-            case PORTABLE:
+            case BINARY_OBJ:
+            case BINARY:
             case EXTERNALIZABLE:
                 return new DefaultFinalClassAccessor(field, id, mode, false);
 
@@ -608,8 +608,8 @@ public abstract class BinaryFieldAccessor {
 
                     break;
 
-                case PORTABLE_OBJ:
-                    writer.writePortableObjectField((BinaryObjectImpl)val);
+                case BINARY_OBJ:
+                    writer.writeBinaryObjectField((BinaryObjectImpl)val);
 
                     break;
 
@@ -623,7 +623,7 @@ public abstract class BinaryFieldAccessor {
 
                     break;
 
-                case PORTABLE:
+                case BINARY:
                 case EXTERNALIZABLE:
                 case OBJECT:
                     writer.writeObjectField(val);
@@ -809,8 +809,8 @@ public abstract class BinaryFieldAccessor {
 
                     break;
 
-                case PORTABLE_OBJ:
-                    val = reader.readPortableObject(id);
+                case BINARY_OBJ:
+                    val = reader.readBinaryObject(id);
 
                     break;
 
@@ -824,7 +824,7 @@ public abstract class BinaryFieldAccessor {
 
                     break;
 
-                case PORTABLE:
+                case BINARY:
                 case EXTERNALIZABLE:
                 case OBJECT:
                     val = reader.readObject(id);

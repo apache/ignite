@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 import sun.misc.Unsafe;
 
 /**
- * Field tests for heap-based portables.
+ * Field tests for heap-based binaries.
  */
 public class BinaryFieldsOffheapSelfTest extends BinaryFieldsAbstractSelfTest {
     /** Unsafe instance. */
@@ -46,7 +46,7 @@ public class BinaryFieldsOffheapSelfTest extends BinaryFieldsAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected BinaryObjectExImpl toPortable(BinaryMarshaller marsh, Object obj) throws Exception {
+    @Override protected BinaryObjectExImpl toBinary(BinaryMarshaller marsh, Object obj) throws Exception {
         byte[] arr = marsh.marshal(obj);
 
         long ptr = UNSAFE.allocateMemory(arr.length);
@@ -55,6 +55,6 @@ public class BinaryFieldsOffheapSelfTest extends BinaryFieldsAbstractSelfTest {
 
         UNSAFE.copyMemory(arr, BYTE_ARR_OFF, null, ptr, arr.length);
 
-        return new BinaryObjectOffheapImpl(portableContext(marsh), ptr, 0, arr.length);
+        return new BinaryObjectOffheapImpl(binaryContext(marsh), ptr, 0, arr.length);
     }
 }

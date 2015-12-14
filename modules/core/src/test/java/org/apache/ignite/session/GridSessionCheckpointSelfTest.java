@@ -102,7 +102,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
 
             marsh.setContext(new MarshallerContextTestImpl(null));
 
-            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, cfg);
+            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, cfg);
         }
 
         GridSessionCheckpointSelfTest.spi = spi;

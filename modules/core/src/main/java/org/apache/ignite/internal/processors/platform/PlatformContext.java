@@ -260,10 +260,10 @@ public interface PlatformContext {
      *
      * @param rcv Native receiver.
      * @param ptr Pointer.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Stream receiver.
      */
-    public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepPortable);
+    public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepBinary);
 
     /**
      * Create cluster node filter.

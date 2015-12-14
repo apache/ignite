@@ -42,7 +42,7 @@ public class CacheOperationContext implements Serializable {
     /** Client ID which operates over this projection. */
     private final UUID subjId;
 
-    /** Keep portable flag. */
+    /** Keep binary flag. */
     private final boolean keepBinary;
 
     /** Expiry policy. */
@@ -66,7 +66,7 @@ public class CacheOperationContext implements Serializable {
     /**
      * @param skipStore Skip store flag.
      * @param subjId Subject ID.
-     * @param keepBinary Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @param expiryPlc Expiry policy.
      */
     public CacheOperationContext(
@@ -87,16 +87,16 @@ public class CacheOperationContext implements Serializable {
     }
 
     /**
-     * @return Keep portable flag.
+     * @return Keep binary flag.
      */
     public boolean isKeepBinary() {
         return keepBinary;
     }
 
     /**
-     * See {@link IgniteInternalCache#keepPortable()}.
+     * See {@link IgniteInternalCache#keepBinary()}.
      *
-     * @return New instance of CacheOperationContext with keep portable flag.
+     * @return New instance of CacheOperationContext with keep binary flag.
      */
     public CacheOperationContext keepBinary() {
         return new CacheOperationContext(

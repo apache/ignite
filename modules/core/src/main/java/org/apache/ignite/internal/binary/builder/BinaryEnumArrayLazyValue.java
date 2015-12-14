@@ -50,13 +50,13 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
             Class cls;
 
             try {
-                cls = U.forName(reader.readString(), reader.portableContext().configuration().getClassLoader());
+                cls = U.forName(reader.readString(), reader.binaryContext().configuration().getClassLoader());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
-            compTypeId = reader.portableContext().descriptorForClass(cls, true).typeId();
+            compTypeId = reader.binaryContext().descriptorForClass(cls, true).typeId();
         }
         else {
             compTypeId = typeId;

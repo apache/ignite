@@ -68,7 +68,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Test for portable objects stored in cache.
+ * Test for binary objects stored in cache.
  */
 public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonAbstractTest {
     /** */
@@ -184,7 +184,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      */
     @SuppressWarnings("unchecked")
     public void testCircularReference() throws Exception {
-        IgniteCache c = keepPortableCache();
+        IgniteCache c = keepBinaryCache();
 
         TestReferenceObject obj1 = new TestReferenceObject();
 
@@ -229,7 +229,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             assertEquals(i, obj.val);
         }
 
-        IgniteCache<Integer, BinaryObject> kpc = keepPortableCache();
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             BinaryObject po = kpc.get(i);
@@ -254,7 +254,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             entries.put(i, val);
         }
 
-        IgniteCache<Integer, BinaryObject> prj = ((IgniteCacheProxy)c).keepPortable();
+        IgniteCache<Integer, BinaryObject> prj = ((IgniteCacheProxy)c).keepBinary();
 
         Iterator<Cache.Entry<Integer, BinaryObject>> it = prj.iterator();
 
@@ -306,7 +306,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             }
         }
 
-        IgniteCache<Integer, Collection<BinaryObject>> kpc = keepPortableCache();
+        IgniteCache<Integer, Collection<BinaryObject>> kpc = keepBinaryCache();
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             Collection<BinaryObject> col = kpc.get(i);
@@ -353,7 +353,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             }
         }
 
-        IgniteCache<Integer, Map<Integer, BinaryObject>> kpc = keepPortableCache();
+        IgniteCache<Integer, Map<Integer, BinaryObject>> kpc = keepBinaryCache();
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             Map<Integer, BinaryObject> map = kpc.get(i);
@@ -389,14 +389,14 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             assertEquals(i, obj.val);
         }
 
-        IgniteCache<Integer, BinaryObject> kpc = keepPortableCache();
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
 
-        IgniteCache<Integer, BinaryObject> cachePortableAsync = kpc.withAsync();
+        IgniteCache<Integer, BinaryObject> cacheBinaryAsync = kpc.withAsync();
 
         for (int i = 0; i < ENTRY_CNT; i++) {
-            cachePortableAsync.get(i);
+            cacheBinaryAsync.get(i);
 
-            BinaryObject po = cachePortableAsync.<BinaryObject>future().get();
+            BinaryObject po = cacheBinaryAsync.<BinaryObject>future().get();
 
             assertEquals(i, (int)po.field("val"));
         }
@@ -434,7 +434,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             }
         }
 
-        IgniteCache<Integer, BinaryObject> kpc = keepPortableCache();
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -483,14 +483,14 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             }
         }
 
-        IgniteCache<Integer, BinaryObject> kpc = keepPortableCache();
-        IgniteCache<Integer, BinaryObject> cachePortableAsync = kpc.withAsync();
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
+        IgniteCache<Integer, BinaryObject> cacheBinaryAsync = kpc.withAsync();
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                cachePortableAsync.get(i);
+                cacheBinaryAsync.get(i);
 
-                BinaryObject po = cachePortableAsync.<BinaryObject>future().get();
+                BinaryObject po = cacheBinaryAsync.<BinaryObject>future().get();
 
                 assertEquals(i, (int)po.field("val"));
 
@@ -522,7 +522,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
                 assertEquals(e.getKey().intValue(), e.getValue().val);
         }
 
-        IgniteCache<Integer, BinaryObject> kpc = keepPortableCache();
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
 
         for (int i = 0; i < ENTRY_CNT; ) {
             Set<Integer> keys = new HashSet<>();
@@ -566,8 +566,8 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
                 assertEquals(e.getKey().intValue(), e.getValue().val);
         }
 
-        IgniteCache<Integer, BinaryObject> kpc = keepPortableCache();
-        IgniteCache<Integer, BinaryObject> cachePortableAsync = kpc.withAsync();
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
+        IgniteCache<Integer, BinaryObject> cacheBinaryAsync = kpc.withAsync();
 
         for (int i = 0; i < ENTRY_CNT; ) {
             Set<Integer> keys = new HashSet<>();
@@ -576,9 +576,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
                 keys.add(i++);
 
 
-            cachePortableAsync.getAll(keys);
+            cacheBinaryAsync.getAll(keys);
 
-            Map<Integer, BinaryObject> objs = cachePortableAsync.<Map<Integer, BinaryObject>>future().get();
+            Map<Integer, BinaryObject> objs = cacheBinaryAsync.<Map<Integer, BinaryObject>>future().get();
 
             assertEquals(10, objs.size());
 
@@ -628,7 +628,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             }
         }
 
-        IgniteCache<Integer, BinaryObject> kpc = keepPortableCache();
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
 
         for (int i = 0; i < ENTRY_CNT; ) {
             Set<Integer> keys = new HashSet<>();
@@ -693,7 +693,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             }
         }
 
-        IgniteCache<Integer, BinaryObject> cache = keepPortableCache();
+        IgniteCache<Integer, BinaryObject> cache = keepBinaryCache();
 
         for (int i = 0; i < ENTRY_CNT; ) {
             Set<Integer> keys = new HashSet<>();
@@ -785,7 +785,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testTransform() throws Exception {
-        IgniteCache<Integer, BinaryObject> c = keepPortableCache();
+        IgniteCache<Integer, BinaryObject> c = keepBinaryCache();
 
         checkTransform(primaryKey(c));
 
@@ -798,9 +798,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     }
 
     /**
-     * @return Cache with keep portable flag.
+     * @return Cache with keep binary flag.
      */
-    private <K, V> IgniteCache<K, V> keepPortableCache() {
+    private <K, V> IgniteCache<K, V> keepBinaryCache() {
         return ignite(0).cache(null).withKeepBinary();
     }
 
@@ -811,7 +811,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     private void checkTransform(Integer key) throws Exception {
         log.info("Transform: " + key);
 
-        IgniteCache<Integer, BinaryObject> c = keepPortableCache();
+        IgniteCache<Integer, BinaryObject> c = keepBinaryCache();
 
         try {
             c.invoke(key, new EntryProcessor<Integer, BinaryObject, Void>() {
@@ -836,9 +836,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
                     Ignite ignite = e.unwrap(Ignite.class);
 
-                    IgniteBinary portables = ignite.binary();
+                    IgniteBinary binaries = ignite.binary();
 
-                    BinaryObjectBuilder builder = portables.builder(val);
+                    BinaryObjectBuilder builder = binaries.builder(val);
 
                     builder.setField("val", 2);
 

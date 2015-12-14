@@ -384,7 +384,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /**
-     * Write portable metadata.
+     * Write binary metadata.
      *
      * @param writer Writer.
      * @param typeId Type id.
@@ -612,8 +612,8 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepPortable) {
-        return new PlatformStreamReceiverImpl(rcv, ptr, keepPortable, this);
+    @Override public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepBinary) {
+        return new PlatformStreamReceiverImpl(rcv, ptr, keepBinary, this);
     }
 
     /** {@inheritDoc} */

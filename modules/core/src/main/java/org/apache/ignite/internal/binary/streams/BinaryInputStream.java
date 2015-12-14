@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary.streams;
 import org.apache.ignite.internal.binary.BinaryPositionReadable;
 
 /**
- * Portable input stream.
+ * Binary input stream.
  */
 public interface BinaryInputStream extends BinaryStream, BinaryPositionReadable {
     /**

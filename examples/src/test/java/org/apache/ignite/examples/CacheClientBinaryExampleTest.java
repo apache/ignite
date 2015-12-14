@@ -27,20 +27,20 @@ import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 public class CacheClientBinaryExampleTest extends GridAbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected String defaultConfig() {
-        return "examples/config/portable/example-ignite-portable.xml";
+        return "examples/config/binary/example-ignite-binary.xml";
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPortablePutGetExample() throws Exception {
+    public void testBinaryPutGetExample() throws Exception {
         CacheClientBinaryPutGetExample.main(new String[] {});
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPortableQueryExample() throws Exception {
+    public void testBinaryQueryExample() throws Exception {
         CacheClientBinaryQueryExample.main(new String[] {});
     }
 }

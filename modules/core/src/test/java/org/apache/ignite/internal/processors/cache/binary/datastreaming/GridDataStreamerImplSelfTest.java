@@ -55,7 +55,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     private static final int KEYS_COUNT = 1000;
 
     /** Flag indicating should be cache configured with binary or not.  */
-    private static boolean portables;
+    private static boolean binaries;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -66,7 +66,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        if (portables) {
+        if (binaries) {
             BinaryMarshaller marsh = new BinaryMarshaller();
 
             cfg.setMarshaller(marsh);
@@ -101,7 +101,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      */
     public void testAddDataFromMap() throws Exception {
         try {
-            portables = false;
+            binaries = false;
 
             startGrids(2);
 
@@ -143,13 +143,13 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Data streamer should add portable object that weren't registered explicitly.
+     * Data streamer should add binary object that weren't registered explicitly.
      *
      * @throws Exception If failed.
      */
-    public void testAddMissingPortable() throws Exception {
+    public void testAddMissingBinary() throws Exception {
         try {
-            portables = true;
+            binaries = true;
 
             startGrids(2);
 
@@ -177,14 +177,14 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Data streamer should correctly load portable entries from HashMap in case of grids with more than one node
+     * Data streamer should correctly load binary entries from HashMap in case of grids with more than one node
      *  and with GridOptimizedMarshaller that requires serializable.
      *
      * @throws Exception If failed.
      */
-    public void testAddPortableDataFromMap() throws Exception {
+    public void testAddBinaryDataFromMap() throws Exception {
         try {
-            portables = true;
+            binaries = true;
 
             startGrids(2);
 
@@ -220,8 +220,8 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
                 assertEquals(k, v.val());
             }
 
-            // Read random keys. Take values as PortableObject.
-            IgniteCache<Integer, BinaryObject> c2 = ((IgniteCacheProxy)c).keepPortable();
+            // Read random keys. Take values as BinaryObject.
+            IgniteCache<Integer, BinaryObject> c2 = ((IgniteCacheProxy)c).keepBinary();
 
             for (int i = 0; i < 100; i ++) {
                 Integer k = rnd.nextInt(KEYS_COUNT);

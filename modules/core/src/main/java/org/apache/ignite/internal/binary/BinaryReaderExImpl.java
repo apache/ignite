@@ -69,7 +69,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.NULL;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OPTM_MARSH;
-import static org.apache.ignite.internal.binary.GridBinaryMarshaller.PORTABLE_OBJ;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.STRING;
@@ -81,11 +81,11 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
 
 /**
- * Portable reader implementation.
+ * Binary reader implementation.
  */
 @SuppressWarnings("unchecked")
 public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, BinaryReaderHandlesHolder, ObjectInput {
-    /** Portable context. */
+    /** Binary context. */
     private final BinaryContext ctx;
 
     /** Input stream. */
@@ -185,7 +185,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         start = in.position();
 
-        // Perform full header parsing in case of portable object.
+        // Perform full header parsing in case of binary object.
         if (!skipHdrCheck && (in.readByte() == GridBinaryMarshaller.OBJ)) {
             // Ensure protocol is fine.
             BinaryUtils.checkProtocolVersion(in.readByte());
@@ -312,12 +312,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /**
      * @param fieldId Field ID.
-     * @return Portable object.
+     * @return Binary object.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable BinaryObject readPortableObject(int fieldId) throws BinaryObjectException {
+    @Nullable BinaryObject readBinaryObject(int fieldId) throws BinaryObjectException {
         if (findFieldById(fieldId)) {
-            if (checkFlag(PORTABLE_OBJ) == Flag.NULL)
+            if (checkFlag(BINARY_OBJ) == Flag.NULL)
                 return null;
 
             return new BinaryObjectImpl(ctx, BinaryUtils.doReadByteArray(in), in.readInt());
@@ -1598,12 +1598,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 break;
 
-            case PORTABLE_OBJ:
-                obj = BinaryUtils.doReadPortableObject(in, ctx);
+            case BINARY_OBJ:
+                obj = BinaryUtils.doReadBinaryObject(in, ctx);
 
                 ((BinaryObjectImpl)obj).context(ctx);
 
-                if (!GridBinaryMarshaller.KEEP_PORTABLES.get())
+                if (!GridBinaryMarshaller.KEEP_BINARIES.get())
                     obj = ((BinaryObject)obj).deserialize();
 
                 break;

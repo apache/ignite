@@ -46,7 +46,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import sun.misc.Unsafe;
 
 /**
- * Portable builder test.
+ * Binary builder test.
  */
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
@@ -80,7 +80,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         bCfg.setTypeConfigurations(Arrays.asList(
             new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration(Value.class.getName()),
-            new BinaryTypeConfiguration("org.gridgain.grid.internal.util.portable.mutabletest.*"),
+            new BinaryTypeConfiguration("org.gridgain.grid.internal.util.binary.mutabletest.*"),
             customTypeCfg));
 
         cfg.setBinaryConfiguration(bCfg);
@@ -115,7 +115,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         obj.setDefaultData();
         obj.enumArr = null;
 
-        GridBinaryTestClasses.TestObjectAllTypes deserialized = builder(toPortable(obj)).build().deserialize();
+        GridBinaryTestClasses.TestObjectAllTypes deserialized = builder(toBinary(obj)).build().deserialize();
 
         GridTestUtils.deepEquals(obj, deserialized);
     }
@@ -723,7 +723,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testOffheapPortable() throws Exception {
+    public void testOffheapBinary() throws Exception {
         BinaryObjectBuilder builder = builder("Class");
 
         builder.hashCode(100);
@@ -891,7 +891,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         GridBinaryTestClasses.TestObjectContainer c = new GridBinaryTestClasses.TestObjectContainer(list);
 
-        BinaryObjectBuilderImpl builder = builder(toPortable(c));
+        BinaryObjectBuilderImpl builder = builder(toBinary(c));
         builder.<List>getField("foo").add("!!!");
 
         BinaryObject res = builder.build();
@@ -908,25 +908,33 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testSetPortableObject() {
-        BinaryObject portableObj = builder(GridBinaryTestClasses.TestObjectContainer.class.getName())
-            .setField("foo", toPortable(new GridBinaryTestClasses.TestObjectAllTypes()))
+    public void testSetBinaryObject() {
+        // Prepare marshaller context.
+        CacheObjectBinaryProcessorImpl proc = ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects());
+
+        proc.marshal(new GridBinaryTestClasses.TestObjectContainer());
+        proc.marshal(new GridBinaryTestClasses.TestObjectAllTypes());
+
+        // Actual test.
+        BinaryObject binaryObj = builder(GridBinaryTestClasses.TestObjectContainer.class.getName())
+            .setField("foo", toBinary(new GridBinaryTestClasses.TestObjectAllTypes()))
             .build();
 
-        assertTrue(portableObj.<GridBinaryTestClasses.TestObjectContainer>deserialize().foo instanceof GridBinaryTestClasses.TestObjectAllTypes);
+        assertTrue(binaryObj.<GridBinaryTestClasses.TestObjectContainer>deserialize().foo instanceof
+            GridBinaryTestClasses.TestObjectAllTypes);
     }
 
     /**
      *
      */
-    public void testPlainPortableObjectCopyFrom() {
-        GridBinaryTestClasses.TestObjectPlainPortable obj = new GridBinaryTestClasses.TestObjectPlainPortable(toPortable(new GridBinaryTestClasses.TestObjectAllTypes()));
+    public void testPlainBinaryObjectCopyFrom() {
+        GridBinaryTestClasses.TestObjectPlainBinary obj = new GridBinaryTestClasses.TestObjectPlainBinary(toBinary(new GridBinaryTestClasses.TestObjectAllTypes()));
 
-        BinaryObjectBuilderImpl builder = builder(toPortable(obj));
-        assertTrue(builder.getField("plainPortable") instanceof BinaryObject);
+        BinaryObjectBuilderImpl builder = builder(toBinary(obj));
+        assertTrue(builder.getField("plainBinary") instanceof BinaryObject);
 
-        GridBinaryTestClasses.TestObjectPlainPortable deserialized = builder.build().deserialize();
-        assertTrue(deserialized.plainPortable != null);
+        GridBinaryTestClasses.TestObjectPlainBinary deserialized = builder.build().deserialize();
+        assertTrue(deserialized.plainBinary != null);
     }
 
     /**
@@ -950,7 +958,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         obj.setDefaultData();
         obj.enumArr = null;
 
-        BinaryObjectBuilder builder = builder(toPortable(obj));
+        BinaryObjectBuilder builder = builder(toBinary(obj));
 
         builder.removeField("str");
 
@@ -969,7 +977,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         obj.setDefaultData();
         obj.enumArr = null;
 
-        BinaryObjectBuilderImpl builder = builder(toPortable(obj));
+        BinaryObjectBuilderImpl builder = builder(toBinary(obj));
 
         builder.getField("i_");
 
@@ -987,7 +995,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         outer.inner.outer = outer;
         outer.foo = "a";
 
-        BinaryObjectBuilder builder = builder(toPortable(outer));
+        BinaryObjectBuilder builder = builder(toBinary(outer));
 
         builder.setField("foo", "b");
 
@@ -998,32 +1006,32 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Portables.
+     * @return Binaries.
      */
-    private IgniteBinary portables() {
+    private IgniteBinary binaries() {
         return grid(0).binary();
     }
 
     /**
      * @param obj Object.
-     * @return Portable object.
+     * @return Binary object.
      */
-    private BinaryObject toPortable(Object obj) {
-        return portables().toBinary(obj);
+    private BinaryObject toBinary(Object obj) {
+        return binaries().toBinary(obj);
     }
 
     /**
      * @return Builder.
      */
     private BinaryObjectBuilder builder(String clsName) {
-        return portables().builder(clsName);
+        return binaries().builder(clsName);
     }
 
     /**
      * @return Builder.
      */
     private BinaryObjectBuilderImpl builder(BinaryObject obj) {
-        return (BinaryObjectBuilderImpl)portables().builder(obj);
+        return (BinaryObjectBuilderImpl)binaries().builder(obj);
     }
 
     /**

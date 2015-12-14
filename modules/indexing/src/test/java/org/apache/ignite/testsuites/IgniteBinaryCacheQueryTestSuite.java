@@ -51,7 +51,7 @@ import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Cache query suite with portable marshaller.
+ * Cache query suite with binary marshaller.
  */
 public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
     /**
@@ -61,7 +61,7 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        TestSuite suite = new TestSuite("Grid Cache Query Test Suite using PortableMarshaller");
+        TestSuite suite = new TestSuite("Grid Cache Query Test Suite using BinaryMarshaller");
 
         // Parsing
         suite.addTestSuite(GridQueryParsingTest.class);
@@ -92,8 +92,8 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheQueryIndexingDisabledSelfTest.class);
 
-        //Should be adjusted. Not ready to be used with PortableMarshaller.
-        //suite.addTestSuite(GridCachePortableSwapScanQuerySelfTest.class);
+        //Should be adjusted. Not ready to be used with BinaryMarshaller.
+        //suite.addTestSuite(GridCacheBinarySwapScanQuerySelfTest.class);
 
         suite.addTestSuite(GridOrderedMessageCancelSelfTest.class);
 

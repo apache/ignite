@@ -53,7 +53,7 @@ import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
 
 /**
- * Portable class descriptor.
+ * Binary class descriptor.
  */
 public class BinaryClassDescriptor {
     /** */
@@ -167,9 +167,9 @@ public class BinaryClassDescriptor {
             mode = BinaryWriteMode.EXCLUSION;
         else {
             if (cls == BinaryEnumObjectImpl.class)
-                mode = BinaryWriteMode.PORTABLE_ENUM;
+                mode = BinaryWriteMode.BINARY_ENUM;
             else
-                mode = serializer != null ? BinaryWriteMode.PORTABLE : BinaryUtils.mode(cls);
+                mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
         switch (mode) {
@@ -210,9 +210,9 @@ public class BinaryClassDescriptor {
             case OBJECT_ARR:
             case COL:
             case MAP:
-            case PORTABLE_OBJ:
+            case BINARY_OBJ:
             case ENUM:
-            case PORTABLE_ENUM:
+            case BINARY_ENUM:
             case ENUM_ARR:
             case CLASS:
             case EXCLUSION:
@@ -223,7 +223,7 @@ public class BinaryClassDescriptor {
 
                 break;
 
-            case PORTABLE:
+            case BINARY:
             case EXTERNALIZABLE:
                 ctor = constructor(cls);
                 fields = null;
@@ -284,7 +284,7 @@ public class BinaryClassDescriptor {
                 throw new BinaryObjectException("Invalid mode: " + mode);
         }
 
-        if (mode == BinaryWriteMode.PORTABLE || mode == BinaryWriteMode.EXTERNALIZABLE ||
+        if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.EXTERNALIZABLE ||
             mode == BinaryWriteMode.OBJECT) {
             readResolveMtd = U.findNonPublicMethod(cls, "readResolve");
             writeReplaceMtd = U.findNonPublicMethod(cls, "writeReplace");
@@ -362,14 +362,14 @@ public class BinaryClassDescriptor {
     }
 
     /**
-     * @return portableWriteReplace() method
+     * @return binaryWriteReplace() method
      */
     @Nullable Method getWriteReplaceMethod() {
         return writeReplaceMtd;
     }
 
     /**
-     * @return portableReadResolve() method
+     * @return binaryReadResolve() method
      */
     @SuppressWarnings("UnusedDeclaration")
     @Nullable Method getReadResolveMethod() {
@@ -546,8 +546,8 @@ public class BinaryClassDescriptor {
 
                 break;
 
-            case PORTABLE_ENUM:
-                writer.doWritePortableEnum((BinaryEnumObjectImpl)obj);
+            case BINARY_ENUM:
+                writer.doWriteBinaryEnum((BinaryEnumObjectImpl)obj);
 
                 break;
 
@@ -561,12 +561,12 @@ public class BinaryClassDescriptor {
 
                 break;
 
-            case PORTABLE_OBJ:
-                writer.doWritePortableObject((BinaryObjectImpl)obj);
+            case BINARY_OBJ:
+                writer.doWriteBinaryObject((BinaryObjectImpl)obj);
 
                 break;
 
-            case PORTABLE:
+            case BINARY:
                 if (preWrite(writer, obj)) {
                     try {
                         if (serializer != null)
@@ -660,7 +660,7 @@ public class BinaryClassDescriptor {
         Object res;
 
         switch (mode) {
-            case PORTABLE:
+            case BINARY:
                 res = newInstance();
 
                 reader.setHandle(res);

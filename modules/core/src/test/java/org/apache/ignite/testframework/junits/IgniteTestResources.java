@@ -266,7 +266,7 @@ public class IgniteTestResources {
         if (marsh instanceof BinaryMarshaller) {
             BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
 
-            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, new IgniteConfiguration());
+            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, new IgniteConfiguration());
         }
 
         return marsh;
