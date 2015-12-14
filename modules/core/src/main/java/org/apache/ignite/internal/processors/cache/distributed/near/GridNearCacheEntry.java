@@ -127,6 +127,12 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 }
             }
 
+            if (cctx.affinity().backup(cctx.localNode(), part, topVer)) {
+                this.topVer = -1L;
+
+                return false;
+            }
+
             this.topVer = topVer.topologyVersion();
 
             return true;

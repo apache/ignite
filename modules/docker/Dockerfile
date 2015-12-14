@@ -15,41 +15,26 @@
 # limitations under the License.
 #
 
-# Start from a Debian image.
-FROM debian:8
+# Start from a Java image.
+FROM java:7
 
-# Install tools.
-RUN apt-get update && apt-get install -y --fix-missing \
-  wget \
-  dstat \
-  maven \
-  git
+# Ignite version
+ENV IGNITE_VERSION 1.5.0-b1
 
-# Intasll Oracle JDK.
-RUN mkdir /opt/jdk
+WORKDIR /opt/ignite
 
-RUN wget --header "Cookie: oraclelicense=accept-securebackup-cookie" \
-  http://download.oracle.com/otn-pub/java/jdk/7u76-b13/jdk-7u76-linux-x64.tar.gz
+ADD http://www.us.apache.org/dist/ignite/1.5.0-b1/apache-ignite-fabric-1.5.0-b1-bin.zip /opt/ignite/ignite.zip
 
-RUN tar -zxf jdk-7u76-linux-x64.tar.gz -C /opt/jdk
+# Ignite home
+ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric-1.5.0-b1-bin
 
-RUN rm jdk-7u76-linux-x64.tar.gz
+RUN unzip ignite.zip
 
-RUN update-alternatives --install /usr/bin/java java /opt/jdk/jdk1.7.0_76/bin/java 100
-
-RUN update-alternatives --install /usr/bin/javac javac /opt/jdk/jdk1.7.0_76/bin/javac 100
-
-# Sets java variables.
-ENV JAVA_HOME /opt/jdk/jdk1.7.0_76/
-
-# Create working directory
-RUN mkdir /home/ignite_home
-
-WORKDIR /home/ignite_home
+RUN rm ignite.zip
 
 # Copy sh files and set permission
-ADD *.sh ./
+ADD ./run.sh $IGNITE_HOME/
 
-RUN chmod +x *.sh
+RUN chmod +x $IGNITE_HOME/run.sh
 
-CMD ./run.sh
+CMD $IGNITE_HOME/run.sh

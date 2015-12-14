@@ -265,6 +265,9 @@ public class CacheQueryExample {
     private static void initialize() {
         IgniteCache<Long, Organization> orgCache = Ignition.ignite().cache(ORG_CACHE);
 
+        // Clear cache before running the example.
+        orgCache.clear();
+
         // Organizations.
         Organization org1 = new Organization("ApacheIgnite");
         Organization org2 = new Organization("Other");
@@ -273,6 +276,9 @@ public class CacheQueryExample {
         orgCache.put(org2.id, org2);
 
         IgniteCache<AffinityKey<Long>, Person> personCache = Ignition.ignite().cache(PERSON_CACHE);
+
+        // Clear cache before running the example.
+        personCache.clear();
 
         // People.
         Person p1 = new Person(org1, "John", "Doe", 2000, "John Doe has Master Degree.");

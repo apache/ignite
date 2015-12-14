@@ -63,6 +63,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -77,6 +78,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessag
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -1728,6 +1730,40 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testDiscoveryEventsDiscard() throws Exception {
+        try {
+            TestEventDiscardSpi spi = new TestEventDiscardSpi();
+
+            nodeSpi.set(spi);
+
+            Ignite ignite0 = startGrid(0);
+
+            startGrid(1);
+
+            ignite0.createCache(new CacheConfiguration<>()); // Send custom message.
+
+            ignite0.destroyCache(null); // Send custom message.
+
+            stopGrid(1);
+
+            log.info("Start new node.");
+
+            spi.checkDuplicates = true;
+
+            startGrid(1);
+
+            spi.checkDuplicates = false;
+
+            assertFalse(spi.failed);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * @param nodeName Node name.
      * @throws Exception If failed.
      */
@@ -1779,6 +1815,37 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean apply(UUID uuid, Object o) {
             return true;
+        }
+    }
+
+
+    /**
+     *
+     */
+    private static class TestEventDiscardSpi extends TcpDiscoverySpi {
+        /** */
+        private ConcurrentHashSet<IgniteUuid> msgIds = new ConcurrentHashSet<>();
+
+        /** */
+        private volatile boolean checkDuplicates;
+
+        /** */
+        private volatile boolean failed;
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock,
+            TcpDiscoveryAbstractMessage msg,
+            GridByteArrayOutputStream bout,
+            long timeout) throws IOException, IgniteCheckedException {
+            boolean add = msgIds.add(msg.id());
+
+            if (checkDuplicates && !add) {
+                log.error("Send duplicated message: " + msg);
+
+                failed = true;
+            }
+
+            super.writeToSocket(sock, msg, bout, timeout);
         }
     }
 

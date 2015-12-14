@@ -111,7 +111,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     private boolean all;
 
     /** */
-    private boolean keepPortable;
+    private boolean keepBinary;
 
     /** */
     private UUID subjId;
@@ -165,7 +165,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @param incBackups {@code true} if need to include backups.
      * @param fields Fields query flag.
      * @param all Whether to load all pages.
-     * @param keepPortable Whether to keep binary.
+     * @param keepBinary Whether to keep binary.
      * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
@@ -179,7 +179,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         boolean incBackups,
         boolean fields,
         boolean all,
-        boolean keepPortable,
+        boolean keepBinary,
         UUID subjId,
         int taskHash,
         AffinityTopologyVersion topVer,
@@ -192,7 +192,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.incBackups = incBackups;
         this.fields = fields;
         this.all = all;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
@@ -215,7 +215,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @param incBackups {@code true} if need to include backups.
      * @param args Query arguments.
      * @param incMeta Include meta data or not.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
@@ -237,7 +237,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         boolean incBackups,
         Object[] args,
         boolean incMeta,
-        boolean keepPortable,
+        boolean keepBinary,
         UUID subjId,
         int taskHash,
         AffinityTopologyVersion topVer,
@@ -262,7 +262,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.incBackups = incBackups;
         this.args = args;
         this.incMeta = incMeta;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
@@ -454,8 +454,8 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     /**
      * @return Whether to keep binary.
      */
-    public boolean keepPortable() {
-        return keepPortable;
+    public boolean keepBinary() {
+        return keepBinary;
     }
 
     /**
@@ -555,7 +555,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeBoolean("keepPortable", keepPortable))
+                if (!writer.writeBoolean("keepBinary", keepBinary))
                     return false;
 
                 writer.incrementState();
@@ -711,7 +711,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 reader.incrementState();
 
             case 13:
-                keepPortable = reader.readBoolean("keepPortable");
+                keepBinary = reader.readBoolean("keepBinary");
 
                 if (!reader.isLastRead())
                     return false;

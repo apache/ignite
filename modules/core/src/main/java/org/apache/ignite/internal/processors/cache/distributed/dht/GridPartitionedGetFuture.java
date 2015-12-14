@@ -88,7 +88,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      *          if called on backup node.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
@@ -103,7 +103,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean forcePrimary,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean canRemap,
@@ -116,7 +116,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             forcePrimary,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             expiryPlc,
             skipVals,
             canRemap,
@@ -400,7 +400,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                     null,
                                     taskName,
                                     expiryPlc,
-                                    !deserializePortable);
+                                    !deserializeBinary);
 
                                 if (res != null) {
                                     v = res.get1();
@@ -420,7 +420,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                     null,
                                     taskName,
                                     expiryPlc,
-                                    !deserializePortable);
+                                    !deserializeBinary);
                             }
 
                             colocated.context().evicts().touch(entry, topVer);
@@ -439,7 +439,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                         v,
                                         skipVals,
                                         keepCacheObjects,
-                                        deserializePortable,
+                                        deserializeBinary,
                                         true);
 
                                 return false;
@@ -524,7 +524,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         info.value(),
                         skipVals,
                         keepCacheObjects,
-                        deserializePortable,
+                        deserializeBinary,
                         false);
                 }
             }

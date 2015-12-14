@@ -34,7 +34,7 @@ import sun.misc.Unsafe;
  *     <li>Expire time</li>
  *     <li>GridCacheVersion or GridCacheVersionEx</li>
  *     <li>Value is byte array flag</li>
- *     <li>Value byte array (marshalled with portable or grid marshaller)</li>
+ *     <li>Value byte array (marshalled with binary or grid marshaller)</li>
  *     <li>Value classloader UUID</li>
  *     <li>Key classloader UUID</li>
  * </ul>
