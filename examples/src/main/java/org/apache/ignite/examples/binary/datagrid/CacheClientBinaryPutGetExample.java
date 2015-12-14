@@ -42,7 +42,7 @@ import org.apache.ignite.binary.BinaryObject;
  * format using special cache projection.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables the binary marshaller: {@code 'ignite.{sh|bat} examples/config/binary/example-ignite-binary.xml'}.
+ * enables the binary marshaller: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
  * Alternatively you can run {@link org.apache.ignite.examples.ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
