@@ -131,6 +131,12 @@
             <outputDirectory>/platforms/cpp/licenses</outputDirectory>
         </fileSet>
 
+        <!-- Move CPP docs. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/doc</directory>
+            <outputDirectory>/platforms/cpp/docs</outputDirectory>
+        </fileSet>
+
         <!-- Other files. -->
         <fileSet>
             <directory>bin</directory>

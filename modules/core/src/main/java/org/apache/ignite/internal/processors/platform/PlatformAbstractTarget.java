@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.platform;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
@@ -229,7 +229,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * Process IN operation.
      *
      * @param type Type.
-     * @param reader Portable reader.
+     * @param reader Binary reader.
      * @return Result.
      * @throws IgniteCheckedException In case of exception.
      */
@@ -241,8 +241,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * Process IN-OUT operation.
      *
      * @param type Type.
-     * @param reader Portable reader.
-     * @param writer Portable writer.
+     * @param reader Binary reader.
+     * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
     protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
@@ -254,7 +254,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * Process IN operation with managed object as result.
      *
      * @param type Type.
-     * @param reader Portable reader.
+     * @param reader Binary reader.
      * @return Result.
      * @throws IgniteCheckedException In case of exception.
      */
@@ -267,8 +267,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      *
      * @param type Type.
      * @param arg Argument.
-     * @param reader Portable reader.
-     * @param writer Portable writer.
+     * @param reader Binary reader.
+     * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
     protected void processInObjectStreamOutStream(int type, @Nullable Object arg, BinaryRawReaderEx reader,
@@ -290,7 +290,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * Process OUT operation.
      *
      * @param type Type.
-     * @param writer Portable writer.
+     * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
     protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {

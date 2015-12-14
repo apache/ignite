@@ -846,10 +846,10 @@
                                         <exclude>dev-tools/.gradle/**/*</exclude>
                                         <exclude>dev-tools/gradle/wrapper/**/*</exclude>
                                         <exclude>dev-tools/gradlew</exclude>
-                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/1.1/test2-1.1.pom</exclude>
-                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/maven-metadata-local.xml</exclude>
-                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/1.1/test1-1.1.pom</exclude>
-                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/maven-metadata-local.xml</exclude>
+                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.pom</exclude>
+                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/maven-metadata-local.xml</exclude>
+                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.pom</exclude>
+                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/maven-metadata-local.xml</exclude>
                                         <!--shmem-->
                                         <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
                                         <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
@@ -875,8 +875,8 @@
                                         <!--platforms-->
                                         <exclude>src/main/java/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
                                         <exclude>src/main/resources/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
-                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/1.1/test1-1.1.jar</exclude>
-                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/1.1/test2-1.1.jar</exclude>
+                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.jar</exclude>
+                                        <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</exclude>
                                         <exclude>**/META-INF/services/*.PlatformBootstrapFactory</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>

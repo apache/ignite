@@ -50,9 +50,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.portable.BinaryCachingMetadataHandler;
-import org.apache.ignite.internal.portable.PortableContext;
-import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
@@ -89,7 +89,7 @@ public class IgniteMock implements Ignite {
     private IgniteBinary binaryMock;
 
     /** */
-    private PortableContext ctx;
+    private BinaryContext ctx;
 
     /**
      * Mock values
@@ -295,7 +295,7 @@ public class IgniteMock implements Ignite {
 
         if (ctx == null) {
             /** {@inheritDoc} */
-            ctx = new PortableContext(BinaryCachingMetadataHandler.create(), configuration()) {
+            ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), configuration()) {
                 @Override public int typeId(String typeName) {
                     return typeName.hashCode();
                 }

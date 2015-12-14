@@ -138,7 +138,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * so keys and values will be returned from cache API methods without changes. Therefore,
      * signature of the cache can contain only following types:
      * <ul>
-     *     <li><code>org.apache.ignite.portable.PortableObject</code> for portable classes</li>
+     *     <li><code>org.apache.ignite.binary.BinaryObject</code> for binary classes</li>
      *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
      *     <li>Arrays of primitives (byte[], int[], ...)</li>
      *     <li>{@link String} and array of {@link String}s</li>
@@ -148,7 +148,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *     <li>Enums and array of enums</li>
      *     <li>
      *         Maps, collections and array of objects (but objects inside
-     *         them will still be converted if they are portable)
+     *         them will still be converted if they are binary)
      *     </li>
      * </ul>
      * <p>
@@ -158,7 +158,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <pre>
      * IgniteCache<Integer, BinaryObject> prj = cache.withKeepBinary();
      *
-     * // Value is not deserialized and returned in portable format.
+     * // Value is not deserialized and returned in binary format.
      * BinaryObject po = prj.get(1);
      * </pre>
      * <p>
@@ -166,7 +166,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * if default marshaller is used.
      * If not, this method is no-op and will return current cache.
      *
-     * @return New cache instance for portable objects.
+     * @return New cache instance for binary objects.
      */
     public <K1, V1> IgniteCache<K1, V1> withKeepBinary();
 
