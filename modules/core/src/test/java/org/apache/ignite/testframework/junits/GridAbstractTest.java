@@ -1286,14 +1286,16 @@ public abstract class GridAbstractTest extends TestCase {
 
         String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
 
-        if (!F.isEmpty(mcastAddr)) {
-            TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
+        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
 
+        ipFinder.setAddresses(Collections.singleton("127.0.0.1:" + TcpDiscoverySpi.DFLT_PORT));
+
+        if (!F.isEmpty(mcastAddr)) {
             ipFinder.setMulticastGroup(mcastAddr);
             ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
-
-            discoSpi.setIpFinder(ipFinder);
         }
+
+        discoSpi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(discoSpi);
 

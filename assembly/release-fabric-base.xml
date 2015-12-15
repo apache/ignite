@@ -82,7 +82,7 @@
 
         <!-- Move .Net docs. -->
         <fileSet>
-            <directory>modules/platforms/dotnet/doc</directory>
+            <directory>modules/clients/target/dotnetdoc/html</directory>
             <outputDirectory>/platforms/dotnet/docs</outputDirectory>
         </fileSet>
 
@@ -133,7 +133,7 @@
 
         <!-- Move CPP docs. -->
         <fileSet>
-            <directory>modules/platforms/cpp/doc</directory>
+            <directory>modules/clients/target/cppdoc/html</directory>
             <outputDirectory>/platforms/cpp/docs</outputDirectory>
         </fileSet>
 

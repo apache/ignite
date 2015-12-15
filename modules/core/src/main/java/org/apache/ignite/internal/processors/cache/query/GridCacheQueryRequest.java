@@ -111,7 +111,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     private boolean all;
 
     /** */
-    private boolean keepBinary;
+    private boolean keepPortable;
 
     /** */
     private UUID subjId;
@@ -192,7 +192,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.incBackups = incBackups;
         this.fields = fields;
         this.all = all;
-        this.keepBinary = keepBinary;
+        this.keepPortable = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
@@ -262,7 +262,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.incBackups = incBackups;
         this.args = args;
         this.incMeta = incMeta;
-        this.keepBinary = keepBinary;
+        this.keepPortable = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
@@ -455,7 +455,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @return Whether to keep binary.
      */
     public boolean keepBinary() {
-        return keepBinary;
+        return keepPortable;
     }
 
     /**
@@ -555,7 +555,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeBoolean("keepBinary", keepBinary))
+                if (!writer.writeBoolean("keepPortable", keepPortable))
                     return false;
 
                 writer.incrementState();
@@ -711,7 +711,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 reader.incrementState();
 
             case 13:
-                keepBinary = reader.readBoolean("keepBinary");
+                keepPortable = reader.readBoolean("keepPortable");
 
                 if (!reader.isLastRead())
                     return false;

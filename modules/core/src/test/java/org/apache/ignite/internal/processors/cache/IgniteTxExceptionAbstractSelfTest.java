@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -386,25 +387,57 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         info("Check key: " + key);
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteKernal grid = (IgniteKernal)grid(i);
+            final int idx = i;
 
-            GridCacheAdapter cache = grid.internalCache(null);
+            GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    IgniteKernal grid = (IgniteKernal)grid(idx);
 
-            GridCacheEntryEx entry = cache.peekEx(key);
+                    GridCacheAdapter cache = grid.internalCache(null);
 
-            log.info("Entry: " + entry);
+                    GridCacheEntryEx entry = cache.peekEx(key);
 
-            if (entry != null)
-                assertFalse("Unexpected entry for grid [i=" + i + ", entry=" + entry + ']', entry.lockedByAny());
+                    log.info("Entry: " + entry);
 
-            if (cache.isNear()) {
-                entry = ((GridNearCacheAdapter)cache).dht().peekEx(key);
+                    if (entry != null) {
+                        try {
+                            boolean locked = entry.lockedByAny();
 
-                log.info("Dht entry: " + entry);
+                            if (locked) {
+                                info("Unexpected entry for grid [i=" + idx + ", entry=" + entry + ']');
 
-                if (entry != null)
-                    assertFalse("Unexpected entry for grid [i=" + i + ", entry=" + entry + ']', entry.lockedByAny());
-            }
+                                return false;
+                            }
+                        }
+                        catch (GridCacheEntryRemovedException ignore) {
+                            // Obsolete entry cannot be locked.
+                        }
+                    }
+
+                    if (cache.isNear()) {
+                        entry = ((GridNearCacheAdapter)cache).dht().peekEx(key);
+
+                        log.info("Dht entry: " + entry);
+
+                        if (entry != null) {
+                            try {
+                                boolean locked = entry.lockedByAny();
+
+                                if (locked) {
+                                    info("Unexpected entry for grid [i=" + idx + ", entry=" + entry + ']');
+
+                                    return false;
+                                }
+                            }
+                            catch (GridCacheEntryRemovedException ignore) {
+                                // Obsolete entry cannot be locked.
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+            }, getTestTimeout());
         }
     }
 
