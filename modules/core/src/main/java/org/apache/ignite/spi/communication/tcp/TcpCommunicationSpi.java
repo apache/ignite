@@ -3024,7 +3024,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private final BlockingQueue<GridNioRecoveryDescriptor> q = new LinkedBlockingQueue<>();
 
         /**
-         *
+         * @param gridName Grid name.
          */
         private CommunicationWorker(String gridName) {
             super(gridName, "tcp-comm-worker", log);

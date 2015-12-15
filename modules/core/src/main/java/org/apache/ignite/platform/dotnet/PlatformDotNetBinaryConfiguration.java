@@ -17,10 +17,9 @@
 
 package org.apache.ignite.platform.dotnet;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.util.ArrayList;
 import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Mirror of .Net class BinaryConfiguration.cs
@@ -41,7 +40,7 @@ public class PlatformDotNetBinaryConfiguration {
     /** Default serializer. */
     private String dfltSerializer;
 
-    /** Whether to cache deserialized value in IGridPortableObject */
+    /** Whether to cache deserialized value in IGridBinaryObject */
     private boolean dfltKeepDeserialized = true;
 
     /**
@@ -145,7 +144,7 @@ public class PlatformDotNetBinaryConfiguration {
     /**
      * Gets default keep deserialized flag. See {@link #setDefaultKeepDeserialized(boolean)} for more information.
      *
-     * @return  Flag indicates whether to cache deserialized value in IGridPortableObject.
+     * @return  Flag indicates whether to cache deserialized value in IGridBinaryObject.
      */
     public boolean isDefaultKeepDeserialized() {
         return dfltKeepDeserialized;

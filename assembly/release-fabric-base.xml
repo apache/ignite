@@ -35,19 +35,6 @@
             <destName>ignite_x86.sln</destName>
         </file>
 
-        <!-- Copy .Net files. -->
-        <file>
-            <source>modules/platforms/dotnet/Apache.Ignite.slnrel</source>
-            <outputDirectory>/platforms/dotnet</outputDirectory>
-            <destName>Apache.Ignite.sln</destName>
-        </file>
-
-        <file>
-            <source>modules/platforms/dotnet/Apache.Ignite_x86.slnrel</source>
-            <outputDirectory>/platforms/dotnet</outputDirectory>
-            <destName>Apache.Ignite_x86.sln</destName>
-        </file>
-
         <!-- Other files. -->
         <file>
             <source>assembly/LICENSE_FABRIC</source>
@@ -87,16 +74,16 @@
             </includes>
         </fileSet>
 
-        <!-- Move .Net "core" module. -->
+        <!-- Move .Net binaries. -->
         <fileSet>
-            <directory>modules/platforms/dotnet/Apache.Ignite.Core</directory>
-            <outputDirectory>/platforms/dotnet/Apache.Ignite.Core</outputDirectory>
+            <directory>modules/platforms/dotnet/bin</directory>
+            <outputDirectory>/platforms/dotnet/bin</outputDirectory>
         </fileSet>
 
-        <!-- Move .Net executable module. -->
+        <!-- Move .Net docs. -->
         <fileSet>
-            <directory>modules/platforms/dotnet/Apache.Ignite</directory>
-            <outputDirectory>/platforms/dotnet/Apache.Ignite</outputDirectory>
+            <directory>modules/clients/target/dotnetdoc/html</directory>
+            <outputDirectory>/platforms/dotnet/docs</outputDirectory>
         </fileSet>
 
         <!-- Move .Net examples. -->
@@ -142,6 +129,12 @@
         <fileSet>
             <directory>modules/platforms/licenses</directory>
             <outputDirectory>/platforms/cpp/licenses</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP docs. -->
+        <fileSet>
+            <directory>modules/clients/target/cppdoc/html</directory>
+            <outputDirectory>/platforms/cpp/docs</outputDirectory>
         </fileSet>
 
         <!-- Other files. -->

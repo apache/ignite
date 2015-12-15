@@ -221,7 +221,7 @@ public class Ignition {
      *      not found).
      */
     public static boolean stop(@Nullable String name, boolean cancel) {
-        return IgnitionEx.stop(name, cancel);
+        return IgnitionEx.stop(name, cancel, false);
     }
 
     /**
@@ -522,8 +522,7 @@ public class Ignition {
      * According to contract this method has to be called only under {@link IgniteThread}.
      * An {@link IllegalArgumentException} will be thrown otherwise.
      *
-     * @return a current {@link Ignite} instance to address from closure.
-     *
+     * @return A current {@link Ignite} instance to address from closure.
      * @throws IgniteIllegalStateException Thrown if grid was not properly
      *      initialized or grid instance was stopped or was not started
      * @throws IllegalArgumentException Thrown if current thread is not an {@link IgniteThread}.

@@ -57,6 +57,8 @@ import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
@@ -83,6 +85,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 @SuppressWarnings("UnusedDeclaration")
 @GridCommonTest(group = "NonDistributed Kernal Self")
 public class GridFactorySelfTest extends GridCommonAbstractTest {
+    /** IP finder. */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** */
     private static final AtomicInteger cnt = new AtomicInteger();
 
@@ -103,6 +108,15 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cnt.set(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+
+        return cfg;
     }
 
     /**
@@ -863,9 +877,11 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     public void testCurrentIgnite() throws Exception {
         final String LEFT = "LEFT";
         final String RIGHT = "RIGHT";
+
         try {
             Ignite iLEFT = startGrid(LEFT);
             Ignite iRIGHT = startGrid(RIGHT);
+
             waitForDiscovery(iLEFT, iRIGHT);
 
             iLEFT.compute(iLEFT.cluster().forRemotes()).run(new IgniteRunnable() {

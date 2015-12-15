@@ -399,8 +399,14 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
 
     /**
      * @param i Node index.
+     * @param startLatch Thread start latch.
+     * @param run Run flag.
+     * @throws Exception If failed.
+     * @return Threads future.
      */
-    private IgniteInternalFuture<?> startNodeAndCreaterThread(final int i, final CountDownLatch startLatch, final AtomicBoolean run)
+    private IgniteInternalFuture<?> startNodeAndCreaterThread(final int i,
+        final CountDownLatch startLatch,
+        final AtomicBoolean run)
         throws Exception {
         return multithreadedAsync(new Runnable() {
             @Override public void run() {

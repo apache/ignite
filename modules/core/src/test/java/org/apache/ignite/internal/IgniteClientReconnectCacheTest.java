@@ -693,7 +693,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try {
-                    Ignition.start(getConfiguration(getTestGridName(SRV_CNT)));
+                    Ignition.start(optimize(getConfiguration(getTestGridName(SRV_CNT))));
 
                     fail();
 
@@ -724,7 +724,13 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         TestTcpDiscoverySpi srvSpi = spi(srv);
 
         try {
-            assertTrue(joinLatch.await(5000, MILLISECONDS));
+            if (!joinLatch.await(10_000, MILLISECONDS)) {
+                log.error("Failed to wait for join event, will dump threads.");
+
+                U.dumpThreads(log);
+
+                fail("Failed to wait for join event.");
+            }
 
             U.sleep(1000);
 

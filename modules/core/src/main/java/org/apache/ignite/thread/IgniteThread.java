@@ -77,13 +77,22 @@ public class IgniteThread extends Thread {
         this.gridName = gridName;
     }
 
-    protected IgniteThread(String gridName, ThreadGroup threadGroup, String threadName) {
-        super(threadGroup, threadName);
+    /**
+     * @param gridName Name of grid this thread is created for.
+     * @param threadGrp Thread group.
+     * @param threadName Name of thread.
+     */
+    protected IgniteThread(String gridName, ThreadGroup threadGrp, String threadName) {
+        super(threadGrp, threadName);
 
         this.gridName = gridName;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets name of the grid this thread belongs to.
+     *
+     * @return Name of the grid this thread belongs to.
+     */
     public String getGridName() {
         return gridName;
     }

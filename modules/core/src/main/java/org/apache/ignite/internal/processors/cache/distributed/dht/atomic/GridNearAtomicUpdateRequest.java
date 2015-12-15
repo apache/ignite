@@ -151,8 +151,12 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /** */
     private boolean clientReq;
 
-    /** Keep portable flag. */
+    /** Keep binary flag. */
     private boolean keepBinary;
+
+    /** */
+    @GridDirectTransient
+    private GridNearAtomicUpdateResponse res;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -341,7 +345,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     }
 
     /**
-     * @return Keep portable flag.
+     * @return Keep binary flag.
      */
     public boolean keepBinary() {
         return keepBinary;
@@ -542,6 +546,27 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      */
     public boolean hasPrimary() {
         return hasPrimary;
+    }
+
+    /**
+     * @param res Response.
+     * @return {@code True} if current response was {@code null}.
+     */
+    public boolean onResponse(GridNearAtomicUpdateResponse res) {
+        if (this.res == null) {
+            this.res = res;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return Response.
+     */
+    @Nullable public GridNearAtomicUpdateResponse response() {
+        return res;
     }
 
     /** {@inheritDoc}

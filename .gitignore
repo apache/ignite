@@ -27,3 +27,4 @@ git-patch-prop-local.sh
 **/cpp/**/vs/x64/
 **/cpp/**/vs/Win32/
 **/dotnet/**/obj/
+/modules/platforms/cpp/doc/

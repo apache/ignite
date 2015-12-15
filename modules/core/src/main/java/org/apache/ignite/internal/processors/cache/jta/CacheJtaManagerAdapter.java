@@ -44,6 +44,8 @@ public abstract class CacheJtaManagerAdapter extends GridCacheSharedManagerAdapt
     /**
      * Gets transaction manager finder. Returns Object to avoid dependency on JTA library.
      *
+     * Used only in test purposes.
+     *
      * @return Transaction manager finder.
      */
     @Nullable public abstract Object tmLookup();

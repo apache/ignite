@@ -1,4 +1,4 @@
-/*
+*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -856,6 +856,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             if (e.getCause() instanceof IgniteCheckedException) {
                 throw (IgniteCheckedException)e.getCause();
             }
+
             fail(e.getCause().getMessage());
         }
 
