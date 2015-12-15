@@ -324,6 +324,7 @@ public class GridH2QueryContext {
      public static void set(GridH2QueryContext x) {
          assert qctx.get() == null;
 
+         // We need MAP query context to be available to other threads to run distributed joins.
          if (x.key.type == MAP && qctxs.putIfAbsent(x.key, x) != null)
              throw new IllegalStateException("Query context is already set.");
 

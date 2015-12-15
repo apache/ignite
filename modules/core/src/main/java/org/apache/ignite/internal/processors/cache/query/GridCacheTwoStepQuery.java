@@ -183,6 +183,7 @@ public class GridCacheTwoStepQuery {
         cp.rdc = rdc.copy(args);
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
+        cp.distributedJoins = distributedJoins;
 
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy(args));

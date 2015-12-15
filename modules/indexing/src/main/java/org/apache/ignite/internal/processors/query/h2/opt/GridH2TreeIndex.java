@@ -1415,6 +1415,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                                 if (req.bounds() != null)
                                     req = createRequest(qctx, req.batchLookupId());
 
+                                // Prefetch next page.
                                 send(singletonList(node), req);
                             }
                             else
@@ -1559,6 +1560,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
          * @return Range.
          */
         public GridH2RowRange next(int maxRows) {
+            assert maxRows > 0 : maxRows;
+
             for (;;) {
                 if (curRange.hasNext()) {
                     // Here we are getting last rows from previously partially fetched range.
@@ -1602,12 +1605,12 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 curRange = doFind0(t, first, true, last, filter);
 
                 if (!curRange.hasNext()) {
-                    // We have to return empty range.
-                    GridH2RowRange nextRange = new GridH2RowRange();
+                    // We have to return empty range here.
+                    GridH2RowRange emptyRange = new GridH2RowRange();
 
-                    nextRange.rangeId(curRangeId);
+                    emptyRange.rangeId(curRangeId);
 
-                    return nextRange;
+                    return emptyRange;
                 }
             }
         }
