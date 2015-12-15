@@ -16,6 +16,7 @@
 ::
 
 @echo off
+Setlocal EnableDelayedExpansion
 
 ::
 :: Parses command line parameters into Ignite variables that are common for the launcher scripts:
