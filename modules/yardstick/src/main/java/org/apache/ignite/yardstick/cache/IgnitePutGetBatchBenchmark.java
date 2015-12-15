@@ -39,14 +39,13 @@ public class IgnitePutGetBatchBenchmark extends IgniteCacheAbstractBenchmark<Int
 
         Map<Integer, SampleValue> updates = new TreeMap<>();
 
-        for (Map.Entry<Integer, Object> e : vals.entrySet()) {
-            if (e.getValue() != null) {
-                int key = nextRandom(args.range());
+        for (Integer key : keys) {
+            Object val = vals.get(key);
 
-                updates.put(key, new SampleValue(key));
-            }
-            else
-                updates.put(e.getKey(), new SampleValue(e.getKey()));
+            if (val != null)
+                key = nextRandom(args.range());
+
+            updates.put(key, new SampleValue(key));
         }
 
         cache.putAll(updates);
