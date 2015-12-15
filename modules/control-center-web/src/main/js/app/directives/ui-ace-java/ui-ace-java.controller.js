@@ -15,26 +15,12 @@
  * limitations under the License.
  */
 
-const SNIPPET = 1;
-const FACTORY = 2;
-
 const SERVER_CFG = 'ServerConfigurationFactory';
 const CLIENT_CFG = 'ClientConfigurationFactory';
-
-const TYPES = [
-    {value: SNIPPET, label: 'snippet'},
-    {value: FACTORY, label: 'factory class'}
-];
 
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     var ctrl = this;
 
-    // Scope values.
-    $scope.type = SNIPPET;
-    
-    // Scope data.
-    $scope.types = TYPES;
-    
     // Scope methods.
     $scope.onLoad = onLoad;
 
@@ -45,7 +31,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
         if (!value)
             return;
 
-        let type = $scope.type === FACTORY ? (!$scope.cfg ? SERVER_CFG : CLIENT_CFG) : false;
+        let type = $scope.cfg ? CLIENT_CFG : SERVER_CFG;
 
         // TODO IGNITE-2054: need move $generatorJava to services.
         ctrl.data = $generatorJava.cluster($scope.cluster, 'factory', type, $scope.cfg);
@@ -55,4 +41,4 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     $scope.$watch('cfg', clusterWatcher, true);
     $scope.$watch('type', clusterWatcher);
     $scope.$watch('cluster', clusterWatcher);
-}]
+}];

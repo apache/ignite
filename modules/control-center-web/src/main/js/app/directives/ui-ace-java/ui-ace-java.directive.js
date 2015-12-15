@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-java.jade!'
-import controller from './ui-ace-java.controller'
+import template from './ui-ace-java.jade!';
+import controller from './ui-ace-java.controller';
 
 export default ['igniteUiAceJava', [() => {
 
@@ -29,5 +29,5 @@ export default ['igniteUiAceJava', [() => {
 		template,
 		controller,
 		controllerAs: 'ctrl'
-	}
-}]]
+	};
+}]];
