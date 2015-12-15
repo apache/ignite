@@ -32,7 +32,7 @@ namespace
     enum { DEFAULT_DISPLAY_SIZE = 34 };
 
     /** Default variable size data display size. */
-    enum { DEFAULT_VARDATA_DISPLAY_SIZE = 1024 };
+    enum { DEFAULT_VARDATA_DISPLAY_SIZE = 64 };
 }
 
 namespace ignite
@@ -41,6 +41,57 @@ namespace ignite
     {
         namespace type_traits
         {
+
+#ifdef _DEBUG
+
+#define DBG_STR_CASE(x) case x: return #x
+
+            const char* StatementAttrIdToString(long id)
+            {
+                switch (id)
+                {
+                    DBG_STR_CASE(SQL_ATTR_APP_PARAM_DESC);
+                    DBG_STR_CASE(SQL_ATTR_APP_ROW_DESC);
+                    DBG_STR_CASE(SQL_ATTR_ASYNC_ENABLE);
+                    DBG_STR_CASE(SQL_ATTR_CONCURRENCY);
+                    DBG_STR_CASE(SQL_ATTR_CURSOR_SCROLLABLE);
+                    DBG_STR_CASE(SQL_ATTR_CURSOR_SENSITIVITY);
+                    DBG_STR_CASE(SQL_ATTR_CURSOR_TYPE);
+                    DBG_STR_CASE(SQL_ATTR_ENABLE_AUTO_IPD);
+                    DBG_STR_CASE(SQL_ATTR_FETCH_BOOKMARK_PTR);
+                    DBG_STR_CASE(SQL_ATTR_IMP_PARAM_DESC);
+                    DBG_STR_CASE(SQL_ATTR_IMP_ROW_DESC);
+                    DBG_STR_CASE(SQL_ATTR_KEYSET_SIZE);
+                    DBG_STR_CASE(SQL_ATTR_MAX_LENGTH);
+                    DBG_STR_CASE(SQL_ATTR_MAX_ROWS);
+                    DBG_STR_CASE(SQL_ATTR_METADATA_ID);
+                    DBG_STR_CASE(SQL_ATTR_NOSCAN);
+                    DBG_STR_CASE(SQL_ATTR_PARAM_BIND_OFFSET_PTR);
+                    DBG_STR_CASE(SQL_ATTR_PARAM_BIND_TYPE);
+                    DBG_STR_CASE(SQL_ATTR_PARAM_OPERATION_PTR);
+                    DBG_STR_CASE(SQL_ATTR_PARAM_STATUS_PTR);
+                    DBG_STR_CASE(SQL_ATTR_PARAMS_PROCESSED_PTR);
+                    DBG_STR_CASE(SQL_ATTR_PARAMSET_SIZE);
+                    DBG_STR_CASE(SQL_ATTR_QUERY_TIMEOUT);
+                    DBG_STR_CASE(SQL_ATTR_RETRIEVE_DATA);
+                    DBG_STR_CASE(SQL_ATTR_ROW_ARRAY_SIZE);
+                    DBG_STR_CASE(SQL_ATTR_ROW_BIND_OFFSET_PTR);
+                    DBG_STR_CASE(SQL_ATTR_ROW_BIND_TYPE);
+                    DBG_STR_CASE(SQL_ATTR_ROW_NUMBER);
+                    DBG_STR_CASE(SQL_ATTR_ROW_OPERATION_PTR);
+                    DBG_STR_CASE(SQL_ATTR_ROW_STATUS_PTR);
+                    DBG_STR_CASE(SQL_ATTR_ROWS_FETCHED_PTR);
+                    DBG_STR_CASE(SQL_ATTR_SIMULATE_CURSOR);
+                    DBG_STR_CASE(SQL_ATTR_USE_BOOKMARKS);
+                default:
+                    break;
+                }
+                return "<< UNKNOWN ID >>";
+            }
+
+#undef DBG_STR_CASE
+#endif
+
             bool IsApplicationTypeSupported(int16_t type)
             {
                 return ToDriverType(type) != IGNITE_ODBC_C_TYPE_UNSUPPORTED;

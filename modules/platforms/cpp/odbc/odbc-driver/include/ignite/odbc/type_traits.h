@@ -26,6 +26,16 @@ namespace ignite
     {
         namespace type_traits
         {
+#ifdef _DEBUG
+            /**
+             * Convert statement attribute ID to string containing its name.
+             * Debug function.
+             * @param type Attribute ID.
+             * @return Null-terminated string containing attribute name.
+             */
+            const char* StatementAttrIdToString(long id);
+#endif
+
             /** 
              * ODBC type aliases.
              * We use these so we will not be needed to include system-specific

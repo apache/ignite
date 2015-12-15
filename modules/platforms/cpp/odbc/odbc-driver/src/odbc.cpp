@@ -35,7 +35,6 @@
 #include "ignite/odbc/environment.h"
 #include "ignite/odbc/connection.h"
 
-
 #ifdef ODBC_DEBUG
 
 FILE* log_file = NULL;
@@ -49,7 +48,6 @@ void logInit(const char* path)
 }
 
 #endif
-
 
 BOOL INSTAPI ConfigDSN(HWND     hwndParent,
                        WORD     req,
@@ -786,6 +784,14 @@ SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
     success = success && statement->GetColumnAttribute(columnNum, SQL_DESC_SCALE, 0, 0, 0, &decimalDigitsRes);
     success = success && statement->GetColumnAttribute(columnNum, SQL_DESC_NULLABLE, 0, 0, 0, &nullableRes);
 
+    LOG_MSG("columnNum: %lld\n", columnNum);
+    LOG_MSG("dataTypeRes: %lld\n", dataTypeRes);
+    LOG_MSG("columnSizeRes: %lld\n", columnSizeRes);
+    LOG_MSG("decimalDigitsRes: %lld\n", decimalDigitsRes);
+    LOG_MSG("nullableRes: %lld\n", nullableRes);
+    LOG_MSG("columnNameBuf: %s\n", columnNameBuf);
+    LOG_MSG("columnNameLen: %d\n", *columnNameLen);
+
     *dataType = static_cast<SQLSMALLINT>(dataTypeRes);
     *columnSize = static_cast<SQLULEN>(columnSizeRes);
     *decimalDigits = static_cast<SQLSMALLINT>(decimalDigitsRes);
@@ -858,6 +864,88 @@ SQLRETURN SQL_API SQLForeignKeys(SQLHSTMT       stmt,
         primaryTable, foreignCatalog, foreignSchema, foreignTable);
 
     return success ? SQL_SUCCESS : SQL_ERROR;
+}
+
+SQLRETURN SQL_API SQLGetStmtAttr(SQLHSTMT       stmt,
+                                 SQLINTEGER     attr,
+                                 SQLPOINTER     valueBuf,
+                                 SQLINTEGER     valueBufLen,
+                                 SQLINTEGER*    valueResLen)
+{
+    using ignite::odbc::Statement;
+    using ignite::odbc::type_traits::StatementAttrIdToString;
+
+    LOG_MSG("SQLGetStmtAttr called: %s (%d)\n", StatementAttrIdToString(attr), attr);
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    switch (attr)
+    {
+        case SQL_ATTR_APP_ROW_DESC:
+        case SQL_ATTR_APP_PARAM_DESC:
+        case SQL_ATTR_IMP_ROW_DESC:
+        case SQL_ATTR_IMP_PARAM_DESC:
+        {
+            SQLPOINTER *val = reinterpret_cast<SQLPOINTER*>(valueBuf);
+
+            *val = static_cast<SQLPOINTER>(stmt);
+
+            break;
+        }
+
+        case SQL_ATTR_ROW_ARRAY_SIZE:
+        {
+            SQLINTEGER *val = reinterpret_cast<SQLINTEGER*>(valueBuf);
+
+            *val = static_cast<SQLINTEGER>(1);
+
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLSetStmtAttr(SQLHSTMT    stmt,
+                                 SQLINTEGER  attr,
+                                 SQLPOINTER  value,
+                                 SQLINTEGER  valueLen)
+{
+    using ignite::odbc::Statement;
+    using ignite::odbc::type_traits::StatementAttrIdToString;
+
+    LOG_MSG("SQLSetStmtAttr called: %s (%d)\n", StatementAttrIdToString(attr), attr);
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    switch (attr)
+    {
+        case SQL_ATTR_ROW_ARRAY_SIZE:
+        {
+            SQLULEN val = reinterpret_cast<SQLULEN>(value);
+
+            LOG_MSG("Value: %d\n", val);
+
+            if (val == 1)
+                return SQL_SUCCESS;
+
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    return SQL_ERROR;
 }
 
 //
@@ -1089,16 +1177,6 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV     env,
     return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLGetStmtAttr(SQLHSTMT       stmt,
-                                 SQLINTEGER     attr,
-                                 SQLPOINTER     valueBuf,
-                                 SQLINTEGER     valueBufLen,
-                                 SQLINTEGER*    valueResLen)
-{
-    LOG_MSG("SQLGetStmtAttr called\n");
-    return SQL_SUCCESS;
-}
-
 SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC     conn,
                                     SQLINTEGER  attr,
                                     SQLPOINTER  value,
@@ -1122,15 +1200,6 @@ SQLRETURN SQL_API SQLSetEnvAttr(SQLHENV     env,
                                 SQLINTEGER  valueLen)
 {
     LOG_MSG("SQLSetEnvAttr called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLSetStmtAttr(SQLHSTMT    stmt,
-                                 SQLINTEGER  attr,
-                                 SQLPOINTER  value,
-                                 SQLINTEGER  valueLen)
-{
-    LOG_MSG("SQLSetStmtAttr called\n");
     return SQL_SUCCESS;
 }
 

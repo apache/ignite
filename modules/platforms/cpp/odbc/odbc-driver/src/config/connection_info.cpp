@@ -97,6 +97,12 @@ namespace ignite
                     DBG_STR_CASE(SQL_CURSOR_ROLLBACK_BEHAVIOR);
                     DBG_STR_CASE(SQL_TXN_CAPABLE);
                     DBG_STR_CASE(SQL_QUOTED_IDENTIFIER_CASE);
+                    DBG_STR_CASE(SQL_SQL92_NUMERIC_VALUE_FUNCTIONS);
+                    DBG_STR_CASE(SQL_SQL92_STRING_FUNCTIONS);
+                    DBG_STR_CASE(SQL_SQL92_DATETIME_FUNCTIONS);
+                    DBG_STR_CASE(SQL_SQL92_PREDICATES);
+                    DBG_STR_CASE(SQL_SQL92_RELATIONAL_JOIN_OPERATORS);
+                    DBG_STR_CASE(SQL_SQL92_VALUE_EXPRESSIONS);
                 default: 
                     break;
                 }
@@ -115,8 +121,8 @@ namespace ignite
                 strParams[SQL_DBMS_NAME]   = "Apache Ignite";
 
                 // ODBC version.
-                strParams[SQL_DRIVER_ODBC_VER] = "02.00";
-                strParams[SQL_DBMS_VER]        = "02.00";
+                strParams[SQL_DRIVER_ODBC_VER] = "03.00";
+                strParams[SQL_DBMS_VER]        = "03.00";
 
                 // Driver version. At a minimum, the version is of the form 
                 // ##.##.####, where the first two digits are the major version,
@@ -240,6 +246,38 @@ namespace ignite
 
                 // Bitmask enumerating the support operations in SQLSetPos.
                 intParams[SQL_POS_OPERATIONS] = 0;
+
+                // Bitmask enumerating the numeric value scalar functions.
+                intParams[SQL_SQL92_NUMERIC_VALUE_FUNCTIONS] = 0;
+
+                // Bitmask enumerating the string scalar functions.
+                intParams[SQL_SQL92_STRING_FUNCTIONS] = 0;
+
+                // Bitmask enumerating the datetime scalar functions.
+                intParams[SQL_SQL92_DATETIME_FUNCTIONS] = 0;
+
+                // Bitmask enumerating the value expressions supported,
+                // as defined in SQL-92.
+                intParams[SQL_SQL92_VALUE_EXPRESSIONS] = SQL_SVE_CASE | 
+                    SQL_SVE_COALESCE | SQL_SVE_NULLIF;
+
+                // Bitmask enumerating the datetime scalar functions.
+                intParams[SQL_SQL92_PREDICATES] = SQL_SP_BETWEEN |
+                    SQL_SP_COMPARISON | SQL_SP_EXISTS | SQL_SP_IN |
+                    SQL_SP_ISNOTNULL | SQL_SP_ISNULL | SQL_SP_LIKE |
+                    SQL_SP_MATCH_FULL | SQL_SP_MATCH_PARTIAL |
+                    SQL_SP_MATCH_UNIQUE_FULL | SQL_SP_MATCH_UNIQUE_PARTIAL |
+                    SQL_SP_OVERLAPS | SQL_SP_QUANTIFIED_COMPARISON |
+                    SQL_SP_UNIQUE;
+
+                // Bitmask enumerating the relational join operators supported
+                // in a SELECT statement, as defined in SQL-92.
+                intParams[SQL_SQL92_RELATIONAL_JOIN_OPERATORS] =
+                    SQL_SRJO_CORRESPONDING_CLAUSE | SQL_SRJO_CROSS_JOIN |
+                    SQL_SRJO_EXCEPT_JOIN | SQL_SRJO_EXCEPT_JOIN |
+                    SQL_SRJO_INNER_JOIN | SQL_SRJO_INTERSECT_JOIN |
+                    SQL_SRJO_LEFT_OUTER_JOIN | SQL_SRJO_NATURAL_JOIN |
+                    SQL_SRJO_RIGHT_OUTER_JOIN | SQL_SRJO_UNION_JOIN;
 
                 //========================= Short Params ==========================
                 // The maximum number of active statements that the driver can
