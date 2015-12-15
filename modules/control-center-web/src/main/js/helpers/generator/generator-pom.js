@@ -159,7 +159,7 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
     if (dialect.MySQL)
         addDependency('mysql', 'mysql-connector-java', '5.1.37');
 
-    if (dialect.PosgreSQL)
+    if (dialect.PostgreSQL)
         addDependency('org.postgresql', 'postgresql', '9.4-1204-jdbc42');
 
     if (dialect.H2)

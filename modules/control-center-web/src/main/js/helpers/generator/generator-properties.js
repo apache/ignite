@@ -28,7 +28,7 @@ $generatorProperties.jdbcUrlTemplate = function(dialect) {
             return 'jdbc:sqlserver://[host]:[port][;databaseName=database]';
         case 'MySQL':
             return 'jdbc:mysql://[host]:[port]/[database]';
-        case 'PosgreSQL':
+        case 'PostgreSQL':
             return 'jdbc:postgresql://[host]:[port]/[database]';
         case 'H2':
             return 'jdbc:h2:tcp://[host]/[database]';
