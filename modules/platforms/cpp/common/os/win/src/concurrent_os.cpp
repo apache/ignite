@@ -17,6 +17,8 @@
 
 #include "ignite/common/concurrent_os.h"
 
+#pragma intrinsic(_InterlockedCompareExchange64)
+
 #ifndef _WIN64
 namespace
 {
