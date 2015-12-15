@@ -242,9 +242,10 @@ public class GridSqlQuerySplitter {
         map.parameterIndexes(toIntArray(paramIdxs));
 
         Set<String> spaces = new HashSet<>(schemas.size());
-        for (String schema : schemas) {
+
+        for (String schema : schemas)
             spaces.add(igniteH2Indexing.space(schema));
-        }
+
         // Build resulting two step query.
         GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(spaces, rdc, rdcQry.simpleQuery()).addMapQuery(map);
 

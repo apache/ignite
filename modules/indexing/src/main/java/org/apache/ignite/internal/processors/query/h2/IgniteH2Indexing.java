@@ -651,7 +651,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Removing query index table: " + tbl.fullTableName());
 
-        Connection c = connectionForThread(schema(tbl.spaceName()));
+        Connection c = connectionForThread(tbl.schemaName());
 
         Statement stmt = null;
 
@@ -876,7 +876,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private ResultSet executeQuery(String space, String qry, @Nullable Collection<Object> params, TableDescriptor tbl)
             throws IgniteCheckedException {
-        Connection conn = connectionForThread(schema(tbl.spaceName()));
+        Connection conn = connectionForThread(tbl.schemaName());
 
         String sql = generateQuery(qry, tbl);
 
@@ -1184,9 +1184,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     *  TODO
-     * @param cacheName
-     * @return
+     * Returns empty string, if {@code nullableString} is empty.
+     *
+     * @param nullableString String for convertion. Could be null.
+     * @return Non null string. Could be empty.
      */
     private static String emptyIfNull(String nullableString) {
         return nullableString == null ? "" : nullableString;
@@ -1331,13 +1332,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Gets space name from database schema. A proper way to request a space name for an empty schema is to
+     * use {@code "\"\"" String} as schema name.
+     *
      * @param schema Schema name.
-     * @return Space name.
+     * @return Space name. Could be null.
      */
     public String space(String schema) {
         assert schema != null;
 
-        return "".equals(schema) ? null : schema2space.get(schema);
+        if ("".equals(schema))
+            return null;
+
+        String result = schema2space.get(schema);
+
+        if (result != null)
+            return result;
+
+        // For the compatibility with {@link org.h2.schema.Schema#getName()}
+        return schema2space.get(escapeName(schema, true));
     }
 
     /** {@inheritDoc} */
@@ -1549,7 +1562,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schema2space.put(schema, emptyIfNull(ccfg.getName()));
         space2schema.put(emptyIfNull(ccfg.getName()), schema);
 
-        if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(),
+        if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(), schema,
             ccfg.getOffHeapMaxMemory() >= 0 || ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED ?
             new GridUnsafeMemory(0) : null, ccfg)) != null)
             throw new IgniteCheckedException("Cache already registered: " + U.maskName(ccfg.getName()));
@@ -1891,10 +1904,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /**
-         * @return Space name.
+         * @return Schema name.
          */
-        public String spaceName() {
-            return schema.spaceName;
+        public String schemaName() {
+            return schema.schemaName;
         }
 
         /**
@@ -2160,6 +2173,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final String spaceName;
 
         /** */
+        private final String schemaName;
+
+        /** */
         private final GridUnsafeMemory offheap;
 
         /** */
@@ -2176,8 +2192,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param offheap Offheap memory.
          * @param ccfg Cache configuration.
          */
-        private Schema(@Nullable String spaceName, GridUnsafeMemory offheap, CacheConfiguration<?,?> ccfg) {
+        private Schema(@Nullable String spaceName, String schemaName, GridUnsafeMemory offheap, CacheConfiguration<?,?> ccfg) {
             this.spaceName = spaceName;
+            this.schemaName = schemaName;
             this.offheap = offheap;
             this.ccfg = ccfg;
 
