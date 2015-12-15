@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
 /**
  * Denotes an exception which has some data to be written in a special manner.

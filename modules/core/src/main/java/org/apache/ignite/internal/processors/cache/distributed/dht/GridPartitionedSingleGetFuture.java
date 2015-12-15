@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -101,8 +102,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     /** Task name. */
     private final String taskName;
 
-    /** Whether to deserialize portable objects. */
-    private boolean deserializePortable;
+    /** Whether to deserialize binary objects. */
+    private boolean deserializeBinary;
 
     /** Skip values flag. */
     private boolean skipVals;
@@ -120,6 +121,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     private final boolean keepCacheObjects;
 
     /** */
+    @GridToStringInclude
     private ClusterNode node;
 
     /**
@@ -130,7 +132,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param forcePrimary If {@code true} then will force network trip to primary node even if called on backup node.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
@@ -145,7 +147,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         boolean forcePrimary,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean canRemap,
@@ -160,7 +162,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         this.forcePrimary = forcePrimary;
         this.subjId = subjId;
         this.taskName = taskName;
-        this.deserializePortable = deserializePortable;
+        this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.canRemap = canRemap;
@@ -414,7 +416,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param res Result.
      */
     public void onResult(UUID nodeId, GridNearSingleGetResponse res) {
-        if (!processResponse(nodeId) || !checkError(res.error(), res.invalidPartitions(), res.topologyVersion()))
+        if (!processResponse(nodeId) ||
+            !checkError(res.error(), res.invalidPartitions(), res.topologyVersion(), nodeId))
             return;
 
         Message res0 = res.result();
@@ -449,7 +452,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      */
     @Override public void onResult(UUID nodeId, GridNearGetResponse res) {
         if (!processResponse(nodeId) ||
-            !checkError(res.error(), !F.isEmpty(res.invalidPartitions()), res.topologyVersion()))
+            !checkError(res.error(), !F.isEmpty(res.invalidPartitions()), res.topologyVersion(), nodeId))
             return;
 
         Collection<GridCacheEntryInfo> infos = res.entries();
@@ -479,10 +482,13 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param err Error.
      * @param invalidParts Invalid partitions error flag.
      * @param rmtTopVer Received topology version.
+     * @param nodeId Node ID.
+     * @return {@code True} if should process received response.
      */
     private boolean checkError(@Nullable IgniteCheckedException err,
         boolean invalidParts,
-        AffinityTopologyVersion rmtTopVer) {
+        AffinityTopologyVersion rmtTopVer,
+        UUID nodeId) {
         if (err != null) {
             onDone(err);
 
@@ -497,7 +503,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 onDone(new IgniteCheckedException("Failed to process invalid partitions response (remote node reported " +
                     "invalid partitions but remote topology version does not differ from local) " +
                     "[topVer=" + topVer + ", rmtTopVer=" + rmtTopVer + ", part=" + cctx.affinity().partition(key) +
-                    ", nodeId=" + node.id() + ']'));
+                    ", nodeId=" + nodeId + ']'));
 
                 return false;
             }
@@ -580,7 +586,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 }
                 else {
                     if (!keepCacheObjects) {
-                        Object res = cctx.unwrapPortableIfNeeded(val, !deserializePortable && !skipVals);
+                        Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary && !skipVals);
 
                         onDone(res);
                     }

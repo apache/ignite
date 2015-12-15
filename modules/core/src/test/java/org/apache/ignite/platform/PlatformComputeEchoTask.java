@@ -74,17 +74,17 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
     /** Type: map. */
     private static final int TYPE_MAP = 11;
 
-    /** Type: portable object which exists in all platforms. */
-    private static final int TYPE_PORTABLE = 12;
+    /** Type: binary object which exists in all platforms. */
+    private static final int TYPE_BINARY = 12;
 
-    /** Type: portable object which exists only in Java. */
-    private static final int TYPE_PORTABLE_JAVA = 13;
+    /** Type: binary object which exists only in Java. */
+    private static final int TYPE_BINARY_JAVA = 13;
 
     /** Type: object array. */
     private static final int TYPE_OBJ_ARRAY = 14;
 
-    /** Type: portable object array. */
-    private static final int TYPE_PORTABLE_ARRAY = 15;
+    /** Type: binary object array. */
+    private static final int TYPE_BINARY_ARRAY = 15;
 
     /** Type: enum. */
     private static final int TYPE_ENUM = 16;
@@ -165,16 +165,16 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                 case TYPE_MAP:
                     return Collections.singletonMap(1, 1);
 
-                case TYPE_PORTABLE:
+                case TYPE_BINARY:
                     return new PlatformComputeBinarizable(1);
 
-                case TYPE_PORTABLE_JAVA:
+                case TYPE_BINARY_JAVA:
                     return new PlatformComputeJavaBinarizable(1);
 
                 case TYPE_OBJ_ARRAY:
                     return new String[] { "foo", "bar", "baz" };
 
-                case TYPE_PORTABLE_ARRAY:
+                case TYPE_BINARY_ARRAY:
                     return new PlatformComputeBinarizable[] {
                         new PlatformComputeBinarizable(1),
                         new PlatformComputeBinarizable(2),
