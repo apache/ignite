@@ -41,11 +41,11 @@ import org.apache.ignite.binary.BinaryObject;
  * it demonstrates how binary object can be retrieved in fully-deserialized form or in binary object
  * format using special cache projection.
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables the binary marshaller: {@code 'ignite.{sh|bat} examples/config/binary/example-ignite-binary.xml'}.
+ * Remote nodes should always be started with the following command:
+ * {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}
  * <p>
  * Alternatively you can run {@link org.apache.ignite.examples.ExampleNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-ignite.xml} configuration.
+ * start a node with {@code examples/config/example-ignite.xml} configuration.
  */
 @SuppressWarnings("TypeMayBeWeakened")
 public class CacheClientBinaryPutGetExample {
