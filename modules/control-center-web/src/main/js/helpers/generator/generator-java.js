@@ -1401,12 +1401,19 @@ $generatorJava.clusterCaches = function (caches, igfss, res) {
 
         $generatorJava.resetVariables(res);
 
+        var hasDatasource = $generatorCommon.cacheHasDatasource(cache);
+
         res.line('/**');
-        res.line(' * Create cache configuration for cache "' + cache.name + '".');
+        res.line(' * Create configuration for cache "' + cache.name + '".');
         res.line(' *');
         res.line(' * @return Configured cache.');
+
+        if (hasDatasource)
+            res.line(' * @throws Exception if failed to create cache configuration.');
+
         res.line(' */');
-        res.startBlock('public static CacheConfiguration ' + cacheName + '(' + ($generatorCommon.cacheHasDatasource(cache) ? 'Properties props' : '') + ') {');
+        res.startBlock('public static CacheConfiguration ' + cacheName + '(' +
+            (hasDatasource ? 'Properties props' : '') + ')' + (hasDatasource ? 'throws Exception' : '') + ' {');
 
         $generatorJava.declareVariable(res, cacheName, 'org.apache.ignite.configuration.CacheConfiguration');
 
