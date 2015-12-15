@@ -99,7 +99,7 @@ namespace ignite
                 //for (size_t i = 0; i < buf.size(); ++i)
                 //    LOG_MSG("Data[%0.4d] : %0.3d, %c\n", i, (int)buf[i], buf[i] > 64 && buf[i] < 128 ? buf[i] : '.');
 
-                if (inMem.Capacity() < buf.size())
+                if (inMem.Capacity() < static_cast<int32_t>(buf.size()))
                     inMem.Reallocate(static_cast<int32_t>(buf.size()));
 
                 memcpy(inMem.Data(), buf.data(), buf.size());

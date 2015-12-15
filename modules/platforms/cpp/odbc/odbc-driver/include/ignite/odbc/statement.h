@@ -213,6 +213,20 @@ namespace ignite
              */
             bool AffectedRows(int64_t& rowCnt) const;
 
+            /**
+             * Set rows fetched buffer pointer.
+             *
+             * @param ptr Rows fetched buffer pointer.
+             */
+            void SetRowsFetchedPtr(size_t* ptr);
+
+            /**
+             * Get rows fetched buffer pointer.
+             *
+             * @return Rows fetched buffer pointer.
+             */
+            size_t* GetRowsFetchedPtr();
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Statement)
 
@@ -235,6 +249,9 @@ namespace ignite
 
             /** Underlying query. */
             std::auto_ptr<query::Query> currentQuery;
+
+            /** Buffer to store number of rows fetched by the last fetch. */
+            size_t* rowsFetched;
         };
     }
 }

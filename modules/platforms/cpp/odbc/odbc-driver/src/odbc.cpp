@@ -99,11 +99,11 @@ BOOL INSTAPI ConfigDSN(HWND     hwndParent,
     return TRUE;
 }
 
-SQLRETURN SQLGetInfo(SQLHDBC        conn,
-                     SQLUSMALLINT   infoType,
-                     SQLPOINTER     infoValue,
-                     SQLSMALLINT    infoValueMax,
-                     SQLSMALLINT*   length)
+SQLRETURN SQL_API SQLGetInfo(SQLHDBC        conn,
+                             SQLUSMALLINT   infoType,
+                             SQLPOINTER     infoValue,
+                             SQLSMALLINT    infoValueMax,
+                             SQLSMALLINT*   length)
 {
     using ignite::odbc::Connection;
     using ignite::odbc::config::ConnectionInfo;
@@ -905,8 +905,17 @@ SQLRETURN SQL_API SQLGetStmtAttr(SQLHSTMT       stmt,
             break;
         }
 
-        default:
+        case SQL_ATTR_ROWS_FETCHED_PTR:
+        {
+            SQLULEN** val = reinterpret_cast<SQLULEN**>(valueBuf);
+
+            *val = reinterpret_cast<SQLULEN*>(statement->GetRowsFetchedPtr());
+
             break;
+        }
+
+        default:
+            return SQL_ERROR;
     }
 
     return SQL_SUCCESS;
@@ -935,17 +944,24 @@ SQLRETURN SQL_API SQLSetStmtAttr(SQLHSTMT    stmt,
 
             LOG_MSG("Value: %d\n", val);
 
-            if (val == 1)
-                return SQL_SUCCESS;
+            if (val != 1)
+                return SQL_ERROR;
+
+            break;
+        }
+
+        case SQL_ATTR_ROWS_FETCHED_PTR:
+        {
+            statement->SetRowsFetchedPtr(reinterpret_cast<size_t*>(value));
 
             break;
         }
 
         default:
-            break;
+            return SQL_ERROR;
     }
 
-    return SQL_ERROR;
+    return SQL_SUCCESS;
 }
 
 //

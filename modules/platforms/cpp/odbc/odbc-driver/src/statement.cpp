@@ -29,7 +29,7 @@ namespace ignite
     namespace odbc
     {
         Statement::Statement(Connection& parent) :
-            connection(parent), columnBindings(), currentQuery()
+            connection(parent), columnBindings(), currentQuery(), rowsFetched(0)
         {
             // No-op.
         }
@@ -156,10 +156,18 @@ namespace ignite
 
         SqlResult Statement::FetchRow()
         {
+            if (rowsFetched)
+                *rowsFetched = 0;
+
             if (!currentQuery.get())
                 return SQL_RESULT_ERROR;
 
-            return currentQuery->FetchNextRow(columnBindings);
+            SqlResult res = currentQuery->FetchNextRow(columnBindings);
+
+            if (rowsFetched && res == SQL_RESULT_SUCCESS)
+                *rowsFetched = 1;
+
+            return res;
         }
 
         const meta::ColumnMetaVector* Statement::GetMeta() const
@@ -219,6 +227,16 @@ namespace ignite
             rowCnt = currentQuery->AffectedRows();
 
             return true;
+        }
+
+        void Statement::SetRowsFetchedPtr(size_t* ptr)
+        {
+            rowsFetched = ptr;
+        }
+
+        size_t* Statement::GetRowsFetchedPtr()
+        {
+            return rowsFetched;
         }
     }
 }
