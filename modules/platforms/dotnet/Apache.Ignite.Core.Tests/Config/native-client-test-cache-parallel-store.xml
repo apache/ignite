@@ -39,7 +39,7 @@
                     <property name="name" value="object_store_parallel"/>
                     <property name="cacheMode" value="LOCAL"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="keepBinaryInStore" value="false"/>
+                    <property name="storeKeepBinary" value="false"/>
 
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
