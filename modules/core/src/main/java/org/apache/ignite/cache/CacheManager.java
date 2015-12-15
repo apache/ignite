@@ -109,6 +109,8 @@ public class CacheManager implements javax.cache.CacheManager {
 
                 cfg.setGridName("CacheManager_" + igniteCnt.getAndIncrement());
 
+                cfg.setClassLoader(clsLdr);
+
                 ignite = (IgniteKernal)IgnitionEx.start(cfg);
             }
             else
