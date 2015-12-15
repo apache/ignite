@@ -168,7 +168,7 @@
                                 <configuration>
                                     <target>
                                         <exec executable="${doxygen.exec}" searchpath="true" dir="../platforms/dotnet/">
-                                            <arg value="dotnet.dxg" />
+                                            <arg value="Apache.Ignite.dxg" />
                                         </exec>
 
                                         <copy file="../../assembly/docfiles/ignite_logo.png" todir="target/dotnetdoc/html" />
