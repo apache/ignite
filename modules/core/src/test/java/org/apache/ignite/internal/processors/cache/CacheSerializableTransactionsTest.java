@@ -2981,6 +2981,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> restartFut = restart ? restartFuture(stop, null) : null;
 
+            final long stopTime = U.currentTimeMillis() + getTestTimeout() - 30_000;
+
             for (int i = 0; i < 30; i++) {
                 final AtomicInteger cntr = new AtomicInteger();
 
@@ -3007,6 +3009,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                         barrier.await();
 
                         for (int i = 0; i < 1000; i++) {
+                            if (i % 100 == 0 && U.currentTimeMillis() > stopTime)
+                                break;
+
                             try {
                                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                                     Integer val = cache.get(key);
@@ -3036,6 +3041,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 assertTrue(cntr.get() > 0);
 
                 checkValue(key, cntr.get(), cacheName, restart);
+
+                if (U.currentTimeMillis() > stopTime)
+                    break;
             }
 
             stop.set(true);
