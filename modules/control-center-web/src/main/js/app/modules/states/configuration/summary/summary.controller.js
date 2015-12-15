@@ -28,7 +28,9 @@ export default [
 
         $loading.finish('loading');
 
-        $scope.selectItem(_.first(clusters));
+        const idx = sessionStorage.summarySelectedId || 0;
+
+        $scope.selectItem(clusters[idx]);
     });
 
     $scope.panelExpanded = $common.panelExpanded;
@@ -66,8 +68,11 @@ export default [
             return;
 
         ctrl.cluster = cluster;
+
         $scope.cluster = cluster;
         $scope.selectedItem = cluster;
+
+        sessionStorage.summarySelectedId = $scope.clusters.indexOf(cluster);
     };
 
     let updateTab = (cluster) => {
