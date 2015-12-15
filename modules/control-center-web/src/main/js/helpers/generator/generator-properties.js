@@ -68,10 +68,17 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
 
                         switch (storeFactory.dialect) {
                             case 'DB2':
-                                res.line(beanId + '.jdbc.server_name=YOUR_JDBC_SERVER_NAME');
+                                res.line(beanId + '.jdbc.server_name=YOUR_DATABASE_SERVER_NAME');
                                 res.line(beanId + '.jdbc.port_number=YOUR_JDBC_PORT_NUMBER');
-                                res.line(beanId + '.jdbc.database_name=YOUR_JDBC_DATABASE_TYPE');
+                                res.line(beanId + '.jdbc.database_name=YOUR_DATABASE_NAME');
                                 res.line(beanId + '.jdbc.driver_type=YOUR_JDBC_DRIVER_TYPE');
+
+                                break;
+
+                            case 'PostgreSQL':
+                                res.line(beanId + '.jdbc.server_name=YOUR_DATABASE_SERVER_NAME');
+                                res.line(beanId + '.jdbc.database_name=YOUR_DATABASE_NAME');
+
                                 break;
 
                             default:
