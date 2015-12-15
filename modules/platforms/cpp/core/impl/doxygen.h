@@ -42,7 +42,7 @@
 	 namespace cache
 	 {
 		 /**
-		  * %Ignite %Cache Query API.
+		  * Contains APIs for creating and executing cache queries.
 		  */
 		 namespace query
 		 {
