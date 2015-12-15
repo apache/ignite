@@ -92,8 +92,10 @@ public class IgniteSinkTask extends SinkTask {
      */
     @Override public void put(Collection<SinkRecord> records) {
         try {
-            for (SinkRecord record : records)
-                buffer.add(record);
+            for (SinkRecord record : records) {
+                if (record.key() != null)
+                    buffer.add(record);
+            }
         }
         catch (ConnectException e) {
             log.error("Failed adding record", e);
