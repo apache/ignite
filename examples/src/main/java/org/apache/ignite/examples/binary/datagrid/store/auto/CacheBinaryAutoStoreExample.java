@@ -18,10 +18,8 @@
 package org.apache.ignite.examples.binary.datagrid.store.auto;
 
 import java.sql.Types;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
@@ -30,8 +28,8 @@ import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.examples.util.DbH2ServerStartup;
 import org.apache.ignite.examples.model.Person;
+import org.apache.ignite.examples.util.DbH2ServerStartup;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -162,6 +160,9 @@ public class CacheBinaryAutoStoreExample {
                 cache.loadCache(null);
 
                 System.out.println(">>> Loaded cache entries: " + cache.size());
+            }
+            finally {
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }
