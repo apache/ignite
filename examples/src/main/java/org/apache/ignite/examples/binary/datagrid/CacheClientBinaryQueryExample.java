@@ -45,8 +45,11 @@ import org.apache.ignite.binary.BinaryObject;
  * This example demonstrates use of binary objects with cache queries.
  * The example populates cache with sample data and runs several SQL and full text queries over this data.
  * <p>
- * Remote nodes should always be started with {@link org.apache.ignite.examples.ExampleNodeStartup} which starts
- * a node with {@code examples/config/example-ignite.xml} configuration.
+ * Remote nodes should always be started with the following command:
+ * {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}
+ * <p>
+ * Alternatively you can run {@link org.apache.ignite.examples.ExampleNodeStartup} in another JVM which will
+ * start a node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheClientBinaryQueryExample {
     /** Organization cache name. */
