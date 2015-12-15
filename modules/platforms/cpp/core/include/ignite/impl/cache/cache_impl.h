@@ -300,7 +300,7 @@ namespace ignite
                  */
                 query::QueryCursorImpl* QuerySql(const ignite::cache::query::SqlQuery& qry, IgniteError* err);
 
-                /*
+                /**
                  * Invoke text query.
                  *
                  * @param qry Query.
@@ -309,7 +309,7 @@ namespace ignite
                  */
                 query::QueryCursorImpl* QueryText(const ignite::cache::query::TextQuery& qry, IgniteError* err);
 
-                /*
+                /**
                  * Invoke scan query.
                  *
                  * @param qry Query.
@@ -318,7 +318,7 @@ namespace ignite
                  */
                 query::QueryCursorImpl* QueryScan(const ignite::cache::query::ScanQuery& qry, IgniteError* err);
 
-                /*
+                /**
                  * Invoke sql fields query.
                  *
                  * @param qry Query.

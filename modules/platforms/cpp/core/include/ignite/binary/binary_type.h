@@ -226,8 +226,8 @@ namespace ignite
             }
         };
 
-        /*
-         * Templated binary type for pointers.
+        /**
+         * Templated binary type specification for pointers.
          */
         template <typename T>
         struct IGNITE_IMPORT_EXPORT BinaryType<T*>
