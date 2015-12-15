@@ -38,7 +38,7 @@ namespace ignite
          */
         static Ignite Start(const IgniteConfiguration& cfg);
 
-        /*
+        /**
          * Start Ignite instance.
          *
          * @param cfg Configuration.
