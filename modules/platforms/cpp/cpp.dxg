@@ -25,7 +25,7 @@ DOXYFILE_ENCODING      = UTF-8
 # The PROJECT_NAME tag is a single word (or a sequence of words surrounded
 # by quotes) that should identify the project.
 
-PROJECT_NAME           = "&nbsp; Apache Ignite C++ Client Library"
+PROJECT_NAME           = "&nbsp; Apache Ignite C++"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number.
 # This could be handy for archiving the generated documentation or
@@ -1718,5 +1718,5 @@ DOT_CLEANUP            = YES
 ;INPUT=core/include/ignite core/src
 ;EXCLUDE=core/include/ignite/impl core/os/linux/include/ignite/impl core/os/linux/src/impl core/os/win/include/ignite/impl core/os/win/src/impl core/src/impl
 ;STRIP_FROM_PATH=core/include/ignite core/src
-;OUTPUT_DIRECTORY=doc
+;OUTPUT_DIRECTORY=../../clients/target/cppdoc
 ;PROJECT_LOGO=../../../assembly/docfiles/ignite_logo.png

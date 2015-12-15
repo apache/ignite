@@ -180,6 +180,7 @@ public class BinaryMetadata implements Externalizable {
             out.writeInt(-1);
         else {
             out.writeInt(fields.size());
+
             for (Map.Entry<String, Integer> fieldEntry : fields.entrySet()) {
                 U.writeString(out, fieldEntry.getKey());
                 out.writeInt(fieldEntry.getValue());
@@ -191,10 +192,10 @@ public class BinaryMetadata implements Externalizable {
         if (schemas == null)
             out.writeInt(-1);
         else {
-            out.writeInt(fields.size());
-            for (BinarySchema schema : schemas) {
+            out.writeInt(schemas.size());
+
+            for (BinarySchema schema : schemas)
                 schema.writeTo(out);
-            }
         }
 
         out.writeBoolean(isEnum);
@@ -220,13 +221,16 @@ public class BinaryMetadata implements Externalizable {
         typeName = U.readString(in);
 
         int fieldsSize = in.readInt();
+
         if (fieldsSize == -1)
             fields = null;
         else {
             fields = new HashMap<>();
+
             for (int i = 0; i < fieldsSize; i++) {
                 String fieldName = U.readString(in);
                 int fieldId = in.readInt();
+
                 fields.put(fieldName, fieldId);
             }
         }
@@ -234,13 +238,17 @@ public class BinaryMetadata implements Externalizable {
         affKeyFieldName = U.readString(in);
 
         int schemasSize = in.readInt();
+
         if (schemasSize == -1)
             schemas = null;
         else {
             schemas = new ArrayList<>();
+
             for (int i = 0; i < schemasSize; i++) {
                 BinarySchema schema = new BinarySchema();
+
                 schema.readFrom(in);
+
                 schemas.add(schema);
             }
         }
