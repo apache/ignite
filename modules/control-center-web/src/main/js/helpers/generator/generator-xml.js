@@ -223,6 +223,7 @@ $generatorXml.clusterGeneral = function (cluster, res) {
         res = $generatorCommon.builder();
 
     $generatorXml.property(res, cluster, 'name', 'gridName');
+    $generatorXml.property(res, cluster, 'localHost');
 
     if (cluster.discovery) {
         res.startBlock('<property name="discoverySpi">');

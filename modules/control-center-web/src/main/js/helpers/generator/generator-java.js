@@ -387,6 +387,9 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
     $generatorJava.property(res, 'cfg', cluster, 'name', null, 'setGridName');
     res.needEmptyLine = true;
 
+    $generatorJava.property(res, 'cfg', cluster, 'localHost');
+    res.needEmptyLine = true;
+
     if (clientNearCfg) {
         res.line('cfg.setClientMode(true);');
 

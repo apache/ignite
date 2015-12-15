@@ -28,6 +28,16 @@
           }
         },
         {
+          "label": "Local host",
+          "id": "localHost",
+          "type": "text",
+          "model": "localHost",
+          "placeholder": "0.0.0.0",
+          "tip": [
+            "System-wide local address or host for all Ignite components to bind to"
+          ]
+        },
+        {
           "label": "Discovery",
           "id": "discovery",
           "type": "dropdown-details",

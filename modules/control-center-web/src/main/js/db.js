@@ -264,6 +264,7 @@ exports.Igfs = mongoose.model('Igfs', IgfsSchema);
 var ClusterSchema = new Schema({
     space: {type: ObjectId, ref: 'Space'},
     name: String,
+    localHost: String,
     discovery: {
         localAddress: String,
         localPort: Number,
