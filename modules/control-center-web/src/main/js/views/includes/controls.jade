@@ -78,7 +78,7 @@ mixin table-pair-edit(prefix, keyPlaceholder, valPlaceholder, keyJavaBuildInType
 mixin table-pair(header, tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, divider)
     .col-sm-12.group
         .group-legend
-            label #{header}
+            label(id='{{::field.model}}-legend') #{header}
             +group-tip('field.tip')
             +group-btn-add('tableNewItem(field)', 'field.addTip')
         .group-content-empty(ng-if='!((#{tblMdl} && #{tblMdl}.length > 0) || tableNewItemActive(field))') Not defined

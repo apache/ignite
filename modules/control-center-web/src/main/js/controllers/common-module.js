@@ -1276,7 +1276,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
         }
         else if (ui === 'table-indexes') {
             field.newIndexName = null;
-            field.newIndexType = null;
+            field.newIndexType = 'SORTED';
             field.newIndexFields = null;
 
             _tableFocus(field.focusId, -1);
