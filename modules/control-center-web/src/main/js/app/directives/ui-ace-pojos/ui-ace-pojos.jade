@@ -31,4 +31,4 @@ div
             label
                 input(type='checkbox' ng-model='ctrl.includeKeyFields')
                 | Include key fields
-    div(ui-ace='{onLoad: onLoad, mode: "java"}' ng-if='ctrl.data' ng-model='ctrl.data')
+    div(ng-if='ctrl.data' ui-ace='{onLoad: onLoad, mode: "java"}' ng-model='ctrl.data')

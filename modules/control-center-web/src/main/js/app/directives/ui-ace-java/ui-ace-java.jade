@@ -25,4 +25,4 @@ div
                 data-sort='false'
                 ng-model='type'
             )
-    div(ui-ace='{onLoad: onLoad, mode: "java"}' ng-if='ctrl.data' ng-model='ctrl.data')
+    div(ng-if='ctrl.data' ui-ace='{onLoad: onLoad, mode: "java"}' ng-model='ctrl.data')
