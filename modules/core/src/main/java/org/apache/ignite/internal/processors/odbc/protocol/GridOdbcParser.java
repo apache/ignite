@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.odbc.protocol;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.*;
-import org.apache.ignite.internal.binary.streams.PortableHeapInputStream;
-import org.apache.ignite.internal.binary.streams.PortableHeapOutputStream;
-import org.apache.ignite.internal.binary.streams.PortableInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.GridOdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.GridOdbcTableMeta;
@@ -53,7 +53,7 @@ public class GridOdbcParser implements GridNioParser {
     protected final GridKernalContext ctx;
 
     /** Marshaller. */
-    private final GridPortableMarshaller marsh;
+    private final GridBinaryMarshaller marsh;
 
     GridOdbcParser(GridKernalContext context) {
         ctx = context;
@@ -82,7 +82,7 @@ public class GridOdbcParser implements GridNioParser {
             if (leftToReceive != 0)
                 return null;
 
-            PortableInputStream stream = new PortableHeapInputStream(currentMessage.array());
+            BinaryInputStream stream = new BinaryHeapInputStream(currentMessage.array());
 
             BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null);
 
@@ -93,7 +93,7 @@ public class GridOdbcParser implements GridNioParser {
 
         // Receiving new message
         // Getting message length. It's in the first four bytes of the message.
-        PortableInputStream stream = new PortableHeapInputStream(buf.array());
+        BinaryInputStream stream = new BinaryHeapInputStream(buf.array());
 
         BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null);
 
@@ -131,7 +131,7 @@ public class GridOdbcParser implements GridNioParser {
 
         System.out.println("Encoding query processing result");
 
-        BinaryRawWriterEx writer = marsh.writer(new PortableHeapOutputStream(INIT_CAP));
+        BinaryRawWriterEx writer = marsh.writer(new BinaryHeapOutputStream(INIT_CAP));
 
         // Reserving space for the message length.
         int msgLenPos = writer.reserveInt();

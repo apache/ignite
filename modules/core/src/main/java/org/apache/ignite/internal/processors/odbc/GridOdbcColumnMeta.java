@@ -1,13 +1,13 @@
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.binary.BinaryClassDescriptor;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.PortableClassDescriptor;
-import org.apache.ignite.internal.binary.PortableContext;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 import java.io.IOException;
 
-import static org.apache.ignite.internal.binary.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
 /**
  * ODBC column-related metadata.
@@ -86,7 +86,7 @@ public class GridOdbcColumnMeta {
      * @param ctx Portable context.
      * @throws IOException
      */
-    public void writeBinary(BinaryRawWriterEx writer, PortableContext ctx) throws IOException {
+    public void writeBinary(BinaryRawWriterEx writer, BinaryContext ctx) throws IOException {
         writer.writeString(schemaName);
         writer.writeString(tableName);
         writer.writeString(columnName);
@@ -94,7 +94,7 @@ public class GridOdbcColumnMeta {
 
         byte typeId;
 
-        PortableClassDescriptor desc = ctx.descriptorForClass(dataType, false);
+        BinaryClassDescriptor desc = ctx.descriptorForClass(dataType, false);
 
         if (desc == null)
             throw new IOException("Object is not portable: [class=" + dataType + ']');
