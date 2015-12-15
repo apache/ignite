@@ -482,19 +482,6 @@ var NotebookSchema = new Schema({
 // Define Notebook model.
 exports.Notebook = mongoose.model('Notebook', NotebookSchema);
 
-// Define Database preset schema.
-var DatabasePresetSchema = new Schema({
-    space: {type: ObjectId, ref: 'Space'},
-    jdbcDriverJar: String,
-    jdbcDriverClass: String,
-    jdbcUrl: String,
-    user: String,
-    packageName: String
-});
-
-// Define Database preset model.
-exports.DatabasePreset = mongoose.model('DatabasePreset', DatabasePresetSchema);
-
 exports.upsert = function (model, data, cb) {
     if (data._id) {
         var id = data._id;

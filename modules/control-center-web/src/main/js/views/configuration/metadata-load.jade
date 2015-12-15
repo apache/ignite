@@ -20,7 +20,7 @@ mixin chk(mdl, change, tip)
     input(type='checkbox' ng-model=mdl ng-change=change bs-tooltip='' data-title=tip data-placement='bottom')
 
 .modal.center(role='dialog')
-    .modal-dialog
+    .modal-dialog(ng-cloak)
         .modal-content(dw-loading='loadingMetadataFromDb' dw-loading-options='loadMeta.loadingOptions')
             #errors-container.modal-header.header
                 button.close(ng-click='$hide()' aria-hidden='true') &times;

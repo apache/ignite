@@ -58,7 +58,7 @@ mixin hard-link(ref, txt)
             a(href='/configuration/clusters') here.
 
         div(ng-show='clusters || clusters.length > 0')
-            +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
+            +main-table('clusters', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
 
             div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)')
                 .padding-top-dflt(bs-affix)

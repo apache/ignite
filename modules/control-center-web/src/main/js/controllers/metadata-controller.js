@@ -93,7 +93,7 @@ consoleModule.controller('metadataController', [
 
             $scope.indexType = $common.mkOptions(['SORTED', 'FULLTEXT', 'GEOSPATIAL']);
 
-            var presets = [
+            var _dbPresets = [
                 {
                     db: 'oracle',
                     jdbcDriverClass: 'oracle.jdbc.OracleDriver',
@@ -132,6 +132,47 @@ consoleModule.controller('metadataController', [
                 }
             ];
 
+            function _loadPresets () {
+                try {
+                   var restoredPresets =  JSON.parse(localStorage.dbPresets);
+
+                    _.forEach(restoredPresets, function (restoredPreset) {
+                        var preset = _.find(_dbPresets, { jdbcDriverClass: restoredPreset.jdbcDriverClass });
+
+                        if (preset) {
+                            preset.jdbcUrl = restoredPreset.jdbcUrl;
+
+                            preset.user = restoredPreset.user;
+                        }
+                    });
+
+                }
+                catch (ignore) {
+                    // No-op.
+                }
+            }
+
+            _loadPresets();
+
+            function _savePreset (preset) {
+                try {
+                    if (preset.testDrive)
+                        return;
+
+                    var oldPreset = _.find(_dbPresets, { jdbcDriverClass: preset.jdbcDriverClass });
+
+                    if (oldPreset)
+                        angular.extend(oldPreset, preset);
+                    else
+                        _dbPresets.push(preset);
+
+                    localStorage.dbPresets = JSON.stringify(_dbPresets);
+                }
+                catch (errMsg) {
+                    $common.showError(errMsg);
+                }
+            }
+
             $scope.preset = {
                 db: 'unknown',
                 jdbcDriverClass: '',
@@ -143,25 +184,15 @@ consoleModule.controller('metadataController', [
 
             $scope.ui.showValid = true;
 
-            var jdbcDrivers = [];
+            function _findPreset(idx) {
+                var jdbcDriverClass = $scope.jdbcDriverJars[idx].jdbcDriverClass;
 
-            function _findPreset(jdbcDriverJar) {
-                var jdbcDriverClass = '';
-
-                var idx = _.findIndex(jdbcDrivers, function (jdbcDriver) {
-                    return  jdbcDriver.jdbcDriverJar == jdbcDriverJar;
+                idx = _.findIndex(_dbPresets, function (preset) {
+                    return preset.jdbcDriverClass === jdbcDriverClass;
                 });
 
-                if (idx >= 0) {
-                    jdbcDriverClass = jdbcDrivers[idx].jdbcDriverClass;
-
-                    idx = _.findIndex(presets, function (preset) {
-                        return preset.jdbcDriverClass == jdbcDriverClass;
-                    });
-
-                    if (idx >= 0)
-                        return presets[idx];
-                }
+                if (idx >= 0)
+                    return _dbPresets[idx];
 
                 return {
                     db: 'unknown',
@@ -172,14 +203,19 @@ consoleModule.controller('metadataController', [
                 }
             }
 
-            $scope.$watch('preset.jdbcDriverJar', function (jdbcDriverJar) {
-                if (jdbcDriverJar) {
-                    var newPreset = _findPreset(jdbcDriverJar);
+            $scope.$watch('preset.drvIdx', function (drvIdx) {
+                if (_.isNumber(drvIdx)) {
+                    var preset = $scope.jdbcDriverJars[drvIdx];
 
-                    $scope.preset.db = newPreset.db;
-                    $scope.preset.jdbcDriverClass = newPreset.jdbcDriverClass;
-                    $scope.preset.jdbcUrl = newPreset.jdbcUrl;
-                    $scope.preset.user = newPreset.user;
+                    if (!preset.testDrive)
+                        preset = _findPreset(drvIdx);
+
+                    var newPreset = angular.copy(preset);
+
+                    newPreset.drvIdx = drvIdx;
+                    newPreset.tablesOnly = $scope.preset.tablesOnly;
+
+                    $scope.preset = newPreset;
                 }
             }, true);
 
@@ -266,24 +302,46 @@ consoleModule.controller('metadataController', [
                 $scope.awaitAgent(function (result, onSuccess, onException) {
                     loadMetaModal.show();
 
-                    $loading.start('loadingMetadataFromDb');
-
                     // Get available JDBC drivers via agent.
                     if ($scope.loadMeta.action == 'drivers') {
+                        $loading.start('loadingMetadataFromDb');
+
                         $http.post('/api/v1/agent/drivers')
                             .success(function (drivers) {
                                 onSuccess();
 
                                 if (drivers && drivers.length > 0) {
-                                    $scope.jdbcDriverJars = _.map(drivers, function (driver) {
-                                        return {value: driver.jdbcDriverJar, label: driver.jdbcDriverJar};
+                                    $scope.jdbcDriverJars = [];
+
+                                    var _h2DrvJar = _.find(drivers, function (drv) {
+                                        return drv.jdbcDriverJar.startsWith('h2');
                                     });
 
-                                    jdbcDrivers = drivers;
+                                    if (_h2DrvJar) {
+                                        $scope.jdbcDriverJars.push({
+                                            label: 'Test-drive metadata',
+                                            value: $scope.jdbcDriverJars.length,
+                                            jdbcDriverJar: _h2DrvJar.jdbcDriverJar,
+                                            jdbcDriverClass: 'org.h2.Driver',
+                                            jdbcUrl: 'jdbc:h2:mem:test-drive-db',
+                                            user: 'sa',
+                                            password: '',
+                                            testDrive: true
+                                        });
+                                    }
 
-                                    $scope.preset.jdbcDriverJar = drivers[0].jdbcDriverJar;
+                                    drivers.forEach(function (driver) {
+                                        $scope.jdbcDriverJars.push({
+                                            label: driver.jdbcDriverJar,
+                                            value: $scope.jdbcDriverJars.length,
+                                            jdbcDriverJar: driver.jdbcDriverJar,
+                                            jdbcDriverClass: driver.jdbcDriverClass
+                                        });
+                                    });
 
-                                    function openLoadMetadataModal() {
+                                    $scope.preset.drvIdx = 0;
+
+                                    $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
                                         loadMetaModal.$promise.then(function () {
                                             $scope.loadMeta.action = 'connect';
                                             $scope.loadMeta.tables = [];
@@ -291,9 +349,7 @@ consoleModule.controller('metadataController', [
 
                                             $focus('jdbcUrl');
                                         });
-                                    }
-
-                                    $common.confirmUnsavedChanges($scope.ui.isDirty(), openLoadMetadataModal);
+                                    });
                                 }
                                 else {
                                     $common.showError('JDBC drivers not found!');
@@ -306,6 +362,7 @@ consoleModule.controller('metadataController', [
                             })
                             .finally(function () {
                                 $scope.loadMeta.info = INFO_CONNECT_TO_DB;
+
                                 $loading.finish('loadingMetadataFromDb');
                             });
                     }
@@ -473,12 +530,7 @@ consoleModule.controller('metadataController', [
                 if (!$common.isValidJavaClass('Package', $scope.ui.packageName, false, 'metadataLoadPackage', true))
                     return false;
 
-                $scope.preset.space = $scope.spaces[0];
-
-                $http.post('/api/v1/configuration/presets/save', $scope.preset)
-                    .error(function (errMsg) {
-                        $common.showError(errMsg);
-                    });
+                _savePreset($scope.preset);
 
                 var batch = [];
                 var tables = [];
@@ -745,23 +797,6 @@ consoleModule.controller('metadataController', [
                 .finally(function() {
                     $scope.ui.ready = true;
                     $loading.finish('loadingMetadataScreen');
-                });
-
-            $http.post('/api/v1/configuration/presets/list')
-                .success(function (data) {
-                    _.forEach(data.presets, function (restoredPreset) {
-                        var preset = _.find(presets, function (dfltPreset) {
-                            return dfltPreset.jdbcDriverClass == restoredPreset.jdbcDriverClass;
-                        });
-
-                        if (preset) {
-                            preset.jdbcUrl = restoredPreset.jdbcUrl;
-                            preset.user = restoredPreset.user;
-                        }
-                    });
-                })
-                .error(function (errMsg) {
-                    $common.showError(errMsg);
                 });
 
             $scope.selectItem = function (item, backup) {

@@ -34,6 +34,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.agent.AgentConfiguration;
 import org.apache.ignite.agent.remote.Remote;
+import org.apache.ignite.agent.testdrive.AgentMetadataTestDrive;
 import org.apache.ignite.schema.parser.DbMetadataReader;
 import org.apache.ignite.schema.parser.DbTable;
 
@@ -67,6 +68,9 @@ public class DatabaseMetadataExtractor {
     private Connection connect(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl, Properties jdbcInfo) throws SQLException {
         if (!new File(jdbcDriverJarPath).isAbsolute() && driversFolder != null)
             jdbcDriverJarPath = new File(driversFolder, jdbcDriverJarPath).getPath();
+
+        if (AgentMetadataTestDrive.isTestDriveUrl(jdbcUrl))
+            AgentMetadataTestDrive.testDrive();
 
         return DbMetadataReader.getInstance().connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo);
     }

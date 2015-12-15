@@ -49,7 +49,7 @@ include ../includes/controls
     div(dw-loading='loadingCachesScreen' dw-loading-options='{text: "Loading caches screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr
-            +main-table('Caches:', 'caches', 'cacheName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')
+            +main-table('caches', 'caches', 'cacheName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip data-title='Create new cache')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cache

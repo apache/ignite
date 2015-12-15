@@ -53,4 +53,5 @@
                         | &nbsp; in agent folder for more information
             .modal-footer
                 button.btn.btn-default(ng-click='goBack()') Back to {{::agentDownloadBackTo}}
+                button.btn.btn-primary(ng-if='nodeFailedConnection' ng-click='downloadAgent()') Start test-drive
                 button.btn.btn-primary(ng-if='!nodeFailedConnection' ng-click='downloadAgent()') Download zip

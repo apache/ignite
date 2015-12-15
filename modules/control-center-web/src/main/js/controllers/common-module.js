@@ -872,7 +872,6 @@ consoleModule.service('$common', [
                 }
                 else
                     selectFunc();
-
             },
             saveBtnTipText: function (dirty, objectName) {
                 if (dirty)
