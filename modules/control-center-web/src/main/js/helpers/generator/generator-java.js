@@ -927,7 +927,7 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
                             break;
 
                         case 'PostgreSQL':
-                            res.line('dataSource.setDataSourceName("' + dataSourceBean + '"));');
+                            res.line('dataSource.setDataSourceName("' + dataSourceBean + '");');
                             res.line('dataSource.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
                             res.line('dataSource.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
 
