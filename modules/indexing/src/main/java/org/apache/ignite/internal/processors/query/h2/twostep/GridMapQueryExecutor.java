@@ -145,6 +145,8 @@ public class GridMapQueryExecutor {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
+                GridH2QueryContext.clearAfterDeadNode(nodeId);
+
                 ConcurrentMap<Long,QueryResults> nodeRess = qryRess.remove(nodeId);
 
                 if (nodeRess == null)

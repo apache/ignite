@@ -1391,7 +1391,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         private GridH2IndexRangeResponse awaitForResponse() {
             assert remainingRanges > 0;
 
-            for (int attempt = 0; attempt < 40; attempt++) {
+            for (int attempt = 0; attempt < 50; attempt++) {
                 GridH2IndexRangeResponse res;
 
                 try {
@@ -1446,11 +1446,11 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 }
 
                 if (!kernalContext().discovery().alive(node))
-                    throw new GridH2RetryException("Node left.");
+                    throw new GridH2RetryException("Node left: " + node);
             }
 
             // Attempts exceeded.
-            throw new CacheException("Failed to get index range from remote node.");
+            throw new CacheException("Failed to get index range from remote node, request timeout.");
         }
 
         /**

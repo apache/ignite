@@ -371,6 +371,16 @@ public class GridH2QueryContext {
     }
 
     /**
+     * @param nodeId Dead node ID.
+     */
+    public static void clearAfterDeadNode(UUID nodeId) {
+        for (Key key : qctxs.keySet()) {
+            if (key.nodeId.equals(nodeId))
+                doClear(key);
+        }
+    }
+
+    /**
      * Access current thread local query context (if it was set).
      *
      * @return Current thread local query context or {@code null} if the query runs outside of Ignite context.

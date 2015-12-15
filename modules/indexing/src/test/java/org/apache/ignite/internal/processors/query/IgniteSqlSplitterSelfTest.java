@@ -222,6 +222,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             doTestDistributedJoins(c, 30, 100, 1000, false);
             doTestDistributedJoins(c, 30, 100, 1000, true);
+
+            doTestDistributedJoins(c, 100, 2000, 10, false);
+            doTestDistributedJoins(c, 100, 2000, 10, true);
         }
         finally {
             c.destroy();
