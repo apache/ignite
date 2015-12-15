@@ -17,6 +17,35 @@
 
 #include "ignite/common/concurrent_os.h"
 
+#pragma intrinsic(_InterlockedCompareExchange64)
+
+#ifndef _WIN64
+namespace
+{
+    /**
+     * Atomically add specified value to variable.
+     * Internal function.
+     * @param ptr Variable pointer.
+     * @param val Value to be added.
+     * @return Resulting value.
+     */
+    inline int64_t AtomicAddAndGet64(int64_t *ptr, int64_t val)
+    {
+        using ignite::common::concurrent::Atomics;
+
+        int64_t real = *ptr;
+        int64_t expected;
+        do
+        {
+            expected = real;
+            real = Atomics::CompareAndSet64Val(ptr, expected, expected + val);
+        } while (real != expected);
+
+        return expected + val;
+    }
+}
+#endif //_WIN64
+
 namespace ignite
 {
     namespace common
@@ -103,17 +132,25 @@ namespace ignite
 
             int64_t Atomics::CompareAndSet64Val(int64_t* ptr, int64_t expVal, int64_t newVal)
             {
-                return InterlockedCompareExchange64(reinterpret_cast<LONG64*>(ptr), newVal, expVal);
+                return _InterlockedCompareExchange64(reinterpret_cast<LONG64*>(ptr), newVal, expVal);
             }
 
             int64_t Atomics::IncrementAndGet64(int64_t* ptr)
             {
+#ifdef _WIN64
                 return InterlockedIncrement64(reinterpret_cast<LONG64*>(ptr));
+#else //_WIN64
+                return AtomicAddAndGet64(ptr, 1);
+#endif //_WIN64
             }
 
             int64_t Atomics::DecrementAndGet64(int64_t* ptr)
             {
+#ifdef _WIN64
                 return InterlockedDecrement64(reinterpret_cast<LONG64*>(ptr));
+#else //_WIN64
+                return AtomicAddAndGet64(ptr, -1);
+#endif //_WIN64
             }
             
             bool ThreadLocal::OnProcessAttach()
