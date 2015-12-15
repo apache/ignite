@@ -152,7 +152,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     private boolean clientReq;
 
     /** Keep binary flag. */
-    private boolean keepPortable;
+    private boolean keepBinary;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -200,7 +200,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         @Nullable UUID subjId,
         int taskNameHash,
         boolean skipStore,
-        boolean keepPortable,
+        boolean keepBinary,
         boolean clientReq,
         boolean addDepInfo
     ) {
@@ -223,7 +223,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
         this.clientReq = clientReq;
         this.addDepInfo = addDepInfo;
 
@@ -344,7 +344,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      * @return Keep binary flag.
      */
     public boolean keepBinary() {
-        return keepPortable;
+        return keepBinary;
     }
 
     /**
@@ -697,7 +697,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeBoolean("keepPortable", keepPortable))
+                if (!writer.writeBoolean("keepBinary", keepBinary))
                     return false;
 
                 writer.incrementState();
@@ -873,7 +873,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 14:
-                keepPortable = reader.readBoolean("keepPortable");
+                keepBinary = reader.readBoolean("keepBinary");
 
                 if (!reader.isLastRead())
                     return false;

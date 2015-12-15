@@ -158,7 +158,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     private List<CacheObject> localPrevVals;
 
     /** Keep binary flag. */
-    private boolean keepPortable;
+    private boolean keepBinary;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -194,7 +194,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         int taskNameHash,
         Object[] invokeArgs,
         boolean addDepInfo,
-        boolean keepPortable
+        boolean keepBinary
     ) {
         assert invokeArgs == null || forceTransformBackups;
 
@@ -209,7 +209,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         this.taskNameHash = taskNameHash;
         this.invokeArgs = invokeArgs;
         this.addDepInfo = addDepInfo;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
 
         keys = new ArrayList<>();
         partIds = new ArrayList<>();
@@ -489,7 +489,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
      * @return Keep binary flag.
      */
     public boolean keepBinary() {
-        return keepPortable;
+        return keepBinary;
     }
 
     /**
@@ -745,7 +745,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeBoolean("keepPortable", keepPortable))
+                if (!writer.writeBoolean("keepBinary", keepBinary))
                     return false;
 
                 writer.incrementState();
@@ -905,7 +905,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 reader.incrementState();
 
             case 9:
-                keepPortable = reader.readBoolean("keepPortable");
+                keepBinary = reader.readBoolean("keepBinary");
 
                 if (!reader.isLastRead())
                     return false;

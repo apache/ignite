@@ -65,7 +65,7 @@ public class DataStreamerRequest implements Message {
     private boolean skipStore;
 
     /** Keep binary flag. */
-    private boolean keepPortable;
+    private boolean keepBinary;
 
     /** */
     private DeploymentMode depMode;
@@ -137,7 +137,7 @@ public class DataStreamerRequest implements Message {
         this.entries = entries;
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
-        this.keepPortable = keepBinary;
+        this.keepBinary = keepBinary;
         this.depMode = depMode;
         this.sampleClsName = sampleClsName;
         this.userVer = userVer;
@@ -200,7 +200,7 @@ public class DataStreamerRequest implements Message {
      * @return Keep binary flag.
      */
     public boolean keepBinary() {
-        return keepPortable;
+        return keepBinary;
     }
 
     /**
@@ -306,7 +306,7 @@ public class DataStreamerRequest implements Message {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeBoolean("keepPortable", keepPortable))
+                if (!writer.writeBoolean("keepBinary", keepBinary))
                     return false;
 
                 writer.incrementState();
@@ -425,7 +425,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 6:
-                keepPortable = reader.readBoolean("keepPortable");
+                keepBinary = reader.readBoolean("keepBinary");
 
                 if (!reader.isLastRead())
                     return false;
