@@ -570,12 +570,22 @@ public class GridMapQueryExecutor {
                 qr.cancel();
             }
 
-            U.error(log, "Failed to execute local query.", e);
+            if (X.hasCause(e, GridH2RetryException.class)) {
+                try {
+                    sendRetry(node, reqId);
+                }
+                catch (IgniteCheckedException ex) {
+                    U.warn(log, "Failed to send retry message to node: " + node);
+                }
+            }
+            else {
+                U.error(log, "Failed to execute local query.", e);
 
-            sendError(node, reqId, e);
+                sendError(node, reqId, e);
 
-            if (e instanceof Error)
-                throw (Error)e;
+                if (e instanceof Error)
+                    throw (Error)e;
+            }
         }
         finally {
             // Release reserved partitions.
@@ -591,16 +601,13 @@ public class GridMapQueryExecutor {
      */
     private void sendError(ClusterNode node, long qryReqId, Throwable err) {
         try {
-            if (X.hasCause(err, GridH2RetryException.class)) {
-                sendRetry(node, qryReqId);
-
-                return;
-            }
-
             GridQueryFailResponse msg = new GridQueryFailResponse(qryReqId, err);
 
-            if (node.isLocal())
+            if (node.isLocal()) {
+                U.error(log, "Failed to run map query on local node.", err);
+
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+            }
             else
                 ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
         }

@@ -556,7 +556,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to write to index (grid is stopping).");
+            return;
 
         try {
             if (coctx == null)

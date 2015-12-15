@@ -227,7 +227,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      */
     private void send(Collection<ClusterNode> nodes, Message msg) {
         if (!getTable().rowDescriptor().indexing().send(msgTopic, nodes, msg, null, locNodeHandler))
-            throw new CacheException("Failed to send message to nodes: " + nodes + ".");
+            throw new GridH2RetryException("Failed to send message to nodes: " + nodes + ".");
     }
 
     /**
@@ -310,7 +310,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
                     ranges.add(range);
 
-                    maxRows -= range.rows().size();
+                    if (range.rows() != null)
+                        maxRows -= range.rows().size();
                 }
 
                 if (src.hasMoreRows()) {
@@ -855,9 +856,14 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
         assert vals.length > 0;
 
+        List<GridH2ValueMessage> msgVals = msg.values();
+
         for (int i = 0; i < indexColumns.length; i++) {
+            if (i >= msgVals.size())
+                continue;
+
             try {
-                vals[indexColumns[i].column.getColumnId()] = msg.values().get(i).value(ctx);
+                vals[indexColumns[i].column.getColumnId()] = msgVals.get(i).value(ctx);
             }
             catch (IgniteCheckedException e) {
                 throw new CacheException(e);
@@ -1398,7 +1404,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                     res = respQueue.poll(500, TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException e) {
-                    throw new IgniteInterruptedException(e);
+                    throw new GridH2RetryException("Interrupted.");
                 }
 
                 if (res != null) {
@@ -1483,23 +1489,25 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
                 cursorRangeId = range.rangeId();
 
-                final Iterator<GridH2RowMessage> it = range.rows().iterator();
+                if (!F.isEmpty(range.rows())) {
+                    final Iterator<GridH2RowMessage> it = range.rows().iterator();
 
-                if (it.hasNext()) {
-                    cursor = new GridH2Cursor(new Iterator<Row>() {
-                        @Override public boolean hasNext() {
-                            return it.hasNext();
-                        }
+                    if (it.hasNext()) {
+                        cursor = new GridH2Cursor(new Iterator<Row>() {
+                            @Override public boolean hasNext() {
+                                return it.hasNext();
+                            }
 
-                        @Override public Row next() {
-                            // Lazily convert messages into real rows.
-                            return toRow(it.next());
-                        }
+                            @Override public Row next() {
+                                // Lazily convert messages into real rows.
+                                return toRow(it.next());
+                            }
 
-                        @Override public void remove() {
-                            throw new UnsupportedOperationException();
-                        }
-                    });
+                            @Override public void remove() {
+                                throw new UnsupportedOperationException();
+                            }
+                        });
+                    }
                 }
             }
         }
