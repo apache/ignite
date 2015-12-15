@@ -140,7 +140,7 @@ var CacheSchema = new Schema({
             dataSourceBean: String,
             dialect: {
                 type: String,
-                enum: ['Oracle', 'DB2', 'SQLServer', 'MySQL', 'PosgreSQL', 'H2']
+                enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PosgreSQL', 'H2']
             }
         },
         CacheJdbcBlobStoreFactory: {

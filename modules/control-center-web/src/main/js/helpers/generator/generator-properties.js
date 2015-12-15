@@ -18,6 +18,25 @@
 // Properties generation entry point.
 $generatorProperties = {};
 
+$generatorProperties.jdbcUrlTemplate = function(dialect) {
+    switch (dialect) {
+        case 'Oracle':
+            return 'jdbc:oracle:thin:@[host]:[port]:[database]';
+        case 'DB2':
+            return 'jdbc:db2://[host]:[port]/[database]';
+        case 'SQLServer':
+            return 'jdbc:sqlserver://[host]:[port][;databaseName=database]';
+        case 'MySQL':
+            return 'jdbc:mysql://[host]:[port]/[database]';
+        case 'PosgreSQL':
+            return 'jdbc:postgresql://[host]:[port]/[database]';
+        case 'H2':
+            return 'jdbc:h2:tcp://[host]/[database]';
+    }
+
+    return 'jdbc:your_database';
+};
+
 /**
  * Generate properties file with properties stubs for stores data sources.
  *
@@ -56,7 +75,7 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
                                 break;
 
                             default:
-                                res.line(beanId + '.jdbc.url=YOUR_JDBC_URL');
+                                res.line(beanId + '.jdbc.url=' + $generatorProperties.jdbcUrlTemplate(storeFactory.dialect));
                         }
 
                         res.line(beanId + '.jdbc.username=YOUR_USER_NAME');
