@@ -240,7 +240,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.KeyTypeName, y.KeyTypeName);
             Assert.AreEqual(x.ValueTypeName, y.ValueTypeName);
 
-            CollectionAssert.AreEqual(x.Fields, y.Fields);
+            AssertConfigsAreEqual(x.Fields, y.Fields);
             CollectionAssert.AreEqual(x.Aliases, y.Aliases);
 
             AssertConfigsAreEqual(x.Indexes, y.Indexes);
@@ -266,6 +266,40 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Asserts that two configurations have the same properties.
         /// </summary>
+        private static void AssertConfigsAreEqual(ICollection<QueryField> x, ICollection<QueryField> y)
+        {
+            if (x == null)
+            {
+                Assert.IsNull(y);
+                return;
+            }
+
+            Assert.AreEqual(x.Count, y.Count);
+
+            for (var i = 0; i < x.Count; i++)
+                AssertConfigsAreEqual(x.ElementAt(i), y.ElementAt(i));
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
+        private static void AssertConfigsAreEqual(ICollection<IndexField> x, ICollection<IndexField> y)
+        {
+            if (x == null)
+            {
+                Assert.IsNull(y);
+                return;
+            }
+
+            Assert.AreEqual(x.Count, y.Count);
+
+            for (var i = 0; i < x.Count; i++)
+                AssertConfigsAreEqual(x.ElementAt(i), y.ElementAt(i));
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
         private static void AssertConfigsAreEqual(QueryIndex x, QueryIndex y)
         {
             Assert.IsNotNull(x);
@@ -273,8 +307,32 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(x.Name, y.Name);
             Assert.AreEqual(x.IndexType, y.IndexType);
-            
-            CollectionAssert.AreEqual(x.Fields, y.Fields);
+
+            AssertConfigsAreEqual(x.Fields, y.Fields);
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
+        private static void AssertConfigsAreEqual(QueryField x, QueryField y)
+        {
+            Assert.IsNotNull(x);
+            Assert.IsNotNull(y);
+
+            Assert.AreEqual(x.Name, y.Name);
+            Assert.AreEqual(x.TypeName, y.TypeName);
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
+        private static void AssertConfigsAreEqual(IndexField x, IndexField y)
+        {
+            Assert.IsNotNull(x);
+            Assert.IsNotNull(y);
+
+            Assert.AreEqual(x.Name, y.Name);
+            Assert.AreEqual(x.IsAscending, y.IsAscending);
         }
 
         /// <summary>
