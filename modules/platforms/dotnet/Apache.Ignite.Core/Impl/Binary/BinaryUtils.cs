@@ -1354,6 +1354,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="reader">Context.</param>
         /// <param name="factory">Factory delegate.</param>
+        /// <returns>
+        /// Dictionary.
+        /// </returns>
+        public static TDictionary ReadDictionary<TDictionary, TK, TV>(BinaryReader reader,
+            Func<int, TDictionary> factory) where TDictionary : IDictionary<TK, TV>
+        {
+            return ReadDictionary<TDictionary, TK, TV>(reader, factory, (dict, key, val) => dict[key] = val);
+        }
+
+        /// <summary>
+        /// Read dictionary.
+        /// </summary>
+        /// <param name="reader">Context.</param>
+        /// <param name="factory">Factory delegate.</param>
         /// <param name="adder">The adder.</param>
         /// <returns>
         /// Dictionary.

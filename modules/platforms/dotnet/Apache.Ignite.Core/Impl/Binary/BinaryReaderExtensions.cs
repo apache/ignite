@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static Dictionary<TKey, TValue> ReadDictionaryAsGeneric<TKey, TValue>(this IBinaryRawReader reader)
         {
             return reader.ReadDictionary<Dictionary<TKey, TValue>, TKey, TValue>(
-                size => new Dictionary<TKey, TValue>(size), (dict, key, val) => dict[key] = val);
+                size => new Dictionary<TKey, TValue>(size));
         }
     }
 }

@@ -515,24 +515,23 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public TDictionary ReadDictionary<TDictionary, TK, TV>(string fieldName, Func<int, TDictionary> factory, 
-            Action<TDictionary, TK, TV> adder)
+        public TDictionary ReadDictionary<TDictionary, TK, TV>(string fieldName, Func<int, TDictionary> factory)
+            where TDictionary : IDictionary<TK, TV>
         {
             IgniteArgumentCheck.NotNull(factory, "factory");
-            IgniteArgumentCheck.NotNull(adder, "adder");
 
-            return ReadField(fieldName, reader => BinaryUtils.ReadDictionary(reader, factory, adder), 
+            return ReadField(fieldName, reader => BinaryUtils.ReadDictionary<TDictionary, TK, TV>(reader, factory), 
                 BinaryUtils.TypeDictionary);
         }
 
         /** <inheritdoc /> */
-        public TDictionary ReadDictionary<TDictionary, TK, TV>(Func<int, TDictionary> factory, 
-            Action<TDictionary, TK, TV> adder)
+        public TDictionary ReadDictionary<TDictionary, TK, TV>(Func<int, TDictionary> factory)
+            where TDictionary : IDictionary<TK, TV>
         {
             IgniteArgumentCheck.NotNull(factory, "factory");
-            IgniteArgumentCheck.NotNull(adder, "adder");
 
-            return Read(reader => BinaryUtils.ReadDictionary(reader, factory, adder), BinaryUtils.TypeDictionary);
+            return Read(reader => BinaryUtils.ReadDictionary<TDictionary, TK, TV>(reader, factory),
+                BinaryUtils.TypeDictionary);
         }
 
         /// <summary>

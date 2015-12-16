@@ -2386,7 +2386,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 Assert.AreEqual(new Dictionary<int, string> {{1, "2"}},
                     reader.ReadDictionary<Dictionary<int, string>, int, string>("dict",
-                        len => new Dictionary<int, string>(len), (dict, key, val) => dict[key] = val));
+                        len => new Dictionary<int, string>(len)));
 
                 // Check raw
                 ReadRaw(reader.GetRawReader());
@@ -2412,7 +2412,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 Assert.AreEqual(new Dictionary<int, string> { { 1, "2" } },
                     reader.ReadDictionary<Dictionary<int, string>, int, string>(
-                        len => new Dictionary<int, string>(len), (dict, key, val) => dict[key] = val));
+                        len => new Dictionary<int, string>(len)));
             }
         }
     }
