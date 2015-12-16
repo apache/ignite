@@ -86,7 +86,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
         qry.setPageSize(arg.pageSize());
         qry.setLocal(arg.local());
 
-        return c.query(qry);
+        return c.withKeepBinary().query(qry);
     }
 
     /**
@@ -142,7 +142,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
 
                 long start = U.currentTimeMillis();
 
-                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(c.query(qry));
+                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
 
                 Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 
