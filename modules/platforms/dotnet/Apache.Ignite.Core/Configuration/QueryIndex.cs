@@ -17,10 +17,12 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Represents cache query index configuration.
@@ -28,11 +30,39 @@ namespace Apache.Ignite.Core.Configuration
     public class QueryIndex
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="QueryIndex" /> class.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        public QueryIndex(string fieldName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(fieldName, "fieldName");
+
+            Fields = new[] {new IndexField(fieldName)};
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryIndex" /> class.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="indexType">Type of the index.</param>
+        public QueryIndex(string fieldName, QueryIndexType indexType) : this(fieldName)
+        {
+            IndexType = indexType;
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex"/> class.
         /// </summary>
-        public QueryIndex()
+        /// <param name="fields">The fields.</param>
+        public QueryIndex(params IndexField[] fields)
         {
-            // No-op.
+            if (fields.Length == 0)
+                throw new ArgumentException("Query index must have at least one field");
+
+            if (fields.Any(f => f == null))
+                throw new ArgumentException("IndexField cannot be null.");
+
+            Fields = fields;
         }
 
         /// <summary>
@@ -49,22 +79,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets a collection of fields to be indexed, with their respective Ascending flags.
         /// </summary>
-        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<KeyValuePair<string, bool>> Fields { get; set; }  // TODO: ICollection<QueryField>
-
-        /// <summary>
-        /// Gets or sets the name of the field for this index.
-        /// This property is a shortcut to <see cref="Fields"/>: 
-        /// getter returns name of the first field, and setter overwrites the collection.
-        /// </summary>
-        /// <value>
-        /// The name of the field.
-        /// </value>
-        public string FieldName
-        {
-            get { return Fields == null ? null : Fields.First().Key; }
-            set { Fields = new[] {new KeyValuePair<string, bool>(value, false)}; }
-        }
+        public ICollection<IndexField> Fields { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex"/> class.
@@ -77,7 +92,7 @@ namespace Apache.Ignite.Core.Configuration
 
             var count = reader.ReadInt();
             Fields = count == 0 ? null : Enumerable.Range(0, count).Select(x =>
-                new KeyValuePair<string, bool>(reader.ReadString(), reader.ReadBoolean())).ToList();
+                new IndexField(reader.ReadString(), reader.ReadBoolean())).ToList();
         }
 
         /// <summary>
@@ -94,8 +109,8 @@ namespace Apache.Ignite.Core.Configuration
 
                 foreach (var field in Fields)
                 {
-                    writer.WriteString(field.Key);
-                    writer.WriteBoolean(field.Value);
+                    writer.WriteString(field.Name);
+                    writer.WriteBoolean(field.IsAscending);
                 }
             }
             else

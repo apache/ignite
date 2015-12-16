@@ -126,6 +126,7 @@
     <Compile Include="Configuration\CacheRebalanceMode.cs" />
     <Compile Include="Configuration\CacheWriteSynchronizationMode.cs" />
     <Compile Include="Configuration\DiscoveryConfiguration.cs" />
+    <Compile Include="Configuration\IndexField.cs" />
     <Compile Include="Configuration\IpFinder.cs" />
     <Compile Include="Configuration\MulticastIpFinder.cs" />
     <Compile Include="Configuration\QueryEntity.cs" />

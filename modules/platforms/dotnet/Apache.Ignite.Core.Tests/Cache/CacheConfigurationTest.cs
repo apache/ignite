@@ -336,23 +336,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                         Aliases = new Dictionary<string, string> {{"length", "len"}},
                         Indexes = new[]
                         {
-                            new QueryIndex
-                            {
-                                Name = "index1",
-                                Fields = new[]
-                                {
-                                    new KeyValuePair<string, bool>("name", false)
-                                }
-                            },
-                            new QueryIndex
+                            new QueryIndex("name") {Name = "index1" },
+                            new QueryIndex(new IndexField("location", true))
                             {
                                 Name= "index2",
-                                IndexType = QueryIndexType.FullText,
-                                Fields = new[]
-                                {
-                                    new KeyValuePair<string, bool>("location", true)
-                                }
-                            },
+                                IndexType = QueryIndexType.FullText
+                            }
                         }
                     }
                 }

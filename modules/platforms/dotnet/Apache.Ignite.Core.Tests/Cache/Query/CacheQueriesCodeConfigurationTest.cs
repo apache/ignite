@@ -51,25 +51,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         {
                             new QueryEntity
                             {
-                                KeyType = typeof(int),
+                                KeyType = typeof (int),
                                 ValueType = typeof (QueryPerson),
                                 Fields = new[]
                                 {
-                                    new QueryField("Name", typeof(string)), 
-                                    new QueryField("Age", typeof(int))
+                                    new QueryField("Name", typeof (string)),
+                                    new QueryField("Age", typeof (int))
                                 },
                                 Indexes = new[]
                                 {
-                                    new QueryIndex
-                                    {
-                                        IndexType = QueryIndexType.FullText,
-                                        FieldName = "Name"
-                                    },
-                                    new QueryIndex
-                                    {
-                                        IndexType = QueryIndexType.Sorted,
-                                        FieldName = "Age"
-                                    }
+                                    new QueryIndex("Name", QueryIndexType.FullText), new QueryIndex("Age")
                                 }
                             }
                         }
