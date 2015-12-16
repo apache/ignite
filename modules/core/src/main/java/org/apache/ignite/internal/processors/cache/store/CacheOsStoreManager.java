@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
  * Default store manager implementation.
@@ -57,7 +57,7 @@ public class CacheOsStoreManager extends GridCacheStoreManagerAdapter {
             if (store instanceof PlatformCacheStore) {
                 PlatformProcessor proc = ctx.platform();
 
-                proc.registerStore((PlatformCacheStore)store, configuredConvertPortable());
+                proc.registerStore((PlatformCacheStore)store, configuredConvertBinary());
             }
         }
 
@@ -76,12 +76,12 @@ public class CacheOsStoreManager extends GridCacheStoreManagerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean convertPortable() {
-        return configuredConvertPortable() && !(cfgStore instanceof PlatformCacheStore);
+    @Override public boolean convertBinary() {
+        return configuredConvertBinary() && !(cfgStore instanceof PlatformCacheStore);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean configuredConvertPortable() {
-        return !(ctx.config().getMarshaller() instanceof BinaryMarshaller && cfg.isKeepBinaryInStore());
+    @Override public boolean configuredConvertBinary() {
+        return !(ctx.config().getMarshaller() instanceof BinaryMarshaller && cfg.isStoreKeepBinary());
     }
 }

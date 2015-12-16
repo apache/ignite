@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.cache;
 
 import java.io.Serializable;
@@ -124,7 +125,7 @@ public class QueryEntity implements Serializable {
     /**
      * Sets mapping from full property name in dot notation to an alias that will be used as SQL column name.
      * Example: {"parent.name" -> "parentName"}.
-
+     *
      * @param aliases Aliases map.
      */
     public void setAliases(Map<String, String> aliases) {
