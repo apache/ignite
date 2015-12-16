@@ -27,21 +27,28 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal static class JavaTypes
     {
         /** */
-        private static readonly Dictionary<string, Type> JavaToNet = new Dictionary<string, Type>
+        private static readonly Dictionary<Type, string> NetToJava = new Dictionary<Type, string>
         {
-            {"java.lang.Integer", typeof (int)},
-            {"java.lang.Long", typeof (long)},
-            {"java.lang.Byte", typeof (byte)},
-            {"java.lang.Short", typeof (short)},
-            {"java.lang.Float", typeof (float)},
-            {"java.lang.Double", typeof (double)},
-            {"java.lang.Character", typeof (char)},
-            {"java.lang.Boolean", typeof (bool)},
-            {"java.lang.String", typeof (string)},
-        };  // TODO: Decimal? unsigned?
+            {typeof (bool), "java.lang.Boolean"},
+            {typeof (byte), "java.lang.Byte"},
+            {typeof (sbyte), "java.lang.Byte"},
+            {typeof (short), "java.lang.Short"},
+            {typeof (ushort), "java.lang.Short"},
+            {typeof (char), "java.lang.Character"},
+            {typeof (int), "java.lang.Integer"},
+            {typeof (uint), "java.lang.Integer"},
+            {typeof (long), "java.lang.Long"},
+            {typeof (ulong), "java.lang.Long"},
+            {typeof (float), "java.lang.Float"},
+            {typeof (double), "java.lang.Double"},
+            {typeof (string), "java.lang.String"},
+            {typeof (decimal), "java.math.BigDecimal"},
+            {typeof (Guid), "java.util.UUID"}
+        };
 
         /** */
-        private static readonly Dictionary<Type, string> NetToJava = JavaToNet.ToDictionary(x => x.Value, x => x.Key);
+        private static readonly Dictionary<string, Type> JavaToNet =
+            NetToJava.GroupBy(x => x.Value).ToDictionary(g => g.Key, g => g.First().Key);
 
         /** */
         private static readonly string MappedTypes = string.Join(", ", NetToJava.Keys.Select(x => x.Name));
