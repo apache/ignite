@@ -50,6 +50,13 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    public void testCacheEntryProcessorExample() throws Exception {
+        CacheEntryProcessorExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testCacheAtomicLongExample() throws Exception {
         IgniteAtomicLongExample.main(EMPTY_ARGS);
     }

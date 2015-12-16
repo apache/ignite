@@ -36,6 +36,13 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
         CacheAffinityExample.main(EMPTY_ARGS);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheEntryProcessorExample() throws Exception {
+        CacheEntryProcessorExample.main(EMPTY_ARGS);
+    }
+
 //    TODO: IGNITE-711 next example(s) should be implemented for java 8
 //    or testing method(s) should be removed if example(s) does not applicable for java 8.
 //    /**
