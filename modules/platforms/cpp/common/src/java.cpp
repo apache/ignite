@@ -78,7 +78,7 @@ namespace ignite
                 }
             };
 
-            /*
+            /**
              * Heloper function to copy characters.
              *
              * @param src Source.
@@ -148,7 +148,7 @@ namespace ignite
                     delete[] errMsg;
             }
 
-            /*
+            /**
              * Guard to ensure global reference cleanup.
              */
             class JniGlobalRefGuard
@@ -397,7 +397,7 @@ namespace ignite
 
             /* HELPER METHODS. */
 
-            /*
+            /**
              * Throw exception to Java in case of missing callback pointer. It means that callback is not implemented in
              * native platform and Java -> platform operation cannot proceede further. As JniContext is not available at
              * this point, we have to obtain exception details from scratch. This is not critical from performance
@@ -728,7 +728,7 @@ namespace ignite
                 return members;
             }
 
-            /*
+            /**
              * Create JVM.
              */
             void CreateJvm(char** opts, int optsLen, JavaVM** jvm, JNIEnv** env) {
@@ -2084,9 +2084,9 @@ namespace ignite
                 jvm->GetJvm()->DestroyJavaVM();
             }
 
-            /*
-            * Attach thread to JVM.
-            */
+            /**
+             * Attach thread to JVM.
+             */
             JNIEnv* JniContext::Attach() {
                 JNIEnv* env;
 
@@ -2164,9 +2164,9 @@ namespace ignite
                 }
             }
 
-            /*
-            * Convert local reference to global.
-            */
+            /**
+             * Convert local reference to global.
+             */
             jobject JniContext::LocalToGlobal(JNIEnv* env, jobject localRef) {
                 if (localRef) {
                     jobject globalRef = env->NewGlobalRef(localRef);

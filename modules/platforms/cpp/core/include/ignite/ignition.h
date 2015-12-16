@@ -15,14 +15,6 @@
  * limitations under the License.
  */
 
-/**
- * \mainpage Apache Ignite C++
- *
- * Apache Ignite In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for
- * computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with
- * traditional disk-based or flash-based technologies.
- */
-
 #ifndef _IGNITE_IGNITION
 #define _IGNITE_IGNITION
 
@@ -46,7 +38,7 @@ namespace ignite
          */
         static Ignite Start(const IgniteConfiguration& cfg);
 
-        /*
+        /**
          * Start Ignite instance.
          *
          * @param cfg Configuration.
