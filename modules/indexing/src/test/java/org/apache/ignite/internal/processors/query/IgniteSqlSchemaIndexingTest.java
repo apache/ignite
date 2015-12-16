@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -35,6 +38,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests {@link IgniteH2Indexing} support {@link CacheConfiguration#setSqlSchema(String)} configuration.
  */
+@SuppressWarnings("unchecked")
 public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -61,12 +65,13 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private static CacheConfiguration cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
+
         return new CacheConfiguration()
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setBackups(1)
-            .setIndexedTypes(idxTypes);
+            .setIndexedTypes(Integer.class, Fact.class);
     }
 
     /**
@@ -92,21 +97,42 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
         }, IgniteException.class, "insensitive schema name already registered");
     }
 
+    /**
+     * Tests unregistration of previous scheme.
+     *
+     * @throws Exception If failed.
+     */
     public void testCacheUnregistration() throws Exception {
         try {
             startGridsMultiThreaded(3, true);
 
-            final CacheConfiguration cfg = cacheConfig("InSensitiveCache", true, Integer.class, Integer.class)
-                .setSqlSchema("InsensitiveCache");
-            final CacheConfiguration collisionCfg = cacheConfig("InsensitiveCache", true, Integer.class, Integer.class)
-                .setSqlSchema("InsensitiveCache");
+            final CacheConfiguration<Integer, Fact> cfg = cacheConfig("Insensitive_Cache", true, Integer.class, Fact.class)
+                .setSqlSchema("Insensitive_Cache");
+            final CacheConfiguration<Integer, Fact> collisionCfg = cacheConfig("InsensitiveCache", true, Integer.class, Fact.class)
+                .setSqlSchema("Insensitive_Cache");
 
-            IgniteCache ic = ignite(0).createCache(cfg);
+            IgniteCache<Integer, Fact> cache = ignite(0).createCache(cfg);
 
-            ignite(0).destroyCache(ic.getName());
+            SqlFieldsQuery qry = new SqlFieldsQuery("select f.id, f.name " +
+                "from Insensitive_Cache.Fact f");
 
-            ignite(0).createCache(collisionCfg); // Previous collision should be removed by now.
+            cache.put(1, new Fact(1, "cacheInsensitive"));
 
+            for ( List<?> row : cache.query(qry)) {
+                assertEquals(2, row.size());
+                assertEquals(1, row.get(0));
+                assertEquals("cacheInsensitive", row.get(1));
+            }
+
+            ignite(0).destroyCache(cache.getName());
+
+            cache = ignite(0).createCache(collisionCfg); // Previous collision should be removed by now.
+
+            cache.put(1, new Fact(1, "cacheInsensitive"));
+            cache.put(2, new Fact(2, "ThisIsANewCache"));
+            cache.put(3, new Fact(3, "With3RecordsAndAnotherName"));
+
+            assertEquals(3, cache.query(qry).getAll().size());
         }
         finally {
             stopAllGrids();
@@ -114,4 +140,43 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
     }
 
     // TODO add tests with dynamic cache unregistration, after resolve of https://issues.apache.org/jira/browse/IGNITE-1094
+
+    /** Test class as query entity */
+    private static class Fact {
+        /** Primary key. */
+        @QuerySqlField
+        private int id;
+
+        @QuerySqlField
+        private String name;
+
+        /**
+         * Constructs a fact.
+         *
+         * @param id fact ID.
+         * @param name fact name.
+         */
+        Fact(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        /**
+         * Gets fact ID.
+         *
+         * @return fact ID.
+         */
+        public int getId() {
+            return id;
+        }
+
+        /**
+         * Gets fact name.
+         *
+         * @return Fact name.
+         */
+        public String getName() {
+            return name;
+        }
+    }
 }

@@ -1349,6 +1349,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (result != null)
             return result;
 
+        // For the compatibility with {@link Connection#prepareStatement()}
+        result = schema2space.get(schema.toUpperCase());
+
+        if (result != null)
+            return result;
+
         // For the compatibility with {@link org.h2.schema.Schema#getName()}
         return schema2space.get(escapeName(schema, true));
     }
@@ -1558,6 +1564,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw new IgniteCheckedException("Case insensitive schema name already registered: " +
                         U.maskName(schema));
             }
+            schema = schema.toUpperCase();
         }
         schema2space.put(schema, emptyIfNull(ccfg.getName()));
         space2schema.put(emptyIfNull(ccfg.getName()), schema);
