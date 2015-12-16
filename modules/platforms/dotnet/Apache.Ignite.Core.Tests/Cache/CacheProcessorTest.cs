@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// </summary>
     public class CacheProcessorTest
     {
+        [Test]
         public void TestCacheInvoke()
         {
             using (var ignite1 = Ignition.Start(GetConfig("grid1")))
@@ -69,6 +70,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             return new IgniteConfigurationEx
             {
                 GridName = name,
+                SpringConfigUrl = @"config\cache-processor.xml",
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 BinaryConfiguration =
