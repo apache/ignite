@@ -164,6 +164,17 @@ namespace ignite
                 const std::string& foreignTable);
 
             /**
+             * Get primary keys.
+             *
+             * @param catalog Catalog name.
+             * @param schema Schema name.
+             * @param table Table name.
+             * @return True on success.
+             */
+            bool ExecuteGetPrimaryKeysQuery(const std::string& catalog, const std::string& schema,
+                const std::string& table);
+
+            /**
              * Close statement.
              *
              * @return True on success.
@@ -227,6 +238,20 @@ namespace ignite
              */
             size_t* GetRowsFetchedPtr();
 
+            /**
+             * Set row statuses array pointer.
+             *
+             * @param ptr Row statuses array pointer.
+             */
+            void SetRowStatusesPtr(uint16_t* ptr);
+
+            /**
+             * Get row statuses array pointer.
+             *
+             * @return Row statuses array pointer.
+             */
+            uint16_t* GetRowStatusesPtr();
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Statement)
 
@@ -252,6 +277,9 @@ namespace ignite
 
             /** Buffer to store number of rows fetched by the last fetch. */
             size_t* rowsFetched;
+
+            /** Array to store statuses of rows fetched by the last fetch. */
+            uint16_t* rowStatuses;
         };
     }
 }

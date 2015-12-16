@@ -24,7 +24,7 @@
 
 namespace
 {
-    enum ResultColumnName
+    enum ResultColumn
     {
         /** Catalog name. NULL if not applicable to the data source. */
         TABLE_CAT = 1,

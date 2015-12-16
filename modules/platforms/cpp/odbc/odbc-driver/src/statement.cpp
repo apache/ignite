@@ -15,10 +15,22 @@
  * limitations under the License.
  */
 
+#ifdef _WIN32
+#   define _WINSOCKAPI_
+#   include <windows.h>
+
+ // Undefining windows macro to use standard library tool
+#   undef min
+#endif //_WIN32
+
+#include <sqlext.h>
+#include <odbcinst.h>
+
 #include "ignite/odbc/query/data_query.h"
 #include "ignite/odbc/query/column_metadata_query.h"
 #include "ignite/odbc/query/table_metadata_query.h"
 #include "ignite/odbc/query/foreign_keys_query.h"
+#include "ignite/odbc/query/primary_keys_query.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
@@ -29,7 +41,8 @@ namespace ignite
     namespace odbc
     {
         Statement::Statement(Connection& parent) :
-            connection(parent), columnBindings(), currentQuery(), rowsFetched(0)
+            connection(parent), columnBindings(), currentQuery(),
+            rowsFetched(0), rowStatuses(0)
         {
             // No-op.
         }
@@ -142,6 +155,17 @@ namespace ignite
             return currentQuery->Execute();
         }
 
+        bool Statement::ExecuteGetPrimaryKeysQuery(const std::string & catalog, const std::string & schema,
+            const std::string & table)
+        {
+            if (currentQuery.get())
+                currentQuery->Close();
+
+            currentQuery.reset(new query::PrimaryKeysQuery(connection, catalog, schema, table));
+
+            return currentQuery->Execute();
+        }
+
         bool Statement::Close()
         {
             if (!currentQuery.get())
@@ -163,9 +187,15 @@ namespace ignite
                 return SQL_RESULT_ERROR;
 
             SqlResult res = currentQuery->FetchNextRow(columnBindings);
+            
+            if (res == SQL_RESULT_SUCCESS)
+            {
+                if (rowsFetched)
+                    *rowsFetched = 1;
 
-            if (rowsFetched && res == SQL_RESULT_SUCCESS)
-                *rowsFetched = 1;
+                if (rowStatuses)
+                    rowStatuses[0] = SQL_ROW_SUCCESS;
+            }
 
             return res;
         }
@@ -237,6 +267,16 @@ namespace ignite
         size_t* Statement::GetRowsFetchedPtr()
         {
             return rowsFetched;
+        }
+
+        void Statement::SetRowStatusesPtr(uint16_t* ptr)
+        {
+            rowStatuses = ptr;
+        }
+
+        uint16_t * Statement::GetRowStatusesPtr()
+        {
+            return rowStatuses;
         }
     }
 }

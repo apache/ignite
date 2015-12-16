@@ -164,6 +164,7 @@
     <ClCompile Include="..\..\src\query\data_query.cpp" />
     <ClCompile Include="..\..\src\query\column_metadata_query.cpp" />
     <ClCompile Include="..\..\src\query\foreign_keys_query.cpp" />
+    <ClCompile Include="..\..\src\query\primary_keys_query.cpp" />
     <ClCompile Include="..\..\src\query\table_metadata_query.cpp" />
     <ClCompile Include="..\..\src\result_page.cpp" />
     <ClCompile Include="..\..\src\row.cpp" />
@@ -185,11 +186,13 @@
     <ClInclude Include="..\..\include\ignite\odbc\environment.h" />
     <ClInclude Include="..\..\include\ignite\odbc\message.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\column_meta.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\meta\primary_key_meta.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\table_meta.h" />
     <ClInclude Include="..\..\include\ignite\odbc\parser.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\data_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\column_metadata_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\foreign_keys_query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\primary_keys_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\table_metadata_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\result_page.h" />

@@ -88,6 +88,9 @@
     <ClCompile Include="..\..\src\query\foreign_keys_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\query\primary_keys_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -164,6 +167,12 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\foreign_keys_query.h">
       <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\primary_keys_query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\meta\primary_key_meta.h">
+      <Filter>Code\meta</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

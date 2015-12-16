@@ -31,6 +31,9 @@ namespace ignite
     {
         namespace meta
         {
+            /**
+             * Column metadata.
+             */
             class ColumnMeta
             {
             public:

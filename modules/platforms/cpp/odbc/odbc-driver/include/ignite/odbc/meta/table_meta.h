@@ -31,6 +31,9 @@ namespace ignite
     {
         namespace meta
         {
+            /**
+             * Table metadata.
+             */
             class TableMeta
             {
             public:

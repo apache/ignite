@@ -914,6 +914,15 @@ SQLRETURN SQL_API SQLGetStmtAttr(SQLHSTMT       stmt,
             break;
         }
 
+        case SQL_ATTR_ROW_STATUS_PTR:
+        {
+            SQLUSMALLINT** val = reinterpret_cast<SQLUSMALLINT**>(valueBuf);
+
+            *val = reinterpret_cast<SQLUSMALLINT*>(statement->GetRowStatusesPtr());
+
+            break;
+        }
+
         default:
             return SQL_ERROR;
     }
@@ -957,11 +966,49 @@ SQLRETURN SQL_API SQLSetStmtAttr(SQLHSTMT    stmt,
             break;
         }
 
+        case SQL_ATTR_ROW_STATUS_PTR:
+        {
+            statement->SetRowStatusesPtr(reinterpret_cast<uint16_t*>(value));
+
+            break;
+        }
+
         default:
             return SQL_ERROR;
     }
 
     return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLPrimaryKeys(SQLHSTMT       stmt,
+                                 SQLCHAR*       catalogName,
+                                 SQLSMALLINT    catalogNameLen,
+                                 SQLCHAR*       schemaName,
+                                 SQLSMALLINT    schemaNameLen,
+                                 SQLCHAR*       tableName,
+                                 SQLSMALLINT    tableNameLen)
+{
+    using ignite::odbc::Statement;
+    using ignite::utility::SqlStringToString;
+
+    LOG_MSG("SQLPrimaryKeys called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    std::string catalog = SqlStringToString(catalogName, catalogNameLen);
+    std::string schema = SqlStringToString(schemaName, schemaNameLen);
+    std::string table = SqlStringToString(tableName, tableNameLen);
+
+    LOG_MSG("catalog: %s\n", catalog.c_str());
+    LOG_MSG("schema: %s\n", schema.c_str());
+    LOG_MSG("table: %s\n", table.c_str());
+
+    bool success = statement->ExecuteGetPrimaryKeysQuery(catalog, schema, table);
+
+    return success ? SQL_ERROR : SQL_SUCCESS;
 }
 
 //
@@ -1365,18 +1412,6 @@ SQLRETURN SQL_API SQLParamOptions(SQLHSTMT  stmt,
                                   SQLULEN*  paramsProcessed)
 {
     LOG_MSG("SQLParamOptions called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLPrimaryKeys(SQLHSTMT       stmt,
-                                 SQLCHAR*       catalogName,
-                                 SQLSMALLINT    catalogNameLen,
-                                 SQLCHAR*       schemaName,
-                                 SQLSMALLINT    schemaNameLen,
-                                 SQLCHAR*       tableName,
-                                 SQLSMALLINT    tableNameLen)
-{
-    LOG_MSG("SQLPrimaryKeys called\n");
     return SQL_SUCCESS;
 }
 

@@ -21,7 +21,6 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/query/foreign_keys_query.h"
-#include "..\..\include\ignite\odbc\query\foreign_keys_query.h"
 
 namespace ignite
 {
