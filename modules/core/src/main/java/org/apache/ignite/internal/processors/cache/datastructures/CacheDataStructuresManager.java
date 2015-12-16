@@ -39,6 +39,7 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
@@ -493,7 +494,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         true).get();
                 }
                 catch (IgniteCheckedException e) {
-                    if (e.hasCause(ClusterTopologyException.class)) {
+                    if (e.hasCause(ClusterTopologyCheckedException.class)) {
                         if (log.isDebugEnabled())
                             log.debug("RemoveSetData job failed, will retry: " + e);
 
@@ -516,7 +517,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         true).get();
                 }
                 catch (IgniteCheckedException e) {
-                    if (e.hasCause(ClusterTopologyException.class)) {
+                    if (e.hasCause(ClusterTopologyCheckedException.class)) {
                         if (log.isDebugEnabled())
                             log.debug("RemoveSetData job failed, will retry: " + e);
 

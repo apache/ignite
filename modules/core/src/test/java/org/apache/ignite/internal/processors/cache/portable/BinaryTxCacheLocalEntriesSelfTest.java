@@ -41,7 +41,7 @@ public class BinaryTxCacheLocalEntriesSelfTest extends GridCacheAbstractSelfTest
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setKeepBinaryInStore(true);
+        ccfg.setStoreKeepBinary(true);
 
         return ccfg;
     }

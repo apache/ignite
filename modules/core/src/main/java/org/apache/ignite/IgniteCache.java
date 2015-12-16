@@ -557,8 +557,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the provided key. If an {@link javax.cache.Cache.Entry} does not exist for the specified key,
      * an attempt is made to load it (if a loader is configured) or a surrogate
      * {@link javax.cache.Cache.Entry}, consisting of the key with a null value is used instead.
-     * This method different
      * <p>
+     * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
+     * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
+     * the same.
      *
      * @param key            the key to the entry
      * @param entryProcessor the {@link CacheEntryProcessor} to invoke
@@ -605,6 +607,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@link CacheEntryProcessor} or Caching implementation throw an exception, the
      * exception is wrapped and re-thrown when a call to
      * {@link javax.cache.processor.EntryProcessorResult#get()} is made.
+     * <p>
+     * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
+     * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
+     * the same.
      *
      * @param keys           the set of keys for entries to process
      * @param entryProcessor the {@link CacheEntryProcessor} to invoke

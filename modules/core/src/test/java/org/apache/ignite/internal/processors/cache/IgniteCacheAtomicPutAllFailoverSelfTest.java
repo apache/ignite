@@ -30,6 +30,7 @@ public class IgniteCacheAtomicPutAllFailoverSelfTest extends GridCachePutAllFail
         return ATOMIC;
     }
 
+    /** {@inheritDoc} */
     @Override public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapTieredSwap(){
         fail("https://issues.apache.org/jira/browse/IGNITE-1584");
     }
