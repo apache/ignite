@@ -259,7 +259,7 @@ namespace ignite
                         out[toCopy] = 0;
                     }
 
-                    if (*reslen)
+                    if (reslen)
                     {
                         if (buflen >= static_cast<int64_t>((value.size() + 1) * charSize))
                             *reslen = value.size();
@@ -268,9 +268,7 @@ namespace ignite
                     }
                 }
                 else if (reslen)
-                {
                     *reslen = value.size();
-                }
             }
 
             void ApplicationDataBuffer::PutRawDataToBuffer(void *data, size_t len)
@@ -283,7 +281,7 @@ namespace ignite
 
                     memcpy(buffer, data, toCopy);
 
-                    if (*reslen)
+                    if (reslen)
                     {
                         if (buflen >= ilen)
                             *reslen = ilen;
@@ -292,9 +290,7 @@ namespace ignite
                     }
                 }
                 else if (reslen)
-                {
                     *reslen = ilen;
-                }
             }
 
             void ApplicationDataBuffer::PutInt8(int8_t value)
@@ -439,12 +435,48 @@ namespace ignite
                 using namespace type_traits;
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
                     case IGNITE_ODBC_C_TYPE_BINARY:
                     case IGNITE_ODBC_C_TYPE_DEFAULT:
                     {
                         PutRawDataToBuffer(data, len);
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    {
+                        std::stringstream converter;
+
+                        uint8_t *dataBytes = reinterpret_cast<uint8_t*>(data);
+
+                        for (size_t i = 0; i < len; ++i)
+                        {
+                            converter << std::hex
+                                << std::setfill('0')
+                                << std::setw(2)
+                                << (unsigned)dataBytes[i];
+                        }
+
+                        PutStrToStrBuffer<char>(converter.str());
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    {
+                        std::wstringstream converter;
+
+                        uint8_t *dataBytes = reinterpret_cast<uint8_t*>(data);
+
+                        for (size_t i = 0; i < len; ++i)
+                        {
+                            converter << std::hex
+                                      << std::setfill<wchar_t>('0')
+                                      << std::setw(2)
+                                      << (unsigned)dataBytes[i];
+                        }
+
+                        PutStrToStrBuffer<wchar_t>(converter.str());
+
                         break;
                     }
 

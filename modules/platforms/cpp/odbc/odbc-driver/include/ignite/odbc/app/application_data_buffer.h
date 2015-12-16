@@ -211,6 +211,16 @@ namespace ignite
                     return buflen;
                 }
 
+                /**
+                 * Get result data length.
+                 *
+                 * @return Data length.
+                 */
+                int64_t GetResLen() const
+                {
+                    return *reslen;
+                }
+
             private:
                 /**
                  * Put value of numeric type in the buffer.

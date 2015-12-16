@@ -187,7 +187,7 @@ namespace ignite
                 return SQL_RESULT_ERROR;
 
             SqlResult res = currentQuery->FetchNextRow(columnBindings);
-            
+
             if (res == SQL_RESULT_SUCCESS)
             {
                 if (rowsFetched)
