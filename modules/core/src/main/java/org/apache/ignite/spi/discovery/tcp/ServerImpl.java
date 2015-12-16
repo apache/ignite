@@ -2352,7 +2352,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             assert ring.hasRemoteNodes();
 
-            for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sendMsgLsnrs)
+            for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sndMsgLsnrs)
                 msgLsnr.apply(msg);
 
             sendMessageToClients(msg);
@@ -4849,7 +4849,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             for (port = spi.locPort; port < spi.locPort + spi.locPortRange; port++) {
                 try {
                     if (spi.isSslEnabled())
-                        srvrSock = spi.sslSrvSocketFactory.createServerSocket(port, 0, spi.locHost);
+                        srvrSock = spi.sslSrvSockFactory.createServerSocket(port, 0, spi.locHost);
                     else
                         srvrSock = new ServerSocket(port, 0, spi.locHost);
 
