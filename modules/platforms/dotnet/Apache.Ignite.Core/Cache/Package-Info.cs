@@ -17,9 +17,9 @@
 
 #pragma warning disable 1587   // invalid XML comment
 /// <summary>
-/// Binary protocol.
+/// Distributed in-memory cache.
 /// </summary>
-namespace Apache.Ignite.Core.Binary
+namespace Apache.Ignite.Core.Cache
 {
     // No-op.
 }

@@ -17,7 +17,7 @@
 
 #pragma warning disable 1587   // invalid XML comment
 /// <summary>
-/// Ignite.NET core functionality.
+/// Entry point, core functionality.
 /// </summary>
 namespace Apache.Ignite.Core
 {

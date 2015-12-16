@@ -76,6 +76,7 @@
     <Compile Include="Cache\ICacheMetrics.cs" />
     <Compile Include="Cache\CacheResult.cs" />
     <Compile Include="Cache\IMutableCacheEntry.cs" />
+    <Compile Include="Cache\Package-Info.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQuery.cs" />
     <Compile Include="Cache\Query\Continuous\IContinuousQueryHandle.cs" />
     <Compile Include="Cache\Query\IQueryCursor.cs" />
@@ -96,8 +97,10 @@
     <Compile Include="Cluster\IClusterMetrics.cs" />
     <Compile Include="Cluster\IClusterNode.cs" />
     <Compile Include="Cluster\IClusterNodeFilter.cs" />
+    <Compile Include="Cluster\Package-Info.cs" />
     <Compile Include="Common\IgniteException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
+    <Compile Include="Common\Package-Info.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
     <Compile Include="Compute\ComputeJobAdapter.cs" />
     <Compile Include="Compute\ComputeJobFailoverException.cs" />

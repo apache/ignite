@@ -17,9 +17,9 @@
 
 #pragma warning disable 1587   // invalid XML comment
 /// <summary>
-/// Binary protocol.
+/// Common types.
 /// </summary>
-namespace Apache.Ignite.Core.Binary
+namespace Apache.Ignite.Core.Common
 {
     // No-op.
 }
