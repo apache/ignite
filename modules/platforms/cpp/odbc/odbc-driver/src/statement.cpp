@@ -155,8 +155,8 @@ namespace ignite
             return currentQuery->Execute();
         }
 
-        bool Statement::ExecuteGetPrimaryKeysQuery(const std::string & catalog, const std::string & schema,
-            const std::string & table)
+        bool Statement::ExecuteGetPrimaryKeysQuery(const std::string& catalog, const std::string& schema,
+            const std::string& table)
         {
             if (currentQuery.get())
                 currentQuery->Close();
