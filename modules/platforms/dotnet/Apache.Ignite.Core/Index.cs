@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+
+#pragma warning disable 1587
+/// <summary>
+/// Apache Ignite .NET core functionality.
+/// </summary>
 namespace Apache.Ignite.Core
 {
     // Doxygen main page
