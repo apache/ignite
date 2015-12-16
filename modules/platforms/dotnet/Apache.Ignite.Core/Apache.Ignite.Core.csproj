@@ -309,6 +309,7 @@
     <Compile Include="Impl\Unmanaged\UnmanagedNonReleaseableTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
+    <Compile Include="Index.cs" />
     <Compile Include="Lifecycle\ILifecycleBean.cs" />
     <Compile Include="Lifecycle\LifecycleEventType.cs" />
     <Compile Include="Messaging\IMessageListener.cs" />
