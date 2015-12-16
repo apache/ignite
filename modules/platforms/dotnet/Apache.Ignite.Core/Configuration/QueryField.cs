@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Configuration
 {
     using System;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Represents a queryable field.
@@ -28,29 +29,41 @@ namespace Apache.Ignite.Core.Configuration
     public class QueryField
     {
         /// <summary>
-        /// Gets or sets the field name.
+        /// Initializes a new instance of the <see cref="QueryField"/> class.
         /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Java type name.
-        /// </summary>
-        public string TypeName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the type of the field.
-        /// This is a shortcut for <see cref="TypeName"/>. 
-        /// Getter will return null for non-primitive types.
-        /// </summary>
-        public Type Type
+        /// <param name="name">Name.</param>
+        /// <param name="javaTypeName">Java type name.</param>
+        public QueryField(string name, string javaTypeName)
         {
-            get { return JavaTypes.GetDotNetType(TypeName); }
-            set
-            {
-                TypeName = value == null
-                    ? null
-                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
-            }
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNullOrEmpty(javaTypeName, "typeName");
+
+            Name = name;
+            TypeName = javaTypeName;
         }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryField" /> class.
+        /// </summary>
+        /// <param name="name">Name.</param>
+        /// <param name="type">Type.</param>
+        public QueryField(string name, Type type)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(type, "type");
+
+            Name = name;
+            TypeName = JavaTypes.GetJavaTypeName(type) ?? BinaryUtils.GetTypeName(type);
+        }
+
+        /// <summary>
+        /// Gets the field name.
+        /// </summary>
+        public string Name { get; private set; }
+
+        /// <summary>
+        /// Gets the Java type name.
+        /// </summary>
+        public string TypeName { get; private set; }
     }
 }

@@ -53,10 +53,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             {
                                 KeyType = typeof(int),
                                 ValueType = typeof (QueryPerson),
-                                FieldNames = new[]
+                                Fields = new[]
                                 {
-                                    new KeyValuePair<string, string>("Name", "java.lang.String"),
-                                    new KeyValuePair<string, string>("Age", "java.lang.Integer")
+                                    new QueryField("Name", typeof(string)), 
+                                    new QueryField("Age", typeof(int))
                                 },
                                 Indexes = new[]
                                 {

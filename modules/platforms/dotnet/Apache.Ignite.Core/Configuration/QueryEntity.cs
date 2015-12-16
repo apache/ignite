@@ -32,8 +32,6 @@ namespace Apache.Ignite.Core.Configuration
     /// </summary>
     public class QueryEntity
     {
-        // TODO: KeyType, ValueType, Fields
-
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
         /// </summary>
@@ -84,13 +82,12 @@ namespace Apache.Ignite.Core.Configuration
             }
         }
 
-        // TODO: KeyValuePair sucks, replace with QueryField or something.
         /// <summary>
         /// Gets or sets query fields, a map from field name to Java type name. 
-        /// The order of fields is important as it defines the order of columns returned by the 'select *' queries.
+        /// The order of fields defines the order of columns returned by the 'select *' queries.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<KeyValuePair<string, string>> FieldNames { get; set; }
+        public ICollection<QueryField> Fields { get; set; }
 
         /// <summary>
         /// Gets or sets field name aliases: mapping from full name in dot notation to an alias 
@@ -116,8 +113,8 @@ namespace Apache.Ignite.Core.Configuration
             ValueTypeName = reader.ReadString();
 
             var count = reader.ReadInt();
-            FieldNames = count == 0 ? null : Enumerable.Range(0, count).Select(x =>
-                    new KeyValuePair<string, string>(reader.ReadString(), reader.ReadString())).ToList();
+            Fields = count == 0 ? null : Enumerable.Range(0, count).Select(x =>
+                    new QueryField(reader.ReadString(), reader.ReadString())).ToList();
 
             count = reader.ReadInt();
             Aliases = count == 0 ? null : Enumerable.Range(0, count)
@@ -135,8 +132,32 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteString(KeyTypeName);
             writer.WriteString(ValueTypeName);
 
-            WritePairs(writer, FieldNames);
-            WritePairs(writer, Aliases);
+            if (Fields != null)
+            {
+                writer.WriteInt(Fields.Count);
+
+                foreach (var field in Fields)
+                {
+                    writer.WriteString(field.Name);
+                    writer.WriteString(field.TypeName);
+                }
+            }
+            else
+                writer.WriteInt(0);
+
+
+            if (Aliases != null)
+            {
+                writer.WriteInt(Aliases.Count);
+
+                foreach (var field in Aliases)
+                {
+                    writer.WriteString(field.Key);
+                    writer.WriteString(field.Value);
+                }
+            }
+            else
+                writer.WriteInt(0);
 
             if (Indexes != null)
             {
@@ -148,25 +169,6 @@ namespace Apache.Ignite.Core.Configuration
                         throw new InvalidOperationException("Invalid cache configuration: QueryIndex can't be null.");
 
                     index.Write(writer);
-                }
-            }
-            else
-                writer.WriteInt(0);
-        }
-
-        /// <summary>
-        /// Writes pairs.
-        /// </summary>
-        private static void WritePairs(IBinaryRawWriter writer, ICollection<KeyValuePair<string, string>> pairs)
-        {
-            if (pairs != null)
-            {
-                writer.WriteInt(pairs.Count);
-
-                foreach (var field in pairs)
-                {
-                    writer.WriteString(field.Key);
-                    writer.WriteString(field.Value);
                 }
             }
             else

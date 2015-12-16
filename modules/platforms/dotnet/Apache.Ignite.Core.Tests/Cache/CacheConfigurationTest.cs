@@ -240,7 +240,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.KeyTypeName, y.KeyTypeName);
             Assert.AreEqual(x.ValueTypeName, y.ValueTypeName);
 
-            CollectionAssert.AreEqual(x.FieldNames, y.FieldNames);
+            CollectionAssert.AreEqual(x.Fields, y.Fields);
             CollectionAssert.AreEqual(x.Aliases, y.Aliases);
 
             AssertConfigsAreEqual(x.Indexes, y.Indexes);
@@ -327,11 +327,11 @@ namespace Apache.Ignite.Core.Tests.Cache
                     {
                         KeyTypeName = "Integer",
                         ValueTypeName = "java.lang.String",
-                        FieldNames = new[]
+                        Fields = new[]
                         {
-                            new KeyValuePair<string, string>("length", "Integer"),
-                            new KeyValuePair<string, string>("name", "String"),
-                            new KeyValuePair<string, string>("location", "String")
+                            new QueryField("length", typeof(int)), 
+                            new QueryField("name", typeof(string)), 
+                            new QueryField("location", typeof(string)),
                         },
                         Aliases = new Dictionary<string, string> {{"length", "len"}},
                         Indexes = new[]
