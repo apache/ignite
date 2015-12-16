@@ -150,7 +150,7 @@ SHORT_NAMES            = NO
 # comments will behave just like regular Qt-style comments
 # (thus requiring an explicit @brief command for a brief description.)
 
-JAVADOC_AUTOBRIEF      = NO
+JAVADOC_AUTOBRIEF      = YES
 
 # If the QT_AUTOBRIEF tag is set to YES then Doxygen will
 # interpret the first line (until the first dot) of a Qt-style
@@ -1715,7 +1715,7 @@ GENERATE_LEGEND        = YES
 
 DOT_CLEANUP            = YES
 
-;INPUT=core/include/ignite core/src
+;INPUT=core
 ;EXCLUDE=core/include/ignite/impl core/os/linux/include/ignite/impl core/os/linux/src/impl core/os/win/include/ignite/impl core/os/win/src/impl core/src/impl
 ;STRIP_FROM_PATH=core/include/ignite core/src
 ;OUTPUT_DIRECTORY=../../clients/target/cppdoc
