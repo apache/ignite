@@ -175,7 +175,6 @@ namespace Apache.Ignite.Core.Configuration
             ReadFromBackup = DefaultReadFromBackup;
             RebalanceBatchSize = DefaultRebalanceBatchSize;
             RebalanceMode = DefaultRebalanceMode;
-            RebalanceThreadPoolSize = DefaultRebalanceThreadPoolSize;
             RebalanceThrottle = DefaultRebalanceThrottle;
             RebalanceTimeout = DefaultRebalanceTimeout;
             SqlOnheapRowCacheSize = DefaultSqlOnheapRowCacheSize;
@@ -219,7 +218,6 @@ namespace Apache.Ignite.Core.Configuration
             RebalanceBatchSize = reader.ReadInt();
             RebalanceDelay = reader.ReadLongAsTimespan();
             RebalanceMode = (CacheRebalanceMode) reader.ReadInt();
-            RebalanceThreadPoolSize = reader.ReadInt();
             RebalanceThrottle = reader.ReadLongAsTimespan();
             RebalanceTimeout = reader.ReadLongAsTimespan();
             SqlEscapeAll = reader.ReadBoolean();
@@ -268,7 +266,6 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt(RebalanceBatchSize);
             writer.WriteLong((long) RebalanceDelay.TotalMilliseconds);
             writer.WriteInt((int) RebalanceMode);
-            writer.WriteInt(RebalanceThreadPoolSize);
             writer.WriteLong((long) RebalanceThrottle.TotalMilliseconds);
             writer.WriteLong((long) RebalanceTimeout.TotalMilliseconds);
             writer.WriteBoolean(SqlEscapeAll);
@@ -464,12 +461,6 @@ namespace Apache.Ignite.Core.Configuration
         /// <see cref="ICacheStore.WriteAll"/> or <see cref="ICacheStore.DeleteAll"/> methods. 
         /// </summary>
         public int WriteBehindBatchSize { get; set; }
-
-        /// <summary>
-        /// Gets or sets size of rebalancing thread pool. Note that size serves as a hint and implementation 
-        /// may create more threads for rebalancing than specified here (but never less threads).
-        /// </summary>
-        public int RebalanceThreadPoolSize { get; set; }
 
         /// <summary>
         /// Gets or sets rebalance timeout.

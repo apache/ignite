@@ -128,7 +128,6 @@ import java.util.Map;
         ccfg.setRebalanceBatchSize(in.readInt());
         ccfg.setRebalanceDelay(in.readLong());
         ccfg.setRebalanceMode(CacheRebalanceMode.fromOrdinal(in.readInt()));
-        ccfg.setRebalanceThreadPoolSize(in.readInt());
         ccfg.setRebalanceThrottle(in.readLong());
         ccfg.setRebalanceTimeout(in.readLong());
         ccfg.setSqlEscapeAll(in.readBoolean());
@@ -401,7 +400,6 @@ import java.util.Map;
         writer.writeLong(ccfg.getRebalanceDelay());
         writer.writeInt(ccfg.getRebalanceMode() == null ?
             CacheConfiguration.DFLT_REBALANCE_MODE.ordinal() : ccfg.getRebalanceMode().ordinal());
-        writer.writeInt(ccfg.getRebalanceThreadPoolSize());
         writer.writeLong(ccfg.getRebalanceThrottle());
         writer.writeLong(ccfg.getRebalanceTimeout());
         writer.writeBoolean(ccfg.isSqlEscapeAll());

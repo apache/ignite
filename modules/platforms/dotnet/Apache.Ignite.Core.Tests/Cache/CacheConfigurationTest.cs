@@ -157,7 +157,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultReadFromBackup, cfg.ReadFromBackup);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceBatchSize, cfg.RebalanceBatchSize);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceMode, cfg.RebalanceMode);
-            Assert.AreEqual(CacheConfiguration.DefaultRebalanceThreadPoolSize, cfg.RebalanceThreadPoolSize);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceThrottle, cfg.RebalanceThrottle);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceTimeout, cfg.RebalanceTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultSqlOnheapRowCacheSize, cfg.SqlOnheapRowCacheSize);
@@ -197,7 +196,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.ReadFromBackup, y.ReadFromBackup);
             Assert.AreEqual(x.RebalanceBatchSize, y.RebalanceBatchSize);
             Assert.AreEqual(x.RebalanceMode, y.RebalanceMode);
-            Assert.AreEqual(x.RebalanceThreadPoolSize, y.RebalanceThreadPoolSize);
             Assert.AreEqual(x.RebalanceThrottle, y.RebalanceThrottle);
             Assert.AreEqual(x.RebalanceTimeout, y.RebalanceTimeout);
             Assert.AreEqual(x.SqlOnheapRowCacheSize, y.SqlOnheapRowCacheSize);
@@ -371,7 +369,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 RebalanceBatchSize = 12,
                 RebalanceDelay = TimeSpan.FromSeconds(13),
                 RebalanceMode = CacheRebalanceMode.Async,
-                RebalanceThreadPoolSize = 14,
                 RebalanceThrottle = TimeSpan.FromSeconds(15),
                 RebalanceTimeout = TimeSpan.FromSeconds(16),
                 SqlEscapeAll = true,
