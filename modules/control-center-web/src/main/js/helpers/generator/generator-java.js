@@ -1284,7 +1284,7 @@ $generatorJava.cacheMetadatas = function (metadatas, varName, res) {
 };
 
 // Generate cache configs.
-$generatorJava.cache = function(cache, varName, res) {
+$generatorJava.cache = function(cache, varName, isSrvCfg, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1294,7 +1294,8 @@ $generatorJava.cache = function(cache, varName, res) {
 
     $generatorJava.cacheQuery(cache, varName, res);
 
-    $generatorJava.cacheStore(cache, cache.metadatas, varName, res);
+    if (isSrvCfg)
+        $generatorJava.cacheStore(cache, cache.metadatas, varName, res);
 
     $generatorJava.cacheConcurrency(cache, varName, res);
 
@@ -1400,7 +1401,7 @@ $generatorJava.cacheVariableName = function (cache, names) {
 };
 
 // Generate cluster caches.
-$generatorJava.clusterCaches = function (caches, igfss, res) {
+$generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
     function clusterCache(res, cache, names) {
         res.emptyLineIfNeeded();
 
@@ -1424,7 +1425,7 @@ $generatorJava.clusterCaches = function (caches, igfss, res) {
 
         $generatorJava.declareVariable(res, cacheName, 'org.apache.ignite.configuration.CacheConfiguration');
 
-        $generatorJava.cache(cache, cacheName, res);
+        $generatorJava.cache(cache, cacheName, isSrvCfg, res);
 
         res.line('return ' + cacheName + ';');
         res.endBlock('}');
@@ -1449,7 +1450,7 @@ $generatorJava.clusterCaches = function (caches, igfss, res) {
         res.needEmptyLine = true;
     }
 
-    if (igfss && igfss.length > 0) {
+    if (isSrvCfg && igfss && igfss.length > 0) {
         res.emptyLineIfNeeded();
 
         _.forEach(igfss, function (igfs) {
@@ -2009,12 +2010,17 @@ $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     $generatorJava.clusterTransactions(cluster, res);
 
-    if (!$commonUtils.isDefined(clientNearCfg))
+    var isSrvCfg = !$commonUtils.isDefined(clientNearCfg);
+
+    if (isSrvCfg)
         $generatorJava.clusterCacheUse(cluster.caches, cluster.igfss, res);
 
     $generatorJava.clusterSsl(cluster, res);
 
-    return $generatorJava.igfss(cluster.igfss, 'cfg', res);
+    if (isSrvCfg)
+        $generatorJava.igfss(cluster.igfss, 'cfg', res);
+
+    return res;
 };
 
 // Generate loading of secret properties file.
@@ -2049,56 +2055,52 @@ $generatorJava.tryLoadSecretProperties = function (cluster, res) {
 $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
     var res = $generatorCommon.builder();
 
+    var isSrvCfg = !$commonUtils.isDefined(clientNearCfg);
+
     if (cluster) {
         var resCfg = $generatorJava.clusterConfiguration(cluster, clientNearCfg, $generatorCommon.builder());
 
         res.mergeProps(resCfg);
 
-        if (javaClass) {
-            res.line('/**');
-            res.line(' * ' + $generatorCommon.mainComment());
-            res.line(' */');
-            res.startBlock('public class ' + javaClass + ' {');
-            res.line('/**');
-            res.line(' * Configure grid.');
-            res.line(' *');
-            res.line(' * @return Ignite configuration.');
-            res.line(' * @throws Exception If failed to construct Ignite configuration instance.');
-            res.line(' */');
-            res.startBlock('public static IgniteConfiguration createConfiguration() throws Exception {');
-        }
+        res.line('/**');
+        res.line(' * ' + $generatorCommon.mainComment());
+        res.line(' */');
+        res.startBlock('public class ' + javaClass + ' {');
+        res.line('/**');
+        res.line(' * Configure grid.');
+        res.line(' *');
+        res.line(' * @return Ignite configuration.');
+        res.line(' * @throws Exception If failed to construct Ignite configuration instance.');
+        res.line(' */');
+        res.startBlock('public static IgniteConfiguration createConfiguration() throws Exception {');
 
         $generatorJava.tryLoadSecretProperties(cluster, res);
 
         res.mergeLines(resCfg);
 
-        if (javaClass) {
-            res.needEmptyLine = true;
+        res.needEmptyLine = true;
 
-            res.line('return cfg;');
-            res.endBlock('}');
+        res.line('return cfg;');
+        res.endBlock('}');
 
-            res.needEmptyLine = true;
+        res.needEmptyLine = true;
 
-            $generatorJava.clusterMetadatas(cluster.caches, res);
+        $generatorJava.clusterMetadatas(cluster.caches, res);
 
-            $generatorJava.clusterCaches(cluster.caches, cluster.igfss, res);
+        $generatorJava.clusterCaches(cluster.caches, cluster.igfss, isSrvCfg, res);
 
-            res.needEmptyLine = true;
-        }
+        res.needEmptyLine = true;
 
         if (clientNearCfg) {
-            if (javaClass) {
-                res.line('/**');
-                res.line(' * Configure client near cache configuration.');
-                res.line(' *');
-                res.line(' * @return Near cache configuration.');
-                res.line(' * @throws Exception If failed to construct near cache configuration instance.');
-                res.line(' */');
-                res.startBlock('public static NearCacheConfiguration createNearCacheConfiguration() throws Exception {');
+            res.line('/**');
+            res.line(' * Configure client near cache configuration.');
+            res.line(' *');
+            res.line(' * @return Near cache configuration.');
+            res.line(' * @throws Exception If failed to construct near cache configuration instance.');
+            res.line(' */');
+            res.startBlock('public static NearCacheConfiguration createNearCacheConfiguration() throws Exception {');
 
-                $generatorJava.resetVariables(res);
-            }
+            $generatorJava.resetVariables(res);
 
             $generatorJava.declareVariable(res, 'clientNearCfg', 'org.apache.ignite.configuration.NearCacheConfiguration');
 
@@ -2111,19 +2113,15 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
             if (clientNearCfg.nearEvictionPolicy && clientNearCfg.nearEvictionPolicy.kind)
                 $generatorJava.evictionPolicy(res, 'clientNearCfg', clientNearCfg.nearEvictionPolicy, 'nearEvictionPolicy');
 
-            if (javaClass) {
-                res.line('return clientNearCfg;');
-                res.endBlock('}');
-            }
+            res.line('return clientNearCfg;');
+            res.endBlock('}');
 
             res.needEmptyLine = true;
         }
 
-        if (javaClass) {
-            res.endBlock('}');
+        res.endBlock('}');
 
-            return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.asString();
-        }
+        return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.asString();
     }
 
     return res.asString();
