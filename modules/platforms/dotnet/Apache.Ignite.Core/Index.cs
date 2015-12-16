@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,23 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+namespace Apache.Ignite.Core
+{
+    // Doxygen main page
 
-import org.apache.ignite.cache.CacheAtomicityMode;
+    /**
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+    \mainpage Apache Ignite.NET In-Memory Data Fabric
 
-/**
- *
- */
-public class IgniteCacheAtomicPutAllFailoverSelfTest extends GridCachePutAllFailoverSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
+    Apache Ignite.NET In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for 
+    computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with 
+    traditional disk-based or flash-based technologies.
 
-    /** {@inheritDoc} */
-    @Override public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapTieredSwap(){
-        fail("https://issues.apache.org/jira/browse/IGNITE-1584");
-    }
+    */
 }

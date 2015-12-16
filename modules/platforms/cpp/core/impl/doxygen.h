@@ -15,23 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.cache.CacheAtomicityMode;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-
 /**
+ * \mainpage Apache Ignite C++
  *
+ * Apache Ignite In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for
+ * computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with
+ * traditional disk-based or flash-based technologies.
  */
-public class IgniteCacheAtomicPutAllFailoverSelfTest extends GridCachePutAllFailoverSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapTieredSwap(){
-        fail("https://issues.apache.org/jira/browse/IGNITE-1584");
-    }
-}
+ 
+ /**
+  * Apache %Ignite API.
+  */
+ namespace ignite
+ {
+	 /**
+	  * %Ignite Binary Objects API.
+	  */
+	 namespace binary
+	 {
+		 // Empty.
+	 }
+	 
+	 /**
+	  * %Ignite %Cache API.
+	  */
+	 namespace cache
+	 {
+		 /**
+		  * Contains APIs for creating and executing cache queries.
+		  */
+		 namespace query
+		 {
+			 // Empty.
+		 }
+	 }
+ }
+ 
