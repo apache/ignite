@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Platform pooled memory chunk.
     /// </summary>
-    internal class PlatformPooledMemory : PlatformMemory
+    internal unsafe class PlatformPooledMemory : PlatformMemory
     {
         /** Cached stream. */
         private PlatformMemoryStream _stream;
@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Constructor.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
-        public PlatformPooledMemory(long memPtr) : base(memPtr)
+        public PlatformPooledMemory(PlatformMemoryHeader* memPtr) : base(memPtr)
         {
             // No-op.
         }
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         public override void Reallocate(int cap)
         {
             // Try doubling capacity to avoid excessive allocations.
-            int doubledCap = PlatformMemoryUtils.GetCapacity(Pointer) << 1;
+            int doubledCap = Pointer->Capacity * 2;
 
             if (doubledCap > cap)
                 cap = doubledCap;

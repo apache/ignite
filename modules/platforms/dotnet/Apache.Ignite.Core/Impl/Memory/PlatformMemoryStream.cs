@@ -467,7 +467,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         public long MemoryPointer
         {
-            get { return _mem.Pointer; }
+            get { return (long) _mem.Pointer; }
         }
 
         /// <summary>

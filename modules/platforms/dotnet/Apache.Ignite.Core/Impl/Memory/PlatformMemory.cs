@@ -18,22 +18,25 @@
 namespace Apache.Ignite.Core.Impl.Memory
 {
     using System;
+    using System.Diagnostics;
 
     /// <summary>
     /// Abstract memory chunk.
     /// </summary>
     [CLSCompliant(false)]
-    public abstract class PlatformMemory : IPlatformMemory
+    public abstract unsafe class PlatformMemory : IPlatformMemory
     {
         /** Memory pointer. */
-        private readonly long _memPtr;
+        private readonly PlatformMemoryHeader* _memPtr;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
-        protected PlatformMemory(long memPtr)
+        protected PlatformMemory(PlatformMemoryHeader* memPtr)
         {
+            Debug.Assert(memPtr != (void*) 0);
+
             _memPtr = memPtr;
         }
 
@@ -45,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
-        public long Pointer
+        public PlatformMemoryHeader* Pointer
         {
             get { return _memPtr; }
         }
@@ -53,20 +56,20 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public long Data
         {
-            get { return PlatformMemoryUtils.GetData(_memPtr); }
+            get { return _memPtr->Pointer; }
         }
 
         /** <inheritdoc /> */
         public int Capacity
         {
-            get { return PlatformMemoryUtils.GetCapacity(_memPtr); }
+            get { return _memPtr->Capacity; }
         }
 
         /** <inheritdoc /> */
         public int Length
         {
-            get { return PlatformMemoryUtils.GetLength(_memPtr); }
-            set { PlatformMemoryUtils.SetLength(_memPtr, value); }
+            get { return _memPtr->Length; }
+            set { _memPtr->Length = value; }
         }
 
         /** <inheritdoc /> */

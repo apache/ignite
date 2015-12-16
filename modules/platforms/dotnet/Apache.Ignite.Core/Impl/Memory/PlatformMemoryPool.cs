@@ -18,29 +18,27 @@
 namespace Apache.Ignite.Core.Impl.Memory
 {
     using System;
+    using System.Diagnostics;
     using Microsoft.Win32.SafeHandles;
 
     /// <summary>
     /// Platform memory pool.
     /// </summary>
     [CLSCompliant(false)]
-    public class PlatformMemoryPool : SafeHandleMinusOneIsInvalid
+    public unsafe class PlatformMemoryPool : SafeHandleMinusOneIsInvalid
     {
-        /** First pooled memory chunk. */
-        private PlatformPooledMemory _mem1;
+        private readonly PlatformMemoryHeader* _hdr;
 
-        /** Second pooled memory chunk. */
-        private PlatformPooledMemory _mem2;
-
-        /** Third pooled memory chunk. */
-        private PlatformPooledMemory _mem3;
+        /** Pooled memory chunks. */
+        private readonly PlatformPooledMemory[] _mem = new PlatformPooledMemory[PlatformMemoryUtils.PoolSize];
 
         /// <summary>
         /// Constructor.
         /// </summary>
         public PlatformMemoryPool() : base(true)
         {
-            handle = (IntPtr)PlatformMemoryUtils.AllocatePool();
+            _hdr = PlatformMemoryUtils.AllocatePool();
+            handle = (IntPtr) _hdr;
         }
 
         /// <summary>
@@ -50,10 +48,12 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns>Memory chunk</returns>
         public PlatformMemory Allocate(int cap)
         {
-            var memPtr = PlatformMemoryUtils.AllocatePooled(handle.ToInt64(), cap);
+            var memPtr = PlatformMemoryUtils.AllocatePooled(_hdr, cap);
 
             // memPtr == 0 means that we failed to acquire thread-local memory chunk, so fallback to unpooled memory.
-            return memPtr != 0 ? Get(memPtr) : new PlatformUnpooledMemory(PlatformMemoryUtils.AllocateUnpooled(cap));
+            return memPtr != (void*) 0
+                ? Get(memPtr)
+                : new PlatformUnpooledMemory(PlatformMemoryUtils.AllocateUnpooled(cap));
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="cap">Minimum capacity.</param>
-        public static void Reallocate(long memPtr, int cap)
+        public static void Reallocate(PlatformMemoryHeader* memPtr, int cap)
         {
             PlatformMemoryUtils.ReallocatePooled(memPtr, cap);
         }
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Release pooled memory chunk.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
-        public static void Release(long memPtr)
+        public static void Release(PlatformMemoryHeader* memPtr)
         {
             PlatformMemoryUtils.ReleasePooled(memPtr);
         }
@@ -80,23 +80,27 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>Memory chunk.</returns>
-        public PlatformMemory Get(long memPtr) 
+        public PlatformMemory Get(PlatformMemoryHeader* memPtr) 
         {
-            long delta = memPtr - handle.ToInt64();
+            for (var i = 0; i < _mem.Length; i++)
+            {
+                if (memPtr == _hdr + i)
+                {
+                    _mem[i] = _mem[i] ?? new PlatformPooledMemory(memPtr);
 
-            if (delta == PlatformMemoryUtils.PoolHdrOffMem1) 
-                return _mem1 ?? (_mem1 = new PlatformPooledMemory(memPtr));
+                    return _mem[i];
+                }
+            }
+
+            Debug.Fail("Failed to find pooled memory chunk by a pointer.");
             
-            if (delta == PlatformMemoryUtils.PoolHdrOffMem2) 
-                return _mem2 ?? (_mem2 = new PlatformPooledMemory(memPtr));
-
-            return _mem3 ?? (_mem3 = new PlatformPooledMemory(memPtr));
+            return null;
         }
 
         /** <inheritdoc /> */
         protected override bool ReleaseHandle()
         {
-            PlatformMemoryUtils.ReleasePool(handle.ToInt64());
+            PlatformMemoryUtils.ReleasePool(_hdr);
 
             handle = new IntPtr(-1);
 
