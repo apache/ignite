@@ -62,7 +62,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
         cacheCfg.setCacheStoreFactory(singletonFactory(STORE));
-        cacheCfg.setKeepBinaryInStore(keepBinaryInStore());
+        cacheCfg.setStoreKeepBinary(keepBinaryInStore());
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);

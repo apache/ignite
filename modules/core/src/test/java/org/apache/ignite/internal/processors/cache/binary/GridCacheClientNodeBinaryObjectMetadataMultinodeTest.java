@@ -268,7 +268,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
     public void testClientStartsFirst() throws Exception {
         client = true;
 
-        Ignite ignite0 = startGrid(0);
+        final Ignite ignite0 = startGrid(0);
 
         assertTrue(ignite0.configuration().isClientMode());
 
@@ -289,6 +289,12 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
             cache.put(i, builder.build());
         }
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return ignite0.binary().types().size() == 100;
+            }
+        }, 5000);
 
         assertEquals(100, ignite(0).binary().types().size());
     }
