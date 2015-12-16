@@ -478,13 +478,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public TCollection ReadCollection<TCollection, TElement>(string fieldName, Func<int, TCollection> factory, 
-            Action<TCollection, TElement> adder)
+        public TCollection ReadCollection<TCollection, TElement>(string fieldName, Func<int, TCollection> factory)
+            where TCollection : ICollection<TElement>
         {
             IgniteArgumentCheck.NotNull(factory, "factory");
-            IgniteArgumentCheck.NotNull(adder, "adder");
 
-            return ReadField(fieldName, r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
+            return ReadField(fieldName, r => BinaryUtils.ReadCollection<TCollection, TElement>(r, factory),
+                BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */
@@ -494,13 +494,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public TCollection ReadCollection<TCollection, TElement>(Func<int, TCollection> factory, 
-            Action<TCollection, TElement> adder)
+        public TCollection ReadCollection<TCollection, TElement>(Func<int, TCollection> factory)
+            where TCollection : ICollection<TElement>
         {
             IgniteArgumentCheck.NotNull(factory, "factory");
-            IgniteArgumentCheck.NotNull(adder, "adder");
 
-            return Read(r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
+            return Read(r => BinaryUtils.ReadCollection<TCollection, TElement>(r, factory), BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */

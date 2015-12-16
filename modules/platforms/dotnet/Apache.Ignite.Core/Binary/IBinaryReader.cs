@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Reader for binary objects. 
@@ -232,12 +233,11 @@ namespace Apache.Ignite.Core.Binary
         /// <typeparam name="TElement">The type of the element.</typeparam>
         /// <param name="fieldName">Field name.</param>
         /// <param name="factory">Factory.</param>
-        /// <param name="adder">Adder.</param>
         /// <returns>
         /// Collection.
         /// </returns>
-        TCollection ReadCollection<TCollection, TElement>(string fieldName, Func<int, TCollection> factory, 
-            Action<TCollection, TElement> adder);
+        TCollection ReadCollection<TCollection, TElement>(string fieldName, Func<int, TCollection> factory) 
+            where TCollection : ICollection<TElement>;
 
         /// <summary>
         /// Read named dictionary.

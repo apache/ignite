@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Resulting generic list.</returns>
         public static List<T> ReadCollectionAsList<T>(this IBinaryRawReader reader)
         {
-            return reader.ReadCollection<List<T>, T>(size => new List<T>(size), (col, elem) => col.Add(elem));
+            return reader.ReadCollection<List<T>, T>(size => new List<T>(size));
         }
 
         /// <summary>

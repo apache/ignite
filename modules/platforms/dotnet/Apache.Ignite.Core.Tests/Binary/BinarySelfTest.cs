@@ -2338,7 +2338,6 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteArray("arr", new InteropCollections[0]);
 
                 // Check custom
-                writer.WriteCollection("stringCol", new StringCollection {"1", "2"});
                 writer.WriteDictionary("dict", (IDictionary<int, string>) new Dictionary<int, string> {{1, "2"}});
 
                 // Check raw
@@ -2364,7 +2363,6 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteArray(new InteropCollections[0]);
 
                 // Check custom
-                writer.WriteCollection(new StringCollection { "1", "2" });
                 writer.WriteDictionary((IDictionary<int, string>) new Dictionary<int, string> {{1, "2"}});
             }
 
@@ -2372,7 +2370,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 // Check nulls
                 Assert.IsNull(reader.ReadCollection("null1"));
-                Assert.IsNull(reader.ReadCollection<List<string>, string>("null2", i => null, (o, e) => Assert.Fail()));
+                Assert.IsNull(reader.ReadCollection<List<string>, string>("null2", i => null));
                 Assert.IsNull(reader.ReadDictionary("null3"));
                 Assert.IsNull(reader.ReadArray<InteropCollections>("null4"));
 
@@ -2386,14 +2384,6 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(new HashSet<object>(new object[] {"1", "2"}), reader.ReadCollection("hashSet"));
                 Assert.AreEqual(new InteropCollections[0], reader.ReadArray<InteropCollections>("arr"));
 
-                // Check custom
-                Assert.AreEqual(new StringCollection {"1", "2"},
-                    reader.ReadCollection<StringCollection, string>("stringCol", count =>
-                    {
-                        Assert.AreEqual(2, count);
-                        return new StringCollection();
-                    }, (col, el) => col.Add(el)));
-
                 Assert.AreEqual(new Dictionary<int, string> {{1, "2"}},
                     reader.ReadDictionary<Dictionary<int, string>, int, string>("dict",
                         len => new Dictionary<int, string>(len), (dict, key, val) => dict[key] = val));
@@ -2406,7 +2396,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 // Check nulls
                 Assert.IsNull(reader.ReadCollection());
-                Assert.IsNull(reader.ReadCollection<List<string>, string>(i => null, (o, e) => Assert.Fail()));
+                Assert.IsNull(reader.ReadCollection<List<string>, string>(i => null));
                 Assert.IsNull(reader.ReadDictionary());
                 Assert.IsNull(reader.ReadArray<InteropCollections>());
 
@@ -2419,15 +2409,6 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(new LinkedList<object>(new object[] { "1", "2" }), reader.ReadCollection());
                 Assert.AreEqual(new HashSet<object>(new object[] { "1", "2" }), reader.ReadCollection());
                 Assert.AreEqual(new InteropCollections[0], reader.ReadArray<InteropCollections>());
-
-                // Check custom
-                Assert.AreEqual(new StringCollection {"1", "2"},
-                    reader.ReadCollection<StringCollection, string>(
-                        count =>
-                        {
-                            Assert.AreEqual(2, count);
-                            return new StringCollection();
-                        }, (col, el) => col.Add(el)));
 
                 Assert.AreEqual(new Dictionary<int, string> { { 1, "2" } },
                     reader.ReadDictionary<Dictionary<int, string>, int, string>(
