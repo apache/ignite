@@ -254,12 +254,11 @@ namespace Apache.Ignite.Core.Binary
         /// <typeparam name="TV">The type of the value.</typeparam>
         /// <param name="fieldName">Field name.</param>
         /// <param name="factory">Factory.</param>
-        /// <param name="adder">Adder.</param>
         /// <returns>
         /// Dictionary.
         /// </returns>
-        TDictionary ReadDictionary<TDictionary, TK, TV>(string fieldName, Func<int, TDictionary> factory,
-            Action<TDictionary, TK, TV> adder);
+        TDictionary ReadDictionary<TDictionary, TK, TV>(string fieldName, Func<int, TDictionary> factory) 
+            where TDictionary : IDictionary<TK, TV>;
 
         /// <summary>
         /// Get raw reader. 
