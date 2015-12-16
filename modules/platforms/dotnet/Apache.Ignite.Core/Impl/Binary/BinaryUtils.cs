@@ -1201,14 +1201,17 @@ namespace Apache.Ignite.Core.Impl.Binary
             switch (colType)
             {
                 case CollectionLinkedList:
-                    return ReadCollection0<LinkedList<object>, object>(reader, len, count => new LinkedList<object>());
+                    return ReadCollection0<LinkedList<object>, object>(reader, len, count => new LinkedList<object>(),
+                        (col, el) => col.AddLast(el));
 
                 case CollectionHashSet:
                 case CollectionLinkedHashSet:
-                    return ReadCollection0<HashSet<object>, object>(reader, len, count => new HashSet<object>());
+                    return ReadCollection0<HashSet<object>, object>(reader, len, count => new HashSet<object>(),
+                        (col, el) => col.Add(el));
 
                 default:
-                    return ReadCollection0<List<object>, object>(reader, len, count => new List<object>());
+                    return ReadCollection0<ArrayList, object>(reader, len, count => new ArrayList(),
+                        (col, el) => col.Add(el));
             }
         }
 
@@ -1227,7 +1230,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             reader.ReadByte();  // ignore collection type
 
-            return ReadCollection0<TCollection, TElement>(reader, len, factory);
+            return ReadCollection0<TCollection, TElement>(reader, len, factory, (col, el) => col.Add(el));
         }
 
         /// <summary>
@@ -1238,9 +1241,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="reader">The reader.</param>
         /// <param name="count">The count.</param>
         /// <param name="factory">The factory.</param>
+        /// <param name="adder">The adder.</param>
         /// <returns>Collection.</returns>
         private static TCollection ReadCollection0<TCollection, TElement>(BinaryReader reader, int count,
-                    Func<int, TCollection> factory) where TCollection : ICollection<TElement>
+                    Func<int, TCollection> factory, Action<TCollection, TElement> adder)
         {
             Debug.Assert(reader != null);
             Debug.Assert(factory != null);
@@ -1248,7 +1252,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var col = factory.Invoke(count);
 
             for (int i = 0; i < count; i++)
-                col.Add(reader.Deserialize<TElement>());
+                adder(col, reader.Deserialize<TElement>());
 
             return col;
         }
