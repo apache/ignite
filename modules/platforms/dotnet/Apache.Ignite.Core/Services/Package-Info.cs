@@ -17,9 +17,9 @@
 
 #pragma warning disable 1587   // invalid XML comment
 /// <summary>
-/// Compute grid.
+/// Service grid.
 /// </summary>
-namespace Apache.Ignite.Core.Compute
+namespace Apache.Ignite.Core.Services
 {
     // No-op.
 }

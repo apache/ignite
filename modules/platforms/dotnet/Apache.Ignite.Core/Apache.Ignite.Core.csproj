@@ -124,6 +124,7 @@
     <Compile Include="Datastream\StreamTransformer.cs" />
     <Compile Include="Datastream\StreamVisitor.cs" />
     <Compile Include="DataStructures\IAtomicLong.cs" />
+    <Compile Include="DataStructures\Package-Info.cs" />
     <Compile Include="Events\CacheEvent.cs" />
     <Compile Include="Events\CacheQueryExecutedEvent.cs" />
     <Compile Include="Events\CacheQueryReadEvent.cs" />
@@ -138,6 +139,7 @@
     <Compile Include="Events\IEventListener.cs" />
     <Compile Include="Events\IEvents.cs" />
     <Compile Include="Events\JobEvent.cs" />
+    <Compile Include="Events\Package-Info.cs" />
     <Compile Include="Events\SwapSpaceEvent.cs" />
     <Compile Include="Events\TaskEvent.cs" />
     <Compile Include="GlobalSuppressions.cs" />
@@ -315,6 +317,8 @@
     <Compile Include="Impl\Unmanaged\UnmanagedNonReleaseableTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
+    <Compile Include="Lifecycle\Package-Info.cs" />
+    <Compile Include="Messaging\Package-Info.cs" />
     <Compile Include="Package-Info.cs" />
     <Compile Include="Lifecycle\ILifecycleBean.cs" />
     <Compile Include="Lifecycle\LifecycleEventType.cs" />
@@ -338,16 +342,19 @@
     <Compile Include="Binary\BinaryTypeNames.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resource\InstanceResourceAttribute.cs" />
+    <Compile Include="Resource\Package-Info.cs" />
     <Compile Include="Resource\StoreSessionResourceAttribute.cs" />
     <Compile Include="Services\IService.cs" />
     <Compile Include="Services\IServiceContext.cs" />
     <Compile Include="Services\IServiceDescriptor.cs" />
     <Compile Include="Services\IServices.cs" />
+    <Compile Include="Services\Package-Info.cs" />
     <Compile Include="Services\ServiceConfiguration.cs" />
     <Compile Include="Services\ServiceInvocationException.cs" />
     <Compile Include="Transactions\ITransaction.cs" />
     <Compile Include="Transactions\ITransactionMetrics.cs" />
     <Compile Include="Transactions\ITransactions.cs" />
+    <Compile Include="Transactions\Package-Info.cs" />
     <Compile Include="Transactions\TransactionConcurrency.cs" />
     <Compile Include="Transactions\TransactionHeuristicException.cs" />
     <Compile Include="Transactions\TransactionIsolation.cs" />

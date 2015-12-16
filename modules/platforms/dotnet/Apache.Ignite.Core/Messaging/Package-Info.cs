@@ -17,9 +17,9 @@
 
 #pragma warning disable 1587   // invalid XML comment
 /// <summary>
-/// Compute grid.
+/// Distributed messaging.
 /// </summary>
-namespace Apache.Ignite.Core.Compute
+namespace Apache.Ignite.Core.Messaging
 {
     // No-op.
 }

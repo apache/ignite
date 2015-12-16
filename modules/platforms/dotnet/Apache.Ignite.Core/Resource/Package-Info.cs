@@ -17,9 +17,9 @@
 
 #pragma warning disable 1587   // invalid XML comment
 /// <summary>
-/// Compute grid.
+/// Resource injection.
 /// </summary>
-namespace Apache.Ignite.Core.Compute
+namespace Apache.Ignite.Core.Resource
 {
     // No-op.
 }
