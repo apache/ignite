@@ -64,8 +64,10 @@
     <Compile Include="Cache\Event\ICacheEntryEvent.cs" />
     <Compile Include="Cache\Event\ICacheEntryEventFilter.cs" />
     <Compile Include="Cache\Event\ICacheEntryEventListener.cs" />
+    <Compile Include="Cache\Event\Package-Info.cs" />
     <Compile Include="Cache\Expiry\ExpiryPolicy.cs" />
     <Compile Include="Cache\Expiry\IExpiryPolicy.cs" />
+    <Compile Include="Cache\Expiry\Package-Info.cs" />
     <Compile Include="Cache\ICache.cs" />
     <Compile Include="Cache\ICacheAffinity.cs" />
     <Compile Include="Cache\ICacheEntry.cs" />
@@ -79,7 +81,9 @@
     <Compile Include="Cache\Package-Info.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQuery.cs" />
     <Compile Include="Cache\Query\Continuous\IContinuousQueryHandle.cs" />
+    <Compile Include="Cache\Query\Continuous\Package-Info.cs" />
     <Compile Include="Cache\Query\IQueryCursor.cs" />
+    <Compile Include="Cache\Query\Package-Info.cs" />
     <Compile Include="Cache\Query\QueryBase.cs" />
     <Compile Include="Cache\Query\ScanQuery.cs" />
     <Compile Include="Cache\Query\SqlFieldsQuery.cs" />
@@ -90,6 +94,7 @@
     <Compile Include="Cache\Store\CacheStoreException.cs" />
     <Compile Include="Cache\Store\ICacheStore.cs" />
     <Compile Include="Cache\Store\ICacheStoreSession.cs" />
+    <Compile Include="Cache\Store\Package-Info.cs" />
     <Compile Include="Cluster\ClusterGroupEmptyException.cs" />
     <Compile Include="Cluster\ClusterTopologyException.cs" />
     <Compile Include="Cluster\ICluster.cs" />
