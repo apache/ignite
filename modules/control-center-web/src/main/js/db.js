@@ -157,7 +157,7 @@ var CacheSchema = new Schema({
             hibernateProperties: [String]
         }
     },
-    keepBinaryInStore: Boolean,
+    storeKeepBinary: Boolean,
     loadPreviousValue: Boolean,
     readThrough: Boolean,
     writeThrough: Boolean,

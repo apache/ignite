@@ -793,7 +793,7 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
         }
     }
 
-    $generatorXml.property(res, cache, 'keepBinaryInStore', null, false);
+    $generatorXml.property(res, cache, 'storeKeepBinary', null, false);
     $generatorXml.property(res, cache, 'loadPreviousValue', null, false);
     $generatorXml.property(res, cache, 'readThrough', null, null, false);
     $generatorXml.property(res, cache, 'writeThrough', null, null, false);

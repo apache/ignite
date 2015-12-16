@@ -991,7 +991,7 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
         res.needEmptyLine = true;
     }
 
-    $generatorJava.property(res, cacheVarName, cache, 'keepBinaryInStore', null, null, false);
+    $generatorJava.property(res, cacheVarName, cache, 'storeKeepBinary', null, null, false);
     $generatorJava.property(res, cacheVarName, cache, 'loadPreviousValue', null, null, false);
     $generatorJava.property(res, cacheVarName, cache, 'readThrough', null, null, false);
     $generatorJava.property(res, cacheVarName, cache, 'writeThrough', null, null, false);
