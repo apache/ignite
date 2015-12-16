@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -53,11 +55,21 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
     private static final int SPLIT_COUNT = 5;
 
     /** */
+    private static CountDownLatch taskLatch;
+
+    /** */
     protected GridSessionCheckpointAbstractSelfTest() {
         super(/*start grid*/false);
     }
 
-     /**
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        taskLatch = null;
+
+        super.beforeTest();
+    }
+
+    /**
      * @param sesKey Session key.
      * @param globalKey Global key.
      * @param globalState Global state.
@@ -123,6 +135,8 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         Ignite ignite = G.start(cfg);
 
         try {
+            taskLatch = new CountDownLatch(1);
+
             ignite.compute().localDeployTask(GridCheckpointTestTask.class, GridCheckpointTestTask.class.getClassLoader());
 
             ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), "GridCheckpointTestTask", null);
@@ -131,7 +145,9 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
             fut.getTaskSession().saveCheckpoint("future:global:key", "future:global:testval",
                 ComputeTaskSessionScope.GLOBAL_SCOPE, 0);
 
-            int res = (Integer) fut.get();
+            taskLatch.countDown();
+
+            int res = (Integer)fut.get();
 
             assert res == SPLIT_COUNT : "Invalid result: " + res;
 
@@ -198,9 +214,8 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         @Override public Object reduce(List<ComputeJobResult> results) {
             int res = 0;
 
-            for (ComputeJobResult result : results) {
+            for (ComputeJobResult result : results)
                 res += (Integer)result.getData();
-            }
 
             for (int i = 0; i < SPLIT_COUNT; i++) {
                 ses.saveCheckpoint("reduce:session:key:" + i, "reduce:session:testval:" + i);
@@ -208,15 +223,10 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
                     ComputeTaskSessionScope.GLOBAL_SCOPE, 0);
             }
 
-            // Sleep to let task future store a session attribute.
             try {
-                Thread.sleep(200);
-            }
-            catch (InterruptedException e) {
-                throw new IgniteException("Got interrupted during reducing.", e);
-            }
+                if (taskLatch != null)
+                    taskLatch.await(30, TimeUnit.SECONDS);
 
-            try {
                 // Check task and job states.
                 for (int i =  0; i < SPLIT_COUNT; i++) {
                     // Check task map state.

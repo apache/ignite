@@ -78,7 +78,7 @@ namespace ignite
                 }
             };
 
-            /*
+            /**
              * Heloper function to copy characters.
              *
              * @param src Source.
@@ -148,7 +148,7 @@ namespace ignite
                     delete[] errMsg;
             }
 
-            /*
+            /**
              * Guard to ensure global reference cleanup.
              */
             class JniGlobalRefGuard
@@ -234,7 +234,7 @@ namespace ignite
             JniMethod M_PLATFORM_CACHE_WITH_NO_RETRIES = JniMethod("withNoRetries", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_WITH_EXPIRY_PLC = JniMethod("withExpiryPolicy", "(JJJ)Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
-            JniMethod M_PLATFORM_CACHE_WITH_KEEP_PORTABLE = JniMethod("withKeepPortable", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
+            JniMethod M_PLATFORM_CACHE_WITH_KEEP_PORTABLE = JniMethod("withKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_CLEAR = JniMethod("clear", "()V", false);
             JniMethod M_PLATFORM_CACHE_REMOVE_ALL = JniMethod("removeAll", "()V", false);
             JniMethod M_PLATFORM_CACHE_ITERATOR = JniMethod("iterator", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCacheIterator;", false);
@@ -372,7 +372,7 @@ namespace ignite
 
             const char* C_PLATFORM_SERVICES = "org/apache/ignite/internal/processors/platform/services/PlatformServices";
 			JniMethod M_PLATFORM_SERVICES_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
-			JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE = JniMethod("withServerKeepPortable", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
+			JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE = JniMethod("withServerKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL = JniMethod("cancel", "(Ljava/lang/String;)V", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL_ALL = JniMethod("cancelAll", "()V", false);
 			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("dotNetServiceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
@@ -397,7 +397,7 @@ namespace ignite
 
             /* HELPER METHODS. */
 
-            /*
+            /**
              * Throw exception to Java in case of missing callback pointer. It means that callback is not implemented in
              * native platform and Java -> platform operation cannot proceede further. As JniContext is not available at
              * this point, we have to obtain exception details from scratch. This is not critical from performance
@@ -728,7 +728,7 @@ namespace ignite
                 return members;
             }
 
-            /*
+            /**
              * Create JVM.
              */
             void CreateJvm(char** opts, int optsLen, JavaVM** jvm, JNIEnv** env) {
@@ -867,7 +867,7 @@ namespace ignite
 
                 try {
                     if (!JVM.GetJvm()) {
-                        // 1. Create JVM itself.    
+                        // 1. Create JVM itself.
                         CreateJvm(opts, optsLen, &jvm, &env);
 
                         // 2. Populate members;
@@ -2084,9 +2084,9 @@ namespace ignite
                 jvm->GetJvm()->DestroyJavaVM();
             }
 
-            /*
-            * Attach thread to JVM.
-            */
+            /**
+             * Attach thread to JVM.
+             */
             JNIEnv* JniContext::Attach() {
                 JNIEnv* env;
 
@@ -2164,9 +2164,9 @@ namespace ignite
                 }
             }
 
-            /*
-            * Convert local reference to global.
-            */
+            /**
+             * Convert local reference to global.
+             */
             jobject JniContext::LocalToGlobal(JNIEnv* env, jobject localRef) {
                 if (localRef) {
                     jobject globalRef = env->NewGlobalRef(localRef);

@@ -29,7 +29,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  * Topology validator test
  */
 public abstract class IgniteTopologyValidatorAbstractTxCacheTest extends IgniteTopologyValidatorAbstractCacheTest {
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;

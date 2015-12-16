@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -43,16 +44,20 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -68,12 +73,14 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -115,6 +122,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setConsistentId(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
 
@@ -681,6 +690,93 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     }
 
     /**
+     * Tries to find keys for two partitions: for one partition assignment should not change after node join,
+     * for another primary node should change.
+     *
+     * @param ignite Ignite.
+     * @param nodes Current nodes.
+     * @return Found keys.
+     */
+    private IgniteBiTuple<Integer, Integer> findKeys(Ignite ignite, ClusterNode...nodes) {
+        ClusterNode newNode = new TcpDiscoveryNode();
+
+        GridTestUtils.setFieldValue(newNode, "consistentId", getTestGridName(4));
+        GridTestUtils.setFieldValue(newNode, "id", UUID.randomUUID());
+
+        List<ClusterNode> topNodes = new ArrayList<>();
+
+        Collections.addAll(topNodes, nodes);
+
+        topNodes.add(newNode);
+
+        DiscoveryEvent discoEvt = new DiscoveryEvent(newNode, "", EventType.EVT_NODE_JOINED, newNode);
+
+        final long topVer = ignite.cluster().topologyVersion();
+
+        GridAffinityFunctionContextImpl ctx = new GridAffinityFunctionContextImpl(topNodes,
+            null,
+            discoEvt,
+            new AffinityTopologyVersion(topVer + 1),
+            1);
+
+        AffinityFunction affFunc = ignite.cache(null).getConfiguration(CacheConfiguration.class).getAffinity();
+
+        List<List<ClusterNode>> newAff = affFunc.assignPartitions(ctx);
+
+        List<List<ClusterNode>> curAff = ((IgniteKernal)ignite).context().cache().internalCache(null).context().
+            affinity().assignments(new AffinityTopologyVersion(topVer));
+
+        Integer key1 = null;
+        Integer key2 = null;
+
+        Affinity<Integer> aff = ignite.affinity(null);
+
+        for (int i = 0; i < curAff.size(); i++) {
+            if (key1 == null) {
+                List<ClusterNode> oldNodes = curAff.get(i);
+                List<ClusterNode> newNodes = newAff.get(i);
+
+                if (oldNodes.equals(newNodes))
+                    key1 = findKey(aff, i);
+            }
+
+            if (key2 == null) {
+                ClusterNode oldPrimary = F.first(curAff.get(i));
+                ClusterNode newPrimary = F.first(newAff.get(i));
+
+                if (!oldPrimary.equals(newPrimary))
+                    key2 = findKey(aff, i);
+            }
+
+            if (key1 != null && key2 != null)
+                break;
+        }
+
+        if (key1 == null || key2 == null)
+            fail("Failed to find nodes required for test.");
+
+        return new IgniteBiTuple<>(key1, key2);
+    }
+
+    /**
+     * @param aff Affinity.
+     * @param part Required key partition.
+     * @return Key.
+     */
+    private Integer findKey(Affinity<Integer> aff, int part) {
+        for (int i = 0; i < 10_000; i++) {
+            Integer key = i;
+
+            if (aff.partition(key) == part)
+                return key;
+        }
+
+        fail();
+
+        return null;
+    }
+
+    /**
      * Tests specific scenario when mapping for first locked keys does not change, but changes for second one.
      *
      * @throws Exception If failed.
@@ -710,8 +806,11 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
 
-        final Integer key1 = 0;
-        final Integer key2 = 7;
+        IgniteBiTuple<Integer, Integer> keys =
+            findKeys(ignite0, ignite0.localNode(), ignite1.localNode(), ignite2.localNode());
+
+        final Integer key1 = keys.get1();
+        final Integer key2 = keys.get2();
 
         spi.blockMessages(GridNearLockRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearLockRequest.class, ignite1.localNode().id());
@@ -1168,22 +1267,28 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         IgniteCache<Integer, Integer> cache = ignite3.cache(null);
 
+        Affinity<Integer> aff = ignite0.affinity(null);
+
         try (Transaction tx = ignite3.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            cache.put(1, 1);
-            cache.put(2, 2);
-            cache.put(3, 3);
+            Integer key1 = findKey(aff, 1);
+            Integer key2 = findKey(aff, 2);
+            Integer key3 = findKey(aff, 3);
+
+            cache.put(key1, 1);
+            cache.put(key2, 2);
+            cache.put(key3, 3);
 
             tx.commit();
         }
 
         checkClientLockMessages(spi.recordedMessages(), 3);
 
-        Map<Integer, Integer> map = new HashMap<>();
+        Map<Integer, Integer> map = new LinkedHashMap<>();
 
-        map.put(4, 4);
-        map.put(5, 5);
-        map.put(6, 6);
-        map.put(7, 7);
+        map.put(primaryKey(ignite0.cache(null)), 4);
+        map.put(primaryKey(ignite1.cache(null)), 5);
+        map.put(primaryKey(ignite2.cache(null)), 6);
+        map.put(primaryKeys(ignite0.cache(null), 1, 10_000).get(0), 7);
 
         try (Transaction tx = ignite3.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.putAll(map);

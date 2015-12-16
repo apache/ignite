@@ -22,8 +22,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Benchmarks", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E0784F76-949C-456E-A529-A55D0E389165}"
 	ProjectSection(SolutionItems) = preProject
+		Apache.Ignite.dxg = Apache.Ignite.dxg
 		Apache.Ignite.FxCop = Apache.Ignite.FxCop
 		Apache.Ignite.sln.DotSettings = Apache.Ignite.sln.DotSettings
+		build.bat = build.bat
 		examples\Config\example-cache-query.xml = examples\Config\example-cache-query.xml
 		examples\Config\example-cache-store.xml = examples\Config\example-cache-store.xml
 		examples\Config\example-cache.xml = examples\Config\example-cache.xml

@@ -337,6 +337,13 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         cacheCtx.config().isLoadPreviousValue() &&
                         !txEntry.skipStore();
 
+                    boolean evt = retVal || txEntry.op() == TRANSFORM;
+
+                    EntryProcessor entryProc = null;
+
+                    if (evt && txEntry.op() == TRANSFORM)
+                        entryProc = F.first(txEntry.entryProcessors()).get1();
+
                     CacheObject val = cached.innerGet(
                         tx,
                         /*swap*/true,
@@ -344,11 +351,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         /*fail fast*/false,
                         /*unmarshal*/true,
                         /*metrics*/retVal,
-                        /*event*/retVal,
+                        /*event*/evt,
                         /*tmp*/false,
-                        null,
-                        null,
-                        null,
+                        tx.subjectId(),
+                        entryProc,
+                        tx.resolveTaskName(),
                         null,
                         txEntry.keepBinary());
 
@@ -364,25 +371,45 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             Object procRes = null;
                             Exception err = null;
 
-                             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                                try {
-                                    CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(
-                                        txEntry.context(), key, val, txEntry.cached().version(), txEntry.keepBinary());
+                            boolean modified = false;
 
+                             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
+                                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(
+                                     txEntry.context(), key, val, txEntry.cached().version(), txEntry.keepBinary());
+
+                                 try {
                                     EntryProcessor<Object, Object, Object> processor = t.get1();
 
                                     procRes = processor.process(invokeEntry, t.get2());
 
-                                    val = cacheCtx.toCacheObject(invokeEntry.getValue());
+                                    val = cacheCtx.toCacheObject(invokeEntry.getValue(true));
                                 }
                                 catch (Exception e) {
                                     err = e;
 
                                     break;
                                 }
+
+                                 modified |= invokeEntry.modified();
                             }
 
-                            txEntry.entryProcessorCalculatedValue(val);
+                            if (modified)
+                                val = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(val));
+
+                            GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
+
+                            if (op == NOOP) {
+                                if (expiry != null) {
+                                    long ttl = CU.toTtl(expiry.getExpiryForAccess());
+
+                                    txEntry.ttl(ttl);
+
+                                    if (ttl == CU.TTL_ZERO)
+                                        op = DELETE;
+                                }
+                            }
+
+                            txEntry.entryProcessorCalculatedValue(new T2<>(op, op == NOOP ? null : val));
 
                             if (retVal) {
                                 if (err != null || procRes != null)
@@ -1301,10 +1328,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         entry.cached().partition());
 
                     if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.EVICTED) {
-                        CacheObject procVal = entry.entryProcessorCalculatedValue();
+                        T2<GridCacheOperation, CacheObject> procVal = entry.entryProcessorCalculatedValue();
 
-                        entry.op(procVal == null ? DELETE : UPDATE);
-                        entry.value(procVal, true, false);
+                        assert procVal != null : entry;
+
+                        entry.op(procVal.get1());
+                        entry.value(procVal.get2(), true, false);
                         entry.entryProcessors(null);
                     }
                 }

@@ -60,7 +60,7 @@ public class CacheStarSchemaExample {
     private static final String REPLICATED_CACHE_NAME = CacheStarSchemaExample.class.getSimpleName() + "Replicated";
 
     /** ID generator. */
-    private static int idGen = (int)System.currentTimeMillis();
+    private static int idGen;
 
     /** DimStore data. */
     private static Map<Integer, DimStore> dataStore = new HashMap<>();
@@ -75,9 +75,12 @@ public class CacheStarSchemaExample {
      */
     public static void main(String[] args) {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-
             System.out.println();
             System.out.println(">>> Cache star schema example started.");
+
+            // Destroy caches to clean up the data if any left from previous runs.
+            ignite.destroyCache(PARTITIONED_CACHE_NAME);
+            ignite.destroyCache(REPLICATED_CACHE_NAME);
 
             CacheConfiguration<Integer, FactPurchase> factCacheCfg = new CacheConfiguration<>(PARTITIONED_CACHE_NAME);
 

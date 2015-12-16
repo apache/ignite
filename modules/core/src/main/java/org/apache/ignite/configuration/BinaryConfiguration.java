@@ -44,7 +44,7 @@ public class BinaryConfiguration {
     private boolean compactFooter = DFLT_COMPACT_FOOTER;
 
     /**
-     * Sets class names of portable objects explicitly.
+     * Sets class names of binary objects explicitly.
      *
      * @param clsNames Class names.
      */
@@ -112,7 +112,7 @@ public class BinaryConfiguration {
 
     /**
      * Get whether to write footers in compact form. When enabled, Ignite will not write fields metadata
-     * when serializing objects, because internally {@code PortableMarshaller} already distribute metadata inside
+     * when serializing objects, because internally {@code BinaryMarshaller} already distribute metadata inside
      * cluster. This increases serialization performance.
      * <p>
      * <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external

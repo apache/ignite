@@ -15,6 +15,14 @@
  * limitations under the License.
  */
 
+/**
+ * \mainpage Apache Ignite.NET
+ *
+ * Apache Ignite In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for 
+ * computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with 
+ * traditional disk-based or flash-based technologies.
+ */
+
 namespace Apache.Ignite.Core.Impl
 {
     using System;

@@ -219,7 +219,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
             ccfg.getAffinityMapper() != null ? ccfg.getAffinityMapper() : new GridCacheDefaultAffinityKeyMapper(),
             ccfg.isCopyOnRead() && memMode != OFFHEAP_VALUES,
             storeVal,
-            ctx.config().isPeerClassLoadingEnabled() && !isPortableEnabled(ccfg));
+            ctx.config().isPeerClassLoadingEnabled() && !isBinaryEnabled(ccfg));
 
         ctx.resource().injectGeneric(res.defaultAffMapper());
 
@@ -250,12 +250,12 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortableObject(Object obj) {
+    @Override public boolean isBinaryObject(Object obj) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortableEnabled(CacheConfiguration<?, ?> ccfg) {
+    @Override public boolean isBinaryEnabled(CacheConfiguration<?, ?> ccfg) {
         return false;
     }
 

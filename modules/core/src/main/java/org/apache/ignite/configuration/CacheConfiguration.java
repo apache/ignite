@@ -45,7 +45,6 @@ import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -209,7 +208,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default value for keep binary in store behavior .*/
     @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
-    public static final Boolean DFLT_KEEP_BINARY_IN_STORE = new Boolean(false);
+    public static final Boolean DFLT_STORE_KEEP_BINARY = new Boolean(false);
 
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
@@ -270,7 +269,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Factory storeFactory;
 
     /** */
-    private Boolean keepBinaryInStore = DFLT_KEEP_BINARY_IN_STORE;
+    private Boolean storeKeepBinary = DFLT_STORE_KEEP_BINARY;
 
     /** */
     private boolean loadPrevVal = DFLT_LOAD_PREV_VAL;
@@ -445,8 +444,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
         isWriteThrough = cc.isWriteThrough();
-        keepBinaryInStore = cc.isKeepBinaryInStore() != null ? cc.isKeepBinaryInStore() :
-            DFLT_KEEP_BINARY_IN_STORE;
+        storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
@@ -892,7 +890,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Flag indicating that {@link CacheStore} implementation
      * is working with binary objects instead of Java objects.
-     * Default value of this flag is {@link #DFLT_KEEP_BINARY_IN_STORE}.
+     * Default value of this flag is {@link #DFLT_STORE_KEEP_BINARY}.
      * <p>
      * If set to {@code false}, Ignite will deserialize keys and
      * values stored in binary format before they are passed
@@ -907,17 +905,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Keep binary in store flag.
      */
-    public Boolean isKeepBinaryInStore() {
-        return keepBinaryInStore;
+    public Boolean isStoreKeepBinary() {
+        return storeKeepBinary;
     }
 
     /**
      * Sets keep binary in store flag.
      *
-     * @param keepBinaryInStore Keep binary in store flag.
+     * @param storeKeepBinary Keep binary in store flag.
      */
-    public void setKeepBinaryInStore(boolean keepBinaryInStore) {
-        this.keepBinaryInStore = keepBinaryInStore;
+    public void setStoreKeepBinary(boolean storeKeepBinary) {
+        this.storeKeepBinary = storeKeepBinary;
     }
 
     /**
@@ -1113,7 +1111,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets class name of transaction manager finder for integration for JEE app servers.
      *
      * @return Transaction manager finder.
-     * @deprecated Use {@link TransactionConfiguration#getTxManagerLookupClassName()} instead.
+     * @deprecated Use {@link TransactionConfiguration#getTxManagerFactory()} instead.
      */
     @Deprecated
     public String getTransactionManagerLookupClassName() {
@@ -1126,7 +1124,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
      *      receive JTA transaction manager.
      * @return {@code this} for chaining.
-     * @deprecated Use {@link TransactionConfiguration#setTxManagerLookupClassName(String)} instead.
+     * @deprecated Use {@link TransactionConfiguration#setTxManagerFactory(Factory)} instead.
      */
     @Deprecated
     public CacheConfiguration<K, V> setTransactionManagerLookupClassName(String tmLookupClsName) {
@@ -1872,7 +1870,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
             TypeDescriptor desc = processKeyAndValueClasses(keyCls, valCls);
 
-            qryEntities.add(convert(desc));
+            QueryEntity converted = convert(desc);
+
+            boolean dup = false;
+
+            for (QueryEntity entity : qryEntities) {
+                if (F.eq(entity.getValueType(), converted.getValueType())) {
+                    dup = true;
+
+                    break;
+                }
+            }
+
+            if (!dup)
+                qryEntities.add(converted);
         }
 
         return this;
@@ -1968,10 +1979,21 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
         if (this.qryEntities == null)
             this.qryEntities = new ArrayList<>(qryEntities);
-        else if (indexedTypes != null)
-            this.qryEntities.addAll(qryEntities);
-        else
-            throw new CacheException("Query entities can be set only once.");
+
+        for (QueryEntity entity : qryEntities) {
+            boolean found = false;
+
+            for (QueryEntity existing : this.qryEntities) {
+                if (F.eq(entity.getValueType(), existing.getValueType())) {
+                    found = true;
+
+                    break;
+                }
+            }
+
+            if (!found)
+                this.qryEntities.add(entity);
+        }
 
         return this;
     }

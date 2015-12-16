@@ -34,7 +34,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.portable.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -354,6 +354,15 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             this.getter = getter;
             this.setter = setter;
             this.field = field;
+
+            if (getter != null)
+                getter.setAccessible(true);
+
+            if (setter != null)
+                setter.setAccessible(true);
+
+            if (field != null)
+                field.setAccessible(true);
         }
 
         /**

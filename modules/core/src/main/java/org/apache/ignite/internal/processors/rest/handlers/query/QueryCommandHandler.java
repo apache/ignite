@@ -443,14 +443,16 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                 if (qryCurIt == null)
                     return new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                        "Failed to find query with ID: " + req.queryId());
+                        "Failed to find query with ID: " + req.queryId() + ". " +
+                        "Possible reasons: wrong query ID, no more data to fetch from query, query was closed by timeout" +
+                        " or node where query was executed is not found.");
 
                 qryCurIt.lock();
 
                 try {
                     if (qryCurIt.timestamp() == -1)
                         return new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                            "Query is closed by timeout. Restart query with ID: " + req.queryId());
+                            "Query with ID: " + req.queryId() + " was closed by timeout");
 
                     qryCurIt.timestamp(U.currentTimeMillis());
 
