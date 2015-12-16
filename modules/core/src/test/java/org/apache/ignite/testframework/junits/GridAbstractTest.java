@@ -60,8 +60,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.portable.BinaryEnumCache;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryEnumCache;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
@@ -1286,14 +1286,16 @@ public abstract class GridAbstractTest extends TestCase {
 
         String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
 
-        if (!F.isEmpty(mcastAddr)) {
-            TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
+        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
 
+        ipFinder.setAddresses(Collections.singleton("127.0.0.1:" + TcpDiscoverySpi.DFLT_PORT));
+
+        if (!F.isEmpty(mcastAddr)) {
             ipFinder.setMulticastGroup(mcastAddr);
             ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
-
-            discoSpi.setIpFinder(ipFinder);
         }
+
+        discoSpi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(discoSpi);
 

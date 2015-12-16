@@ -225,7 +225,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param forcePrimary Force primary flag.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVal Skip value flag.
      * @param skipStore Skip store flag.
@@ -237,7 +237,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         boolean forcePrimary,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
         boolean skipStore,
@@ -257,7 +257,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             txx,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             expiry,
             skipVal,
             canRemap,
@@ -445,9 +445,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public V promote(K key, boolean deserializePortable) throws IgniteCheckedException {
+    @Override public V promote(K key, boolean deserializeBinary) throws IgniteCheckedException {
         // Unswap only from dht(). Near cache does not have swap storage.
-        return dht().promote(key, deserializePortable);
+        return dht().promote(key, deserializeBinary);
     }
 
     /** {@inheritDoc} */

@@ -54,7 +54,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  */
 public class CacheAutoStoreExample {
     /** Global person ID to use across entire example. */
-    private static final Long id = Math.abs(UUID.randomUUID().getLeastSignificantBits());
+    private static final Long id = 25121642L;
 
     /** Cache name. */
     public static final String CACHE_NAME = CacheAutoStoreExample.class.getSimpleName();
@@ -114,32 +114,42 @@ public class CacheAutoStoreExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteException If example execution failed.
+     * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws IgniteException {
+    public static void main(String[] args) throws Exception {
         // To start ignite with desired configuration uncomment the appropriate line.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
-            System.out.println(">>> Cache auto store example started.");
+            System.out.println(">>> Populate database with data...");
+            DbH2ServerStartup.populateDatabase();
+
+            System.out.println();
+            System.out.println(">>> Cache auto store example started...");
 
             try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheConfiguration())) {
                 try (Transaction tx = ignite.transactions().txStart()) {
                     Person val = cache.get(id);
 
-                    System.out.println("Read value: " + val);
+                    System.out.println(">>> Read value: " + val);
 
-                    val = cache.getAndPut(id, new Person(id, "Isaac", "Newton"));
+                    val = cache.getAndPut(id, new Person(id, 1L, "Isaac", "Newton", 100.10, "English physicist and mathematician"));
 
-                    System.out.println("Overwrote old value: " + val);
+                    System.out.println(">>> Overwrote old value: " + val);
 
                     val = cache.get(id);
 
-                    System.out.println("Read value: " + val);
+                    System.out.println(">>> Read value: " + val);
+
+                    System.out.println(">>> Update salary in transaction...");
+
+                    val.salary *= 2;
+
+                    cache.put(id, val);
 
                     tx.commit();
                 }
 
-                System.out.println("Read value after commit: " + cache.get(id));
+                System.out.println(">>> Read value after commit: " + cache.get(id));
 
                 cache.clear();
 
@@ -149,7 +159,7 @@ public class CacheAutoStoreExample {
                 // Load cache on all data nodes with custom SQL statement.
                 cache.loadCache(null, "java.lang.Long", "select * from PERSON where id <= 3");
 
-                System.out.println("Loaded cache entries: " + cache.size());
+                System.out.println(">>> Loaded cache entries: " + cache.size());
 
                 cache.clear();
 
@@ -157,7 +167,7 @@ public class CacheAutoStoreExample {
                 System.out.println(">>> Load ALL data to cache from DB...");
                 cache.loadCache(null);
 
-                System.out.println("Loaded cache entries: " + cache.size());
+                System.out.println(">>> Loaded cache entries: " + cache.size());
             }
         }
     }

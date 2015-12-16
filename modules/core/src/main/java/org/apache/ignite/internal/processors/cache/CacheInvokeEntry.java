@@ -50,9 +50,9 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         KeyCacheObject keyObj,
         @Nullable CacheObject valObj,
         GridCacheVersion ver,
-        boolean keepPortable
+        boolean keepBinary
     ) {
-        super(cctx, keyObj, valObj, keepPortable);
+        super(cctx, keyObj, valObj, keepBinary);
 
         this.hadVal = valObj != null;
         this.ver = ver;
@@ -72,9 +72,9 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         @Nullable CacheObject valObj,
         @Nullable V val,
         GridCacheVersion ver,
-        boolean keepPortable
+        boolean keepBinary
     ) {
-        super(ctx, keyObj, key, valObj, val, keepPortable);
+        super(ctx, keyObj, key, valObj, val, keepBinary);
 
         this.hadVal = valObj != null || val != null;
         this.ver = ver;

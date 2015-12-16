@@ -21,8 +21,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStoreCallback;
@@ -337,12 +337,12 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * Initialize the store.
      *
      * @param ctx Context.
-     * @param convertPortable Convert portable flag.
+     * @param convertBinary Convert binary flag.
      * @throws org.apache.ignite.IgniteCheckedException
      */
-    public void initialize(GridKernalContext ctx, boolean convertPortable) throws IgniteCheckedException {
+    public void initialize(GridKernalContext ctx, boolean convertBinary) throws IgniteCheckedException {
         A.ensure(typName != null || nativeFactory != null,
-            "Either typName or nativeFactory must be set in PlatformDotNetCacheStore");
+                "Either typName or nativeFactory must be set in PlatformDotNetCacheStore");
 
         platformCtx = PlatformUtils.platformContext(ctx.grid());
 
@@ -351,7 +351,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            write(writer, convertPortable);
+            write(writer, convertBinary);
 
             out.synchronize();
 
@@ -363,10 +363,10 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * Write store data to a stream.
      *
      * @param writer Writer.
-     * @param convertPortable Convert portable flag.
+     * @param convertBinary Convert binary flag.
      */
-    protected void write(BinaryRawWriterEx writer, boolean convertPortable) {
-        writer.writeBoolean(convertPortable);
+    protected void write(BinaryRawWriterEx writer, boolean convertBinary) {
+        writer.writeBoolean(convertBinary);
         writer.writeObjectDetached(nativeFactory);
 
         if (nativeFactory == null) {

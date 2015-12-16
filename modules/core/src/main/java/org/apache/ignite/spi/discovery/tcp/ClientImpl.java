@@ -1054,7 +1054,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sendMsgLsnrs)
+                for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sndMsgLsnrs)
                     msgLsnr.apply(msg);
 
                 boolean ack = clientAck && !(msg instanceof TcpDiscoveryPingResponse);
