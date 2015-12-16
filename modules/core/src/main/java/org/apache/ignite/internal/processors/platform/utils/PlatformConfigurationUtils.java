@@ -27,8 +27,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
@@ -110,7 +109,7 @@ public class PlatformConfigurationUtils {
         ccfg.setEvictSynchronizedKeyBufferSize(in.readInt());
         ccfg.setEvictSynchronizedTimeout(in.readLong());
         ccfg.setInvalidate(in.readBoolean());
-        ccfg.setKeepBinaryInStore(in.readBoolean());
+        ccfg.setStoreKeepBinary(in.readBoolean());
         ccfg.setLoadPreviousValue(in.readBoolean());
         ccfg.setDefaultLockTimeout(in.readLong());
         ccfg.setLongQueryWarningTimeout(in.readLong());
@@ -293,7 +292,7 @@ public class PlatformConfigurationUtils {
         writer.writeInt(ccfg.getEvictSynchronizedKeyBufferSize());
         writer.writeLong(ccfg.getEvictSynchronizedTimeout());
         writer.writeBoolean(ccfg.isInvalidate());
-        writer.writeBoolean(ccfg.isKeepBinaryInStore());
+        writer.writeBoolean(ccfg.isStoreKeepBinary());
         writer.writeBoolean(ccfg.isLoadPreviousValue());
         writer.writeLong(ccfg.getDefaultLockTimeout());
         writer.writeLong(ccfg.getLongQueryWarningTimeout());
