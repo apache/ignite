@@ -1628,6 +1628,10 @@ a {
     .dw-loading.dw-loading-overlay {
         z-index: 9999;
     }
+
+    .dw-loading-body {
+        left: 10%;
+    }
 }
 
 .panel-tip-container {

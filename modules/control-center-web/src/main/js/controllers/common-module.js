@@ -1936,7 +1936,10 @@ consoleModule.controller('auth', [
 
 // Download agent controller.
 consoleModule.controller('agent-download', [
-    '$http', '$common', '$scope', '$interval', '$modal', '$state', function ($http, $common, $scope, $interval, $modal, $state) {
+    '$http', '$common', '$scope', '$interval', '$modal', '$loading', '$state',
+        function ($http, $common, $scope, $interval, $modal, $loading, $state) {
+        $scope.loadingAgentOptions = { text: 'Enabling test-drive SQL...' };
+
         // Pre-fetch modal dialogs.
         var _agentDownloadModal = $modal({scope: $scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
 
@@ -1975,6 +1978,21 @@ consoleModule.controller('agent-download', [
             lnk.click();
 
             document.body.removeChild(lnk);
+        };
+
+        $scope.enableTestDriveSQL = function () {
+            $loading.start('loadingAgent');
+
+            $http.post('/api/v1/agent/testdrive/sql')
+                .success(function (result) {
+                    if (!result)
+                        $common.showError('Failed to start test-drive sql', 'top-right', 'body', true);
+                })
+                .error(function (errMsg, status) {
+                    $loading.finish('loadingAgent');
+
+                    _handleException(errMsg, status);
+                });
         };
 
         /**
@@ -2033,6 +2051,8 @@ consoleModule.controller('agent-download', [
 
                     if (_agentDownloadModal.awaitFirstSuccess)
                         _stopInterval();
+
+                    $loading.finish('loadingAgent');
 
                     _agentDownloadModal.checkFn(result, _agentDownloadModal.hide, _handleException);
                 })
