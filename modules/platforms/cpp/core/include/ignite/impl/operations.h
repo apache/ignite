@@ -154,7 +154,7 @@ namespace ignite
             IGNITE_NO_COPY_ASSIGNMENT(In3Operation)
         };
 
-        /*
+        /**
          * Input set operation.
          */
         template<typename T>
@@ -192,7 +192,7 @@ namespace ignite
         class InMapOperation : public InputOperation
         {
         public:
-            /*
+            /**
              * Constructor.
              *
              * @param val Value.
@@ -360,7 +360,7 @@ namespace ignite
             IGNITE_NO_COPY_ASSIGNMENT(Out2Operation)
         };
         
-        /*
+        /**
          * Output map operation.
          */
         template<typename T1, typename T2>
@@ -412,7 +412,7 @@ namespace ignite
             IGNITE_NO_COPY_ASSIGNMENT(OutMapOperation)
         };
 
-        /*
+        /**
          * Output query GET ALL operation.
          */
         template<typename K, typename V>
