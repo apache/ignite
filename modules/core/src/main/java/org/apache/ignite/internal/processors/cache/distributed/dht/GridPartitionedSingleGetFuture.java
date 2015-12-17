@@ -156,6 +156,14 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     ) {
         assert key != null;
 
+        AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
+
+        if (lockedTopVer != null) {
+            topVer = lockedTopVer;
+
+            canRemap = false;
+        }
+
         this.cctx = cctx;
         this.key = key;
         this.readThrough = readThrough;

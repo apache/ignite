@@ -3343,16 +3343,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteException If transaction exist.
      */
     private void checkEmptyTransactions() throws IgniteException {
-        if (transactions().tx() != null)
-            throw new IgniteException("Cannot start/stop cache within transaction.");
-
-        if (sharedCtx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId()) != null)
-            throw new IgniteException("Cannot start/stop cache within lock.");
+        if (transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null)
+            throw new IgniteException("Cannot start/stop cache within lock or transaction.");
     }
 
     /**
      * @param val Object to check.
      * @throws IgniteCheckedException If validation failed.
+     * @return Configuration copy.
      */
     private CacheConfiguration cloneCheckSerializable(CacheConfiguration val) throws IgniteCheckedException {
         if (val == null)
