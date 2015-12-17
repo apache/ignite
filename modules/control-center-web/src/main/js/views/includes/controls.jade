@@ -14,6 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+mixin tip(message)
+    i.tipField.fa.fa-question-circle(bs-tooltip='"#{message}"')
+
 mixin tipField(lines)
     i.tipField.fa.fa-question-circle(ng-if=lines bs-tooltip='joinTip(#{lines})')
     i.tipField.fa.fa-question-circle.blank(ng-if='!#{lines}')

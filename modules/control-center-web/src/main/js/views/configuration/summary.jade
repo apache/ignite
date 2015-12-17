@@ -27,24 +27,16 @@ mixin hard-link(ref, txt)
             li Download XML Config
             li Download Java Code
             li Download Docker File
-            li 
+            li
                 ignite-dialog More info
                     ignite-dialog-title Summary screen
                     ignite-dialog-content 
-                        | Configurations available in XML, Java and Dockerfile format for Server and Client mode.
-                        br
-                        | Database table POJO classes for cluster's metadata available on "POJO" tab.
-                        br
-                        | Use "Download" button to receive configurations in ZIP file.
-                        br
-                        | Go back to change configuration on&nbsp;
-                        a(href='/configuration/clusters') clusters
-                        | &nbsp;,&nbsp;
-                        a(href='/configuration/caches') caches
-                        | &nbsp;or&nbsp; 
-                        a(href='/configuration/metadata') metadata
-                        | &nbsp;screen.
-                    
+                        | Configurations available in XML, Java and Dockerfile format for Server and Client mode.#[br]
+                        | Database table POJO classes for cluster's metadata available on "POJO" tab.#[br]
+                        | Use "Download" button to receive configurations in ZIP file.#[br]
+                        | Go back to change configuration on #[a(href='/configuration/clusters') clusters] ,&nbsp;
+                        | #[a(href='/configuration/caches') caches] or #[a(href='/configuration/metadata') metadata] screen.
+                
         ignite-callout-cel(data-title='Next Steps')
             li Deploy Ignite Servers
             li Connect Ignite Clients
@@ -67,7 +59,7 @@ mixin hard-link(ref, txt)
                     hr
 
                 .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
-                    .panel.panel-default
+                    //- .panel.panel-default
                         .panel-heading(role='tab' bs-collapse-toggle)
                             i.fa(ng-class='panelExpanded(panels, "server") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
                             label Server
@@ -89,8 +81,49 @@ mixin hard-link(ref, txt)
                             label Client
 
                         .panel-collapse(id='client' role='tabpanel' bs-collapse-target)
-                            .details-row(ng-repeat='field in clientFields')
-                                +form-row-custom(['col-xs-4 col-sm-4 col-md-3'], ['col-xs-4 col-sm-4 col-md-3'], 'backupItem')
+                            form(name='clientForm').details-row
+                                ignite-form-field(data-label='Near cache start size')
+                                    +tip("Initial cache size for near cache which will be used to pre-create internal hash table after start")
+                                    ignite-form-field-input-number(
+                                        ng-model='backupItem.nearConfiguration'
+                                    )
+                                        
+
+
+
+
+
+
+                                div
+                                    label.col-xs-4.col-sm-4.col-md-3(for='nearStartSize')
+                                        | Near cache start size:
+                                    div.col-xs-4.col-sm-4.col-md-3
+                                        +tip("Initial cache size for near cache which will be used to pre-create internal hash table after start")
+                                        .input-tip
+                                            input.form-control(
+                                                id='nearStartSize' 
+                                                name='nearStartSize' 
+                                                type='number' 
+                                                placeholder='375000' 
+                                                min='0' 
+                                                max='Number.MAX_VALUE' 
+                                                ng-model='backupItem.nearConfiguration'
+                                            )
+
+                                            i.fa.fa-exclamation-triangle.form-control-feedback(
+                                                ng-show='clientForm.nearStartSize.$error.min' 
+                                                bs-tooltip='"Value is less than allowable minimum."'
+                                            )
+                                            i.fa.fa-exclamation-triangle.form-control-feedback(
+                                                ng-show='clientForm.nearStartSize.$error.max' 
+                                                bs-tooltip='"Value is more than allowable maximum."'
+                                            )
+                                            i.fa.fa-exclamation-triangle.form-control-feedback(
+                                                ng-show='clientForm.nearStartSize.$error.number' 
+                                                bs-tooltip='"Invalid value. Only numbers allowed."'
+                                            )
+
+                                //- +form-row-custom(['col-xs-4 col-sm-4 col-md-3'], ['col-xs-4 col-sm-4 col-md-3'], 'backupItem')
                             .summary-tabs(bs-tabs data-bs-active-pane="tabsClient.activeTab" template='configuration/summary-tabs.html')
                                 div(bs-pane title='XML')
                                     ignite-ui-ace-xml(data-cluster='cluster' data-cluster-cfg='backupItem.nearConfiguration')

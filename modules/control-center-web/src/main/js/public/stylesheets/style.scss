@@ -1805,3 +1805,15 @@ treecontrol.tree-classic {
         margin-right: 10px
     }
 }
+
+.summary-tabs {
+    .nav-tabs > li:first-child,
+    .nav-tabs > li:first-child.active {
+        & > a,
+        & > a:focus,
+        & > a:hover {
+            border-left: none;
+            border-top-left-radius: 0;
+        }
+    }
+}
