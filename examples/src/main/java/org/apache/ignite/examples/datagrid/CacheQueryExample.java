@@ -22,6 +22,7 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -126,12 +127,12 @@ public class CacheQueryExample {
      * Example for scan query based on a predicate.
      */
     private static void scanQuery() {
-        IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
+        IgniteCache<BinaryObject, BinaryObject> cache = Ignition.ignite().cache(PERSON_CACHE).withKeepBinary();
 
-        ScanQuery<AffinityKey<Long>, Person> scan = new ScanQuery<>(
-            new IgniteBiPredicate<AffinityKey<Long>, Person>() {
-                @Override public boolean apply(AffinityKey<Long> key, Person person) {
-                    return person.salary <= 1000;
+        ScanQuery<BinaryObject, BinaryObject> scan = new ScanQuery<>(
+            new IgniteBiPredicate<BinaryObject, BinaryObject>() {
+                @Override public boolean apply(BinaryObject key, BinaryObject person) {
+                    return person.<Double>field("salary") <= 1000;
                 }
             }
         );
