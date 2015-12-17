@@ -281,9 +281,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Nullable @Override public Cache.Entry<K, V> randomEntry() {
-        GridKernalContext kctx = ctx.kernalContext();
+        GridKernalContext kCtx = ctx.kernalContext();
 
-        if (kctx.isDaemon() || kctx.clientNode())
+        if (kCtx.isDaemon() || kCtx.clientNode())
             throw new UnsupportedOperationException("Not applicable for daemon or client node.");
 
         GridCacheGateway<K, V> gate = this.gate;
@@ -468,7 +468,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             fut = ctx.kernalContext().query().executeQuery(ctx,
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
+                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
                         return qry.execute();
                     }
                 }, false);
@@ -483,7 +483,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             fut = ctx.kernalContext().query().executeQuery(ctx,
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
+                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
                         return qry.execute();
                     }
                 }, false);
@@ -496,7 +496,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             fut = ctx.kernalContext().query().executeQuery(ctx,
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
+                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
                         return qry.execute(((SpiQuery)filter).getArgs());
                     }
                 }, false);
@@ -1756,7 +1756,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     opCtx != null && opCtx.noRetries());
 
             return new IgniteCacheProxy<>((GridCacheContext<K1, V1>)ctx,
-                (GridCacheAdapter<K1, V1>)delegate,
+                (IgniteInternalCache<K1, V1>)delegate,
                 opCtx0,
                 isAsync(),
                 lock);
@@ -1883,6 +1883,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param opCtx Cache operation context to guard.
      * @return Previous projection set on this thread.
      */
+    @SuppressWarnings("IfMayBeConditional")
     private CacheOperationContext onEnter(GridCacheGateway<K, V> gate, CacheOperationContext opCtx) {
         if (lock)
             return gate.enter(opCtx);
@@ -1894,6 +1895,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param gate Cache gateway.
      * @return {@code True} if enter successful.
      */
+    @SuppressWarnings("IfMayBeConditional")
     private boolean onEnterIfNoStop(GridCacheGateway<K, V> gate) {
         if (lock)
             return gate.enterIfNotStopped();
@@ -1938,7 +1940,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ctx = (GridCacheContext<K, V>)in.readObject();
 
-        delegate = (IgniteInternalCache<K, V>)in.readObject();
+        IgniteInternalCache<K, V> delegate0 = (IgniteInternalCache<K, V>)in.readObject();
+
+        if (delegate0 instanceof GridCacheProxyImpl)
+            delegate0 = ((GridCacheProxyImpl)delegate0).delegate();
+
+        delegate = delegate0;
 
         opCtx = (CacheOperationContext)in.readObject();
 
@@ -1955,7 +1962,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * Gets value without waiting for toplogy changes.
+     * Gets value without waiting for topology changes.
      *
      * @param key Key.
      * @return Value.

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -54,6 +55,8 @@ public class IgniteCacheSerializationSelfTest extends GridCommonAbstractTest {
         if (getTestGridName(CLIENT).equals(gridName))
             cfg.setClientMode(true);
 
+        cfg.setMarshaller(null);
+
         return cfg;
     }
 
@@ -76,8 +79,8 @@ public class IgniteCacheSerializationSelfTest extends GridCommonAbstractTest {
      * @param atomicityMode Atomicity mode.
      * @return Cache configuration.
      */
-    private CacheConfiguration<Integer, Integer> cacheConfiguration(CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+    private CacheConfiguration<Integer, TestValue> cacheConfiguration(CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
+        CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>();
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(atomicityMode);
@@ -93,13 +96,22 @@ public class IgniteCacheSerializationSelfTest extends GridCommonAbstractTest {
     public void testSerializeClosure() throws Exception {
         Ignite client = ignite(CLIENT);
 
-        final IgniteCache<Integer, Integer> clientCache = client.createCache(cacheConfiguration(PARTITIONED, ATOMIC));
+        final IgniteCache<Integer, TestValue> clientCache = client.createCache(cacheConfiguration(PARTITIONED, ATOMIC));
+
+        for (int i = 0; i < 100; i++) {
+            clientCache.put(i, new TestValue(i));
+        }
 
         try {
-            client.compute(client.cluster().forRemotes().forRandom()).call(new IgniteCallable<Object>() {
+            client.compute(client.cluster().forRemotes().forRandom()).broadcast(new IgniteCallable<Object>() {
                 @Override public Object call() throws Exception {
-                    clientCache.withKeepBinary();
-                    clientCache.withSkipStore();
+                    IgniteCache<Integer, BinaryObject> binCache = clientCache.withKeepBinary();
+
+                    for (int i = 0; i < 100; i++) {
+                        BinaryObject obj = binCache.get(i);
+
+                        assertEquals(i, obj.field("id"));
+                    }
 
                     return null;
                 }
@@ -107,6 +119,21 @@ public class IgniteCacheSerializationSelfTest extends GridCommonAbstractTest {
         }
         finally {
             client.destroyCache(null);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestValue {
+        /** */
+        private int id;
+
+        /**
+         * @param id ID.
+         */
+        private TestValue(int id) {
+            this.id = id;
         }
     }
 }
