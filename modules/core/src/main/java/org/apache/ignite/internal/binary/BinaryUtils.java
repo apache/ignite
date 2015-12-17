@@ -34,7 +34,11 @@ import org.jsr166.ConcurrentHashMap8;
 
 import java.io.ByteArrayInputStream;
 import java.io.Externalizable;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
@@ -952,8 +956,6 @@ public class BinaryUtils {
             return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
             return BinaryWriteMode.BINARY;
-        else if (Externalizable.class.isAssignableFrom(cls))
-            return BinaryWriteMode.EXTERNALIZABLE;
         else if (isSpecialCollection(cls))
             return BinaryWriteMode.COL;
         else if (isSpecialMap(cls))
@@ -1835,6 +1837,49 @@ public class BinaryUtils {
      */
     public static int positionForHandle(BinaryInputStream in) {
         return in.position() - 1;
+    }
+
+    /**
+     * Check if class is binarylizable.
+     *
+     * @param cls Class.
+     * @return {@code True} if binarylizable.
+     */
+    public static boolean isBinarylizable(Class cls) {
+        for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+            if (Binarylizable.class.isAssignableFrom(c))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Determines whether class contains custom Java serialization logic.
+     *
+     * @param cls Class.
+     * @return {@code true} if custom Java serialization logic exists, {@code false} otherwise.
+     */
+    @SuppressWarnings("unchecked")
+    public static boolean isCustomJavaSerialization(Class cls) {
+        for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+            if (Externalizable.class.isAssignableFrom(c))
+                return true;
+
+            try {
+                Method writeObj = c.getDeclaredMethod("writeObject", ObjectOutputStream.class);
+                Method readObj = c.getDeclaredMethod("readObject", ObjectInputStream.class);
+
+                if (!Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
+                    writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class)
+                    return true;
+            }
+            catch (NoSuchMethodException ignored) {
+                // No-op.
+            }
+        }
+
+        return false;
     }
 
     /**

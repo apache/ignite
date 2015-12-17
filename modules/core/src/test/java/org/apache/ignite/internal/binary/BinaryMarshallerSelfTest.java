@@ -76,6 +76,7 @@ import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -435,23 +436,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testExternalizableHashCode() throws Exception {
-        SimpleExternalizable sim1 = new SimpleExternalizable("Simple");
-        SimpleExternalizable sim2 = new SimpleExternalizable("Simple");
-
-        BinaryMarshaller marsh = binaryMarshaller();
-
-        BinaryObjectImpl sim1Binary = marshal(sim1, marsh);
-        BinaryObjectImpl sim2Binary = marshal(sim2, marsh);
-
-        assertEquals(sim1.hashCode(), sim2.hashCode());
-        assertEquals(sim1.hashCode(), sim1Binary.hashCode());
-        assertEquals(sim2.hashCode(), sim2Binary.hashCode());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testExternalizableInEnclosing() throws Exception {
         SimpleEnclosingObject obj = new SimpleEnclosingObject();
         obj.simpl = new SimpleExternalizable("field");
@@ -795,6 +779,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     private static class TestQueue extends AbstractQueue<Integer> implements Externalizable {
         /** Name. */
         private String name;
+
+        /**
+         * {@link Externalizable} support.
+         */
+        public TestQueue() {
+            // No-op.
+        }
 
         /**
          * @param name Name.
@@ -2690,7 +2681,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         iCfg.setBinaryConfiguration(bCfg);
 
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg);
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
@@ -4065,6 +4056,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public static class SimpleExternalizable implements Externalizable {
         /** */
         private String field;
+
+        /**
+         * {@link Externalizable} support.
+         */
+        public SimpleExternalizable() {
+            // No-op.
+        }
 
         /**
          * @param field Field.
