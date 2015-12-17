@@ -208,9 +208,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Command in H2 prepared statement.
      */
     static {
-        try {
-            System.setProperty("h2.objectCache", "false");
+        // Initialize system properties for H2.
+        System.setProperty("h2.objectCache", "false");
+        System.setProperty("h2.serializeJavaObject", "false");
+        System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
 
+        try {
             COMMAND_FIELD = JdbcPreparedStatement.class.getDeclaredField("command");
 
             COMMAND_FIELD.setAccessible(true);
@@ -244,6 +247,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private GridReduceQueryExecutor rdcQryExec;
+
+    /** */
+    private GridSpinBusyLock busyLock;
 
     /** */
     private final ThreadLocal<ConnectionWrapper> connCache = new ThreadLocal<ConnectionWrapper>() {
@@ -1438,6 +1444,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @return Busy lock.
+     */
+    public GridSpinBusyLock busyLock() {
+        return busyLock;
+    }
+
+    /**
      * @return Map query executor.
      */
     public GridMapQueryExecutor mapQueryExecutor() {
@@ -1457,8 +1470,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Starting cache query index...");
 
-        System.setProperty("h2.serializeJavaObject", "false");
-        System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
+        this.busyLock = busyLock;
 
         if (SysProperties.serializeJavaObject) {
             U.warn(log, "Serialization of Java objects in H2 was enabled.");
@@ -1562,7 +1574,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             catch (IgniteCheckedException e) {
                 ok = false;
 
-                U.warn(log, e.getMessage());
+                U.warn(log, "Failed to send message [node=" + node + ", msg=" + msg +
+                    ", errMsg=" + e.getMessage() + "]");
             }
         }
 
@@ -1648,6 +1661,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             U.error(log, "Failed to shutdown database.", e);
         }
+
+        GridH2QueryContext.clearLocalNodeStop(nodeId);
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");

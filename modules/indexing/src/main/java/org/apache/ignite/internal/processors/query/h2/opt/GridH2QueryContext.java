@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -31,7 +32,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
 /**
@@ -50,6 +50,9 @@ public class GridH2QueryContext {
     /** Index snapshots. */
     @GridToStringInclude
     private Map<Long, Object> snapshots;
+
+    /** */
+    private List<GridReservable> reservations;
 
     /** Range streams for indexes. */
     private Map<Integer, Object> streams;
@@ -141,6 +144,16 @@ public class GridH2QueryContext {
      */
     public boolean distributedJoins() {
         return distributedJoins;
+    }
+
+    /**
+     * @param reservations Reserved partitions or group reservations.
+     * @return {@code this}.
+     */
+    public GridH2QueryContext reservations(List<GridReservable> reservations) {
+        this.reservations = reservations;
+
+        return this;
     }
 
     /**
@@ -343,7 +356,7 @@ public class GridH2QueryContext {
 
         qctx.remove();
 
-        if (!onlyThreadLoc && x.key.type != LOCAL)
+        if (!onlyThreadLoc && x.key.type == MAP)
             doClear(x.key);
     }
 
@@ -361,22 +374,47 @@ public class GridH2QueryContext {
      * @param key Context key.
      */
     private static void doClear(Key key) {
+        assert key.type == MAP : key.type;
+
         GridH2QueryContext x = qctxs.remove(key);
 
-        if (x != null && !F.isEmpty(x.snapshots)) {
+        if (x == null)
+            return;
+
+        assert x.key.equals(key);
+
+        if (!F.isEmpty(x.snapshots)) {
             for (Object snapshot : x.snapshots.values()) {
                 if (snapshot instanceof GridReservable)
                     ((GridReservable)snapshot).release();
             }
         }
+
+        List<GridReservable> r = x.reservations;
+
+        if (!F.isEmpty(r)) {
+            for (int i = 0; i < r.size(); i++)
+                r.get(i).release();
+        }
     }
 
     /**
+     * @param locNodeId Local node ID.
      * @param nodeId Dead node ID.
      */
-    public static void clearAfterDeadNode(UUID nodeId) {
+    public static void clearAfterDeadNode(UUID locNodeId, UUID nodeId) {
         for (Key key : qctxs.keySet()) {
-            if (key.nodeId.equals(nodeId))
+            if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId))
+                doClear(key);
+        }
+    }
+
+    /**
+     * @param locNodeId Local node ID.
+     */
+    public static void clearLocalNodeStop(UUID locNodeId) {
+        for (Key key : qctxs.keySet()) {
+            if (key.locNodeId.equals(locNodeId))
                 doClear(key);
         }
     }

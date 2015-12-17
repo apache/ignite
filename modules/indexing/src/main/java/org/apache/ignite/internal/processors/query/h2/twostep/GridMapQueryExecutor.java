@@ -143,11 +143,13 @@ public class GridMapQueryExecutor {
 
         log = ctx.log(GridMapQueryExecutor.class);
 
+        final UUID locNodeId = ctx.localNodeId();
+
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(final Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-                GridH2QueryContext.clearAfterDeadNode(nodeId);
+                GridH2QueryContext.clearAfterDeadNode(locNodeId, nodeId);
 
                 ConcurrentMap<Long,QueryResults> nodeRess = qryRess.remove(nodeId);
 
@@ -220,14 +222,14 @@ public class GridMapQueryExecutor {
 
         long qryReqId = msg.queryRequestId();
 
+        GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
+
         QueryResults results = nodeRess.remove(qryReqId);
 
         if (results == null)
             return;
 
         results.cancel();
-
-        GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
     }
 
     /**
@@ -490,7 +492,8 @@ public class GridMapQueryExecutor {
                 .partitionsMap(partsMap)
                 .distributedJoins(distributedJoins)
                 .pageSize(pageSize)
-                .topologyVersion(topVer);
+                .topologyVersion(topVer)
+                .reservations(reserved);
 
             List<GridH2Table> snapshotedTbls = null;
 
@@ -509,6 +512,9 @@ public class GridMapQueryExecutor {
             }
 
             GridH2QueryContext.set(qctx);
+
+            // qctx is set, we have to release reservations inside of it.
+            reserved = null;
 
             h2.enforceJoinOrder(true);
 
@@ -570,14 +576,8 @@ public class GridMapQueryExecutor {
                 qr.cancel();
             }
 
-            if (X.hasCause(e, GridH2RetryException.class)) {
-                try {
-                    sendRetry(node, reqId);
-                }
-                catch (IgniteCheckedException ex) {
-                    U.warn(log, "Failed to send retry message to node: " + node);
-                }
-            }
+            if (X.hasCause(e, GridH2RetryException.class))
+                sendRetry(node, reqId);
             else {
                 U.error(log, "Failed to execute local query.", e);
 
@@ -588,9 +588,11 @@ public class GridMapQueryExecutor {
             }
         }
         finally {
-            // Release reserved partitions.
-            for (GridReservable r : reserved)
-                r.release();
+            if (reserved != null) {
+                // Release reserved partitions.
+                for (int i = 0; i < reserved.size(); i++)
+                    reserved.get(i).release();
+            }
         }
     }
 
@@ -682,22 +684,26 @@ public class GridMapQueryExecutor {
     /**
      * @param node Node.
      * @param reqId Request ID.
-     * @throws IgniteCheckedException If failed.
      */
-    private void sendRetry(ClusterNode node, long reqId) throws IgniteCheckedException {
-        boolean loc = node.isLocal();
+    private void sendRetry(ClusterNode node, long reqId) {
+        try {
+            boolean loc = node.isLocal();
 
-        GridQueryNextPageResponse msg = new GridQueryNextPageResponse(reqId,
+            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(reqId,
             /*qry*/0, /*page*/0, /*allRows*/0, /*cols*/1,
-            loc ? null : Collections.<Message>emptyList(),
-            loc ? Collections.<Value[]>emptyList() : null);
+                loc ? null : Collections.<Message>emptyList(),
+                loc ? Collections.<Value[]>emptyList() : null);
 
-        msg.retry(h2.readyTopologyVersion());
+            msg.retry(h2.readyTopologyVersion());
 
-        if (loc)
-            h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
-        else
-            ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+            if (loc)
+                h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+            else
+                ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+        }
+        catch (Exception e) {
+            U.warn(log, "Failed to send retry message: " + e.getMessage());
+        }
     }
 
     /**

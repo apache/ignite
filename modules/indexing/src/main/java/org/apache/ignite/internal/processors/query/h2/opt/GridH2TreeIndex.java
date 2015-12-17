@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridEmptyIterator;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
@@ -208,7 +209,17 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
             msgLsnr = new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg) {
-                    onMessage0(nodeId, msg);
+                    GridSpinBusyLock l = desc.indexing().busyLock();
+
+                    if (!l.enterBusy())
+                        return;
+
+                    try {
+                        onMessage0(nodeId, msg);
+                    }
+                    finally {
+                        l.leaveBusy();
+                    }
                 }
             };
 
@@ -1397,7 +1408,10 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         private GridH2IndexRangeResponse awaitForResponse() {
             assert remainingRanges > 0;
 
-            for (int attempt = 0; attempt < 50; attempt++) {
+            for (int attempt = 0;; attempt++) {
+                if (kernalContext().isStopping())
+                    throw new GridH2RetryException("Stopping node.");
+
                 GridH2IndexRangeResponse res;
 
                 try {
@@ -1434,7 +1448,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                                 throw new GridH2RetryException("Failure on remote node.");
 
                             try {
-                                U.sleep(10 * attempt);
+                                U.sleep(20 * attempt);
                             }
                             catch (IgniteInterruptedCheckedException e) {
                                 throw new IgniteInterruptedException(e.getMessage());
@@ -1442,22 +1456,19 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
                             send(singletonList(node), req);
 
-                            break;
+                            continue;
 
                         case GridH2IndexRangeResponse.STATUS_ERROR:
                             throw new CacheException(res.error());
 
                         default:
-                            assert false;
+                            throw new IllegalStateException();
                     }
                 }
 
                 if (!kernalContext().discovery().alive(node))
                     throw new GridH2RetryException("Node left: " + node);
             }
-
-            // Attempts exceeded.
-            throw new CacheException("Failed to get index range from remote node, request timeout.");
         }
 
         /**

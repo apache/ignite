@@ -607,6 +607,9 @@ public class GridReduceQueryExecutor {
                 final boolean oldStyle = oldNodesInTopology();
                 final boolean distributedJoins = qry.distributedJoins();
 
+                if (oldStyle && distributedJoins)
+                    throw new CacheException("Failed to enable distributed joins. Topology contains older data nodes.");
+
                 if (send(nodes,
                     oldStyle ?
                         new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null) :
@@ -704,6 +707,8 @@ public class GridReduceQueryExecutor {
                 }
 
                 if (retry) {
+                    send(nodes, new GridQueryCancelRequest(qryReqId), null);
+
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
 

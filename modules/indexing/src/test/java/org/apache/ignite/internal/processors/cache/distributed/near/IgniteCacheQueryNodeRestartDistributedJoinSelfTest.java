@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -51,16 +52,16 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final String QRY_0 = "select co.id, count(*) cnt\n" +
+    private static final String QRY_0 = "select co._key, count(*) cnt\n" +
         "from \"pe\".Person pe, \"pr\".Product pr, \"co\".Company co, \"pu\".Purchase pu\n" +
-        "where pe.id = pu.personId and pu.productId = pr.id and pr.companyId = co.id \n" +
-        "group by co.id order by cnt desc, co.id";
+        "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key \n" +
+        "group by co._key order by cnt desc, co._key";
 
     /** */
-    private static final String QRY_1 = "select pr.id, co.id\n" +
+    private static final String QRY_1 = "select pr._key, co._key\n" +
         "from \"pr\".Product pr, \"co\".Company co\n" +
-        "where pr.companyId = co.id\n" +
-        "order by co.id, pr.id ";
+        "where pr.companyId = co._key\n" +
+        "order by co._key, pr._key ";
 
     /** */
     private static final int GRID_CNT = 6;
@@ -182,14 +183,17 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends GridComm
         int duration = 90 * 1000;
         int qryThreadNum = 4;
         int restartThreadsNum = 2; // 4 + 2 = 6 nodes
-        final int nodeLifeTime = 2 * 1000;
-        final int logFreq = 10;
+        final int nodeLifeTime = 4000;
+        final int logFreq = 1;
 
         startGridsMultiThreaded(GRID_CNT);
 
         final AtomicIntegerArray locks = new AtomicIntegerArray(GRID_CNT);
 
         fillCaches();
+
+        X.println("Plan: " + grid(0).cache("pu").query(new SqlFieldsQuery("explain " + QRY_0)
+            .setDistributedJoins(true)).getAll());
 
         final List<List<?>> pRes = grid(0).cache("pu").query(new SqlFieldsQuery(QRY_0)
             .setDistributedJoins(true)).getAll();
@@ -206,7 +210,6 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends GridComm
         assertFalse(rRes.isEmpty());
 
         final AtomicInteger qryCnt = new AtomicInteger();
-
         final AtomicBoolean qrysDone = new AtomicBoolean();
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new CAX() {
@@ -221,15 +224,14 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends GridComm
                     }
                     while (!locks.compareAndSet(g, 0, 1));
 
-                    if (rnd.nextBoolean()) { // Partitioned query.
+                    if (rnd.nextBoolean()) {
                         IgniteCache<?,?> cache = grid(g).cache("pu");
 
                         SqlFieldsQuery qry = new SqlFieldsQuery(QRY_0).setDistributedJoins(true);
 
                         boolean smallPageSize = rnd.nextBoolean();
 
-                        if (smallPageSize)
-                            qry.setPageSize(3);
+                        qry.setPageSize(smallPageSize ? 30 : 1000);
 
                         try {
                             assertEquals(pRes, cache.query(qry).getAll());
@@ -321,16 +323,12 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends GridComm
         info("Stopping..");
 
         restartsDone.set(true);
-
-        fut2.get();
-
-        info("Restarts stopped.");
-
         qrysDone.set(true);
 
+        fut2.get();
         fut1.get();
 
-        info("Queries stopped.");
+        info("Stopped.");
     }
 
     /** {@inheritDoc} */
