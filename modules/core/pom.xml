@@ -331,6 +331,11 @@
                                         <property name="props.file" value="../../modules/core/target/classes/ignite.properties" />
 
                                         <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.update.notifier.enabled.by.default=.*" />
+                                            <substitution expression="ignite.update.notifier.enabled.by.default=${update.notifier.enabled.by.default}" />
+                                        </replaceregexp>
+
+                                        <replaceregexp file="${props.file}" byline="true">
                                             <regexp pattern="ignite.rel.date=.*" />
                                             <substitution expression="ignite.rel.date=${ignite.rel.date}" />
                                         </replaceregexp>
