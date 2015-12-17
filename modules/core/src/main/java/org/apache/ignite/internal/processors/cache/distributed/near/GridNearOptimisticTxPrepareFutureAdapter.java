@@ -50,11 +50,13 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
     /** {@inheritDoc} */
     @Override public final void prepare() {
         // Obtain the topology version to use.
-        AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId());
+        long threadId = Thread.currentThread().getId();
+
+        AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 
         // If there is another system transaction in progress, use it's topology version to prevent deadlock.
         if (topVer == null && tx != null && tx.system()) {
-            IgniteInternalTx tx0 = cctx.tm().anyActiveThreadTx(tx);
+            IgniteInternalTx tx0 = cctx.tm().anyActiveThreadTx(threadId, tx);
 
             if (tx0 != null)
                 topVer = tx0.topologyVersionSnapshot();

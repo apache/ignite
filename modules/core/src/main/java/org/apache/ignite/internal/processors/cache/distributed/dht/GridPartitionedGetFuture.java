@@ -133,10 +133,19 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * Initializes future.
      */
     public void init() {
-        AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
-            canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
+        AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
-        map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+        if (lockedTopVer != null) {
+            canRemap = false;
+
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), lockedTopVer);
+        }
+        else {
+            AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
+                canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
+
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+        }
 
         markInitialized();
     }

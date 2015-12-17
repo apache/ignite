@@ -19,8 +19,10 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -323,6 +325,11 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override public BinaryObject clone() throws CloneNotSupportedException {
         return heapCopy();
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
+        return BinaryObjectBuilderImpl.wrap(heapCopy());
     }
 
     /** {@inheritDoc} */

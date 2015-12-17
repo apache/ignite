@@ -87,7 +87,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
     protected IgniteCacheExpiryPolicy expiryPlc;
 
     /** Flag indicating that get should be done on a locked topology version. */
-    protected final boolean canRemap;
+    protected boolean canRemap;
 
     /** */
     protected final boolean needVer;

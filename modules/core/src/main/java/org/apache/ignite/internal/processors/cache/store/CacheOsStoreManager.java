@@ -82,6 +82,6 @@ public class CacheOsStoreManager extends GridCacheStoreManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean configuredConvertBinary() {
-        return !(ctx.config().getMarshaller() instanceof BinaryMarshaller && cfg.isKeepBinaryInStore());
+        return !(ctx.config().getMarshaller() instanceof BinaryMarshaller && cfg.isStoreKeepBinary());
     }
 }
