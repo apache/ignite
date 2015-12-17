@@ -31,7 +31,6 @@ import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.ExamplesUtils;
 import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.examples.util.DbH2ServerStartup;
-import org.apache.ignite.scalar.lang.ScalarOutClosure;
 import org.apache.ignite.transactions.Transaction;
 import org.h2.jdbcx.JdbcConnectionPool;
 
