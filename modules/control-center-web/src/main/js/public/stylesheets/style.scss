@@ -427,6 +427,14 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
+.settings-row:first-child {
+    margin-top: 0;
+}
+
+.details-row, .settings-row:last-child {
+    margin-bottom: 0;
+}
+
 button, a.btn {
     margin-right: 5px;
 }
@@ -673,7 +681,7 @@ button.form-control {
 }
 
 .theme-line .panel-body {
-    padding: 10px 20px;
+    padding: 20px;
 }
 
 .theme-line .main-content a.customize {
@@ -948,14 +956,14 @@ button.form-control {
 .panel-details {
     margin-top: 10px;
 
-    padding: 0;
+    padding: 10px;
 
     border-radius: 5px;
     border: thin dotted $ignite-border-color;
 }
 
 .group-section {
-    margin-top: 30px;
+    margin-top: 20px;
 }
 
 .group {
@@ -988,7 +996,7 @@ button.form-control {
 }
 
 .group-content {
-    margin: 0 10px 10px 10px;
+    margin: 10px;
 
     table {
         width: 100%;
@@ -1381,6 +1389,10 @@ a {
     margin-top: 10px;
 }
 
+.margin-top-dflt-2x {
+    margin-top: 20px;
+}
+
 .margin-bottom-dflt {
     margin-bottom: 10px;
 }
@@ -1496,7 +1508,7 @@ a {
 .preview-panel {
     min-height: 28px;
 
-    margin: 10px 0 10px 20px;
+    margin-left: 20px;
 
     border-radius: 5px;
     border: thin dotted $ignite-border-color;
@@ -1505,9 +1517,8 @@ a {
 }
 
 .preview-legend {
-    top: -1px;
-    right: 15px;
-    margin-right: 10px;
+    top: -10px;
+    right: 20px;
     position: absolute;
     z-index: 900;
 
