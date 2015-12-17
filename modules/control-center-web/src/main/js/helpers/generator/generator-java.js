@@ -1284,7 +1284,7 @@ $generatorJava.cacheMetadatas = function (metadatas, varName, res) {
 };
 
 // Generate cache configs.
-$generatorJava.cache = function(cache, varName, isSrvCfg, res) {
+$generatorJava.cache = function(cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1294,8 +1294,7 @@ $generatorJava.cache = function(cache, varName, isSrvCfg, res) {
 
     $generatorJava.cacheQuery(cache, varName, res);
 
-    if (isSrvCfg)
-        $generatorJava.cacheStore(cache, cache.metadatas, varName, res);
+    $generatorJava.cacheStore(cache, cache.metadatas, varName, res);
 
     $generatorJava.cacheConcurrency(cache, varName, res);
 
@@ -1425,7 +1424,7 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
 
         $generatorJava.declareVariable(res, cacheName, 'org.apache.ignite.configuration.CacheConfiguration');
 
-        $generatorJava.cache(cache, cacheName, isSrvCfg, res);
+        $generatorJava.cache(cache, cacheName, res);
 
         res.line('return ' + cacheName + ';');
         res.endBlock('}');
@@ -1479,13 +1478,23 @@ $generatorJava.clusterCacheUse = function (caches, igfss, res) {
         clusterCacheInvoke(res, cache, names);
     });
 
+    if (names.length > 0) {
+        res.line('// Set data caches.');
+        res.line('cfg.setCacheConfiguration(' + names.join(', ') + ');');
+
+        res.needEmptyLine = true;
+    }
+
+    var igfsNames = [];
+
     _.forEach(igfss, function (igfs) {
-        clusterCacheInvoke(res, $generatorCommon.igfsDataCache(igfs), names);
-        clusterCacheInvoke(res, $generatorCommon.igfsMetaCache(igfs), names);
+        clusterCacheInvoke(res, $generatorCommon.igfsDataCache(igfs), igfsNames);
+        clusterCacheInvoke(res, $generatorCommon.igfsMetaCache(igfs), igfsNames);
     });
 
-    if (names.length > 0) {
-        res.line('cfg.setCacheConfiguration(' + names.join(', ') + ');');
+    if (igfsNames.length > 0) {
+        res.line('// Set IGFS caches.');
+        res.line('cfg.setCacheConfiguration(' + igfsNames.join(', ') + ');');
 
         res.needEmptyLine = true;
     }

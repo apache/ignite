@@ -1103,13 +1103,13 @@ $generatorXml.cacheMetadatas = function(metadatas, res) {
 };
 
 // Generate cache configs.
-$generatorXml.cache = function(cache, isSrvCfg, res) {
+$generatorXml.cache = function(cache, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     res.startBlock('<bean class="org.apache.ignite.configuration.CacheConfiguration">');
 
-    $generatorXml.cacheConfiguration(cache, isSrvCfg, res);
+    $generatorXml.cacheConfiguration(cache, res);
 
     res.endBlock('</bean>');
 
@@ -1117,7 +1117,7 @@ $generatorXml.cache = function(cache, isSrvCfg, res) {
 };
 
 // Generate cache configs.
-$generatorXml.cacheConfiguration = function(cache, isSrvCfg, res) {
+$generatorXml.cacheConfiguration = function(cache, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1127,8 +1127,7 @@ $generatorXml.cacheConfiguration = function(cache, isSrvCfg, res) {
 
     $generatorXml.cacheQuery(cache, res);
 
-    if (isSrvCfg)
-        $generatorXml.cacheStore(cache, cache.metadatas, res);
+    $generatorXml.cacheStore(cache, cache.metadatas, res);
 
     $generatorXml.cacheConcurrency(cache, res);
 
@@ -1155,7 +1154,7 @@ $generatorXml.clusterCaches = function(caches, igfss, isSrvCfg, res) {
         res.startBlock('<list>');
 
         _.forEach(caches, function(cache) {
-            $generatorXml.cache(cache, isSrvCfg, res);
+            $generatorXml.cache(cache, res);
 
             res.needEmptyLine = true;
         });
@@ -1422,7 +1421,7 @@ $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
     if (!isSrvCfg) {
         res.line('<property name="clientMode" value="true"/>');
 
-        res.line();
+        res.needEmptyLine = true;
     }
 
     $generatorXml.clusterGeneral(cluster, res);
