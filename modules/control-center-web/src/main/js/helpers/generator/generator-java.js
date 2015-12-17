@@ -966,7 +966,7 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
                 res.deep++;
 
                 res.line('/** {@inheritDoc} */');
-                res.startBlock('@Override public ' + res.import('org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore') + ' create() {');
+                res.startBlock('@Override public ' + res.importClass('org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore') + ' create() {');
 
                 $generatorJava.cacheStoreDataSource(storeFactory, res);
 
