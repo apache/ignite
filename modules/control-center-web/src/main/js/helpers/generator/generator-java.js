@@ -71,7 +71,7 @@ $generatorJava.setterName = function (propName, setterName) {
  * @param varFullActualType Variable actual full class name to be added to imports.
  * @param varFullGenericType1 Optional full class name of first generic.
  * @param varFullGenericType2 Optional full class name of second generic.
- * @param subClass If `true` then variable will be declared as anonymous subclass.
+ * @param subClass If 'true' then variable will be declared as anonymous subclass.
  */
 $generatorJava.declareVariable = function (res, varName, varFullType, varFullActualType, varFullGenericType1, varFullGenericType2, subClass) {
     res.emptyLineIfNeeded();
@@ -111,7 +111,7 @@ $generatorJava.declareVariable = function (res, varName, varFullType, varFullAct
 $generatorJava.declareVariableLocal = function (res, varName, varFullType) {
     var varType = res.importClass(varFullType);
 
-    res.line(varType + varName + ' = new ' + varType + '();');
+    res.line(varType + ' ' + varName + ' = new ' + varType + '();');
 
     res.needEmptyLine = true;
 };
@@ -280,12 +280,13 @@ $generatorJava.multiparamProperty = function (res, varName, obj, propName, dataT
 
 /**
  * Add complex bean.
+ *
  * @param res Resulting output with generated code.
  * @param varName Variable name.
  * @param bean
- * @param beanPropName
+ * @param beanPropName Bean property name.
  * @param beanVarName
- * @param beanClass
+ * @param beanClass Bean class.
  * @param props
  * @param createBeanAlthoughNoProps If 'true' then create empty bean.
  */
@@ -965,7 +966,7 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
                 res.deep++;
 
                 res.line('/** {@inheritDoc} */');
-                res.startBlock('@Override public CacheJdbcPojoStore<Long, Person> create() {');
+                res.startBlock('@Override public ' + res.import('org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore') + ' create() {');
 
                 $generatorJava.cacheStoreDataSource(storeFactory, res);
 
@@ -1446,7 +1447,7 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
 
         res.line(' */');
         res.startBlock('public static CacheConfiguration ' + cacheName + '(' +
-            (hasDatasource ? 'Properties props' : '') + ')' + (hasDatasource ? 'throws Exception' : '') + ' {');
+            (hasDatasource ? 'final Properties props' : '') + ')' + (hasDatasource ? 'throws Exception' : '') + ' {');
 
         $generatorJava.declareVariable(res, cacheName, 'org.apache.ignite.configuration.CacheConfiguration');
 
