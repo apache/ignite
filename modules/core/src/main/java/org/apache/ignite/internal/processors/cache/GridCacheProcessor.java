@@ -1041,9 +1041,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConfiguration cfg = cacheCtx.config();
 
         // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
-        if (cfg.isKeepBinaryInStore() && cfg.isKeepBinaryInStore() != CacheConfiguration.DFLT_KEEP_BINARY_IN_STORE
+        if (cfg.isStoreKeepBinary() && cfg.isStoreKeepBinary() != CacheConfiguration.DFLT_STORE_KEEP_BINARY
             && !(ctx.config().getMarshaller() instanceof BinaryMarshaller))
-            U.warn(log, "CacheConfiguration.isKeepBinaryInStore() configuration property will be ignored because " +
+            U.warn(log, "CacheConfiguration.isStoreKeepBinary() configuration property will be ignored because " +
                 "BinaryMarshaller is not used");
 
         // Start managers.
@@ -3343,16 +3343,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteException If transaction exist.
      */
     private void checkEmptyTransactions() throws IgniteException {
-        if (transactions().tx() != null)
-            throw new IgniteException("Cannot start/stop cache within transaction.");
-
-        if (sharedCtx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId()) != null)
-            throw new IgniteException("Cannot start/stop cache within lock.");
+        if (transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null)
+            throw new IgniteException("Cannot start/stop cache within lock or transaction.");
     }
 
     /**
      * @param val Object to check.
      * @throws IgniteCheckedException If validation failed.
+     * @return Configuration copy.
      */
     private CacheConfiguration cloneCheckSerializable(CacheConfiguration val) throws IgniteCheckedException {
         if (val == null)

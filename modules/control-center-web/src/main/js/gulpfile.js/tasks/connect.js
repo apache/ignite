@@ -21,6 +21,7 @@ var modrewrite = require('connect-modrewrite');
 
 var options = {
     livereload: true,
+	port: 8090,
 	root: './build',
 	middleware: function (connect, opt) {
 		return [modrewrite([

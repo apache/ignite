@@ -43,6 +43,7 @@
         <git.exec>git</git.exec>
         <maven.bundle.plugin.version>2.5.4</maven.bundle.plugin.version>
         <javadoc.opts>-XDenableSunApiLintControl</javadoc.opts>
+        <update.notifier.enabled.by.default>true</update.notifier.enabled.by.default>
 
         <!-- Dependency versions. -->
         <activemq.version>5.12.0</activemq.version>

@@ -42,7 +42,7 @@ include ../includes/controls
     div(dw-loading='loadingClustersScreen' dw-loading-options='{text: "Loading clusters screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr
-            +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')
+            +main-table('clusters', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip data-title='Create new cluster')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cluster

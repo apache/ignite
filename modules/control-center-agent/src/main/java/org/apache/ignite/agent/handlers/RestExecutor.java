@@ -40,6 +40,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.ignite.agent.AgentConfiguration;
 import org.apache.ignite.agent.remote.Remote;
+import org.apache.ignite.agent.testdrive.AgentSqlTestDrive;
 
 import static org.apache.ignite.agent.AgentConfiguration.DFLT_NODE_PORT;
 
@@ -98,7 +99,7 @@ public class RestExecutor {
 
         if (path != null) {
             if (!path.startsWith("/") && !cfg.nodeUri().endsWith("/"))
-                path = '/' +  path;
+                path = '/' + path;
 
             builder.setPath(path);
         }
@@ -163,6 +164,14 @@ public class RestExecutor {
 
             return new RestResult(404, "Failed connect to node and execute REST command.");
         }
+    }
+
+    /**
+     * Enable test-drive SQL.
+     */
+    @Remote
+    public boolean enableTestDriveSQL() {
+        return AgentSqlTestDrive.testDrive(cfg);
     }
 
     /**

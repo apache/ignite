@@ -458,7 +458,7 @@ public class AgentSqlTestDrive {
     /**
      * Start ignite node with cacheEmployee and populate it with data.
      */
-    public static void testDrive(AgentConfiguration acfg) {
+    public static boolean testDrive(AgentConfiguration acfg) {
         if (initLatch.compareAndSet(false, true)) {
             log.log(Level.INFO, "TEST-DRIVE-SQL: Starting embedded node for sql test-drive...");
 
@@ -496,7 +496,7 @@ public class AgentSqlTestDrive {
                 if (F.isEmpty(host) || port == null) {
                     log.log(Level.SEVERE, "TEST-DRIVE-SQL: Failed to start embedded node with rest!");
 
-                    return;
+                    return false;
                 }
 
                 acfg.nodeUri(String.format("http://%s:%d", "0.0.0.0".equals(host) ? "127.0.0.1" : host, port));
@@ -507,7 +507,11 @@ public class AgentSqlTestDrive {
             }
             catch (Exception e) {
                 log.log(Level.SEVERE, "TEST-DRIVE-SQL: Failed to start embedded node for sql test-drive!", e);
+
+                return false;
             }
         }
+
+        return true;
     }
 }

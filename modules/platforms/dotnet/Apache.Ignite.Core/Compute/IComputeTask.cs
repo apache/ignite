@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Compute
     ///         <description>Inject annotated resources into task instance.</description>
     ///     </item>
     ///     <item>
-    ///         <description>Apply <see cref="IComputeTask{A,T,R}.Map(IList{IClusterNode}, TArg)"/>.
+    ///         <description>Apply <see cref="Map"/>.
     ///         This method is responsible for splitting business logic into multiple jobs 
     ///         (units of execution) and mapping them to Ignite nodes.</description>
     ///     </item>
@@ -41,8 +41,7 @@ namespace Apache.Ignite.Core.Compute
     ///         <description>System will send mapped Ignite jobs to their respective nodes.</description>
     ///     </item>
     ///     <item>
-    ///         <description>Once job execution results become available method 
-    ///         <see cref="IComputeTask{A,T,R}.OnResult(IComputeJobResult{TJobRes}, IList{IComputeJobResult{TJobRes}})"/>
+    ///         <description>Once job execution results become available, <see cref="OnResult"/> method
     ///         will be called for ech received job result. The policy returned by this method will
     ///         determine the way task reacts to every job result.
     ///         <para />
@@ -65,10 +64,8 @@ namespace Apache.Ignite.Core.Compute
     ///         </description>
     ///     </item>
     ///     <item>
-    ///         <description>Once all results are received or 
-    ///         <see cref="IComputeTask{A,T,R}.OnResult(IComputeJobResult{TJobRes}, IList{IComputeJobResult{TJobRes}})"/>
-    ///         method returned <see cref="ComputeJobResultPolicy.Reduce"/> policy, method 
-    ///         <see cref="IComputeTask{A,T,R}.Reduce(IList{IComputeJobResult{TJobRes}})"/>
+    ///         <description>Once all results are received or  <see cref="OnResult"/>
+    ///         method returned <see cref="ComputeJobResultPolicy.Reduce"/> policy, method <see cref="Reduce"/>
     ///         is called to aggregate received results into one final result. Once this method is finished the 
     ///         execution of the Ignite task is complete. This result will be returned to the user through future.
     ///         </description>    

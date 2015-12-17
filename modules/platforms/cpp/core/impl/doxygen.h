@@ -16,7 +16,38 @@
  */
 
 /**
- * <!-- Package description. -->
- * Contains Spring-based cache store implementation.
+ * \mainpage Apache Ignite C++
+ *
+ * Apache Ignite In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for
+ * computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with
+ * traditional disk-based or flash-based technologies.
  */
-package org.apache.ignite.examples.datagrid.store.spring;
+ 
+ /**
+  * Apache %Ignite API.
+  */
+ namespace ignite
+ {
+	 /**
+	  * %Ignite Binary Objects API.
+	  */
+	 namespace binary
+	 {
+		 // Empty.
+	 }
+	 
+	 /**
+	  * %Ignite %Cache API.
+	  */
+	 namespace cache
+	 {
+		 /**
+		  * Contains APIs for creating and executing cache queries.
+		  */
+		 namespace query
+		 {
+			 // Empty.
+		 }
+	 }
+ }
+ 

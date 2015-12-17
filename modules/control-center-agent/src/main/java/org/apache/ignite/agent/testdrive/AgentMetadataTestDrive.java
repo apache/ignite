@@ -44,15 +44,11 @@ public class AgentMetadataTestDrive {
     private static final AtomicBoolean initLatch = new AtomicBoolean();
 
     /**
-     * Execute query.
-     *
-     * @param conn Connection to database.
-     * @param qry Statement to execute.
+     * @param jdbcUrl Connection url.
+     * @return true if url is used for test-drive.
      */
-    private static void query(Connection conn, String qry) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(qry)) {
-            ps.executeUpdate();
-        }
+    public static boolean isTestDriveUrl(String jdbcUrl) {
+        return "jdbc:h2:mem:test-drive-db".equals(jdbcUrl);
     }
 
     /**

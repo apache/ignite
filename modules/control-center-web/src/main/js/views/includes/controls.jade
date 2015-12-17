@@ -143,8 +143,7 @@ mixin details-row(lblClasses, fieldClasses)
     - var lblDetailClasses = lblClasses + ' details-label'
 
     - var detailMdl = 'getModel(backupItem, detail)[detail.model]';
-    - var detailCommon = {'ng-model': detailMdl, 'ng-required': 'detail.required'};
-    - var detailDisabled = '{{detail.disabled}}'
+    - var detailCommon = {'ng-model': detailMdl, 'ng-required': '{{detail.required}}', 'ng-disabled': '{{detail.disabled}}'};
     - var dropdownPlaceholder = {'ng-class': '{placeholder: !(' + detailMdl + ' && ' + detailMdl + '.length > 0)}'}
 
     - var customValidators = {'ng-attr-ipaddress': '{{detail.ipaddress}}'}
@@ -168,7 +167,7 @@ mixin details-row(lblClasses, fieldClasses)
             .div(class=fieldClasses)
                 +tipField('detail.tip')
                 .input-tip
-                    input.form-control(id='{{::detail.id}}' name='{{detail.model}}' type='number' ng-disabled=detailDisabled placeholder='{{::detail.placeholder}}' min='{{detail.min ? detail.min : 0}}' max='{{detail.max ? detail.max : Number.MAX_VALUE}}')&attributes(detailCommon)
+                    input.form-control(id='{{::detail.id}}' name='{{detail.model}}' type='number' placeholder='{{::detail.placeholder}}' min='{{detail.min ? detail.min : 0}}' max='{{detail.max ? detail.max : Number.MAX_VALUE}}')&attributes(detailCommon)
                     +ico-exclamation('{{detail.model}}', 'min', 'Value is less than allowable minimum.')
                     +ico-exclamation('{{detail.model}}', 'max', 'Value is more than allowable maximum.')
                     +ico-exclamation('{{detail.model}}', 'number', 'Invalid value. Only numbers allowed.')
@@ -487,9 +486,9 @@ mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
             thead
                 tr
                     th
-                        lable.labelHeader.labelFormField #{title}
+                        lable.labelHeader.labelFormField #{title}:
                         .col-sm-3.pull-right(style='padding: 0')
-                            input.form-control(type='text' st-search='#{searchField}' placeholder='Filter #{rows}...')
+                            input.form-control(type='text' st-search='#{searchField}' placeholder='Filter #{title}...')
                 tbody
                     tr
                         td

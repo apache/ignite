@@ -20,7 +20,7 @@ $generatorXml = {};
 
 // Do XML escape.
 $generatorXml.escape = function (s) {
-    if (typeof(s) != 'string')
+    if (typeof(s) !== 'string')
         return s;
 
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -51,7 +51,7 @@ $generatorXml.property = function (res, obj, propName, setterName, dflt) {
             var hasDflt = $commonUtils.isDefined(dflt);
 
             // Add to result if no default provided or value not equals to default.
-            if (!hasDflt || (hasDflt && val != dflt)) {
+            if (!hasDflt || (hasDflt && val !== dflt)) {
                 $generatorXml.element(res, 'property', 'name', setterName ? setterName : propName, 'value', $generatorXml.escape(val));
 
                 return true;
@@ -82,7 +82,7 @@ $generatorXml.listProperty = function (res, obj, propName, listType, rowFactory)
 
         if (!rowFactory)
             rowFactory = function (val) {
-                return '<value>' + $generatorXml.escape(val) + '</value>'
+                return '<value>' + $generatorXml.escape(val) + '</value>';
             };
 
         res.startBlock('<property name="' + propName + '">');
@@ -115,7 +115,7 @@ $generatorXml.arrayProperty = function (res, obj, propName, descr, rowFactory) {
         res.startBlock('<list>');
 
         _.forEach(val, function (v) {
-            res.append(rowFactory(v))
+            res.append(rowFactory(v));
         });
 
         res.endBlock('</list>');
@@ -358,13 +358,13 @@ $generatorXml.clusterAtomics = function (cluster, res) {
 
         var cacheMode = atomics.cacheMode ? atomics.cacheMode : 'PARTITIONED';
 
-        var hasData = cacheMode != 'PARTITIONED';
+        var hasData = cacheMode !== 'PARTITIONED';
 
         $generatorXml.property(res, atomics, 'cacheMode');
 
         hasData = $generatorXml.property(res, atomics, 'atomicSequenceReserveSize') || hasData;
 
-        if (cacheMode == 'PARTITIONED')
+        if (cacheMode === 'PARTITIONED')
             hasData = $generatorXml.property(res, atomics, 'backups') || hasData;
 
         res.endBlock('</bean>');
@@ -499,7 +499,7 @@ $generatorXml.clusterEvents = function (cluster, res) {
 
         res.startBlock('<property name="includeEventTypes">');
 
-        if (cluster.includeEventTypes.length == 1)
+        if (cluster.includeEventTypes.length === 1)
             res.line('<util:constant static-field="org.apache.ignite.events.EventType.' + cluster.includeEventTypes[0] + '"/>');
         else {
             res.startBlock('<list>');
@@ -513,7 +513,7 @@ $generatorXml.clusterEvents = function (cluster, res) {
                 var eventList = $dataStructures.EVENT_GROUPS[eventGroup];
 
                 _.forEach(eventList, function(event) {
-                    res.line('<util:constant static-field="org.apache.ignite.events.EventType.' + event + '"/>')
+                    res.line('<util:constant static-field="org.apache.ignite.events.EventType.' + event + '"/>');
                 });
             });
 
@@ -570,7 +570,7 @@ $generatorXml.clusterSwap = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if (cluster.swapSpaceSpi && cluster.swapSpaceSpi.kind == 'FileSwapSpaceSpi') {
+    if (cluster.swapSpaceSpi && cluster.swapSpaceSpi.kind === 'FileSwapSpaceSpi') {
         $generatorXml.beanProperty(res, cluster.swapSpaceSpi.FileSwapSpaceSpi, 'swapSpaceSpi',
             $generatorCommon.SWAP_SPACE_SPI, true);
 
@@ -663,7 +663,7 @@ $generatorXml.cacheGeneral = function(cache, res) {
     $generatorXml.property(res, cache, 'cacheMode');
     $generatorXml.property(res, cache, 'atomicityMode');
 
-    if (cache.cacheMode == 'PARTITIONED')
+    if (cache.cacheMode === 'PARTITIONED')
         $generatorXml.property(res, cache, 'backups');
 
     $generatorXml.property(res, cache, 'readFromBackup');
@@ -740,7 +740,7 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
         var storeFactory = cache.cacheStoreFactory[factoryKind];
 
         if (storeFactory) {
-            if (factoryKind == 'CacheJdbcPojoStoreFactory') {
+            if (factoryKind === 'CacheJdbcPojoStoreFactory') {
                 res.startBlock('<property name="cacheStoreFactory">');
                 res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">');
 
@@ -772,14 +772,14 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
                 }
 
                 res.endBlock('</bean>');
-                res.endBlock("</property>")
+                res.endBlock("</property>");
             }
             else
                 $generatorXml.beanProperty(res, storeFactory, 'cacheStoreFactory', $generatorCommon.STORE_FACTORIES[factoryKind], true);
 
             if (storeFactory.dialect && storeFactory.dataSourceBean) {
                 if (_.findIndex(res.datasources, function (ds) {
-                        return ds.dataSourceBean == storeFactory.dataSourceBean;
+                        return ds.dataSourceBean === storeFactory.dataSourceBean;
                     }) < 0) {
                     res.datasources.push({
                         dataSourceBean: storeFactory.dataSourceBean,
@@ -793,7 +793,7 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
         }
     }
 
-    $generatorXml.property(res, cache, 'keepBinaryInStore', null, false);
+    $generatorXml.property(res, cache, 'storeKeepBinary', null, false);
     $generatorXml.property(res, cache, 'loadPreviousValue', null, false);
     $generatorXml.property(res, cache, 'readThrough', null, null, false);
     $generatorXml.property(res, cache, 'writeThrough', null, null, false);
@@ -831,7 +831,7 @@ $generatorXml.cacheRebalance = function(cache, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if (cache.cacheMode != 'LOCAL') {
+    if (cache.cacheMode !== 'LOCAL') {
         $generatorXml.property(res, cache, 'rebalanceMode');
         $generatorXml.property(res, cache, 'rebalanceThreadPoolSize');
         $generatorXml.property(res, cache, 'rebalanceBatchSize');
@@ -859,7 +859,7 @@ $generatorXml.cacheServerNearCache = function(cache, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if (cache.cacheMode == 'PARTITIONED' && cache.nearCacheEnabled) {
+    if (cache.cacheMode === 'PARTITIONED' && cache.nearCacheEnabled) {
         res.emptyLineIfNeeded();
 
         res.startBlock('<property name="nearConfiguration">');
@@ -1143,7 +1143,7 @@ $generatorXml.cacheConfiguration = function(cache, res) {
 };
 
 // Generate caches configs.
-$generatorXml.clusterCaches = function(caches, igfss, res) {
+$generatorXml.clusterCaches = function(caches, igfss, isSrvCfg, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1159,15 +1159,16 @@ $generatorXml.clusterCaches = function(caches, igfss, res) {
             res.needEmptyLine = true;
         });
 
-        _.forEach(igfss, function(igfs) {
-            $generatorXml.cache($generatorCommon.igfsDataCache(igfs), res);
+        if (isSrvCfg)
+            _.forEach(igfss, function(igfs) {
+                $generatorXml.cache($generatorCommon.igfsDataCache(igfs), res);
 
-            res.needEmptyLine = true;
+                res.needEmptyLine = true;
 
-            $generatorXml.cache($generatorCommon.igfsMetaCache(igfs), res);
+                $generatorXml.cache($generatorCommon.igfsMetaCache(igfs), res);
 
-            res.needEmptyLine = true;
-        });
+                res.needEmptyLine = true;
+            });
 
         res.endBlock('</list>');
         res.endBlock('</property>');
@@ -1415,10 +1416,12 @@ $generatorXml.generateDataSources = function (datasources, res) {
 };
 
 $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
-    if (clientNearCfg) {
+    var isSrvCfg = !$commonUtils.isDefined(clientNearCfg);
+
+    if (!isSrvCfg) {
         res.line('<property name="clientMode" value="true"/>');
 
-        res.line();
+        res.needEmptyLine = true;
     }
 
     $generatorXml.clusterGeneral(cluster, res);
@@ -1445,11 +1448,14 @@ $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     $generatorXml.clusterTransactions(cluster, res);
 
-    $generatorXml.clusterCaches(cluster.caches, cluster.igfss, res);
+    $generatorXml.clusterCaches(cluster.caches, cluster.igfss, isSrvCfg, res);
 
     $generatorXml.clusterSsl(cluster, res);
 
-    return $generatorXml.igfss(cluster.igfss, res);
+    if (isSrvCfg)
+        $generatorXml.igfss(cluster.igfss, res);
+
+    return res;
 };
 
 $generatorXml.cluster = function (cluster, clientNearCfg) {

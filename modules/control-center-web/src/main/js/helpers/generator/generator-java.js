@@ -71,8 +71,9 @@ $generatorJava.setterName = function (propName, setterName) {
  * @param varFullActualType Variable actual full class name to be added to imports.
  * @param varFullGenericType1 Optional full class name of first generic.
  * @param varFullGenericType2 Optional full class name of second generic.
+ * @param subClass If 'true' then variable will be declared as anonymous subclass.
  */
-$generatorJava.declareVariable = function (res, varName, varFullType, varFullActualType, varFullGenericType1, varFullGenericType2) {
+$generatorJava.declareVariable = function (res, varName, varFullType, varFullActualType, varFullGenericType1, varFullGenericType2, subClass) {
     res.emptyLineIfNeeded();
 
     var varType = res.importClass(varFullType);
@@ -94,7 +95,23 @@ $generatorJava.declareVariable = function (res, varName, varFullType, varFullAct
             varName + ' = new ' + varActualType + '<>();');
     }
     else
-        res.line((varNew ? (varType + ' ') : '') + varName + ' = new ' + varType + '();');
+        res.line((varNew ? (varType + ' ') : '') + varName + ' = new ' + varType + '()' + (subClass ? ' {' : ';'));
+
+    if (!subClass)
+        res.needEmptyLine = true;
+};
+
+/**
+ * Add local variable declaration.
+ *
+ * @param res Resulting output with generated code.
+ * @param varName Variable name.
+ * @param varFullType Variable full class name to be added to imports.
+ */
+$generatorJava.declareVariableLocal = function (res, varName, varFullType) {
+    var varType = res.importClass(varFullType);
+
+    res.line(varType + ' ' + varName + ' = new ' + varType + '();');
 
     res.needEmptyLine = true;
 };
@@ -263,12 +280,13 @@ $generatorJava.multiparamProperty = function (res, varName, obj, propName, dataT
 
 /**
  * Add complex bean.
+ *
  * @param res Resulting output with generated code.
  * @param varName Variable name.
  * @param bean
- * @param beanPropName
+ * @param beanPropName Bean property name.
  * @param beanVarName
- * @param beanClass
+ * @param beanClass Bean class.
  * @param props
  * @param createBeanAlthoughNoProps If 'true' then create empty bean.
  */
@@ -874,6 +892,52 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
 };
 
 /**
+ * Generate cache store datasource.
+ *
+ * @param storeFactory Factory to generate data source for.
+ * @param res Resulting output with generated code.
+ */
+$generatorJava.cacheStoreDataSource = function (storeFactory, res) {
+    if (storeFactory.dialect) {
+        var dataSourceBean = storeFactory.dataSourceBean;
+
+        var dsClsName = $generatorCommon.dataSourceClassName(storeFactory.dialect);
+
+        $generatorJava.declareVariableLocal(res, 'dataSource', dsClsName);
+
+        switch (storeFactory.dialect) {
+            case 'Generic':
+                res.line('dataSource.setJdbcUrl(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
+
+                break;
+
+            case 'DB2':
+                res.line('dataSource.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
+                res.line('dataSource.setPortNumber(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.port_number")));');
+                res.line('dataSource.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
+                res.line('dataSource.setDriverType(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.driver_type")));');
+
+                break;
+
+            case 'PostgreSQL':
+                res.line('dataSource.setDataSourceName("' + dataSourceBean + '");');
+                res.line('dataSource.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
+                res.line('dataSource.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
+
+                break;
+
+            default:
+                res.line('dataSource.setURL(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
+        }
+
+        res.line('dataSource.setUser(props.getProperty("' + dataSourceBean + '.jdbc.username"));');
+        res.line('dataSource.setPassword(props.getProperty("' + dataSourceBean + '.jdbc.password"));');
+
+        res.needEmptyLine = true;
+    }
+};
+
+/**
  * Generate cache store group.
  *
  * @param cache Cache descriptor.
@@ -896,60 +960,23 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
 
             var varName = 'storeFactory' + storeFactoryDesc.suffix;
 
-            var dataSourceFound = false;
-
-            if (storeFactory.dialect) {
-                var dataSourceBean = storeFactory.dataSourceBean;
-
-                dataSourceFound = true;
-
-                if (!_.contains(res.datasources, dataSourceBean)) {
-                    res.datasources.push(dataSourceBean);
-
-                    var dsClsName = $generatorCommon.dataSourceClassName(storeFactory.dialect);
-
-                    res.needEmptyLine = true;
-
-                    $generatorJava.declareVariable(res, 'dataSource', dsClsName);
-
-                    switch (storeFactory.dialect) {
-                        case 'Generic':
-                            res.line('dataSource.setJdbcUrl(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
-
-                            break;
-
-                        case 'DB2':
-                            res.line('dataSource.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
-                            res.line('dataSource.setPortNumber(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.port_number")));');
-                            res.line('dataSource.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
-                            res.line('dataSource.setDriverType(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.driver_type")));');
-
-                            break;
-
-                        case 'PostgreSQL':
-                            res.line('dataSource.setDataSourceName("' + dataSourceBean + '");');
-                            res.line('dataSource.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
-                            res.line('dataSource.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
-
-                            break;
-
-                        default:
-                            res.line('dataSource.setURL(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
-                    }
-
-                    res.line('dataSource.setUser(props.getProperty("' + dataSourceBean + '.jdbc.username"));');
-                    res.line('dataSource.setPassword(props.getProperty("' + dataSourceBean + '.jdbc.password"));');
-
-                    res.needEmptyLine = true;
-                }
-            }
-
             if (factoryKind === 'CacheJdbcPojoStoreFactory') {
                 // Generate POJO store factory.
-                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory');
+                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory', null, null, null, true);
+                res.deep++;
 
-                if (dataSourceFound)
-                    res.line(varName + '.setDataSource(dataSource);');
+                res.line('/** {@inheritDoc} */');
+                res.startBlock('@Override public ' + res.importClass('org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore') + ' create() {');
+
+                $generatorJava.cacheStoreDataSource(storeFactory, res);
+
+                res.line('setDataSource(dataSource);');
+                res.line('');
+                res.line('return super.create();');
+                res.endBlock('};');
+                res.endBlock('};');
+
+                res.needEmptyLine = true;
 
                 res.line(varName + '.setDialect(new ' +
                     res.importClass($generatorCommon.jdbcDialectClassName(storeFactory.dialect)) + '());');
@@ -991,7 +1018,7 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
         res.needEmptyLine = true;
     }
 
-    $generatorJava.property(res, cacheVarName, cache, 'keepBinaryInStore', null, null, false);
+    $generatorJava.property(res, cacheVarName, cache, 'storeKeepBinary', null, null, false);
     $generatorJava.property(res, cacheVarName, cache, 'loadPreviousValue', null, null, false);
     $generatorJava.property(res, cacheVarName, cache, 'readThrough', null, null, false);
     $generatorJava.property(res, cacheVarName, cache, 'writeThrough', null, null, false);
@@ -1400,7 +1427,7 @@ $generatorJava.cacheVariableName = function (cache, names) {
 };
 
 // Generate cluster caches.
-$generatorJava.clusterCaches = function (caches, igfss, res) {
+$generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
     function clusterCache(res, cache, names) {
         res.emptyLineIfNeeded();
 
@@ -1420,7 +1447,7 @@ $generatorJava.clusterCaches = function (caches, igfss, res) {
 
         res.line(' */');
         res.startBlock('public static CacheConfiguration ' + cacheName + '(' +
-            (hasDatasource ? 'Properties props' : '') + ')' + (hasDatasource ? 'throws Exception' : '') + ' {');
+            (hasDatasource ? 'final Properties props' : '') + ')' + (hasDatasource ? 'throws Exception' : '') + ' {');
 
         $generatorJava.declareVariable(res, cacheName, 'org.apache.ignite.configuration.CacheConfiguration');
 
@@ -1449,7 +1476,7 @@ $generatorJava.clusterCaches = function (caches, igfss, res) {
         res.needEmptyLine = true;
     }
 
-    if (igfss && igfss.length > 0) {
+    if (isSrvCfg && igfss && igfss.length > 0) {
         res.emptyLineIfNeeded();
 
         _.forEach(igfss, function (igfs) {
@@ -1478,13 +1505,23 @@ $generatorJava.clusterCacheUse = function (caches, igfss, res) {
         clusterCacheInvoke(res, cache, names);
     });
 
+    if (names.length > 0) {
+        res.line('// Set data caches.');
+        res.line('cfg.setCacheConfiguration(' + names.join(', ') + ');');
+
+        res.needEmptyLine = true;
+    }
+
+    var igfsNames = [];
+
     _.forEach(igfss, function (igfs) {
-        clusterCacheInvoke(res, $generatorCommon.igfsDataCache(igfs), names);
-        clusterCacheInvoke(res, $generatorCommon.igfsMetaCache(igfs), names);
+        clusterCacheInvoke(res, $generatorCommon.igfsDataCache(igfs), igfsNames);
+        clusterCacheInvoke(res, $generatorCommon.igfsMetaCache(igfs), igfsNames);
     });
 
-    if (names.length > 0) {
-        res.line('cfg.setCacheConfiguration(' + names.join(', ') + ');');
+    if (igfsNames.length > 0) {
+        res.line('// Set IGFS caches.');
+        res.line('cfg.setCacheConfiguration(' + igfsNames.join(', ') + ');');
 
         res.needEmptyLine = true;
     }
@@ -2009,12 +2046,17 @@ $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     $generatorJava.clusterTransactions(cluster, res);
 
-    if (!$commonUtils.isDefined(clientNearCfg))
+    var isSrvCfg = !$commonUtils.isDefined(clientNearCfg);
+
+    if (isSrvCfg)
         $generatorJava.clusterCacheUse(cluster.caches, cluster.igfss, res);
 
     $generatorJava.clusterSsl(cluster, res);
 
-    return $generatorJava.igfss(cluster.igfss, 'cfg', res);
+    if (isSrvCfg)
+        $generatorJava.igfss(cluster.igfss, 'cfg', res);
+
+    return res;
 };
 
 // Generate loading of secret properties file.
@@ -2049,56 +2091,52 @@ $generatorJava.tryLoadSecretProperties = function (cluster, res) {
 $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
     var res = $generatorCommon.builder();
 
+    var isSrvCfg = !$commonUtils.isDefined(clientNearCfg);
+
     if (cluster) {
         var resCfg = $generatorJava.clusterConfiguration(cluster, clientNearCfg, $generatorCommon.builder());
 
         res.mergeProps(resCfg);
 
-        if (javaClass) {
-            res.line('/**');
-            res.line(' * ' + $generatorCommon.mainComment());
-            res.line(' */');
-            res.startBlock('public class ' + javaClass + ' {');
-            res.line('/**');
-            res.line(' * Configure grid.');
-            res.line(' *');
-            res.line(' * @return Ignite configuration.');
-            res.line(' * @throws Exception If failed to construct Ignite configuration instance.');
-            res.line(' */');
-            res.startBlock('public static IgniteConfiguration createConfiguration() throws Exception {');
-        }
+        res.line('/**');
+        res.line(' * ' + $generatorCommon.mainComment());
+        res.line(' */');
+        res.startBlock('public class ' + javaClass + ' {');
+        res.line('/**');
+        res.line(' * Configure grid.');
+        res.line(' *');
+        res.line(' * @return Ignite configuration.');
+        res.line(' * @throws Exception If failed to construct Ignite configuration instance.');
+        res.line(' */');
+        res.startBlock('public static IgniteConfiguration createConfiguration() throws Exception {');
 
         $generatorJava.tryLoadSecretProperties(cluster, res);
 
         res.mergeLines(resCfg);
 
-        if (javaClass) {
-            res.needEmptyLine = true;
+        res.needEmptyLine = true;
 
-            res.line('return cfg;');
-            res.endBlock('}');
+        res.line('return cfg;');
+        res.endBlock('}');
 
-            res.needEmptyLine = true;
+        res.needEmptyLine = true;
 
-            $generatorJava.clusterMetadatas(cluster.caches, res);
+        $generatorJava.clusterMetadatas(cluster.caches, res);
 
-            $generatorJava.clusterCaches(cluster.caches, cluster.igfss, res);
+        $generatorJava.clusterCaches(cluster.caches, cluster.igfss, isSrvCfg, res);
 
-            res.needEmptyLine = true;
-        }
+        res.needEmptyLine = true;
 
         if (clientNearCfg) {
-            if (javaClass) {
-                res.line('/**');
-                res.line(' * Configure client near cache configuration.');
-                res.line(' *');
-                res.line(' * @return Near cache configuration.');
-                res.line(' * @throws Exception If failed to construct near cache configuration instance.');
-                res.line(' */');
-                res.startBlock('public static NearCacheConfiguration createNearCacheConfiguration() throws Exception {');
+            res.line('/**');
+            res.line(' * Configure client near cache configuration.');
+            res.line(' *');
+            res.line(' * @return Near cache configuration.');
+            res.line(' * @throws Exception If failed to construct near cache configuration instance.');
+            res.line(' */');
+            res.startBlock('public static NearCacheConfiguration createNearCacheConfiguration() throws Exception {');
 
-                $generatorJava.resetVariables(res);
-            }
+            $generatorJava.resetVariables(res);
 
             $generatorJava.declareVariable(res, 'clientNearCfg', 'org.apache.ignite.configuration.NearCacheConfiguration');
 
@@ -2111,19 +2149,15 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
             if (clientNearCfg.nearEvictionPolicy && clientNearCfg.nearEvictionPolicy.kind)
                 $generatorJava.evictionPolicy(res, 'clientNearCfg', clientNearCfg.nearEvictionPolicy, 'nearEvictionPolicy');
 
-            if (javaClass) {
-                res.line('return clientNearCfg;');
-                res.endBlock('}');
-            }
+            res.line('return clientNearCfg;');
+            res.endBlock('}');
 
             res.needEmptyLine = true;
         }
 
-        if (javaClass) {
-            res.endBlock('}');
+        res.endBlock('}');
 
-            return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.asString();
-        }
+        return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.asString();
     }
 
     return res.asString();

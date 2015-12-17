@@ -1115,6 +1115,7 @@ label {
 
 .labelHeader {
     font-weight: bold;
+    text-transform: capitalize;
 }
 
 .labelField {
@@ -1626,6 +1627,10 @@ a {
 .modal {
     .dw-loading.dw-loading-overlay {
         z-index: 9999;
+    }
+
+    .dw-loading-body {
+        left: 10%;
     }
 }
 

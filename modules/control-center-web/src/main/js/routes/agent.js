@@ -45,7 +45,7 @@ router.get('/download/zip', function (req, res) {
     var JSZip = require('jszip');
     var config = require('../helpers/configuration-loader.js');
 
-    var agentFld = 'ignite-web-agent-1.5.0-SNAPSHOT';
+    var agentFld = 'ignite-web-agent-1.5.0-b2-SNAPSHOT';
     var agentZip = agentFld + '.zip';
 
     // Read a zip file.
@@ -278,6 +278,20 @@ router.post('/cache/metadata', function (req, res) {
 router.post('/ping', function (req, res) {
     if (_client(req, res) != null)
         res.sendStatus(200);
+});
+
+/* Enable test-drive for sql. */
+router.post('/testdrive/sql', function (req, res) {
+    var client = _client(req, res);
+
+    if (client) {
+        client.enableTestDriveSQL(function (err, drivers) {
+            if (err)
+                return res.status(500).send(err);
+
+            res.sendStatus(200);
+        });
+    }
 });
 
 /* Get JDBC drivers list. */

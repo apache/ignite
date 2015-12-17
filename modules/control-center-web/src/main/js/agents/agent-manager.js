@@ -194,6 +194,14 @@ Client.prototype.availableDrivers = function(cb) {
     this._invokeRmtMethod('availableDrivers', arguments)
 };
 
+/**
+ * @param {Function} cb Callback. Take two arguments: {Object} exception, {Object} result.
+ * @return {Boolean} If test-drive SQL was enabled.
+ */
+Client.prototype.enableTestDriveSQL = function(cb) {
+    this._invokeRmtMethod('enableTestDriveSQL', arguments)
+};
+
 Client.prototype._invokeRmtMethod = function(methodName, args) {
     var cb = null;
 
