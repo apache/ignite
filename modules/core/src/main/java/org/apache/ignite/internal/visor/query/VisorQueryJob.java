@@ -41,8 +41,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.RMV_DELAY;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_COL_NAMES;
-import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_QRY_NAME;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_NEAR_CACHE;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_QRY_NAME;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SQL_QRY_NAME;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.fetchScanQueryRows;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.fetchSqlQueryRows;
