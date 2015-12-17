@@ -87,7 +87,7 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
 
                         res.line(beanId + '.jdbc.username=YOUR_USER_NAME');
                         res.line(beanId + '.jdbc.password=YOUR_PASSWORD');
-                        res.line();
+                        res.line('');
                     }
                 }
             }
