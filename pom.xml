@@ -829,7 +829,7 @@
 
                                         <echo message="Update ignite.version in cpp client" />
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(AC_INIT.+\[)\d.\d.\d.*?(\].+)" />
+                                            <regexp pattern="(AC_INIT.+\[)\d+\.\d+\.\d+.*?(\].+)" />
                                             <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/configure.ac" />
@@ -837,7 +837,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(define GG_VERSION_STR_WIN &quot;)\d.\d.\d(.\d)?(&quot;)" />
+                                            <regexp pattern="(define GG_VERSION_STR_WIN &quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;)" />
                                             <substitution expression="\1${new.client.version}\3" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/resource.h" />
@@ -845,7 +845,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-16">
-                                            <regexp pattern="(Version&quot;, &quot;)\d.\d.\d.\d(&quot;)" />
+                                            <regexp pattern="(Version&quot;, &quot;)\d+\.\d+\.\d+\.\d+(&quot;)" />
                                             <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/Resource.rc" />
