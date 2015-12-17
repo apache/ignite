@@ -18,6 +18,7 @@
 package org.apache.ignite.java8.examples;
 
 import org.apache.ignite.examples.java8.datagrid.CacheAffinityExample;
+import org.apache.ignite.examples.java8.datagrid.CacheEntryProcessorExample;
 import org.apache.ignite.examples.java8.datagrid.CacheApiExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
