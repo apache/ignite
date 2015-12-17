@@ -278,15 +278,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * Performs future mapping.
      */
     public void map() {
-        AffinityTopologyVersion topVer = null;
-
-        IgniteInternalTx tx = cctx.tm().anyActiveThreadTx(null);
-
-        if (tx != null && tx.topologyVersionSnapshot() != null)
-            topVer = tx.topologyVersionSnapshot();
-
-        if (topVer == null)
-            topVer = cctx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId());
+        AffinityTopologyVersion topVer = cctx.shared().lockedTopologyVersion(null);
 
         if (topVer == null)
             mapOnTopology();

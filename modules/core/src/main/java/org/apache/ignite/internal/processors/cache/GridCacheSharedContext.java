@@ -572,6 +572,26 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @param ignore Transaction to ignore.
+     * @return Not null topology version if current thread holds lock preventing topology change.
+     */
+    @Nullable public AffinityTopologyVersion lockedTopologyVersion(IgniteInternalTx ignore) {
+        long threadId = Thread.currentThread().getId();
+
+        IgniteInternalTx tx = txMgr.anyActiveThreadTx(threadId, ignore);
+
+        AffinityTopologyVersion topVer = null;
+
+        if (tx != null && tx.topologyVersionSnapshot() != null)
+            topVer = tx.topologyVersionSnapshot();
+
+        if (topVer == null)
+            topVer = mvccMgr.lastExplicitLockTopologyVersion(threadId);
+
+        return topVer;
+    }
+
+    /**
      * Nulling references to potentially leak-prone objects.
      */
     public void cleanup() {
