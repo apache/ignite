@@ -45,7 +45,7 @@ router.get('/download/zip', function (req, res) {
     var JSZip = require('jszip');
     var config = require('../helpers/configuration-loader.js');
 
-    var agentFld = 'ignite-web-agent-1.5.0-b2-SNAPSHOT';
+    var agentFld = 'ignite-web-agent-1.5.0-final-SNAPSHOT';
     var agentZip = agentFld + '.zip';
 
     // Read a zip file.
@@ -86,7 +86,7 @@ router.post('/topology', function (req, res) {
         client.ignite().cluster(false).then(function (clusters) {
             var caches = clusters.map(function (cluster) {
                 return Object.keys(cluster._caches).map(function (key) {
-                    return {name: key, mode: cluster._caches[key]}
+                    return {name: key, mode: cluster._caches[key]};
                 });
             });
 
