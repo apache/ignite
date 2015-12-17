@@ -1578,23 +1578,7 @@ public class GridCacheUtils {
     ) {
         return new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx e) {
-                return aff.isPrimary(n, e.key().value(e.context().cacheObjectContext(), false));
-            }
-        };
-    }
-
-    /**
-     * @param aff Affinity.
-     * @param n Node.
-     * @return Predicate that evaulates to {@code true} if entry is primary for node.
-     */
-    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cachePrimary0(
-        final Affinity<K> aff,
-        final ClusterNode n
-    ) {
-        return new IgnitePredicate<Cache.Entry<K, V>>() {
-            @Override public boolean apply(Cache.Entry<K, V> e) {
-                return aff.isPrimary(n, e.getKey());
+                return aff.isPrimary(n, e.key());
             }
         };
     }
