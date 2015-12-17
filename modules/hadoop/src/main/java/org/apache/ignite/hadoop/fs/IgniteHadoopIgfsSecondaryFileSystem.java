@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import static org.apache.ignite.internal.util.typedef.F.*;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
@@ -137,16 +138,10 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath,
         @Nullable String userName) throws IgniteCheckedException {
         // Treat empty uri and userName arguments as nulls to improve configuration usability:
-        if (F.isEmpty(uri))
-            uri = null;
+        uri = nullifyEmpty(uri);
+        cfgPath = nullifyEmpty(cfgPath);
 
-        if (F.isEmpty(cfgPath))
-            cfgPath = null;
-
-        if (F.isEmpty(userName))
-            userName = null;
-
-        this.dfltUserName = IgfsUtils.fixUserName(userName);
+        this.dfltUserName = IgfsUtils.fixUserName(nullifyEmpty(userName));
 
         try {
             this.secProvider = new SecondaryFileSystemProvider(uri, cfgPath);
@@ -161,10 +156,46 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
         assert dfltFs != null;
 
-        uri = secProvider.uri().toString();
+        setProperties();
+    }
+
+    /**
+     * Constructor that accepts an arbitrary SecondaryFileSystemProvider instance.
+     *
+     * @param userName The user name.
+     * @param provider The provider.
+     * @throws IgniteCheckedException On error.
+     */
+    public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String userName,
+            SecondaryFileSystemProvider provider) throws IgniteCheckedException {
+        this.dfltUserName = IgfsUtils.fixUserName(nullifyEmpty(userName));
+
+        this.secProvider = provider;
+
+        try {
+            // File system creation for the default user name.
+            // The value is *not* stored in the 'fileSysLazyMap' cache, but saved in field:
+            this.dfltFs = secProvider.createFileSystem(dfltUserName);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
+
+        assert dfltFs != null;
+
+        setProperties();
+    }
+
+    /**
+     * Sets the file system properties.
+     */
+    private void setProperties() {
+        String uri = secProvider.uri().toString();
 
         if (!uri.endsWith("/"))
             uri += "/";
+
+        String cfgPath = secProvider.configurationPath();
 
         if (cfgPath != null)
             props.put(SECONDARY_FS_CONFIG_PATH, cfgPath);

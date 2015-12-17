@@ -30,6 +30,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.internal.processors.hadoop.fs.HadoopFileSystemsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
+import static org.apache.ignite.internal.util.typedef.F.*;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,10 +39,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public class SecondaryFileSystemProvider {
     /** Configuration of the secondary filesystem, never null. */
-    private final Configuration cfg = HadoopUtils.safeCreateConfiguration();
+    protected final Configuration cfg = HadoopUtils.safeCreateConfiguration();
 
     /** The secondary filesystem URI, never null. */
-    private final URI uri;
+    protected final URI uri;
+
+    /** Configuration file path. */
+    @Nullable protected final String confPath;
 
     /**
      * Creates new provider with given config parameters. The configuration URL is optional. The filesystem URI must be
@@ -53,15 +57,17 @@ public class SecondaryFileSystemProvider {
      * See {@link IgniteUtils#resolveIgniteUrl(String)} on how the path resolved.
      * @throws IOException
      */
-    public SecondaryFileSystemProvider(final @Nullable String secUri,
-        final @Nullable String secConfPath) throws IOException {
-        if (secConfPath != null) {
-            URL url = U.resolveIgniteUrl(secConfPath);
+    public SecondaryFileSystemProvider(@Nullable String secUri, @Nullable String secConfPath) throws IOException {
+        secUri = nullifyEmpty(secUri);
+        confPath = nullifyEmpty(secConfPath);
+
+        if (confPath != null) {
+            URL url = U.resolveIgniteUrl(confPath);
 
             if (url == null) {
                 // If secConfPath is given, it should be resolvable:
                 throw new IllegalArgumentException("Failed to resolve secondary file system configuration path " +
-                    "(ensure that it exists locally and you have read access to it): " + secConfPath);
+                    "(ensure that it exists locally and you have read access to it): " + confPath);
             }
 
             cfg.addResource(url);
@@ -90,7 +96,7 @@ public class SecondaryFileSystemProvider {
      * @throws IOException
      */
     public FileSystem createFileSystem(String userName) throws IOException {
-        userName = IgfsUtils.fixUserName(userName);
+        userName = IgfsUtils.fixUserName(nullifyEmpty(userName));
 
         final FileSystem fileSys;
 
@@ -135,5 +141,12 @@ public class SecondaryFileSystemProvider {
      */
     public URI uri() {
         return uri;
+    }
+
+    /**
+     * @return The configuration path, if any.
+     */
+    @Nullable public String configurationPath() {
+        return confPath;
     }
 }

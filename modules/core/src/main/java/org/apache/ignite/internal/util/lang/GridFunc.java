@@ -2290,6 +2290,18 @@ public class GridFunc {
     }
 
     /**
+     * Nullifies the String.
+     * @param x The argument.
+     * @return Nullified argument.
+     */
+    public static String nullifyEmpty(String x) {
+        if (isEmpty(x))
+            return null;
+
+        return x;
+    }
+
+    /**
      * Utility map getter. This method analogous to {@link #addIfAbsent(Map, Object, Callable)}
      * method but this one doesn't put the default value into the map when key is not found.
      *
