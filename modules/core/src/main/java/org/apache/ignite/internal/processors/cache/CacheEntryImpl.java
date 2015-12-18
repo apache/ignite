@@ -81,10 +81,10 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V>, Externalizable {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
-        if(cls.isAssignableFrom(getClass()))
+        if (cls.isAssignableFrom(getClass()))
             return cls.cast(this);
 
-        if (ver != null && cls.isAssignableFrom(CacheEntry.class))
+        if (cls.isAssignableFrom(CacheEntry.class))
             return (T)new CacheEntryImplEx<>(key, val, ver);
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
