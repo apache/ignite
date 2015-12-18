@@ -17,7 +17,7 @@
 
 /**
  * @file
- * Declares binary writer class.
+ * Declares ignite::binary::BinaryWriter class.
  */
 
 #ifndef _IGNITE_BINARY_WRITER

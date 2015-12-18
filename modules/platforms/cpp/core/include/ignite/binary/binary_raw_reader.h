@@ -17,7 +17,7 @@
 
 /**
  * @file
- * Declares binary raw reader class.
+ * Declares ignite::binary::BinaryRawReader class.
  */
 
 #ifndef _IGNITE_BINARY_RAW_READER

@@ -17,7 +17,7 @@
 
 /**
  * @file
- * Declares binary reader class.
+ * Declares ignite::binary::BinaryReader class.
  */
 
 #ifndef _IGNITE_BINARY_READER

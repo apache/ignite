@@ -17,8 +17,8 @@
 
 /**
  * @file
- * Declares binary type class and helping macros to declare binary type
- * specialisation for user types.
+ * Declares ignite::binary::BinaryType class template and helping macros
+ * to declare binary type specialisation for user types.
  */
 
 #ifndef _IGNITE_BINARY_TYPE
