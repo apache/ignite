@@ -97,7 +97,7 @@ public abstract class AbstractSchemaImportTest extends TestCase {
             " tsCol TIMESTAMP," +
             " arrCol BINARY(10))");
 
-        stmt.executeUpdate("CREATE SCHEMA TESTSCHEMA");
+        stmt.executeUpdate("CREATE SCHEMA IF NOT EXISTS TESTSCHEMA");
 
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS TESTSCHEMA.TST(pk INTEGER PRIMARY KEY, " +
             " boolCol BOOLEAN NOT NULL," +
