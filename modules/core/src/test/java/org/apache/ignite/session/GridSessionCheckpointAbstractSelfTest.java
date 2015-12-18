@@ -36,6 +36,7 @@ import org.apache.ignite.compute.ComputeTaskSessionScope;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.TaskSessionResource;
@@ -55,7 +56,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
     private static final int SPLIT_COUNT = 5;
 
     /** */
-    private static CountDownLatch taskLatch;
+    private static volatile CountDownLatch taskLatch;
 
     /** */
     protected GridSessionCheckpointAbstractSelfTest() {
