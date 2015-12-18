@@ -36,30 +36,10 @@ export default [
     $scope.panelExpanded = $common.panelExpanded;
     $scope.tableVisibleRow = $table.tableVisibleRow;
     $scope.joinTip = $common.joinTip;
-    $scope.getModel = $common.getModel;
     $scope.widthIsSufficient = $common.widthIsSufficient;
-
-    $scope.evictionPolicies = [
-        {value: 'LRU', label: 'LRU'},
-        {value: 'FIFO', label: 'FIFO'},
-        {value: 'SORTED', label: 'Sorted'},
-        {value: undefined, label: 'Not set'}
-    ];
 
     $scope.tabsServer = { activeTab: 0 };
     $scope.tabsClient = { activeTab: 0 };
-
-    $scope.backupItem = {javaClassClient: 1};
-
-    $http.get('/models/summary.json')
-        .success(function (data) {
-            $scope.screenTip = data.screenTip;
-            $scope.moreInfo = data.moreInfo;
-            $scope.clientFields = data.clientFields;
-        })
-        .error(function (errMsg) {
-            $common.showError(errMsg);
-        });
 
     $scope.selectItem = (cluster) => {
         delete ctrl.cluster;

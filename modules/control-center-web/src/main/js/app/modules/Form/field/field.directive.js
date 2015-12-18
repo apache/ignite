@@ -15,20 +15,23 @@
  * limitations under the License.
  */
 
-const template = `
-	<div>
-		<label class='col-xs-4 col-sm-4 col-md-3'>{{::label}}:</label>
-		<div class='col-xs-4 col-sm-4 col-md-3'ng-transclude=''></div>
-	</div>
-`;
+import link from './field.link';
+import template from './field.jade!';
 
 export default ['igniteFormField', [() => {
+	
+	let controller = () => {}
+
 	return {
 		restrict: 'E',
-		scope: {
+		scope: { },
+		bindToController: {
+			for: '@',
 			label: '@'
 		},
 		template,
+		controller,
+		controllerAs: 'field',
 		replace: true,
 		transclude: true,
 		require: '^form'

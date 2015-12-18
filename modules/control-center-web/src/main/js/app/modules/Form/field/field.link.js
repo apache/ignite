@@ -15,31 +15,7 @@
  * limitations under the License.
  */
 
-import template from './number.jade!';
+export default function($scope, $element, $attrs, $ctrls) {
 
-export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', guid => {
-	let link = (scope, el, attrs, [form, label]) => {
-		let {id, name} = scope; 
-		let field = form[name];
-
-		console.log('label', label);
-
-		scope.field = field;
-		label.for = scope.id = id || guid();
-	}
-
-	return {
-		restrict: 'E',
-		scope: {
-			id: '@',
-			name: '@',
-			placeholder: '@',
-			ngModel: '='
-		},
-		link,
-		template,
-		replace: true,
-		transclude: true,
-		require: ['^form', '?^igniteFormField']
-	};
-}]];
+    
+};

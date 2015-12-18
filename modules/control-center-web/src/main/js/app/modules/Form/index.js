@@ -16,6 +16,7 @@
  */
 
 import igniteFormField from './field/field.directive';
+import igniteFormFieldDropdown from './field/dropdown.directive';
 import igniteFormFieldInputNumber from './field/input/number.directive';
 
 angular
@@ -23,4 +24,13 @@ angular
 
 ])
 .directive(...igniteFormField)
+.directive(...igniteFormFieldDropdown)
 .directive(...igniteFormFieldInputNumber)
+.factory('IgniteFormGUID', [() => {
+
+	let guid = 0;
+
+	return () => {
+		return `form-field-${guid++}`;
+	}
+}])

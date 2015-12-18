@@ -19,6 +19,9 @@ include ../includes/controls
 mixin hard-link(ref, txt)
     a(style='color:#ec1c24' href=ref target='_blank') #{txt}
 
+mixin ignite-form-field-tooltip(message)
+    i.tipField.fa.fa-question-circle(bs-tooltip='"#{message}"')
+
 .docs-header
     h1 Configurations Summary
 .docs-body
@@ -59,7 +62,7 @@ mixin hard-link(ref, txt)
                     hr
 
                 .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
-                    //- .panel.panel-default
+                    .panel.panel-default
                         .panel-heading(role='tab' bs-collapse-toggle)
                             i.fa(ng-class='panelExpanded(panels, "server") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
                             label Server
@@ -81,54 +84,71 @@ mixin hard-link(ref, txt)
                             label Client
 
                         .panel-collapse(id='client' role='tabpanel' bs-collapse-target)
-                            form(name='clientForm').details-row
-                                ignite-form-field(data-label='Near cache start size')
-                                    +tip("Initial cache size for near cache which will be used to pre-create internal hash table after start")
-                                    ignite-form-field-input-number(
-                                        ng-model='backupItem.nearConfiguration'
-                                    )
-                                        
+                            form(name='clientForm')
+                                .details-row
+                                    ignite-form-field(data-label='Near cache start size')
+                                        +ignite-form-field-tooltip("Initial cache size for near cache which will be used to pre-create internal hash table after start")
+                                        ignite-form-field-input-number(
+                                            data-name='nearStartSize'
+                                            data-ng-model='ctrl.cluster.cfg.nearStartSize'
+                                            data-placeholder='375000'
+                                        )
 
+                                .details-row
+                                    ignite-form-field(data-label='Near cache eviction policy')
+                                        +ignite-form-field-tooltip("Cache expiration policy")
+                                        ignite-form-field-dropdown(
+                                            data-name='evictionPolicies'
+                                            data-options="[\
+                                                {value: 'LRU', label: 'LRU'},\
+                                                {value: 'FIFO', label: 'FIFO'},\
+                                                {value: 'SORTED', label: 'Sorted'},\
+                                                {value: undefined, label: 'Not set'}\
+                                            ]"
+                                            data-ng-model='ctrl.cluster.cfg.nearEvictionPolicy.kind'
+                                        )
+                                    span(ng-if='ctrl.cluster.cfg.nearEvictionPolicy.kind')
+                                        a.customize(
+                                            ng-show='ctrl.__form.expanded' 
+                                            ng-click='ctrl.__form.expanded = false'
+                                        ) Hide settings
+                                        a.customize(
+                                            ng-hide='ctrl.__form.expanded' 
+                                            ng-click='ctrl.__form.expanded = true'
+                                        ) Show settings
 
+                                .details-row
+                                    .col-sm-12.panel-details(ng-if='ctrl.__form.expanded && ctrl.cluster.cfg.nearEvictionPolicy.kind')
+                                        .details-row
+                                            ignite-form-field(data-label='Batch size')
+                                                +ignite-form-field-tooltip("Number of entries to remove on shrink")
+                                                ignite-form-field-input-number(
+                                                    data-name='batchSize'
+                                                    data-ng-model='ctrl.cluster.cfg.nearEvictionPolicy[ctrl.cluster.cfg.nearEvictionPolicy.kind].batchSize'
+                                                    data-placeholder='1'
+                                                )           
+                                        .details-row
+                                            ignite-form-field(data-label='Max memory size')
+                                                +ignite-form-field-tooltip("Maximum allowed cache size in bytes")
+                                                ignite-form-field-input-number(
+                                                    data-name='maxMemorySize'
+                                                    data-ng-model='ctrl.cluster.cfg.nearEvictionPolicy[ctrl.cluster.cfg.nearEvictionPolicy.kind].maxMemorySize'
+                                                    data-placeholder='0'
+                                                )
+                                        .details-row
+                                            ignite-form-field(data-label='Max size')
+                                                +ignite-form-field-tooltip("Maximum allowed size of cache before entry will start getting evicted")
+                                                ignite-form-field-input-number(
+                                                    data-name='maxSize'
+                                                    data-ng-model='ctrl.cluster.cfg.nearEvictionPolicy[ctrl.cluster.cfg.nearEvictionPolicy.kind].maxSize'
+                                                    data-placeholder='100000'
+                                                )
 
-
-
-
-                                div
-                                    label.col-xs-4.col-sm-4.col-md-3(for='nearStartSize')
-                                        | Near cache start size:
-                                    div.col-xs-4.col-sm-4.col-md-3
-                                        +tip("Initial cache size for near cache which will be used to pre-create internal hash table after start")
-                                        .input-tip
-                                            input.form-control(
-                                                id='nearStartSize' 
-                                                name='nearStartSize' 
-                                                type='number' 
-                                                placeholder='375000' 
-                                                min='0' 
-                                                max='Number.MAX_VALUE' 
-                                                ng-model='backupItem.nearConfiguration'
-                                            )
-
-                                            i.fa.fa-exclamation-triangle.form-control-feedback(
-                                                ng-show='clientForm.nearStartSize.$error.min' 
-                                                bs-tooltip='"Value is less than allowable minimum."'
-                                            )
-                                            i.fa.fa-exclamation-triangle.form-control-feedback(
-                                                ng-show='clientForm.nearStartSize.$error.max' 
-                                                bs-tooltip='"Value is more than allowable maximum."'
-                                            )
-                                            i.fa.fa-exclamation-triangle.form-control-feedback(
-                                                ng-show='clientForm.nearStartSize.$error.number' 
-                                                bs-tooltip='"Invalid value. Only numbers allowed."'
-                                            )
-
-                                //- +form-row-custom(['col-xs-4 col-sm-4 col-md-3'], ['col-xs-4 col-sm-4 col-md-3'], 'backupItem')
                             .summary-tabs(bs-tabs data-bs-active-pane="tabsClient.activeTab" template='configuration/summary-tabs.html')
                                 div(bs-pane title='XML')
-                                    ignite-ui-ace-xml(data-cluster='cluster' data-cluster-cfg='backupItem.nearConfiguration')
+                                    ignite-ui-ace-xml(data-cluster='cluster' data-cluster-cfg='ctrl.cluster.cfg')
                                 div(bs-pane title='Java')
-                                    ignite-ui-ace-java(data-cluster='cluster' data-cluster-cfg='backupItem.nearConfiguration')
+                                    ignite-ui-ace-java(data-cluster='cluster' data-cluster-cfg='ctrl.cluster.cfg')
                                 div(bs-pane title='POM')
                                     ignite-ui-ace-pom(data-cluster='cluster')
                                 div(bs-pane title='POJO' ng-show='cluster | hasPojo')
