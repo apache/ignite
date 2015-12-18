@@ -134,7 +134,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     else if (!CassandraHelper.isPreparedStatementClusterError(e))
                         throw new IgniteException(errorMsg, e);
 
-                    if (!CassandraHelper.isPreparedStatementClusterError(e))
+                    if (log != null && !CassandraHelper.isPreparedStatementClusterError(e))
                         log.warning(errorMsg, e);
 
                     error = e;
@@ -221,7 +221,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 if (!tblAbsenceErrorFlag && !hostsAvailabilityErrorFlag && !prepStatementErrorFlag)
                     throw new IgniteException(errorMsg, error);
 
-                if (!CassandraHelper.isPreparedStatementClusterError(error))
+                if (log != null && !CassandraHelper.isPreparedStatementClusterError(error))
                     log.warning(errorMsg, error);
 
                 // if there are only table absence errors and it is not required for the operation we can return
@@ -248,7 +248,8 @@ public class CassandraSessionImpl implements CassandraSession {
         if (assistant.processedCount() == 0)
             throw new IgniteException(errorMsg, error);
 
-        log.warning(errorMsg, error);
+        if (log != null)
+            log.warning(errorMsg, error);
 
         return assistant.processedData();
     }
@@ -280,7 +281,8 @@ public class CassandraSessionImpl implements CassandraSession {
                     if (!CassandraHelper.isTableAbsenceError(e) && !CassandraHelper.isHostsAvailabilityError(e))
                         throw new IgniteException(errorMsg, e);
 
-                    log.warning(errorMsg, e);
+                    if (log != null)
+                        log.warning(errorMsg, e);
 
                     if (CassandraHelper.isTableAbsenceError(e))
                         return;

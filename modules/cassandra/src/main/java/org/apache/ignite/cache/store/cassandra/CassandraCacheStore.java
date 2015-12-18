@@ -99,19 +99,19 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         try {
             pool = Executors.newFixedThreadPool(maxPoolSize);
 
+            CassandraSession ses = getCassandraSession();
+
             for (Object obj : args) {
                 if (obj == null || !(obj instanceof String) || !((String)obj).trim().toLowerCase().startsWith("select"))
                     continue;
 
-                // TODO IGNITE-1371: Could we move getCassandraSession() to variable out of for-loop ?
-                futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(getCassandraSession(), (String) obj,
-                        controller, log, clo)));
+                futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(ses, (String) obj, controller, log, clo)));
             }
 
             for (Future<?> fut : futs)
                 U.get(fut);
 
-            if (log.isDebugEnabled() && storeSes != null)
+            if (log != null && log.isDebugEnabled() && storeSes != null)
                 log.debug("Cache loaded from db: " + storeSes.cacheName());
         }
         catch (IgniteCheckedException e) {
@@ -385,12 +385,12 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
      */
     private CassandraSession getCassandraSession() {
         if (storeSes == null || storeSes.transaction() == null)
-            return dataSrc.session(log);
+            return dataSrc.session(log != null ? log : new NullLogger());
 
         CassandraSession ses = (CassandraSession) storeSes.properties().get(ATTR_CONN_PROP);
 
         if (ses == null) {
-            ses = dataSrc.session(log);
+            ses = dataSrc.session(log != null ? log : new NullLogger());
             storeSes.properties().put(ATTR_CONN_PROP, ses);
         }
 
