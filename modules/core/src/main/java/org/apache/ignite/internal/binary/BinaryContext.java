@@ -212,7 +212,7 @@ public class BinaryContext implements Externalizable {
         registerPredefinedType(LinkedHashMap.class, 0);
 
         // Classes with overriden default serialization flag.
-        registerPredefinedType(AffinityKey.class, 0);
+        registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class));
 
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
@@ -761,6 +761,15 @@ public class BinaryContext implements Externalizable {
      * @return GridBinaryClassDescriptor.
      */
     public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id) {
+        return registerPredefinedType(cls, id, null);
+    }
+
+    /**
+     * @param cls Class.
+     * @param id Type ID.
+     * @return GridBinaryClassDescriptor.
+     */
+    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName) {
         String typeName = typeName(cls.getName());
 
         if (id == 0)
@@ -772,7 +781,7 @@ public class BinaryContext implements Externalizable {
             false,
             id,
             typeName,
-            null,
+            affFieldName,
             BinaryInternalIdMapper.defaultInstance(),
             new BinaryReflectiveSerializer(),
             false,
@@ -783,6 +792,9 @@ public class BinaryContext implements Externalizable {
         predefinedTypes.put(id, desc);
 
         descByCls.put(cls, desc);
+
+        if (affFieldName != null)
+            affKeyFieldNames.putIfAbsent(id, affFieldName);
 
         return desc;
     }
