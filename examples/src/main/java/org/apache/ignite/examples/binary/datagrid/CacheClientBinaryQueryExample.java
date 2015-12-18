@@ -34,11 +34,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.model.binary.Address;
-import org.apache.ignite.examples.model.binary.Employee;
-import org.apache.ignite.examples.model.binary.EmployeeKey;
-import org.apache.ignite.examples.model.binary.Organization;
-import org.apache.ignite.examples.model.binary.OrganizationType;
+import org.apache.ignite.examples.model.Address;
+import org.apache.ignite.examples.model.Employee;
+import org.apache.ignite.examples.model.EmployeeKey;
+import org.apache.ignite.examples.model.Organization;
+import org.apache.ignite.examples.model.OrganizationType;
 import org.apache.ignite.binary.BinaryObject;
 
 /**

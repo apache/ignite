@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.model.binary;
+package org.apache.ignite.examples.model;
 
 /**
  * Organization type enum.
