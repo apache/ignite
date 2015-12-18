@@ -30,16 +30,20 @@ import org.springframework.core.io.Resource;
  * Helper class utilized by unit tests to get appropriate instance of {@link CacheStore}
  */
 public class CacheStoreHelper {
+    /** */
     private static final Logger LOGGER = Logger.getLogger(CacheStoreHelper.class.getName());
 
+    /** */
     public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings, DataSource conn) {
         return createCacheStore(cacheName, persistenceSettings, conn, LOGGER);
     }
 
-    public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings,
-        DataSource conn, Logger log) {
+    /** */
+    public static CacheStore createCacheStore(String cacheName, Resource persistenceSettings, DataSource conn,
+        Logger log) {
         CassandraCacheStore<Integer, Integer> cacheStore =
-            new CassandraCacheStore<>(conn, new KeyValuePersistenceSettings(persistenceSettings));
+            new CassandraCacheStore<>(conn, new KeyValuePersistenceSettings(persistenceSettings),
+                Runtime.getRuntime().availableProcessors());
 
         try {
             Field sesField = CassandraCacheStore.class.getDeclaredField("storeSession");

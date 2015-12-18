@@ -54,8 +54,9 @@ public class KeyPersistenceSettings extends PersistenceSettings {
         if (!PersistenceStrategy.POJO.equals(getStrategy()))
             return;
 
-        Element partKeysNode = el.getElementsByTagName(PARTITION_KEY_ELEMENT) != null ?
-            (Element)el.getElementsByTagName(PARTITION_KEY_ELEMENT).item(0) : null;
+        NodeList keyElem = el.getElementsByTagName(PARTITION_KEY_ELEMENT);
+
+        Element partKeysNode = keyElem != null ? (Element) keyElem.item(0) : null;
 
         Element clusterKeysNode = el.getElementsByTagName(CLUSTER_KEY_ELEMENT) != null ?
             (Element)el.getElementsByTagName(CLUSTER_KEY_ELEMENT).item(0) : null;
@@ -207,6 +208,7 @@ public class KeyPersistenceSettings extends PersistenceSettings {
         }
 
         NodeList nodes = el.getElementsByTagName(FIELD_ELEMENT);
+
         int cnt = nodes == null ? 0 : nodes.getLength();
 
         if (cnt == 0) {

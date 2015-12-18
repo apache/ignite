@@ -68,6 +68,9 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     /** Cassandra data source. */
     private DataSource dataSrc;
 
+    /** Max workers thread count. These threads are responsible for load cache. */
+    private int maxPoolSize = Runtime.getRuntime().availableProcessors();
+
     /** Controller component responsible for serialization logic. */
     private PersistenceController controller;
 
@@ -76,10 +79,12 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
      *
      * @param dataSrc Data source.
      * @param settings Persistence settings for Ignite key and value objects.
+     * @param maxPoolSize Max workers thread count.
      */
-    public CassandraCacheStore(DataSource dataSrc, KeyValuePersistenceSettings settings) {
+    public CassandraCacheStore(DataSource dataSrc, KeyValuePersistenceSettings settings, int maxPoolSize) {
         this.dataSrc = dataSrc;
         this.controller = new PersistenceController(settings);
+        this.maxPoolSize = maxPoolSize;
     }
 
     /** {@inheritDoc} */
@@ -92,12 +97,13 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         Collection<Future<?>> futs = new ArrayList<>(args.length);
 
         try {
-            pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            pool = Executors.newFixedThreadPool(maxPoolSize);
 
             for (Object obj : args) {
                 if (obj == null || !(obj instanceof String) || !((String)obj).trim().toLowerCase().startsWith("select"))
                     continue;
 
+                // TODO IGNITE-1371: Could we move getCassandraSession() to variable out of for-loop ?
                 futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(getCassandraSession(), (String) obj,
                         controller, log, clo)));
             }
@@ -105,7 +111,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             for (Future<?> fut : futs)
                 U.get(fut);
 
-            if (log != null && log.isDebugEnabled() && storeSes != null)
+            if (log.isDebugEnabled() && storeSes != null)
                 log.debug("Cache loaded from db: " + storeSes.cacheName());
         }
         catch (IgniteCheckedException e) {
@@ -125,13 +131,8 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             return;
 
         CassandraSession cassandraSes = (CassandraSession) storeSes.properties().remove(ATTR_CONN_PROP);
-        if (cassandraSes != null) {
-            try {
-                cassandraSes.close();
-            }
-            catch (Throwable ignored) {
-            }
-        }
+
+        U.closeQuiet(cassandraSes);
     }
 
     /** {@inheritDoc} */
@@ -186,26 +187,32 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             return ses.execute(new GenericBatchExecutionAssistant<Map<K, V>, K>() {
                 private Map<K, V> data = new HashMap<>();
 
+                /** {@inheritDoc} */
                 @Override public String getStatement() {
                     return controller.getLoadStatement(true);
                 }
 
+                /** {@inheritDoc} */
                 @Override  public BoundStatement bindStatement(PreparedStatement statement, K key) {
                     return controller.bindKey(statement, key);
                 }
 
+                /** {@inheritDoc} */
                 @Override public KeyValuePersistenceSettings getPersistenceSettings() {
                     return controller.getPersistenceSettings();
                 }
 
+                /** {@inheritDoc} */
                 @Override public String operationName() {
                     return "BULK_READ";
                 }
 
+                /** {@inheritDoc} */
                 @Override public Map<K, V> processedData() {
                     return data;
                 }
 
+                /** {@inheritDoc} */
                 @Override protected void process(Row row) {
                     data.put((K)controller.buildKeyObject(row), (V)controller.buildValueObject(row));
                 }
@@ -264,23 +271,28 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
 
         try {
             ses.execute(new GenericBatchExecutionAssistant<Void, Cache.Entry<? extends K, ? extends V>>() {
+                /** {@inheritDoc} */
                 @Override public String getStatement() {
                     return controller.getWriteStatement();
                 }
 
+                /** {@inheritDoc} */
                 @Override public BoundStatement bindStatement(PreparedStatement statement,
                     Cache.Entry<? extends K, ? extends V> entry) {
                     return controller.bindKeyValue(statement, entry.getKey(), entry.getValue());
                 }
 
+                /** {@inheritDoc} */
                 @Override public KeyValuePersistenceSettings getPersistenceSettings() {
                     return controller.getPersistenceSettings();
                 }
 
+                /** {@inheritDoc} */
                 @Override public String operationName() {
                     return "BULK_WRITE";
                 }
 
+                /** {@inheritDoc} */
                 @Override public boolean tableExistenceRequired() {
                     return true;
                 }
@@ -340,14 +352,17 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
 
         try {
             ses.execute(new GenericBatchExecutionAssistant<Void, Object>() {
+                /** {@inheritDoc} */
                 @Override public String getStatement() {
                     return controller.getDeleteStatement();
                 }
 
+                /** {@inheritDoc} */
                 @Override public BoundStatement bindStatement(PreparedStatement statement, Object key) {
                     return controller.bindKey(statement, key);
                 }
 
+                /** {@inheritDoc} */
                 @Override public KeyValuePersistenceSettings getPersistenceSettings() {
                     return controller.getPersistenceSettings();
                 }
@@ -370,12 +385,12 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
      */
     private CassandraSession getCassandraSession() {
         if (storeSes == null || storeSes.transaction() == null)
-            return dataSrc.session(log != null ? log : new NullLogger());
+            return dataSrc.session(log);
 
         CassandraSession ses = (CassandraSession) storeSes.properties().get(ATTR_CONN_PROP);
 
         if (ses == null) {
-            ses = dataSrc.session(log != null ? log : new NullLogger());
+            ses = dataSrc.session(log);
             storeSes.properties().put(ATTR_CONN_PROP, ses);
         }
 
@@ -388,12 +403,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
      * @param ses Cassandra session wrapper.
      */
     private void closeCassandraSession(CassandraSession ses) {
-        if (ses != null && (storeSes == null || storeSes.transaction() == null)) {
-            try {
-                ses.close();
-            }
-            catch (Throwable ignored) {
-            }
-        }
+        if (ses != null && (storeSes == null || storeSes.transaction() == null))
+            U.closeQuiet(ses);
     }
 }

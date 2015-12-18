@@ -30,10 +30,11 @@ import org.apache.log4j.Logger;
  * Basic load test driver to be inherited by specific implementation for particular use-case
  */
 public abstract class LoadTestDriver {
-    public void runTest(String testName, Class<? extends Worker> clazz, String loggerName) {
+    /** */
+    public void runTest(String testName, Class<? extends Worker> clazz, String logName) {
         logger().info("Running " + testName + " test");
 
-        Object config = setup(loggerName);
+        Object cfg = setup(logName);
 
         try {
 
@@ -43,7 +44,7 @@ public abstract class LoadTestDriver {
             logger().info("Starting workers");
 
             for (int i = 0; i < TestsHelper.getLoadTestsThreadsCount(); i++) {
-                Worker worker = createWorker(clazz, config, startPosition, startPosition + 10000000);
+                Worker worker = createWorker(clazz, cfg, startPosition, startPosition + 10000000);
                 workers.add(worker);
                 worker.setName(testName + "-worker-" + i);
                 worker.start();
@@ -74,23 +75,29 @@ public abstract class LoadTestDriver {
             printTestResultsStatistics(testName, workers);
         }
         finally {
-            tearDown(config);
+            tearDown(cfg);
         }
     }
 
+    /** */
     protected abstract Logger logger();
 
-    protected abstract Object setup(String loggerName);
+    /** */
+    protected abstract Object setup(String logName);
 
+    /** */
     protected void tearDown(Object obj) {
     }
 
+    /** */
     @SuppressWarnings("unchecked")
-    private Worker createWorker(Class clazz, Object config, int startPosition, int endPosition) {
+    private Worker createWorker(Class clazz, Object cfg, int startPosition, int endPosition) {
         try {
-            Class configClass = config instanceof Ignite ? Ignite.class : CacheStore.class;
-            Constructor constr = clazz.getConstructor(configClass, int.class, int.class);
-            return (Worker)constr.newInstance(config, startPosition, endPosition);
+            Class cfgCls = cfg instanceof Ignite ? Ignite.class : CacheStore.class;
+
+            Constructor ctor = clazz.getConstructor(cfgCls, int.class, int.class);
+
+            return (Worker)ctor.newInstance(cfg, startPosition, endPosition);
         }
         catch (Throwable e) {
             logger().error("Failed to instantiate worker of class '" + clazz.getName() + "'", e);
@@ -98,6 +105,7 @@ public abstract class LoadTestDriver {
         }
     }
 
+    /** */
     private void printTestResultsHeader(String testName, List<String> failedWorkers) {
         if (failedWorkers.isEmpty()) {
             logger().info(testName + " test execution successfully completed.");
@@ -122,13 +130,14 @@ public abstract class LoadTestDriver {
             TestsHelper.getLoadTestsThreadsCount() + " workers failed. Failed workers: " + strFailedWorkers);
     }
 
+    /** */
     @SuppressWarnings("StringBufferReplaceableByString")
     private void printTestResultsStatistics(String testName, List<Worker> workers) {
-        int count = 0;
+        int cnt = 0;
         int speed = 0;
 
         for (Worker worker : workers) {
-            count += worker.getMsgCountTotal();
+            cnt += worker.getMsgCountTotal();
             speed += worker.getSpeed();
         }
 
@@ -137,7 +146,7 @@ public abstract class LoadTestDriver {
         builder.append("-------------------------------------------------");
         builder.append(SystemHelper.LINE_SEPARATOR);
         builder.append(testName).append(" test statistics").append(SystemHelper.LINE_SEPARATOR);
-        builder.append("Messages: ").append(count).append(SystemHelper.LINE_SEPARATOR);
+        builder.append("Messages: ").append(cnt).append(SystemHelper.LINE_SEPARATOR);
         builder.append("Speed: ").append(speed).append(" msg/sec").append(SystemHelper.LINE_SEPARATOR);
         builder.append("-------------------------------------------------");
 

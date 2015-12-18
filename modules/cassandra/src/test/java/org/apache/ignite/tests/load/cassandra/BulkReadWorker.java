@@ -29,22 +29,28 @@ import org.apache.ignite.tests.utils.TestsHelper;
  * Cassandra direct load tests worker for bulk read operation CacheStore.load
  */
 public class BulkReadWorker extends Worker {
+    /** */
     public static final String LOGGER_NAME = "CassandraBulkReadLoadTest";
 
+    /** */
     private List<Object> keys = new ArrayList<>(TestsHelper.getBulkOperationSize());
 
+    /** */
     public BulkReadWorker(CacheStore cacheStore, int startPosition, int endPosition) {
         super(cacheStore, startPosition, endPosition);
     }
 
+    /** {@inheritDoc} */
     @Override protected String loggerName() {
         return LOGGER_NAME;
     }
 
+    /** {@inheritDoc} */
     @Override protected boolean batchMode() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void process(CacheStore cacheStore, Collection<CacheEntryImpl> entries) {
         keys.clear();

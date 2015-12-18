@@ -33,8 +33,14 @@ import org.apache.log4j.Logger;
  * to store cache data into Cassandra tables
  */
 public class IgnitePersistentStoreLoadTest extends LoadTestDriver {
+    /** */
     private static final Logger LOGGER = Logger.getLogger("IgniteLoadTests");
 
+    /**
+     * test starter.
+     *
+     * @param args Test arguments.
+     */
     public static void main(String[] args) {
         try {
             LOGGER.info("Ignite load tests execution started");
@@ -79,5 +85,4 @@ public class IgnitePersistentStoreLoadTest extends LoadTestDriver {
         if (ignite != null)
             ignite.close();
     }
-
 }

@@ -51,9 +51,12 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
     /** Persistence settings. */
     private transient KeyValuePersistenceSettings persistenceSettings;
 
+    /** Max workers thread count. These threads are responsible for load cache. */
+    private int maxPoolSize = Runtime.getRuntime().availableProcessors();
+
     /** {@inheritDoc} */
     @Override public CassandraCacheStore<K, V> create() {
-        return new CassandraCacheStore<>(getDataSource(), getPersistenceSettings());
+        return new CassandraCacheStore<>(getDataSource(), getPersistenceSettings(), getMaxPoolSize());
     }
 
     /**
@@ -158,6 +161,27 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
     }
 
     /**
+     * Get maximum workers thread count. These threads are responsible for queries execution.
+     *
+     * @return Maximum workers thread count.
+     */
+    public int getMaxPoolSize() {
+        return maxPoolSize;
+    }
+
+    /**
+     * Set Maximum workers thread count. These threads are responsible for queries execution.
+     *
+     * @param maxPoolSize Max workers thread count.
+     * @return {@code This} for chaining.
+     */
+    public CassandraCacheStoreFactory<K, V> setMaxPoolSize(int maxPoolSize) {
+        this.maxPoolSize = maxPoolSize;
+
+        return this;
+    }
+
+    /**
      * Loads bean from Spring ApplicationContext.
      *
      * @param appCtx Application context.
@@ -173,5 +197,4 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
             throw new IgniteException("Failed to load bean in application context [beanName=" + beanName + ", igniteConfig=" + appCtx + ']', e);
         }
     }
-
 }

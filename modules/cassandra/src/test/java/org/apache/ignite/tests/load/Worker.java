@@ -36,36 +36,64 @@ import org.apache.log4j.Logger;
  * Worker thread abstraction to be inherited by specific load test implementation
  */
 public abstract class Worker extends Thread {
+    /** */
     private static final SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("hh:mm:ss");
 
+    /** */
     private long testStartTime;
 
+    /** */
     boolean warmup = TestsHelper.getLoadTestsWarmupPeriod() != 0;
 
+    /** */
     private volatile long warmupStartTime = 0;
+
+    /** */
     private volatile long warmupFinishTime = 0;
 
+    /** */
     private volatile long startTime = 0;
+
+    /** */
     private volatile long finishTime = 0;
 
+    /** */
     private volatile int warmupMsgProcessed = 0;
+
+    /** */
     private volatile int warmupSleepCnt = 0;
 
+    /** */
     private volatile int msgProcessed = 0;
+
+    /** */
     private volatile int sleepCnt = 0;
 
+    /** */
     private Throwable executionError;
 
+    /** */
     private long statReportedTime;
 
+    /** */
     private CacheStore cacheStore;
+
+    /** */
     private Ignite ignite;
+
+    /** */
     private IgniteCache igniteCache;
 
+    /** */
     private Logger log;
+
+    /** */
     private int startPosition;
+
+    /** */
     private int endPosition;
 
+    /** */
     public Worker(CacheStore cacheStore, int startPosition, int endPosition) {
         this.cacheStore = cacheStore;
         this.log = Logger.getLogger(loggerName());
@@ -73,6 +101,7 @@ public abstract class Worker extends Thread {
         this.endPosition = endPosition;
     }
 
+    /** */
     public Worker(Ignite ignite, int startPosition, int endPosition) {
         this.ignite = ignite;
         this.log = Logger.getLogger(loggerName());
@@ -80,6 +109,7 @@ public abstract class Worker extends Thread {
         this.endPosition = endPosition;
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void run() {
         try {
@@ -96,10 +126,12 @@ public abstract class Worker extends Thread {
         }
     }
 
+    /** */
     public boolean isFailed() {
         return executionError != null;
     }
 
+    /** */
     public int getSpeed() {
         if (msgProcessed == 0)
             return 0;
@@ -110,30 +142,38 @@ public abstract class Worker extends Thread {
         return duration == 0 ? msgProcessed : msgProcessed / (int)duration;
     }
 
+    /** */
     public int getMsgCountTotal() {
         return warmupMsgProcessed + msgProcessed;
     }
 
+    /** */
     protected abstract String loggerName();
 
+    /** */
     protected abstract boolean batchMode();
 
+    /** */
     protected void process(CacheStore cacheStore, CacheEntryImpl entry) {
         throw new UnsupportedOperationException("Single message processing is not supported");
     }
 
+    /** */
     protected void process(IgniteCache cache, Object key, Object val) {
         throw new UnsupportedOperationException("Single message processing is not supported");
     }
 
+    /** */
     protected void process(CacheStore cacheStore, Collection<CacheEntryImpl> entries) {
         throw new UnsupportedOperationException("Batch processing is not supported");
     }
 
+    /** */
     protected void process(IgniteCache cache, Map map) {
         throw new UnsupportedOperationException("Batch processing is not supported");
     }
 
+    /** */
     @SuppressWarnings("unchecked")
     private void execute() throws InterruptedException {
         testStartTime = System.currentTimeMillis();
@@ -208,26 +248,31 @@ public abstract class Worker extends Thread {
         }
     }
 
+    /** */
     private void doWork(CacheEntryImpl entry) throws InterruptedException {
         process(cacheStore, entry);
         updateMetrics(1);
     }
 
+    /** */
     private void doWork(Object key, Object val) throws InterruptedException {
         process(igniteCache, key, val);
         updateMetrics(1);
     }
 
+    /** */
     private void doWork(Collection<CacheEntryImpl> entries) throws InterruptedException {
         process(cacheStore, entries);
         updateMetrics(entries.size());
     }
 
+    /** */
     private void doWork(Map entries) throws InterruptedException {
         process(igniteCache, entries);
         updateMetrics(entries.size());
     }
 
+    /** */
     private int getWarmUpSpeed() {
         if (warmupMsgProcessed == 0)
             return 0;
@@ -238,6 +283,7 @@ public abstract class Worker extends Thread {
         return duration == 0 ? warmupMsgProcessed : warmupMsgProcessed / (int)duration;
     }
 
+    /** */
     private void updateMetrics(int itemsProcessed) throws InterruptedException {
         if (warmup)
             warmupMsgProcessed += itemsProcessed;
@@ -253,6 +299,7 @@ public abstract class Worker extends Thread {
             sleepCnt++;
     }
 
+    /** */
     private void reportStatistics() {
         // statistics should be reported only every 30 seconds
         if (System.currentTimeMillis() - statReportedTime < 30000)
@@ -272,6 +319,7 @@ public abstract class Worker extends Thread {
         }
     }
 
+    /** */
     private void reportTestCompletion() {
         StringBuilder builder = new StringBuilder();
 

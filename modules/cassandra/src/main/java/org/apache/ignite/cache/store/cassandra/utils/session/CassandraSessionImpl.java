@@ -134,7 +134,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     else if (!CassandraHelper.isPreparedStatementClusterError(e))
                         throw new IgniteException(errorMsg, e);
 
-                    if (log != null && !CassandraHelper.isPreparedStatementClusterError(e))
+                    if (!CassandraHelper.isPreparedStatementClusterError(e))
                         log.warning(errorMsg, e);
 
                     error = e;
@@ -221,7 +221,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 if (!tblAbsenceErrorFlag && !hostsAvailabilityErrorFlag && !prepStatementErrorFlag)
                     throw new IgniteException(errorMsg, error);
 
-                if (log != null && !CassandraHelper.isPreparedStatementClusterError(error))
+                if (!CassandraHelper.isPreparedStatementClusterError(error))
                     log.warning(errorMsg, error);
 
                 // if there are only table absence errors and it is not required for the operation we can return
@@ -248,8 +248,7 @@ public class CassandraSessionImpl implements CassandraSession {
         if (assistant.processedCount() == 0)
             throw new IgniteException(errorMsg, error);
 
-        if (log != null)
-            log.warning(errorMsg, error);
+        log.warning(errorMsg, error);
 
         return assistant.processedData();
     }
@@ -281,8 +280,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     if (!CassandraHelper.isTableAbsenceError(e) && !CassandraHelper.isHostsAvailabilityError(e))
                         throw new IgniteException(errorMsg, e);
 
-                    if (log != null)
-                        log.warning(errorMsg, e);
+                    log.warning(errorMsg, e);
 
                     if (CassandraHelper.isTableAbsenceError(e))
                         return;
@@ -580,7 +578,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 if (hndNum != 0)
                     return;
 
-                RuntimeException error = new IgniteException("Failed to create Cassandra table " + settings.getTableFullName());
+                IgniteException error = new IgniteException("Failed to create Cassandra table " + settings.getTableFullName());
 
                 int attempt = 0;
 
@@ -598,7 +596,7 @@ public class CassandraSessionImpl implements CassandraSession {
                         else
                             throw new IgniteException("Failed to create Cassandra table " + settings.getTableFullName(), e);
 
-                        error = e instanceof RuntimeException ? (RuntimeException)e : new IgniteException(e);
+                        error = (e instanceof IgniteException) ? (IgniteException)e : new IgniteException(e);
                     }
 
                     attempt++;

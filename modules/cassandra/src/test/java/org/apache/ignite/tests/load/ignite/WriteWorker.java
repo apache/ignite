@@ -25,20 +25,25 @@ import org.apache.ignite.tests.load.Worker;
  * Ignite load tests worker for write operation CacheStore.write
  */
 public class WriteWorker extends Worker {
+    /** */
     public static final String LOGGER_NAME = "IgniteWriteLoadTest";
 
+    /** */
     public WriteWorker(Ignite ignite, int startPosition, int endPosition) {
         super(ignite, startPosition, endPosition);
     }
 
+    /** {@inheritDoc} */
     @Override protected String loggerName() {
         return LOGGER_NAME;
     }
 
+    /** {@inheritDoc} */
     @Override protected boolean batchMode() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void process(IgniteCache cache, Object key, Object val) {
         cache.put(key, val);

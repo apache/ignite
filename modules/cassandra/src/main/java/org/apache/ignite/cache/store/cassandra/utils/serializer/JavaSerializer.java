@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cache.store.cassandra.utils.serializer;
 
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -46,24 +48,11 @@ public class JavaSerializer implements Serializer {
             return ByteBuffer.wrap(stream.toByteArray());
         }
         catch (IOException e) {
-            throw new RuntimeException("Failed to serialize object of the class '" + obj.getClass().getName() + "'", e);
+            throw new IgniteException("Failed to serialize object of the class '" + obj.getClass().getName() + "'", e);
         }
         finally {
-            if (out != null) {
-                try {
-                    out.close();
-                }
-                catch (Throwable ignored) {
-                }
-            }
-
-            if (stream != null) {
-                try {
-                    stream.close();
-                }
-                catch (Throwable ignored) {
-                }
-            }
+            U.closeQuiet(out);
+            U.closeQuiet(stream);
         }
     }
 
@@ -78,24 +67,11 @@ public class JavaSerializer implements Serializer {
             return in.readObject();
         }
         catch (Throwable e) {
-            throw new RuntimeException("Failed to deserialize object from byte stream", e);
+            throw new IgniteException("Failed to deserialize object from byte stream", e);
         }
         finally {
-            if (in != null) {
-                try {
-                    in.close();
-                }
-                catch (Throwable ignored) {
-                }
-            }
-
-            if (stream != null) {
-                try {
-                    stream.close();
-                }
-                catch (Throwable ignored) {
-                }
-            }
+            U.closeQuiet(in);
+            U.closeQuiet(stream);
         }
     }
 }
