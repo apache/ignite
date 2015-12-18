@@ -101,8 +101,7 @@ public class DbMetadataParserTest extends AbstractSchemaImportTest {
         checkField(fieldsIt.next(), "arrcol", false, Object.class);
     }
 
-    public void checkSchemaHasFullDbName(PojoDescriptor type)
-    {
+    public void checkSchemaHasFullDbName(PojoDescriptor type) {
         assertNotNull("The DB schema should have a non-null fullDbName", type.fullDbName());
     }
 
