@@ -1,4 +1,4 @@
-﻿﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,21 +15,19 @@
  * limitations under the License.
  */
 
-using System.Reflection;
-using System.Runtime.InteropServices;
+package org.apache.ignite.binary;
 
-[assembly: AssemblyTitle("Apache.Ignite.Core.Tests")]
-[assembly: AssemblyDescription("Apache Ignite.NET Tests")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Apache Software Foundation")]
-[assembly: AssemblyProduct("Apache Ignite.NET")]
-[assembly: AssemblyCopyright("Copyright ©  2015")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
+/**
+ * Binary serializer which writes object fields using reflection. Transient fields are not written.
+ */
+public class BinaryReflectiveSerializer implements BinarySerializer {
+    /** {@inheritDoc} */
+    @Override public void writeBinary(Object obj, BinaryWriter writer) throws BinaryObjectException {
+        assert false : "Method should not be called directly.";
+    }
 
-[assembly: ComVisible(false)]
-
-[assembly: Guid("de8dd5cc-7c7f-4a09-80d5-7086d9416a7b")]
-
-[assembly: AssemblyVersion("1.5.0.10000")]
-[assembly: AssemblyFileVersion("1.5.0.10000")]
+    /** {@inheritDoc} */
+    @Override public void readBinary(Object obj, BinaryReader reader) throws BinaryObjectException {
+        assert false : "Method should not be called directly.";
+    }
+}

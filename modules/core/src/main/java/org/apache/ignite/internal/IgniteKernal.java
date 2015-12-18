@@ -3245,26 +3245,33 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     public void dumpDebugInfo() {
-        GridKernalContextImpl ctx = this.ctx;
+        try {
+            GridKernalContextImpl ctx = this.ctx;
 
-        if (ctx != null) {
-            boolean client = ctx.clientNode();
+            GridDiscoveryManager discoMrg = ctx != null ? ctx.discovery() : null;
 
-            ClusterNode locNode = ctx.discovery().localNode();
+            ClusterNode locNode = discoMrg != null ? discoMrg.localNode() : null;
 
-            UUID routerId = locNode instanceof TcpDiscoveryNode ? ((TcpDiscoveryNode)locNode).clientRouterNodeId() : null;
+            if (ctx != null && discoMrg != null && locNode != null) {
+                boolean client = ctx.clientNode();
 
-            U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
-                ", name=" + ctx.gridName() +
-                ", order=" + locNode.order() +
-                ", topVer=" + ctx.discovery().topologyVersion() +
-                ", client=" + client +
-                (client && routerId != null ? ", routerId=" + routerId : "") + ']');
+                UUID routerId = locNode instanceof TcpDiscoveryNode ? ((TcpDiscoveryNode)locNode).clientRouterNodeId() : null;
 
-            ctx.cache().context().exchange().dumpDebugInfo();
+                U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
+                    ", name=" + ctx.gridName() +
+                    ", order=" + locNode.order() +
+                    ", topVer=" + discoMrg.topologyVersion() +
+                    ", client=" + client +
+                    (client && routerId != null ? ", routerId=" + routerId : "") + ']');
+
+                ctx.cache().context().exchange().dumpDebugInfo();
+            }
+            else
+                U.warn(log, "Dumping debug info for node, context is not initialized [name=" + gridName + ']');
         }
-        else
-            U.warn(log, "Dumping debug info for node, context is not initialized [name=" + gridName + ']');
+        catch (Exception e) {
+            U.error(log, "Failed to dump debug info for node: " + e, e);
+        }
     }
 
     /** {@inheritDoc} */

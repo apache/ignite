@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid.store.hibernate;
+package org.apache.ignite.examples.datagrid.store.spring;
 
 import java.util.UUID;
 import javax.cache.configuration.Factory;
@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
-import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreSessionListener;
+import org.apache.ignite.cache.store.spring.CacheSpringStoreSessionListener;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.ExamplesUtils;
@@ -38,25 +38,21 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 /**
  * Demonstrates usage of cache with underlying persistent store configured.
  * <p>
- * This example uses {@link CacheHibernatePersonStore} as a persistent store.
+ * This example uses {@link CacheSpringPersonStore} as a persistent store.
  * <p>
  * To start the example, you should:
  * <ul>
  *     <li>Start H2 database TCP server using {@link DbH2ServerStartup}.</li>
  *     <li>Start a few nodes using {@link ExampleNodeStartup}.</li>
- *     <li>Start example using {@link CacheHibernateStoreExample}.</li>
+ *     <li>Start example using {@link CacheSpringStoreExample}.</li>
  * </ul>
  * <p>
  * Remote nodes can be started with {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
-public class CacheHibernateStoreExample {
-    /** Hibernate configuration resource path. */
-    private static final String HIBERNATE_CFG =
-        "/org/apache/ignite/examples/datagrid/store/hibernate/hibernate.cfg.xml";
-
+public class CacheSpringStoreExample {
     /** Cache name. */
-    private static final String CACHE_NAME = CacheHibernateStoreExample.class.getSimpleName();
+    private static final String CACHE_NAME = CacheSpringStoreExample.class.getSimpleName();
 
     /** Heap size required to run this example. */
     public static final int MIN_MEMORY = 1024 * 1024 * 1024;
@@ -86,15 +82,15 @@ public class CacheHibernateStoreExample {
             // Set atomicity as transaction, since we are showing transactions in example.
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-            // Configure Hibernate store.
-            cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(CacheHibernatePersonStore.class));
+            // Configure Spring store.
+            cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(CacheSpringPersonStore.class));
 
-            // Configure Hibernate session listener.
+            // Configure Spring session listener.
             cacheCfg.setCacheStoreSessionListenerFactories(new Factory<CacheStoreSessionListener>() {
                 @Override public CacheStoreSessionListener create() {
-                    CacheHibernateStoreSessionListener lsnr = new CacheHibernateStoreSessionListener();
+                    CacheSpringStoreSessionListener lsnr = new CacheSpringStoreSessionListener();
 
-                    lsnr.setHibernateConfigurationPath(HIBERNATE_CFG);
+                    lsnr.setDataSource(CacheSpringPersonStore.DATA_SRC);
 
                     return lsnr;
                 }
