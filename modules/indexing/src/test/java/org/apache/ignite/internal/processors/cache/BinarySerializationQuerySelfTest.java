@@ -221,7 +221,7 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
         Cache.Entry res = (Cache.Entry)iter.next();
 
         assertEquals(2, res.getKey());
-        assertEquals(20, U.field(res.getValue(), "val"));
+        assertEquals(Integer.valueOf(20), U.field(res.getValue(), "val"));
 
         assert !iter.hasNext();
 

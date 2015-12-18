@@ -73,6 +73,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.values;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -169,6 +172,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setName("nearCache");
+        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         final IgniteCache<Object, Object> nearCache = client.getOrCreateCache(ccfg, new NearCacheConfiguration<>());
 
@@ -786,8 +790,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
             CacheAtomicWriteOrderMode[] writeOrders =
-                atomicityMode == ATOMIC ? CacheAtomicWriteOrderMode.values() :
-                new CacheAtomicWriteOrderMode[]{CacheAtomicWriteOrderMode.CLOCK};
+                atomicityMode == ATOMIC ? values() : new CacheAtomicWriteOrderMode[]{CLOCK};
 
             for (CacheAtomicWriteOrderMode writeOrder : writeOrders) {
                 for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {

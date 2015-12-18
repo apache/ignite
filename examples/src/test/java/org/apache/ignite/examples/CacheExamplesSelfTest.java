@@ -18,6 +18,7 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.datagrid.CacheAffinityExample;
+import org.apache.ignite.examples.datagrid.CacheEntryProcessorExample;
 import org.apache.ignite.examples.datagrid.CacheApiExample;
 import org.apache.ignite.examples.datagrid.CacheContinuousQueryExample;
 import org.apache.ignite.examples.datagrid.CacheDataStreamerExample;
@@ -44,6 +45,13 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      */
     public void testCacheAffinityExample() throws Exception {
         CacheAffinityExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheEntryProcessorExample() throws Exception {
+        CacheEntryProcessorExample.main(EMPTY_ARGS);
     }
 
     /**

@@ -482,7 +482,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> initialRebalanceFuture() {
-        return cctx.kernalContext().clientNode() ? new GridFinishedFuture<>(true) : initRebalanceFut;
+        return cctx.kernalContext().clientNode() ? startFut : initRebalanceFut;
     }
 
     /**

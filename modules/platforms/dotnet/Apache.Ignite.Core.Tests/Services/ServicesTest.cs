@@ -218,10 +218,10 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             Services.Cancel(SvcName + 0);
-            Services.Cancel(SvcName + 1);
+            AssertNoService(SvcName + 0);
 
-            Assert.IsNull(Services.GetService<ITestIgniteService>(SvcName + 0));
-            Assert.IsNull(Services.GetService<ITestIgniteService>(SvcName + 1));
+            Services.Cancel(SvcName + 1);
+            AssertNoService(SvcName + 1);
 
             for (var i = 2; i < 10; i++)
                 Assert.IsNotNull(Services.GetService<ITestIgniteService>(SvcName + i));
@@ -229,7 +229,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Services.CancelAll();
 
             for (var i = 0; i < 10; i++)
-                Assert.IsNull(Services.GetService<ITestIgniteService>(SvcName + i));
+                AssertNoService(SvcName + i);
         }
 
         /// <summary>
@@ -477,8 +477,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Services.CancelAll();
 
             // Cancellation failed, but service is removed.
-            foreach (var grid in Grids)
-                Assert.IsNull(grid.GetServices().GetService<ITestIgniteService>(SvcName));
+            AssertNoService();
         }
 
         [Test]
@@ -576,6 +575,18 @@ namespace Apache.Ignite.Core.Tests.Services
                     }
                 }
             };
+        }
+
+        /// <summary>
+        /// Asserts that there is no service on any grid with given name.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        private void AssertNoService(string name = SvcName)
+        {
+            foreach (var grid in Grids)
+                Assert.IsTrue(
+                    TestUtils.WaitForCondition(() => grid.GetServices()
+                        .GetService<ITestIgniteService>(name) == null, 5000));
         }
 
         /// <summary>

@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.model.binary;
-
 /**
- * Organization type enum.
+ * <!-- Package description. -->
+ * Contains Spring-based cache store implementation.
  */
-public enum OrganizationType {
-    /** Non-profit organization. */
-    NON_PROFIT,
-
-    /** Private organization. */
-    PRIVATE,
-
-    /** Government organization. */
-    GOVERNMENT
-}
+package org.apache.ignite.examples.datagrid.store.spring;

@@ -162,11 +162,11 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
                     assertEquals("updated-" + i, updated.stringValue());
 
                     BinaryObject updatedBinary = nodeBinaryCache.get(i);
-                    assertEquals(i + 1, updatedBinary.field("val"));
+                    assertEquals(new Integer(i + 1), updatedBinary.field("val"));
                     assertEquals("updated-" + i, updatedBinary.field("strVal"));
 
                     updatedBinary = nodeBinaryCache.get(-(i + 1));
-                    assertEquals(i + 1, updatedBinary.field("val"));
+                    assertEquals(new Integer(i + 1), updatedBinary.field("val"));
                     assertEquals("updated-" + i, updatedBinary.field("strVal"));
                 }
             }
