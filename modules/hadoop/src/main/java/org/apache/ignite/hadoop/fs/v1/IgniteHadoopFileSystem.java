@@ -44,6 +44,7 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Progressable;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.igfs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -51,7 +52,6 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
-import org.apache.ignite.internal.processors.hadoop.SecondaryFileSystemProvider;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsInputStream;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsOutputStream;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProxyInputStream;
@@ -85,8 +85,6 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PREFER_LOCAL_WRITES;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_CONFIG_PATH;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_URI;
 
 /**
  * {@code IGFS} Hadoop 1.x file system driver over file system API. To use
@@ -293,7 +291,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
             igfsGrpBlockSize = handshake.blockSize();
 
-            IgfsPaths paths = handshake.secondaryPaths();
+            final IgfsPaths<FileSystem> paths = handshake.secondaryPaths();
 
             // Initialize client logger.
             Boolean logEnabled = parameter(cfg, PARAM_IGFS_LOG_ENABLED, uriAuthority, false);
@@ -327,21 +325,27 @@ public class IgniteHadoopFileSystem extends FileSystem {
             }
 
             if (initSecondary) {
-                Map<String, String> props = paths.properties();
+//                Map<String, String> props = paths.properties();
+//
+//                String secUri = props.get(SECONDARY_FS_URI);
+//                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
 
-                String secUri = props.get(SECONDARY_FS_URI);
-                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
+                HadoopFileSystemFactory<FileSystem> factory = (HadoopFileSystemFactory<FileSystem>)paths.factory();
+
+                A.ensure(secondaryUri != null, "File system factory uri should not be null.");
+
+                secondaryUri = factory.uri();
+
+                A.ensure(secondaryUri != null, "Secondary file system uri should not be null.");
 
                 try {
-                    SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
+                    //SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
 
-                    secondaryFs = secProvider.createFileSystem(user);
-
-                    secondaryUri = secProvider.uri();
+                    secondaryFs = factory.get(user); //secProvider.createFileSystem(user);
                 }
                 catch (IOException e) {
                     if (!mgmt)
-                        throw new IOException("Failed to connect to the secondary file system: " + secUri, e);
+                        throw new IOException("Failed to connect to the secondary file system: " + secondaryUri, e);
                     else
                         LOG.warn("Visor failed to create secondary file system (operations on paths with PROXY mode " +
                             "will have no effect): " + e.getMessage());

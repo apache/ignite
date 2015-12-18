@@ -2290,7 +2290,7 @@ public class GridFunc {
     }
 
     /**
-     * Nullifies the String.
+     * Nullifies an empty String.
      * @param x The argument.
      * @return Nullified argument.
      */
@@ -2299,6 +2299,18 @@ public class GridFunc {
             return null;
 
         return x;
+    }
+
+    /**
+     * Nullifies an empty collection.
+     * @param c The argument.
+     * @return Nullified argument.
+     */
+    public static <T> Collection<T> nullifyEmpty(Collection<T> c) {
+        if (isEmpty(c))
+            return null;
+
+        return c;
     }
 
     /**
