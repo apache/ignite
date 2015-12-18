@@ -28,9 +28,9 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.model.binary.Address;
-import org.apache.ignite.examples.model.binary.Organization;
-import org.apache.ignite.examples.model.binary.OrganizationType;
+import org.apache.ignite.examples.model.Address;
+import org.apache.ignite.examples.model.Organization;
+import org.apache.ignite.examples.model.OrganizationType;
 import org.apache.ignite.binary.BinaryObject;
 
 /**

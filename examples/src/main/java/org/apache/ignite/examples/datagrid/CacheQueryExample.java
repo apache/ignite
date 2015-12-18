@@ -273,8 +273,8 @@ public class CacheQueryExample {
         Organization org1 = new Organization("ApacheIgnite");
         Organization org2 = new Organization("Other");
 
-        orgCache.put(org1.id, org1);
-        orgCache.put(org2.id, org2);
+        orgCache.put(org1.id(), org1);
+        orgCache.put(org2.id(), org2);
 
         IgniteCache<AffinityKey<Long>, Person> personCache = Ignition.ignite().cache(PERSON_CACHE);
 
