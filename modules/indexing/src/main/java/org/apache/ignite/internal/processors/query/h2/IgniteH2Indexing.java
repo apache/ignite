@@ -242,9 +242,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** space name -> schema name */
     private final Map<String, String> space2schema = new ConcurrentHashMap8<>();
 
-    /** schema name -> space name */
-    private final Map<String, String> schema2space = new ConcurrentHashMap8<>();
-
     /** */
     private final ThreadLocal<ConnectionWrapper> connCache = new ThreadLocal<ConnectionWrapper>() {
         @Nullable @Override public ConnectionWrapper get() {
@@ -1152,7 +1149,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Schema schema = schemas.get(schemaName);
 
-        TableDescriptor tbl = new TableDescriptor(schema, type, this);
+        TableDescriptor tbl = new TableDescriptor(schema, type);
 
         try {
             Connection conn = connectionForThread(schemaName);
@@ -1350,20 +1347,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Gets space name from database schema.
      *
-     * @param schema Schema name. Could not be null. Could be empty.
+     * @param schemaName Schema name. Could not be null. Could be empty.
      * @return Space name. Could be null.
      */
-    public String space(String schema) {
-        assert schema != null;
+    public String space(String schemaName) {
+        assert schemaName != null;
 
-        String result = schema2space.get(schema);
+        Schema schema = schemas.get(schemaName);
 
         // For the compatibility with conversion from """" to "" inside h2 lib
-        if (result == null) {
-            result = schema2space.get(escapeName(schema, true));
+        if (schema == null) {
+            assert schemaName.isEmpty() || schemaName.charAt(0) != ESC_CH;
+
+            schema = schemas.get(escapeName(schemaName, true));
         }
 
-        return result.isEmpty() ? null : result;
+        return emptyIfNull(schema.spaceName).isEmpty() ? null : schema.spaceName;
     }
 
     /** {@inheritDoc} */
@@ -1543,7 +1542,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         conns.clear();
         schemas.clear();
-        schema2space.clear();
         space2schema.clear();
 
         try (Connection c = DriverManager.getConnection(dbUrl);
@@ -1561,24 +1559,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException {
         String schema = schemaNameFromCacheConf(ccfg);
-        if (schema.charAt(0) == ESC_CH) {
-            if (schema2space.containsKey(schema))
-                throw new IgniteCheckedException("Case sensitive schema name already registered: " + U.maskName(schema));
-        }
-        else {
-            for (String registeredSchema : schema2space.keySet()) {
-                if (registeredSchema.equalsIgnoreCase(schema))
-                    throw new IgniteCheckedException("Case insensitive schema name already registered: " +
-                        U.maskName(schema));
-            }
-        }
 
         if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(), schema,
             ccfg.getOffHeapMaxMemory() >= 0 || ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED ?
             new GridUnsafeMemory(0) : null, ccfg)) != null)
-            throw new IgniteCheckedException("Cache already registered: " + U.maskName(ccfg.getName()));
+            throw new IgniteCheckedException("Schema for cache already registered: " + U.maskName(ccfg.getName()));
 
-        schema2space.put(schema, emptyIfNull(ccfg.getName()));
         space2schema.put(emptyIfNull(ccfg.getName()), schema);
 
         createSchema(schema);
@@ -1591,9 +1577,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String schema = schema(ccfg.getName());
         Schema rmv = schemas.remove(schema);
 
-        space2schema.remove(schema2space.remove(schema));
-
         if (rmv != null) {
+            space2schema.remove(rmv.spaceName);
             mapQryExec.onCacheStop(ccfg.getName());
 
             try {
@@ -1910,11 +1895,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param schema Schema.
          * @param type Type descriptor.
          */
-        TableDescriptor(Schema schema, GridQueryTypeDescriptor type, IgniteH2Indexing igniteH2Indexing) {
+        TableDescriptor(Schema schema, GridQueryTypeDescriptor type) {
             this.type = type;
             this.schema = schema;
 
-            fullTblName = igniteH2Indexing.schema(schema.spaceName) + "." + escapeName(type.name(), schema.escapeAll());
+            fullTblName = schema.schemaName + "." + escapeName(type.name(), schema.escapeAll());
         }
 
         /**

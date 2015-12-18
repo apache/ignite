@@ -75,12 +75,20 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
             .setIndexedTypes(Integer.class, Fact.class);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * Tests collision for case insensitive sqlScheme.
      *
      * @throws Exception If failed.
      */
     public void testCaseSensitive() throws Exception {
+        //TODO rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
+        //https://issues.apache.org/jira/browse/IGNITE-1094
+
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 final CacheConfiguration cfg = cacheConfig("InSensitiveCache", true, Integer.class, Integer.class)
@@ -95,7 +103,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteException.class, "insensitive schema name already registered");
+        }, IgniteException.class, "Schema for cache already registered");
     }
 
     /**
@@ -104,66 +112,56 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheUnregistration() throws Exception {
-        try {
-            startGridsMultiThreaded(3, true);
+        startGridsMultiThreaded(3, true);
 
-            final CacheConfiguration<Integer, Fact> cfg = cacheConfig("Insensitive_Cache", true, Integer.class, Fact.class)
-                .setSqlSchema("Insensitive_Cache");
-            final CacheConfiguration<Integer, Fact> collisionCfg = cacheConfig("InsensitiveCache", true, Integer.class, Fact.class)
-                .setSqlSchema("Insensitive_Cache");
+        final CacheConfiguration<Integer, Fact> cfg = cacheConfig("Insensitive_Cache", true, Integer.class, Fact.class)
+            .setSqlSchema("Insensitive_Cache");
+        final CacheConfiguration<Integer, Fact> collisionCfg = cacheConfig("InsensitiveCache", true, Integer.class, Fact.class)
+            .setSqlSchema("Insensitive_Cache");
 
-            IgniteCache<Integer, Fact> cache = ignite(0).createCache(cfg);
+        IgniteCache<Integer, Fact> cache = ignite(0).createCache(cfg);
 
-            SqlFieldsQuery qry = new SqlFieldsQuery("select f.id, f.name " +
-                "from InSENSitive_Cache.Fact f");
+        SqlFieldsQuery qry = new SqlFieldsQuery("select f.id, f.name " +
+            "from InSENSitive_Cache.Fact f");
 
-            cache.put(1, new Fact(1, "cacheInsensitive"));
+        cache.put(1, new Fact(1, "cacheInsensitive"));
 
-            for ( List<?> row : cache.query(qry)) {
-                assertEquals(2, row.size());
-                assertEquals(1, row.get(0));
-                assertEquals("cacheInsensitive", row.get(1));
-            }
-
-            ignite(0).destroyCache(cache.getName());
-
-            cache = ignite(0).createCache(collisionCfg); // Previous collision should be removed by now.
-
-            cache.put(1, new Fact(1, "cacheInsensitive"));
-            cache.put(2, new Fact(2, "ThisIsANewCache"));
-            cache.put(3, new Fact(3, "With3RecordsAndAnotherName"));
-
-            assertEquals(3, cache.query(qry).getAll().size());
-
-            ignite(0).destroyCache(cache.getName());
+        for (List<?> row : cache.query(qry)) {
+            assertEquals(2, row.size());
+            assertEquals(1, row.get(0));
+            assertEquals("cacheInsensitive", row.get(1));
         }
-        finally {
-            stopAllGrids();
-        }
+
+        ignite(0).destroyCache(cache.getName());
+
+        cache = ignite(0).createCache(collisionCfg); // Previous collision should be removed by now.
+
+        cache.put(1, new Fact(1, "cacheInsensitive"));
+        cache.put(2, new Fact(2, "ThisIsANewCache"));
+        cache.put(3, new Fact(3, "With3RecordsAndAnotherName"));
+
+        assertEquals(3, cache.query(qry).getAll().size());
+
+        ignite(0).destroyCache(cache.getName());
     }
 
     public void testSchemaEscapeAll() throws Exception {
-        try {
-            startGridsMultiThreaded(3, true);
+        startGridsMultiThreaded(3, true);
 
-            final CacheConfiguration<Integer, Fact> cfg = cacheConfig("simpleSchema", true, Integer.class, Fact.class)
-                .setSqlSchema("SchemaName1")
-                .setSqlEscapeAll(true);
+        final CacheConfiguration<Integer, Fact> cfg = cacheConfig("simpleSchema", true, Integer.class, Fact.class)
+            .setSqlSchema("SchemaName1")
+            .setSqlEscapeAll(true);
 
-            final CacheConfiguration<Integer, Fact> cfgEsc = cacheConfig("escapedSchema", true, Integer.class, Fact.class)
-                .setSqlSchema("\"SchemaName2\"")
-                .setSqlEscapeAll(true);
+        final CacheConfiguration<Integer, Fact> cfgEsc = cacheConfig("escapedSchema", true, Integer.class, Fact.class)
+            .setSqlSchema("\"SchemaName2\"")
+            .setSqlEscapeAll(true);
 
-            escapeCheckSchemaName(ignite(0).createCache(cfg), log, cfg.getSqlSchema());
+        escapeCheckSchemaName(ignite(0).createCache(cfg), log, cfg.getSqlSchema());
 
-            escapeCheckSchemaName(ignite(0).createCache(cfgEsc), log, "SchemaName2");
+        escapeCheckSchemaName(ignite(0).createCache(cfgEsc), log, "SchemaName2");
 
-            ignite(0).destroyCache(cfg.getName());
-            ignite(0).destroyCache(cfgEsc.getName());
-        }
-        finally {
-            stopAllGrids();
-        }
+        ignite(0).destroyCache(cfg.getName());
+        ignite(0).destroyCache(cfgEsc.getName());
     }
 
     private static void escapeCheckSchemaName(final IgniteCache<Integer, Fact> cache, IgniteLogger log, String schemaName) {
