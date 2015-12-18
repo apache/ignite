@@ -776,6 +776,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Stores rule for constructing schemaName according to cache configuration.
+     *
+     * @param ccfg Cache configuration.
+     * @return Proper schema name according to ANSI-99 standard.
+     */
+    private static String schemaNameFromCacheConf(CacheConfiguration<?,?> ccfg) {
+        if (ccfg.getSqlSchema() == null)
+            return escapeName(ccfg.getName(), true);
+
+        if (ccfg.getSqlSchema().charAt(0) == ESC_CH)
+            return ccfg.getSqlSchema();
+
+        return ccfg.isSqlEscapeAll() ? escapeName(ccfg.getSqlSchema(), true) : ccfg.getSqlSchema().toUpperCase();
+    }
+
+    /**
      * Executes sql query.
      *
      * @param conn Connection,.
@@ -1324,39 +1340,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Gets database schema from space.
      *
-     * @param space Space name.
-     * @return Schema name. Should not be null.
+     * @param space Space name. {@code null} would be converted to an empty string.
+     * @return Schema name. Should not be null since we should not fail for an invalid space name.
      */
     private String schema(@Nullable String space) {
         return emptyIfNull(space2schema.get(emptyIfNull(space)));
     }
 
     /**
-     * Gets space name from database schema. A proper way to request a space name for an empty schema is to
-     * use {@code "\"\"" String} as schema name.
+     * Gets space name from database schema.
      *
-     * @param schema Schema name.
+     * @param schema Schema name. Could not be null. Could be empty.
      * @return Space name. Could be null.
      */
     public String space(String schema) {
         assert schema != null;
 
-        if ("".equals(schema))
-            return null;
-
         String result = schema2space.get(schema);
 
-        if (result != null)
-            return result;
+        // For the compatibility with conversion from """" to "" inside h2 lib
+        if (result == null) {
+            result = schema2space.get(escapeName(schema, true));
+        }
 
-        // For the compatibility with {@link Connection#prepareStatement()}
-        result = schema2space.get(schema.toUpperCase());
-
-        if (result != null)
-            return result;
-
-        // For the compatibility with {@link org.h2.schema.Schema#getName()}
-        return schema2space.get(escapeName(schema, true));
+        return result.isEmpty() ? null : result;
     }
 
     /** {@inheritDoc} */
@@ -1553,7 +1560,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException {
-        String schema = ccfg.getSqlSchema() == null ? escapeName(ccfg.getName(), true) : ccfg.getSqlSchema();
+        String schema = schemaNameFromCacheConf(ccfg);
         if (schema.charAt(0) == ESC_CH) {
             if (schema2space.containsKey(schema))
                 throw new IgniteCheckedException("Case sensitive schema name already registered: " + U.maskName(schema));
@@ -1564,15 +1571,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw new IgniteCheckedException("Case insensitive schema name already registered: " +
                         U.maskName(schema));
             }
-            schema = schema.toUpperCase();
         }
-        schema2space.put(schema, emptyIfNull(ccfg.getName()));
-        space2schema.put(emptyIfNull(ccfg.getName()), schema);
 
         if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(), schema,
             ccfg.getOffHeapMaxMemory() >= 0 || ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED ?
             new GridUnsafeMemory(0) : null, ccfg)) != null)
             throw new IgniteCheckedException("Cache already registered: " + U.maskName(ccfg.getName()));
+
+        schema2space.put(schema, emptyIfNull(ccfg.getName()));
+        space2schema.put(emptyIfNull(ccfg.getName()), schema);
 
         createSchema(schema);
 

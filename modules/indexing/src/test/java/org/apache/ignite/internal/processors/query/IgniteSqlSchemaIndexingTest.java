@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -114,7 +115,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Fact> cache = ignite(0).createCache(cfg);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("select f.id, f.name " +
-                "from Insensitive_Cache.Fact f");
+                "from InSENSitive_Cache.Fact f");
 
             cache.put(1, new Fact(1, "cacheInsensitive"));
 
@@ -133,9 +134,59 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
             cache.put(3, new Fact(3, "With3RecordsAndAnotherName"));
 
             assertEquals(3, cache.query(qry).getAll().size());
+
+            ignite(0).destroyCache(cache.getName());
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    public void testSchemaEscapeAll() throws Exception {
+        try {
+            startGridsMultiThreaded(3, true);
+
+            final CacheConfiguration<Integer, Fact> cfg = cacheConfig("simpleSchema", true, Integer.class, Fact.class)
+                .setSqlSchema("SchemaName1")
+                .setSqlEscapeAll(true);
+
+            final CacheConfiguration<Integer, Fact> cfgEsc = cacheConfig("escapedSchema", true, Integer.class, Fact.class)
+                .setSqlSchema("\"SchemaName2\"")
+                .setSqlEscapeAll(true);
+
+            escapeCheckSchemaName(ignite(0).createCache(cfg), log, cfg.getSqlSchema());
+
+            escapeCheckSchemaName(ignite(0).createCache(cfgEsc), log, "SchemaName2");
+
+            ignite(0).destroyCache(cfg.getName());
+            ignite(0).destroyCache(cfgEsc.getName());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    private static void escapeCheckSchemaName(final IgniteCache<Integer, Fact> cache, IgniteLogger log, String schemaName) {
+
+        final SqlFieldsQuery qryWrong = new SqlFieldsQuery("select f.id, f.name " +
+            "from " + schemaName.toUpperCase() + ".Fact f");
+
+        cache.put(1, new Fact(1, "cacheInsensitive"));
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                cache.query(qryWrong);
+                return null;
+            }
+        }, IgniteException.class, "Failed to parse query");
+
+        SqlFieldsQuery qryCorrect = new SqlFieldsQuery("select f.\"id\", f.\"name\" " +
+            "from \""+schemaName+"\".\"Fact\" f");
+
+        for ( List<?> row : cache.query(qryCorrect)) {
+            assertEquals(2, row.size());
+            assertEquals(1, row.get(0));
+            assertEquals("cacheInsensitive", row.get(1));
         }
     }
 
