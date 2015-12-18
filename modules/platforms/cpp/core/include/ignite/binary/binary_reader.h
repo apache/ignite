@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares binary reader class.
+ */
+
 #ifndef _IGNITE_BINARY_READER
 #define _IGNITE_BINARY_READER
 

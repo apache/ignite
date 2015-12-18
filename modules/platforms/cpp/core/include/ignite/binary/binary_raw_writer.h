@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares binary raw writer class.
+ */
+
 #ifndef _IGNITE_BINARY_RAW_WRITER
 #define _IGNITE_BINARY_RAW_WRITER
 
