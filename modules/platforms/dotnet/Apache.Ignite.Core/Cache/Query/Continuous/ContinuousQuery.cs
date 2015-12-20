@@ -42,26 +42,26 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// Default buffer size.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
-        public const int DfltBufSize = 1;
+        public const int DefaultBufSize = 1;
 
         /// <summary>
         /// Default time interval.
         /// </summary>
         [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
-        public static readonly TimeSpan DfltTimeInterval = new TimeSpan(0);
+        public static readonly TimeSpan DefaultTimeInterval = new TimeSpan(0);
 
         /// <summary>
         /// Default auto-unsubscribe flag value.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
-        public const bool DfltAutoUnsubscribe = true;
+        public const bool DefaultAutoUnsubscribe = true;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="lsnr">Listener.</param>
-        public ContinuousQuery(ICacheEntryEventListener<TK, TV> lsnr) : this(lsnr, false)
+        /// <param name="listener">Listener.</param>
+        public ContinuousQuery(ICacheEntryEventListener<TK, TV> listener) : this(listener, false)
         {
             // No-op.
         }
@@ -69,9 +69,9 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="lsnr">Listener.</param>
-        /// <param name="loc">Whether query should be executed locally.</param>
-        public ContinuousQuery(ICacheEntryEventListener<TK, TV> lsnr, bool loc) : this(lsnr, null, loc)
+        /// <param name="listener">Listener.</param>
+        /// <param name="local">Whether query should be executed locally.</param>
+        public ContinuousQuery(ICacheEntryEventListener<TK, TV> listener, bool local) : this(listener, null, local)
         {
             // No-op.
         }
@@ -79,10 +79,10 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="lsnr">Listener.</param>
+        /// <param name="listener">Listener.</param>
         /// <param name="filter">Filter.</param>
-        public ContinuousQuery(ICacheEntryEventListener<TK, TV> lsnr, ICacheEntryEventFilter<TK, TV> filter)
-            : this(lsnr, filter, false)
+        public ContinuousQuery(ICacheEntryEventListener<TK, TV> listener, ICacheEntryEventFilter<TK, TV> filter)
+            : this(listener, filter, false)
         {
             // No-op.
         }
@@ -90,18 +90,18 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="lsnr">Listener.</param>
+        /// <param name="listener">Listener.</param>
         /// <param name="filter">Filter.</param>
-        /// <param name="loc">Whether query should be executed locally.</param>
-        public ContinuousQuery(ICacheEntryEventListener<TK, TV> lsnr, ICacheEntryEventFilter<TK, TV> filter, bool loc)
+        /// <param name="local">Whether query should be executed locally.</param>
+        public ContinuousQuery(ICacheEntryEventListener<TK, TV> listener, ICacheEntryEventFilter<TK, TV> filter, bool local)
         {
-            Listener = lsnr;
+            Listener = listener;
             Filter = filter;
-            Local = loc;
+            IsLocal = local;
 
-            BufferSize = DfltBufSize;
-            TimeInterval = DfltTimeInterval;
-            AutoUnsubscribe = DfltAutoUnsubscribe;
+            BufferSize = DefaultBufSize;
+            TimeInterval = DefaultTimeInterval;
+            AutoUnsubscribe = DefaultAutoUnsubscribe;
         }
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// Entries from buffer will be sent to the master node only if the buffer is 
         /// full or time provided via <see cref="TimeInterval"/> is exceeded.
         /// <para />
-        /// Defaults to <see cref="DfltBufSize"/>
+        /// Defaults to <see cref="DefaultBufSize"/>
         /// </summary>
         public int BufferSize { get; set; }
 
@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// <para />
         /// Defaults to <c>false</c>.
         /// </summary>
-        public bool Local { get; set; }
+        public bool IsLocal { get; set; }
 
         /// <summary>
         /// Validate continuous query state.

@@ -48,6 +48,9 @@ public class PlatformContinuousQueryRemoteFilter implements PlatformContinuousQu
     /** Native filter in serialized form. */
     private Object filter;
 
+    /** Keep portable flag for the filter. */
+    private boolean keepPortable;
+
     /** Grid hosting the filter. */
     @IgniteInstanceResource
     private transient Ignite grid;
@@ -70,10 +73,11 @@ public class PlatformContinuousQueryRemoteFilter implements PlatformContinuousQu
      *
      * @param filter Serialized native filter.
      */
-    public PlatformContinuousQueryRemoteFilter(Object filter) {
+    public PlatformContinuousQueryRemoteFilter(Object filter, boolean keepPortable) {
         assert filter != null;
 
         this.filter = filter;
+        this.keepPortable = keepPortable;
     }
 
     /** {@inheritDoc} */
@@ -118,6 +122,7 @@ public class PlatformContinuousQueryRemoteFilter implements PlatformContinuousQu
                 BinaryRawWriterEx writer = ctx.writer(out);
 
                 writer.writeObject(filter);
+                writer.writeBoolean(keepPortable);
 
                 out.synchronize();
 
@@ -172,11 +177,13 @@ public class PlatformContinuousQueryRemoteFilter implements PlatformContinuousQu
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(filter);
+        out.writeBoolean(keepPortable);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         filter = in.readObject();
+        keepPortable = in.readBoolean();
 
         assert filter != null;
     }
