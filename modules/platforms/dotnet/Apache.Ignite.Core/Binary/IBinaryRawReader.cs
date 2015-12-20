@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Raw reader for binary objects. 
@@ -197,15 +198,19 @@ namespace Apache.Ignite.Core.Binary
         /// Read collection.
         /// </summary>
         /// <returns>Collection.</returns>
-        ICollection ReadCollection();
+        IEnumerable ReadCollection();
 
         /// <summary>
         /// Read collection.
         /// </summary>
+        /// <typeparam name="TCollection">The type of the collection.</typeparam>
+        /// <typeparam name="TElement">The type of the element.</typeparam>
         /// <param name="factory">Factory.</param>
-        /// <param name="adder">Adder.</param>
-        /// <returns>Collection.</returns>
-        ICollection ReadCollection(CollectionFactory factory, CollectionAdder adder);
+        /// <returns>
+        /// Collection.
+        /// </returns>
+        TCollection ReadCollection<TCollection, TElement>(Func<int, TCollection> factory)
+            where TCollection : ICollection<TElement>;
 
         /// <summary>
         /// Read dictionary. 
@@ -216,8 +221,14 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Read dictionary.
         /// </summary>
+        /// <typeparam name="TDictionary">The type of the dictionary.</typeparam>
+        /// <typeparam name="TK">The type of the key.</typeparam>
+        /// <typeparam name="TV">The type of the value.</typeparam>
         /// <param name="factory">Factory.</param>
-        /// <returns>Dictionary.</returns>
-        IDictionary ReadDictionary(DictionaryFactory factory);
+        /// <returns>
+        /// Dictionary.
+        /// </returns>
+        TDictionary ReadDictionary<TDictionary, TK, TV>(Func<int, TDictionary> factory) 
+            where TDictionary : IDictionary<TK, TV>;
     }
 }

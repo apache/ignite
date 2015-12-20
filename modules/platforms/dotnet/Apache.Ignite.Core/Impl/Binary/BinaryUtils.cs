@@ -196,6 +196,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Collection: linked list. */
         public const byte CollectionLinkedList = 2;
         
+        /** Collection: HashSet. */
+        public const byte CollectionHashSet = 3;
+        
+        /** Collection: LinkedHashSet. */
+        public const byte CollectionLinkedHashSet = 4;
+        
         /** Map: custom. */
         public const byte MapCustom = 0;
 
@@ -1052,116 +1058,237 @@ namespace Apache.Ignite.Core.Impl.Binary
             return vals;
         }
 
-        /**
-         * <summary>Write collection.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         */
-        public static void WriteCollection(ICollection val, BinaryWriter ctx)
+        /// <summary>
+        /// Write collection.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        public static void WriteCollection(IEnumerable val, BinaryWriter ctx)
         {
-            var valType = val.GetType();
-            
+            Debug.Assert(val != null);
+            Debug.Assert(ctx != null);
+
+            WriteCollection(val, ctx, GetCollectionTypeCode(val.GetType()));
+        }
+
+        /// <summary>
+        /// Write collection.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        public static void WriteCollection<T>(IEnumerable<T> val, BinaryWriter ctx)
+        {
+            Debug.Assert(val != null);
+            Debug.Assert(ctx != null);
+
+            WriteCollection(val, ctx, GetCollectionTypeCode(val.GetType()));
+        }
+
+        /// <summary>
+        /// Write non-null collection with known type.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        /// <param name="colType">Collection type.</param>
+        public static void WriteCollection(IEnumerable val, BinaryWriter ctx, byte colType)
+        {
+            WriteCollection0(val, (writer, col) =>
+            {
+                var count = 0;
+
+                foreach (var elem in col)
+                {
+                    ctx.Write(elem);
+                    count++;
+                }
+
+                return count;
+            }, ctx, colType);
+        }
+
+        /// <summary>
+        /// Write non-null collection with known type.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        /// <param name="colType">Collection type.</param>
+        public static void WriteCollection<T>(IEnumerable<T> val, BinaryWriter ctx, byte colType)
+        {
+            WriteCollection0(val, (writer, col) =>
+            {
+                var count = 0;
+
+                foreach (var elem in col)
+                {
+                    ctx.Write(elem);
+                    count++;
+                }
+
+                return count;
+            }, ctx, colType);
+        }
+
+        /// <summary>
+        /// Writes the collection.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="writeAction">The write action.</param>
+        /// <param name="writer">The writer.</param>
+        /// <param name="colType">Type of the col.</param>
+        private static void WriteCollection0<T>(T val, Func<BinaryWriter, T, int> writeAction,
+                    BinaryWriter writer, byte colType)
+        {
+            Debug.Assert(val != null);
+            Debug.Assert(writer != null);
+
+            var stream = writer.Stream;
+
+            var countPos = stream.Position;
+
+            stream.WriteInt(0); // reserve for count
+
+            stream.WriteByte(colType);
+
+            var count = writeAction(writer, val);
+
+            var endPos = stream.Position;
+
+            stream.Seek(countPos, SeekOrigin.Begin);
+            stream.WriteInt(count);
+
+            stream.Seek(endPos, SeekOrigin.Begin);
+        }
+
+        /// <summary>
+        /// Gets the collection type code.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>Collection type code.</returns>
+        private static byte GetCollectionTypeCode(Type type)
+        {
             byte colType;
 
-            if (valType.IsGenericType)
+            if (type.IsGenericType)
             {
-                var genType = valType.GetGenericTypeDefinition();
+                var genType = type.GetGenericTypeDefinition();
 
-                if (genType == typeof (List<>))
+                if (genType == typeof(List<>))
                     colType = CollectionArrayList;
-                else if (genType == typeof (LinkedList<>))
+                else if (genType == typeof(LinkedList<>))
                     colType = CollectionLinkedList;
+                else if (genType == typeof(HashSet<>))
+                    colType = CollectionHashSet;
                 else
                     colType = CollectionCustom;
             }
             else
-                colType = valType == typeof (ArrayList) ? CollectionArrayList : CollectionCustom;
+                colType = type == typeof(ArrayList) ? CollectionArrayList : CollectionCustom;
 
-            WriteCollection(val, ctx, colType);
+            return colType;
         }
 
-        /**
-         * <summary>Write non-null collection with known type.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         * <param name="colType">Collection type.</param>
-         */
-        public static void WriteCollection(ICollection val, BinaryWriter ctx, byte colType)
+        /// <summary>
+        /// Reads the collection.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns>Collection.</returns>
+        public static IEnumerable ReadCollection(BinaryReader reader)
         {
-            ctx.Stream.WriteInt(val.Count);
+            int len = reader.ReadInt();
 
-            ctx.Stream.WriteByte(colType);
+            byte colType = reader.ReadByte();
 
-            foreach (object elem in val)
-                ctx.Write(elem);
-        }
-
-        /**
-         * <summary>Read collection.</summary>
-         * <param name="ctx">Context.</param>
-         * <param name="factory">Factory delegate.</param>
-         * <param name="adder">Adder delegate.</param>
-         * <returns>Collection.</returns>
-         */
-        public static ICollection ReadCollection(BinaryReader ctx,
-            CollectionFactory factory, CollectionAdder adder)
-        {
-            IBinaryStream stream = ctx.Stream;
-
-            int len = stream.ReadInt();
-
-            byte colType = ctx.Stream.ReadByte();
-
-            ICollection res;
-
-            if (factory == null)
+            switch (colType)
             {
-                if (colType == CollectionLinkedList)
-                    res = new LinkedList<object>();
-                else
-                    res = new ArrayList(len);
+                case CollectionLinkedList:
+                    return ReadCollection0<LinkedList<object>, object>(reader, len, count => new LinkedList<object>(),
+                        (col, el) => col.AddLast(el));
+
+                case CollectionHashSet:
+                case CollectionLinkedHashSet:
+                    return ReadCollection0<HashSet<object>, object>(reader, len, count => new HashSet<object>(),
+                        (col, el) => col.Add(el));
+
+                default:
+                    return ReadCollection0<ArrayList, object>(reader, len, count => new ArrayList(),
+                        (col, el) => col.Add(el));
             }
-            else
-                res = factory.Invoke(len);
-
-            if (adder == null)
-                adder = (col, elem) => { ((ArrayList) col).Add(elem); };
-
-            for (int i = 0; i < len; i++)
-                adder.Invoke(res, ctx.Deserialize<object>());
-
-            return res;
         }
 
-        /**
-         * <summary>Write dictionary.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         */
+        /// <summary>
+        /// Reads the collection.
+        /// </summary>
+        /// <typeparam name="TCollection">The type of the collection.</typeparam>
+        /// <typeparam name="TElement">The type of the element.</typeparam>
+        /// <param name="reader">The reader.</param>
+        /// <param name="factory">The factory.</param>
+        /// <returns>Collection.</returns>
+        public static TCollection ReadCollection<TCollection, TElement>(BinaryReader reader,
+                            Func<int, TCollection> factory) where TCollection : ICollection<TElement>
+        {
+            int len = reader.ReadInt();
+
+            reader.ReadByte();  // ignore collection type
+
+            return ReadCollection0<TCollection, TElement>(reader, len, factory, (col, el) => col.Add(el));
+        }
+
+        /// <summary>
+        /// Reads the collection.
+        /// </summary>
+        /// <typeparam name="TCollection">The type of the collection.</typeparam>
+        /// <typeparam name="TElement">The type of the element.</typeparam>
+        /// <param name="reader">The reader.</param>
+        /// <param name="count">The count.</param>
+        /// <param name="factory">The factory.</param>
+        /// <param name="adder">The adder.</param>
+        /// <returns>Collection.</returns>
+        private static TCollection ReadCollection0<TCollection, TElement>(BinaryReader reader, int count,
+                    Func<int, TCollection> factory, Action<TCollection, TElement> adder)
+        {
+            Debug.Assert(reader != null);
+            Debug.Assert(factory != null);
+
+            var col = factory.Invoke(count);
+
+            for (int i = 0; i < count; i++)
+                adder(col, reader.Deserialize<TElement>());
+
+            return col;
+        }
+
+        /// <summary>
+        /// Write dictionary.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
         public static void WriteDictionary(IDictionary val, BinaryWriter ctx)
         {
-            var valType = val.GetType();
+            Debug.Assert(val != null);
+            Debug.Assert(ctx != null);
 
-            byte dictType;
-
-            if (valType.IsGenericType)
-            {
-                var genType = valType.GetGenericTypeDefinition();
-
-                dictType = genType == typeof (Dictionary<,>) ? MapHashMap : MapCustom;
-            }
-            else
-                dictType = valType == typeof (Hashtable) ? MapHashMap : MapCustom;
-
-            WriteDictionary(val, ctx, dictType);
+            WriteDictionary(val, ctx, GetDictionaryTypeCode(val.GetType()));
         }
 
-        /**
-         * <summary>Write non-null dictionary with known type.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         * <param name="dictType">Dictionary type.</param>
-         */
+        /// <summary>
+        /// Write dictionary.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        public static void WriteDictionary<TK, TV>(IDictionary<TK, TV> val, BinaryWriter ctx)
+        {
+            Debug.Assert(val != null);
+            Debug.Assert(ctx != null);
+
+            WriteDictionary(val, ctx, GetDictionaryTypeCode(val.GetType()));
+        }
+
+        /// <summary>
+        /// Write non-null dictionary with known type.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        /// <param name="dictType">Dictionary type.</param>
         public static void WriteDictionary(IDictionary val, BinaryWriter ctx, byte dictType)
         {
             ctx.Stream.WriteInt(val.Count);
@@ -1175,30 +1302,94 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
-        /**
-         * <summary>Read dictionary.</summary>
-         * <param name="ctx">Context.</param>
-         * <param name="factory">Factory delegate.</param>
-         * <returns>Dictionary.</returns>
-         */
-        public static IDictionary ReadDictionary(BinaryReader ctx, DictionaryFactory factory)
+        /// <summary>
+        /// Write non-null dictionary with known type.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <param name="ctx">Write context.</param>
+        /// <param name="dictType">Dictionary type.</param>
+        public static void WriteDictionary<TK, TV>(IDictionary<TK, TV> val, BinaryWriter ctx, byte dictType)
         {
-            IBinaryStream stream = ctx.Stream;
+            ctx.Stream.WriteInt(val.Count);
+
+            ctx.Stream.WriteByte(dictType);
+
+            foreach (var entry in val)
+            {
+                ctx.Write(entry.Key);
+                ctx.Write(entry.Value);
+            }
+        }
+
+        /// <summary>
+        /// Gets the dictionary type code.
+        /// </summary>
+        /// <param name="valType">Type of the value.</param>
+        /// <returns></returns>
+        private static byte GetDictionaryTypeCode(Type valType)
+        {
+            Debug.Assert(valType != null);
+
+            if (valType.IsGenericType)
+                return valType.GetGenericTypeDefinition() == typeof (Dictionary<,>) ? MapHashMap : MapCustom;
+
+            return valType == typeof(Hashtable) ? MapHashMap : MapCustom;
+        }
+
+        /// <summary>
+        /// Reads the dictionary.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns>
+        /// Dictionary.
+        /// </returns>
+        public static IDictionary ReadDictionary(BinaryReader reader)
+        {
+            return ReadDictionary<Hashtable, object, object>(reader, count => new Hashtable(count),
+                (dict, key, val) => dict[key] = val);
+        }
+
+        /// <summary>
+        /// Read dictionary.
+        /// </summary>
+        /// <param name="reader">Context.</param>
+        /// <param name="factory">Factory delegate.</param>
+        /// <returns>
+        /// Dictionary.
+        /// </returns>
+        public static TDictionary ReadDictionary<TDictionary, TK, TV>(BinaryReader reader,
+            Func<int, TDictionary> factory) where TDictionary : IDictionary<TK, TV>
+        {
+            return ReadDictionary<TDictionary, TK, TV>(reader, factory, (dict, key, val) => dict[key] = val);
+        }
+
+        /// <summary>
+        /// Read dictionary.
+        /// </summary>
+        /// <param name="reader">Context.</param>
+        /// <param name="factory">Factory delegate.</param>
+        /// <param name="adder">The adder.</param>
+        /// <returns>
+        /// Dictionary.
+        /// </returns>
+        public static TDictionary ReadDictionary<TDictionary, TK, TV>(BinaryReader reader, Func<int, TDictionary> factory,
+            Action<TDictionary, TK, TV> adder)
+        {
+            Debug.Assert(reader != null);
+            Debug.Assert(factory != null);
+            Debug.Assert(adder != null);
+
+            IBinaryStream stream = reader.Stream;
 
             int len = stream.ReadInt();
 
             // Skip dictionary type as we can do nothing with it here.
-            ctx.Stream.ReadByte();
+            reader.Stream.ReadByte();
 
-            var res = factory == null ? new Hashtable(len) : factory.Invoke(len);
+            var res = factory(len);
 
             for (int i = 0; i < len; i++)
-            {
-                object key = ctx.Deserialize<object>();
-                object val = ctx.Deserialize<object>();
-
-                res[key] = val;
-            }
+                adder(res, reader.Deserialize<TK>(), reader.Deserialize<TV>());
 
             return res;
         }

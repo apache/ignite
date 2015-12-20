@@ -19,27 +19,7 @@ namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections;
-
-    /// <summary>
-    /// Delegate for collection creation.
-    /// </summary>
-    /// <param name="size">Collection size.</param>
-    /// <returns>Collection.</returns>
-    public delegate ICollection CollectionFactory(int size);
-
-    /// <summary>
-    /// Delegate for adding element to collection.
-    /// </summary>
-    /// <param name="col">Collection.</param>
-    /// <param name="elem">Element to add.</param>
-    public delegate void CollectionAdder(ICollection col, object elem);
-
-    /// <summary>
-    /// Delegate for dictionary creation.
-    /// </summary>
-    /// <param name="size">Dictionary size.</param>
-    /// <returns>Dictionary.</returns>
-    public delegate IDictionary DictionaryFactory(int size);
+    using System.Collections.Generic;
 
     /// <summary>
     /// Reader for binary objects. 
@@ -244,16 +224,20 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Collection.</returns>
-        ICollection ReadCollection(string fieldName);
+        IEnumerable ReadCollection(string fieldName);
 
         /// <summary>
         /// Read named collection.
         /// </summary>
+        /// <typeparam name="TCollection">The type of the collection.</typeparam>
+        /// <typeparam name="TElement">The type of the element.</typeparam>
         /// <param name="fieldName">Field name.</param>
         /// <param name="factory">Factory.</param>
-        /// <param name="adder">Adder.</param>
-        /// <returns>Collection.</returns>
-        ICollection ReadCollection(string fieldName, CollectionFactory factory, CollectionAdder adder);
+        /// <returns>
+        /// Collection.
+        /// </returns>
+        TCollection ReadCollection<TCollection, TElement>(string fieldName, Func<int, TCollection> factory) 
+            where TCollection : ICollection<TElement>;
 
         /// <summary>
         /// Read named dictionary.
@@ -265,10 +249,16 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Read named dictionary.
         /// </summary>
+        /// <typeparam name="TDictionary">The type of the dictionary.</typeparam>
+        /// <typeparam name="TK">The type of the key.</typeparam>
+        /// <typeparam name="TV">The type of the value.</typeparam>
         /// <param name="fieldName">Field name.</param>
         /// <param name="factory">Factory.</param>
-        /// <returns>Dictionary.</returns>
-        IDictionary ReadDictionary(string fieldName, DictionaryFactory factory);
+        /// <returns>
+        /// Dictionary.
+        /// </returns>
+        TDictionary ReadDictionary<TDictionary, TK, TV>(string fieldName, Func<int, TDictionary> factory) 
+            where TDictionary : IDictionary<TK, TV>;
 
         /// <summary>
         /// Get raw reader. 

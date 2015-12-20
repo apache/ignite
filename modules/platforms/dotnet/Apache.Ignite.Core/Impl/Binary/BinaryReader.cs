@@ -472,53 +472,66 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public ICollection ReadCollection(string fieldName)
+        public IEnumerable ReadCollection(string fieldName)
         {
-            return ReadCollection(fieldName, null, null);
+            return ReadField(fieldName, BinaryUtils.ReadCollection, BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */
-        public ICollection ReadCollection()
+        public TCollection ReadCollection<TCollection, TElement>(string fieldName, Func<int, TCollection> factory)
+            where TCollection : ICollection<TElement>
         {
-            return ReadCollection(null, null);
+            IgniteArgumentCheck.NotNull(factory, "factory");
+
+            return ReadField(fieldName, r => BinaryUtils.ReadCollection<TCollection, TElement>(r, factory),
+                BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */
-        public ICollection ReadCollection(string fieldName, CollectionFactory factory,
-            CollectionAdder adder)
+        public IEnumerable ReadCollection()
         {
-            return ReadField(fieldName, r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
+            return Read(BinaryUtils.ReadCollection, BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */
-        public ICollection ReadCollection(CollectionFactory factory,
-            CollectionAdder adder)
+        public TCollection ReadCollection<TCollection, TElement>(Func<int, TCollection> factory)
+            where TCollection : ICollection<TElement>
         {
-            return Read(r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
+            IgniteArgumentCheck.NotNull(factory, "factory");
+
+            return Read(r => BinaryUtils.ReadCollection<TCollection, TElement>(r, factory), BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */
         public IDictionary ReadDictionary(string fieldName)
         {
-            return ReadDictionary(fieldName, null);
+            return ReadField(fieldName, BinaryUtils.ReadDictionary, BinaryUtils.TypeDictionary);
         }
 
         /** <inheritdoc /> */
         public IDictionary ReadDictionary()
         {
-            return ReadDictionary((DictionaryFactory)null);
+            return Read(BinaryUtils.ReadDictionary, BinaryUtils.TypeDictionary);
         }
 
         /** <inheritdoc /> */
-        public IDictionary ReadDictionary(string fieldName, DictionaryFactory factory)
+        public TDictionary ReadDictionary<TDictionary, TK, TV>(string fieldName, Func<int, TDictionary> factory)
+            where TDictionary : IDictionary<TK, TV>
         {
-            return ReadField(fieldName, r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
+            IgniteArgumentCheck.NotNull(factory, "factory");
+
+            return ReadField(fieldName, reader => BinaryUtils.ReadDictionary<TDictionary, TK, TV>(reader, factory), 
+                BinaryUtils.TypeDictionary);
         }
 
         /** <inheritdoc /> */
-        public IDictionary ReadDictionary(DictionaryFactory factory)
+        public TDictionary ReadDictionary<TDictionary, TK, TV>(Func<int, TDictionary> factory)
+            where TDictionary : IDictionary<TK, TV>
         {
-            return Read(r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
+            IgniteArgumentCheck.NotNull(factory, "factory");
+
+            return Read(reader => BinaryUtils.ReadDictionary<TDictionary, TK, TV>(reader, factory),
+                BinaryUtils.TypeDictionary);
         }
 
         /// <summary>

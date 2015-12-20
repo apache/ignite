@@ -33,8 +33,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Resulting generic list.</returns>
         public static List<T> ReadCollectionAsList<T>(this IBinaryRawReader reader)
         {
-            return ((List<T>) reader.ReadCollection(size => new List<T>(size),
-                (col, elem) => ((List<T>) col).Add((T) elem)));
+            return reader.ReadCollection<List<T>, T>(size => new List<T>(size));
         }
 
         /// <summary>
@@ -46,7 +45,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Resulting dictionary.</returns>
         public static Dictionary<TKey, TValue> ReadDictionaryAsGeneric<TKey, TValue>(this IBinaryRawReader reader)
         {
-            return (Dictionary<TKey, TValue>) reader.ReadDictionary(size => new Dictionary<TKey, TValue>(size));
+            return reader.ReadDictionary<Dictionary<TKey, TValue>, TKey, TValue>(
+                size => new Dictionary<TKey, TValue>(size));
         }
     }
 }

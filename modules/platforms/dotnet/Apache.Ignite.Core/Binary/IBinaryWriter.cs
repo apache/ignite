@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Writer for binary objects. 
@@ -232,7 +233,20 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Collection.</param>
-        void WriteCollection(string fieldName, ICollection val);
+        void WriteCollection(string fieldName, IEnumerable val);
+
+        /// <summary>
+        /// Writes a named collection in interoperable form.
+        /// 
+        /// Use this method to communicate with other platforms 
+        /// or with nodes that need to read collection elements in binary form.
+        /// 
+        /// When there is no need for binarization or interoperability, please use <see cref="WriteObject{T}" />,
+        /// which will properly preserve generic collection type.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <param name="val">Collection.</param>
+        void WriteCollection<T>(string fieldName, IEnumerable<T> val);
 
         /// <summary>
         /// Writes a named dictionary in interoperable form.
@@ -246,6 +260,19 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Dictionary.</param>
         void WriteDictionary(string fieldName, IDictionary val);
+
+        /// <summary>
+        /// Writes a named dictionary in interoperable form.
+        /// 
+        /// Use this method to communicate with other platforms 
+        /// or with nodes that need to read dictionary elements in binary form.
+        /// 
+        /// When there is no need for binarization or interoperability, please use <see cref="WriteObject{T}" />,
+        /// which will properly preserve generic dictionary type.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <param name="val">Dictionary.</param>
+        void WriteDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val);
 
         /// <summary>
         /// Get raw writer. 

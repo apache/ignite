@@ -25,13 +25,17 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using NUnit.Framework;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// 
@@ -608,6 +612,23 @@ namespace Apache.Ignite.Core.Tests.Binary
             var newObjList = _marsh.Unmarshal<IList<string>>(data);
 
             CollectionAssert.AreEquivalent(list, newObjList);
+        }
+
+        /// <summary>
+        /// Check interoperable collections.
+        /// </summary>
+        [Test]
+        public void TestInteropCollections()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new List<BinaryTypeConfiguration>
+                {
+                    new BinaryTypeConfiguration(typeof (InteropCollections))
+                }
+            });
+
+            Assert.IsNotNull(marsh.Unmarshal<InteropCollections>(marsh.Marshal(new InteropCollections())));
         }
 
         /// <summary>
@@ -2293,6 +2314,105 @@ namespace Apache.Ignite.Core.Tests.Binary
             public static bool operator !=(ReflectiveStruct left, ReflectiveStruct right)
             {
                 return !left.Equals(right);
+            }
+        }
+
+        private class InteropCollections : IBinarizable
+        {
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                // Check nulls
+                writer.WriteCollection("null1", null);
+                writer.WriteCollection<string>("null2", null);
+                writer.WriteDictionary("null3", null);
+                writer.WriteArray<InteropCollections>("null4", null);
+
+                // Check non-generic
+                writer.WriteCollection("arrayList", new ArrayList {1, "2"});
+                writer.WriteDictionary("hashtable", new Hashtable {{1, "2"}});
+
+                // Check generic
+                writer.WriteCollection("list", new List<string> {"1", "2"});
+                writer.WriteCollection("linkedList", new LinkedList<string>(new[] {"1", "2"}));
+                writer.WriteCollection("hashSet", new HashSet<string>(new[] {"1", "2"}));
+                writer.WriteArray("arr", new InteropCollections[0]);
+
+                // Check custom
+                writer.WriteDictionary("dict", (IDictionary<int, string>) new Dictionary<int, string> {{1, "2"}});
+
+                // Check raw
+                WriteRaw(writer.GetRawWriter());
+            }
+
+            private static void WriteRaw(IBinaryRawWriter writer)
+            {
+                // Check nulls
+                writer.WriteCollection(null);
+                writer.WriteCollection<string>(null);
+                writer.WriteDictionary(null);
+                writer.WriteArray<InteropCollections>(null);
+
+                // Check non-generic
+                writer.WriteCollection(new ArrayList { 1, "2" });
+                writer.WriteDictionary(new Hashtable { { 1, "2" } });
+
+                // Check generic
+                writer.WriteCollection(new List<string> { "1", "2" });
+                writer.WriteCollection(new LinkedList<string>(new[] { "1", "2" }));
+                writer.WriteCollection(new HashSet<string>(new[] { "1", "2" }));
+                writer.WriteArray(new InteropCollections[0]);
+
+                // Check custom
+                writer.WriteDictionary((IDictionary<int, string>) new Dictionary<int, string> {{1, "2"}});
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                // Check nulls
+                Assert.IsNull(reader.ReadCollection("null1"));
+                Assert.IsNull(reader.ReadCollection<List<string>, string>("null2", i => null));
+                Assert.IsNull(reader.ReadDictionary("null3"));
+                Assert.IsNull(reader.ReadArray<InteropCollections>("null4"));
+
+                // Check non-generic
+                Assert.AreEqual(new ArrayList { 1, "2" }, reader.ReadCollection("arrayList"));
+                Assert.AreEqual(new Hashtable { { 1, "2" } }, reader.ReadDictionary("hashtable"));
+
+                // Check generic
+                Assert.AreEqual(new ArrayList { "1", "2" }, reader.ReadCollection("list"));
+                Assert.AreEqual(new LinkedList<object>(new object[] {"1", "2"}), reader.ReadCollection("linkedList"));
+                Assert.AreEqual(new HashSet<object>(new object[] {"1", "2"}), reader.ReadCollection("hashSet"));
+                Assert.AreEqual(new InteropCollections[0], reader.ReadArray<InteropCollections>("arr"));
+
+                Assert.AreEqual(new Dictionary<int, string> {{1, "2"}},
+                    reader.ReadDictionary<Dictionary<int, string>, int, string>("dict",
+                        len => new Dictionary<int, string>(len)));
+
+                // Check raw
+                ReadRaw(reader.GetRawReader());
+            }
+
+            private static void ReadRaw(IBinaryRawReader reader)
+            {
+                // Check nulls
+                Assert.IsNull(reader.ReadCollection());
+                Assert.IsNull(reader.ReadCollection<List<string>, string>(i => null));
+                Assert.IsNull(reader.ReadDictionary());
+                Assert.IsNull(reader.ReadArray<InteropCollections>());
+
+                // Check non-generic
+                Assert.AreEqual(new ArrayList { 1, "2" }, reader.ReadCollection());
+                Assert.AreEqual(new Hashtable { { 1, "2" } }, reader.ReadDictionary());
+
+                // Check generic
+                Assert.AreEqual(new ArrayList { "1", "2" }, reader.ReadCollection());
+                Assert.AreEqual(new LinkedList<object>(new object[] { "1", "2" }), reader.ReadCollection());
+                Assert.AreEqual(new HashSet<object>(new object[] { "1", "2" }), reader.ReadCollection());
+                Assert.AreEqual(new InteropCollections[0], reader.ReadArray<InteropCollections>());
+
+                Assert.AreEqual(new Dictionary<int, string> { { 1, "2" } },
+                    reader.ReadDictionary<Dictionary<int, string>, int, string>(
+                        len => new Dictionary<int, string>(len)));
             }
         }
     }

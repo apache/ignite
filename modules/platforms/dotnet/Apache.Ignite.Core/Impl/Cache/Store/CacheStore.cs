@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                     case OpLoadAll:
                         var keys = rawReader.ReadCollection();
 
-                        var result = _store.LoadAll(keys);
+                        var result = _store.LoadAll((ICollection) keys);
 
                         foreach (DictionaryEntry entry in result)
                             WriteObjects(cb, grid, entry.Key, entry.Value);
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                         break;
 
                     case OpRmvAll:
-                        _store.DeleteAll(rawReader.ReadCollection());
+                        _store.DeleteAll((ICollection) rawReader.ReadCollection());
 
                         break;
 
