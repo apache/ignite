@@ -679,10 +679,10 @@ public class GridReduceQueryExecutor {
                     else {
                         UUID locNodeId = ctx.localNodeId();
 
+                        h2.setupConnection(r.conn, false, enforceJoinOrder);
+
                         GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
                             .pageSize(r.pageSize).distributedJoins(false));
-
-                        h2.enforceJoinOrder(enforceJoinOrder);
 
                         try {
                             if (qry.explain())
@@ -699,8 +699,6 @@ public class GridReduceQueryExecutor {
                             resIter = new Iter(res);
                         }
                         finally {
-                            h2.enforceJoinOrder(false);
-
                             GridH2QueryContext.clear(false);
                         }
                     }

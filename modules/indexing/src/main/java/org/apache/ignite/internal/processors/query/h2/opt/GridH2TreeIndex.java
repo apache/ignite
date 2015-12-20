@@ -1423,7 +1423,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
                 if (res != null) {
                     switch (res.status()) {
-                        case GridH2IndexRangeResponse.STATUS_OK:
+                        case STATUS_OK:
                             List<GridH2RowRange> ranges0 = res.ranges();
 
                             remainingRanges -= ranges0.size();
@@ -1454,11 +1454,12 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                                 throw new IgniteInterruptedException(e.getMessage());
                             }
 
+                            // Retry to send the request once more after some time.
                             send(singletonList(node), req);
 
-                            continue;
+                            break;
 
-                        case GridH2IndexRangeResponse.STATUS_ERROR:
+                        case STATUS_ERROR:
                             throw new CacheException(res.error());
 
                         default:

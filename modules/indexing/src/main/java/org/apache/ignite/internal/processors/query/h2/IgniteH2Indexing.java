@@ -120,7 +120,6 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
-import org.h2.command.dml.OptimizerHints;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
@@ -728,21 +727,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder)
         throws IgniteCheckedException {
-        initLocalQueryContext(filters);
+        Connection conn = connectionForSpace(spaceName);
+
+        initLocalQueryContext(conn, enforceJoinOrder, filters);
 
         try {
-            Connection conn = connectionForSpace(spaceName);
-
-            enforceJoinOrder(enforceJoinOrder);
-
-            ResultSet rs;
-
-            try {
-                rs = executeSqlQueryWithTimer(spaceName, conn, qry, params, true);
-            }
-            finally {
-                enforceJoinOrder(false);
-            }
+            ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, qry, params, true);
 
             List<GridQueryFieldMetadata> meta = null;
 
@@ -888,25 +878,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Executes query.
-     *
-     * @param space Space.
-     * @param qry Query.
-     * @param params Query parameters.
-     * @param tbl Target table of query to generate select.
-     * @return Result set.
-     * @throws IgniteCheckedException If failed.
-     */
-    private ResultSet executeQuery(String space, String qry, @Nullable Collection<Object> params,
-        TableDescriptor tbl) throws IgniteCheckedException {
-        Connection conn = connectionForThread(tbl.schema());
-
-        String sql = generateQuery(qry, tbl);
-
-        return executeSqlQueryWithTimer(space, conn, sql, params, true);
-    }
-
-    /**
      * Binds parameters to prepared statement.
      *
      * @param stmt Prepared statement.
@@ -923,10 +894,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @param conn Connection.
+     * @param enforceJoinOrder Enforce join order of tables.
      * @param filter Filter.
      */
-    private void initLocalQueryContext(IndexingQueryFilter filter) {
+    private void initLocalQueryContext(Connection conn, boolean enforceJoinOrder, IndexingQueryFilter filter) {
+        setupConnection(conn, false, enforceJoinOrder);
+
         GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter).distributedJoins(false));
+    }
+
+    /**
+     * @param conn Connection to use.
+     * @param distributedJoins If distributed joins are enabled.
+     * @param enforceJoinOrder Enforce join order of tables.
+     */
+    public void setupConnection(Connection conn, boolean distributedJoins, boolean enforceJoinOrder) {
+        Session s = session(conn);
+
+        s.setForceJoinOrder(enforceJoinOrder);
+        s.setJoinBatchEnabled(distributedJoins);
     }
 
     /** {@inheritDoc} */
@@ -939,10 +926,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             throw new CacheException("Failed to find SQL table for type: " + type.name());
 
-        initLocalQueryContext(filter);
+        String sql = generateQuery(qry, tbl);
+
+        Connection conn = connectionForThread(tbl.schema());
+
+        initLocalQueryContext(conn, false, filter);
 
         try {
-            ResultSet rs = executeQuery(spaceName, qry, params, tbl);
+            ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, true);
 
             return new KeyValIterator(rs);
         }
@@ -1026,18 +1017,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param enforce If {@code true}, then table join order will be enforced.
-     */
-    public void enforceJoinOrder(boolean enforce) {
-        OptimizerHints hints = null;
-        if (enforce) {
-            hints = new OptimizerHints();
-            hints.setJoinReorderEnabled(false);
-        }
-        OptimizerHints.set(hints);
-    }
-
-    /**
      * @param cctx Cache context.
      * @return {@code true} If the given cache is partitioned.
      */
@@ -1059,8 +1038,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final String sqlQry = qry.getSql();
 
         Connection c = connectionForSpace(space);
+
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
-        final boolean distributedJoins = qry.isDistributedJoins();
+        final boolean distributedJoins = qry.isDistributedJoins() && isPartitioned(cctx);
         final boolean groupByCollocated = qry.isCollocated();
 
         GridCacheTwoStepQuery twoStepQry;
@@ -1076,12 +1056,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else {
             final UUID locNodeId = ctx.localNodeId();
-            Session ses = session(c);
+
+            setupConnection(c, distributedJoins, enforceJoinOrder);
 
             GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
-                .distributedJoins(distributedJoins && isPartitioned(cctx)));
-            enforceJoinOrder(enforceJoinOrder);
-            ses.setJoinBatchEnabled(false);
+                .distributedJoins(distributedJoins));
 
             PreparedStatement stmt;
 
@@ -1092,8 +1071,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new CacheException("Failed to parse query: " + sqlQry, e);
             }
             finally {
-                ses.setJoinBatchEnabled(true);
-                enforceJoinOrder(false);
                 GridH2QueryContext.clear(false);
             }
 
@@ -1429,7 +1406,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return -1;
 
-        ResultSet rs = executeSqlQuery(connectionForSpace(spaceName),
+        Connection conn = connectionForSpace(spaceName);
+
+        setupConnection(conn, false, false);
+
+        ResultSet rs = executeSqlQuery(conn,
             "SELECT COUNT(*) FROM " + tbl.fullTableName(), null, false);
 
         try {

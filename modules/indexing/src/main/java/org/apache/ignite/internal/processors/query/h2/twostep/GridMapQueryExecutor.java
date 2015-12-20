@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.lang.reflect.Field;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
@@ -511,19 +512,22 @@ public class GridMapQueryExecutor {
                 }
             }
 
+            Connection conn = h2.connectionForSpace(mainCache);
+
+            // Here we enforce join order to have the same behavior on all the nodes.
+            h2.setupConnection(conn, distributedJoins, true);
+
             GridH2QueryContext.set(qctx);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
-
-            h2.enforceJoinOrder(true);
 
             try {
                 // Run queries.
                 int i = 0;
 
                 for (GridCacheSqlQuery qry : qrys) {
-                    ResultSet rs = h2.executeSqlQueryWithTimer(mainCache, h2.connectionForSpace(mainCache), qry.query(),
+                    ResultSet rs = h2.executeSqlQueryWithTimer(mainCache, conn, qry.query(),
                         F.asList(qry.parameters()), true);
 
                     if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
@@ -559,8 +563,6 @@ public class GridMapQueryExecutor {
                 }
             }
             finally {
-                h2.enforceJoinOrder(false);
-
                 GridH2QueryContext.clear(distributedJoins);
 
                 if (!F.isEmpty(snapshotedTbls)) {

@@ -23,6 +23,7 @@ import java.util.List;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
+import org.h2.expression.Comparison;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionColumn;
 import org.h2.index.IndexCondition;
@@ -40,10 +41,10 @@ public final class GridH2CollocationModel {
     public static final int MULTIPLIER_COLLOCATED = 1;
 
     /** */
-    private static final int MULTIPLIER_UNICAST = 20;
+    private static final int MULTIPLIER_UNICAST = 50;
 
     /** */
-    private static final int MULTIPLIER_BROADCAST = 80;
+    private static final int MULTIPLIER_BROADCAST = 200;
 
     /** */
     private final GridH2CollocationModel upper;
@@ -285,7 +286,7 @@ public final class GridH2CollocationModel {
         for (int i = 0; i < idxConditions.size(); i++) {
             IndexCondition c = idxConditions.get(i);
 
-            if (c.getCompareType() == IndexCondition.EQUALITY &&
+            if (c.getCompareType() == Comparison.EQUAL &&
                 c.getColumn().getColumnId() == affColId && c.isEvaluatable()) {
                 affKeyConditionFound = true;
 
@@ -451,9 +452,13 @@ public final class GridH2CollocationModel {
         if (child == null && create && isChildTableOrView(i, null)) {
             TableFilter f = childFilters[i];
 
-            children[i] = child = f.getTable().isView() ?
-                buildCollocationModel(this, i, getSubQuery(f), null) :
-                createChildModel(this, i, null);
+            if (f.getTable().isView())
+                child = buildCollocationModel(this, i, getSubQuery(f), null);
+            else
+                child = createChildModel(this, i, null);
+
+            assert child != null;
+            assert children[i] == child;
         }
 
         return child;
@@ -558,10 +563,13 @@ public final class GridH2CollocationModel {
 
             SelectUnion union = (SelectUnion)qry;
 
-            GridH2CollocationModel a = buildCollocationModel(upper, filter, union.getLeft(), unions);
-            GridH2CollocationModel b = buildCollocationModel(upper, filter, union.getRight(), unions);
+            GridH2CollocationModel left = buildCollocationModel(upper, filter, union.getLeft(), unions);
+            GridH2CollocationModel right = buildCollocationModel(upper, filter, union.getRight(), unions);
 
-            return a == null ? b : a;
+            assert left != null;
+            assert right != null;
+
+            return upper != null ? upper : left;
         }
 
         Select select = (Select)qry;
@@ -586,7 +594,7 @@ public final class GridH2CollocationModel {
                 createChildModel(cm, i, null);
         }
 
-        return upper == null ? cm : null;
+        return upper != null ? upper : cm;
     }
 
     /**
