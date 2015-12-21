@@ -1681,7 +1681,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     /**
      *
      */
-    private static class BadHashKeyObject implements Serializable {
+    private static class BadHashKeyObject implements Serializable, Comparable<BadHashKeyObject> {
         /** */
         @QuerySqlField(index = false)
         private final String str;
@@ -1690,7 +1690,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
          * @param str String.
          */
         private BadHashKeyObject(String str) {
-            this.str = str;
+            this.str = str == null ? "" : str;
         }
 
         /** {@inheritDoc} */
@@ -1706,6 +1706,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return 10;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(BadHashKeyObject o) {
+            return str.compareTo(o.str);
         }
 
         /** {@inheritDoc} */
