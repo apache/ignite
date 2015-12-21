@@ -237,7 +237,7 @@ public class GridBinaryMarshaller {
     @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws BinaryObjectException {
         assert bytes != null;
 
-        return (T)BinaryUtils.unmarshal(BinaryHeapInputStream.create(bytes, 0), ctx, clsLdr);
+        return (T) BinaryUtilsEx.unmarshal(BinaryHeapInputStream.create(bytes, 0), ctx, clsLdr);
     }
 
     /**
@@ -247,7 +247,7 @@ public class GridBinaryMarshaller {
      */
     @SuppressWarnings("unchecked")
     @Nullable public <T> T unmarshal(BinaryInputStream in) throws BinaryObjectException {
-        return (T)BinaryUtils.unmarshal(in, ctx, null);
+        return (T) BinaryUtilsEx.unmarshal(in, ctx, null);
     }
 
     /**

@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryUtilsEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -203,7 +203,7 @@ import org.apache.ignite.internal.util.typedef.F;
         if (keepBinary)
             return map;
 
-        Map<Object, Object> map0 = BinaryUtils.newMap(map);
+        Map<Object, Object> map0 = BinaryUtilsEx.newMap(map);
 
         for (Map.Entry<Object, Object> e : map.entrySet())
             map0.put(unwrapBinary(e.getKey(), keepBinary, cpy), unwrapBinary(e.getValue(), keepBinary, cpy));
@@ -241,7 +241,7 @@ import org.apache.ignite.internal.util.typedef.F;
      * @return Unwrapped set.
      */
     private Set<Object> unwrapBinaries(Set<Object> set, boolean keepBinary, boolean cpy) {
-        Set<Object> set0 = BinaryUtils.newSet(set);
+        Set<Object> set0 = BinaryUtilsEx.newSet(set);
 
         for (Object obj : set)
             set0.add(unwrapBinary(obj, keepBinary, cpy));

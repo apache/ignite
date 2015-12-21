@@ -887,7 +887,7 @@ public class BinaryContext implements Externalizable {
      * @return {@code True} if reflective serializer can be used.
      */
     private static boolean canUseReflectiveSerializer(Class cls) {
-        return BinaryUtils.isBinarylizable(cls) || !BinaryUtils.isCustomJavaSerialization(cls);
+        return BinaryUtilsEx.isBinarylizable(cls) || !BinaryUtilsEx.isCustomJavaSerialization(cls);
     }
 
     /**

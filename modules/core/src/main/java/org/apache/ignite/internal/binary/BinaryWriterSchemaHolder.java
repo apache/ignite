@@ -94,19 +94,19 @@ public class BinaryWriterSchemaHolder {
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteByte((byte)data[curIdx]);
 
-                res = BinaryUtils.OFFSET_1;
+                res = BinaryUtilsEx.OFFSET_1;
             }
             else if (lastOffset < MAX_OFFSET_2) {
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteShort((short) data[curIdx]);
 
-                res = BinaryUtils.OFFSET_2;
+                res = BinaryUtilsEx.OFFSET_2;
             }
             else {
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteInt(data[curIdx]);
 
-                res = BinaryUtils.OFFSET_4;
+                res = BinaryUtilsEx.OFFSET_4;
             }
         }
         else {
@@ -116,7 +116,7 @@ public class BinaryWriterSchemaHolder {
                     out.unsafeWriteByte((byte) data[curIdx++]);
                 }
 
-                res = BinaryUtils.OFFSET_1;
+                res = BinaryUtilsEx.OFFSET_1;
             }
             else if (lastOffset < MAX_OFFSET_2) {
                 for (int curIdx = startIdx; curIdx < idx;) {
@@ -124,7 +124,7 @@ public class BinaryWriterSchemaHolder {
                     out.unsafeWriteShort((short) data[curIdx++]);
                 }
 
-                res = BinaryUtils.OFFSET_2;
+                res = BinaryUtilsEx.OFFSET_2;
             }
             else {
                 for (int curIdx = startIdx; curIdx < idx;) {
@@ -132,7 +132,7 @@ public class BinaryWriterSchemaHolder {
                     out.unsafeWriteInt(data[curIdx++]);
                 }
 
-                res = BinaryUtils.OFFSET_4;
+                res = BinaryUtilsEx.OFFSET_4;
             }
         }
 

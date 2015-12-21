@@ -170,16 +170,16 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
         short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
-        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+        int fieldIdLen = BinaryUtilsEx.isCompactFooter(flags) ? 0 : BinaryUtilsEx.FIELD_ID_LEN;
+        int fieldOffsetLen = BinaryUtilsEx.fieldOffsetLength(flags);
 
         int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
 
         int fieldPos;
 
-        if (fieldOffsetLen == BinaryUtils.OFFSET_1)
+        if (fieldOffsetLen == BinaryUtilsEx.OFFSET_1)
             fieldPos = start + ((int)BinaryPrimitives.readByte(ptr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffsetLen == BinaryUtils.OFFSET_2)
+        else if (fieldOffsetLen == BinaryUtilsEx.OFFSET_2)
             fieldPos = start + ((int)BinaryPrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + BinaryPrimitives.readInt(ptr, fieldOffsetPos);
@@ -296,7 +296,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
                 stream.position(fieldPos);
 
-                val = BinaryUtils.unmarshal(stream, ctx, null);
+                val = BinaryUtilsEx.unmarshal(stream, ctx, null);
 
                 break;
         }

@@ -23,7 +23,7 @@ import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryUtilsEx;
 
 import java.util.Collection;
 import java.util.IdentityHashMap;
@@ -145,10 +145,10 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        Byte flag = BinaryUtils.PLAIN_CLASS_TO_FLAG.get(val.getClass());
+        Byte flag = BinaryUtilsEx.PLAIN_CLASS_TO_FLAG.get(val.getClass());
 
         if (flag != null) {
-            BinaryUtils.writePlainObject(writer, val);
+            BinaryUtilsEx.writePlainObject(writer, val);
 
             return;
         }

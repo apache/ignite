@@ -414,7 +414,7 @@ public class BinarySchema implements Externalizable {
      */
     public static class Builder {
         /** Schema ID. */
-        private int schemaId = BinaryUtils.schemaInitialId();
+        private int schemaId = BinaryUtilsEx.schemaInitialId();
 
         /** Fields. */
         private final ArrayList<Integer> fields = new ArrayList<>();
@@ -443,7 +443,7 @@ public class BinarySchema implements Externalizable {
         public void addField(int fieldId) {
             fields.add(fieldId);
 
-            schemaId = BinaryUtils.updateSchemaId(schemaId, fieldId);
+            schemaId = BinaryUtilsEx.updateSchemaId(schemaId, fieldId);
         }
 
         /**

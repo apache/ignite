@@ -27,7 +27,7 @@ import org.apache.ignite.internal.binary.BinaryPositionReadable;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryUtilsEx;
 
 import java.sql.Timestamp;
 import java.util.Date;
@@ -840,7 +840,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
         /** {@inheritDoc} */
         @Override public Object value() {
-            return BinaryUtils.unwrapLazy(wrappedCollection());
+            return BinaryUtilsEx.unwrapLazy(wrappedCollection());
         }
     }
 }

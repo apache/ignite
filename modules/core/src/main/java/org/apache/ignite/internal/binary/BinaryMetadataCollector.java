@@ -267,8 +267,8 @@ class BinaryMetadataCollector implements BinaryWriter {
         if (oldFieldTypeId != null && !oldFieldTypeId.equals(fieldTypeId)) {
             throw new BinaryObjectException(
                 "Field is written twice with different types [" + "typeName=" + typeName + ", fieldName=" + name +
-                ", fieldTypeName1=" + BinaryUtils.fieldTypeName(oldFieldTypeId) +
-                ", fieldTypeName2=" + BinaryUtils.fieldTypeName(fieldTypeId) + ']'
+                ", fieldTypeName1=" + BinaryUtilsEx.fieldTypeName(oldFieldTypeId) +
+                ", fieldTypeName2=" + BinaryUtilsEx.fieldTypeName(fieldTypeId) + ']'
             );
         }
 

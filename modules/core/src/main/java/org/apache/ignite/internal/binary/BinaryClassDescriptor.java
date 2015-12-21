@@ -22,6 +22,7 @@ import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryUtils;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -170,7 +171,7 @@ public class BinaryClassDescriptor {
             if (cls == BinaryEnumObjectImpl.class)
                 mode = BinaryWriteMode.BINARY_ENUM;
             else
-                mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
+                mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtilsEx.mode(cls);
         }
 
         if (useOptMarshaller && userType) {

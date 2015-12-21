@@ -30,7 +30,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinarySchemaRegistry;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
-import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryUtilsEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -131,7 +131,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
         byte ver = reader.readBytePositioned(start + GridBinaryMarshaller.PROTO_VER_POS);
 
-        BinaryUtils.checkProtocolVersion(ver);
+        BinaryUtilsEx.checkProtocolVersion(ver);
 
         int typeId = reader.readIntPositioned(start + GridBinaryMarshaller.TYPE_ID_POS);
         ctx = reader.binaryContext();
@@ -214,16 +214,16 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     assignedFldsById = Collections.emptyMap();
 
                 // Get footer details.
-                int fieldIdLen = BinaryUtils.fieldIdLength(flags);
-                int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+                int fieldIdLen = BinaryUtilsEx.fieldIdLength(flags);
+                int fieldOffsetLen = BinaryUtilsEx.fieldOffsetLength(flags);
 
-                IgniteBiTuple<Integer, Integer> footer = BinaryUtils.footerAbsolute(reader, start);
+                IgniteBiTuple<Integer, Integer> footer = BinaryUtilsEx.footerAbsolute(reader, start);
 
                 int footerPos = footer.get1();
                 int footerEnd = footer.get2();
 
                 // Get raw position.
-                int rawPos = BinaryUtils.rawOffsetAbsolute(reader, start);
+                int rawPos = BinaryUtilsEx.rawOffsetAbsolute(reader, start);
 
                 // Position reader on data.
                 reader.position(start + hdrLen);
@@ -251,7 +251,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     else {
                         int type = fieldLen != 0 ? reader.readByte(0) : 0;
 
-                        if (fieldLen != 0 && !BinaryUtils.isPlainArrayType(type) && BinaryUtils.isPlainType(type)) {
+                        if (fieldLen != 0 && !BinaryUtilsEx.isPlainArrayType(type) && BinaryUtilsEx.isPlainType(type)) {
                             writer.writeFieldId(fieldId);
 
                             writer.write(reader.array(), reader.position(), fieldLen);
@@ -314,19 +314,19 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                             nullObjField = true;
                     }
                     else
-                        newFldTypeId = BinaryUtils.typeByClass(val.getClass());
+                        newFldTypeId = BinaryUtilsEx.typeByClass(val.getClass());
 
-                    String newFldTypeName = BinaryUtils.fieldTypeName(newFldTypeId);
+                    String newFldTypeName = BinaryUtilsEx.fieldTypeName(newFldTypeId);
 
                     if (oldFldTypeName == null) {
                         // It's a new field, we have to add it to metadata.
                         if (fieldsMeta == null)
                             fieldsMeta = new HashMap<>();
 
-                        fieldsMeta.put(name, BinaryUtils.fieldTypeId(newFldTypeName));
+                        fieldsMeta.put(name, BinaryUtilsEx.fieldTypeId(newFldTypeName));
                     }
                     else if (!nullObjField) {
-                        String objTypeName = BinaryUtils.fieldTypeName(GridBinaryMarshaller.OBJ);
+                        String objTypeName = BinaryUtilsEx.fieldTypeName(GridBinaryMarshaller.OBJ);
 
                         if (!objTypeName.equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
                             throw new BinaryObjectException(
@@ -343,8 +343,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             if (reader != null) {
                 // Write raw data if any.
-                int rawOff = BinaryUtils.rawOffsetAbsolute(reader, start);
-                int footerStart = BinaryUtils.footerStartAbsolute(reader, start);
+                int rawOff = BinaryUtilsEx.rawOffsetAbsolute(reader, start);
+                int footerStart = BinaryUtilsEx.footerStartAbsolute(reader, start);
 
                 if (rawOff < footerStart) {
                     writer.rawWriter();
@@ -353,7 +353,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 }
 
                 // Shift reader to the end of the object.
-                reader.position(start + BinaryUtils.length(reader, start));
+                reader.position(start + BinaryUtilsEx.length(reader, start));
             }
 
             writer.postWrite(true, registeredType, hashCode);
@@ -405,7 +405,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     private IgniteBiTuple<Integer, Integer> fieldPositionAndLength(int footerPos, int footerEnd, int rawPos,
         int fieldIdLen, int fieldOffsetLen) {
         // Get field offset first.
-        int fieldOffset = BinaryUtils.fieldOffsetRelative(reader, footerPos + fieldIdLen, fieldOffsetLen);
+        int fieldOffset = BinaryUtilsEx.fieldOffsetRelative(reader, footerPos + fieldIdLen, fieldOffsetLen);
         int fieldPos = start + fieldOffset;
 
         // Get field length.
@@ -416,7 +416,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             fieldLen = rawPos - fieldPos;
         else {
             // Field is somewhere in the middle, get difference with the next offset.
-            int nextFieldOffset = BinaryUtils.fieldOffsetRelative(reader,
+            int nextFieldOffset = BinaryUtilsEx.fieldOffsetRelative(reader,
                 footerPos + fieldIdLen + fieldOffsetLen + fieldIdLen, fieldOffsetLen);
 
             fieldLen = nextFieldOffset - fieldOffset;
@@ -432,19 +432,19 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         assert reader != null;
 
         if (readCache == null) {
-            int fieldIdLen = BinaryUtils.fieldIdLength(flags);
-            int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+            int fieldIdLen = BinaryUtilsEx.fieldIdLength(flags);
+            int fieldOffsetLen = BinaryUtilsEx.fieldOffsetLength(flags);
 
             BinarySchema schema = reader.schema();
 
             Map<Integer, Object> readCache = new HashMap<>();
 
-            IgniteBiTuple<Integer, Integer> footer = BinaryUtils.footerAbsolute(reader, start);
+            IgniteBiTuple<Integer, Integer> footer = BinaryUtilsEx.footerAbsolute(reader, start);
 
             int footerPos = footer.get1();
             int footerEnd = footer.get2();
 
-            int rawPos = BinaryUtils.rawOffsetAbsolute(reader, start);
+            int rawPos = BinaryUtilsEx.rawOffsetAbsolute(reader, start);
 
             int idx = 0;
 
@@ -485,12 +485,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             val = readCache.get(fldId);
         }
 
-        return (T)BinaryUtils.unwrapLazy(val);
+        return (T) BinaryUtilsEx.unwrapLazy(val);
     }
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder setField(String name, Object val0) {
-        Object val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
+        Object val = val0 == null ? new BinaryValueWithType(BinaryUtilsEx.typeByClass(Object.class), null) : val0;
 
         if (assignedVals == null)
             assignedVals = new LinkedHashMap<>();
@@ -511,7 +511,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         if (assignedVals == null)
             assignedVals = new LinkedHashMap<>();
 
-        assignedVals.put(name, new BinaryValueWithType(BinaryUtils.typeByClass(type), val));
+        assignedVals.put(name, new BinaryValueWithType(BinaryUtilsEx.typeByClass(type), val));
 
         return this;
     }

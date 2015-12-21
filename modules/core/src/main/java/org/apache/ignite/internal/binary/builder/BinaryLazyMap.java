@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryUtilsEx;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -81,7 +81,7 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
             delegate = new LinkedHashMap<>();
 
             for (int i = 0; i < size; i++)
-                delegate.put(BinaryUtils.unwrapLazy(reader.parseValue()), reader.parseValue());
+                delegate.put(BinaryUtilsEx.unwrapLazy(reader.parseValue()), reader.parseValue());
         }
     }
 
@@ -154,21 +154,21 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
     @Override public Object get(Object key) {
         ensureDelegateInit();
 
-        return BinaryUtils.unwrapLazy(delegate.get(key));
+        return BinaryUtilsEx.unwrapLazy(delegate.get(key));
     }
 
     /** {@inheritDoc} */
     @Override public Object put(Object key, Object val) {
         ensureDelegateInit();
 
-        return BinaryUtils.unwrapLazy(delegate.put(key, val));
+        return BinaryUtilsEx.unwrapLazy(delegate.put(key, val));
     }
 
     /** {@inheritDoc} */
     @Override public Object remove(Object key) {
         ensureDelegateInit();
 
-        return BinaryUtils.unwrapLazy(delegate.remove(key));
+        return BinaryUtilsEx.unwrapLazy(delegate.remove(key));
     }
 
     /** {@inheritDoc} */
