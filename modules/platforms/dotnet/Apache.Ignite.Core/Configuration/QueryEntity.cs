@@ -21,8 +21,10 @@ namespace Apache.Ignite.Core.Configuration
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
 
@@ -32,6 +34,12 @@ namespace Apache.Ignite.Core.Configuration
     /// </summary>
     public class QueryEntity
     {
+        /** */
+        private Type _keyType;
+
+        /** */
+        private Type _valType;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
         /// </summary>
@@ -47,14 +55,21 @@ namespace Apache.Ignite.Core.Configuration
 
         /// <summary>
         /// Gets or sets the type of the key.
-        /// This is a shortcut for <see cref="KeyTypeName"/>. 
-        /// Getter will return null for non-primitive types.
+        /// <para />
+        /// This is a shortcut for <see cref="KeyTypeName"/>. Getter will return null for non-primitive types.
+        /// <para />
+        /// Setting this property will overwrite <see cref="Fields"/> and <see cref="Indexes"/> according to
+        /// <see cref="QueryFieldAttribute"/>, if any.
         /// </summary>
         public Type KeyType
         {
-            get { return JavaTypes.GetDotNetType(KeyTypeName); }
+            get { return _keyType ?? JavaTypes.GetDotNetType(KeyTypeName); }
             set
             {
+                RescanAttributes(value, _valType);  // Do this first because it can throw
+
+                _keyType = value;
+
                 KeyTypeName = value == null
                     ? null
                     : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
@@ -68,17 +83,26 @@ namespace Apache.Ignite.Core.Configuration
 
         /// <summary>
         /// Gets or sets the type of the value.
-        /// This is a shortcut for <see cref="ValueTypeName"/>. 
-        /// Getter will return null for non-primitive types.
+        /// <para />
+        /// This is a shortcut for <see cref="ValueTypeName"/>. Getter will return null for non-primitive types.
+        /// <para />
+        /// Setting this property will overwrite <see cref="Fields"/> and <see cref="Indexes"/> according to
+        /// <see cref="QueryFieldAttribute"/>, if any.
         /// </summary>
         public Type ValueType
         {
-            get { return JavaTypes.GetDotNetType(KeyTypeName); }
+            get { return _valType ?? JavaTypes.GetDotNetType(KeyTypeName); }
             set
             {
+                RescanAttributes(_keyType, value);  // Do this first because it can throw
+
+                _valType = value;
+
                 ValueTypeName = value == null
                     ? null
                     : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+
+                RescanAttributes();
             }
         }
 
@@ -173,6 +197,146 @@ namespace Apache.Ignite.Core.Configuration
             }
             else
                 writer.WriteInt(0);
+        }
+
+
+        /// <summary>
+        /// Rescans the attributes in <see cref="KeyType"/> and <see cref="ValueType"/>.
+        /// </summary>
+        private void RescanAttributes(params Type[] types)
+        {
+            if (types.Length == 0 || types.All(t => t == null))
+                return;
+
+            var fields = new List<QueryField>();
+            var indexes = new List<QueryIndexEx>();
+
+            foreach (var type in types.Where(t => t != null))
+                ScanAttributes(type, fields, indexes, null, new HashSet<Type>());
+
+            if (fields.Any())
+                Fields = fields;
+
+            if (indexes.Any())
+                Indexes = GetGroupIndexes(indexes).ToArray();
+        }
+
+        /// <summary>
+        /// Gets the group indexes.
+        /// </summary>
+        /// <param name="indexes">Ungrouped indexes with their group names.</param>
+        /// <returns></returns>
+        private static IEnumerable<QueryIndex> GetGroupIndexes(List<QueryIndexEx> indexes)
+        {
+            return indexes.Where(idx => idx.IndexGroups != null)
+                .SelectMany(idx => idx.IndexGroups.Select(g => new {Index = idx, GroupName = g}))
+                .GroupBy(x => x.GroupName)
+                .Select(g =>
+                {
+                    var idxs = g.Select(pair => pair.Index).ToArray();
+
+                    var first = idxs.First();
+
+                    return new QueryIndex(idxs.SelectMany(i => i.Fields).ToArray())
+                    {
+                        IndexType = first.IndexType,
+                        Name = first.Name
+                    };
+                })
+                .Concat(indexes.Where(idx => idx.IndexGroups == null));
+        }
+
+        /// <summary>
+        /// Scans specified type for occurences of <see cref="QueryFieldAttribute"/>.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="fields">The fields.</param>
+        /// <param name="indexes">The indexes.</param>
+        /// <param name="parentPropName">Name of the parent property.</param>
+        /// <param name="visitedTypes">The visited types.</param>
+        private static void ScanAttributes(Type type, List<QueryField> fields, List<QueryIndexEx> indexes, 
+            string parentPropName, ISet<Type> visitedTypes)
+        {
+            Debug.Assert(type != null);
+            Debug.Assert(fields != null);
+            Debug.Assert(indexes != null);
+
+            if (visitedTypes.Contains(type))
+                throw new InvalidOperationException("Recursive Query Field definition detected: " + type);
+
+            visitedTypes.Add(type);
+
+            foreach (var memberInfo in GetFieldsAndProperties(type))
+            {
+                foreach (var attr in memberInfo.Key.GetCustomAttributes(true).OfType<QueryFieldAttribute>())
+                {
+                    var columnName = attr.Name ?? memberInfo.Key.Name;
+
+                    if (parentPropName != null)
+                        columnName = parentPropName + "." + columnName;
+
+                    fields.Add(new QueryField(columnName, memberInfo.Value));
+
+                    if (attr.IsIndexed)
+                        indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, attr.IndexType, attr.IndexGroups));
+
+                    ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes);
+                }
+            }
+
+            visitedTypes.Remove(type);
+        }
+
+        /// <summary>
+        /// Gets the fields and properties.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns></returns>
+        private static IEnumerable<KeyValuePair<MemberInfo, Type>> GetFieldsAndProperties(Type type)
+        {
+            Debug.Assert(type != null);
+
+            if (type.IsPrimitive)
+                yield break;
+
+            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
+                               BindingFlags.DeclaredOnly;
+
+            while (type != typeof (object) && type != null)
+            {
+                foreach (var fieldInfo in type.GetFields(bindingFlags))
+                    yield return new KeyValuePair<MemberInfo, Type>(fieldInfo, fieldInfo.FieldType);
+
+                foreach (var propertyInfo in type.GetProperties(bindingFlags))
+                    yield return new KeyValuePair<MemberInfo, Type>(propertyInfo, propertyInfo.PropertyType);
+
+                type = type.BaseType;
+            }
+        }
+
+        /// <summary>
+        /// Extended index with group names.
+        /// </summary>
+        private class QueryIndexEx : QueryIndex
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="QueryIndexEx"/> class.
+            /// </summary>
+            /// <param name="fieldName">Name of the field.</param>
+            /// <param name="isDescending">if set to <c>true</c> [is descending].</param>
+            /// <param name="indexType">Type of the index.</param>
+            /// <param name="groups">The groups.</param>
+            public QueryIndexEx(string fieldName, bool isDescending, QueryIndexType indexType, 
+                ICollection<string> groups) 
+                : base(fieldName, isDescending, indexType)
+            {
+                IndexGroups = groups;
+            }
+
+            /// <summary>
+            /// Gets or sets the index groups.
+            /// </summary>
+            public ICollection<string> IndexGroups { get; set; }
         }
     }
 }

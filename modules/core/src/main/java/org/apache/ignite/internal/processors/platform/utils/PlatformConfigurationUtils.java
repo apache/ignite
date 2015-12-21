@@ -228,7 +228,7 @@ import java.util.Map;
             LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>(cnt);
 
             for (int i = 0; i < cnt; i++)
-                fields.put(in.readString(), in.readBoolean());
+                fields.put(in.readString(), !in.readBoolean());
 
             res.setFields(fields);
         }
@@ -502,7 +502,7 @@ import java.util.Map;
 
             for (Map.Entry<String, Boolean> field : fields.entrySet()) {
                 writer.writeString(field.getKey());
-                writer.writeBoolean(field.getValue());
+                writer.writeBoolean(!field.getValue());
             }
         }
         else

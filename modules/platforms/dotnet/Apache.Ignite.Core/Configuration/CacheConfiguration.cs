@@ -149,7 +149,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
         /// </summary>
-        /// <param name="name">The name.</param>
+        /// <param name="name">Cache name.</param>
         public CacheConfiguration(string name)
         {
             Name = name;
@@ -185,6 +185,20 @@ namespace Apache.Ignite.Core.Configuration
             WriteBehindFlushFrequency = DefaultWriteBehindFlushFrequency;
             WriteBehindFlushSize = DefaultWriteBehindFlushSize;
             WriteBehindFlushThreadCount= DefaultWriteFromBehindFlushThreadCount;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheConfiguration"/> class 
+        /// and populates <see cref="QueryEntities"/> according to provided query types.
+        /// </summary>
+        /// <param name="name">Cache name.</param>
+        /// <param name="queryTypes">
+        /// Collection of types to be registered as query entities. These types should use 
+        /// <see cref="QueryFieldAttribute"/> to configure query fields and properties.
+        /// </param>
+        public CacheConfiguration(string name, params Type[] queryTypes) : this(name)
+        {
+            QueryEntities = queryTypes.Select(type => new QueryEntity {ValueType = type}).ToArray();
         }
 
         /// <summary>

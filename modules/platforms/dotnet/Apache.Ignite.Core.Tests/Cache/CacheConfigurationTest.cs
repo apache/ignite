@@ -330,7 +330,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsNotNull(y);
 
             Assert.AreEqual(x.Name, y.Name);
-            Assert.AreEqual(x.IsAscending, y.IsAscending);
+            Assert.AreEqual(x.IsDescending, y.IsDescending);
         }
 
         /// <summary>

@@ -58,6 +58,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static string GetJavaTypeName(Type type)
         {
+            if (type == null)
+                return null;
+
             string res;
 
             return NetToJava.TryGetValue(type, out res) ? res : null;
@@ -70,6 +73,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns></returns>
         public static Type GetDotNetType(string javaTypeName)
         {
+            if (string.IsNullOrEmpty(javaTypeName))
+                return null;
+
             Type res;
 
             return JavaToNet.TryGetValue(javaTypeName, out res) ? res : null;

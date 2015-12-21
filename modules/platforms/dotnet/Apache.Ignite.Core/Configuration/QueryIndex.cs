@@ -33,19 +33,31 @@ namespace Apache.Ignite.Core.Configuration
         /// Initializes a new instance of the <see cref="QueryIndex" /> class.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
-        public QueryIndex(string fieldName)
+        public QueryIndex(string fieldName) : this(fieldName, false)
         {
-            IgniteArgumentCheck.NotNullOrEmpty(fieldName, "fieldName");
-
-            Fields = new[] {new IndexField(fieldName)};
+            // No-op.
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex" /> class.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
+        /// <param name="isDescending">Sort direction.</param>
+        public QueryIndex(string fieldName, bool isDescending)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(fieldName, "fieldName");
+
+            Fields = new[] {new IndexField(fieldName, isDescending)};
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryIndex" /> class.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="isDescending">Sort direction.</param>
         /// <param name="indexType">Type of the index.</param>
-        public QueryIndex(string fieldName, QueryIndexType indexType) : this(fieldName)
+        public QueryIndex(string fieldName, bool isDescending, QueryIndexType indexType) 
+            : this(fieldName, isDescending)
         {
             IndexType = indexType;
         }
@@ -77,7 +89,7 @@ namespace Apache.Ignite.Core.Configuration
         public QueryIndexType IndexType { get; set; }
 
         /// <summary>
-        /// Gets or sets a collection of fields to be indexed, with their respective Ascending flags.
+        /// Gets or sets a collection of fields to be indexed.
         /// </summary>
         public ICollection<IndexField> Fields { get; private set; }
 
@@ -110,7 +122,7 @@ namespace Apache.Ignite.Core.Configuration
                 foreach (var field in Fields)
                 {
                     writer.WriteString(field.Name);
-                    writer.WriteBoolean(field.IsAscending);
+                    writer.WriteBoolean(field.IsDescending);
                 }
             }
             else

@@ -39,10 +39,10 @@ namespace Apache.Ignite.Core.Configuration
         /// Initializes a new instance of the <see cref="IndexField"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
-        /// <param name="isAscending">Sort direction.</param>
-        public IndexField(string name, bool isAscending) : this (name)
+        /// <param name="isDescending">Sort direction.</param>
+        public IndexField(string name, bool isDescending) : this (name)
         {
-            IsAscending = isAscending;
+            IsDescending = isDescending;
         }
 
         /// <summary>
@@ -51,8 +51,8 @@ namespace Apache.Ignite.Core.Configuration
         public string Name { get; private set; }
 
         /// <summary>
-        /// Gets a value indicating whether this index is ascending.
+        /// Gets a value indicating whether this index is descending. Default is false.
         /// </summary>
-        public bool IsAscending { get; private set; }
+        public bool IsDescending { get; private set; }
     }
 }

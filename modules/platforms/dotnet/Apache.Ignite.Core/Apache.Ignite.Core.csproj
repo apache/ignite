@@ -133,6 +133,7 @@
     <Compile Include="Configuration\QueryField.cs" />
     <Compile Include="Configuration\QueryIndex.cs" />
     <Compile Include="Configuration\QueryIndexType.cs" />
+    <Compile Include="Configuration\QueryFieldAttribute.cs" />
     <Compile Include="Configuration\StaticIpFinder.cs" />
     <Compile Include="Datastream\IDataStreamer.cs" />
     <Compile Include="Datastream\IStreamReceiver.cs" />
