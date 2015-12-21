@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.igfs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
@@ -31,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Secondary file system over native IGFS.
  */
-class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystem {
+class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystem <IgfsEx> {
     /** Delegate. */
     private final IgfsEx igfs;
 
@@ -125,5 +126,10 @@ class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystem {
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public HadoopFileSystemFactory<IgfsEx> getSecondaryFileSystemFactory() {
+        return null;
     }
 }
