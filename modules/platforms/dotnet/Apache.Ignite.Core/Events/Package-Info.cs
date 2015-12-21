@@ -18,7 +18,7 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// Contains Event Subscription functionality together with various events emitted by Ignite.
+/// Event Subscription functionality together with various events emitted by Ignite.
 /// </summary>
 namespace Apache.Ignite.Core.Events
 {
