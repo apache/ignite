@@ -18,7 +18,7 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// Contains Topic-based Messaging functionality.
+/// Topic-based Messaging functionality.
 /// </summary>
 namespace Apache.Ignite.Core.Messaging
 {

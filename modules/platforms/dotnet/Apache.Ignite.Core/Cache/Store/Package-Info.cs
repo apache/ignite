@@ -18,7 +18,7 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// Contains cache store interfaces.
+/// Cache store interfaces.
 /// </summary>
 namespace Apache.Ignite.Core.Cache.Store
 {

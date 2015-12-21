@@ -31,5 +31,6 @@ using System.Reflection;
 
 [assembly: Guid("ce65ec7c-d3cf-41ad-8f45-f90d5af68d77")]
 
-[assembly: AssemblyVersion("1.5.0.10000")]
-[assembly: AssemblyFileVersion("1.5.0.10000")]
+[assembly: AssemblyVersion("1.5.0.7768")]
+[assembly: AssemblyFileVersion("1.5.0.7768")]
+[assembly: AssemblyInformationalVersion("1.5.0-final-SNAPSHOT")]
