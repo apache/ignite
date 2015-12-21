@@ -1087,16 +1087,23 @@ $generatorJava.cacheServerNearCache = function (cache, varName, res) {
     if (cache.cacheMode === 'PARTITIONED' && cache.nearCacheEnabled) {
         res.needEmptyLine = true;
 
-        res.importClass('org.apache.ignite.configuration.NearCacheConfiguration');
+        if (cache.nearConfiguration) {
+            $generatorJava.declareVariable(res, 'nearCfg', 'org.apache.ignite.configuration.NearCacheConfiguration');
 
-        $generatorJava.beanProperty(res, varName, cache.nearConfiguration, 'nearConfiguration', 'nearConfiguration',
-            'NearCacheConfiguration', {nearStartSize: null}, true);
+            res.needEmptyLine = true;
 
-        if (cache.nearConfiguration && cache.nearConfiguration.nearEvictionPolicy && cache.nearConfiguration.nearEvictionPolicy.kind) {
-            $generatorJava.evictionPolicy(res, 'nearConfiguration', cache.nearConfiguration.nearEvictionPolicy, 'nearEvictionPolicy');
+            if (cache.nearConfiguration.nearStartSize) {
+                $generatorJava.property(res, 'nearCfg', cache.nearConfiguration, 'nearStartSize');
+
+                res.needEmptyLine = true;
+            }
+
+            if (cache.nearConfiguration.nearEvictionPolicy && cache.nearConfiguration.nearEvictionPolicy.kind) {
+                $generatorJava.evictionPolicy(res, 'nearCfg', cache.nearConfiguration.nearEvictionPolicy, 'nearEvictionPolicy');
+
+                res.needEmptyLine = true;
+            }
         }
-
-        res.needEmptyLine = true;
     }
 
     return res;
