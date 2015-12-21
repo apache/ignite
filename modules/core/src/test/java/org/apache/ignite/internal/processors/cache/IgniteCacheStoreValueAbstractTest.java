@@ -107,7 +107,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 2 * 60_000;
+        return 3 * 60_000;
     }
 
     /** {@inheritDoc} */

@@ -68,10 +68,10 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// <param name="clientMode">Client mode flag.</param>
         private static void TestRemoteNodes(Example example, bool clientMode)
         {
-            // Exclude CrossPlatformExample and LifecycleExample
+            // Exclude LifecycleExample
             if (string.IsNullOrEmpty(example.SpringConfigUrl))
             {
-                Assert.IsTrue(new[] {"CrossPlatformExample", "LifecycleExample"}.Contains(example.Name));
+                Assert.AreEqual("LifecycleExample", example.Name);
 
                 return;
             }

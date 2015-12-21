@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::cache::query::QueryFieldsCursor class.
+ */
+
 #ifndef _IGNITE_CACHE_QUERY_FIELDS_CURSOR
 #define _IGNITE_CACHE_QUERY_FIELDS_CURSOR
 

@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::cache::CachePeekMode enum.
+ */
+
 #ifndef _IGNITE_CACHE_PEEK_MODE
 #define _IGNITE_CACHE_PEEK_MODE
 

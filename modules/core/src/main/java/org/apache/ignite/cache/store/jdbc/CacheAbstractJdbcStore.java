@@ -1475,7 +1475,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         throws CacheWriterException {
         TypeKind valKind = em.valueKind();
 
-        // Object could be passed by cache in binary format in case of cache configured with setKeepBinaryInStore(true).
+        // Object could be passed by cache in binary format in case of cache configured with setStoreKeepBinary(true).
         if (valKind == TypeKind.POJO && val instanceof BinaryObject)
             valKind = TypeKind.BINARY;
 

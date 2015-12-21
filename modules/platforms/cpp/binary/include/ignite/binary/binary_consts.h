@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares specific binary constatants
+ */
+
 #ifndef _IGNITE_BINARY_CONSTS
 #define _IGNITE_BINARY_CONSTS
 

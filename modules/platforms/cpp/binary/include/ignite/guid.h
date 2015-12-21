@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::Guid class.
+ */
+
 #ifndef _IGNITE_GUID
 #define _IGNITE_GUID
 

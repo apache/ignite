@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::cache::query::QueryFieldsRow class.
+ */
+
 #ifndef _IGNITE_CACHE_QUERY_FIELDS_ROW
 #define _IGNITE_CACHE_QUERY_FIELDS_ROW
 

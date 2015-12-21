@@ -902,9 +902,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             Ignite g1 = startGrid(1);
 
-            long timeout = (long)(discoMap.get(g1.name()).getIpFinderCleanFrequency() * 1.5);
+            long failureDetectTimeout = g1.configuration().getFailureDetectionTimeout();
 
-            Thread.sleep(timeout);
+            long timeout = (long)(discoMap.get(g1.name()).getIpFinderCleanFrequency() * 1.5) + failureDetectTimeout;
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ipFinder.getRegisteredAddresses().size() == 1;
+                }
+            }, timeout);
 
             assert ipFinder.getRegisteredAddresses().size() == 1 : "ipFinder=" + ipFinder.getRegisteredAddresses();
 
@@ -914,7 +920,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             ipFinder.registerAddresses(Arrays.asList(new InetSocketAddress("host1", 1024),
                 new InetSocketAddress("host2", 1024)));
 
-            Thread.sleep(timeout);
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ipFinder.getRegisteredAddresses().size() == 1;
+                }
+            }, timeout);
 
             assert ipFinder.getRegisteredAddresses().size() == 1 : "ipFinder=" + ipFinder.getRegisteredAddresses();
         }
@@ -970,7 +980,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     }
                 }
 
-                assertTrue("GridTcpDiscoveryMulticastIpFinder should register port." , found);
+                assertTrue("TcpDiscoveryMulticastIpFinder should register port." , found);
             }
         }
         finally {

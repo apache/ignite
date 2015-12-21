@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-visor-console_2.10</artifactId>
-    <version>1.5.0-b2-SNAPSHOT</version>
+    <version>1.5.0-final-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>

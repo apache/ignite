@@ -167,6 +167,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip store flag.
+     * @param keepBinary Keep binary flag.
      * @param remapCnt Maximum number of retries.
      * @param waitTopFut If {@code false} does not wait for affinity change future.
      */
@@ -277,15 +278,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * Performs future mapping.
      */
     public void map() {
-        AffinityTopologyVersion topVer = null;
-
-        IgniteInternalTx tx = cctx.tm().anyActiveThreadTx(null);
-
-        if (tx != null && tx.topologyVersionSnapshot() != null)
-            topVer = tx.topologyVersionSnapshot();
-
-        if (topVer == null)
-            topVer = cctx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId());
+        AffinityTopologyVersion topVer = cctx.shared().lockedTopologyVersion(null);
 
         if (topVer == null)
             mapOnTopology();
@@ -359,7 +352,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * @param res Update response.
      */
     private void updateNear(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
-        if (!nearEnabled || !req.hasPrimary())
+        assert nearEnabled;
+
+        if (res.remapKeys() != null || !req.hasPrimary())
             return;
 
         GridNearAtomicCache near = (GridNearAtomicCache)cctx.dht().near();
@@ -544,6 +539,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         @GridToStringInclude
         private Map<UUID, GridNearAtomicUpdateRequest> mappings;
 
+        /** */
+        private int resCnt;
+
         /** Error. */
         private CachePartialUpdateCheckedException err;
 
@@ -583,7 +581,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 else
                     req = mappings != null ? mappings.get(nodeId) : null;
 
-                if (req != null) {
+                if (req != null && req.response() == null) {
                     res = new GridNearAtomicUpdateResponse(cctx.cacheId(), nodeId, req.futureVersion(),
                         cctx.deploymentEnabled());
 
@@ -632,10 +630,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     rcvAll = true;
                 }
                 else {
-                    req = mappings != null ? mappings.remove(nodeId) : null;
+                    req = mappings != null ? mappings.get(nodeId) : null;
 
-                    if (req != null)
-                        rcvAll = mappings.isEmpty();
+                    if (req != null && req.onResponse(res)) {
+                        resCnt++;
+
+                        rcvAll = mappings.size() == resCnt;
+                    }
                     else
                         return;
                 }
@@ -731,8 +732,19 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 return;
             }
 
-            if (!nodeErr && res.remapKeys() == null)
-                updateNear(req, res);
+            if (rcvAll && nearEnabled) {
+                if (mappings != null) {
+                    for (GridNearAtomicUpdateRequest req0 : mappings.values()) {
+                        GridNearAtomicUpdateResponse res0 = req0.response();
+
+                        assert res0 != null : req0;
+
+                        updateNear(req0, res0);
+                    }
+                }
+                else if (!nodeErr)
+                    updateNear(req, res);
+            }
 
             if (remapTopVer != null) {
                 if (fut0 != null)
@@ -827,6 +839,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             synchronized (this) {
                 assert futVer == null : this;
                 assert this.topVer == AffinityTopologyVersion.ZERO : this;
+
+                resCnt = 0;
 
                 this.topVer = topVer;
 

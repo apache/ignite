@@ -30,7 +30,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.ExamplesUtils;
 import org.apache.ignite.examples.model.Person;
+import org.apache.ignite.examples.util.DbH2ServerStartup;
 import org.apache.ignite.transactions.Transaction;
+import org.h2.jdbcx.JdbcConnectionPool;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -38,6 +40,13 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  * Demonstrates usage of cache with underlying persistent store configured.
  * <p>
  * This example uses {@link CacheJdbcPersonStore} as a persistent store.
+ * <p>
+ * To start the example, you should:
+ * <ul>
+ *     <li>Start H2 database TCP server using {@link DbH2ServerStartup}.</li>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup}.</li>
+ *     <li>Start example using {@link CacheJdbcStoreExample}.</li>
+ * </ul>
  * <p>
  * Remote nodes can be started with {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
@@ -82,7 +91,7 @@ public class CacheJdbcStoreExample {
                 @Override public CacheStoreSessionListener create() {
                     CacheJdbcStoreSessionListener lsnr = new CacheJdbcStoreSessionListener();
 
-                    lsnr.setDataSource(CacheJdbcPersonStore.DATA_SRC);
+                    lsnr.setDataSource(JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:ExampleDb", "sa", ""));
 
                     return lsnr;
                 }
@@ -143,5 +152,18 @@ public class CacheJdbcStoreExample {
         }
 
         System.out.println("Read value after commit: " + cache.get(id));
+
+        // Clear entry from memory, but keep it in store.
+        cache.clear(id);
+
+        // Operations on this cache will not affect store.
+        IgniteCache<Long, Person> cacheSkipStore = cache.withSkipStore();
+
+        System.out.println("Read value skipping store (expecting null): " + cacheSkipStore.get(id));
+
+        System.out.println("Read value with store lookup (expecting NOT null): " + cache.get(id));
+
+        // Expecting not null, since entry should be in memory since last call.
+        System.out.println("Read value skipping store (expecting NOT null): " + cacheSkipStore.get(id));
     }
 }
