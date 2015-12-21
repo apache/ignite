@@ -20,8 +20,11 @@ package org.apache.ignite.internal.processors.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -31,6 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -196,6 +200,54 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEquals(2, columnQuery(c, qry + "where a < 2 and b >= 3").size());
             assertEquals(3, columnQuery(c, qry + "where a <= 1 and b > 0").size());
             assertEquals(2, columnQuery(c, qry + "where a <= 1 and b >= 3").size());
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
+     * Test HAVING clause.
+     */
+    public void testHaving() {
+        IgniteCache<Integer, Integer> c = ignite(0).getOrCreateCache(cacheConfig("ints", true,
+            Integer.class, Integer.class));
+
+        try {
+            Random rnd = new GridRandom();
+
+            Map<Integer, AtomicLong> cntMap = new HashMap<>();
+
+            for (int i = 0; i < 1000; i++) {
+                int v = (int)(50 * rnd.nextGaussian());
+
+                c.put(i, v);
+
+                AtomicLong cnt = cntMap.get(v);
+
+                if (cnt == null)
+                    cntMap.put(v, cnt = new AtomicLong());
+
+                cnt.incrementAndGet();
+            }
+
+            assertTrue(cntMap.size() > 10);
+
+            String sqlQry = "select _val, count(*) cnt from Integer group by _val having cnt > ?";
+
+            X.println("Plan: " + c.query(new SqlFieldsQuery("explain " + sqlQry).setArgs(0)).getAll());
+
+            for (int i = -1; i <= 1001; i += 10) {
+                List<List<?>> res = c.query(new SqlFieldsQuery(sqlQry).setArgs(i)).getAll();
+
+                for (List<?> row : res) {
+                    int v = (Integer)row.get(0);
+                    long cnt = (Long)row.get(1);
+
+                    assertTrue(cnt + " > " + i, cnt > i);
+                    assertEquals(cntMap.get(v).longValue(), cnt);
+                }
+            }
         }
         finally {
             c.destroy();
