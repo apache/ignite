@@ -35,7 +35,6 @@ export default [
 
     $scope.panelExpanded = $common.panelExpanded;
     $scope.tableVisibleRow = $table.tableVisibleRow;
-    $scope.joinTip = $common.joinTip;
     $scope.widthIsSufficient = $common.widthIsSufficient;
 
     $scope.tabsServer = { activeTab: 0 };
@@ -65,10 +64,10 @@ export default [
 
     $scope.$watch('cluster', updateTab);
 
-    // TODO IGNITE-2114: implemented as indendent logic for download.
+    // TODO IGNITE-2114: implemented as independent logic for download.
     $scope.downloadConfiguration = function () {
         var cluster = $scope.cluster;
-        var clientNearCfg = $scope.backupItem.nearConfiguration;
+        var clientNearCfg = cluster.clientNearCfg;
 
         var zip = new JSZip();
 
