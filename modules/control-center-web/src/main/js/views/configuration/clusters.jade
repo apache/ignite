@@ -27,17 +27,12 @@ include ../includes/controls
                 ignite-dialog More info
                     ignite-dialog-title Clusters screen
                     ignite-dialog-content 
-                        | Manage your clusters on current screen.
-                        br
-                        | Generated clusters configuration available on&nbsp;
-                        a(href='/configuration/summary') summary
-                        | &nbsp;screen.
+                        | Manage your clusters on current screen.#[br]
+                        | Generated clusters configuration available on #[a(ui-sref='base.configuration.summary') summary] screen.
 
         ignite-callout-cel(data-title='Next Steps')
-            li Continue to&nbsp;
-                a(ui-sref='base.configuration.caches') Caches
-            li Continue to&nbsp;
-                a(ui-sref='base.configuration.summary') Summary
+            li Continue to #[a(ui-sref='base.configuration.caches') Caches]
+            li Continue to #[a(ui-sref='base.configuration.summary') Summary]
 
     div(dw-loading='loadingClustersScreen' dw-loading-options='{text: "Loading clusters screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')

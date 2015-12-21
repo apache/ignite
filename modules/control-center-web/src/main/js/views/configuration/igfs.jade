@@ -26,21 +26,13 @@ include ../includes/controls
                 ignite-dialog More info
                     ignite-dialog-title IGFS screen
                     ignite-dialog-content 
-                        | Manage your IGFS file systems on current screen.
-                        br
-                        | IGFS can be assigned to specified&nbsp;
-                        a(href='/configuration/clusters') clusters
-                        | .&nbsp;
-                        br
-                        | Generated cluster with IGFS available on&nbsp;
-                        a(href='/configuration/summary') summary
-                        | &nbsp;screen.
+                        | Manage your IGFS file systems on current screen.#[br]
+                        | IGFS can be assigned to specified #[a(ui-sref='base.configuration.clusters') clusters].#[br]
+                        | Generated cluster with IGFS available on #[a(ui-sref='base.configuration.summary') summary] screen.
                     
         ignite-callout-cel(data-title='Next Steps')
-            li Continue to&nbsp;
-                a(ui-sref='base.configuration.summary') Summary
-            li Back to&nbsp;
-                a(ui-sref='base.configuration.clusters') Clusters
+            li Continue to #[a(ui-sref='base.configuration.summary') Summary]
+            li Back to #[a(ui-sref='base.configuration.clusters') Clusters]
 
     div(dw-loading='loadingIgfsScreen' dw-loading-options='{text: "Loading IGFS screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')

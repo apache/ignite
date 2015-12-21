@@ -28,23 +28,13 @@ include ../includes/controls
                 ignite-dialog More info
                     ignite-dialog-title Caches screen
                     ignite-dialog-content 
-                        | Caches can be linked with specified&nbsp;
-                        a(href='/configuration/clusters') clusters
-                        | &nbsp;and&nbsp;
-                        a(href='/configuration/metadata') metadata
-                        | ,
-                        br
-                        | Generated cluster with caches configuration available on&nbsp;
-                        a(href='/configuration/summary') summary
-                        | &nbsp;screen.
+                        | Caches can be linked with specified #[a(ui-sref='base.configuration.clusters') clusters] and #[a(ui-sref='base.configuration.metadata') metadata].#[br]
+                        | Generated cluster with caches configuration available on #[a(ui-sref='base.configuration.summary') summary] screen.
                     
         ignite-callout-cel(data-title='Next Steps')
-            li Continue to&nbsp;
-                a(ui-sref='base.configuration.metadata') Metadata
-            li Continue to&nbsp;
-                a(ui-sref='base.configuration.summary') Summary
-            li Back to&nbsp;
-                a(ui-sref='base.configuration.clusters') Clusters
+            li Continue to #[a(ui-sref='base.configuration.metadata') Metadata]
+            li Continue to #[a(ui-sref='base.configuration.summary') Summary]
+            li Back to #[a(ui-sref='base.configuration.clusters') Clusters]
 
     div(dw-loading='loadingCachesScreen' dw-loading-options='{text: "Loading caches screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
