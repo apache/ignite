@@ -231,6 +231,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 cnt.incrementAndGet();
             }
 
+            assertTrue(cntMap.size() > 10);
+
             String sqlQry = "select _val, count(*) cnt from Integer group by _val having cnt > ?";
 
             X.println("Plan: " + c.query(new SqlFieldsQuery("explain " + sqlQry).setArgs(0)).getAll());
