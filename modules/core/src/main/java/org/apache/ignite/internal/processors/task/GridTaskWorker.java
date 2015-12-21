@@ -696,8 +696,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         if (log.isDebugEnabled())
                             U.warn(log, "Received response for unknown child job (was job presumed failed?): " + res);
 
-                        selfOccupied = true;
+                        res = delayedRess.poll();
 
+                        // We can not return here because there can be more delayed messages in the queue.
                         continue;
                     }
 
@@ -708,7 +709,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         if (log.isDebugEnabled())
                             log.debug("Received redundant response for a job (will ignore): " + res);
 
-                        return;
+                        res = delayedRess.poll();
+
+                        // We can not return here because there can be more delayed messages in the queue.
+                        continue;
                     }
 
                     if (!jobRes.getNode().id().equals(res.getNodeId())) {

@@ -230,7 +230,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testFunctionNpe() {
-        // TODO IGNITE-1886
+        assert false : "https://issues.apache.org/jira/browse/IGNITE-1886";
+
         IgniteCache<Integer, User> userCache = ignite(0).createCache(
             cacheConfig("UserCache", true, Integer.class, User.class));
         IgniteCache<Integer, UserOrder> userOrderCache = ignite(0).createCache(

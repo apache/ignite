@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -31,6 +32,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Tests that {@link GridServiceProcessor} completes deploy/undeploy futures during node stop.
  */
 public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -43,6 +51,8 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
 
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
+                Thread.currentThread().setName("deploy-thread");
+
                 IgniteServices svcs = ignite.services();
 
                 IgniteServices services = svcs.withAsync();
@@ -69,13 +79,19 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
 
         Ignition.stopAll(true);
 
-        assertTrue("Deploy future isn't completed", finishLatch.await(15, TimeUnit.SECONDS));
+        boolean wait = finishLatch.await(15, TimeUnit.SECONDS);
+
+        if (!wait)
+            U.dumpThreads(log);
+
+        assertTrue("Deploy future isn't completed", wait);
     }
 
     /**
      * Simple map service.
      */
     public interface TestService {
+        // No-op.
     }
 
     /**

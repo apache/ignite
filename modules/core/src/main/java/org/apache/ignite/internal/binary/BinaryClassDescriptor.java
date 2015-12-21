@@ -166,7 +166,7 @@ public class BinaryClassDescriptor {
         if (excluded)
             mode = BinaryWriteMode.EXCLUSION;
         else if (useOptMarshaller)
-            mode = BinaryWriteMode.OBJECT; // Will not be used anywhere.
+            mode = BinaryWriteMode.OPTIMIZED; // Will not be used anywhere.
         else {
             if (cls == BinaryEnumObjectImpl.class)
                 mode = BinaryWriteMode.BINARY_ENUM;
@@ -225,6 +225,7 @@ public class BinaryClassDescriptor {
             case BINARY_ENUM:
             case ENUM_ARR:
             case CLASS:
+            case OPTIMIZED:
             case EXCLUSION:
                 ctor = null;
                 fields = null;
@@ -395,6 +396,7 @@ public class BinaryClassDescriptor {
     void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
         assert obj != null;
         assert writer != null;
+        assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
 
         writer.typeId(typeId);
 
@@ -648,6 +650,7 @@ public class BinaryClassDescriptor {
      */
     Object read(BinaryReaderExImpl reader) throws BinaryObjectException {
         assert reader != null;
+        assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
 
         Object res;
 
