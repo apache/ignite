@@ -97,6 +97,13 @@ namespace ignite
             void UnbindAllParameters();
 
             /**
+             * Get number of binded parameters.
+             *
+             * @return Number of binded parameters.
+             */
+            uint16_t GetParametersNumber() const;
+
+            /**
              * Prepare SQL query.
              *
              * @note Only SELECT queries are supported currently.

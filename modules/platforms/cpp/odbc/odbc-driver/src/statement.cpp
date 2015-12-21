@@ -82,6 +82,11 @@ namespace ignite
             paramBindings.clear();
         }
 
+        uint16_t Statement::GetParametersNumber() const
+        {
+            return static_cast<uint16_t>(paramBindings.size());
+        }
+
         bool Statement::PrepareSqlQuery(const char* query, size_t len)
         {
             if (currentQuery.get())

@@ -206,8 +206,6 @@ SQLRETURN SQL_API SQLAllocStmt(SQLHDBC conn, SQLHSTMT* stmt)
 
 SQLRETURN SQL_API SQLFreeHandle(SQLSMALLINT type, SQLHANDLE handle)
 {
-    //LOG_MSG("SQLFreeHandle called\n");
-
     switch (type)
     {
         case SQL_HANDLE_ENV:
@@ -1011,6 +1009,22 @@ SQLRETURN SQL_API SQLPrimaryKeys(SQLHSTMT       stmt,
     return success ? SQL_ERROR : SQL_SUCCESS;
 }
 
+SQLRETURN SQL_API SQLNumParams(SQLHSTMT stmt, SQLSMALLINT* paramCnt)
+{
+    using ignite::odbc::Statement;
+
+    LOG_MSG("SQLNumParams called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    *paramCnt = static_cast<SQLSMALLINT>(statement->GetParametersNumber());
+
+    return SQL_SUCCESS;
+}
+
 //
 // ==== Not implemented ====
 //
@@ -1398,12 +1412,6 @@ SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT     stmt,
                                    SQLSMALLINT* nullable)
 {
     LOG_MSG("SQLDescribeParam called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLNumParams(SQLHSTMT stmt, SQLSMALLINT* paramCnt)
-{
-    LOG_MSG("SQLNumParams called\n");
     return SQL_SUCCESS;
 }
 
