@@ -23,18 +23,25 @@ import java.io.Serializable;
  * Simple POJO which could be stored as a key in Ignite cache
  */
 public class PersonId implements Serializable {
+    /** */
     private String companyCode;
-    private String departmentCode;
-    private int personNumber;
 
+    /** */
+    private String departmentCode;
+
+    /** */
+    private int personNum;
+
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public PersonId() {
     }
 
-    public PersonId(String companyCode, String departmentCode, int personNumber) {
+    /** */
+    public PersonId(String companyCode, String departmentCode, int personNum) {
         this.companyCode = companyCode;
         this.departmentCode = departmentCode;
-        this.personNumber = personNumber;
+        this.personNum = personNum;
     }
 
     /** {@inheritDoc} */
@@ -53,45 +60,51 @@ public class PersonId implements Serializable {
             (id.companyCode != null && !id.companyCode.equals(companyCode)))
             return false;
 
-        return personNumber == id.personNumber;
+        return personNum == id.personNum;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         String code = (companyCode == null ? "" : companyCode) +
             (departmentCode == null ? "" : departmentCode) +
-            personNumber;
+                personNum;
 
         return code.hashCode();
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public void setCompanyCode(String code) {
         companyCode = code;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public String getCompanyCode() {
         return companyCode;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public void setDepartmentCode(String code) {
         departmentCode = code;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public String getDepartmentCode() {
         return departmentCode;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
-    public void setPersonNumber(int number) {
-        personNumber = number;
+    public void setPersonNumber(int personNum) {
+        this.personNum = personNum;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public int getPersonNumber() {
-        return personNumber;
+        return personNum;
     }
 }

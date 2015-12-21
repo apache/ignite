@@ -28,19 +28,36 @@ import java.util.List;
  * Simple POJO which could be stored as a value in Ignite cache
  */
 public class Person implements Externalizable {
+    /** */
     private String firstName;
+
+    /** */
     private String lastName;
+
+    /** */
     private int age;
+
+    /** */
     private boolean married;
+
+    /** */
     private long height;
+
+    /** */
     private float weight;
+
+    /** */
     private Date birthDate;
+
+    /** */
     private List<String> phones;
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public Person() {
     }
 
+    /** */
     public Person(String firstName, String lastName, int age, boolean married,
         long height, float weight, Date birthDate, List<String> phones) {
         this.firstName = firstName;
@@ -53,6 +70,8 @@ public class Person implements Externalizable {
         this.phones = phones;
     }
 
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(firstName);
         out.writeObject(lastName);
@@ -64,6 +83,7 @@ public class Person implements Externalizable {
         out.writeObject(phones);
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         firstName = (String)in.readObject();
@@ -76,6 +96,7 @@ public class Person implements Externalizable {
         phones = (List<String>)in.readObject();
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("SimplifiableIfStatement")
     @Override public boolean equals(Object obj) {
         if (obj == null || !(obj instanceof Person))
@@ -103,6 +124,7 @@ public class Person implements Externalizable {
             height == person.height && weight == person.weight;
     }
 
+    /** */
     @SuppressWarnings("SimplifiableIfStatement")
     public boolean equalsPrimitiveFields(Object obj) {
         if (obj == null || !(obj instanceof Person))
@@ -126,81 +148,97 @@ public class Person implements Externalizable {
             height == person.height && weight == person.weight;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public void setFirstName(String name) {
         firstName = name;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public String getFirstName() {
         return firstName;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public void setLastName(String name) {
         lastName = name;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public String getLastName() {
         return lastName;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public void setAge(int age) {
         this.age = age;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public int getAge() {
         return age;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public void setMarried(boolean married) {
         this.married = married;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public boolean getMarried() {
         return married;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public void setHeight(long height) {
         this.height = height;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public long getHeight() {
         return height;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public void setWeight(float weight) {
         this.weight = weight;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public float getWeight() {
         return weight;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public void setBirthDate(Date date) {
         birthDate = date;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public Date getBirthDate() {
         return birthDate;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public void setPhones(List<String> phones) {
         this.phones = phones;
     }
 
+    /** */
     @SuppressWarnings("UnusedDeclaration")
     public List<String> getPhones() {
         return phones;

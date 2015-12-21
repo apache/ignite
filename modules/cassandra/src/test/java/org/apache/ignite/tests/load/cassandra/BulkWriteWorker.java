@@ -26,20 +26,25 @@ import org.apache.ignite.tests.load.Worker;
  * Cassandra direct load tests worker for bulk write operation CacheStore.writeAll
  */
 public class BulkWriteWorker extends Worker {
+    /** */
     public static final String LOGGER_NAME = "CassandraBulkWriteLoadTest";
 
+    /** */
     public BulkWriteWorker(CacheStore cacheStore, int startPosition, int endPosition) {
         super(cacheStore, startPosition, endPosition);
     }
 
+    /** {@inheritDoc} */
     @Override protected String loggerName() {
         return LOGGER_NAME;
     }
 
+    /** {@inheritDoc} */
     @Override protected boolean batchMode() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void process(CacheStore cacheStore, Collection<CacheEntryImpl> entries) {
         cacheStore.writeAll(entries);

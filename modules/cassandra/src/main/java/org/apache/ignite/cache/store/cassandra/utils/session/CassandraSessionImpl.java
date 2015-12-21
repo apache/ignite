@@ -580,7 +580,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 if (hndNum != 0)
                     return;
 
-                RuntimeException error = new IgniteException("Failed to create Cassandra table " + settings.getTableFullName());
+                IgniteException error = new IgniteException("Failed to create Cassandra table " + settings.getTableFullName());
 
                 int attempt = 0;
 
@@ -598,7 +598,7 @@ public class CassandraSessionImpl implements CassandraSession {
                         else
                             throw new IgniteException("Failed to create Cassandra table " + settings.getTableFullName(), e);
 
-                        error = e instanceof RuntimeException ? (RuntimeException)e : new IgniteException(e);
+                        error = (e instanceof IgniteException) ? (IgniteException)e : new IgniteException(e);
                     }
 
                     attempt++;

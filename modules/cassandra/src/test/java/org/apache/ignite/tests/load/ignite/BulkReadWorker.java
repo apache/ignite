@@ -26,20 +26,25 @@ import org.apache.ignite.tests.load.Worker;
  * Ignite load tests worker for bulk read operation CacheStore.loadAll
  */
 public class BulkReadWorker extends Worker {
+    /** */
     public static final String LOGGER_NAME = "IgniteBulkReadLoadTest";
 
+    /** */
     public BulkReadWorker(Ignite ignite, int startPosition, int endPosition) {
         super(ignite, startPosition, endPosition);
     }
 
+    /** {@inheritDoc} */
     @Override protected String loggerName() {
         return LOGGER_NAME;
     }
 
+    /** {@inheritDoc} */
     @Override protected boolean batchMode() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void process(IgniteCache cache, Map entries) {
         cache.getAll(entries.keySet());

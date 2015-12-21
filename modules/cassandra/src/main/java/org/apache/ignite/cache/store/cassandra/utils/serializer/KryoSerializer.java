@@ -20,6 +20,8 @@ package org.apache.ignite.cache.store.cassandra.utils.serializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -28,6 +30,9 @@ import java.nio.ByteBuffer;
  * Serializer based on Kryo serialization.
  */
 public class KryoSerializer implements Serializer {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Thread local instance of {@link com.esotericsoftware.kryo.Kryo} */
     private transient ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
         protected Kryo initialValue() {
@@ -54,24 +59,11 @@ public class KryoSerializer implements Serializer {
             return ByteBuffer.wrap(stream.toByteArray());
         }
         catch (Throwable e) {
-            throw new RuntimeException("Failed to serialize object of the class '" + obj.getClass().getName() + "'", e);
+            throw new IgniteException("Failed to serialize object of the class '" + obj.getClass().getName() + "'", e);
         }
         finally {
-            if (out != null) {
-                try {
-                    out.close();
-                }
-                catch (Throwable ignored) {
-                }
-            }
-
-            if (stream != null) {
-                try {
-                    stream.close();
-                }
-                catch (Throwable ignored) {
-                }
-            }
+            U.closeQuiet(out);
+            U.closeQuiet(stream);
         }
     }
 
@@ -86,24 +78,11 @@ public class KryoSerializer implements Serializer {
             return kryos.get().readClassAndObject(in);
         }
         catch (Throwable e) {
-            throw new RuntimeException("Failed to deserialize object from byte stream", e);
+            throw new IgniteException("Failed to deserialize object from byte stream", e);
         }
         finally {
-            if (in != null) {
-                try {
-                    in.close();
-                }
-                catch (Throwable ignored) {
-                }
-            }
-
-            if (stream != null) {
-                try {
-                    stream.close();
-                }
-                catch (Throwable ignored) {
-                }
-            }
+            U.closeQuiet(in);
+            U.closeQuiet(stream);
         }
     }
 }

@@ -28,6 +28,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.cassandra.utils.common.SystemHelper;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.springframework.core.io.Resource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -309,21 +310,8 @@ public class KeyValuePersistenceSettings {
             throw new IgniteException("Failed to read input stream for Cassandra persistence settings resource: " + rsrc, e);
         }
         finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                }
-                catch (Throwable ignored) {
-                }
-            }
-
-            if (in != null) {
-                try {
-                    in.close();
-                }
-                catch (Throwable ignored) {
-                }
-            }
+            U.closeQuiet(reader);
+            U.closeQuiet(in);
         }
 
         return settings.toString();
