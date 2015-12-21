@@ -247,7 +247,7 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
     };
 
     var loadNotebook = function () {
-        $loading.start('loadingNotebookScreen');
+        $loading.start('loading');
 
         $http.post('/api/v1/notebooks/get', {noteId: $state.params.id})
             .success(function (notebook) {
@@ -280,9 +280,7 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
             .finally(function () {
                 $scope.loaded = true;
 
-                console.log($scope.notebook);
-
-                $loading.finish('loadingNotebookScreen');
+                $loading.finish('loading');
             });
     };
 

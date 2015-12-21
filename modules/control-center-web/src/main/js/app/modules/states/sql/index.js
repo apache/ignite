@@ -26,6 +26,9 @@ angular
     $stateProvider
     .state('base.sql', {
         url: '/sql/{id}',
-		templateUrl: '/sql/sql.html'
+		templateUrl: '/sql/sql.html',
+		data: {
+			loading: 'Loading notebook screen...'
+		}
 	});
 }]);
