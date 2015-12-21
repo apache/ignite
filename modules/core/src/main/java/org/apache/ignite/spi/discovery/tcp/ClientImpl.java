@@ -1828,36 +1828,42 @@ class ClientImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            if (!getLocalNodeId().equals(msg.creatorNodeId())) {
-                TcpDiscoveryNode node = rmtNodes.remove(msg.failedNodeId());
+            if (nodeAdded()) {
+                if (!getLocalNodeId().equals(msg.creatorNodeId())) {
+                    TcpDiscoveryNode node = rmtNodes.remove(msg.failedNodeId());
 
-                if (node == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node failed message since node is not found [msg=" + msg + ']');
+                    if (node == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Discarding node failed message since node is not found [msg=" + msg + ']');
 
-                    return;
+                        return;
+                    }
+
+                    Collection<ClusterNode> top = updateTopologyHistory(msg.topologyVersion(), msg);
+
+                    if (state != CONNECTED) {
+                        if (log.isDebugEnabled())
+                            log.debug("Discarding node failed message (join process is not finished): " + msg);
+
+                        return;
+                    }
+
+                    if (msg.warning() != null) {
+                        ClusterNode creatorNode = rmtNodes.get(msg.creatorNodeId());
+
+                        U.warn(log, "Received EVT_NODE_FAILED event with warning [" +
+                            "nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : msg.creatorNodeId()) +
+                            ", msg=" + msg.warning() + ']');
+                    }
+
+                    notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node, top);
+
+                    spi.stats.onNodeFailed();
                 }
-
-                Collection<ClusterNode> top = updateTopologyHistory(msg.topologyVersion(), msg);
-
-                if (state != CONNECTED) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node failed message (join process is not finished): " + msg);
-
-                    return;
-                }
-
-                if (msg.warning() != null) {
-                    ClusterNode creatorNode = rmtNodes.get(msg.creatorNodeId());
-
-                    U.warn(log, "Received EVT_NODE_FAILED event with warning [" +
-                        "nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : msg.creatorNodeId()) +
-                        ", msg=" + msg.warning() + ']');
-                }
-
-                notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node, top);
-
-                spi.stats.onNodeFailed();
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Ignore topology message, local node not added to topology: " + msg);
             }
         }
 

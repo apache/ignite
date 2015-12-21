@@ -606,8 +606,11 @@ public class CodeGenerator {
 
             add2(src, "jdbcType.setCacheName(cacheName);");
 
-            // Database info.
-            add2(src, "jdbcType.setDatabaseSchema(\"" + pojo.schema() + "\");");
+            // Database schema.
+            if (pojo.schema() != null)
+                add2(src, "jdbcType.setDatabaseSchema(\"" + pojo.schema() + "\");");
+
+            // Database table.
             add2(src, "jdbcType.setDatabaseTable(\"" + tbl + "\");");
 
             // Java info.

@@ -1088,7 +1088,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         clientMode = true;
 
-        final int CLIENTS = 2;
+        final int CLIENTS = 5;
 
         List<Ignite> clients = new ArrayList<>();
 
@@ -1103,12 +1103,14 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         int nodes = SRV_CNT + CLIENTS;
         int srvNodes = SRV_CNT;
 
-        for (int iter = 0; iter < 3; iter++) {
+        for (int iter = 0; iter < 5; iter++) {
             log.info("Iteration: " + iter);
 
             reconnectClientNodes(log, clients, grid(0), null);
 
-            for (Ignite client : clients) {
+            final int expNodes = CLIENTS + srvNodes;
+
+            for (final Ignite client : clients) {
                 IgniteCache<Object, Object> cache = client.cache(null);
 
                 assertNotNull(cache);
@@ -1116,6 +1118,14 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                 cache.put(client.name(), 1);
 
                 assertEquals(1, cache.get(client.name()));
+
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        ClusterGroup grp = client.cluster().forCacheNodes(null);
+
+                        return grp.nodes().size() == expNodes;
+                    }
+                }, 5000);
 
                 ClusterGroup grp = client.cluster().forCacheNodes(null);
 
@@ -1127,7 +1137,15 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             }
 
             for (int i = 0; i < nodes; i++) {
-                Ignite ignite = grid(i);
+                final Ignite ignite = grid(i);
+
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        ClusterGroup grp = ignite.cluster().forCacheNodes(null);
+
+                        return grp.nodes().size() == expNodes;
+                    }
+                }, 5000);
 
                 ClusterGroup grp = ignite.cluster().forCacheNodes(null);
 
