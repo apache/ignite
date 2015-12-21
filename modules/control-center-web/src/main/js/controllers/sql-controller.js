@@ -280,6 +280,8 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
             .finally(function () {
                 $scope.loaded = true;
 
+                console.log($scope.notebook);
+
                 $loading.finish('loadingNotebookScreen');
             });
     };
