@@ -1214,8 +1214,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Escaped name.
      */
     private static String escapeName(String name, boolean escapeAll) {
+        if (name == null) // It is possible only for a cache name.
+            return "" + ESC_CH + ESC_CH;
+
         if (escapeAll)
-            return name == null ? "" + ESC_CH + ESC_CH : ESC_CH + name + ESC_CH;
+            return ESC_CH + name + ESC_CH;
 
         SB sb = null;
 
@@ -1362,7 +1365,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             schema = schemas.get(escapeName(schemaName, true));
         }
 
-        return emptyIfNull(schema.spaceName).isEmpty() ? null : schema.spaceName;
+        return schema.spaceName;
     }
 
     /** {@inheritDoc} */
@@ -2188,6 +2191,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         /**
          * @param spaceName Space name.
+         * @param schemaName Schema name.
          * @param offheap Offheap memory.
          * @param ccfg Cache configuration.
          */
