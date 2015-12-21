@@ -779,27 +779,18 @@
                                             function setClientVersion(ggVer, clientVer) {
                                                 var p = project.getProperty(ggVer);
 
-                                                var pos = p.search("-");
+                                                var digitVer = /\d+\.\d+\.\d+/.exec(p);
 
-                                                if (pos &gt; 0)
+                                                if (digitVer != null)
                                                 {
-                                                    var suffix = p.substring(pos);
+                                                    // Date of the last major release
+                                                    var startDate = new Date(2015,1,1);
 
-                                                    var ver = 0;
+                                                    // Number of hours since the last major release
+                                                    var buildNum = Math.round((new Date() - startDate)/(3600*1000));
+                                                    var ver = digitVer[0] + "." + buildNum;
 
-                                                    var beta = /-b([0-9]+)/.exec(suffix);
-                                                    if (beta !== null)
-                                                        ver += parseInt(beta[1]);
-
-                                                    var patch = /-p([0-9]+)/.exec(suffix);
-                                                    if (patch !== null)
-                                                        ver += parseInt(patch[1]) * 100;
-
-                                                    if (suffix.search("final") &gt; 0)
-                                                        ver += 10000;
-
-                                                    var resVer = p.substring(0, pos) +"." + ver;
-                                                    project.setProperty(clientVer, resVer);
+                                                    project.setProperty(clientVer, ver);
                                                 }
                                                 else
                                                     project.setProperty(clientVer, p);
@@ -820,8 +811,17 @@
                                         <echo message="${new.client.version}" />
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d.\d.\d(.\d)?(&quot;\)\])" />
+                                            <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])" />
                                             <substitution expression="\1${new.client.version}\3" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/AssemblyInfo.cs" />
+                                                <include name="**/AssemblyInfo.cpp" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
+                                            <substitution expression="\1${new.ignite.version}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/AssemblyInfo.cs" />
                                                 <include name="**/AssemblyInfo.cpp" />
@@ -830,7 +830,7 @@
 
                                         <echo message="Update ignite.version in cpp client" />
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(AC_INIT.+\[)\d.\d.\d.*?(\].+)" />
+                                            <regexp pattern="(AC_INIT.+\[)\d+\.\d+\.\d+.*?(\].+)" />
                                             <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/configure.ac" />
@@ -838,7 +838,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(define GG_VERSION_STR_WIN &quot;)\d.\d.\d(.\d)?(&quot;)" />
+                                            <regexp pattern="(define GG_VERSION_STR_WIN &quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;)" />
                                             <substitution expression="\1${new.client.version}\3" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/resource.h" />
@@ -846,7 +846,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-16">
-                                            <regexp pattern="(Version&quot;, &quot;)\d.\d.\d.\d(&quot;)" />
+                                            <regexp pattern="(Version&quot;, &quot;)\d+\.\d+\.\d+\.\d+(&quot;)" />
                                             <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/Resource.rc" />

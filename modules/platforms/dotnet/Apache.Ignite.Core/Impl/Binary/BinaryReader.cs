@@ -484,15 +484,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public ICollection ReadCollection(string fieldName, CollectionFactory factory,
-            CollectionAdder adder)
+        public ICollection ReadCollection(string fieldName, Func<int, ICollection> factory, 
+            Action<ICollection, object> adder)
         {
             return ReadField(fieldName, r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */
-        public ICollection ReadCollection(CollectionFactory factory,
-            CollectionAdder adder)
+        public ICollection ReadCollection(Func<int, ICollection> factory, Action<ICollection, object> adder)
         {
             return Read(r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
         }
@@ -506,17 +505,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public IDictionary ReadDictionary()
         {
-            return ReadDictionary((DictionaryFactory)null);
+            return ReadDictionary((Func<int, IDictionary>) null);
         }
 
         /** <inheritdoc /> */
-        public IDictionary ReadDictionary(string fieldName, DictionaryFactory factory)
+        public IDictionary ReadDictionary(string fieldName, Func<int, IDictionary> factory)
         {
             return ReadField(fieldName, r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
         }
 
         /** <inheritdoc /> */
-        public IDictionary ReadDictionary(DictionaryFactory factory)
+        public IDictionary ReadDictionary(Func<int, IDictionary> factory)
         {
             return Read(r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
         }
