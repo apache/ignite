@@ -99,6 +99,8 @@ $generatorJava.declareVariable = function (res, varName, varFullType, varFullAct
 
     if (!subClass)
         res.needEmptyLine = true;
+
+    return varName;
 };
 
 /**
