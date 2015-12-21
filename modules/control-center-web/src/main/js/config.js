@@ -142,6 +142,9 @@ System.config({
     "github:twbs/bootstrap@3.3.6": {
       "jquery": "github:components/jquery@2.1.4"
     },
+    "github:wix/angular-tree-control@0.2.23": {
+      "angular": "github:angular/bower-angular@1.4.8"
+    },
     "npm:acorn-globals@1.0.9": {
       "acorn": "npm:acorn@2.6.4"
     },
