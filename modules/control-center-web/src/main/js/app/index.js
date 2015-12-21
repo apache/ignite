@@ -54,6 +54,7 @@ window.angular = angular;
 
 import './modules/User/index'
 import './modules/Auth/index'
+import './modules/Form/index'
 
 import './modules/states/login/index'
 import './modules/states/logout/index'
@@ -90,9 +91,10 @@ import hasPojo from './filters/hasPojo/hasPojo.filter'
 angular
 .module('ignite-console', [
 	'ui.router',
-	// Services.
+	// Base modules.
 	'ignite-console.Auth',
 	'ignite-console.User',
+	'ignite-console.Form',
 	// States.
 	'ignite-console.states.login',
 	'ignite-console.states.logout',
