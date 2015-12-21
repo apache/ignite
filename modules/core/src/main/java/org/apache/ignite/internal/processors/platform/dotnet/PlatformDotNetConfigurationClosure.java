@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformConfiguratio
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
@@ -240,7 +241,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     @SuppressWarnings("deprecation")
     private static GridBinaryMarshaller marshaller() {
         try {
-            BinaryContext ctx = new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration());
+            BinaryContext ctx =
+                new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
 
             BinaryMarshaller marsh = new BinaryMarshaller();
 

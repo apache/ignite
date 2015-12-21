@@ -597,7 +597,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
         // If there is another system transaction in progress, use it's topology version to prevent deadlock.
         if (topVer == null && tx != null && tx.system()) {
-            IgniteInternalTx tx0 = cctx.tm().anyActiveThreadTx(tx);
+            IgniteInternalTx tx0 = cctx.tm().anyActiveThreadTx(Thread.currentThread().getId(), tx);
 
             if (tx0 != null)
                 topVer = tx0.topologyVersionSnapshot();

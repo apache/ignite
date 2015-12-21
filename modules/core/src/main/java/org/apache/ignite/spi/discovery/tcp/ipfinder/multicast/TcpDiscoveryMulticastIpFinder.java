@@ -136,6 +136,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     /** */
     private boolean mcastErr;
 
+    @GridToStringExclude
+    private Set<InetSocketAddress> locNodeAddrs;
+
     /**
      * Constructs new IP finder.
      */
@@ -369,6 +372,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         }
 
         if (!clientMode) {
+            locNodeAddrs = new HashSet<>(addrs);
+
             if (addrSnds.isEmpty()) {
                 try {
                     // Create non-bound socket if local host is loopback or failed to create sockets explicitly
@@ -403,8 +408,11 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             else
                 mcastErr = true;
         }
-        else
+        else {
             assert addrSnds.isEmpty() : addrSnds;
+
+            locNodeAddrs = Collections.emptySet();
+        }
     }
 
     /** {@inheritDoc} */
@@ -607,7 +615,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                     U.close(sock);
                 }
 
-                if (!rmtAddrs.isEmpty())
+                if (rmtAddrs.size() > locNodeAddrs.size())
                     break;
 
                 if (i < addrReqAttempts - 1) // Wait some time before re-sending address request.

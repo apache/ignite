@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -91,9 +90,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** */
     private GridDhtPartitionTopology top;
-
-    /** Topology version. */
-    private final GridAtomicLong topVer = new GridAtomicLong();
 
     /** Force key futures. */
     private final ConcurrentMap<IgniteUuid, GridDhtForceKeysFuture<?, ?>> forceKeyFuts = newMap();
@@ -148,11 +144,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 assert e.type() != EVT_NODE_JOINED || n.order() > loc.order() : "Node joined with smaller-than-local " +
                     "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
-
-                boolean set = topVer.setIfGreater(e.topologyVersion());
-
-                assert set : "Have you configured TcpDiscoverySpi for your in-memory data grid? [newVer=" +
-                    e.topologyVersion() + ", curVer=" + topVer.get() + ", evt=" + e + ']';
 
                 if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {
                     for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
@@ -235,20 +226,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         demander.start();
 
         cctx.events().addListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("DHT rebalancer onKernalStart callback.");
-
-        ClusterNode loc = cctx.localNode();
-
-        assert loc.metrics().getStartTime() > 0;
-
-        final long startTopVer = loc.order();
-
-        topVer.setIfGreater(startTopVer);
     }
 
     /** {@inheritDoc} */
@@ -382,12 +359,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public void onReconnected() {
         startFut = new GridFutureAdapter<>();
-
-        long topVer0 = cctx.kernalContext().discovery().topologyVersion();
-
-        assert topVer0 > 0 : topVer0;
-
-        topVer.set(topVer0);
     }
 
     /**
@@ -482,7 +453,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> initialRebalanceFuture() {
-        return cctx.kernalContext().clientNode() ? new GridFinishedFuture<>(true) : initRebalanceFut;
+        return cctx.kernalContext().clientNode() ? startFut : initRebalanceFut;
     }
 
     /**

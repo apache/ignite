@@ -539,6 +539,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearClose() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-2189");
+
         IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getNearConfig());
 
         // GridDhtTxPrepareRequest requests to Client node will be counted.

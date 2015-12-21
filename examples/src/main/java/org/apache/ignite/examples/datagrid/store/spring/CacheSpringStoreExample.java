@@ -25,11 +25,12 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
-import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
+import org.apache.ignite.cache.store.spring.CacheSpringStoreSessionListener;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.ExamplesUtils;
 import org.apache.ignite.examples.model.Person;
+import org.apache.ignite.examples.util.DbH2ServerStartup;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -38,6 +39,13 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  * Demonstrates usage of cache with underlying persistent store configured.
  * <p>
  * This example uses {@link CacheSpringPersonStore} as a persistent store.
+ * <p>
+ * To start the example, you should:
+ * <ul>
+ *     <li>Start H2 database TCP server using {@link DbH2ServerStartup}.</li>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup}.</li>
+ *     <li>Start example using {@link CacheSpringStoreExample}.</li>
+ * </ul>
  * <p>
  * Remote nodes can be started with {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
@@ -80,7 +88,7 @@ public class CacheSpringStoreExample {
             // Configure Spring session listener.
             cacheCfg.setCacheStoreSessionListenerFactories(new Factory<CacheStoreSessionListener>() {
                 @Override public CacheStoreSessionListener create() {
-                    CacheJdbcStoreSessionListener lsnr = new CacheJdbcStoreSessionListener();
+                    CacheSpringStoreSessionListener lsnr = new CacheSpringStoreSessionListener();
 
                     lsnr.setDataSource(CacheSpringPersonStore.DATA_SRC);
 

@@ -1104,7 +1104,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <returns>Collection.</returns>
          */
         public static ICollection ReadCollection(BinaryReader ctx,
-            CollectionFactory factory, CollectionAdder adder)
+            Func<int, ICollection> factory, Action<ICollection, object> adder)
         {
             IBinaryStream stream = ctx.Stream;
 
@@ -1181,7 +1181,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="factory">Factory delegate.</param>
          * <returns>Dictionary.</returns>
          */
-        public static IDictionary ReadDictionary(BinaryReader ctx, DictionaryFactory factory)
+        public static IDictionary ReadDictionary(BinaryReader ctx, Func<int, IDictionary> factory)
         {
             IBinaryStream stream = ctx.Stream;
 

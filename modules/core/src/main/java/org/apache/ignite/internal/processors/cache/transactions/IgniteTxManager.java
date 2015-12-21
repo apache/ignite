@@ -605,11 +605,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param threadId Thread ID.
+     * @param ignore Transaction to ignore.
      * @return Any transaction associated with the current thread.
      */
-    public IgniteInternalTx anyActiveThreadTx(IgniteInternalTx ignore) {
-        long threadId = Thread.currentThread().getId();
-
+    public IgniteInternalTx anyActiveThreadTx(long threadId, IgniteInternalTx ignore) {
         IgniteInternalTx tx = threadMap.get(threadId);
 
         if (tx != null && tx.topologyVersionSnapshot() != null)

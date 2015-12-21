@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::cache::query::QueryArgument class template and
+ * ignite::cache::query::QueryArgumentBase interface.
+ */
+
 #ifndef _IGNITE_CACHE_QUERY_ARGUMENT
 #define _IGNITE_CACHE_QUERY_ARGUMENT
 

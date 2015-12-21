@@ -23,12 +23,12 @@
         "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 
 <hibernate-mapping default-access="field">
-    <class name="org.apache.ignite.examples.model.Person" table="PERSONS">
+    <class name="org.apache.ignite.examples.model.Person" table="PERSON">
         <!-- ID. -->
         <id name="id"/>
 
         <!-- We only map data we are interested in. -->
-        <property name="firstName"/>
-        <property name="lastName"/>
+        <property name="firstName" column="first_name"/>
+        <property name="lastName" column="last_name"/>
     </class>
 </hibernate-mapping>
