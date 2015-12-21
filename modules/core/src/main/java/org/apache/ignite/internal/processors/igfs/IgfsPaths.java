@@ -65,9 +65,12 @@ public class IgfsPaths <F> implements Externalizable {
      * @param dfltMode Default IGFS mode.
      * @param pathModes Path modes.
      */
-    public IgfsPaths(Map<String, String> props, IgfsMode dfltMode, @Nullable List<T2<IgfsPath,
-        IgfsMode>> pathModes) {
+    public IgfsPaths(Map<String, String> props,
+                     HadoopFileSystemFactory<F> factory,
+                     IgfsMode dfltMode,
+                     @Nullable List<T2<IgfsPath, IgfsMode>> pathModes) {
         this.props = props;
+        this.factory = factory;
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
     }

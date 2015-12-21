@@ -330,9 +330,9 @@ public class IgniteHadoopFileSystem extends FileSystem {
 //                String secUri = props.get(SECONDARY_FS_URI);
 //                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
 
-                HadoopFileSystemFactory<FileSystem> factory = (HadoopFileSystemFactory<FileSystem>)paths.factory();
+                HadoopFileSystemFactory<FileSystem> factory = paths.factory();
 
-                A.ensure(secondaryUri != null, "File system factory uri should not be null.");
+                A.ensure(factory != null, "Secondary file system factory should not be null.");
 
                 secondaryUri = factory.uri();
 

@@ -92,7 +92,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 //    private @Nullable Collection<URI> cfgPaths;
 
     /** The default user name. It is used if no user context is set. */
-    private String dfltUserName;
+    private String dfltUserName = IgfsUtils.fixUserName(null);
 
     /** */
     private HadoopFileSystemFactory<FileSystem> fsFactory;
@@ -112,6 +112,13 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 //            }
 //        }
 //    );
+
+    /**
+     * Default constructor for Spring.
+     */
+    public IgniteHadoopIgfsSecondaryFileSystem() {
+        // noop.
+    }
 
     /**
      * Simple constructor that is to be used by default.
@@ -516,7 +523,8 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         Exception e = null;
 
         try {
-            dfltFs.close();
+            if (dfltFs != null)
+                dfltFs.close();
         }
         catch (Exception e0) {
             e = e0;
@@ -569,11 +577,13 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
     /**
      * Should be invoked by client (from Spring?) after all the setters invoked.
+     * TODO: how this should be invoked?
      *
      * @throws IgniteCheckedException
      */
     public void start() throws IgniteCheckedException {
         A.ensure(fsFactory != null, "factory");
+        A.ensure(dfltUserName != null, "dfltUserName");
 
         if (fsFactory instanceof LifecycleAware)
             ((LifecycleAware) fsFactory).start();
@@ -585,12 +595,12 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             // The value is *not* stored in the 'fileSysLazyMap' cache, but saved in field:
             //this.dfltFs = secProvider.createFileSystem(dfltUserName);
             this.dfltFs = fsFactory.get(dfltUserName);
+
+            assert dfltFs != null;
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
         }
-
-        assert dfltFs != null;
     }
 
     /** {@inheritDoc} */
