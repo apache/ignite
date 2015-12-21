@@ -35,19 +35,31 @@ angular
 	})
 	.state('base.configuration.clusters', {
 		url: '/clusters',
-		templateUrl: '/configuration/clusters.html'	
+		templateUrl: '/configuration/clusters.html',
+		data: {
+			loading: 'Loading clusters screen...'
+		}
 	})
 	.state('base.configuration.caches', {
 		url: '/caches',
-		templateUrl: '/configuration/caches.html'	
+		templateUrl: '/configuration/caches.html',
+		data: {
+			loading: 'Loading caches screen...'
+		}
 	})
 	.state('base.configuration.metadata', {
 		url: '/metadata',
-		templateUrl: '/configuration/metadata.html'	
+		templateUrl: '/configuration/metadata.html',
+		data: {
+			loading: 'Loading metadata screen...'
+		}
 	})
 	.state('base.configuration.igfs', {
 		url: '/igfs',
-		templateUrl: '/configuration/igfs.html'	
+		templateUrl: '/configuration/igfs.html',
+		data: {
+			loading: 'Loading IGFS screen...'
+		}
 	})
 	.state('base.configuration.summary', {
 		url: '/summary',
