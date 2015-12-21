@@ -18,7 +18,7 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// Contains APIs for creating and executing cache queries.
+/// APIs for creating and executing cache queries.
 /// </summary>
 namespace Apache.Ignite.Core.Cache.Query
 {
