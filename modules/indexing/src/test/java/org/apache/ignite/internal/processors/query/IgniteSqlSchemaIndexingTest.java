@@ -66,7 +66,6 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private static CacheConfiguration cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
-
         return new CacheConfiguration()
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
@@ -145,6 +144,11 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
         ignite(0).destroyCache(cache.getName());
     }
 
+    /**
+     * Tests escapeAll and sqlSchema apposition.
+     *
+     * @throws Exception If failed.
+     */
     public void testSchemaEscapeAll() throws Exception {
         startGridsMultiThreaded(3, true);
 
@@ -164,8 +168,13 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
         ignite(0).destroyCache(cfgEsc.getName());
     }
 
+    /**
+     * Executes query with and without escaped schema name.
+     * @param cache cache for querying
+     * @param log logger for assertThrows
+     * @param schemaName - schema name without quotes for testing
+     */
     private static void escapeCheckSchemaName(final IgniteCache<Integer, Fact> cache, IgniteLogger log, String schemaName) {
-
         final SqlFieldsQuery qryWrong = new SqlFieldsQuery("select f.id, f.name " +
             "from " + schemaName.toUpperCase() + ".Fact f");
 
