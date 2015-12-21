@@ -198,6 +198,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private static final char ESC_CH = '\"';
 
+    /** */
+    private static final String ESC_STR = ESC_CH + "" + ESC_CH;
+
     /**
      * Command in H2 prepared statement.
      */
@@ -1215,7 +1218,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private static String escapeName(String name, boolean escapeAll) {
         if (name == null) // It is possible only for a cache name.
-            return "" + ESC_CH + ESC_CH;
+            return ESC_STR;
 
         if (escapeAll)
             return ESC_CH + name + ESC_CH;
