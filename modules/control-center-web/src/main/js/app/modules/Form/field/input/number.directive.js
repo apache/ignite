@@ -22,11 +22,9 @@ export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', guid => {
 		let {id, name} = scope; 
 		let field = form[name];
 
-		console.log('label', label);
-
 		scope.field = field;
 		label.for = scope.id = id || guid();
-	}
+	};
 
 	return {
 		restrict: 'E',

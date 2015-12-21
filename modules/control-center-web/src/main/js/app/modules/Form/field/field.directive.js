@@ -15,16 +15,14 @@
  * limitations under the License.
  */
 
-import link from './field.link';
 import template from './field.jade!';
 
 export default ['igniteFormField', [() => {
-	
-	let controller = () => {}
+	let controller = () => {};
 
 	return {
 		restrict: 'E',
-		scope: { },
+		scope: {},
 		bindToController: {
 			for: '@',
 			label: '@'

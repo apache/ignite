@@ -22,7 +22,7 @@ export default ['igniteFormFieldDropdown', ['IgniteFormGUID', guid => {
 		let {id} = scope; 
 
 		scope.id = id || guid();
-	}
+	};
 
 	return {
 		restrict: 'E',

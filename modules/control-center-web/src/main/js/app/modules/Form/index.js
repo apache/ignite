@@ -27,10 +27,7 @@ angular
 .directive(...igniteFormFieldDropdown)
 .directive(...igniteFormFieldInputNumber)
 .factory('IgniteFormGUID', [() => {
-
 	let guid = 0;
 
-	return () => {
-		return `form-field-${guid++}`;
-	}
-}])
+	return () => `form-field-${guid++}`;
+}]);

@@ -39,6 +39,5 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
 
     // Setup watchers. 
     $scope.$watch('cfg', clusterWatcher, true);
-    $scope.$watch('type', clusterWatcher);
     $scope.$watch('cluster', clusterWatcher);
 }];

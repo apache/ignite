@@ -19,7 +19,6 @@ import template from './ui-ace-docker.jade!'
 import controller from './ui-ace-docker.controller'
 
 export default ['igniteUiAceDocker', [() => {
-
 	return {
 		restrict: 'E',
 		scope: {

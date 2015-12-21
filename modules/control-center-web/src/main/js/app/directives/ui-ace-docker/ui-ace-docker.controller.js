@@ -30,7 +30,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     let clusterWatcher = (value) => {
         delete ctrl.data;
 
-        if (!value)
+        if (!$scope.cluster)
             return;
 
         // TODO IGNITE-2058: need move $generatorDocker to services.

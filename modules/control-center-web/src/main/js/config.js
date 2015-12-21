@@ -26,9 +26,9 @@ System.config({
     "angular-motion": "github:mgcrea/angular-motion@0.4.3",
     "angular-nvd3": "github:krispo/angular-nvd3@1.0.5",
     "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.8",
-    "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.5",
+    "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.6",
     "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
-    "angular-tree-control": "github:wix/angular-tree-control@0.2.22",
+    "angular-tree-control": "github:wix/angular-tree-control@0.2.23",
     "angular-ui-ace": "github:angular-ui/ui-ace@0.2.3",
     "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.0.7",
     "angular-ui-router": "github:angular-ui/ui-router@0.2.15",
@@ -141,9 +141,6 @@ System.config({
     },
     "github:twbs/bootstrap@3.3.6": {
       "jquery": "github:components/jquery@2.1.4"
-    },
-    "github:wix/angular-tree-control@0.2.22": {
-      "angular": "github:angular/bower-angular@1.4.8"
     },
     "npm:acorn-globals@1.0.9": {
       "acorn": "npm:acorn@2.6.4"
