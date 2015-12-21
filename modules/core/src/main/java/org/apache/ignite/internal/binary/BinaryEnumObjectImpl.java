@@ -19,9 +19,11 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -118,6 +120,11 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @Override public BinaryObject clone() throws CloneNotSupportedException {
         return (BinaryObject)super.clone();
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
+        return BinaryObjectBuilderImpl.wrap(this);
     }
 
     /** {@inheritDoc} */

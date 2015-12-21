@@ -76,6 +76,7 @@ import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -435,23 +436,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testExternalizableHashCode() throws Exception {
-        SimpleExternalizable sim1 = new SimpleExternalizable("Simple");
-        SimpleExternalizable sim2 = new SimpleExternalizable("Simple");
-
-        BinaryMarshaller marsh = binaryMarshaller();
-
-        BinaryObjectImpl sim1Binary = marshal(sim1, marsh);
-        BinaryObjectImpl sim2Binary = marshal(sim2, marsh);
-
-        assertEquals(sim1.hashCode(), sim2.hashCode());
-        assertEquals(sim1.hashCode(), sim1Binary.hashCode());
-        assertEquals(sim2.hashCode(), sim2Binary.hashCode());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testExternalizableInEnclosing() throws Exception {
         SimpleEnclosingObject obj = new SimpleEnclosingObject();
         obj.simpl = new SimpleExternalizable("field");
@@ -795,6 +779,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     private static class TestQueue extends AbstractQueue<Integer> implements Externalizable {
         /** Name. */
         private String name;
+
+        /**
+         * {@link Externalizable} support.
+         */
+        public TestQueue() {
+            // No-op.
+        }
 
         /**
          * @param name Name.
@@ -2299,41 +2290,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCyclicReferencesMarshalling() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller();
-
-        SimpleObject obj = simpleObject();
-
-        obj.bArr = obj.inner.bArr;
-        obj.cArr = obj.inner.cArr;
-        obj.boolArr = obj.inner.boolArr;
-        obj.sArr = obj.inner.sArr;
-        obj.strArr = obj.inner.strArr;
-        obj.iArr = obj.inner.iArr;
-        obj.lArr = obj.inner.lArr;
-        obj.fArr = obj.inner.fArr;
-        obj.dArr = obj.inner.dArr;
-        obj.dateArr = obj.inner.dateArr;
-        obj.uuidArr = obj.inner.uuidArr;
-        obj.objArr = obj.inner.objArr;
-        obj.bdArr = obj.inner.bdArr;
-        obj.map = obj.inner.map;
-        obj.col = obj.inner.col;
-        obj.mEntry = obj.inner.mEntry;
-
-        SimpleObject res = (SimpleObject)marshalUnmarshal(obj, marsh);
-
-        assertEquals(obj, res);
-
-        assertTrue(res.objArr == res.inner.objArr);
-        assertTrue(res.map == res.inner.map);
-        assertTrue(res.col == res.inner.col);
-        assertTrue(res.mEntry == res.inner.mEntry);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testProxy() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
@@ -2725,7 +2681,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         iCfg.setBinaryConfiguration(bCfg);
 
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg);
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
@@ -2799,8 +2755,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         inner.map.put(2, "str2");
         inner.map.put(3, "str3");
 
-        inner.mEntry = inner.map.entrySet().iterator().next();
-
         SimpleObject outer = new SimpleObject();
 
         outer.b = 2;
@@ -2842,8 +2796,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         outer.map.put(4, "str4");
         outer.map.put(5, "str5");
         outer.map.put(6, "str6");
-
-        outer.mEntry = outer.map.entrySet().iterator().next();
 
         return outer;
     }
@@ -3142,9 +3094,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** */
         private TestEnum[] enumArr;
-
-        /** */
-        private Map.Entry<Integer, String> mEntry;
 
         /** */
         private SimpleObject inner;
@@ -4107,6 +4056,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public static class SimpleExternalizable implements Externalizable {
         /** */
         private String field;
+
+        /**
+         * {@link Externalizable} support.
+         */
+        public SimpleExternalizable() {
+            // No-op.
+        }
 
         /**
          * @param field Field.

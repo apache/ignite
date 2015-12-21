@@ -15,18 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.model.binary;
-
 /**
- * Organization type enum.
+ * <!-- Package description. -->
+ * Model classes for Apache Ignite examples.
  */
-public enum OrganizationType {
-    /** Non-profit organization. */
-    NON_PROFIT,
 
-    /** Private organization. */
-    PRIVATE,
-
-    /** Government organization. */
-    GOVERNMENT
-}
+package org.apache.ignite.examples.model;

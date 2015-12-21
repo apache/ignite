@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Key for binary meta data.
  */
-class BinaryMetadataKey extends GridCacheUtilityKey<BinaryMetadataKey> implements Externalizable {
+public class BinaryMetadataKey extends GridCacheUtilityKey<BinaryMetadataKey> implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -24,54 +24,21 @@ import java.sql.SQLException;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
-import javax.sql.DataSource;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.CacheStoreSessionResource;
-import org.h2.jdbcx.JdbcConnectionPool;
 
 /**
  * Example of {@link CacheStore} implementation that uses JDBC
  * transaction with cache transactions and maps {@link Long} to {@link Person}.
  */
 public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
-    /** Data source. */
-    public static final DataSource DATA_SRC =
-        JdbcConnectionPool.create("jdbc:h2:mem:example;DB_CLOSE_DELAY=-1", "", "");
-
     /** Store session. */
     @CacheStoreSessionResource
     private CacheStoreSession ses;
-
-    /**
-     * Constructor.
-     *
-     * @throws IgniteException If failed.
-     */
-    public CacheJdbcPersonStore() throws IgniteException {
-        prepareDb();
-    }
-
-    /**
-     * Prepares database for example execution. This method will create a
-     * table called "PERSONS" so it can be used by store implementation.
-     *
-     * @throws IgniteException If failed.
-     */
-    private void prepareDb() throws IgniteException {
-        try (Connection conn = DATA_SRC.getConnection()) {
-            conn.createStatement().execute(
-                "create table if not exists PERSONS (" +
-                "id number unique, firstName varchar(255), lastName varchar(255))");
-        }
-        catch (SQLException e) {
-            throw new IgniteException("Failed to create database table.", e);
-        }
-    }
 
     /** {@inheritDoc} */
     @Override public Person load(Long key) {
@@ -79,7 +46,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
         Connection conn = ses.attachment();
 
-        try (PreparedStatement st = conn.prepareStatement("select * from PERSONS where id = ?")) {
+        try (PreparedStatement st = conn.prepareStatement("select * from PERSON where id = ?")) {
             st.setString(1, key.toString());
 
             ResultSet rs = st.executeQuery();
@@ -106,7 +73,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
             // Try update first. If it does not work, then try insert.
             // Some databases would allow these to be done in one 'upsert' operation.
             try (PreparedStatement st = conn.prepareStatement(
-                "update PERSONS set firstName = ?, lastName = ? where id = ?")) {
+                "update PERSON set first_name = ?, last_name = ? where id = ?")) {
                 st.setString(1, val.firstName);
                 st.setString(2, val.lastName);
                 st.setLong(3, val.id);
@@ -117,7 +84,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
             // If update failed, try to insert.
             if (updated == 0) {
                 try (PreparedStatement st = conn.prepareStatement(
-                    "insert into PERSONS (id, firstName, lastName) values (?, ?, ?)")) {
+                    "insert into PERSON (id, first_name, last_name) values (?, ?, ?)")) {
                     st.setLong(1, val.id);
                     st.setString(2, val.firstName);
                     st.setString(3, val.lastName);
@@ -137,7 +104,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
         Connection conn = ses.attachment();
 
-        try (PreparedStatement st = conn.prepareStatement("delete from PERSONS where id=?")) {
+        try (PreparedStatement st = conn.prepareStatement("delete from PERSON where id=?")) {
             st.setLong(1, (Long)key);
 
             st.executeUpdate();
@@ -156,7 +123,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
         Connection conn = ses.attachment();
 
-        try (PreparedStatement stmt = conn.prepareStatement("select * from PERSONS limit ?")) {
+        try (PreparedStatement stmt = conn.prepareStatement("select * from PERSON limit ?")) {
             stmt.setInt(1, entryCnt);
 
             ResultSet rs = stmt.executeQuery();

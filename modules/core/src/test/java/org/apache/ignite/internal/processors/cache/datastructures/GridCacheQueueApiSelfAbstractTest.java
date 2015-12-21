@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -403,58 +404,58 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         final CountDownLatch clearLatch = new CountDownLatch(THREAD_NUM);
 
-        for (int t = 0; t < THREAD_NUM; t++) {
-            Thread th = new Thread(new Runnable() {
-                @Override public void run() {
-                    if (log.isDebugEnabled())
-                        log.debug("Thread has been started." + Thread.currentThread().getName());
+        IgniteInternalFuture<?> offerFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                if (log.isDebugEnabled())
+                    log.debug("Thread has been started." + Thread.currentThread().getName());
 
-                    try {
-                        // Thread must be blocked on put operation.
-                        for (int i = 0; i < (QUEUE_CAPACITY * THREAD_NUM); i++)
-                            queue.offer("anything", 3, TimeUnit.MINUTES);
+                try {
+                    // Thread must be blocked on put operation.
+                    for (int i = 0; i < (QUEUE_CAPACITY * THREAD_NUM); i++)
+                        queue.offer("anything", 3, TimeUnit.MINUTES);
 
-                        fail("Queue failed");
-                    }
-                    catch (IgniteException | IllegalStateException e) {
-                        putLatch.countDown();
-
-                        assert e.getMessage().contains("removed");
-
-                        assert queue.removed();
-                    }
-
-                    if (log.isDebugEnabled())
-                        log.debug("Thread has been stopped." + Thread.currentThread().getName());
-
+                    fail("Queue failed");
                 }
-            });
-            th.start();
-        }
+                catch (IgniteException | IllegalStateException e) {
+                    putLatch.countDown();
 
-        for (int t = 0; t < THREAD_NUM; t++) {
-            Thread th = new Thread(new Runnable() {
-                @Override public void run() {
-                    try {
-                        IgniteQueue<String> queue = grid(0).queue(queueName, 0, null);
+                    assert e.getMessage().contains("removed");
 
-                        if (queue != null)
-                            queue.close();
-                    }
-                    catch (Exception e) {
-                        fail("Unexpected exception: " + e);
-                    }
-                    finally {
-                        clearLatch.countDown();
-                    }
+                    assert queue.removed();
                 }
-            });
-            th.start();
-        }
+
+                if (log.isDebugEnabled())
+                    log.debug("Thread has been stopped." + Thread.currentThread().getName());
+
+                return null;
+            }
+        }, THREAD_NUM, "offer-thread");
+
+        IgniteInternalFuture<?> closeFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try {
+                    IgniteQueue<String> queue = grid(0).queue(queueName, 0, null);
+
+                    if (queue != null)
+                        queue.close();
+                }
+                catch (Exception e) {
+                    fail("Unexpected exception: " + e);
+                }
+                finally {
+                    clearLatch.countDown();
+                }
+
+                return null;
+            }
+        }, THREAD_NUM, "close-thread");
 
         assert putLatch.await(3, TimeUnit.MINUTES);
 
         assert clearLatch.await(3, TimeUnit.MINUTES);
+
+        offerFut.get();
+        closeFut.get();
 
         try {
             assert queue.isEmpty() : queue.size();
@@ -615,13 +616,6 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
          */
         private SameHashItem(String s) {
             this.s = s;
-        }
-
-        /**
-         * @return Priority.
-         */
-        String data() {
-            return s;
         }
 
         /** {@inheritDoc} */

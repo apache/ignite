@@ -42,6 +42,8 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
      * @param fs the filesystem to be wrapped.
      */
     public HadoopFileSystemUniversalFileSystemAdapter(FileSystem fs) {
+        assert fs != null;
+
         this.fileSys = fs;
     }
 

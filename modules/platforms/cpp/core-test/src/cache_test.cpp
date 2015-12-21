@@ -234,12 +234,12 @@ BOOST_AUTO_TEST_CASE(TestGetAll)
     
     std::set<int> keySet (keys, keys + 5);
 
-    for (int i = 0; i < keySet.size(); i++)
+    for (int i = 0; i < static_cast<int>(keySet.size()); i++)
         cache.Put(i + 1, i + 1);
 
     std::map<int, int> map = cache.GetAll(keySet);
 
-    for (int i = 0; i < keySet.size(); i++)
+    for (int i = 0; i < static_cast<int>(keySet.size()); i++)
         BOOST_REQUIRE(i + 1 == map[i + 1]);
 }
 

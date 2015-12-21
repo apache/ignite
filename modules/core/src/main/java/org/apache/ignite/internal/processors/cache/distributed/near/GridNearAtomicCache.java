@@ -130,6 +130,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         GridNearAtomicUpdateRequest req,
         GridNearAtomicUpdateResponse res
     ) {
+        if (F.size(res.failedKeys()) == req.keys().size())
+            return;
+
         /*
          * Choose value to be stored in near cache: first check key is not in failed and not in skipped list,
          * then check if value was generated on primary node, if not then use value sent in request.

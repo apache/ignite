@@ -18,6 +18,7 @@ Apache Ignite In-Memory Data Fabric 1.5
 * Fixed and improved cache types configuration.
 * Fixed cache rebalancing.
 * Many stability and fault-tolerance fixes.
+* Added example to demonstrate the usage of EntryProcessor.
 
 Complete list of closed issues: https://issues.apache.org/jira/issues/?jql=project%20%3D%20IGNITE%20AND%20fixVersion%20%3D%201.5%20AND%20status%20%3D%20closed
 

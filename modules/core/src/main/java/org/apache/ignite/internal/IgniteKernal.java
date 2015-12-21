@@ -745,7 +745,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(gridName, execSvc, log);
 
-        boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true);
+        boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER,
+            Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default")));
 
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
@@ -3244,20 +3245,33 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     public void dumpDebugInfo() {
-        boolean client = ctx.clientNode();
+        try {
+            GridKernalContextImpl ctx = this.ctx;
 
-        ClusterNode locNode = ctx.discovery().localNode();
+            GridDiscoveryManager discoMrg = ctx != null ? ctx.discovery() : null;
 
-        UUID routerId = locNode instanceof TcpDiscoveryNode ? ((TcpDiscoveryNode)locNode).clientRouterNodeId() : null;
+            ClusterNode locNode = discoMrg != null ? discoMrg.localNode() : null;
 
-        U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
-            ", name=" + ctx.gridName() +
-            ", order=" + locNode.order() +
-            ", topVer=" + ctx.discovery().topologyVersion() +
-            ", client=" + client +
-            (client && routerId != null ? ", routerId=" + routerId : "") + ']');
+            if (ctx != null && discoMrg != null && locNode != null) {
+                boolean client = ctx.clientNode();
 
-        ctx.cache().context().exchange().dumpDebugInfo();
+                UUID routerId = locNode instanceof TcpDiscoveryNode ? ((TcpDiscoveryNode)locNode).clientRouterNodeId() : null;
+
+                U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
+                    ", name=" + ctx.gridName() +
+                    ", order=" + locNode.order() +
+                    ", topVer=" + discoMrg.topologyVersion() +
+                    ", client=" + client +
+                    (client && routerId != null ? ", routerId=" + routerId : "") + ']');
+
+                ctx.cache().context().exchange().dumpDebugInfo();
+            }
+            else
+                U.warn(log, "Dumping debug info for node, context is not initialized [name=" + gridName + ']');
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to dump debug info for node: " + e, e);
+        }
     }
 
     /** {@inheritDoc} */

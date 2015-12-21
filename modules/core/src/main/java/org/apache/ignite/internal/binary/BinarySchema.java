@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -210,6 +212,18 @@ public class BinarySchema implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        writeTo(out);
+    }
+
+    /**
+     * The object implements the writeTo method to save its contents
+     * by calling the methods of DataOutput for its primitive values and strings or
+     * calling the writeTo method for other objects.
+     *
+     * @param out the stream to write the object to.
+     * @throws IOException Includes any I/O exceptions that may occur.
+     */
+    public void writeTo(DataOutput out) throws IOException {
         out.writeInt(schemaId);
 
         out.writeInt(ids.length);
@@ -220,6 +234,20 @@ public class BinarySchema implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        readFrom(in);
+    }
+
+    /**
+     * The object implements the readFrom method to restore its
+     * contents by calling the methods of DataInput for primitive
+     * types and strings or calling readFrom for other objects.  The
+     * readFrom method must read the values in the same sequence
+     * and with the same types as were written by writeTo.
+     *
+     * @param in the stream to read data from in order to restore the object
+     * @throws IOException if I/O errors occur
+     */
+    public void readFrom(DataInput in) throws IOException {
         schemaId = in.readInt();
 
         int idsCnt = in.readInt();

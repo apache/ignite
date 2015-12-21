@@ -15,8 +15,18 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.examples.model;
+
 /**
- * <!-- Package description. -->
- * Contains dummy cache store implementation.
+ * Organization type enum.
  */
-package org.apache.ignite.examples.datagrid.store.dummy;
+public enum OrganizationType {
+    /** Non-profit organization. */
+    NON_PROFIT,
+
+    /** Private organization. */
+    PRIVATE,
+
+    /** Government organization. */
+    GOVERNMENT
+}

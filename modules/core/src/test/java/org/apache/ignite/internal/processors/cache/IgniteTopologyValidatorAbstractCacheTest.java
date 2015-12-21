@@ -33,7 +33,7 @@ import org.apache.ignite.transactions.Transaction;
  */
 public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCacheAbstractTest implements Serializable {
     /** key-value used at test. */
-    protected static String KEY_VALUE = "1";
+    protected static String KEY_VAL = "1";
 
     /** cache name 1. */
     protected static String CACHE_NAME_1 = "cache1";
@@ -86,7 +86,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      */
     protected void putInvalid(String cacheName) {
         try {
-            grid(0).cache(cacheName).put(KEY_VALUE, KEY_VALUE);
+            grid(0).cache(cacheName).put(KEY_VAL, KEY_VAL);
 
             assert false : "topology validation broken";
         }
@@ -103,9 +103,9 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      */
     protected void putValid(String cacheName) {
         try {
-            grid(0).cache(cacheName).put(KEY_VALUE, KEY_VALUE);
+            grid(0).cache(cacheName).put(KEY_VAL, KEY_VAL);
 
-            assert grid(0).cache(cacheName).get(KEY_VALUE).equals(KEY_VALUE);
+            assert grid(0).cache(cacheName).get(KEY_VAL).equals(KEY_VAL);
         }
         catch (CacheException ex) {
             assert false : "topology validation broken";
@@ -119,7 +119,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      */
     protected void getInvalid(String cacheName) {
         try {
-            assert grid(0).cache(cacheName).get(KEY_VALUE).equals(KEY_VALUE);
+            assert grid(0).cache(cacheName).get(KEY_VAL).equals(KEY_VAL);
         }
         catch (CacheException ex) {
             assert false : "topology validation broken";
@@ -133,7 +133,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      */
     protected void removeInvalid(String cacheName) {
         try {
-            grid(0).cache(cacheName).remove(KEY_VALUE);
+            grid(0).cache(cacheName).remove(KEY_VAL);
 
             assert false : "topology validation broken";
         }
@@ -164,9 +164,9 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      * @param cacheName cache name.
      */
     public void remove(String cacheName) {
-        assert grid(0).cache(cacheName).get(KEY_VALUE) != null;
+        assert grid(0).cache(cacheName).get(KEY_VAL) != null;
 
-        grid(0).cache(cacheName).remove(KEY_VALUE);
+        grid(0).cache(cacheName).remove(KEY_VAL);
     }
 
     /**
@@ -175,7 +175,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      * @param cacheName cache name.
      */
     public void assertEmpty(String cacheName) {
-        assert grid(0).cache(cacheName).get(KEY_VALUE) == null;
+        assert grid(0).cache(cacheName).get(KEY_VAL) == null;
     }
 
     /** topology validator test. */

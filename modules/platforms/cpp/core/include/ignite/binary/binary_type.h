@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::binary::BinaryType class template and helping macros
+ * to declare binary type specialisation for user types.
+ */
+
 #ifndef _IGNITE_BINARY_TYPE
 #define _IGNITE_BINARY_TYPE
 
@@ -25,6 +31,7 @@
 #include "ignite/ignite_error.h"
 
 /**
+ * @def IGNITE_BINARY_TYPE_START(T)
  * Start binary type definition.
  */
 #define IGNITE_BINARY_TYPE_START(T) \
@@ -33,12 +40,14 @@ struct BinaryType<T> \
 {
 
 /**
+ * @def IGNITE_BINARY_TYPE_END
  * End binary type definition.
  */
 #define IGNITE_BINARY_TYPE_END \
 };
 
 /**
+ * @def IGNITE_BINARY_GET_TYPE_ID_AS_CONST(id)
  * Implementation of GetTypeId() which returns predefined constant.
  */
 #define IGNITE_BINARY_GET_TYPE_ID_AS_CONST(id) \
@@ -48,6 +57,7 @@ int32_t GetTypeId() \
 }
 
 /**
+ * @def IGNITE_BINARY_GET_TYPE_ID_AS_HASH(typeName)
  * Implementation of GetTypeId() which returns hash of passed type name.
  */
 #define IGNITE_BINARY_GET_TYPE_ID_AS_HASH(typeName) \
@@ -57,6 +67,7 @@ int32_t GetTypeId() \
 }
 
 /**
+ * @def IGNITE_BINARY_GET_TYPE_NAME_AS_IS(typeName)
  * Implementation of GetTypeName() which returns type name as is.
  */
 #define IGNITE_BINARY_GET_TYPE_NAME_AS_IS(typeName) \
@@ -66,6 +77,7 @@ std::string GetTypeName() \
 }
 
 /**
+ * @def IGNITE_BINARY_GET_FIELD_ID_AS_HASH
  * Default implementation of GetFieldId() function which returns Java-way hash code of the string.
  */
 #define IGNITE_BINARY_GET_FIELD_ID_AS_HASH \
@@ -75,6 +87,7 @@ int32_t GetFieldId(const char* name) \
 }
 
 /**
+ * @def IGNITE_BINARY_GET_HASH_CODE_ZERO(T)
  * Implementation of GetHashCode() function which always returns 0.
  */
 #define IGNITE_BINARY_GET_HASH_CODE_ZERO(T) \
@@ -84,6 +97,7 @@ int32_t GetHashCode(const T& obj) \
 }
 
 /**
+ * @def IGNITE_BINARY_IS_NULL_FALSE(T)
  * Implementation of IsNull() function which always returns false.
  */
 #define IGNITE_BINARY_IS_NULL_FALSE(T) \
@@ -93,6 +107,7 @@ bool IsNull(const T& obj) \
 }
 
 /**
+ * @def IGNITE_BINARY_IS_NULL_IF_NULLPTR(T)
  * Implementation of IsNull() function which return true if passed object is null pointer.
  */
 #define IGNITE_BINARY_IS_NULL_IF_NULLPTR(T) \
@@ -102,6 +117,7 @@ bool IsNull(const T& obj) \
 }
 
 /**
+ * @def IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(T)
  * Implementation of GetNull() function which returns an instance created with defult constructor.
  */
 #define IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(T) \
@@ -111,6 +127,7 @@ T GetNull() \
 }
 
 /**
+ * @def IGNITE_BINARY_GET_NULL_NULLPTR(T)
  * Implementation of GetNull() function which returns NULL pointer.
  */
 #define IGNITE_BINARY_GET_NULL_NULLPTR(T) \
@@ -226,8 +243,8 @@ namespace ignite
             }
         };
 
-        /*
-         * Templated binary type for pointers.
+        /**
+         * Templated binary type specification for pointers.
          */
         template <typename T>
         struct IGNITE_IMPORT_EXPORT BinaryType<T*>

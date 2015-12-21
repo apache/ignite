@@ -39,6 +39,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinde
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Test suite for all discovery spi implementations.
@@ -49,6 +52,9 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
+        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
+            GridTestUtils.getNextMulticastGroup(IgniteSpiDiscoverySelfTestSuite.class));
+
         TestSuite suite = new TestSuite("Ignite Discovery SPI Test Suite");
 
         // Tcp.
