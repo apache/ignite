@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.platform.utils.*;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -101,7 +102,7 @@ public interface PlatformTarget {
      * @throws IgniteCheckedException In case of failure.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public void listenFuture(final long futId, int typ) throws Exception;
+    public PlatformFutureUtils.Listenable listenFuture(final long futId, int typ) throws Exception;
 
     /**
      * Start listening for the future for specific operation type.
@@ -112,5 +113,5 @@ public interface PlatformTarget {
      * @throws IgniteCheckedException In case of failure.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception;
+    public PlatformFutureUtils.Listenable listenFutureForOperation(final long futId, int typ, int opId) throws Exception;
 }
