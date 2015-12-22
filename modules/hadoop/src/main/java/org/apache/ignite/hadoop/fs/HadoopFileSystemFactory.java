@@ -1,4 +1,4 @@
-package org.apache.ignite.igfs;
+package org.apache.ignite.hadoop.fs;
 
 import java.io.IOException;
 import java.io.Serializable;
