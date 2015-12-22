@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import angular from 'angular';
 import igniteFormField from './field/field.directive';
 import igniteFormFieldDropdown from './field/dropdown.directive';
 import igniteFormFieldInputNumber from './field/input/number.directive';
@@ -27,7 +28,7 @@ angular
 .directive(...igniteFormFieldDropdown)
 .directive(...igniteFormFieldInputNumber)
 .factory('IgniteFormGUID', [() => {
-	let guid = 0;
+    let guid = 0;
 
-	return () => `form-field-${guid++}`;
+    return () => `form-field-${guid++}`;
 }]);

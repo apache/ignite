@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-import angular from 'angular'
+import angular from 'angular';
 
 angular
 .module('ignite-console.navbar', [
 
 ])
 .provider('igniteNavbar', function() {
-    var items = [];
+    const items = [];
 
     this.push = function(data) {
         items.push(data);
@@ -30,18 +30,18 @@ angular
 
     this.$get = [function() {
         return items;
-    }]
+    }];
 })
 .directive('igniteNavbar', ['igniteNavbar', function(igniteNavbar) {
     function controller() {
-        var ctrl = this;
+        const ctrl = this;
 
         ctrl.items = igniteNavbar;
     }
 
     return {
         restrict: 'A',
-        controller: controller,
+        controller,
         controllerAs: 'navbar'
-    }
+    };
 }]);

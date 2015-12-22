@@ -16,11 +16,11 @@
  */
 
 export default ['hasPojo', [() => {
-    let filter = (cache) => {
+    const filter = cache => {
         return cache.metadatas && cache.metadatas.length;
     };
 
     return ({caches} = {}) => {
         return caches && _.chain(caches).filter(filter).first().value();
-    }
-}]]
+    };
+}]];

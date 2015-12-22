@@ -19,9 +19,17 @@ ecmaFeatures:
     experimentalObjectRestSpread: true
 
 globals:
+    _: true
     window: true
     global: true
-    __dirname: true
+    $generatorProperties: true
+    $generatorXml: true
+    $generatorJava: true
+    $generatorPom: true
+    $generatorReadme: true
+    $generatorDocker: true
+    saveAs: true
+
 rules:
     arrow-parens: [1, "as-needed"]
     arrow-spacing: [1, { "before": true, "after": true }]
@@ -36,7 +44,7 @@ rules:
     consistent-return: 0
     consistent-this: [0, "that"]
     constructor-super: 2
-    curly: [2, "all"]
+    curly: [2, "multi-or-nest"]
     default-case: 0
     dot-location: 0
     dot-notation: [2, { "allowKeywords": true }]
@@ -48,7 +56,7 @@ rules:
     guard-for-in: 1
     handle-callback-err: 0
     id-length: [2, {"min": 1, "max": 30}]
-    indent: [2, "tab"]
+    indent: 2
     key-spacing: [2, { "beforeColon": false, "afterColon": true }]
     lines-around-comment: 0
     linebreak-style: [0, "unix"]
@@ -105,7 +113,7 @@ rules:
     no-implicit-coercion: [2, {"boolean": false, "number": true, "string": true}]
     no-loop-func: 2
     no-mixed-requires: [0, false]
-    no-mixed-spaces-and-tabs: [2, false]
+    no-mixed-spaces-and-tabs: [2, true]
     no-multi-spaces: 2
     no-multi-str: 2
     no-multiple-empty-lines: [0, {"max": 2}]
@@ -129,7 +137,6 @@ rules:
     no-redeclare: 2
     no-regex-spaces: 1
     no-restricted-modules: 0
-    no-return-assign: 2
     no-script-url: 0
     no-self-compare: 2
     no-sequences: 2
@@ -146,7 +153,6 @@ rules:
     no-undef: 2
     no-undef-init: 2
     no-undefined: 2
-    no-underscore-dangle: 2
     no-unneeded-ternary: 2
     no-unreachable: 2
     no-unused-expressions: 2
@@ -159,7 +165,6 @@ rules:
     no-with: 2
     new-parens: 2
     newline-after-var: 0
-    object-curly-spacing: [1, "never"]
     object-shorthand: [2, "always"]
     one-var: [2, "never"]
     operator-assignment: [2, "always"]
@@ -175,7 +180,7 @@ rules:
     sort-vars: 0
     space-after-keywords: [2, "always"]
     space-before-blocks: [2, "always"]
-    space-before-function-paren: [2, {"anonymous": "always", "named": "never"}]
+    space-before-function-paren: [2, "never"]
     space-in-parens: 0
     space-infix-ops: 2
     space-return-throw-case: 2

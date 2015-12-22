@@ -19,13 +19,13 @@
 const igniteVersion = '1.5.0-final';
 
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
-    var ctrl = this;
+    const ctrl = this;
 
     // Scope methods.
     $scope.onLoad = onLoad;
 
-    // Watchers definition.    
-    let clusterWatcher = (value) => {
+    // Watchers definition.
+    const clusterWatcher = value => {
         delete ctrl.data;
 
         if (!value)
@@ -35,6 +35,6 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
         ctrl.data = $generatorPom.pom($scope.cluster, igniteVersion).asString();
     };
 
-    // Setup watchers. 
+    // Setup watchers.
     $scope.$watch('cluster', clusterWatcher);
-}]
+}];

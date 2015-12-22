@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-import types from 'app/data/os.json!'
+import types from 'app/data/os.json!';
 
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
-    var ctrl = this;
+    const ctrl = this;
 
     // Scope values.
     $scope.types = types;
@@ -26,8 +26,8 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     // Scope methods.
     $scope.onLoad = onLoad;
 
-    // Watchers definition.    
-    let clusterWatcher = (value) => {
+    // Watchers definition.
+    const clusterWatcher = () => {
         delete ctrl.data;
 
         if (!$scope.cluster)
@@ -37,7 +37,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
         ctrl.data = $generatorDocker.clusterDocker($scope.cluster, $scope.type);
     };
 
-    // Setup watchers. 
+    // Setup watchers.
     $scope.$watch('type', clusterWatcher);
     $scope.$watch('cluster', clusterWatcher);
-}]
+}];

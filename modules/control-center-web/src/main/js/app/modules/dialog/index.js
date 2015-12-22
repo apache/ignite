@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import angular from 'angular';
 import igniteDialog from './dialog.directive';
 import igniteDialogTitle from './dialog-title.directive';
 import igniteDialogContent from './dialog-content.directive';

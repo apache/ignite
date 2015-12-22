@@ -18,10 +18,10 @@
 import template from './loading.jade!';
 
 export default ['igniteLoading', [() => {
-	return {
-		restrict: 'E',
-		template,
-		replace: true,
-		transclude: true
-	}
-}]]
+    return {
+        restrict: 'E',
+        template,
+        replace: true,
+        transclude: true
+    };
+}]];

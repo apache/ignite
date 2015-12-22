@@ -16,26 +16,26 @@
  */
 
 export default ['ConfigurationSummaryResource', ['$q', '$http', ($q, $http) => {
-	const api = '/api/v1/configuration/clusters/list';
+    const api = '/api/v1/configuration/clusters/list';
 
-	return {
-		read() {
-			return $http
-					.post(api)
-					.then(({data}) => data)
-					.then(({clusters, caches, igfss}) => {
-						if (!clusters || !clusters.length)
-							return {};
+    return {
+        read() {
+            return $http
+                .post(api)
+                .then(({data}) => data)
+                .then(({clusters, caches, igfss}) => {
+                    if (!clusters || !clusters.length)
+                        return {};
 
-						_.each(clusters, cluster => {
-							cluster.igfss = _.filter(igfss, ({_id}) => _.contains(cluster.igfss, _id));
-							cluster.caches = _.filter(caches, ({_id}) => _.contains(cluster.caches, _id));
-						});
+                    _.each(clusters, cluster => {
+                        cluster.igfss = _.filter(igfss, ({_id}) => _.contains(cluster.igfss, _id));
+                        cluster.caches = _.filter(caches, ({_id}) => _.contains(cluster.caches, _id));
+                    });
 
-						return {clusters};
-					}, (err) => {
-						return $q.reject(err);
-					})
-		}
-	};
-}]]
+                    return {clusters};
+                }, err => {
+                    return $q.reject(err);
+                });
+        }
+    };
+}]];

@@ -15,103 +15,106 @@
  * limitations under the License.
  */
 
+import JSZip from 'jszip';
+
 export default [
     '$scope', '$http', '$common', '$loading', '$table', '$filter', 'ConfigurationSummaryResource',
     function($scope, $http, $common, $loading, $table, $filter, Resource) {
-    let ctrl = this;
-    let igniteVersion = '1.5.0-b1';
+        const ctrl = this;
+        const igniteVersion = '1.5.0-b1';
 
-    $loading.start('loading');
+        $loading.start('loading');
 
-    Resource.read().then(({clusters}) => {
-        $scope.clusters = clusters;
+        Resource.read().then(({clusters}) => {
+            $scope.clusters = clusters;
 
-        $loading.finish('loading');
+            $loading.finish('loading');
 
-        const idx = sessionStorage.summarySelectedId || 0;
+            const idx = sessionStorage.summarySelectedId || 0;
 
-        $scope.selectItem(clusters[idx]);
-    });
+            $scope.selectItem(clusters[idx]);
+        });
 
-    $scope.panelExpanded = $common.panelExpanded;
-    $scope.tableVisibleRow = $table.tableVisibleRow;
-    $scope.widthIsSufficient = $common.widthIsSufficient;
+        $scope.panelExpanded = $common.panelExpanded;
+        $scope.tableVisibleRow = $table.tableVisibleRow;
+        $scope.widthIsSufficient = $common.widthIsSufficient;
 
-    $scope.tabsServer = { activeTab: 0 };
-    $scope.tabsClient = { activeTab: 0 };
+        $scope.tabsServer = { activeTab: 0 };
+        $scope.tabsClient = { activeTab: 0 };
 
-    $scope.selectItem = (cluster) => {
-        delete ctrl.cluster;
+        $scope.selectItem = cluster => {
+            delete ctrl.cluster;
 
-        if (!cluster)
-            return;
+            if (!cluster)
+                return;
 
-        ctrl.cluster = cluster;
+            ctrl.cluster = cluster;
 
-        $scope.cluster = cluster;
-        $scope.selectedItem = cluster;
+            $scope.cluster = cluster;
+            $scope.selectedItem = cluster;
 
-        sessionStorage.summarySelectedId = $scope.clusters.indexOf(cluster);
-    };
+            sessionStorage.summarySelectedId = $scope.clusters.indexOf(cluster);
+        };
 
-    let updateTab = (cluster) => {
-        if (!cluster)
-            return;
+        const updateTab = cluster => {
+            if (!cluster)
+                return;
 
-        if (!$filter('hasPojo')(cluster) && $scope.tabsClient.activeTab === 3)
-            $scope.tabsClient.activeTab = 0;     
-    };
+            if (!$filter('hasPojo')(cluster) && $scope.tabsClient.activeTab === 3)
+                $scope.tabsClient.activeTab = 0;
+        };
 
-    $scope.$watch('cluster', updateTab);
+        $scope.$watch('cluster', updateTab);
 
-    // TODO IGNITE-2114: implemented as independent logic for download.
-    $scope.downloadConfiguration = function () {
-        var cluster = $scope.cluster;
-        var clientNearCfg = cluster.clientNearCfg;
+        // TODO IGNITE-2114: implemented as independent logic for download.
+        $scope.downloadConfiguration = function() {
+            const cluster = $scope.cluster;
+            const clientNearCfg = cluster.clientNearCfg;
 
-        var zip = new JSZip();
+            const zip = new JSZip();
 
-        zip.file('Dockerfile', ctrl.data.docker);
+            zip.file('Dockerfile', ctrl.data.docker);
 
-        var builder = $generatorProperties.generateProperties(cluster);
+            const builder = $generatorProperties.generateProperties(cluster);
 
-        if (builder)
-            zip.file('src/main/resources/secret.properties', builder.asString());
+            if (builder)
+                zip.file('src/main/resources/secret.properties', builder.asString());
 
-        var srcPath = 'src/main/java/';
+            const srcPath = 'src/main/java/';
 
-        var serverXml = 'config/' + cluster.name + '-server.xml';
-        var clientXml = 'config/' + cluster.name + '-client.xml';
+            const serverXml = 'config/' + cluster.name + '-server.xml';
+            const clientXml = 'config/' + cluster.name + '-client.xml';
 
-        zip.file(serverXml, $generatorXml.cluster(cluster));
-        zip.file(clientXml , $generatorXml.cluster(cluster, clientNearCfg));
+            zip.file(serverXml, $generatorXml.cluster(cluster));
+            zip.file(clientXml, $generatorXml.cluster(cluster, clientNearCfg));
 
-        zip.file(srcPath + 'factory/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ServerConfigurationFactory', null));
-        zip.file(srcPath + 'factory/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ClientConfigurationFactory', clientNearCfg));
+            zip.file(srcPath + 'factory/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ServerConfigurationFactory', null));
+            zip.file(srcPath + 'factory/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ClientConfigurationFactory', clientNearCfg));
 
-        zip.file(srcPath + 'startup/ServerNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeSpringStartup', '"' + serverXml + '"'));
-        zip.file(srcPath + 'startup/ClientNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeSpringStartup', '"' + clientXml + '"'));
+            zip.file(srcPath + 'startup/ServerNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeSpringStartup', '"' + serverXml + '"'));
+            zip.file(srcPath + 'startup/ClientNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeSpringStartup', '"' + clientXml + '"'));
 
-        zip.file(srcPath + 'startup/ServerNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeCodeStartup',
-            'ServerConfigurationFactory.createConfiguration()', 'factory.ServerConfigurationFactory'));
-        zip.file(srcPath + 'startup/ClientNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeCodeStartup',
-            'ClientConfigurationFactory.createConfiguration()', 'factory.ClientConfigurationFactory', clientNearCfg));
+            zip.file(srcPath + 'startup/ServerNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeCodeStartup',
+                'ServerConfigurationFactory.createConfiguration()', 'factory.ServerConfigurationFactory'));
+            zip.file(srcPath + 'startup/ClientNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeCodeStartup',
+                'ClientConfigurationFactory.createConfiguration()', 'factory.ClientConfigurationFactory', clientNearCfg));
 
-        zip.file('pom.xml', $generatorPom.pom(cluster, igniteVersion).asString());
+            zip.file('pom.xml', $generatorPom.pom(cluster, igniteVersion).asString());
 
-        zip.file('README.txt', $generatorReadme.readme().asString());
-        zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());
+            zip.file('README.txt', $generatorReadme.readme().asString());
+            zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());
 
-        for (var meta of ctrl.data.metadatas) {
-            if (meta.keyClass)
-                zip.file(srcPath + meta.keyType.replace(/\./g, '/') + '.java', meta.keyClass);
+            for (const meta of ctrl.data.metadatas) {
+                if (meta.keyClass)
+                    zip.file(srcPath + meta.keyType.replace(/\./g, '/') + '.java', meta.keyClass);
 
-            zip.file(srcPath + meta.valueType.replace(/\./g, '/') + '.java', meta.valueClass);
-        }
+                zip.file(srcPath + meta.valueType.replace(/\./g, '/') + '.java', meta.valueClass);
+            }
 
-        var blob = zip.generate({type:'blob', mimeType: 'application/octet-stream'});
+            const blob = zip.generate({type: 'blob', mimeType: 'application/octet-stream'});
 
-        // Download archive.
-        saveAs(blob, cluster.name + '-configuration.zip');
-    };    
-}]
+            // Download archive.
+            saveAs(blob, cluster.name + '-configuration.zip');
+        };
+    }
+];

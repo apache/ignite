@@ -18,20 +18,20 @@
 import template from './field.jade!';
 
 export default ['igniteFormField', [() => {
-	let controller = () => {};
+    const controller = () => {};
 
-	return {
-		restrict: 'E',
-		scope: {},
-		bindToController: {
-			for: '@',
-			label: '@'
-		},
-		template,
-		controller,
-		controllerAs: 'field',
-		replace: true,
-		transclude: true,
-		require: '^form'
-	};
+    return {
+        restrict: 'E',
+        scope: {},
+        bindToController: {
+            for: '@',
+            label: '@'
+        },
+        template,
+        controller,
+        controllerAs: 'field',
+        replace: true,
+        transclude: true,
+        require: '^form'
+    };
 }]];

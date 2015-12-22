@@ -14,51 +14,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-import angular from 'angular'
+
+import angular from 'angular';
 
 angular
 .module('ignite-console.User', [
-	
+
 ])
-.provider('User', function () {
-	var _user;
+.provider('User', function() {
+    let _user;
 
-	try {
-		_user = JSON.parse(localStorage.user);
-	} catch(ignore) {
-		// No-op.
-	} 
+    try {
+        _user = JSON.parse(localStorage.user);
+    }
+    catch (ignore) {
+        // No-op.
+    }
 
-	this.$get = ['$q', '$injector', '$rootScope', '$state', '$http', ($q, $injector, $root, $state, $http) => {
-		if (_user)
-			$root.user = _user;
+    this.$get = ['$q', '$injector', '$rootScope', '$state', '$http', ($q, $injector, $root, $state, $http) => {
+        if (_user)
+            $root.user = _user;
 
-		return {
-			read() {
-				return $http.post('/api/v1/user').then(({data}) => {
-					if (_.isEmpty(data)) {
-						var Auth = $injector.get('Auth');
+        return {
+            read() {
+                return $http.post('/api/v1/user').then(({data}) => {
+                    if (_.isEmpty(data)) {
+                        const Auth = $injector.get('Auth');
 
-						Auth.authorized = false;
+                        Auth.authorized = false;
 
-						$state.go('login');
-					}
+                        $state.go('login');
+                    }
 
-					try {
-						localStorage.user = JSON.stringify(data);
-					} catch(ignore) {
-						// No-op.
-					}
+                    try {
+                        localStorage.user = JSON.stringify(data);
+                    }
+                    catch (ignore) {
+                        // No-op.
+                    }
 
-					return _user = $root.user = data;
-				})
-			},
-			clean() {
-				delete $root.user;
+                    return _user = $root.user = data;
+                });
+            },
+            clean() {
+                delete $root.user;
 
-				delete localStorage.user;
-			}
-		}
-	}]	
+                delete localStorage.user;
+            }
+        };
+    }];
 });
