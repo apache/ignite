@@ -1103,6 +1103,10 @@ $generatorJava.cacheServerNearCache = function (cache, varName, res) {
 
                 res.needEmptyLine = true;
             }
+
+            res.line(varName + '.setNearConfiguration(nearCfg);');
+
+            res.needEmptyLine = true;
         }
     }
 
