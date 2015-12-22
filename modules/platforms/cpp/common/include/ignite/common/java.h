@@ -347,6 +347,10 @@ namespace ignite
                 jmethodID m_PlatformAtomicLong_isClosed;
                 jmethodID m_PlatformAtomicLong_close;
 
+                jclass c_PlatformListenable;
+                jmethodID m_PlatformListenable_cancel;
+                jmethodID m_PlatformListenable_isCanceled;
+
                 /**
                  * Constructor.
                  */

@@ -167,7 +167,12 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public bool Cancel()
         {
-            return _cancelFunc();
+            var result = _cancelFunc();
+
+            if (result)
+                _taskCompletionSource.TrySetCanceled();
+
+            return result;
         }
 
         /// <summary>
