@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-spring</artifactId>
-    <version>1.5.0.final-SNAPSHOT</version>
+    <version>1.5.1.final-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -137,7 +137,7 @@
         </testResources>
 
         <plugins>
-            <!-- Generate the OSGi MANIFEST.MF for this bundle. 
+            <!-- Generate the OSGi MANIFEST.MF for this bundle.
                  This bundle is a fragment attached to the ignite-core bundle, as it contains and exports classes in the org.apache.ignite
                  leading to a split package situation in OSGi.
             -->
