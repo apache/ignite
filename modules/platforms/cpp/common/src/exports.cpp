@@ -458,4 +458,12 @@ extern "C" {
     void IGNITE_CALL IgniteAtomicLongClose(gcj::JniContext* ctx, void* obj) {
         return ctx->AtomicLongClose(static_cast<jobject>(obj));
     }
+    
+    bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj) {
+        return ctx->ListenableCancel(static_cast<jobject>(obj));
+    }
+
+    bool IGNITE_CALL IgniteListenableIsCanceled(gcj::JniContext* ctx, void* obj) {
+        return ctx->ListenableIsCanceled(static_cast<jobject>(obj));
+    }
 }

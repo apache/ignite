@@ -153,6 +153,9 @@ extern "C" {
     long long IGNITE_CALL IgniteAtomicLongCompareAndSetAndGet(gcj::JniContext* ctx, void* obj, long long expVal, long long newVal);
     bool IGNITE_CALL IgniteAtomicLongIsClosed(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteAtomicLongClose(gcj::JniContext* ctx, void* obj);
+
+    bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj);
+    bool IGNITE_CALL IgniteListenableIsCanceled(gcj::JniContext* ctx, void* obj);
 }
 
 #endif
