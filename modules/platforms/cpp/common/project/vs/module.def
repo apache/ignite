@@ -110,4 +110,4 @@ IgniteAtomicLongCompareAndSetAndGet @107
 IgniteAtomicLongIsClosed @108
 IgniteAtomicLongClose @109
 IgniteListenableCancel @110
-IgniteListenableIsCanceled @111
+IgniteListenableIsCancelled @111

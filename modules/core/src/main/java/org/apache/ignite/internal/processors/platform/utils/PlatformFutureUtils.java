@@ -379,7 +379,7 @@ public class PlatformFutureUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isCanceled() {
+        @Override public boolean isCancelled() {
             return fut.isCancelled();
         }
     }
@@ -423,7 +423,7 @@ public class PlatformFutureUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isCanceled() {
+        @Override public boolean isCancelled() {
             return false;
         }
     }

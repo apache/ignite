@@ -155,7 +155,7 @@ extern "C" {
     void IGNITE_CALL IgniteAtomicLongClose(gcj::JniContext* ctx, void* obj);
 
     bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj);
-    bool IGNITE_CALL IgniteListenableIsCanceled(gcj::JniContext* ctx, void* obj);
+    bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj);
 }
 
 #endif

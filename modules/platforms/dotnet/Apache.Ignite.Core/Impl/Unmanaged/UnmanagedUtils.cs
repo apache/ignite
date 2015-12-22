@@ -826,6 +826,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.AtomicLongClose(target.Context, target.Target);
         }
 
+        internal static bool ListenableCancel(IUnmanagedTarget target)
+        {
+            return JNI.ListenableCancel(target.Context, target.Target);
+        }
+
+        internal static bool ListenableIsCancelled(IUnmanagedTarget target)
+        {
+            return JNI.ListenableIsCancelled(target.Context, target.Target);
+        }
+
         #endregion
     }
 }

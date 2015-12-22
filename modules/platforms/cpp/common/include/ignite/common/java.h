@@ -349,7 +349,7 @@ namespace ignite
 
                 jclass c_PlatformListenable;
                 jmethodID m_PlatformListenable_cancel;
-                jmethodID m_PlatformListenable_isCanceled;
+                jmethodID m_PlatformListenable_isCancelled;
 
                 /**
                  * Constructor.
@@ -594,7 +594,7 @@ namespace ignite
                 void AtomicLongClose(jobject obj);
 
                 bool ListenableCancel(jobject obj);
-                bool ListenableIsCanceled(jobject obj);
+                bool ListenableIsCancelled(jobject obj);
 
                 jobject Acquire(jobject obj);
 
