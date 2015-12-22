@@ -593,6 +593,9 @@ namespace ignite
                 bool AtomicLongIsClosed(jobject obj);
                 void AtomicLongClose(jobject obj);
 
+                bool ListenableCancel(jobject obj);
+                bool ListenableIsCanceled(jobject obj);
+
                 jobject Acquire(jobject obj);
 
                 void DestroyJvm();

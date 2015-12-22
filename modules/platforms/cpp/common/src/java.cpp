@@ -2049,7 +2049,29 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-			jobject JniContext::Acquire(jobject obj)
+            bool JniContext::ListenableCancel(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformListenable_cancel);
+
+                ExceptionCheck(env);
+
+                return res != 0;;
+            }
+
+            bool JniContext::ListenableIsCanceled(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformListenable_isCanceled);
+
+                ExceptionCheck(env);
+
+                return res != 0;;
+            }
+
+            jobject JniContext::Acquire(jobject obj)
             {
                 if (obj) {
 
