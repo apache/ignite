@@ -216,8 +216,14 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
      * Wrapper for cache iterator to behave like {@link QueryCursor}.
      */
     private static class VisorNearCacheCursor<T> implements QueryCursor<T> {
+        /** Wrapped iterator.  */
         private final Iterator<T> it;
 
+        /**
+         * Wrapping constructor.
+         *
+         * @param it Near cache iterator to wrap.
+         */
         private VisorNearCacheCursor(Iterator<T> it) {
             this.it = it;
         }

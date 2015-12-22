@@ -331,6 +331,12 @@ var ClusterSchema = new Schema({
         cacheMode: {type: String, enum: ['LOCAL', 'REPLICATED', 'PARTITIONED']},
         atomicSequenceReserveSize: Number
     },
+    binaryConfiguration: {
+        idMapper: String,
+        serializer: String,
+        typeConfigurations: [{typeName: String, idMapper: String, serializer: String, enum: Boolean}],
+        compactFooter: Boolean
+    },
     caches: [{type: ObjectId, ref: 'Cache'}],
     clockSyncSamples: Number,
     clockSyncFrequency: Number,

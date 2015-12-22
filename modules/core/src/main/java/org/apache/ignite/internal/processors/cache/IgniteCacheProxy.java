@@ -618,7 +618,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             validate(qry);
 
-            CacheOperationContext opCtxCall = ctx.operationContextPerCall();
+            final CacheOperationContext opCtxCall = ctx.operationContextPerCall();
 
             if (qry instanceof ContinuousQuery)
                 return (QueryCursor<R>)queryContinuous((ContinuousQuery<K, V>)qry, qry.isLocal(),
@@ -630,7 +630,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
                     return (QueryCursor<R>)new QueryCursorImpl<>(new Iterable<Cache.Entry<K, V>>() {
                         @Override public Iterator<Cache.Entry<K, V>> iterator() {
-                            return ctx.kernalContext().query().queryLocal(ctx, p);
+                            return ctx.kernalContext().query().queryLocal(ctx, p,
+                                opCtxCall != null && opCtxCall.isKeepBinary());
                         }
                     });
 

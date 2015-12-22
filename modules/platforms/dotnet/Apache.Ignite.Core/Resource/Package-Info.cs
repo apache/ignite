@@ -18,7 +18,7 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// Contains attributes to inject resources into user-defined code such as tasks, jobs, entry processors.
+/// Attributes to inject resources into user-defined code such as tasks, jobs, entry processors.
 /// </summary>
 namespace Apache.Ignite.Core.Resource
 {
