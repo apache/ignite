@@ -463,4 +463,82 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromBigint)
     BOOST_REQUIRE(resInt8 == 19);
 }
 
+BOOST_AUTO_TEST_CASE(TestGetIntWithOffset)
+{
+    struct TestStruct
+    {
+        uint64_t val;
+        int64_t reslen;
+    };
+
+    TestStruct buf[2] = {
+        { 12, sizeof(uint64_t) },
+        { 42, sizeof(uint64_t) }
+    };
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT, &buf[0].val, sizeof(buf[0].val), &buf[0].reslen, &offsetPtr);
+
+    int64_t val = appBuf.GetInt64();
+
+    BOOST_REQUIRE(val == 12);
+
+    offset += sizeof(TestStruct);
+
+    val = appBuf.GetInt64();
+
+    BOOST_REQUIRE(val == 42);
+
+    offsetPtr = 0;
+
+    val = appBuf.GetInt64();
+
+    BOOST_REQUIRE(val == 12);
+}
+
+BOOST_AUTO_TEST_CASE(TestSetStringWithOffset)
+{
+    struct TestStruct
+    {
+        char val[64];
+        int64_t reslen;
+    };
+
+    TestStruct buf[2] = {
+        { "", 0 },
+        { "", 0 }
+    };
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf[0].val, sizeof(buf[0].val), &buf[0].reslen, &offsetPtr);
+
+    appBuf.PutString("Hello Ignite!");
+
+    std::string res(buf[0].val, buf[0].reslen);
+
+    BOOST_REQUIRE(buf[0].reslen == strlen("Hello Ignite!"));
+    BOOST_REQUIRE(res == "Hello Ignite!");
+    BOOST_REQUIRE(res.size() == strlen("Hello Ignite!"));
+
+    offset += sizeof(TestStruct);
+
+    appBuf.PutString("Hello with offset!");
+
+    res.assign(buf[0].val, buf[0].reslen);
+
+    BOOST_REQUIRE(res == "Hello Ignite!");
+    BOOST_REQUIRE(res.size() == strlen("Hello Ignite!"));
+    BOOST_REQUIRE(buf[0].reslen == strlen("Hello Ignite!"));
+
+    res.assign(buf[1].val, buf[1].reslen);
+
+    BOOST_REQUIRE(res == "Hello with offset!");
+    BOOST_REQUIRE(res.size() == strlen("Hello with offset!"));
+    BOOST_REQUIRE(buf[1].reslen == strlen("Hello with offset!"));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
