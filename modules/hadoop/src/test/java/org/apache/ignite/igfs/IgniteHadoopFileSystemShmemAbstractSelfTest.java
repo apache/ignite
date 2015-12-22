@@ -60,8 +60,6 @@ public abstract class IgniteHadoopFileSystemShmemAbstractSelfTest extends Ignite
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testOutOfResources() throws Exception {
-        if (1 == 1) return;
-
         final Collection<IpcEndpoint> eps = new LinkedList<>();
 
         try {

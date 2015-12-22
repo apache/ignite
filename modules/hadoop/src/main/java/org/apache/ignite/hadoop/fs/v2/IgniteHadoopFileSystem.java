@@ -52,7 +52,6 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.Progressable;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
@@ -300,7 +299,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
             grpBlockSize = handshake.blockSize();
 
-            IgfsPaths<HadoopFileSystemFactory<AbstractFileSystem>> paths = handshake.secondaryPaths();
+            IgfsPaths paths = handshake.secondaryPaths();
 
             Boolean logEnabled = parameter(cfg, PARAM_IGFS_LOG_ENABLED, uriAuthority, false);
 
@@ -338,8 +337,8 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 //                String secUri = props.get(SECONDARY_FS_URI);
 //                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
 
-                HadoopFileSystemFactory<AbstractFileSystem> factory
-                    = (HadoopFileSystemFactory<AbstractFileSystem>)paths.getPayload();
+                HadoopAbstractFileSystemFactory factory
+                    = (HadoopAbstractFileSystemFactory)paths.getPayload();
 
                 A.ensure(secondaryUri != null, "File system factory uri should not be null.");
 

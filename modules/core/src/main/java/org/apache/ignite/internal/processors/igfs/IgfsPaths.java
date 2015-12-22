@@ -25,12 +25,10 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.processors.hadoop.PayloadAware;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -38,16 +36,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Description of path modes.
  */
-public class IgfsPaths <P extends Serializable> implements Externalizable, PayloadAware<P> {
+public class IgfsPaths implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-//    /** Additional secondary file system properties. */
-//    @Deprecated
-//    private Map<String, String> props;
-
     /** */
-    private P payload;
+    private Object payload;
 
     /** Default IGFS mode. */
     private IgfsMode dfltMode;
@@ -68,25 +62,13 @@ public class IgfsPaths <P extends Serializable> implements Externalizable, Paylo
      * @param dfltMode Default IGFS mode.
      * @param pathModes Path modes.
      */
-    public IgfsPaths(//Map<String, String> props,
-                     P payload,
+    public IgfsPaths(Object payload,
                      IgfsMode dfltMode,
                      @Nullable List<T2<IgfsPath, IgfsMode>> pathModes) {
-        //this.props = props;
         this.payload = payload;
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
     }
-
-//    /**
-//     * @return Secondary file system properties.
-//     *
-//     * @deprecated
-//     */
-//    @Deprecated
-//    public Map<String, String> properties() {
-//        return props;
-//    }
 
     /**
      * @return Default IGFS mode.
@@ -101,15 +83,6 @@ public class IgfsPaths <P extends Serializable> implements Externalizable, Paylo
     @Nullable public List<T2<IgfsPath, IgfsMode>> pathModes() {
         return pathModes;
     }
-
-//    /**
-//     * Getter for factory.
-//     *
-//     * @return The factory.
-//     */
-//    public HadoopFileSystemFactory<F> factory() {
-//        return factory;
-//    }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
@@ -188,14 +161,14 @@ public class IgfsPaths <P extends Serializable> implements Externalizable, Paylo
         ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes));
 
         try {
-            payload = (P) oi.readObject();
+            payload = oi.readObject();
         }
         finally {
             oi.close();
         }
     }
 
-    @Override public P getPayload() {
+    public Object getPayload() {
         return payload;
     }
 }

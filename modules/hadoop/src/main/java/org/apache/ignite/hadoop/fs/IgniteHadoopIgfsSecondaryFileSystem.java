@@ -35,6 +35,7 @@ import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.hadoop.fs.v1.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -45,8 +46,8 @@ import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-import org.apache.ignite.internal.processors.hadoop.PayloadAware;
-import org.apache.ignite.internal.processors.hadoop.fs.DefaultHadoopFileSystemFactory;
+import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
+import org.apache.ignite.hadoop.fs.v1.DefaultHadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProperties;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
@@ -69,7 +70,7 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
  * see {@link IgfsUserContext#currentUser()}.
  */
 public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem,
-        LifecycleAware, PayloadAware<HadoopFileSystemFactory<FileSystem>> {
+        LifecycleAware, HadoopPayloadAware {
 //    /** Properties of file system, see {@link #properties()}
 //     * */
 //    private final Map<String, String> props = new HashMap<>();
@@ -97,7 +98,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     private String dfltUserName = IgfsUtils.fixUserName(null);
 
     /** */
-    private HadoopFileSystemFactory<FileSystem> fsFactory;
+    private HadoopFileSystemFactory fsFactory;
 
     private final AtomicBoolean started = new AtomicBoolean();
 
@@ -174,20 +175,18 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             fac.setUri(uri);
 
         if (cfgPath != null)
-            fac.setCfgPaths(Collections.singletonList(cfgPath));
+            fac.setConfigPaths(Collections.singletonList(cfgPath));
 
         setFsFactory(fac);
 
         setDfltUserName(userName);
-
-        start();
     }
 
     /**
      *
      * @param factory
      */
-    public void setFsFactory(HadoopFileSystemFactory<FileSystem> factory) {
+    public void setFsFactory(HadoopFileSystemFactory factory) {
         A.ensure(factory != null, "Factory value must not be null.");
 
         this.fsFactory = factory;
@@ -600,7 +599,6 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
     /**
      * Should be invoked by client (from Spring?) after all the setters invoked.
-     * TODO: how this should be invoked?
      *
      * @throws IgniteCheckedException
      */
@@ -609,6 +607,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         A.ensure(fsFactory != null, "factory");
         A.ensure(dfltUserName != null, "dfltUserName");
 
+        // Avoid
         if (started.compareAndSet(false, true)) {
             if (fsFactory instanceof LifecycleAware)
                 ((LifecycleAware) fsFactory).start();
@@ -638,7 +637,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         close();
     }
 
-    @Override public HadoopFileSystemFactory<FileSystem> getPayload() {
+    @Override public HadoopFileSystemFactory getPayload() {
         return fsFactory;
     }
 }

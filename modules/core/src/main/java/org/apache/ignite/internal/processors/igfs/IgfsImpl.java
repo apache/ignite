@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -73,7 +72,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.processors.hadoop.PayloadAware;
+import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -125,7 +124,7 @@ public final class IgfsImpl implements IgfsEx {
     static final Map<String, String> DFLT_DIR_META = F.asMap(PROP_PERMISSION, PERMISSION_DFLT_VAL);
 
     /** Handshake message. */
-    private final IgfsPaths<Serializable> secondaryPaths;
+    private final IgfsPaths secondaryPaths;
 
     /** Cache based structure (meta data) manager. */
     private IgfsMetaManager meta;
@@ -260,11 +259,10 @@ public final class IgfsImpl implements IgfsEx {
 
         modeRslvr = new IgfsModeResolver(dfltMode, modes);
 
-        Serializable secondaryFsPayload = null;
+        Object secondaryFsPayload = null;
 
-        if (secondaryFs instanceof PayloadAware) {
-            secondaryFsPayload = ((PayloadAware<Serializable>) secondaryFs).getPayload();
-        }
+        if (secondaryFs instanceof HadoopPayloadAware)
+            secondaryFsPayload = ((HadoopPayloadAware) secondaryFs).getPayload();
 
         secondaryPaths = new IgfsPaths(
             //secondaryFs == null ? null : secondaryFs.properties(),

@@ -18,12 +18,9 @@
 package org.apache.ignite.hadoop.fs.v1;
 
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -47,7 +44,6 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Progressable;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -71,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_IGFS_LOG_BATCH_SIZE;
@@ -190,7 +187,8 @@ public class IgniteHadoopFileSystem extends FileSystem {
     /** {@inheritDoc} */
     @Override public URI getUri() {
         if (uri == null)
-            throw new IllegalStateException("URI is null (was IgniteHadoopFileSystem properly initialized?).");
+            throw new IllegalStateException("URI is null (was IgniteHadoopFileSystem properly initialized?) [closed="
+                + closeGuard.get() + ']');
 
         return uri;
     }
@@ -242,6 +240,8 @@ public class IgniteHadoopFileSystem extends FileSystem {
     @SuppressWarnings("ConstantConditions")
     @Override public void initialize(URI name, Configuration cfg) throws IOException {
         enterBusy();
+
+        assert !closeGuard.get();
 
         try {
             if (rmtClient != null)
@@ -295,7 +295,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
             igfsGrpBlockSize = handshake.blockSize();
 
-            final IgfsPaths<HadoopFileSystemFactory<FileSystem>> paths = handshake.secondaryPaths();
+            final IgfsPaths paths = handshake.secondaryPaths();
 
             // Initialize client logger.
             Boolean logEnabled = parameter(cfg, PARAM_IGFS_LOG_ENABLED, uriAuthority, false);
@@ -336,16 +336,15 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
 //                byte[] secFsFacoryBytes = handshake.getSecondaryFileSystemFactoryBytes();
 
-                HadoopFileSystemFactory<FileSystem> factory = paths.getPayload();
+                HadoopFileSystemFactory factory = (HadoopFileSystemFactory)paths.getPayload();
 
                 A.ensure(factory != null, "Secondary file system factory should not be null.");
 
-                //secondaryUri = factory.uri();
+                if (factory instanceof LifecycleAware)
+                    ((LifecycleAware) factory).start();
 
                 try {
-                    //SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
-
-                    secondaryFs = factory.get(user); //secProvider.createFileSystem(user);
+                    secondaryFs = factory.get(user);
 
                     secondaryUri = secondaryFs.getUri();
 
@@ -440,12 +439,12 @@ public class IgniteHadoopFileSystem extends FileSystem {
         if (clientLog.isLogEnabled())
             clientLog.close();
 
-        if (secondaryFs != null)
-            U.closeQuiet(secondaryFs);
+        U.closeQuiet(secondaryFs);
+
+        System.out.println("closed " + uri);
 
         // Reset initialized resources.
         uri = null;
-        System.out.println("uri zeroed.");
         rmtClient = null;
     }
 

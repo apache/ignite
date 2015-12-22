@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -63,7 +62,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
-import org.apache.ignite.internal.processors.hadoop.fs.DefaultHadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.v1.DefaultHadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEx;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsIpcIo;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsOutProc;
@@ -385,16 +384,16 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         if (mode != PRIMARY) {
             DefaultHadoopFileSystemFactory fac = new DefaultHadoopFileSystemFactory();
+
             fac.setUri(SECONDARY_URI);
-            fac.setCfgPaths(Collections.singletonList(SECONDARY_CFG_PATH));
+            fac.setConfigPaths(Collections.singletonList(SECONDARY_CFG_PATH));
 
             IgniteHadoopIgfsSecondaryFileSystem sec = new IgniteHadoopIgfsSecondaryFileSystem();
 
             sec.setFsFactory(fac);
             sec.setDfltUserName(SECONDARY_FS_USER);
 
-            sec.start();
-
+            // NB: start() will be invoked upon IgfsImpl init.
             cfg.setSecondaryFileSystem(sec);
         }
 
@@ -412,7 +411,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             @Override public Object call() throws Exception {
                 return new IgniteHadoopFileSystem().getUri();
             }
-        }, IllegalStateException.class, "URI is null (was IgniteHadoopFileSystem properly initialized?).");
+        }, IllegalStateException.class,
+            "URI is null (was IgniteHadoopFileSystem properly initialized?) [closed=false]");
     }
 
     /** @throws Exception If failed. */
