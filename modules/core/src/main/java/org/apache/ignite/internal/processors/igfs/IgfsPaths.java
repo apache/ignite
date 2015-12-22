@@ -28,7 +28,7 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.igfs.HadoopFileSystemFactory;
+//import org.apache.ignite.igfs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -46,8 +46,8 @@ public class IgfsPaths <F> implements Externalizable {
     @Deprecated
     private Map<String, String> props;
 
-    /** */
-    private HadoopFileSystemFactory<F> factory;
+//    /** */
+//    private HadoopFileSystemFactory<F> factory;
 
     /** Default IGFS mode. */
     private IgfsMode dfltMode;
@@ -70,11 +70,11 @@ public class IgfsPaths <F> implements Externalizable {
      * @param pathModes Path modes.
      */
     public IgfsPaths(Map<String, String> props,
-                     HadoopFileSystemFactory<F> factory,
+                     //HadoopFileSystemFactory<F> factory,
                      IgfsMode dfltMode,
                      @Nullable List<T2<IgfsPath, IgfsMode>> pathModes) {
         this.props = props;
-        this.factory = factory;
+        //this.factory = factory;
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
     }
@@ -103,20 +103,20 @@ public class IgfsPaths <F> implements Externalizable {
         return pathModes;
     }
 
-    /**
-     * Getter for factory.
-     *
-     * @return The factory.
-     */
-    public HadoopFileSystemFactory<F> factory() {
-        return factory;
-    }
+//    /**
+//     * Getter for factory.
+//     *
+//     * @return The factory.
+//     */
+//    public HadoopFileSystemFactory<F> factory() {
+//        return factory;
+//    }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeStringMap(out, props);
 
-        writeFactory(out);
+//        writeFactory(out);
 
         U.writeEnum(out, dfltMode);
 
@@ -133,30 +133,30 @@ public class IgfsPaths <F> implements Externalizable {
             out.writeBoolean(false);
     }
 
-    /**
-     *
-     * @param out
-     * @throws IOException
-     */
-    private void writeFactory(ObjectOutput out) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        ObjectOutput oo = new ObjectOutputStream(baos);
-        try {
-            oo.writeObject(factory);
-        }
-        finally {
-            oo.close();
-        }
-
-        U.writeByteArray(out, baos.toByteArray());
-    }
+//    /**
+//     *
+//     * @param out
+//     * @throws IOException
+//     */
+//    private void writeFactory(ObjectOutput out) throws IOException {
+//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//
+//        ObjectOutput oo = new ObjectOutputStream(baos);
+//        try {
+//            oo.writeObject(factory);
+//        }
+//        finally {
+//            oo.close();
+//        }
+//
+//        U.writeByteArray(out, baos.toByteArray());
+//    }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         props = U.readStringMap(in);
 
-        readFactory(in);
+//        readFactory(in);
 
         dfltMode = IgfsMode.fromOrdinal(in.readByte());
 
@@ -176,22 +176,22 @@ public class IgfsPaths <F> implements Externalizable {
         }
     }
 
-    /**
-     *
-     * @param in
-     * @throws IOException
-     * @throws ClassNotFoundException
-     */
-    private void readFactory(ObjectInput in) throws IOException, ClassNotFoundException {
-        byte[] factoryBytes = U.readByteArray(in);
-
-        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes));
-
-        try {
-            factory = (HadoopFileSystemFactory<F>) oi.readObject();
-        }
-        finally {
-            oi.close();
-        }
-    }
+//    /**
+//     *
+//     * @param in
+//     * @throws IOException
+//     * @throws ClassNotFoundException
+//     */
+//    private void readFactory(ObjectInput in) throws IOException, ClassNotFoundException {
+//        byte[] factoryBytes = U.readByteArray(in);
+//
+//        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes));
+//
+//        try {
+//            factory = (HadoopFileSystemFactory<F>) oi.readObject();
+//        }
+//        finally {
+//            oi.close();
+//        }
+//    }
 }

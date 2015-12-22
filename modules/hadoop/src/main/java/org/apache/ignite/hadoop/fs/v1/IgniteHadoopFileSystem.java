@@ -18,9 +18,12 @@
 package org.apache.ignite.hadoop.fs.v1;
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -331,7 +334,11 @@ public class IgniteHadoopFileSystem extends FileSystem {
 //                String secUri = props.get(SECONDARY_FS_URI);
 //                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
 
-                HadoopFileSystemFactory<FileSystem> factory = paths.factory();
+                byte[] secFsFacoryBytes = handshake.getSecondaryFileSystemFactoryBytes();
+
+
+
+                //HadoopFileSystemFactory<FileSystem> factory = paths.factory();
 
                 A.ensure(factory != null, "Secondary file system factory should not be null.");
 
@@ -343,6 +350,10 @@ public class IgniteHadoopFileSystem extends FileSystem {
                     //SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
 
                     secondaryFs = factory.get(user); //secProvider.createFileSystem(user);
+
+                    URI uri2 = secondaryFs.getUri();
+
+                    assert secondaryUri.equals(uri2);
                 }
                 catch (IOException e) {
                     if (!mgmt)
@@ -360,6 +371,24 @@ public class IgniteHadoopFileSystem extends FileSystem {
             leaveBusy();
         }
     }
+
+    /**
+     *
+     * @param in
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    static HadoopFileSystemFactory readFactory(byte[] factoryBytes) throws IOException, ClassNotFoundException {
+        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes));
+
+        try {
+            return (HadoopFileSystemFactory<F>) oi.readObject();
+        }
+        finally {
+            oi.close();
+        }
+    }
+
 
     /** {@inheritDoc} */
     @Override protected void checkPath(Path path) {

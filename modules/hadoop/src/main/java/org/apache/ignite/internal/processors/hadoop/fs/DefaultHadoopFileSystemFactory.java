@@ -106,7 +106,6 @@ public class DefaultHadoopFileSystemFactory implements HadoopFileSystemFactory<F
         }
     }
 
-
     protected void init() throws IOException {
         String secUri = nullifyEmpty(uri == null ? null : uri.toString());
 

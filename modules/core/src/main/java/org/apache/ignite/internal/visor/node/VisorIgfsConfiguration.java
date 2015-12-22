@@ -75,7 +75,7 @@ public class VisorIgfsConfiguration implements Serializable {
 //    /** User name for the secondary hadoop file system config. */
 //    private String secondaryHadoopFileSysUserName;
 
-    private HadoopFileSystemFactory factory;
+//    private HadoopFileSystemFactory factory;
 
     /** IGFS instance mode. */
     private IgfsMode dfltMode;
@@ -146,16 +146,16 @@ public class VisorIgfsConfiguration implements Serializable {
 
         IgfsSecondaryFileSystem secFs = igfs.getSecondaryFileSystem();
 
-        if (secFs != null) {
-            //Map<String, String> props = secFs.properties();
-
-            //cfg.secondaryHadoopFileSysUri = props.get(SECONDARY_FS_URI);
-            //cfg.secondaryHadoopFileSysCfgPath = props.get(SECONDARY_FS_CONFIG_PATH);
-            //cfg.secondaryHadoopFileSysUserName = props.get(SECONDARY_FS_USER_NAME);
-
-            // Just take and save the factory object:
-            cfg.factory = secFs.getSecondaryFileSystemFactory();
-        }
+//        if (secFs != null) {
+//            //Map<String, String> props = secFs.properties();
+//
+//            //cfg.secondaryHadoopFileSysUri = props.get(SECONDARY_FS_URI);
+//            //cfg.secondaryHadoopFileSysCfgPath = props.get(SECONDARY_FS_CONFIG_PATH);
+//            //cfg.secondaryHadoopFileSysUserName = props.get(SECONDARY_FS_USER_NAME);
+//
+//            // Just take and save the factory object:
+//            cfg.factory = secFs.getSecondaryFileSystemFactory();
+//        }
 
         cfg.dfltMode = igfs.getDefaultMode();
         cfg.pathModes = igfs.getPathModes();
@@ -277,14 +277,14 @@ public class VisorIgfsConfiguration implements Serializable {
 //        return secondaryHadoopFileSysCfgPath;
 //    }
 
-    /**
-     *
-     * @param <T>
-     * @return
-     */
-    public <T> HadoopFileSystemFactory<T> secondaryFileSystemFactory() {
-        return factory;
-    }
+//    /**
+//     *
+//     * @param <T>
+//     * @return
+//     */
+//    public <T> HadoopFileSystemFactory<T> secondaryFileSystemFactory() {
+//        return factory;
+//    }
 
     /**
      * @return IGFS instance mode.

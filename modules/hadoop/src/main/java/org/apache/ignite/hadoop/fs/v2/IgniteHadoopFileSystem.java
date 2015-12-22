@@ -58,6 +58,7 @@ import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
+import org.apache.ignite.internal.processors.hadoop.fs.DefaultHadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsInputStream;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsOutputStream;
@@ -345,17 +346,21 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
                 A.ensure(secondaryUri != null, "File system factory uri should not be null.");
 
-                secondaryUri = factory.uri();
-
-                A.ensure(secondaryUri != null, "Secondary file system uri should not be null.");
+                //secondaryUri = factory.uri();
 
                 try {
                     //SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
 
                     secondaryFs = factory.get(user);
 
-                    //secondaryFs = secProvider.createAbstractFileSystem(user);
+                    secondaryUri = secondaryFs.getUri();
 
+                    assert secondaryUri != null;
+
+                    URI uri2 = ((DefaultHadoopFileSystemFactory)factory).uri();
+                    assert secondaryUri.equals(uri2);
+
+                    //secondaryFs = secProvider.createAbstractFileSystem(user);
                     //secondaryUri = secProvider.uri();
                 }
                 catch (IOException e) {

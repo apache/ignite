@@ -256,7 +256,7 @@ public final class IgfsImpl implements IgfsEx {
 
         secondaryPaths = new IgfsPaths(
             secondaryFs == null ? null : secondaryFs.properties(),
-            secondaryFs == null ? null : secondaryFs.getSecondaryFileSystemFactory(),
+            //secondaryFs == null ? null : secondaryFs.getSecondaryFileSystemFactory(),
             dfltMode,
             modeRslvr.modesOrdered());
 
