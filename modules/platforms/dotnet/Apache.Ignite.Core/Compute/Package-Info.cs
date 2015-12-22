@@ -18,7 +18,7 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// Contains Compute Grid functionality.
+/// Compute Grid functionality.
 /// </summary>
 namespace Apache.Ignite.Core.Compute
 {
