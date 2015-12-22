@@ -435,6 +435,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return new GridMapEntry<>(marshalToBinary(e.getKey()), marshalToBinary(e.getValue()));
         }
 
+        if (binaryMarsh.mustDeserialize(obj))
+            return obj; // No need to go through marshal-unmarshal because result will be the same as initial object.
+
         byte[] arr = binaryMarsh.marshal(obj);
 
         assert arr.length > 0;
