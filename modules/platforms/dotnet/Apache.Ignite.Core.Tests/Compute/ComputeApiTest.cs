@@ -1002,6 +1002,16 @@ namespace Apache.Ignite.Core.Tests.Compute
             _grid1.GetCompute().Run(new ComputeAction());
 
             Assert.AreEqual(1, ComputeAction.InvokeCount);
+
+            var cts = new CancellationTokenSource();
+
+            var task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
+
+            cts.Cancel();
+
+            Assert.IsTrue(task.IsCanceled);
+
+            Assert.AreEqual(1, ComputeAction.InvokeCount);
         }
 
         /// <summary>
@@ -1274,6 +1284,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         public void Invoke()
         {
+            Thread.Sleep(10);
             Interlocked.Increment(ref InvokeCount);
             LastNodeId = _grid.GetCluster().GetLocalNode().Id;
         }

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Compute
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
 
@@ -321,6 +322,13 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         /// <param name="action">Job to execute.</param>
         Task RunAsync(IComputeAction action);
+
+        /// <summary>
+        /// Executes provided job on a node in this grid projection.
+        /// </summary>
+        /// <param name="action">Job to execute.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        Task RunAsync(IComputeAction action, CancellationToken cancellationToken);
 
         /// <summary>
         /// Executes given job on the node where data for provided affinity key is located
