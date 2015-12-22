@@ -1883,6 +1883,17 @@ public class BinaryUtils {
     }
 
     /**
+     * Create qualified field name.
+     *
+     * @param cls Class.
+     * @param fieldName Field name.
+     * @return Qualified field name.
+     */
+    public static String qualifiedFieldName(Class cls, String fieldName) {
+        return cls.getName() + "." + fieldName;
+    }
+
+    /**
      * Enum type.
      */
     private static class EnumType {

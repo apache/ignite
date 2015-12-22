@@ -54,6 +54,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
@@ -63,6 +64,7 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
@@ -2315,6 +2317,63 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test duplicate fields.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDuplicateFields() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        DuplicateFieldsB obj = new DuplicateFieldsB(1, 2);
+
+        BinaryObjectImpl objBin = marshal(obj, marsh);
+
+        String fieldName = "x";
+        String fieldNameA = DuplicateFieldsA.class.getName() + "." + fieldName;
+        String fieldNameB = DuplicateFieldsB.class.getName() + "." + fieldName;
+
+        // Check "hasField".
+        assert !objBin.hasField(fieldName);
+        assert objBin.hasField(fieldNameA);
+        assert objBin.hasField(fieldNameB);
+
+        // Check direct field access.
+        assertNull(objBin.field(fieldName));
+        assertEquals(1, objBin.field(fieldNameA));
+        assertEquals(2, objBin.field(fieldNameB));
+
+        // Check metadata.
+        BinaryType type = objBin.type();
+
+        Collection<String> fieldNames = type.fieldNames();
+
+        assertEquals(2, fieldNames.size());
+
+        assert !fieldNames.contains(fieldName);
+        assert fieldNames.contains(fieldNameA);
+        assert fieldNames.contains(fieldNameB);
+
+        // Check field access through type.
+        BinaryField field = type.field(fieldName);
+        BinaryField fieldA = type.field(fieldNameA);
+        BinaryField fieldB = type.field(fieldNameB);
+
+        assert !field.exists(objBin);
+        assert fieldA.exists(objBin);
+        assert fieldB.exists(objBin);
+
+        assertNull(field.value(objBin));
+        assertEquals(1, fieldA.value(objBin));
+        assertEquals(2, fieldB.value(objBin));
+
+        // Check object deserialization.
+        DuplicateFieldsB deserialized = objBin.deserialize();
+
+        assertEquals(obj.xA(), deserialized.xA());
+        assertEquals(obj.xB(), deserialized.xB());
+    }
+
+    /**
      *
      */
     private static interface SomeItf {
@@ -4116,6 +4175,57 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             s = "readResolve";
 
             return this;
+        }
+    }
+
+    /**
+     * Class B for duplicate fields test.
+     */
+    private static class DuplicateFieldsA {
+        /** Field. */
+        int x;
+
+        /**
+         * Constructor.
+         *
+         * @param x Field.
+         */
+        protected DuplicateFieldsA(int x) {
+            this.x = x;
+        }
+
+        /**
+         * @return A's field.
+         */
+        public int xA() {
+            return x;
+        }
+    }
+
+    /**
+     * Class B for duplicate fields test.
+     */
+    private static class DuplicateFieldsB extends DuplicateFieldsA {
+        /** Field. */
+        int x;
+
+        /**
+         * Constructor.
+         *
+         * @param xA Field for parent class.
+         * @param xB Field for current class.
+         */
+        public DuplicateFieldsB(int xA, int xB) {
+            super(xA);
+
+            this.x = xB;
+        }
+
+        /**
+         * @return B's field.
+         */
+        public int xB() {
+            return x;
         }
     }
 

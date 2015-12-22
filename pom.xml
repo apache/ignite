@@ -821,7 +821,7 @@
 
                                         <replaceregexp byline="true" encoding="UTF-8">
                                             <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
-                                            <substitution expression="\1${new.ignite.version}\2" />
+                                            <substitution expression="\1${new.ignite.version.fixed}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/AssemblyInfo.cs" />
                                                 <include name="**/AssemblyInfo.cpp" />
