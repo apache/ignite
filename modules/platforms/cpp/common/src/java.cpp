@@ -1306,20 +1306,24 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            void JniContext::TargetListenFuture(jobject obj, long long futId, int typ) {
+            void* JniContext::TargetListenFuture(jobject obj, long long futId, int typ) {
                 JNIEnv* env = Attach();
 
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFuture, futId, typ);
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFuture, futId, typ);
 
                 ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
             }
 
-            void JniContext::TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId) {
+            void* JniContext::TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId) {
                 JNIEnv* env = Attach();
 
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFutureForOperation, futId, typ, opId);
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFutureForOperation, futId, typ, opId);
 
                 ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
             }
 
             int JniContext::AffinityPartitions(jobject obj) {

@@ -295,14 +295,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
-        internal static void TargetListenFuture(IUnmanagedTarget target, long futId, int typ)
+        internal static IUnmanagedTarget TargetListenFuture(IUnmanagedTarget target, long futId, int typ)
         {
-            JNI.TargetListenFut(target.Context, target.Target, futId, typ);
+            var res = JNI.TargetListenFut(target.Context, target.Target, futId, typ);
+
+            return target.ChangeTarget(res);
         }
 
-        internal static void TargetListenFutureForOperation(IUnmanagedTarget target, long futId, int typ, int opId)
+        internal static IUnmanagedTarget TargetListenFutureForOperation(IUnmanagedTarget target, long futId, int typ, int opId)
         {
-            JNI.TargetListenFutForOp(target.Context, target.Target, futId, typ, opId);
+            var res = JNI.TargetListenFutForOp(target.Context, target.Target, futId, typ, opId);
+
+            return target.ChangeTarget(res);
         }
 
         #endregion

@@ -108,10 +108,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern void* TargetOutObject(void* ctx, void* target, int opType);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFuture")]
-        public static extern void TargetListenFut(void* ctx, void* target, long futId, int typ);
+        public static extern void* TargetListenFut(void* ctx, void* target, long futId, int typ);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFutureForOperation")]
-        public static extern void TargetListenFutForOp(void* ctx, void* target, long futId, int typ, int opId);
+        public static extern void* TargetListenFutForOp(void* ctx, void* target, long futId, int typ, int opId);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAffinityPartitions")]
         public static extern int AffinityParts(void* ctx, void* target);
