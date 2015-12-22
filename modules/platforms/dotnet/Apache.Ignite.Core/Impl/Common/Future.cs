@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Grid future implementation.
@@ -37,11 +38,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Task completion source. */
         private readonly TaskCompletionSource<T> _taskCompletionSource = new TaskCompletionSource<T>();
 
-        /** Cancel delegate. */
-        private volatile Func<bool> _cancelFunc = () => false;
-
-        /** IsCancelled delegate. */
-        private volatile Func<bool> _isCancelledFunc = () => false;
+        /** */
+        private volatile IUnmanagedTarget _unmanagedTarget;
 
         /// <summary>
         /// Constructor.
@@ -149,17 +147,13 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Sets cancellation functions.
+        /// Sets unmanaged future target for cancellation.
         /// </summary>
-        /// <param name="cancelFunc">Cancel function.</param>
-        /// <param name="isCancelledFunc">IsCancelled function.</param>
-        public void SetCancellation(Func<bool> cancelFunc, Func<bool> isCancelledFunc)
+        internal void SetTarget(IUnmanagedTarget target)
         {
-            Debug.Assert(cancelFunc != null);
-            Debug.Assert(isCancelledFunc != null);
+            Debug.Assert(target != null);
 
-            _cancelFunc = cancelFunc;
-            _isCancelledFunc = isCancelledFunc;
+            _unmanagedTarget = target;
         }
 
         /// <summary>
@@ -167,7 +161,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public bool Cancel()
         {
-            var result = _cancelFunc();
+            if (_unmanagedTarget == null)
+                return false;
+
+            var result = UnmanagedUtils.ListenableCancel(_unmanagedTarget);
 
             if (result)
                 _taskCompletionSource.TrySetCanceled();
@@ -180,7 +177,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public bool IsCancelled()
         {
-            return _isCancelledFunc();
+            if (_unmanagedTarget == null)
+                return false;
+
+            return UnmanagedUtils.ListenableIsCancelled(_unmanagedTarget);
         }
     }
 }

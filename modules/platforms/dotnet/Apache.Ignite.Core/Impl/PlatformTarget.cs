@@ -649,9 +649,9 @@ namespace Apache.Ignite.Core.Impl
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
-            var futObj = listenAction(futHnd, (int)futType);
+            var futTarget = listenAction(futHnd, (int)futType);
 
-            fut.SetCancellation(() => false, () => false);  // TODO
+            fut.SetTarget(futTarget);
 
             return fut;
         }
