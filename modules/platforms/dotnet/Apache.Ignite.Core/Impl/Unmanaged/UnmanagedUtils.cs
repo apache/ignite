@@ -415,9 +415,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.CacheCloseLock(target.Context, target.Target, id);
         }
 
-        internal static void CacheRebalance(IUnmanagedTarget target, long futId)
+        internal static IUnmanagedTarget CacheRebalance(IUnmanagedTarget target, long futId)
         {
             JNI.CacheRebalance(target.Context, target.Target, futId);
+
+            return null; // TODO
         }
 
         internal static void CacheStoreCallbackInvoke(IUnmanagedTarget target, long memPtr)
@@ -611,9 +613,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return JNI.TxCommit(target.Context, target.Target, id);
         }
 
-        internal static void TransactionsCommitAsync(IUnmanagedTarget target, long id, long futId)
+        internal static IUnmanagedTarget TransactionsCommitAsync(IUnmanagedTarget target, long id, long futId)
         {
             JNI.TxCommitAsync(target.Context, target.Target, id, futId);
+
+            return null;  // TODO
         }
 
         internal static int TransactionsRollback(IUnmanagedTarget target, long id)
@@ -621,9 +625,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return JNI.TxRollback(target.Context, target.Target, id);
         }
 
-        internal static void TransactionsRollbackAsync(IUnmanagedTarget target, long id, long futId)
+        internal static IUnmanagedTarget TransactionsRollbackAsync(IUnmanagedTarget target, long id, long futId)
         {
             JNI.TxRollbackAsync(target.Context, target.Target, id, futId);
+
+            return null;  // TODO
         }
 
         internal static int TransactionsClose(IUnmanagedTarget target, long id)

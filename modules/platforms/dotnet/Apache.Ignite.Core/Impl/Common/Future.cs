@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -34,6 +35,12 @@ namespace Apache.Ignite.Core.Impl.Common
 
         /** Task completion source. */
         private readonly TaskCompletionSource<T> _taskCompletionSource = new TaskCompletionSource<T>();
+
+        /** Cancel delegate. */
+        private volatile Func<bool> _cancelFunc = () => false;
+
+        /** IsCancelled delegate. */
+        private volatile Func<bool> _isCancelledFunc = () => false;
 
         /// <summary>
         /// Constructor.
@@ -123,6 +130,36 @@ namespace Apache.Ignite.Core.Impl.Common
                 OnError(err);
             else
                 OnResult(res);
+        }
+
+        /// <summary>
+        /// Sets cancellation functions.
+        /// </summary>
+        /// <param name="cancelFunc">Cancel function.</param>
+        /// <param name="isCancelledFunc">IsCancelled function.</param>
+        public void SetCancellation(Func<bool> cancelFunc, Func<bool> isCancelledFunc)
+        {
+            Debug.Assert(cancelFunc != null);
+            Debug.Assert(isCancelledFunc != null);
+
+            _cancelFunc = cancelFunc;
+            _isCancelledFunc = isCancelledFunc;
+        }
+
+        /// <summary>
+        /// Cancels this instance.
+        /// </summary>
+        public bool Cancel()
+        {
+            return _cancelFunc();
+        }
+
+        /// <summary>
+        /// Determines whether this instance is cancelled.
+        /// </summary>
+        public bool IsCancelled()
+        {
+            return _isCancelledFunc();
         }
     }
 }
