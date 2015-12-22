@@ -2071,7 +2071,7 @@ namespace ignite
                 return res != 0;;
             }
 
-            jobject JniContext::Acquire(jobject obj)
+			jobject JniContext::Acquire(jobject obj)
             {
                 if (obj) {
 

@@ -44,5 +44,4 @@ public interface PlatformListenable {
      * @return True if this listenable was canceled before completion.
      */
     public boolean isCancelled();
-
 }
