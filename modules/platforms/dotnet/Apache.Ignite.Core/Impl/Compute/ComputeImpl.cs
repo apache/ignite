@@ -192,9 +192,13 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             long ptr = Marshaller.Ignite.HandleRegistry.Allocate(holder);
 
-            UU.ComputeExecuteNative(Target, ptr, _prj.TopologyVersion);
+            var futTarget = UU.ComputeExecuteNative(Target, ptr, _prj.TopologyVersion);
 
-            return holder.Future;
+            var future = holder.Future;
+
+            future.SetTarget(futTarget);
+
+            return future;
         }
 
         /// <summary>

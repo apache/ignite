@@ -530,7 +530,7 @@ namespace ignite
 
                 void ComputeWithNoFailover(jobject obj);
                 void ComputeWithTimeout(jobject obj, long long timeout);
-                void ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer);
+                void* ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer);
 
                 void ContinuousQueryClose(jobject obj);
                 jobject ContinuousQueryGetInitialQueryCursor(jobject obj);

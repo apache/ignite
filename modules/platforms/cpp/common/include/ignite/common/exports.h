@@ -80,7 +80,7 @@ extern "C" {
 
     void IGNITE_CALL IgniteComputeWithNoFailover(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteComputeWithTimeout(gcj::JniContext* ctx, void* obj, long long timeout);
-    void IGNITE_CALL IgniteComputeExecuteNative(gcj::JniContext* ctx, void* obj, long long taskPtr, long long topVer);
+    void* IGNITE_CALL IgniteComputeExecuteNative(gcj::JniContext* ctx, void* obj, long long taskPtr, long long topVer);
 
     void IGNITE_CALL IgniteContinuousQueryClose(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteContinuousQueryGetInitialQueryCursor(gcj::JniContext* ctx, void* obj);

@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern void ComputeWithTimeout(void* ctx, void* target, long timeout);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteComputeExecuteNative")]
-        public static extern void ComputeExecuteNative(void* ctx, void* target, long taskPtr, long topVer);
+        public static extern void* ComputeExecuteNative(void* ctx, void* target, long taskPtr, long topVer);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteContinuousQueryClose")]
         public static extern void ContinuousQryClose(void* ctx, void* target);

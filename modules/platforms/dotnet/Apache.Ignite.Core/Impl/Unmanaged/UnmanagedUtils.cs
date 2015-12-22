@@ -446,9 +446,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.ComputeWithTimeout(target.Context, target.Target, timeout);
         }
 
-        internal static void ComputeExecuteNative(IUnmanagedTarget target, long taskPtr, long topVer)
+        internal static IUnmanagedTarget ComputeExecuteNative(IUnmanagedTarget target, long taskPtr, long topVer)
         {
-            JNI.ComputeExecuteNative(target.Context, target.Target, taskPtr, topVer);
+            void* res = JNI.ComputeExecuteNative(target.Context, target.Target, taskPtr, topVer);
+
+            return target.ChangeTarget(res);
         }
 
         #endregion

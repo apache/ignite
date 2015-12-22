@@ -219,8 +219,8 @@ extern "C" {
         ctx->ComputeWithTimeout(static_cast<jobject>(obj), timeout);
     }
 
-    void IGNITE_CALL IgniteComputeExecuteNative(gcj::JniContext* ctx, void* obj, long long taskPtr, long long topVer) {
-        ctx->ComputeExecuteNative(static_cast<jobject>(obj), taskPtr, topVer);
+    void* IGNITE_CALL IgniteComputeExecuteNative(gcj::JniContext* ctx, void* obj, long long taskPtr, long long topVer) {
+        return ctx->ComputeExecuteNative(static_cast<jobject>(obj), taskPtr, topVer);
     }
 
     void IGNITE_CALL IgniteContinuousQueryClose(gcj::JniContext* ctx, void* obj) {

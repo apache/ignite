@@ -227,7 +227,7 @@ namespace ignite
             const char* C_PLATFORM_COMPUTE = "org/apache/ignite/internal/processors/platform/compute/PlatformCompute";
             JniMethod M_PLATFORM_COMPUTE_WITH_NO_FAILOVER = JniMethod("withNoFailover", "()V", false);
             JniMethod M_PLATFORM_COMPUTE_WITH_TIMEOUT = JniMethod("withTimeout", "(J)V", false);
-            JniMethod M_PLATFORM_COMPUTE_EXECUTE_NATIVE = JniMethod("executeNative", "(JJ)V", false);
+            JniMethod M_PLATFORM_COMPUTE_EXECUTE_NATIVE = JniMethod("executeNative", "(JJ)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
 
             const char* C_PLATFORM_CACHE = "org/apache/ignite/internal/processors/platform/cache/PlatformCache";
             JniMethod M_PLATFORM_CACHE_WITH_SKIP_STORE = JniMethod("withSkipStore", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
@@ -1529,12 +1529,14 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            void JniContext::ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer) {
+            void* JniContext::ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer) {
                 JNIEnv* env = Attach();
 
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCompute_executeNative, taskPtr, topVer);
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCompute_executeNative, taskPtr, topVer);
 
                 ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
             }
 
             void JniContext::ContinuousQueryClose(jobject obj) {
