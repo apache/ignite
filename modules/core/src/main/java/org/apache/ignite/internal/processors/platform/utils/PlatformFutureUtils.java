@@ -72,7 +72,7 @@ public class PlatformFutureUtils {
      */
     public static PlatformListenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, final int typ,
         PlatformAbstractTarget target) {
-        InternalFutureListenable listenable = new InternalFutureListenable(fut);
+        PlatformListenable listenable = getListenable(fut);
 
         listen(ctx, listenable, futPtr, typ, null, target);
 
@@ -89,7 +89,7 @@ public class PlatformFutureUtils {
      */
     public static PlatformListenable listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ,
         PlatformAbstractTarget target) {
-        FutureListenable listenable = new FutureListenable(fut);
+        PlatformListenable listenable = getListenable(fut);
 
         listen(ctx, listenable, futPtr, typ, null, target);
 
@@ -108,7 +108,7 @@ public class PlatformFutureUtils {
      */
     public static PlatformListenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, final int typ,
         Writer writer, PlatformAbstractTarget target) {
-        InternalFutureListenable listenable = new InternalFutureListenable(fut);
+        PlatformListenable listenable = getListenable(fut);
 
         listen(ctx, listenable, futPtr, typ, writer, target);
 
@@ -127,7 +127,7 @@ public class PlatformFutureUtils {
      */
     public static PlatformListenable listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ,
         Writer writer, PlatformAbstractTarget target) {
-        FutureListenable listenable = new FutureListenable(fut);
+        PlatformListenable listenable = getListenable(fut);
 
         listen(ctx, listenable, futPtr, typ, writer, target);
 
@@ -145,11 +145,31 @@ public class PlatformFutureUtils {
      */
     public static PlatformListenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, Writer writer,
         PlatformAbstractTarget target) {
-        InternalFutureListenable listenable = new InternalFutureListenable(fut);
+        PlatformListenable listenable = getListenable(fut);
 
         listen(ctx, listenable, futPtr, TYP_OBJ, writer, target);
 
         return listenable;
+    }
+
+    /**
+     * Gets the listenable.
+     *
+     * @param fut Future.
+     * @return Platform listenable.
+     */
+    public static PlatformListenable getListenable(IgniteInternalFuture fut) {
+        return new InternalFutureListenable(fut);
+    }
+
+    /**
+     * Gets the listenable.
+     *
+     * @param fut Future.
+     * @return Platform listenable.
+     */
+    public static PlatformListenable getListenable(IgniteFuture fut) {
+        return new FutureListenable(fut);
     }
 
     /**

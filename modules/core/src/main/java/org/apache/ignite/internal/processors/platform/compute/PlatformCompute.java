@@ -30,6 +30,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.utils.*;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -231,7 +232,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      *
      * @param task Task.
      */
-    private void executeNative0(final PlatformAbstractTask task) {
+    private PlatformListenable executeNative0(final PlatformAbstractTask task) {
         IgniteInternalFuture fut = compute.executeAsync(task, null);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
@@ -248,6 +249,8 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 }
             }
         });
+
+        return PlatformFutureUtils.getListenable(fut);
     }
 
     /**
