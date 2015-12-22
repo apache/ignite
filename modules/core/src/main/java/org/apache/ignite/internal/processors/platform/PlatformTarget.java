@@ -102,7 +102,7 @@ public interface PlatformTarget {
      * @throws IgniteCheckedException In case of failure.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public PlatformFutureUtils.Listenable listenFuture(final long futId, int typ) throws Exception;
+    public PlatformListenable listenFuture(final long futId, int typ) throws Exception;
 
     /**
      * Start listening for the future for specific operation type.
@@ -113,5 +113,5 @@ public interface PlatformTarget {
      * @throws IgniteCheckedException In case of failure.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public PlatformFutureUtils.Listenable listenFutureForOperation(final long futId, int typ, int opId) throws Exception;
+    public PlatformListenable listenFutureForOperation(final long futId, int typ, int opId) throws Exception;
 }

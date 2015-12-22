@@ -70,7 +70,7 @@ public class PlatformFutureUtils {
      * @param typ Expected return type.
      * @return Resulting listenable.
      */
-    public static Listenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, final int typ,
+    public static PlatformListenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, final int typ,
         PlatformAbstractTarget target) {
         InternalFutureListenable listenable = new InternalFutureListenable(fut);
 
@@ -87,7 +87,7 @@ public class PlatformFutureUtils {
      * @param typ Expected return type.
      * @return Resulting listenable.
      */
-    public static Listenable listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ,
+    public static PlatformListenable listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ,
         PlatformAbstractTarget target) {
         FutureListenable listenable = new FutureListenable(fut);
 
@@ -106,7 +106,7 @@ public class PlatformFutureUtils {
      * @param writer Writer.
      * @return Resulting listenable.
      */
-    public static Listenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, final int typ,
+    public static PlatformListenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, final int typ,
         Writer writer, PlatformAbstractTarget target) {
         InternalFutureListenable listenable = new InternalFutureListenable(fut);
 
@@ -125,7 +125,7 @@ public class PlatformFutureUtils {
      * @param writer Writer.
      * @return Resulting listenable.
      */
-    public static Listenable listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ,
+    public static PlatformListenable listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ,
         Writer writer, PlatformAbstractTarget target) {
         FutureListenable listenable = new FutureListenable(fut);
 
@@ -143,7 +143,7 @@ public class PlatformFutureUtils {
      * @param writer Writer.
      * @return Resulting listenable.
      */
-    public static Listenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, Writer writer,
+    public static PlatformListenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, Writer writer,
         PlatformAbstractTarget target) {
         InternalFutureListenable listenable = new InternalFutureListenable(fut);
 
@@ -162,8 +162,8 @@ public class PlatformFutureUtils {
      * @param writer Optional writer.
      */
     @SuppressWarnings("unchecked")
-    private static void listen(final PlatformContext ctx, Listenable listenable, final long futPtr, final int typ,
-        @Nullable final Writer writer, final PlatformAbstractTarget target) {
+    private static void listen(final PlatformContext ctx, PlatformListenable listenable, final long futPtr, final
+        int typ, @Nullable final Writer writer, final PlatformAbstractTarget target) {
         final PlatformCallbackGateway gate = ctx.gateway();
 
         listenable.listen(new IgniteBiInClosure<Object, Throwable>() {
@@ -338,35 +338,9 @@ public class PlatformFutureUtils {
     }
 
     /**
-     * Listenable entry.
-     */
-    public static interface Listenable {
-        /**
-         * Listen.
-         *
-         * @param lsnr Listener.
-         */
-        public void listen(IgniteBiInClosure<Object, Throwable> lsnr);
-
-        /**
-         * Cancel this instance.
-         *
-         * @return True if canceled.
-         */
-        public boolean cancel() throws IgniteCheckedException;
-
-        /**
-         * Returns true if this listenable was canceled before completion.
-         *
-         * @return True if this listenable was canceled before completion.
-         */
-        public boolean isCanceled();
-    }
-
-    /**
      * Listenable around Ignite future.
      */
-    private static class FutureListenable implements Listenable {
+    private static class FutureListenable implements PlatformListenable {
         /** Future. */
         private final IgniteFuture fut;
 
@@ -413,7 +387,7 @@ public class PlatformFutureUtils {
     /**
      * Listenable around Ignite future.
      */
-    private static class InternalFutureListenable implements Listenable {
+    private static class InternalFutureListenable implements PlatformListenable {
         /** Future. */
         private final IgniteInternalFuture fut;
 
