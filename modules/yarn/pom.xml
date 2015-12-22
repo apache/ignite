@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-yarn</artifactId>
-    <version>1.5.0-final-SNAPSHOT</version>
+    <version>1.5.0.final-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <properties>
