@@ -83,6 +83,13 @@ namespace ignite
                  */
                 void Write(ignite::impl::binary::BinaryWriterImpl& writer) const;
 
+                /**
+                 * Get data buffer.
+                 *
+                 * @return underlying ApplicationDataBuffer instance.
+                 */
+                ApplicationDataBuffer& GetBuffer();
+
             private:
                 /** Underlying data buffer. */
                 ApplicationDataBuffer buffer;

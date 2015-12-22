@@ -50,7 +50,7 @@ namespace ignite
                 void* buffer, int64_t buflen, int64_t* reslen, size_t** offset) :
                 type(type), buffer(buffer), buflen(buflen), reslen(reslen), offset(offset)
             {
-                assert(offset != 0);
+                // No-op.
             }
 
             ApplicationDataBuffer::ApplicationDataBuffer(const ApplicationDataBuffer & other) :

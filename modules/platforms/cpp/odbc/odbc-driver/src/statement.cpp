@@ -55,6 +55,8 @@ namespace ignite
         void Statement::BindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer)
         {
             columnBindings[columnIdx] = buffer;
+
+            columnBindings[columnIdx].SetPtrToOffsetPtr(&columnBindOffset);
         }
 
         void Statement::UnbindColumn(uint16_t columnIdx)
@@ -80,6 +82,8 @@ namespace ignite
         void Statement::BindParameter(uint16_t paramIdx, const app::Parameter& param)
         {
             paramBindings[paramIdx] = param;
+
+            paramBindings[paramIdx].GetBuffer().SetPtrToOffsetPtr(&paramBindOffset);
         }
 
         void Statement::UnbindParameter(uint16_t paramIdx)

@@ -50,9 +50,9 @@ namespace ignite
                  * @param buffer Data buffer pointer.
                  * @param buflen Data buffer length.
                  * @param reslen Resulting data length.
-                 * @param offset Ponter to buffer and reslen offset.
+                 * @param offset Pointer to buffer and reslen offset pointer.
                  */
-                ApplicationDataBuffer(type_traits::IgniteSqlType type, void* buffer, int64_t buflen, int64_t* reslen, size_t** offset);
+                ApplicationDataBuffer(type_traits::IgniteSqlType type, void* buffer, int64_t buflen, int64_t* reslen, size_t** offset = 0);
 
                 /**
                  * Copy constructor.
@@ -65,7 +65,7 @@ namespace ignite
                  * Destructor.
                  */
                 ~ApplicationDataBuffer();
-            
+
                 /**
                  * Copy assigment operator.
                  *
@@ -73,6 +73,16 @@ namespace ignite
                  * @return This.
                  */
                 ApplicationDataBuffer& operator=(const ApplicationDataBuffer& other);
+
+                /**
+                 * Set pointer to offset pointer.
+                 *
+                 * @param offset Pointer to offset pointer.
+                 */
+                void SetPtrToOffsetPtr(size_t** offset)
+                {
+                    this->offset = offset;
+                }
 
                 /**
                  * Put in buffer value of type int8_t.

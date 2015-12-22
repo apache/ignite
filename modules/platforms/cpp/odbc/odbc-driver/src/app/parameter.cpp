@@ -145,6 +145,11 @@ namespace ignite
                         break;
                 }
             }
+
+            ApplicationDataBuffer & Parameter::GetBuffer()
+            {
+                return buffer;
+            }
         }
     }
 }
