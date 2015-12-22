@@ -526,7 +526,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                 try
                 {
-                    DoOutOp(opId, writer =>
+                    var futTarget = DoOutOpObject(opId, writer =>
                     {
                         writer.WriteLong(taskHandle);
 
@@ -550,6 +550,8 @@ namespace Apache.Ignite.Core.Impl.Compute
                         if (writeAction != null)
                             writeAction(writer);
                     });
+
+                    holder.Future.SetTarget(futTarget);
                 }
                 catch (Exception e)
                 {
