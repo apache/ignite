@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -72,6 +73,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.hadoop.PayloadAware;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -87,6 +89,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -122,7 +125,7 @@ public final class IgfsImpl implements IgfsEx {
     static final Map<String, String> DFLT_DIR_META = F.asMap(PROP_PERMISSION, PERMISSION_DFLT_VAL);
 
     /** Handshake message. */
-    private final IgfsPaths secondaryPaths;
+    private final IgfsPaths<Serializable> secondaryPaths;
 
     /** Cache based structure (meta data) manager. */
     private IgfsMetaManager meta;
@@ -200,6 +203,9 @@ public final class IgfsImpl implements IgfsEx {
         data = igfsCtx.data();
         secondaryFs = cfg.getSecondaryFileSystem();
 
+        if (secondaryFs instanceof LifecycleAware)
+            ((LifecycleAware) secondaryFs).start();
+
         /* Default IGFS mode. */
         IgfsMode dfltMode;
 
@@ -254,9 +260,16 @@ public final class IgfsImpl implements IgfsEx {
 
         modeRslvr = new IgfsModeResolver(dfltMode, modes);
 
+        Serializable secondaryFsPayload = null;
+
+        if (secondaryFs instanceof PayloadAware) {
+            secondaryFsPayload = ((PayloadAware<Serializable>) secondaryFs).getPayload();
+        }
+
         secondaryPaths = new IgfsPaths(
-            secondaryFs == null ? null : secondaryFs.properties(),
+            //secondaryFs == null ? null : secondaryFs.properties(),
             //secondaryFs == null ? null : secondaryFs.getSecondaryFileSystemFactory(),
+            secondaryFsPayload,
             dfltMode,
             modeRslvr.modesOrdered());
 

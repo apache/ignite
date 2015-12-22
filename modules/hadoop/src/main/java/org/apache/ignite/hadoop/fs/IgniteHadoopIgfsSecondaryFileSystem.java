@@ -21,7 +21,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,7 +35,6 @@ import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -47,6 +45,7 @@ import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.hadoop.PayloadAware;
 import org.apache.ignite.internal.processors.hadoop.fs.DefaultHadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProperties;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsSecondaryFileSystemPositionedReadable;
@@ -57,7 +56,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import static org.apache.ignite.internal.util.typedef.F.*;
 
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,7 +68,8 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
  * In fact, this class deals with different FileSystems depending on the user context,
  * see {@link IgfsUserContext#currentUser()}.
  */
-public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem <FileSystem> {
+public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem,
+        LifecycleAware, PayloadAware<HadoopFileSystemFactory<FileSystem>> {
 //    /** Properties of file system, see {@link #properties()}
 //     * */
 //    private final Map<String, String> props = new HashMap<>();
@@ -533,10 +532,10 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<String, String> properties() {
-        return Collections.emptyMap();
-    }
+//    /** {@inheritDoc} */
+//    @Override public Map<String, String> properties() {
+//        return Collections.emptyMap();
+//    }
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
@@ -589,7 +588,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         if (F.eq(user, dfltUserName))
             return dfltFs; // optimization
 
-        assert fsFactory.uri() != null : "uri!";
+        //assert fsFactory.uri() != null : "uri!";
 
         try {
             return fsFactory.get(user);
@@ -605,7 +604,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      *
      * @throws IgniteCheckedException
      */
-    public void start() throws IgniteCheckedException {
+    @Override public void start() {
         // #start() should not ever be invoked if these properties are not set:
         A.ensure(fsFactory != null, "factory");
         A.ensure(dfltUserName != null, "dfltUserName");
@@ -625,13 +624,21 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
                 assert dfltFs != null;
             }
             catch (IOException e) {
-                throw new IgniteCheckedException(e);
+                throw new IgniteException(e);
             }
         }
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public HadoopFileSystemFactory<FileSystem> getSecondaryFileSystemFactory() {
+//    /** {@inheritDoc} */
+//    @Nullable @Override public HadoopFileSystemFactory<FileSystem> getSecondaryFileSystemFactory() {
+//        return fsFactory;
+//    }
+
+    @Override public void stop() throws IgniteException {
+        close();
+    }
+
+    @Override public HadoopFileSystemFactory<FileSystem> getPayload() {
         return fsFactory;
     }
 }

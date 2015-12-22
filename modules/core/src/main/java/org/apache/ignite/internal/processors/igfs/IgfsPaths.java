@@ -25,12 +25,12 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-//import org.apache.ignite.igfs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.processors.hadoop.PayloadAware;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -38,16 +38,16 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Description of path modes.
  */
-public class IgfsPaths <F> implements Externalizable {
+public class IgfsPaths <P extends Serializable> implements Externalizable, PayloadAware<P> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Additional secondary file system properties. */
-    @Deprecated
-    private Map<String, String> props;
+//    /** Additional secondary file system properties. */
+//    @Deprecated
+//    private Map<String, String> props;
 
-//    /** */
-//    private HadoopFileSystemFactory<F> factory;
+    /** */
+    private P payload;
 
     /** Default IGFS mode. */
     private IgfsMode dfltMode;
@@ -65,29 +65,28 @@ public class IgfsPaths <F> implements Externalizable {
     /**
      * Constructor.
      *
-     * @param props Additional secondary file system properties.
      * @param dfltMode Default IGFS mode.
      * @param pathModes Path modes.
      */
-    public IgfsPaths(Map<String, String> props,
-                     //HadoopFileSystemFactory<F> factory,
+    public IgfsPaths(//Map<String, String> props,
+                     P payload,
                      IgfsMode dfltMode,
                      @Nullable List<T2<IgfsPath, IgfsMode>> pathModes) {
-        this.props = props;
-        //this.factory = factory;
+        //this.props = props;
+        this.payload = payload;
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
     }
 
-    /**
-     * @return Secondary file system properties.
-     *
-     * @deprecated
-     */
-    @Deprecated
-    public Map<String, String> properties() {
-        return props;
-    }
+//    /**
+//     * @return Secondary file system properties.
+//     *
+//     * @deprecated
+//     */
+//    @Deprecated
+//    public Map<String, String> properties() {
+//        return props;
+//    }
 
     /**
      * @return Default IGFS mode.
@@ -114,9 +113,9 @@ public class IgfsPaths <F> implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeStringMap(out, props);
+//        U.writeStringMap(out, props);
 
-//        writeFactory(out);
+        writePayload(out);
 
         U.writeEnum(out, dfltMode);
 
@@ -133,30 +132,31 @@ public class IgfsPaths <F> implements Externalizable {
             out.writeBoolean(false);
     }
 
-//    /**
-//     *
-//     * @param out
-//     * @throws IOException
-//     */
-//    private void writeFactory(ObjectOutput out) throws IOException {
-//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//
-//        ObjectOutput oo = new ObjectOutputStream(baos);
-//        try {
-//            oo.writeObject(factory);
-//        }
-//        finally {
-//            oo.close();
-//        }
-//
-//        U.writeByteArray(out, baos.toByteArray());
-//    }
+    /**
+     *
+     * @param out
+     * @throws IOException
+     */
+    private void writePayload(ObjectOutput out) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        ObjectOutput oo = new ObjectOutputStream(baos);
+
+        try {
+            oo.writeObject(payload);
+        }
+        finally {
+            oo.close();
+        }
+
+        U.writeByteArray(out, baos.toByteArray());
+    }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        props = U.readStringMap(in);
+//        props = U.readStringMap(in);
 
-//        readFactory(in);
+        readPayload(in);
 
         dfltMode = IgfsMode.fromOrdinal(in.readByte());
 
@@ -176,22 +176,26 @@ public class IgfsPaths <F> implements Externalizable {
         }
     }
 
-//    /**
-//     *
-//     * @param in
-//     * @throws IOException
-//     * @throws ClassNotFoundException
-//     */
-//    private void readFactory(ObjectInput in) throws IOException, ClassNotFoundException {
-//        byte[] factoryBytes = U.readByteArray(in);
-//
-//        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes));
-//
-//        try {
-//            factory = (HadoopFileSystemFactory<F>) oi.readObject();
-//        }
-//        finally {
-//            oi.close();
-//        }
-//    }
+    /**
+     *
+     * @param in
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    private void readPayload(ObjectInput in) throws IOException, ClassNotFoundException {
+        byte[] factoryBytes = U.readByteArray(in);
+
+        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes));
+
+        try {
+            payload = (P) oi.readObject();
+        }
+        finally {
+            oi.close();
+        }
+    }
+
+    @Override public P getPayload() {
+        return payload;
+    }
 }

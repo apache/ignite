@@ -21,7 +21,6 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Secondary file system interface.
  */
-public interface IgfsSecondaryFileSystem <F> {
+public interface IgfsSecondaryFileSystem {
     /**
      * Checks if the specified path exists.
      *
@@ -194,20 +193,20 @@ public interface IgfsSecondaryFileSystem <F> {
      */
     public long usedSpaceSize() throws IgniteException;
 
-    /**
-     * Gets the implementation specific properties of file system.
-     *
-     * @return Map of properties.
-     * @deprecated Should not be used.
-     */
-    @Deprecated
-    public Map<String,String> properties();
-
-    /**
-     *
-     * @return The factory.
-     */
-    public @Nullable HadoopFileSystemFactory<F> getSecondaryFileSystemFactory();
+//    /**
+//     * Gets the implementation specific properties of file system.
+//     *
+//     * @return Map of properties.
+//     * @deprecated Should not be used.
+//     */
+//    @Deprecated
+//    public Map<String,String> properties();
+//
+//    /**
+//     *
+//     * @return The factory.
+//     */
+//    public @Nullable HadoopFileSystemFactory<F> getSecondaryFileSystemFactory();
 
 
     /**

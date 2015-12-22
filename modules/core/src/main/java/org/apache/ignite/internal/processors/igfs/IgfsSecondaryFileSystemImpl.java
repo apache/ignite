@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.io.OutputStream;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
@@ -32,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Secondary file system over native IGFS.
  */
-class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystem <IgfsEx> {
+class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystem {
     /** Delegate. */
     private final IgfsEx igfs;
 
@@ -118,18 +116,18 @@ class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystem <IgfsEx> {
         return igfs.usedSpaceSize();
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<String, String> properties() {
-        return Collections.emptyMap();
-    }
+//    /** {@inheritDoc} */
+//    @Override public Map<String, String> properties() {
+//        return Collections.emptyMap();
+//    }
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public HadoopFileSystemFactory<IgfsEx> getSecondaryFileSystemFactory() {
-        return null;
-    }
+//    /** {@inheritDoc} */
+//    @Override public HadoopFileSystemFactory<IgfsEx> getSecondaryFileSystemFactory() {
+//        return null;
+//    }
 }

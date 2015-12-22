@@ -52,13 +52,12 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.Progressable;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.HadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
-import org.apache.ignite.internal.processors.hadoop.fs.DefaultHadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsInputStream;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsOutputStream;
@@ -93,8 +92,6 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PREFER_LOCAL_WRITES;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
-//import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_CONFIG_PATH;
-//import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_URI;
 
 /**
  * {@code IGFS} Hadoop 2.x file system driver over file system API. To use
@@ -303,7 +300,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
             grpBlockSize = handshake.blockSize();
 
-            IgfsPaths<AbstractFileSystem> paths = handshake.secondaryPaths();
+            IgfsPaths<HadoopFileSystemFactory<AbstractFileSystem>> paths = handshake.secondaryPaths();
 
             Boolean logEnabled = parameter(cfg, PARAM_IGFS_LOG_ENABLED, uriAuthority, false);
 
@@ -342,7 +339,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 //                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
 
                 HadoopFileSystemFactory<AbstractFileSystem> factory
-                    = (HadoopFileSystemFactory<AbstractFileSystem>)paths.factory();
+                    = (HadoopFileSystemFactory<AbstractFileSystem>)paths.getPayload();
 
                 A.ensure(secondaryUri != null, "File system factory uri should not be null.");
 
@@ -355,10 +352,10 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
                     secondaryUri = secondaryFs.getUri();
 
-                    assert secondaryUri != null;
-
-                    URI uri2 = ((DefaultHadoopFileSystemFactory)factory).uri();
-                    assert secondaryUri.equals(uri2);
+//                    assert secondaryUri != null;
+//
+//                    URI uri2 = ((DefaultHadoopFileSystemFactory)factory).uri();
+//                    assert secondaryUri.equals(uri2);
 
                     //secondaryFs = secProvider.createAbstractFileSystem(user);
                     //secondaryUri = secProvider.uri();

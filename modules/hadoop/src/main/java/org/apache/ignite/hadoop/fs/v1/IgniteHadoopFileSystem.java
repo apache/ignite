@@ -47,7 +47,7 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Progressable;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.HadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -295,7 +295,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
             igfsGrpBlockSize = handshake.blockSize();
 
-            final IgfsPaths<FileSystem> paths = handshake.secondaryPaths();
+            final IgfsPaths<HadoopFileSystemFactory<FileSystem>> paths = handshake.secondaryPaths();
 
             // Initialize client logger.
             Boolean logEnabled = parameter(cfg, PARAM_IGFS_LOG_ENABLED, uriAuthority, false);
@@ -334,26 +334,24 @@ public class IgniteHadoopFileSystem extends FileSystem {
 //                String secUri = props.get(SECONDARY_FS_URI);
 //                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
 
-                byte[] secFsFacoryBytes = handshake.getSecondaryFileSystemFactoryBytes();
+//                byte[] secFsFacoryBytes = handshake.getSecondaryFileSystemFactoryBytes();
 
-
-
-                //HadoopFileSystemFactory<FileSystem> factory = paths.factory();
+                HadoopFileSystemFactory<FileSystem> factory = paths.getPayload();
 
                 A.ensure(factory != null, "Secondary file system factory should not be null.");
 
-                secondaryUri = factory.uri();
-
-                A.ensure(secondaryUri != null, "Secondary file system uri should not be null.");
+                //secondaryUri = factory.uri();
 
                 try {
                     //SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
 
                     secondaryFs = factory.get(user); //secProvider.createFileSystem(user);
 
-                    URI uri2 = secondaryFs.getUri();
+                    secondaryUri = secondaryFs.getUri();
 
-                    assert secondaryUri.equals(uri2);
+                    A.ensure(secondaryUri != null, "Secondary file system uri should not be null.");
+
+                    //assert secondaryUri.equals(uri2);
                 }
                 catch (IOException e) {
                     if (!mgmt)
@@ -372,23 +370,22 @@ public class IgniteHadoopFileSystem extends FileSystem {
         }
     }
 
-    /**
-     *
-     * @param in
-     * @throws IOException
-     * @throws ClassNotFoundException
-     */
-    static HadoopFileSystemFactory readFactory(byte[] factoryBytes) throws IOException, ClassNotFoundException {
-        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes));
-
-        try {
-            return (HadoopFileSystemFactory<F>) oi.readObject();
-        }
-        finally {
-            oi.close();
-        }
-    }
-
+//    /**
+//     *
+//     * @param in
+//     * @throws IOException
+//     * @throws ClassNotFoundException
+//     */
+//    static HadoopFileSystemFactory readFactory(byte[] factoryBytes) throws IOException, ClassNotFoundException {
+//        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes));
+//
+//        try {
+//            return (HadoopFileSystemFactory<F>) oi.readObject();
+//        }
+//        finally {
+//            oi.close();
+//        }
+//    }
 
     /** {@inheritDoc} */
     @Override protected void checkPath(Path path) {

@@ -12,7 +12,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.HadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.HadoopUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsPaths;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -73,10 +73,6 @@ public class DefaultHadoopFileSystemFactory implements HadoopFileSystemFactory<F
         catch (URISyntaxException use) {
             throw new IgniteException(use);
         }
-    }
-
-    @Override public URI uri() {
-        return uri;
     }
 
     /**

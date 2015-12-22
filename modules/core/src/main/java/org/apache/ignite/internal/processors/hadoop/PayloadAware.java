@@ -5,5 +5,9 @@ package org.apache.ignite.internal.processors.hadoop;
  */
 public interface PayloadAware <P> {
 
+    /**
+     *
+     * @return
+     */
     public P getPayload();
 }

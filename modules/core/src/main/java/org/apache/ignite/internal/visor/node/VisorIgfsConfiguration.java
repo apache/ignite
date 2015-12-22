@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.configuration.FileSystemConfiguration;
-import org.apache.ignite.igfs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;

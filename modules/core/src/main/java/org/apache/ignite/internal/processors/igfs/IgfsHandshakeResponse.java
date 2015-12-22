@@ -36,9 +36,6 @@ public class IgfsHandshakeResponse implements Externalizable {
     /** SECONDARY paths. */
     private IgfsPaths paths;
 
-    /** */
-    private byte[] secondaryFileSystemFactoryBytes;
-
     /** Server block size. */
     private long blockSize;
 
@@ -58,12 +55,11 @@ public class IgfsHandshakeResponse implements Externalizable {
      * @param paths Secondary paths.
      * @param blockSize Server default block size.
      */
-    public IgfsHandshakeResponse(String igfsName, IgfsPaths paths, byte[] secondaryFileSystemFactoryBytes,
+    public IgfsHandshakeResponse(String igfsName, IgfsPaths paths,
             long blockSize, Boolean sampling) {
         assert paths != null;
 
         this.igfsName = igfsName;
-        this.secondaryFileSystemFactoryBytes = secondaryFileSystemFactoryBytes;
         this.paths = paths;
         this.blockSize = blockSize;
         this.sampling = sampling;
@@ -97,21 +93,11 @@ public class IgfsHandshakeResponse implements Externalizable {
         return sampling;
     }
 
-    /**
-     *
-     * @return
-     */
-    public byte[] getSecondaryFileSystemFactoryBytes() {
-        return secondaryFileSystemFactoryBytes;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, igfsName);
 
         paths.writeExternal(out);
-
-        U.writeByteArray(out, secondaryFileSystemFactoryBytes);
 
         out.writeLong(blockSize);
 
@@ -130,8 +116,6 @@ public class IgfsHandshakeResponse implements Externalizable {
         paths = new IgfsPaths();
 
         paths.readExternal(in);
-
-        secondaryFileSystemFactoryBytes = U.readByteArray(in);
 
         blockSize = in.readLong();
 
