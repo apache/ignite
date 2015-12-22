@@ -17,16 +17,36 @@
 
 package org.apache.ignite.yardstick.cache;
 
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.yardstick.cache.model.SampleValue;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
- * Ignite benchmark that performs transactional put operations
- * with {@link CacheMemoryMode#OFFHEAP_TIERED OFFHEAP TIRED} memory mode.
+ * Ignite benchmark that performs transactional put operations using implicit transaction.
  */
-public class IgnitePutTxOffHeapBenchmark extends IgnitePutTxImplicitBenchmark {
+public class IgnitePutTxImplicitBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+    /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        if (!IgniteSystemProperties.getBoolean("SKIP_MAP_CHECK"))
+            ignite().compute().broadcast(new WaitMapExchangeFinishCallable());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        int key = nextRandom(args.range());
+
+        // Implicit transaction is used.
+        cache.put(key, new SampleValue(key));
+
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("tx-offheap");
+        return ignite().cache("tx");
     }
 }
