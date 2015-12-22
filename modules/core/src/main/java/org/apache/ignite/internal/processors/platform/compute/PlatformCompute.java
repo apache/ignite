@@ -188,7 +188,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param taskPtr Pointer to the task.
      * @param topVer Topology version.
      */
-    public Object executeNative(long taskPtr, long topVer) {
+    public PlatformListenable executeNative(long taskPtr, long topVer) {
         final PlatformFullTask task = new PlatformFullTask(platformCtx, compute, taskPtr, topVer);
 
         return executeNative0(task);
