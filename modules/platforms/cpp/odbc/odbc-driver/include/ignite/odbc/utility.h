@@ -116,6 +116,14 @@ namespace ignite
             return res;
         }
 
+        template<typename T>
+        T* GetPointerWithOffset(T* ptr, size_t offset)
+        {
+            uint8_t* ptrBytes = (uint8_t*)ptr;
+
+            return (T*)(ptrBytes + offset);
+        }
+
         /**
          * Copy string to buffer of the specific length.
          * @param str String to copy data from.

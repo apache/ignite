@@ -35,8 +35,9 @@ BOOST_AUTO_TEST_CASE(TestPutIntToString)
 {
     char buffer[1024];
     int64_t reslen;
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
 
     appBuf.PutInt8(12);
     BOOST_REQUIRE(!strcmp(buffer, "12"));
@@ -67,8 +68,9 @@ BOOST_AUTO_TEST_CASE(TestPutFloatToString)
 {
     char buffer[1024];
     int64_t reslen;
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
 
     appBuf.PutFloat(12.42f);
     BOOST_REQUIRE(!strcmp(buffer, "12.42"));
@@ -91,8 +93,9 @@ BOOST_AUTO_TEST_CASE(TestPutGuidToString)
 {
     char buffer[1024];
     int64_t reslen;
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
 
     ignite::Guid guid(0x1da1ef8f39ff4d62ULL, 0x8b72e8e9f3371801ULL);
 
@@ -106,8 +109,9 @@ BOOST_AUTO_TEST_CASE(TestPutBinaryToString)
 {
     char buffer[1024];
     int64_t reslen;
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
 
     uint8_t binary[] = { 0x21, 0x84, 0xF4, 0xDC, 0x01, 0x00, 0xFF, 0xF0 };
 
@@ -121,8 +125,9 @@ BOOST_AUTO_TEST_CASE(TestPutStringToString)
 {
     char buffer[1024];
     int64_t reslen;
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
 
     std::string testString("Test string");
 
@@ -136,8 +141,9 @@ BOOST_AUTO_TEST_CASE(TestPutStringToWstring)
 {
     wchar_t buffer[1024];
     int64_t reslen;
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_WCHAR, buffer, sizeof(buffer), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_WCHAR, buffer, sizeof(buffer), &reslen, &offset);
 
     std::string testString("Test string");
 
@@ -149,8 +155,9 @@ BOOST_AUTO_TEST_CASE(TestPutStringToLong)
 {
     long numBuf;
     int64_t reslen;
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen, &offset);
 
     appBuf.PutString("424242424");
     BOOST_REQUIRE(numBuf == 424242424L);
@@ -163,8 +170,9 @@ BOOST_AUTO_TEST_CASE(TestPutStringToTiny)
 {
     int8_t numBuf;
     int64_t reslen;
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_TINYINT, &numBuf, sizeof(numBuf), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_TINYINT, &numBuf, sizeof(numBuf), &reslen, &offset);
 
     appBuf.PutString("12");
     BOOST_REQUIRE(numBuf == 12);
@@ -177,8 +185,9 @@ BOOST_AUTO_TEST_CASE(TestPutStringToFloat)
 {
     float numBuf;
     int64_t reslen;
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen, &offset);
 
     appBuf.PutString("12.21");
     BOOST_REQUIRE_CLOSE_FRACTION(numBuf, 12.21, FLOAT_PRECISION);
@@ -191,8 +200,9 @@ BOOST_AUTO_TEST_CASE(TestPutIntToFloat)
 {
     float numBuf;
     int64_t reslen;
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen, &offset);
 
     appBuf.PutInt8(5);
     BOOST_REQUIRE_CLOSE_FRACTION(numBuf, 5.0, FLOAT_PRECISION);
@@ -217,8 +227,9 @@ BOOST_AUTO_TEST_CASE(TestPutFloatToShort)
 {
     short numBuf;
     int64_t reslen;
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_SHORT, &numBuf, sizeof(numBuf), &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_SHORT, &numBuf, sizeof(numBuf), &reslen, &offset);
 
     appBuf.PutDouble(5.42);
     BOOST_REQUIRE(numBuf == 5);
@@ -237,8 +248,9 @@ BOOST_AUTO_TEST_CASE(TestGetStringFromLong)
 {
     long numBuf = 42;
     int64_t reslen = sizeof(numBuf);
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_LONG, &numBuf, reslen, &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_LONG, &numBuf, reslen, &reslen, &offset);
 
     std::string res = appBuf.GetString(32);
 
@@ -255,8 +267,9 @@ BOOST_AUTO_TEST_CASE(TestGetStringFromDouble)
 {
     double numBuf = 43.36;
     int64_t reslen = sizeof(numBuf);
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &numBuf, reslen, &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &numBuf, reslen, &reslen, &offset);
 
     std::string res = appBuf.GetString(32);
 
@@ -273,8 +286,9 @@ BOOST_AUTO_TEST_CASE(TestGetStringFromString)
 {
     char buf[] = "Some data 32d2d5hs";
     int64_t reslen = sizeof(buf);
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf, reslen, &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf, reslen, &reslen, &offset);
 
     std::string res = appBuf.GetString(reslen);
 
@@ -285,8 +299,9 @@ BOOST_AUTO_TEST_CASE(TestGetFloatFromUshort)
 {
     unsigned short numBuf = 7162;
     int64_t reslen = sizeof(numBuf);
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT, &numBuf, reslen, &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT, &numBuf, reslen, &reslen, &offset);
 
     float resFloat = appBuf.GetFloat();
 
@@ -301,8 +316,9 @@ BOOST_AUTO_TEST_CASE(TestGetFloatFromString)
 {
     char buf[] = "28.562";
     int64_t reslen = sizeof(buf);
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf, reslen, &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf, reslen, &reslen, &offset);
 
     float resFloat = appBuf.GetFloat();
 
@@ -317,8 +333,9 @@ BOOST_AUTO_TEST_CASE(TestGetFloatFromFloat)
 {
     float buf = 207.49f;
     int64_t reslen = sizeof(buf);
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &buf, reslen, &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &buf, reslen, &reslen, &offset);
 
     float resFloat = appBuf.GetFloat();
 
@@ -333,8 +350,9 @@ BOOST_AUTO_TEST_CASE(TestGetFloatFromDouble)
 {
     double buf = 893.162;
     int64_t reslen = sizeof(buf);
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &buf, reslen, &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &buf, reslen, &reslen, &offset);
 
     float resFloat = appBuf.GetFloat();
 
@@ -349,8 +367,9 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromString)
 {
     char buf[] = "39";
     int64_t reslen = sizeof(buf);
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf, reslen, &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf, reslen, &reslen, &offset);
 
     int64_t resInt64 = appBuf.GetInt64();
 
@@ -373,8 +392,9 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromFloat)
 {
     float buf = -107.49f;
     int64_t reslen = sizeof(buf);
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &buf, reslen, &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &buf, reslen, &reslen, &offset);
 
     int64_t resInt64 = appBuf.GetInt64();
 
@@ -397,8 +417,9 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromDouble)
 {
     double buf = 42.97f;
     int64_t reslen = sizeof(buf);
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &buf, reslen, &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &buf, reslen, &reslen, &offset);
 
     int64_t resInt64 = appBuf.GetInt64();
 
@@ -421,8 +442,9 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromBigint)
 {
     uint64_t buf = 19;
     int64_t reslen = sizeof(buf);
+    size_t* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT, &buf, reslen, &reslen);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT, &buf, reslen, &reslen, &offset);
 
     int64_t resInt64 = appBuf.GetInt64();
 

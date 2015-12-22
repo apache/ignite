@@ -25,11 +25,14 @@
 #include <sqlext.h>
 #include <odbcinst.h>
 
+#include <cassert>
+
 #include <algorithm>
 #include <string>
 #include <sstream>
 
 #include "ignite/odbc/app/application_data_buffer.h"
+#include "ignite/odbc/utility.h"
 
 namespace ignite
 {
@@ -38,20 +41,20 @@ namespace ignite
         namespace app
         {
             ApplicationDataBuffer::ApplicationDataBuffer() :
-                type(type_traits::IGNITE_ODBC_C_TYPE_UNSUPPORTED), buffer(0), buflen(0), reslen(0)
+                type(type_traits::IGNITE_ODBC_C_TYPE_UNSUPPORTED), buffer(0), buflen(0), reslen(0), offset(0)
             {
                 // No-op.
             }
 
             ApplicationDataBuffer::ApplicationDataBuffer(type_traits::IgniteSqlType type, 
-                void* bufferPtr, int64_t buflen, int64_t* reslen) :
-                type(type), buffer(bufferPtr), buflen(buflen), reslen(reslen)
+                void* buffer, int64_t buflen, int64_t* reslen, size_t** offset) :
+                type(type), buffer(buffer), buflen(buflen), reslen(reslen), offset(offset)
             {
-                // No-op.
+                assert(offset != 0);
             }
 
             ApplicationDataBuffer::ApplicationDataBuffer(const ApplicationDataBuffer & other) :
-                type(other.type), buffer(other.buffer), buflen(other.buflen), reslen(other.reslen)
+                type(other.type), buffer(other.buffer), buflen(other.buflen), reslen(other.reslen), offset(other.offset)
             {
                 // No-op.
             }
@@ -67,6 +70,7 @@ namespace ignite
                 buffer = other.buffer;
                 buflen = other.buflen;
                 reslen = other.reslen;
+                offset = other.offset;
 
                 return *this;
             }
@@ -152,10 +156,10 @@ namespace ignite
 
                     case IGNITE_ODBC_C_TYPE_NUMERIC:
                     {
-                        if (buffer)
+                        if (GetData())
                         {
                             SQL_NUMERIC_STRUCT* out =
-                                reinterpret_cast<SQL_NUMERIC_STRUCT*>(buffer);
+                                reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
 
                             out->precision = 0;
                             out->scale = 0;
@@ -172,34 +176,34 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_BINARY:
                     case IGNITE_ODBC_C_TYPE_DEFAULT:
                     {
-                        if (buffer)
+                        if (GetData())
                         {
                             if (buflen >= sizeof(value))
                             {
-                                memcpy(buffer, &value, sizeof(value));
+                                memcpy(GetData(), &value, sizeof(value));
 
-                                if (reslen)
-                                    *reslen = sizeof(value);
+                                if (GetResLen())
+                                    *GetResLen() = sizeof(value);
                             }
                             else
                             {
-                                memcpy(buffer, &value, buflen);
+                                memcpy(GetData(), &value, buflen);
 
-                                if (reslen)
-                                    *reslen = SQL_NO_TOTAL;
+                                if (GetResLen())
+                                    *GetResLen() = SQL_NO_TOTAL;
                             }
                         }
-                        else if (reslen)
+                        else if (GetResLen())
                         {
-                            *reslen = sizeof(value);
+                            *GetResLen() = sizeof(value);
                         }
                         break;
                     }
 
                     default:
                     {
-                        if (reslen)
-                            *reslen = SQL_NO_TOTAL;
+                        if (GetResLen())
+                            *GetResLen() = SQL_NO_TOTAL;
                     }
                 }
             }
@@ -207,9 +211,9 @@ namespace ignite
             template<typename Tbuf, typename Tin>
             void ApplicationDataBuffer::PutNumToNumBuffer(Tin value)
             {
-                if (buffer)
+                if (GetData())
                 {
-                    Tbuf* out = reinterpret_cast<Tbuf*>(buffer);
+                    Tbuf* out = reinterpret_cast<Tbuf*>(GetData());
                     *out = static_cast<Tbuf>(value);
                 }
             }
@@ -243,11 +247,11 @@ namespace ignite
             {
                 int64_t charSize = static_cast<int64_t>(sizeof(OutCharT));
 
-                if (buffer)
+                if (GetData())
                 {
                     if (buflen >= charSize)
                     {
-                        OutCharT* out = reinterpret_cast<OutCharT*>(buffer);
+                        OutCharT* out = reinterpret_cast<OutCharT*>(GetData());
 
                         int64_t outLen = (buflen / charSize) - 1;
 
@@ -259,38 +263,38 @@ namespace ignite
                         out[toCopy] = 0;
                     }
 
-                    if (reslen)
+                    if (GetResLen())
                     {
                         if (buflen >= static_cast<int64_t>((value.size() + 1) * charSize))
-                            *reslen = value.size();
+                            *GetResLen() = value.size();
                         else
-                            *reslen = SQL_NO_TOTAL;
+                            *GetResLen() = SQL_NO_TOTAL;
                     }
                 }
-                else if (reslen)
-                    *reslen = value.size();
+                else if (GetResLen())
+                    *GetResLen() = value.size();
             }
 
             void ApplicationDataBuffer::PutRawDataToBuffer(void *data, size_t len)
             {
                 int64_t ilen = static_cast<int64_t>(len);
 
-                if (buffer)
+                if (GetData())
                 {
                     int64_t toCopy = std::min(buflen, ilen);
 
-                    memcpy(buffer, data, toCopy);
+                    memcpy(GetData(), data, toCopy);
 
-                    if (reslen)
+                    if (GetResLen())
                     {
                         if (buflen >= ilen)
-                            *reslen = ilen;
+                            *GetResLen() = ilen;
                         else
-                            *reslen = SQL_NO_TOTAL;
+                            *GetResLen() = SQL_NO_TOTAL;
                     }
                 }
-                else if (reslen)
-                    *reslen = ilen;
+                else if (GetResLen())
+                    *GetResLen() = ilen;
             }
 
             void ApplicationDataBuffer::PutInt8(int8_t value)
@@ -382,8 +386,8 @@ namespace ignite
 
                     default:
                     {
-                        if (reslen)
-                            *reslen = SQL_NO_TOTAL;
+                        if (GetResLen())
+                            *GetResLen() = SQL_NO_TOTAL;
                     }
                 }
             }
@@ -409,7 +413,7 @@ namespace ignite
 
                     case IGNITE_ODBC_C_TYPE_GUID:
                     {
-                        SQLGUID* guid = reinterpret_cast<SQLGUID*>(buffer);
+                        SQLGUID* guid = reinterpret_cast<SQLGUID*>(GetData());
 
                         guid->Data1 = static_cast<uint32_t>(value.GetMostSignificantBits() >> 32);
                         guid->Data2 = static_cast<uint16_t>(value.GetMostSignificantBits() >> 16);
@@ -424,8 +428,8 @@ namespace ignite
 
                     default:
                     {
-                        if (reslen)
-                            *reslen = SQL_NO_TOTAL;
+                        if (GetResLen())
+                            *GetResLen() = SQL_NO_TOTAL;
                     }
                 }
             }
@@ -482,16 +486,16 @@ namespace ignite
 
                     default:
                     {
-                        if (reslen)
-                            *reslen = SQL_NO_TOTAL;
+                        if (GetResLen())
+                            *GetResLen() = SQL_NO_TOTAL;
                     }
                 }
             }
 
             void ApplicationDataBuffer::PutNull()
             {
-                if (reslen)
-                    *reslen = SQL_NULL_DATA;
+                if (GetResLen())
+                    *GetResLen() = SQL_NULL_DATA;
             }
 
             std::string ApplicationDataBuffer::GetString(size_t maxLen) const
@@ -503,7 +507,7 @@ namespace ignite
                 {
                     case IGNITE_ODBC_C_TYPE_CHAR:
                     {
-                        res.assign(reinterpret_cast<char*>(buffer),
+                        res.assign(reinterpret_cast<const char*>(GetData()),
                                    std::min<size_t>(maxLen, buflen));
                         break;
                     }
@@ -596,6 +600,26 @@ namespace ignite
                 return GetNum<double>();
             }
 
+            const void* ApplicationDataBuffer::GetData() const
+            {
+                return ApplyOffset(buffer);
+            }
+
+            const int64_t* ApplicationDataBuffer::GetResLen() const
+            {
+                return ApplyOffset(reslen);
+            }
+
+            void* ApplicationDataBuffer::GetData() 
+            {
+                return ApplyOffset(buffer);
+            }
+
+            int64_t* ApplicationDataBuffer::GetResLen()
+            {
+                return ApplyOffset(reslen);
+            }
+
             template<typename T>
             T ApplicationDataBuffer::GetNum() const
             {
@@ -629,62 +653,62 @@ namespace ignite
 
                     case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<signed char*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<const signed char*>(GetData()));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_BIT:
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<unsigned char*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<const unsigned char*>(GetData()));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<signed short*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<const signed short*>(GetData()));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<unsigned short*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<const unsigned short*>(GetData()));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
                     {
-                        res = static_cast<T>(*reinterpret_cast<signed long*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<const signed long*>(GetData()));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
                     {
-                        res = static_cast<T>(*reinterpret_cast<unsigned long*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<const unsigned long*>(GetData()));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<int64_t*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<const int64_t*>(GetData()));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<uint64_t*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<const uint64_t*>(GetData()));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_FLOAT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<float*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<const float*>(GetData()));
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_DOUBLE:
                     {
-                        res = static_cast<T>(*reinterpret_cast<double*>(buffer));
+                        res = static_cast<T>(*reinterpret_cast<const double*>(GetData()));
                         break;
                     }
 
@@ -693,6 +717,19 @@ namespace ignite
                 }
 
                 return res;
+            }
+
+            template<typename T>
+            T* ApplicationDataBuffer::ApplyOffset(T* ptr) const
+            {
+                if (!ptr)
+                    return ptr;
+
+                assert(offset != 0);
+
+                const size_t *app_offset_ptr = *offset;
+
+                return app_offset_ptr ? utility::GetPointerWithOffset(ptr, *app_offset_ptr) : ptr;
             }
         }
     }

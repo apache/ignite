@@ -73,6 +73,7 @@ namespace ignite
 
                 Row* row = cursor->GetRow();
 
+
                 if (!row)
                     return SQL_RESULT_ERROR;
 
@@ -187,6 +188,7 @@ namespace ignite
                 bool success = connection.SyncMessage(req, rsp);
 
                 LOG_MSG("Query id: %lld\n", rsp.GetQueryId());
+                LOG_MSG("Request status: %s\n", success ? "Success" : "Failure");
 
                 if (!success)
                     return false;

@@ -47,11 +47,12 @@ namespace ignite
                  * Constructor.
                  *
                  * @param type Underlying data type.
-                 * @param bufferPtr Data buffer pointer.
+                 * @param buffer Data buffer pointer.
                  * @param buflen Data buffer length.
                  * @param reslen Resulting data length.
+                 * @param offset Ponter to buffer and reslen offset.
                  */
-                ApplicationDataBuffer(type_traits::IgniteSqlType type, void* bufferPtr, int64_t buflen, int64_t* reslen);
+                ApplicationDataBuffer(type_traits::IgniteSqlType type, void* buffer, int64_t buflen, int64_t* reslen, size_t** offset);
 
                 /**
                  * Copy constructor.
@@ -196,10 +197,14 @@ namespace ignite
                  *
                  * @return Buffer data.
                  */
-                const void* GetData() const
-                {
-                    return buffer;
-                }
+                const void* GetData() const;
+
+                /**
+                 * Get result data length.
+                 *
+                 * @return Data length pointer.
+                 */
+                const int64_t* GetResLen() const;
 
                 /**
                  * Get buffer size in bytes.
@@ -211,17 +216,21 @@ namespace ignite
                     return buflen;
                 }
 
+            private:
+                /**
+                 * Get raw data.
+                 *
+                 * @return Buffer data.
+                 */
+                void* GetData();
+
                 /**
                  * Get result data length.
                  *
-                 * @return Data length.
+                 * @return Data length pointer.
                  */
-                int64_t GetResLen() const
-                {
-                    return *reslen;
-                }
+                int64_t* GetResLen();
 
-            private:
                 /**
                  * Put value of numeric type in the buffer.
                  *
@@ -278,6 +287,15 @@ namespace ignite
                 template<typename T>
                 T GetNum() const;
 
+                /**
+                 * Apply buffer offset to pointer.
+                 * Adds offset to pointer if offset pointer is not null.
+                 * @param ptr Pointer.
+                 * @return Pointer with applied offset.
+                 */
+                template<typename T>
+                T* ApplyOffset(T* ptr) const;
+
                 /** Underlying data type. */
                 type_traits::IgniteSqlType type;
 
@@ -289,6 +307,9 @@ namespace ignite
 
                 /** Result length. */
                 int64_t* reslen;
+
+                /** Pointer to implementation pointer to application offset */
+                size_t** offset;
             };
 
             /** Column binging map type alias. */

@@ -921,6 +921,24 @@ SQLRETURN SQL_API SQLGetStmtAttr(SQLHSTMT       stmt,
             break;
         }
 
+        case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
+        {
+            SQLULEN** val = reinterpret_cast<SQLULEN**>(valueBuf);
+
+            *val = reinterpret_cast<SQLULEN*>(statement->GetParamBindOffsetPtr());
+
+            break;
+        }
+
+        case SQL_ATTR_ROW_BIND_OFFSET_PTR:
+        {
+            SQLULEN** val = reinterpret_cast<SQLULEN**>(valueBuf);
+
+            *val = reinterpret_cast<SQLULEN*>(statement->GetColumnBindOffsetPtr());
+
+            break;
+        }
+
         default:
             return SQL_ERROR;
     }
@@ -967,6 +985,20 @@ SQLRETURN SQL_API SQLSetStmtAttr(SQLHSTMT    stmt,
         case SQL_ATTR_ROW_STATUS_PTR:
         {
             statement->SetRowStatusesPtr(reinterpret_cast<uint16_t*>(value));
+
+            break;
+        }
+
+        case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
+        {
+            statement->SetParamBindOffsetPtr(reinterpret_cast<size_t*>(value));
+
+            break;
+        }
+
+        case SQL_ATTR_ROW_BIND_OFFSET_PTR:
+        {
+            statement->SetColumnBindOffsetPtr(reinterpret_cast<size_t*>(value));
 
             break;
         }

@@ -42,7 +42,7 @@ namespace ignite
     {
         Statement::Statement(Connection& parent) :
             connection(parent), columnBindings(), currentQuery(),
-            rowsFetched(0), rowStatuses(0)
+            rowsFetched(0), rowStatuses(0), paramBindOffset(0), columnBindOffset(0)
         {
             // No-op.
         }
@@ -67,6 +67,16 @@ namespace ignite
             columnBindings.clear();
         }
 
+        void Statement::SetColumnBindOffsetPtr(size_t * ptr)
+        {
+            columnBindOffset = ptr;
+        }
+
+        size_t * Statement::GetColumnBindOffsetPtr()
+        {
+            return columnBindOffset;
+        }
+
         void Statement::BindParameter(uint16_t paramIdx, const app::Parameter& param)
         {
             paramBindings[paramIdx] = param;
@@ -85,6 +95,16 @@ namespace ignite
         uint16_t Statement::GetParametersNumber() const
         {
             return static_cast<uint16_t>(paramBindings.size());
+        }
+
+        void Statement::SetParamBindOffsetPtr(size_t* ptr)
+        {
+            paramBindOffset = ptr;
+        }
+
+        size_t * Statement::GetParamBindOffsetPtr()
+        {
+            return paramBindOffset;
         }
 
         bool Statement::PrepareSqlQuery(const char* query, size_t len)
@@ -192,6 +212,8 @@ namespace ignite
                 return SQL_RESULT_ERROR;
 
             SqlResult res = currentQuery->FetchNextRow(columnBindings);
+
+            LOG_MSG("Result: %d\n", res);
 
             if (res == SQL_RESULT_SUCCESS)
             {

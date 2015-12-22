@@ -77,6 +77,20 @@ namespace ignite
             void UnbindAllColumns();
 
             /**
+             * Set column binding offset pointer.
+             *
+             * @param ptr Column binding offset pointer.
+             */
+            void SetColumnBindOffsetPtr(size_t* ptr);
+
+            /**
+             * Get column binding offset pointer.
+             *
+             * @return Column binding offset pointer.
+             */
+            size_t* GetColumnBindOffsetPtr();
+
+            /**
              * Bind parameter.
              *
              * @param paramIdx Parameter index.
@@ -102,6 +116,20 @@ namespace ignite
              * @return Number of binded parameters.
              */
             uint16_t GetParametersNumber() const;
+
+            /**
+             * Set parameter binding offset pointer.
+             *
+             * @param ptr Parameter binding offset pointer.
+             */
+            void SetParamBindOffsetPtr(size_t* ptr);
+
+            /**
+             * Get parameter binding offset pointer.
+             *
+             * @return Parameter binding offset pointer.
+             */
+            size_t* GetParamBindOffsetPtr();
 
             /**
              * Prepare SQL query.
@@ -287,6 +315,12 @@ namespace ignite
 
             /** Array to store statuses of rows fetched by the last fetch. */
             uint16_t* rowStatuses;
+
+            /** Offset added to pointers to change binding of parameters. */
+            size_t* paramBindOffset;
+            
+            /* Offset added to pointers to change binding of column data. */
+            size_t* columnBindOffset;
         };
     }
 }
