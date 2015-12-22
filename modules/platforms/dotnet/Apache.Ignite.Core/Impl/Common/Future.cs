@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
@@ -51,7 +52,9 @@ namespace Apache.Ignite.Core.Impl.Common
             _converter = converter;
         }
 
-        /** <inheritdoc/> */
+        /// <summary>
+        /// Gets the result.
+        /// </summary>
         public T Get()
         {
             try
@@ -64,10 +67,23 @@ namespace Apache.Ignite.Core.Impl.Common
             }
         }
 
-        /** <inheritdoc/> */
+        /// <summary>
+        /// Gets the task.
+        /// </summary>
         public Task<T> Task
         {
             get { return _taskCompletionSource.Task; }
+        }
+
+        /// <summary>
+        /// Gets the task with cancellation.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        public Task<T> GetTask(CancellationToken cancellationToken)
+        {
+            cancellationToken.Register(() => Cancel());
+
+            return Task;
         }
 
         /** <inheritdoc /> */

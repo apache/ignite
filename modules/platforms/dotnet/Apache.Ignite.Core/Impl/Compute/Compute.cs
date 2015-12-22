@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
@@ -234,6 +235,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         public Task RunAsync(IComputeAction action)
         {
             return _compute.Run(action).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task RunAsync(IComputeAction action, CancellationToken cancellationToken)
+        {
+            return _compute.Run(action).GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */
