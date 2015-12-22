@@ -25,10 +25,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -61,6 +63,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
+import org.apache.ignite.internal.processors.hadoop.fs.DefaultHadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEx;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsIpcIo;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsOutProc;
@@ -380,9 +383,20 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         cfg.setPrefetchBlocks(1);
         cfg.setDefaultMode(mode);
 
-        if (mode != PRIMARY)
-            cfg.setSecondaryFileSystem(new IgniteHadoopIgfsSecondaryFileSystem(
-                SECONDARY_URI, SECONDARY_CFG_PATH, SECONDARY_FS_USER));
+        if (mode != PRIMARY) {
+            DefaultHadoopFileSystemFactory fac = new DefaultHadoopFileSystemFactory();
+            fac.setUri(SECONDARY_URI);
+            fac.setCfgPaths(Collections.singletonList(SECONDARY_CFG_PATH));
+
+            IgniteHadoopIgfsSecondaryFileSystem sec = new IgniteHadoopIgfsSecondaryFileSystem();
+
+            sec.setFsFactory(fac);
+            sec.setDfltUserName(SECONDARY_FS_USER);
+
+            sec.start();
+
+            cfg.setSecondaryFileSystem(sec);
+        }
 
         cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(gridName));
 

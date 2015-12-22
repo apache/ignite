@@ -62,13 +62,22 @@ public class DefaultHadoopFileSystemFactory implements HadoopFileSystemFactory<F
         this.uri = uri;
     }
 
+    /**
+     * Convenience mathod, analog of {@link #setUri(URI)} with String type argument.
+     * @param uriStr
+     */
+    public void setUri(String uriStr) {
+        try {
+            setUri(new URI(uriStr));
+        }
+        catch (URISyntaxException use) {
+            throw new IgniteException(use);
+        }
+    }
+
     @Override public URI uri() {
         return uri;
     }
-
-//    public void setCfg(Configuration cfg) {
-//        this.cfg = cfg;
-//    }
 
     /**
      * Configuration(s) setter, to be invoked from Spring config.

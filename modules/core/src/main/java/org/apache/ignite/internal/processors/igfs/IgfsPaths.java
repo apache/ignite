@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -112,7 +116,7 @@ public class IgfsPaths <F> implements Externalizable {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeStringMap(out, props);
 
-        out.writeObject(factory);
+        writeFactory(out);
 
         U.writeEnum(out, dfltMode);
 
@@ -129,11 +133,30 @@ public class IgfsPaths <F> implements Externalizable {
             out.writeBoolean(false);
     }
 
+    /**
+     *
+     * @param out
+     * @throws IOException
+     */
+    private void writeFactory(ObjectOutput out) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        ObjectOutput oo = new ObjectOutputStream(baos);
+        try {
+            oo.writeObject(factory);
+        }
+        finally {
+            oo.close();
+        }
+
+        U.writeByteArray(out, baos.toByteArray());
+    }
+
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         props = U.readStringMap(in);
 
-        factory = (HadoopFileSystemFactory<F>)in.readObject();
+        readFactory(in);
 
         dfltMode = IgfsMode.fromOrdinal(in.readByte());
 
@@ -150,6 +173,25 @@ public class IgfsPaths <F> implements Externalizable {
 
                 pathModes.add(entry);
             }
+        }
+    }
+
+    /**
+     *
+     * @param in
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    private void readFactory(ObjectInput in) throws IOException, ClassNotFoundException {
+        byte[] factoryBytes = U.readByteArray(in);
+
+        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes));
+
+        try {
+            factory = (HadoopFileSystemFactory<F>) oi.readObject();
+        }
+        finally {
+            oi.close();
         }
     }
 }

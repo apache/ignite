@@ -258,6 +258,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
                     "://[name]/[optional_path], actual=" + name + ']');
 
             uri = name;
+            System.out.println("uri initialized: " + uri);
 
             uriAuthority = uri.getAuthority();
 
@@ -418,6 +419,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
         // Reset initialized resources.
         uri = null;
+        System.out.println("uri zeroed.");
         rmtClient = null;
     }
 

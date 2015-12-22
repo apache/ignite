@@ -21,10 +21,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
@@ -45,6 +47,7 @@ import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.hadoop.fs.DefaultHadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProperties;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
@@ -96,6 +99,8 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
     /** */
     private HadoopFileSystemFactory<FileSystem> fsFactory;
+
+    private final AtomicBoolean started = new AtomicBoolean();
 
 //    /** Lazy per-user cache for the file systems. It is cleared and nulled in #close() method. */
 //    private final HadoopLazyConcurrentMap<String, FileSystem> fileSysLazyMap = new HadoopLazyConcurrentMap<>(
@@ -149,26 +154,41 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * @param cfgPath Additional path to Hadoop configuration.
      * @param userName User name.
      * @throws IgniteCheckedException In case of error.
+     * @deprecated Arg-less constructor should be used instead, + setters. This constructor is
+     *    supported for compatibility only.
      */
+    @Deprecated
     public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath,
         @Nullable String userName) throws IgniteCheckedException {
 
         uri = nullifyEmpty(uri);
-        if (uri != null)
-            U.warn(null, "This constructor is deprecated. URI value passed in will be ignored.");
+//        if (uri != null)
+//            U.warn(null, "This constructor is deprecated. URI value passed in will be ignored.");
 
         cfgPath = nullifyEmpty(cfgPath);
+//        if (cfgPath != null)
+//            U.warn(null, "This constructor is deprecated. The configurationPath value passed in will be ignored.");
+
+        DefaultHadoopFileSystemFactory fac = new DefaultHadoopFileSystemFactory();
+
+        if (uri != null)
+            fac.setUri(uri);
+
         if (cfgPath != null)
-            U.warn(null, "This constructor is deprecated. The configurationPath value passed in will be ignored.");
+            fac.setCfgPaths(Collections.singletonList(cfgPath));
+
+        setFsFactory(fac);
 
         setDfltUserName(userName);
+
+        start();
     }
 
     /**
      *
      * @param factory
      */
-    public void setFsFactory(HadoopFileSystemFactory factory) {
+    public void setFsFactory(HadoopFileSystemFactory<FileSystem> factory) {
         A.ensure(factory != null, "Factory value must not be null.");
 
         this.fsFactory = factory;
@@ -557,6 +577,8 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * @return the FileSystem instance, never null.
      */
     private FileSystem fileSysForUser() {
+        assert started.get(); // Ensure the Fs is started.
+
         String user = IgfsUserContext.currentUser();
 
         if (F.isEmpty(user))
@@ -566,6 +588,8 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
         if (F.eq(user, dfltUserName))
             return dfltFs; // optimization
+
+        assert fsFactory.uri() != null : "uri!";
 
         try {
             return fsFactory.get(user);
@@ -582,24 +606,27 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * @throws IgniteCheckedException
      */
     public void start() throws IgniteCheckedException {
+        // #start() should not ever be invoked if these properties are not set:
         A.ensure(fsFactory != null, "factory");
         A.ensure(dfltUserName != null, "dfltUserName");
 
-        if (fsFactory instanceof LifecycleAware)
-            ((LifecycleAware) fsFactory).start();
+        if (started.compareAndSet(false, true)) {
+            if (fsFactory instanceof LifecycleAware)
+                ((LifecycleAware) fsFactory).start();
 
-        try {
-            //this.secProvider = new SecondaryFileSystemProvider(uri, cfgPath);
+            try {
+                //this.secProvider = new SecondaryFileSystemProvider(uri, cfgPath);
 
-            // File system creation for the default user name.
-            // The value is *not* stored in the 'fileSysLazyMap' cache, but saved in field:
-            //this.dfltFs = secProvider.createFileSystem(dfltUserName);
-            this.dfltFs = fsFactory.get(dfltUserName);
+                // File system creation for the default user name.
+                // The value is *not* stored in the 'fileSysLazyMap' cache, but saved in field:
+                //this.dfltFs = secProvider.createFileSystem(dfltUserName);
+                this.dfltFs = fsFactory.get(dfltUserName);
 
-            assert dfltFs != null;
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException(e);
+                assert dfltFs != null;
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException(e);
+            }
         }
     }
 
