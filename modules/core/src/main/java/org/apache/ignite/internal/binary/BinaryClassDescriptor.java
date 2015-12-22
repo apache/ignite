@@ -35,6 +35,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -44,10 +45,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-
-import static java.lang.reflect.Modifier.isStatic;
-import static java.lang.reflect.Modifier.isTransient;
 
 /**
  * Binary class descriptor.
@@ -250,21 +249,24 @@ public class BinaryClassDescriptor {
 
                 BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
 
+                Set<String> duplicates = duplicateFields(cls);
+
                 Collection<String> names = new HashSet<>();
                 Collection<Integer> ids = new HashSet<>();
 
                 for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                     for (Field f : c.getDeclaredFields()) {
-                        int mod = f.getModifiers();
-
-                        if (!isStatic(mod) && !isTransient(mod)) {
+                        if (serializeField(f)) {
                             f.setAccessible(true);
 
                             String name = f.getName();
 
-                            if (!names.add(name))
-                                throw new BinaryObjectException("Duplicate field name [fieldName=" + name +
-                                    ", cls=" + cls.getName() + ']');
+                            if (duplicates.contains(name))
+                                name = BinaryUtils.qualifiedFieldName(c, name);
+
+                            boolean added = names.add(name);
+
+                            assert added : name;
 
                             int fieldId = idMapper.fieldId(typeId, name);
 
@@ -305,6 +307,42 @@ public class BinaryClassDescriptor {
             readResolveMtd = null;
             writeReplaceMtd = null;
         }
+    }
+
+    /**
+     * Find all fields with duplicate names in the class.
+     *
+     * @param cls Class.
+     * @return Fields with duplicate names.
+     */
+    private static Set<String> duplicateFields(Class cls) {
+        Set<String> all = new HashSet<>();
+        Set<String> duplicates = new HashSet<>();
+
+        for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+            for (Field f : c.getDeclaredFields()) {
+                if (serializeField(f)) {
+                    String name = f.getName();
+
+                    if (!all.add(name))
+                        duplicates.add(name);
+                }
+            }
+        }
+
+        return duplicates;
+    }
+
+    /**
+     * Whether the field must be serialized.
+     *
+     * @param f Field.
+     * @return {@code True} if must be serialized.
+     */
+    private static boolean serializeField(Field f) {
+        int mod = f.getModifiers();
+
+        return !Modifier.isStatic(mod) && !Modifier.isTransient(mod);
     }
 
     /**
