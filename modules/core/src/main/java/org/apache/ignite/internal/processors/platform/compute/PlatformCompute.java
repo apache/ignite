@@ -76,36 +76,29 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_UNICAST:
-                processClosures(reader.readLong(), reader, false, false);
-
-                return TRUE;
+                return processClosures(reader.readLong(), reader, false, false);
 
             case OP_BROADCAST:
-                processClosures(reader.readLong(), reader, true, false);
-
-                return TRUE;
+                return processClosures(reader.readLong(), reader, true, false);
 
             case OP_AFFINITY:
-                processClosures(reader.readLong(), reader, false, true);
-
-                return TRUE;
+                return processClosures(reader.readLong(), reader, false, true);
 
             default:
-                return super.processInStreamOutLong(type, reader);
+                return super.processInStreamOutObject(type, reader);
         }
     }
 
     /**
      * Process closure execution request.
-     *
-     * @param taskPtr Task pointer.
+     *  @param taskPtr Task pointer.
      * @param reader Reader.
      * @param broadcast broadcast flag.
      */
-    private void processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast, boolean affinity) {
+    private PlatformListenable processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast, boolean affinity) {
         PlatformAbstractTask task;
 
         int size = reader.readInt();
@@ -156,7 +149,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         platformCtx.kernalContext().task().setThreadContext(TC_SUBGRID, compute.clusterGroup().nodes());
 
-        executeNative0(task);
+        return executeNative0(task);
     }
 
     /**
@@ -195,10 +188,10 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param taskPtr Pointer to the task.
      * @param topVer Topology version.
      */
-    public void executeNative(long taskPtr, long topVer) {
+    public Object executeNative(long taskPtr, long topVer) {
         final PlatformFullTask task = new PlatformFullTask(platformCtx, compute, taskPtr, topVer);
 
-        executeNative0(task);
+        return executeNative0(task);
     }
 
     /**
