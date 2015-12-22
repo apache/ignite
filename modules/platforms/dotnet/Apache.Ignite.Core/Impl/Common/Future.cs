@@ -161,6 +161,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public bool Cancel()
         {
+            // TODO: Should we always cancel the task, or wait for future cancellation first?
+
+            _taskCompletionSource.TrySetCanceled(); // ???
+
             if (_unmanagedTarget == null)
                 return false;
 
