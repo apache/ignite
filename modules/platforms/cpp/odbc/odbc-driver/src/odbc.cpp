@@ -366,6 +366,37 @@ SQLRETURN SQL_API SQLDriverConnect(SQLHDBC      conn,
     return SQL_SUCCESS;
 }
 
+SQLRETURN SQL_API SQLConnect(SQLHDBC        conn,
+                             SQLCHAR*       serverName,
+                             SQLSMALLINT    serverNameLen,
+                             SQLCHAR*       userName,
+                             SQLSMALLINT    userNameLen,
+                             SQLCHAR*       auth,
+                             SQLSMALLINT    authLen)
+{
+    using ignite::odbc::Connection;
+    using ignite::utility::SqlStringToString;
+
+    LOG_MSG("SQLConnect called\n");
+
+    Connection *connection = reinterpret_cast<Connection*>(conn);
+
+    if (!connection)
+        return SQL_INVALID_HANDLE;
+
+    ignite::odbc::config::Configuration defaultConfig;
+
+    std::string server = SqlStringToString(serverName, serverNameLen);
+
+    if (server != defaultConfig.GetDsn())
+        return SQL_ERROR;
+
+    bool connected = connection->Establish(defaultConfig.GetHost(), 
+        defaultConfig.GetPort(), defaultConfig.GetCache());
+
+    return connected ? SQL_SUCCESS : SQL_ERROR;
+}
+
 SQLRETURN SQL_API SQLDisconnect(SQLHDBC conn)
 {
     using ignite::odbc::Connection;
@@ -1076,18 +1107,6 @@ SQLRETURN SQL_API SQLColAttributes(SQLHSTMT     stmt,
                                    SQLLEN*      numAttrBuf)
 {
     LOG_MSG("SQLColAttributes called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLConnect(SQLHDBC        conn,
-                             SQLCHAR*       serverName,
-                             SQLSMALLINT    serverNameLen,
-                             SQLCHAR*       userName,
-                             SQLSMALLINT    userNameLen,
-                             SQLCHAR*       auth,
-                             SQLSMALLINT    authLen)
-{
-    LOG_MSG("SQLConnect called\n");
     return SQL_SUCCESS;
 }
 
