@@ -24,12 +24,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.BYTE_ARR_OFF;
-import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.UNSAFE;
 
 /**
  * Shuffle message.
@@ -167,11 +165,11 @@ public class HadoopShuffleMessage implements HadoopMessage {
     private void add(byte marker, long ptr, int size) {
         buf[off++] = marker;
 
-        UNSAFE.putInt(buf, BYTE_ARR_OFF + off, size);
+        GridUnsafe.putIntAligned(buf, GridUnsafe.BYTE_ARR_OFF + off, size);
 
         off += 4;
 
-        UNSAFE.copyMemory(null, ptr, buf, BYTE_ARR_OFF + off, size);
+        GridUnsafe.copyMemory(null, ptr, buf, GridUnsafe.BYTE_ARR_OFF + off, size);
 
         off += size;
     }
@@ -183,7 +181,7 @@ public class HadoopShuffleMessage implements HadoopMessage {
         for (int i = 0; i < off;) {
             byte marker = buf[i++];
 
-            int size = UNSAFE.getInt(buf, BYTE_ARR_OFF + i);
+            int size = GridUnsafe.getIntAligned(buf, GridUnsafe.BYTE_ARR_OFF + i);
 
             i += 4;
 

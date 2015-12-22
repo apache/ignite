@@ -22,40 +22,22 @@ import java.io.OutputStream;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import sun.misc.Unsafe;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.DOUBLE_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.FLOAT_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.INT_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.LONG_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
 
 /**
  * Data output based on {@code Unsafe} operations.
  */
 public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput {
-    /** Unsafe. */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** */
     private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, 10000);
-
-    /** */
-    private static final long byteArrOff = UNSAFE.arrayBaseOffset(byte[].class);
-
-    /** */
-    private static final long shortArrOff = UNSAFE.arrayBaseOffset(short[].class);
-
-    /** */
-    private static final long intArrOff = UNSAFE.arrayBaseOffset(int[].class);
-
-    /** */
-    private static final long longArrOff = UNSAFE.arrayBaseOffset(long[].class);
-
-    /** */
-    private static final long floatArrOff = UNSAFE.arrayBaseOffset(float[].class);
-
-    /** */
-    private static final long doubleArrOff = UNSAFE.arrayBaseOffset(double[].class);
-
-    /** */
-    private static final long charArrOff = UNSAFE.arrayBaseOffset(char[].class);
 
     /** Length of char buffer (for writing strings). */
     private static final int CHAR_BUF_SIZE = 256;
@@ -114,7 +96,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public byte[] array() {
         byte[] bytes0 = new byte[off];
 
-        UNSAFE.copyMemory(bytes, byteArrOff, bytes0, byteArrOff, off);
+        GridUnsafe.copyMemory(bytes, BYTE_ARR_OFF, bytes0, BYTE_ARR_OFF, off);
 
         return bytes0;
     }
@@ -147,7 +129,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
         if (size > bytes.length) {
             byte[] newBytes = new byte[size << 1]; // Grow.
 
-            UNSAFE.copyMemory(bytes, byteArrOff, newBytes, byteArrOff, off);
+            GridUnsafe.copyMemory(bytes, BYTE_ARR_OFF, newBytes, BYTE_ARR_OFF, off);
 
             bytes = newBytes;
         }
@@ -157,7 +139,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
             if (maxOff < halfSize) {
                 byte[] newBytes = new byte[halfSize]; // Shrink.
 
-                UNSAFE.copyMemory(bytes, byteArrOff, newBytes, byteArrOff, off);
+                GridUnsafe.copyMemory(bytes, BYTE_ARR_OFF, newBytes, BYTE_ARR_OFF, off);
 
                 bytes = newBytes;
             }
@@ -182,7 +164,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void write(byte[] b) throws IOException {
         requestFreeSize(b.length);
 
-        UNSAFE.copyMemory(b, byteArrOff, bytes, byteArrOff + off, b.length);
+        GridUnsafe.copyMemory(b, BYTE_ARR_OFF, bytes, BYTE_ARR_OFF + off, b.length);
 
         onWrite(b.length);
     }
@@ -191,7 +173,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void write(byte[] b, int off, int len) throws IOException {
         requestFreeSize(len);
 
-        UNSAFE.copyMemory(b, byteArrOff + off, bytes, byteArrOff + this.off, len);
+        GridUnsafe.copyMemory(b, BYTE_ARR_OFF + off, bytes, BYTE_ARR_OFF + this.off, len);
 
         onWrite(len);
     }
@@ -204,7 +186,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         requestFreeSize(bytesToCp);
 
-        UNSAFE.copyMemory(arr, doubleArrOff, bytes, byteArrOff + off, bytesToCp);
+        GridUnsafe.copyMemory(arr, DOUBLE_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
 
         onWrite(bytesToCp);
     }
@@ -226,7 +208,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         requestFreeSize(bytesToCp);
 
-        UNSAFE.copyMemory(arr, charArrOff, bytes, byteArrOff + off, bytesToCp);
+        GridUnsafe.copyMemory(arr, CHAR_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
 
         onWrite(bytesToCp);
     }
@@ -239,7 +221,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         requestFreeSize(bytesToCp);
 
-        UNSAFE.copyMemory(arr, longArrOff, bytes, byteArrOff + off, bytesToCp);
+        GridUnsafe.copyMemory(arr, LONG_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
 
         onWrite(bytesToCp);
     }
@@ -252,7 +234,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         requestFreeSize(bytesToCp);
 
-        UNSAFE.copyMemory(arr, floatArrOff, bytes, byteArrOff + off, bytesToCp);
+        GridUnsafe.copyMemory(arr, FLOAT_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
 
         onWrite(bytesToCp);
     }
@@ -270,7 +252,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         requestFreeSize(arr.length);
 
-        UNSAFE.copyMemory(arr, byteArrOff, bytes, byteArrOff + off, arr.length);
+        GridUnsafe.copyMemory(arr, BYTE_ARR_OFF, bytes, BYTE_ARR_OFF + off, arr.length);
 
         onWrite(arr.length);
     }
@@ -283,7 +265,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         requestFreeSize(bytesToCp);
 
-        UNSAFE.copyMemory(arr, shortArrOff, bytes, byteArrOff + off, bytesToCp);
+        GridUnsafe.copyMemory(arr, SHORT_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
 
         onWrite(bytesToCp);
     }
@@ -296,7 +278,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         requestFreeSize(bytesToCp);
 
-        UNSAFE.copyMemory(arr, intArrOff, bytes, byteArrOff + off, bytesToCp);
+        GridUnsafe.copyMemory(arr, INT_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
 
         onWrite(bytesToCp);
     }
@@ -310,7 +292,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeBoolean(boolean v) throws IOException {
         requestFreeSize(1);
 
-        UNSAFE.putBoolean(bytes, byteArrOff + off, v);
+        GridUnsafe.putBoolean(bytes, BYTE_ARR_OFF + off, v);
 
         onWrite(1);
     }
@@ -319,7 +301,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeByte(int v) throws IOException {
         requestFreeSize(1);
 
-        UNSAFE.putByte(bytes, byteArrOff + off, (byte)v);
+        GridUnsafe.putByte(bytes, BYTE_ARR_OFF + off, (byte)v);
 
         onWrite(1);
     }
@@ -328,7 +310,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeShort(int v) throws IOException {
         requestFreeSize(2);
 
-        UNSAFE.putShort(bytes, byteArrOff + off, (short)v);
+        GridUnsafe.putShortAligned(bytes,  BYTE_ARR_OFF + off, (short)v);
 
         onWrite(2);
     }
@@ -337,7 +319,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeChar(int v) throws IOException {
         requestFreeSize(2);
 
-        UNSAFE.putChar(bytes, byteArrOff + off, (char)v);
+        GridUnsafe.putCharAligned(bytes, BYTE_ARR_OFF + off, (char)v);
 
         onWrite(2);
     }
@@ -346,7 +328,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeInt(int v) throws IOException {
         requestFreeSize(4);
 
-        UNSAFE.putInt(bytes, byteArrOff + off, v);
+        GridUnsafe.putIntAligned(bytes, BYTE_ARR_OFF + off, v);
 
         onWrite(4);
     }
@@ -355,7 +337,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeLong(long v) throws IOException {
         requestFreeSize(8);
 
-        UNSAFE.putLong(bytes, byteArrOff + off, v);
+        GridUnsafe.putLongAligned(bytes, BYTE_ARR_OFF + off, v);
 
         onWrite(8);
     }
@@ -364,7 +346,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeFloat(float v) throws IOException {
         requestFreeSize(4);
 
-        UNSAFE.putFloat(bytes, byteArrOff + off, v);
+        GridUnsafe.putFloatAligned(bytes, BYTE_ARR_OFF + off, v);
 
         onWrite(4);
     }
@@ -373,7 +355,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeDouble(double v) throws IOException {
         requestFreeSize(8);
 
-        UNSAFE.putDouble(bytes, byteArrOff + off, v);
+        GridUnsafe.putDoubleAligned(bytes, BYTE_ARR_OFF + off, v);
 
         onWrite(8);
     }

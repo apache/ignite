@@ -136,9 +136,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private static final int DEFERRED_UPDATE_RESPONSE_TIMEOUT =
         Integer.getInteger(IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT, 500);
 
-    /** Unsafe instance. */
-    private static final sun.misc.Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** Update reply closure. */
     private CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> updateReplyClos;
 
@@ -2337,10 +2334,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 try {
                     GridDhtCacheEntry entry = entryExx(key, topVer);
 
-                    UNSAFE.monitorEnter(entry);
+                    GridUnsafe.monitorEnter(entry);
 
                     if (entry.obsolete())
-                        UNSAFE.monitorExit(entry);
+                        GridUnsafe.monitorExit(entry);
                     else
                         return Collections.singletonList(entry);
                 }
@@ -2380,13 +2377,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (entry == null)
                         continue;
 
-                    UNSAFE.monitorEnter(entry);
+                    GridUnsafe.monitorEnter(entry);
 
                     if (entry.obsolete()) {
                         // Unlock all locked.
                         for (int j = 0; j <= i; j++) {
                             if (locked.get(j) != null)
-                                UNSAFE.monitorExit(locked.get(j));
+                                GridUnsafe.monitorExit(locked.get(j));
                         }
 
                         // Clear entries.
@@ -2435,7 +2432,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             // That's why releasing locks in the finally block..
             for (GridCacheMapEntry entry : locked) {
                 if (entry != null)
-                    UNSAFE.monitorExit(entry);
+                    GridUnsafe.monitorExit(entry);
             }
         }
 

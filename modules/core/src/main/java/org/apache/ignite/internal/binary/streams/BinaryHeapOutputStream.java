@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.binary.streams;
 
+import org.apache.ignite.internal.util.GridUnsafe;
+
 /**
  * Binary heap output stream.
  */
@@ -71,7 +73,7 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
     @Override public byte[] arrayCopy() {
         byte[] res = new byte[pos];
 
-        UNSAFE.copyMemory(data, BYTE_ARR_OFF, res, BYTE_ARR_OFF, pos);
+        GridUnsafe.copyMemory(data, GridUnsafe.BYTE_ARR_OFF, res, GridUnsafe.BYTE_ARR_OFF, pos);
 
         return res;
     }
@@ -88,34 +90,34 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
 
     /** {@inheritDoc} */
     @Override protected void copyAndShift(Object src, long off, int len) {
-        UNSAFE.copyMemory(src, off, data, BYTE_ARR_OFF + pos, len);
+        GridUnsafe.copyMemory(src, off, data, GridUnsafe.BYTE_ARR_OFF + pos, len);
 
         shift(len);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeShortFast(short val) {
-        UNSAFE.putShort(data, BYTE_ARR_OFF + pos, val);
+        GridUnsafe.putShortAligned(data, GridUnsafe.BYTE_ARR_OFF + pos, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeCharFast(char val) {
-        UNSAFE.putChar(data, BYTE_ARR_OFF + pos, val);
+        GridUnsafe.putCharAligned(data, GridUnsafe.BYTE_ARR_OFF + pos, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeIntFast(int val) {
-        UNSAFE.putInt(data, BYTE_ARR_OFF + pos, val);
+        GridUnsafe.putIntAligned(data, GridUnsafe.BYTE_ARR_OFF + pos, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeLongFast(long val) {
-        UNSAFE.putLong(data, BYTE_ARR_OFF + pos, val);
+        GridUnsafe.putLongAligned(data, GridUnsafe.BYTE_ARR_OFF + pos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteByte(byte val) {
-        UNSAFE.putByte(data, BYTE_ARR_OFF + pos++, val);
+        GridUnsafe.putByte(data, GridUnsafe.BYTE_ARR_OFF + pos++, val);
     }
 
     /** {@inheritDoc} */
@@ -123,7 +125,7 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
         if (!LITTLE_ENDIAN)
             val = Short.reverseBytes(val);
 
-        UNSAFE.putShort(data, BYTE_ARR_OFF + pos, val);
+        GridUnsafe.putShortAligned(data, GridUnsafe.BYTE_ARR_OFF + pos, val);
 
         shift(2);
     }
@@ -133,7 +135,7 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
         if (!LITTLE_ENDIAN)
             val = Short.reverseBytes(val);
 
-        UNSAFE.putShort(data, BYTE_ARR_OFF + pos, val);
+        GridUnsafe.putShortAligned(data, GridUnsafe.BYTE_ARR_OFF + pos, val);
     }
 
     /** {@inheritDoc} */
@@ -141,7 +143,7 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
         if (!LITTLE_ENDIAN)
             val = Character.reverseBytes(val);
 
-        UNSAFE.putChar(data, BYTE_ARR_OFF + pos, val);
+        GridUnsafe.putCharAligned(data, GridUnsafe.BYTE_ARR_OFF + pos, val);
 
         shift(2);
     }
@@ -151,7 +153,7 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
         if (!LITTLE_ENDIAN)
             val = Integer.reverseBytes(val);
 
-        UNSAFE.putInt(data, BYTE_ARR_OFF + pos, val);
+        GridUnsafe.putIntAligned(data, GridUnsafe.BYTE_ARR_OFF + pos, val);
 
         shift(4);
     }
@@ -161,7 +163,7 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
         if (!LITTLE_ENDIAN)
             val = Integer.reverseBytes(val);
 
-        UNSAFE.putInt(data, BYTE_ARR_OFF + pos, val);
+        GridUnsafe.putIntAligned(data, GridUnsafe.BYTE_ARR_OFF + pos, val);
     }
 
     /** {@inheritDoc} */
@@ -169,7 +171,7 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
         if (!LITTLE_ENDIAN)
             val = Long.reverseBytes(val);
 
-        UNSAFE.putLong(data, BYTE_ARR_OFF + pos, val);
+        GridUnsafe.putLongAligned(data, GridUnsafe.BYTE_ARR_OFF + pos, val);
 
         shift(8);
     }
