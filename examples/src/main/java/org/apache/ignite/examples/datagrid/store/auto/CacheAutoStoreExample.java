@@ -172,7 +172,6 @@ public class CacheAutoStoreExample {
             finally {
                 ignite.destroyCache(CACHE_NAME);
             }
-
         }
     }
 }
