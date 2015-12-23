@@ -27,6 +27,8 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -41,7 +43,7 @@ public class IgfsPaths implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private Object payload;
+    private byte[] payloadBytes;
 
     /** Default IGFS mode. */
     private IgfsMode dfltMode;
@@ -62,11 +64,27 @@ public class IgfsPaths implements Externalizable {
      * @param payload Payload.
      * @param dfltMode Default IGFS mode.
      * @param pathModes Path modes.
+     * @throws IgniteCheckedException If failed.
      */
-    public IgfsPaths(Object payload, IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> pathModes) {
-        this.payload = payload;
+    public IgfsPaths(Object payload, IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> pathModes)
+        throws IgniteCheckedException {
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
+
+        if (payload == null)
+            payloadBytes = null;
+        else {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            try (ObjectOutput oo = new ObjectOutputStream(baos)) {
+                oo.writeObject(payload);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to serialize secondary file system factory: " + payload, e);
+            }
+
+            payloadBytes = baos.toByteArray();
+        }
     }
 
     /**
@@ -85,20 +103,25 @@ public class IgfsPaths implements Externalizable {
 
     /**
      * @return Payload.
+     *
+     * @throws IgniteCheckedException If failed to deserialize the payload.
      */
-    @Nullable public Object getPayload() {
-        return payload;
+    @Nullable public Object getPayload() throws IgniteCheckedException {
+        if (payloadBytes == null)
+            return null;
+        else {
+            try (ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(payloadBytes))) {
+                return oi.readObject();
+            }
+            catch (IOException | ClassNotFoundException e) {
+                throw new IgniteCheckedException("Failed to deserialize secondary file system factory. ", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        try (ObjectOutput oo = new ObjectOutputStream(baos)) {
-            oo.writeObject(payload);
-        }
-
-        U.writeByteArray(out, baos.toByteArray());
+        U.writeByteArray(out, payloadBytes);
 
         U.writeEnum(out, dfltMode);
 
@@ -120,13 +143,7 @@ public class IgfsPaths implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        byte[] factoryBytes = U.readByteArray(in);
-
-        assert factoryBytes != null;
-
-        try (ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes))) {
-            payload = oi.readObject();
-        }
+        payloadBytes = U.readByteArray(in);
 
         dfltMode = IgfsMode.fromOrdinal(in.readByte());
 

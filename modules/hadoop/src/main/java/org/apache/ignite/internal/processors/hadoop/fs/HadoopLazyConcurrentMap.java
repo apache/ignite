@@ -112,10 +112,6 @@ public class HadoopLazyConcurrentMap<K, V extends Closeable> {
             if (closed)
                 return;
 
-            // TODO: debug:
-            System.out.println("##### closed: " + System.identityHashCode(this));
-            Thread.dumpStack();
-
             closed = true;
 
             Exception err = null;
