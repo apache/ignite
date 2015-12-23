@@ -30,12 +30,14 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CachePartialUpdateException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -117,7 +119,7 @@ class WebSessionListener {
 
                     break;
                 }
-                catch (CachePartialUpdateException ignored) {
+                catch (CacheException | IgniteException e) {
                     if (i == retries - 1) {
                         U.warn(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
                             sesId + ", retries=" + retries + ']');
@@ -125,12 +127,25 @@ class WebSessionListener {
                     else {
                         U.warn(log, "Failed to apply updates for session (will retry): " + sesId);
 
-                        U.sleep(RETRY_DELAY);
+                        IgniteFuture<?> retryFut = null;
+
+                        if (X.hasCause(e, ClusterTopologyException.class)) {
+                            ClusterTopologyException cause = X.cause(e, ClusterTopologyException.class);
+
+                            assert cause != null : e;
+
+                            retryFut = cause.retryReadyFuture();
+                        }
+
+                        if (retryFut != null)
+                            retryFut.get();
+                        else
+                            U.sleep(RETRY_DELAY);
                     }
                 }
             }
         }
-        catch (CacheException | IgniteInterruptedCheckedException e) {
+        catch (Exception e) {
             U.error(log, "Failed to update session attributes [id=" + sesId + ']', e);
         }
     }
