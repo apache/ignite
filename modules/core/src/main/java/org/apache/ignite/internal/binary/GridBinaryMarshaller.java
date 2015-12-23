@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -265,6 +265,16 @@ public class GridBinaryMarshaller {
             return null;
 
         return (T)new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, 0), ldr).deserialize();
+    }
+
+    /**
+     * Whether object must be deserialized anyway. I.e. it cannot be converted to BinaryObject.
+     *
+     * @param obj Object.
+     * @return {@code True} if object will be deserialized on unmarshal.
+     */
+    public boolean mustDeserialize(Object obj) {
+        return obj != null && ctx.mustDeserialize(obj.getClass());
     }
 
     /**

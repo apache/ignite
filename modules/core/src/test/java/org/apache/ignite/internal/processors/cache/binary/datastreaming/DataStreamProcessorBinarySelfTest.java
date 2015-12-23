@@ -22,8 +22,8 @@ import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.stream.StreamReceiver;
 
 /**

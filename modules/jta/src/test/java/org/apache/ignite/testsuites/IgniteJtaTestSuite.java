@@ -21,11 +21,11 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheJndiTmFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheJtaConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheJtaFactoryConfigValidationSelfTest;
-import org.apache.ignite.internal.processors.cache.GridJtaLifecycleAwareSelfTest;
 import org.apache.ignite.internal.processors.cache.GridPartitionedCacheJtaFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.GridPartitionedCacheJtaLookupClassNameSelfTest;
 import org.apache.ignite.internal.processors.cache.GridReplicatedCacheJtaFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.GridReplicatedCacheJtaLookupClassNameSelfTest;
+import org.apache.ignite.internal.processors.cache.GridJtaLifecycleAwareSelfTest;
 
 /**
  * JTA integration tests.

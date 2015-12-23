@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
  * Class for {@code PojoCacheStore} tests.

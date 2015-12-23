@@ -21,11 +21,13 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.IdentityHashMap;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -99,6 +101,11 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      * @return Schema.
      */
     protected abstract BinarySchema createSchema();
+
+    /** {@inheritDoc} */
+    @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
+        return BinaryObjectBuilderImpl.wrap(this);
+    }
 
     /** {@inheritDoc} */
     @Override public BinaryObject clone() throws CloneNotSupportedException {

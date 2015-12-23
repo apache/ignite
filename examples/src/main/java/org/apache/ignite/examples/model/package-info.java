@@ -17,6 +17,7 @@
 
 /**
  * <!-- Package description. -->
- * Contains binary APIs internal implementation.
+ * Model classes for Apache Ignite examples.
  */
-package org.apache.ignite.internal.binary;
+
+package org.apache.ignite.examples.model;

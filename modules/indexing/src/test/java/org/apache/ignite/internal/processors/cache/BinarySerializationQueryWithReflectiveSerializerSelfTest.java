@@ -15,8 +15,14 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.cache;
+
 /**
- * <!-- Package description. -->
- * Contains binary APIs implementation for streams.
+ * Test for query with BinaryMarshaller and different serialization modes and with reflective serializer.
  */
-package org.apache.ignite.internal.binary.streams;
+public class BinarySerializationQueryWithReflectiveSerializerSelfTest extends BinarySerializationQuerySelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean useReflectiveSerializer() {
+        return true;
+    }
+}

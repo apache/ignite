@@ -77,7 +77,7 @@ public class Person implements Serializable {
         // Generate unique ID for this person.
         id = ID_GEN.incrementAndGet();
 
-        orgId = org.id;
+        orgId = org.id();
 
         this.firstName = firstName;
         this.lastName = lastName;

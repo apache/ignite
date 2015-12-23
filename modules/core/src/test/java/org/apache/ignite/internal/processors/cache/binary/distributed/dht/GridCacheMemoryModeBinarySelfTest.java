@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.binary.distributed.dht;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheMemoryModeSelfTest;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
  * Memory models test.

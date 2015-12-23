@@ -14,9 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.tests.p2p;
+
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
- * <!-- Package description. -->
- * Contains dummy cache store implementation.
+ *
  */
-package org.apache.ignite.examples.datagrid.store.dummy;
+public class CacheDeploymentAlwaysTruePredicate implements IgniteBiPredicate<Object, Object> {
+    /** */
+    @Override public boolean apply(Object o, Object o2) {
+        return true;
+    }
+}

@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.util.HashMap;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.HashMap;
 
 /**
  * Binary schema registry. Contains all well-known object schemas.

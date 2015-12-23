@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import sun.misc.Unsafe;
+
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -24,10 +29,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import sun.misc.Unsafe;
 
 /**
  * Field accessor to speedup access.
@@ -104,7 +105,6 @@ public abstract class BinaryFieldAccessor {
             case OBJECT_ARR:
             case BINARY_OBJ:
             case BINARY:
-            case EXTERNALIZABLE:
                 return new DefaultFinalClassAccessor(field, id, mode, false);
 
             default:
@@ -623,7 +623,6 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case BINARY:
-                case EXTERNALIZABLE:
                 case OBJECT:
                     writer.writeObjectField(val);
 
@@ -824,7 +823,6 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case BINARY:
-                case EXTERNALIZABLE:
                 case OBJECT:
                     val = reader.readObject(id);
 

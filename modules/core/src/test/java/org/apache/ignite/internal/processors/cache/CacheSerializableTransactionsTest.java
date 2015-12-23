@@ -2832,6 +2832,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     public void testRandomOperations() throws Exception {
         Ignite ignite0 = ignite(0);
 
+        long stopTime = U.currentTimeMillis() + getTestTimeout() - 30_000;
+
         for (CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {
             logCacheInfo(ccfg);
 
@@ -2869,6 +2871,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                             tx.commit();
                         }
+
+                        if (i % 100 == 0 && U.currentTimeMillis() > stopTime)
+                            break;
                     }
 
                     for (int key = 0; key < KEYS; key++) {
@@ -2877,6 +2882,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                         for (int node = 1; node < SRVS + CLIENTS; node++)
                             assertEquals(val, ignite(node).cache(cache.getName()).get(key));
                     }
+
+                    if (U.currentTimeMillis() > stopTime)
+                        break;
                 }
             }
             finally {

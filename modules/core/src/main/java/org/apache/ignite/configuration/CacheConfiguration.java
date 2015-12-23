@@ -208,7 +208,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default value for keep binary in store behavior .*/
     @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
-    public static final Boolean DFLT_KEEP_BINARY_IN_STORE = new Boolean(false);
+    public static final Boolean DFLT_STORE_KEEP_BINARY = new Boolean(false);
 
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
@@ -269,7 +269,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Factory storeFactory;
 
     /** */
-    private Boolean keepBinaryInStore = DFLT_KEEP_BINARY_IN_STORE;
+    private Boolean storeKeepBinary = DFLT_STORE_KEEP_BINARY;
 
     /** */
     private boolean loadPrevVal = DFLT_LOAD_PREV_VAL;
@@ -365,13 +365,16 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private IgnitePredicate<ClusterNode> nodeFilter;
 
     /** */
+    private String sqlSchema;
+
+    /** */
     private boolean sqlEscapeAll;
 
     /** */
-    private transient Class<?>[] indexedTypes;
+    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
 
     /** */
-    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
+    private transient Class<?>[] indexedTypes;
 
     /** */
     private boolean snapshotableIdx;
@@ -444,8 +447,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
         isWriteThrough = cc.isWriteThrough();
-        keepBinaryInStore = cc.isKeepBinaryInStore() != null ? cc.isKeepBinaryInStore() :
-            DFLT_KEEP_BINARY_IN_STORE;
+        storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
@@ -467,6 +469,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         rebalanceTimeout = cc.getRebalanceTimeout();
         rebalanceThrottle = cc.getRebalanceThrottle();
         snapshotableIdx = cc.isSnapshotableIndex();
+        sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
         sqlOnheapRowCacheSize = cc.getSqlOnheapRowCacheSize();
@@ -891,7 +894,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Flag indicating that {@link CacheStore} implementation
      * is working with binary objects instead of Java objects.
-     * Default value of this flag is {@link #DFLT_KEEP_BINARY_IN_STORE}.
+     * Default value of this flag is {@link #DFLT_STORE_KEEP_BINARY}.
      * <p>
      * If set to {@code false}, Ignite will deserialize keys and
      * values stored in binary format before they are passed
@@ -906,17 +909,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Keep binary in store flag.
      */
-    public Boolean isKeepBinaryInStore() {
-        return keepBinaryInStore;
+    public Boolean isStoreKeepBinary() {
+        return storeKeepBinary;
     }
 
     /**
      * Sets keep binary in store flag.
      *
-     * @param keepBinaryInStore Keep binary in store flag.
+     * @param storeKeepBinary Keep binary in store flag.
      */
-    public void setKeepBinaryInStore(boolean keepBinaryInStore) {
-        this.keepBinaryInStore = keepBinaryInStore;
+    public void setStoreKeepBinary(boolean storeKeepBinary) {
+        this.storeKeepBinary = storeKeepBinary;
     }
 
     /**
@@ -1771,13 +1774,47 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets timeout in milliseconds after which long query warning will be printed.
+     * Sets timeout in milliseconds after which long query warning will be printed.
      *
      * @param longQryWarnTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setLongQueryWarningTimeout(long longQryWarnTimeout) {
         this.longQryWarnTimeout = longQryWarnTimeout;
+
+        return this;
+    }
+
+    /**
+     * Gets custom name of the sql schema. If custom sql schema is not set then {@code null} will be returned and
+     * quoted case sensitive name will be used as sql schema.
+     *
+     * @return Schema name for current cache according to SQL ANSI-99. Could be {@code null}.
+     */
+    @Nullable public String getSqlSchema() {
+        return sqlSchema;
+    }
+
+    /**
+     * Sets sql schema to be used for current cache. This name will correspond to SQL ANSI-99 standard.
+     * Nonquoted identifiers are not case sensitive. Quoted identifiers are case sensitive.
+     * <p/>
+     * Be aware of using the same string in case sensitive and case insensitive manner simultaneously, since
+     * behaviour for such case is not specified.
+     * <p/>
+     * When sqlSchema is not specified, quoted {@code cacheName} is used instead.
+     * <p/>
+     * {@code sqlSchema} could not be an empty string. Has to be {@code "\"\""} instead.
+     *
+     * @param sqlSchema Schema name for current cache according to SQL ANSI-99. Should not be {@code null}.
+     *
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSqlSchema(String sqlSchema) {
+        A.ensure((sqlSchema != null), "Schema could not be null.");
+        A.ensure(!sqlSchema.isEmpty(), "Schema could not be empty.");
+
+        this.sqlSchema = sqlSchema;
 
         return this;
     }

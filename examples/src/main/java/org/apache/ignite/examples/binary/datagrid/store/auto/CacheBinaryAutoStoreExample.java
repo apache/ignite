@@ -94,7 +94,7 @@ public class CacheBinaryAutoStoreExample {
         cfg.setAtomicityMode(TRANSACTIONAL);
 
         // This option will allow to start remote nodes without having user classes in classpath.
-        cfg.setKeepBinaryInStore(true);
+        cfg.setStoreKeepBinary(true);
 
         cfg.setReadThrough(true);
         cfg.setWriteThrough(true);
@@ -160,6 +160,9 @@ public class CacheBinaryAutoStoreExample {
                 cache.loadCache(null);
 
                 System.out.println(">>> Loaded cache entries: " + cache.size());
+            }
+            finally {
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

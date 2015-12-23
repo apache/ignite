@@ -17,9 +17,28 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryMapFactory;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
+
 import java.io.ByteArrayInputStream;
 import java.io.Externalizable;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
@@ -39,20 +58,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryCollectionFactory;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryMapFactory;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -951,8 +956,6 @@ public class BinaryUtils {
             return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
             return BinaryWriteMode.BINARY;
-        else if (Externalizable.class.isAssignableFrom(cls))
-            return BinaryWriteMode.EXTERNALIZABLE;
         else if (isSpecialCollection(cls))
             return BinaryWriteMode.COL;
         else if (isSpecialMap(cls))
@@ -1834,6 +1837,60 @@ public class BinaryUtils {
      */
     public static int positionForHandle(BinaryInputStream in) {
         return in.position() - 1;
+    }
+
+    /**
+     * Check if class is binarylizable.
+     *
+     * @param cls Class.
+     * @return {@code True} if binarylizable.
+     */
+    public static boolean isBinarylizable(Class cls) {
+        for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+            if (Binarylizable.class.isAssignableFrom(c))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Determines whether class contains custom Java serialization logic.
+     *
+     * @param cls Class.
+     * @return {@code true} if custom Java serialization logic exists, {@code false} otherwise.
+     */
+    @SuppressWarnings("unchecked")
+    public static boolean isCustomJavaSerialization(Class cls) {
+        for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+            if (Externalizable.class.isAssignableFrom(c))
+                return true;
+
+            try {
+                Method writeObj = c.getDeclaredMethod("writeObject", ObjectOutputStream.class);
+                Method readObj = c.getDeclaredMethod("readObject", ObjectInputStream.class);
+
+                if (!Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
+                    writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class)
+                    return true;
+            }
+            catch (NoSuchMethodException ignored) {
+                // No-op.
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Create qualified field name.
+     *
+     * @param cls Class.
+     * @param fieldName Field name.
+     * @return Qualified field name.
+     */
+    public static String qualifiedFieldName(Class cls, String fieldName) {
+        return cls.getName() + "." + fieldName;
     }
 
     /**

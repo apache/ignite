@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.util.Collection;
 import org.apache.ignite.binary.BinaryType;
+
+import java.util.Collection;
 
 /**
  * Binary type implementation.

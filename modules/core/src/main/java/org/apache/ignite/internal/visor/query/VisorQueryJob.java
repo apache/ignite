@@ -41,8 +41,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.RMV_DELAY;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_COL_NAMES;
-import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_NEAR_CACHE;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_QRY_NAME;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_NEAR_CACHE;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SQL_QRY_NAME;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.fetchScanQueryRows;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.fetchSqlQueryRows;
@@ -86,7 +86,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
         qry.setPageSize(arg.pageSize());
         qry.setLocal(arg.local());
 
-        return c.query(qry);
+        return c.withKeepBinary().query(qry);
     }
 
     /**
@@ -142,7 +142,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
 
                 long start = U.currentTimeMillis();
 
-                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(c.query(qry));
+                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
 
                 Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 
@@ -216,8 +216,14 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
      * Wrapper for cache iterator to behave like {@link QueryCursor}.
      */
     private static class VisorNearCacheCursor<T> implements QueryCursor<T> {
+        /** Wrapped iterator.  */
         private final Iterator<T> it;
 
+        /**
+         * Wrapping constructor.
+         *
+         * @param it Near cache iterator to wrap.
+         */
         private VisorNearCacheCursor(Iterator<T> it) {
             this.it = it;
         }

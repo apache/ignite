@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-core</artifactId>
-    <version>1.5.0-b2-SNAPSHOT</version>
+    <version>1.5.0.final-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <repositories>
@@ -329,6 +329,11 @@
                                         </tstamp>
 
                                         <property name="props.file" value="../../modules/core/target/classes/ignite.properties" />
+
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.update.notifier.enabled.by.default=.*" />
+                                            <substitution expression="ignite.update.notifier.enabled.by.default=${update.notifier.enabled.by.default}" />
+                                        </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">
                                             <regexp pattern="ignite.rel.date=.*" />

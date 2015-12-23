@@ -28,11 +28,11 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.h2.jdbcx.JdbcConnectionPool;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
  * Example of {@link CacheStore} implementation that uses JDBC
@@ -40,7 +40,8 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
  */
 public class CacheSpringPersonStore extends CacheStoreAdapter<Long, Person> {
     /** Data source. */
-    public static final DataSource DATA_SRC = new DriverManagerDataSource("jdbc:h2:mem:example;DB_CLOSE_DELAY=-1");
+    public static final DataSource DATA_SRC =
+        JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:ExampleDb", "sa", "");
 
     /** Spring JDBC template. */
     private JdbcTemplate jdbcTemplate;
@@ -52,20 +53,6 @@ public class CacheSpringPersonStore extends CacheStoreAdapter<Long, Person> {
      */
     public CacheSpringPersonStore() throws IgniteException {
         jdbcTemplate = new JdbcTemplate(DATA_SRC);
-
-        prepareDb();
-    }
-
-    /**
-     * Prepares database for example execution. This method will create a
-     * table called "PERSONS" so it can be used by store implementation.
-     *
-     * @throws IgniteException If failed.
-     */
-    private void prepareDb() throws IgniteException {
-        jdbcTemplate.update(
-            "create table if not exists PERSONS (" +
-            "id number unique, firstName varchar(255), lastName varchar(255))");
     }
 
     /** {@inheritDoc} */
@@ -73,7 +60,7 @@ public class CacheSpringPersonStore extends CacheStoreAdapter<Long, Person> {
         System.out.println(">>> Store load [key=" + key + ']');
 
         try {
-            return jdbcTemplate.queryForObject("select * from PERSONS where id = ?", new RowMapper<Person>() {
+            return jdbcTemplate.queryForObject("select * from PERSON where id = ?", new RowMapper<Person>() {
                 @Override public Person mapRow(ResultSet rs, int rowNum) throws SQLException {
                     return new Person(rs.getLong(1), rs.getString(2), rs.getString(3));
                 }
@@ -91,11 +78,11 @@ public class CacheSpringPersonStore extends CacheStoreAdapter<Long, Person> {
 
         System.out.println(">>> Store write [key=" + key + ", val=" + val + ']');
 
-        int updated = jdbcTemplate.update("update PERSONS set firstName = ?, lastName = ? where id = ?",
+        int updated = jdbcTemplate.update("update PERSON set first_name = ?, last_name = ? where id = ?",
             val.firstName, val.lastName, val.id);
 
         if (updated == 0) {
-            jdbcTemplate.update("insert into PERSONS (id, firstName, lastName) values (?, ?, ?)",
+            jdbcTemplate.update("insert into PERSON (id, first_name, last_name) values (?, ?, ?)",
                 val.id, val.firstName, val.lastName);
         }
     }
@@ -104,7 +91,7 @@ public class CacheSpringPersonStore extends CacheStoreAdapter<Long, Person> {
     @Override public void delete(Object key) {
         System.out.println(">>> Store delete [key=" + key + ']');
 
-        jdbcTemplate.update("delete from PERSONS where id = ?", key);
+        jdbcTemplate.update("delete from PERSON where id = ?", key);
     }
 
     /** {@inheritDoc} */
@@ -116,7 +103,7 @@ public class CacheSpringPersonStore extends CacheStoreAdapter<Long, Person> {
 
         final AtomicInteger cnt = new AtomicInteger();
 
-        jdbcTemplate.query("select * from PERSONS limit ?", new RowCallbackHandler() {
+        jdbcTemplate.query("select * from PERSON limit ?", new RowCallbackHandler() {
             @Override public void processRow(ResultSet rs) throws SQLException {
                 Person person = new Person(rs.getLong(1), rs.getString(2), rs.getString(3));
 
