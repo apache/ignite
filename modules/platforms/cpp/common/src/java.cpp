@@ -264,8 +264,8 @@ namespace ignite
             JniMethod M_PLATFORM_TRANSACTIONS_TX_START = JniMethod("txStart", "(IIJI)J", false);
             JniMethod M_PLATFORM_TRANSACTIONS_TX_COMMIT = JniMethod("txCommit", "(J)I", false);
             JniMethod M_PLATFORM_TRANSACTIONS_TX_ROLLBACK = JniMethod("txRollback", "(J)I", false);
-            JniMethod M_PLATFORM_TRANSACTIONS_TX_COMMIT_ASYNC = JniMethod("txCommitAsync", "(JJ)V", false);
-            JniMethod M_PLATFORM_TRANSACTIONS_TX_ROLLBACK_ASYNC = JniMethod("txRollbackAsync", "(JJ)V", false);
+            JniMethod M_PLATFORM_TRANSACTIONS_TX_COMMIT_ASYNC = JniMethod("txCommitAsync", "(JJ)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
+            JniMethod M_PLATFORM_TRANSACTIONS_TX_ROLLBACK_ASYNC = JniMethod("txRollbackAsync", "(JJ)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
             JniMethod M_PLATFORM_TRANSACTIONS_TX_STATE = JniMethod("txState", "(J)I", false);
             JniMethod M_PLATFORM_TRANSACTIONS_TX_SET_ROLLBACK_ONLY = JniMethod("txSetRollbackOnly", "(J)Z", false);
             JniMethod M_PLATFORM_TRANSACTIONS_TX_CLOSE = JniMethod("txClose", "(J)I", false);
