@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="cancellationToken">The cancellation token.</param>
         public Task<T> GetTask(CancellationToken cancellationToken)
         {
-            cancellationToken.Register(() => Cancel());
+            cancellationToken.Register(OnTokenCancel);
 
             return Task;
         }
@@ -180,6 +180,14 @@ namespace Apache.Ignite.Core.Impl.Common
                 return false;
 
             return UnmanagedUtils.ListenableIsCancelled(_unmanagedTarget);
+        }
+
+        /// <summary>
+        /// Called when token cancellation occurs.
+        /// </summary>
+        private void OnTokenCancel()
+        {
+            Cancel();
         }
     }
 }
