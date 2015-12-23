@@ -398,7 +398,7 @@
     },
     {
       "label": "Binary configuration",
-      "group": "atomics",
+      "group": "binary",
       "tip": [
         "Configuration for Ignite Binary Objects"
       ],

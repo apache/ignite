@@ -1067,7 +1067,7 @@ consoleModule.service('$confirmBatch', function ($rootScope, $modal,  $q) {
 
     var deferred;
 
-    var stepConfirmModal = $modal({templateUrl: '/template/batch-confirm.html', scope: scope, placement: 'center', show: false});
+    var stepConfirmModal = $modal({templateUrl: '/templates/batch-confirm.html', scope: scope, placement: 'center', show: false});
 
     function _done(cancel) {
         if (cancel)

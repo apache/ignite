@@ -541,6 +541,16 @@ $generatorJava.clusterAtomics = function (cluster, res) {
     return res;
 };
 
+// Generate binary group.
+$generatorJava.clusterBinary = function (cluster, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    res.line('// TODO');
+
+    return res;
+};
+
 // Generate communication group.
 $generatorJava.clusterCommunication = function (cluster, res) {
     if (!res)
@@ -976,7 +986,7 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
                 res.line('setDataSource(dataSource);');
                 res.line('');
                 res.line('return super.create();');
-                res.endBlock('};');
+                res.endBlock('}');
                 res.endBlock('};');
 
                 res.needEmptyLine = true;

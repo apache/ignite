@@ -94,6 +94,7 @@ consoleModule.controller('clustersController', [
         $scope.preview = {
             general: {xml: '', java: '', allDefaults: true},
             atomics: {xml: '', java: '', allDefaults: true},
+            binary: {xml: '', java: '', allDefaults: true},
             communication: {xml: '', java: '', allDefaults: true},
             connector: {xml: '', java: '', allDefaults: true},
             deployment: {xml: '', java: '', allDefaults: true},
@@ -260,6 +261,10 @@ consoleModule.controller('clustersController', [
                                 $scope.preview.atomics.xml = $generatorXml.clusterAtomics(val).asString();
                                 $scope.preview.atomics.java = $generatorJava.clusterAtomics(val).asString();
                                 $scope.preview.atomics.allDefaults = $common.isEmptyString($scope.preview.atomics.xml);
+
+                                $scope.preview.binary.xml = $generatorXml.clusterBinary(val).asString();
+                                $scope.preview.binary.java = $generatorJava.clusterBinary(val).asString();
+                                $scope.preview.binary.allDefaults = $common.isEmptyString($scope.preview.binary.xml);
 
                                 $scope.preview.communication.xml = $generatorXml.clusterCommunication(val).asString();
                                 $scope.preview.communication.java = $generatorJava.clusterCommunication(val).asString();

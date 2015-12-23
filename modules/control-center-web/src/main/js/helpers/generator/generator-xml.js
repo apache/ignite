@@ -379,6 +379,16 @@ $generatorXml.clusterAtomics = function (cluster, res) {
     return res;
 };
 
+// Generate binary group.
+$generatorXml.clusterBinary = function (cluster, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    res.line('<todo>TODO</todo>');
+
+    return res;
+};
+
 // Generate communication group.
 $generatorXml.clusterCommunication = function (cluster, res) {
     if (!res)
