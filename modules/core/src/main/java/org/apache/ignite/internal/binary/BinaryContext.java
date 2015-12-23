@@ -743,7 +743,7 @@ public class BinaryContext implements Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            IgniteKernal g = IgnitionEx.gridx(gridName);
+            IgniteKernal g = IgnitionEx.localIgnite();
 
             if (g == null)
                 throw new IllegalStateException("Failed to find grid for name: " + gridName);
