@@ -1076,6 +1076,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             clsName = clsName.substring(0, clsName.length() - 2) + "_array";
         }
 
+        int parentEnd = clsName.lastIndexOf('$');
+
+        if (parentEnd >= 0)
+            clsName = clsName.substring(parentEnd + 1);
+
         return clsName;
     }
 
