@@ -19,15 +19,26 @@ import template from './ui-ace-java.jade!';
 import controller from './ui-ace-java.controller';
 
 export default ['igniteUiAceJava', [() => {
+    const link = ($scope, $el, {clusterCfg}) => {
+        if (typeof clusterCfg !== 'undefined') {
+            $scope.$watch('cfg', (cfg) => {
+                if (typeof cfg !== 'undefined')
+                    return;
 
-	return {
-		restrict: 'E',
-		scope: {
-			cluster: '=',
-			cfg: '=clusterCfg'
-		},
-		template,
-		controller,
-		controllerAs: 'ctrl'
-	};
+                $scope.cfg = {};
+            });
+        }
+    };
+
+    return {
+        restrict: 'E',
+        scope: {
+            cluster: '=',
+            cfg: '=clusterCfg'
+        },
+        link,
+        template,
+        controller,
+        controllerAs: 'ctrl'
+    };
 }]];
