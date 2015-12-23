@@ -136,8 +136,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureSetUp]
         public void BeforeTests()
         {
-            //TestUtils.JVM_DEBUG = true;
-
             TestUtils.KillProcesses();
 
             TestUtils.JvmDebug = true;
@@ -148,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = "config\\native-client-test-cache-store.xml",
-                BinaryConfiguration = new BinaryConfiguration {Types = new[] {typeof (Key), typeof (Value)}}
+                BinaryConfiguration = new BinaryConfiguration(typeof (Key), typeof (Value))
             };
 
             Ignition.Start(cfg);
