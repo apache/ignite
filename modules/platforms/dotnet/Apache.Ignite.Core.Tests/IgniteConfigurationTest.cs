@@ -33,6 +33,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestAllConfigurationProperties()
         {
+            //  TODO:
+            // Failed to add node to topology because local node is configured to use loopback address, but remote node is not (consider changing 'localAddress' configuration parameter) 
+
             var cfg = new IgniteConfiguration
             {
                 DiscoveryConfiguration = new DiscoveryConfiguration
