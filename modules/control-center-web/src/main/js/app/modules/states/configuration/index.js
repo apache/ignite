@@ -14,60 +14,60 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-import angular from 'angular'
 
-import ConfigurationSummaryCtrl from './summary/summary.controller'
-import ConfigurationSummaryResource from './summary/summary.resource'
+import angular from 'angular';
+
+import ConfigurationSummaryCtrl from './summary/summary.controller';
+import ConfigurationSummaryResource from './summary/summary.resource';
 
 angular
 .module('ignite-console.states.configuration', [
-	'ui.router'
+    'ui.router'
 ])
 // Services.
 .service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {
-	// Setup the states.
-	$stateProvider
-	.state('base.configuration', {
-		url: '/configuration',
-		templateUrl: '/configuration/sidebar.html'
-	})
-	.state('base.configuration.clusters', {
-		url: '/clusters',
-		templateUrl: '/configuration/clusters.html',
-		data: {
-			loading: 'Loading clusters screen...'
-		}
-	})
-	.state('base.configuration.caches', {
-		url: '/caches',
-		templateUrl: '/configuration/caches.html',
-		data: {
-			loading: 'Loading caches screen...'
-		}
-	})
-	.state('base.configuration.metadata', {
-		url: '/metadata',
-		templateUrl: '/configuration/metadata.html',
-		data: {
-			loading: 'Loading metadata screen...'
-		}
-	})
-	.state('base.configuration.igfs', {
-		url: '/igfs',
-		templateUrl: '/configuration/igfs.html',
-		data: {
-			loading: 'Loading IGFS screen...'
-		}
-	})
-	.state('base.configuration.summary', {
-		url: '/summary',
-		templateUrl: '/configuration/summary.html',
-		controller: ConfigurationSummaryCtrl,
-		controllerAs: 'ctrl',
-		data: {
-			loading: 'Loading summary screen...'
-		}
-	})
+    // Setup the states.
+    $stateProvider
+    .state('base.configuration', {
+        url: '/configuration',
+        templateUrl: '/configuration/sidebar.html'
+    })
+    .state('base.configuration.clusters', {
+        url: '/clusters',
+        templateUrl: '/configuration/clusters.html',
+        data: {
+            loading: 'Loading clusters screen...'
+        }
+    })
+    .state('base.configuration.caches', {
+        url: '/caches',
+        templateUrl: '/configuration/caches.html',
+        data: {
+            loading: 'Loading caches screen...'
+        }
+    })
+    .state('base.configuration.metadata', {
+        url: '/metadata',
+        templateUrl: '/configuration/metadata.html',
+        data: {
+            loading: 'Loading metadata screen...'
+        }
+    })
+    .state('base.configuration.igfs', {
+        url: '/igfs',
+        templateUrl: '/configuration/igfs.html',
+        data: {
+            loading: 'Loading IGFS screen...'
+        }
+    })
+    .state('base.configuration.summary', {
+        url: '/summary',
+        templateUrl: '/configuration/summary.html',
+        controller: ConfigurationSummaryCtrl,
+        controllerAs: 'ctrl',
+        data: {
+            loading: 'Loading summary screen...'
+        }
+    });
 }]);

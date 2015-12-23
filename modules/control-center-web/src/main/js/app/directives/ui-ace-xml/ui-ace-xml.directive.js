@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-xml.jade!'
-import controller from './ui-ace-xml.controller'
+import template from './ui-ace-xml.jade!';
+import controller from './ui-ace-xml.controller';
 
 export default ['igniteUiAceXml', [() => {
 
-	return {
-		restrict: 'E',
-		scope: {
-			cluster: '=',
-			cfg: '=clusterCfg'
-		},
-		template,
-		controller,
-		controllerAs: 'ctrl'
-	}
-}]]
+    return {
+        restrict: 'E',
+        scope: {
+            cluster: '=',
+            cfg: '=clusterCfg'
+        },
+        template,
+        controller,
+        controllerAs: 'ctrl'
+    };
+}]];

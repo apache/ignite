@@ -20,14 +20,14 @@ import controller from './ui-ace-java.controller';
 
 export default ['igniteUiAceJava', [() => {
 
-	return {
-		restrict: 'E',
-		scope: {
-			cluster: '=',
-			cfg: '=clusterCfg'
-		},
-		template,
-		controller,
-		controllerAs: 'ctrl'
-	};
+    return {
+        restrict: 'E',
+        scope: {
+            cluster: '=',
+            cfg: '=clusterCfg'
+        },
+        template,
+        controller,
+        controllerAs: 'ctrl'
+    };
 }]];

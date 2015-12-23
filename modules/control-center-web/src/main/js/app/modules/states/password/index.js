@@ -14,27 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-import angular from 'angular'
+
+import angular from 'angular';
 
 angular
 .module('ignite-console.states.password', [
-	'ui.router'
+    'ui.router'
 ])
 .config(['$stateProvider', function($stateProvider) {
-	// set up the states
-	$stateProvider
+    // set up the states
+    $stateProvider
     .state('password', {
         url: '/password',
         abstract: true,
         template: '<ui-view></ui-view>'
     })
-	.state('password.reset', {
-		url: '/reset?{token}',
-		templateUrl: '/reset.html'
-	})
+    .state('password.reset', {
+        url: '/reset?{token}',
+        templateUrl: '/reset.html'
+    })
     .state('password.send', {
         url: '/send',
         templateUrl: '/reset.html'
-    })
+    });
 }]);

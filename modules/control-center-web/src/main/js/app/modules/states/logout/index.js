@@ -14,20 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-import angular from 'angular'
+
+import angular from 'angular';
 
 angular
 .module('ignite-console.states.logout', [
-	'ui.router'
+    'ui.router'
 ])
 .config(['$stateProvider', function($stateProvider) {
-	// set up the states
-	$stateProvider
-	.state('logout', {
-		url: '/logout',
-		controller: ['Auth', function(Auth) {
-			Auth.logout();
-		}]
-	})
+    // set up the states
+    $stateProvider
+    .state('logout', {
+        url: '/logout',
+        controller: ['Auth', function(Auth) {
+            Auth.logout();
+        }]
+    });
 }]);

@@ -18,26 +18,26 @@
 import template from './number.jade!';
 
 export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', guid => {
-	let link = (scope, el, attrs, [form, label]) => {
-		let {id, name} = scope; 
-		let field = form[name];
+    const link = (scope, el, attrs, [form, label]) => {
+        const {id, name} = scope;
+        const field = form[name];
 
-		scope.field = field;
-		label.for = scope.id = id || guid();
-	};
+        scope.field = field;
+        label.for = scope.id = id || guid();
+    };
 
-	return {
-		restrict: 'E',
-		scope: {
-			id: '@',
-			name: '@',
-			placeholder: '@',
-			ngModel: '='
-		},
-		link,
-		template,
-		replace: true,
-		transclude: true,
-		require: ['^form', '?^igniteFormField']
-	};
+    return {
+        restrict: 'E',
+        scope: {
+            id: '@',
+            name: '@',
+            placeholder: '@',
+            ngModel: '='
+        },
+        link,
+        template,
+        replace: true,
+        transclude: true,
+        require: ['^form', '?^igniteFormField']
+    };
 }]];

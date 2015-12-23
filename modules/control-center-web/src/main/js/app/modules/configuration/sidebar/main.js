@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-import angular from 'angular'
+import angular from 'angular';
 
 angular
 .module('ignite-console.configuration.sidebar', [
 
 ])
 .provider('igniteConfigurationSidebar', function() {
-    var items = [
+    const items = [
         { text: 'Clusters', sref: 'base.configuration.clusters' },
         { text: 'Caches', sref: 'base.configuration.caches' },
         { text: 'Metadata', sref: 'base.configuration.metadata' },
@@ -34,23 +34,23 @@ angular
     };
 
     this.$get = [function() {
-        var r = angular.copy(items);
+        const r = angular.copy(items);
 
         r.push({ text: 'Summary', sref: 'base.configuration.summary' });
 
         return r;
-    }]
+    }];
 })
 .directive('igniteConfigurationSidebar', ['igniteConfigurationSidebar', function(igniteConfigurationSidebar) {
     function controller() {
-        var ctrl = this;
+        const ctrl = this;
 
         ctrl.items = igniteConfigurationSidebar;
     }
 
     return {
         restrict: 'A',
-        controller: controller,
+        controller,
         controllerAs: 'sidebar'
-    }
+    };
 }]);

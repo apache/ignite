@@ -17,22 +17,22 @@
 
 import controller from './dialog.controller';
 
-const template = "<a ng-click='ctrl.show()'><span ng-transclude=''></span></a>";
+const template = `<a ng-click='ctrl.show()'><span ng-transclude=''></span></a>`;
 
 export default ['igniteDialog', [() => {
-	return {
-		scope: { 
-			title: '='
-		},
-		bindToController: {
-			title: '='
-		},
-		restrict: 'E',
-		template,
-		controller,
-		controllerAs: 'ctrl',
-		replace: true,
-		transclude: true,
-		require: '^igniteDialog'
-	};
+    return {
+        scope: {
+            title: '='
+        },
+        bindToController: {
+            title: '='
+        },
+        restrict: 'E',
+        template,
+        controller,
+        controllerAs: 'ctrl',
+        replace: true,
+        transclude: true,
+        require: '^igniteDialog'
+    };
 }]];

@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 
+import angular from 'angular';
+
 angular
 .module('ignite-console.userbar', [
 
 ])
 .provider('igniteSettings', function() {
-    var items = [];
+    const items = [];
 
     this.push = function(data) {
         items.push(data);
@@ -28,34 +30,33 @@ angular
 
     this.$get = [function() {
         return items;
-    }]
+    }];
 })
 .directive('igniteSettings', function() {
     return {
         restrict: 'A',
-        controller: ['$rootScope', 'igniteSettings', function ($root, igniteSettings) {
-            var ctrl = this;
+        controller: ['$rootScope', 'igniteSettings', function($root, igniteSettings) {
+            const ctrl = this;
 
             ctrl.items = [{text: 'Profile', sref: 'settings.profile'}];
-            ctrl.customItems = igniteSettings;
 
-            var _rebuildSettings = function (event, user) {
+            const _rebuildSettings = (event, user) => {
                 ctrl.items.splice(1);
 
                 if (!user.becomeUsed && user.admin)
                     ctrl.items.push({text: 'Admin Panel', sref: 'settings.admin'});
 
-                ctrl.items.push.apply(ctrl.items, ctrl.customItems);
+                ctrl.items.push(...igniteSettings);
 
                 if (!user.becomeUsed)
                     ctrl.items.push({text: 'Log Out', sref: 'logout'});
             };
 
             if ($root.user)
-                _rebuildSettings(undefined, $root.user);
+                _rebuildSettings(null, $root.user);
 
             $root.$on('user', _rebuildSettings);
         }],
         controllerAs: 'settings'
-    }
+    };
 });

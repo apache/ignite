@@ -15,23 +15,23 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-pojos.jade!'
-import controller from './ui-ace-pojos.controller'
+import template from './ui-ace-pojos.jade!';
+import controller from './ui-ace-pojos.controller';
 
 export default ['igniteUiAcePojos', [() => {
 
-	return {
-		restrict: 'E',
-		scope: {
-			cluster: '=',
-			metadatas: '=ngModel'
-		},
-		bindToController: {
-			cluster: '=',
-			metadatas: '=ngModel'
-		},
-		template,
-		controller,
-		controllerAs: 'ctrl'
-	}
-}]]
+    return {
+        restrict: 'E',
+        scope: {
+            cluster: '=',
+            metadatas: '=ngModel'
+        },
+        bindToController: {
+            cluster: '=',
+            metadatas: '=ngModel'
+        },
+        template,
+        controller,
+        controllerAs: 'ctrl'
+    };
+}]];
