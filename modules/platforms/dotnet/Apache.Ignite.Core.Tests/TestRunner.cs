@@ -31,9 +31,9 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            TestOne(typeof(IgniteConfigurationTest), "TestMulticastIpFinder");
+            //TestOne(typeof(ContinuousQueryAtomiclBackupTest), "TestInitialQuery");
 
-            //TestAll(typeof (IgniteConfigurationTest));
+            TestAll(typeof (ExecutableTest));
             //TestAllInAssembly();
         }
 
