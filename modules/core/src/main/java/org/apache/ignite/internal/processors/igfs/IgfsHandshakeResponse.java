@@ -55,8 +55,7 @@ public class IgfsHandshakeResponse implements Externalizable {
      * @param paths Secondary paths.
      * @param blockSize Server default block size.
      */
-    public IgfsHandshakeResponse(String igfsName, IgfsPaths paths,
-            long blockSize, Boolean sampling) {
+    public IgfsHandshakeResponse(String igfsName, IgfsPaths paths, long blockSize, Boolean sampling) {
         assert paths != null;
 
         this.igfsName = igfsName;

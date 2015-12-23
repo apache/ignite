@@ -59,12 +59,11 @@ public class IgfsPaths implements Externalizable {
     /**
      * Constructor.
      *
+     * @param payload Payload.
      * @param dfltMode Default IGFS mode.
      * @param pathModes Path modes.
      */
-    public IgfsPaths(Object payload,
-                     IgfsMode dfltMode,
-                     @Nullable List<T2<IgfsPath, IgfsMode>> pathModes) {
+    public IgfsPaths(Object payload, IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> pathModes) {
         this.payload = payload;
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
@@ -84,10 +83,15 @@ public class IgfsPaths implements Externalizable {
         return pathModes;
     }
 
+    /**
+     * @return Payload.
+     */
+    @Nullable public Object getPayload() {
+        return payload;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-//        U.writeStringMap(out, props);
-
         writePayload(out);
 
         U.writeEnum(out, dfltMode);
@@ -106,9 +110,10 @@ public class IgfsPaths implements Externalizable {
     }
 
     /**
+     * Write payload.
      *
-     * @param out
-     * @throws IOException
+     * @param out Output stream.
+     * @throws IOException If failed.
      */
     private void writePayload(ObjectOutput out) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -127,8 +132,6 @@ public class IgfsPaths implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-//        props = U.readStringMap(in);
-
         readPayload(in);
 
         dfltMode = IgfsMode.fromOrdinal(in.readByte());
@@ -150,10 +153,11 @@ public class IgfsPaths implements Externalizable {
     }
 
     /**
+     * Read payload.
      *
-     * @param in
-     * @throws IOException
-     * @throws ClassNotFoundException
+     * @param in Input stream.
+     * @throws IOException If failed.
+     * @throws ClassNotFoundException If failed.
      */
     private void readPayload(ObjectInput in) throws IOException, ClassNotFoundException {
         byte[] factoryBytes = U.readByteArray(in);
@@ -166,9 +170,5 @@ public class IgfsPaths implements Externalizable {
         finally {
             oi.close();
         }
-    }
-
-    public Object getPayload() {
-        return payload;
     }
 }

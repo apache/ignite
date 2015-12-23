@@ -1,4 +1,21 @@
-package org.apache.ignite.hadoop.fs.v1;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.hadoop.fs;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -23,13 +40,11 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
-import static org.apache.ignite.internal.util.lang.GridFunc.nullifyEmpty;
-
 /**
  * The class is to be instantiated as a Spring beans, so it must have public zero-arg constructor.
  * The class is serializable as it will be transferred over the network as a part of {@link IgfsPaths} object.
  */
-public class DefaultHadoopFileSystemFactory implements HadoopFileSystemFactory, Externalizable, LifecycleAware {
+public class CachingHadoopFileSystemFactory implements HadoopFileSystemFactory, Externalizable, LifecycleAware {
     /** Lazy per-user cache for the file systems. It is cleared and nulled in #close() method. */
     private final transient HadoopLazyConcurrentMap<String, FileSystem> fileSysLazyMap = new HadoopLazyConcurrentMap<>(
         new HadoopLazyConcurrentMap.ValueFactory<String, FileSystem>() {
@@ -63,14 +78,14 @@ public class DefaultHadoopFileSystemFactory implements HadoopFileSystemFactory, 
     /**
      *
      */
-    public DefaultHadoopFileSystemFactory() {
+    public CachingHadoopFileSystemFactory() {
         //
 
 
 
     }
 
-    @Override public FileSystem get(String userName) throws IOException {
+    @Override public FileSystem create(String userName) throws IOException {
         A.ensure(cfg != null, "cfg");
 
         if (getCount == 0)
@@ -81,6 +96,8 @@ public class DefaultHadoopFileSystemFactory implements HadoopFileSystemFactory, 
         return fileSysLazyMap.getOrCreate(userName);
     }
 
+    // TODO: Add getter.
+
     /**
      * Uri setter.
      * @param uriStr
@@ -89,12 +106,14 @@ public class DefaultHadoopFileSystemFactory implements HadoopFileSystemFactory, 
         this.uriStr = uriStr;
     }
 
+    // TODO: Add getter.
+
     /**
      * Configuration(s) setter, to be invoked from Spring config.
      * @param cfgPaths
      */
     public void setConfigPaths(List<String> cfgPaths) {
-        this.cfgPathStr = (List)nullifyEmpty(cfgPaths);
+        this.cfgPathStr = cfgPaths;
     }
 
     /**
@@ -102,7 +121,7 @@ public class DefaultHadoopFileSystemFactory implements HadoopFileSystemFactory, 
      * @throws IOException
      */
     protected FileSystem createFileSystem(String userName) throws IOException {
-        userName = IgfsUtils.fixUserName(nullifyEmpty(userName));
+        userName = IgfsUtils.fixUserName(userName);
 
         assert cfg != null;
 
@@ -120,36 +139,39 @@ public class DefaultHadoopFileSystemFactory implements HadoopFileSystemFactory, 
         return fileSys;
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, uriStr);
 
         U.writeCollection(out, cfgPathStr);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         uriStr = U.readString(in);
 
         cfgPathStr = new ArrayList(U.readCollection(in));
     }
 
+    /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
         cfg = HadoopUtils.safeCreateConfiguration();
 
         if (cfgPathStr != null) {
             for (String confPath : cfgPathStr) {
-                confPath = nullifyEmpty(confPath);
-
                 if (confPath != null) {
                     URL url = U.resolveIgniteUrl(confPath);
 
                     if (url == null) {
                         // If secConfPath is given, it should be resolvable:
-                        throw new IllegalArgumentException("Failed to resolve secondary file system configuration path " +
-
+                        throw new IgniteException("Failed to resolve secondary file system configuration path " +
                             "(ensure that it exists locally and you have read access to it): " + confPath);
                     }
 
                     cfg.addResource(url);
+                }
+                else {
+                    // TODO: Throw exception.
                 }
             }
         }
@@ -174,6 +196,7 @@ public class DefaultHadoopFileSystemFactory implements HadoopFileSystemFactory, 
         cfg.setBoolean(prop, true);
     }
 
+    /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         try {
             fileSysLazyMap.close();

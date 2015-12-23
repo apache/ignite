@@ -15,14 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.hadoop.fs;
+
+import java.io.IOException;
+import java.io.Serializable;
+import org.apache.hadoop.fs.FileSystem;
 
 /**
- * Gets payload for Hadoop secondary file system.
+ * This factory is {@link Serializable} because it should be transferable over the network.
+ * <p>
+ * Implementations may choose not to construct a new instance, but instead
+ * return a previously created instance.
  */
-public interface HadoopPayloadAware {
+public interface HadoopFileSystemFactory extends Serializable {
     /**
-     * @return Payload.
+     * Creates the file system, possibly taking a cached instance.
+     * All the other data needed for the file system creation are expected to be contained
+     * in this object instance.
+     *
+     * @param userName The user name
+     * @return The file system.
+     * @throws IOException On error.
      */
-    public Object getPayload();
+    public FileSystem create(String userName) throws IOException;
 }

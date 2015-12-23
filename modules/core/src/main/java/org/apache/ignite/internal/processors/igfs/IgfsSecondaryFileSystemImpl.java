@@ -115,19 +115,4 @@ class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystem {
     @Override public long usedSpaceSize() throws IgniteException {
         return igfs.usedSpaceSize();
     }
-
-//    /** {@inheritDoc} */
-//    @Override public Map<String, String> properties() {
-//        return Collections.emptyMap();
-//    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws IgniteException {
-        // No-op.
-    }
-
-//    /** {@inheritDoc} */
-//    @Override public HadoopFileSystemFactory<IgfsEx> getSecondaryFileSystemFactory() {
-//        return null;
-//    }
 }

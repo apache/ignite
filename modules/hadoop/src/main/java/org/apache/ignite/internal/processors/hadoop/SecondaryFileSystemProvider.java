@@ -58,8 +58,7 @@ public class SecondaryFileSystemProvider {
      * @throws IOException
      */
     public SecondaryFileSystemProvider(@Nullable String secUri, @Nullable String secConfPath) throws IOException {
-        secUri = nullifyEmpty(secUri);
-        confPath = nullifyEmpty(secConfPath);
+        confPath = secConfPath;
 
         if (confPath != null) {
             URL url = U.resolveIgniteUrl(confPath);
@@ -96,7 +95,7 @@ public class SecondaryFileSystemProvider {
      * @throws IOException
      */
     public FileSystem createFileSystem(String userName) throws IOException {
-        userName = IgfsUtils.fixUserName(nullifyEmpty(userName));
+        userName = IgfsUtils.fixUserName(userName);
 
         final FileSystem fileSys;
 
