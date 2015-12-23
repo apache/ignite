@@ -79,6 +79,8 @@ public class CacheTransactionExample {
                 System.out.println(">>> " + cache.get(2));
 
                 System.out.println(">>> Cache transaction example finished.");
+            } finally {
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

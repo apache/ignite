@@ -118,6 +118,10 @@ public class CacheQueryExample {
                 // Example for SQL-based fields queries that uses joins.
                 sqlFieldsQueryWithJoin();
             }
+            finally {
+                ignite.destroyCache(PERSON_CACHE);
+                ignite.destroyCache(ORG_CACHE);
+            }
 
             print("Cache query example finished.");
         }

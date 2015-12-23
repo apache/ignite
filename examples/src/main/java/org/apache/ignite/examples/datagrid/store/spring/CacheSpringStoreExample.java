@@ -109,6 +109,9 @@ public class CacheSpringStoreExample {
                 // read/write-through to persistent store.
                 executeTransaction(cache);
             }
+            finally {
+                ignite.destroyCache(CACHE_NAME);
+            }
         }
     }
 

@@ -169,6 +169,10 @@ public class CacheAutoStoreExample {
 
                 System.out.println(">>> Loaded cache entries: " + cache.size());
             }
+            finally {
+                ignite.destroyCache(CACHE_NAME);
+            }
+
         }
     }
 }

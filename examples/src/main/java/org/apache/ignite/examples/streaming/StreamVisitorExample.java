@@ -52,6 +52,9 @@ public class StreamVisitorExample {
     /** The list of initial instrument prices. */
     private static final double[] INITIAL_PRICES = {194.9, 893.49, 34.21, 23.24, 57.93, 45.03, 44.41, 28.44, 378.49, 69.50};
 
+    /** Cache name. */
+    private static final String CACHE_NAME = "instCache";
+
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
@@ -61,7 +64,7 @@ public class StreamVisitorExample {
                 return;
 
             // Financial instrument cache configuration.
-            CacheConfiguration<String, Instrument> instCfg = new CacheConfiguration<>("instCache");
+            CacheConfiguration<String, Instrument> instCfg = new CacheConfiguration<>(CACHE_NAME);
 
             // Index key and value for querying financial instruments.
             // Note that Instrument class has @QuerySqlField annotation for secondary field indexing.
@@ -139,6 +142,11 @@ public class StreamVisitorExample {
 
                 // Print top 10 words.
                 ExamplesUtils.printQueryResults(top3);
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
+                ignite.destroyCache(instCfg.getName());
             }
         }
     }

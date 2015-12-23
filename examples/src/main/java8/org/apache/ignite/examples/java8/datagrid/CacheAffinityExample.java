@@ -76,6 +76,9 @@ public final class CacheAffinityExample {
                 // Co-locates jobs with data using IgniteCluster.mapKeysToNodes(...) method.
                 visitUsingMapKeysToNodes();
             }
+            finally {
+                ignite.destroyCache(CACHE_NAME);
+            }
         }
     }
 

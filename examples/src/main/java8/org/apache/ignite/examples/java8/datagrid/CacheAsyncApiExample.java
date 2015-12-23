@@ -80,6 +80,9 @@ public class CacheAsyncApiExample {
                 asyncCache.<String>future().listen(fut ->
                     System.out.println("Get operation completed [value=" + fut.get() + ']'));
             }
+            finally {
+                ignite.destroyCache(CACHE_NAME);
+            }
         }
     }
 }

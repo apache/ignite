@@ -59,6 +59,9 @@ public class CacheApiExample {
                 // Demonstrate atomic map operations.
                 atomicMapOperations(cache);
             }
+            finally {
+                ignite.destroyCache(CACHE_NAME);
+            }
         }
     }
 
