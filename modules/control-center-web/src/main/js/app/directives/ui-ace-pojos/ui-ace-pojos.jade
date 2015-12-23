@@ -14,6 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+mixin check-tooltip(message)
+    i.tipLabel.fa.fa-question-circle(bs-tooltip='"#{message}"')
+
 div
     .details-row
         .col-xs-2.col-sm-2.col-md-2
@@ -26,9 +29,12 @@ div
             label
                 input(type='checkbox' ng-model='ctrl.useConstructor')
                 | Generate constructors
+            +check-tooltip("Generate empty and full constructors in POJO classes")
+    .details-row.checkbox
         .col-xs-2.col-sm-2.col-md-2
         .col-xs-10.col-sm-10.col-md-10
             label
                 input(type='checkbox' ng-model='ctrl.includeKeyFields')
                 | Include key fields
+            +check-tooltip("Generate key fields in POJO value class")
     div(ng-if='ctrl.data' ui-ace='{onLoad: onLoad, mode: "java"}' ng-model='ctrl.data')
