@@ -320,6 +320,16 @@
       ],
       "fields": [
         {
+          "label": "SQL schema name",
+          "id": "sqlSchema",
+          "type": "text",
+          "model": "sqlSchema",
+          "placeholder": "Input schema name",
+          "tip": [
+            "Schema name for cache according to SQL ANSI-99"
+          ]
+        },
+        {
           "label": "On-heap cache for off-heap indexes",
           "id": "sqlOnheapRowCacheSize",
           "type": "number",
