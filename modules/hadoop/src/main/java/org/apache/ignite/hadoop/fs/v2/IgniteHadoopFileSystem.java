@@ -35,7 +35,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.Progressable;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedOutputStream;
@@ -170,9 +168,6 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
     /** Secondary file system instance. */
     private AbstractFileSystem secondaryFs;
-
-    /** Secondary file system factory. */
-    private HadoopAbstractFileSystemFactory factory;
 
     /** Whether custom sequential reads before prefetch value is provided. */
     private boolean seqReadsBeforePrefetchOverride;
@@ -338,23 +333,26 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             }
 
             if (initSecondary) {
-                try {
-                    factory = (HadoopAbstractFileSystemFactory) paths.getPayload();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IOException("Failed to get secondary file system factory.", e);
-                }
+                throw new IOException("Proxy mode is not supported for the V2 file system.");
 
-                A.ensure(secondaryUri != null, "File system factory uri should not be null.");
-
-                try {
-                    secondaryFs = factory.get(user);
-
-                    secondaryUri = secondaryFs.getUri();
-                }
-                catch (IOException e) {
-                    throw new IOException("Failed to connect to the secondary file system: " + secondaryUri, e);
-                }
+                // TODO: Enable.
+//                try {
+//                    factory = (HadoopAbstractFileSystemFactory) paths.getPayload();
+//                }
+//                catch (IgniteCheckedException e) {
+//                    throw new IOException("Failed to get secondary file system factory.", e);
+//                }
+//
+//                A.ensure(secondaryUri != null, "File system factory uri should not be null.");
+//
+//                try {
+//                    secondaryFs = factory.get(user);
+//
+//                    secondaryUri = secondaryFs.getUri();
+//                }
+//                catch (IOException e) {
+//                    throw new IOException("Failed to connect to the secondary file system: " + secondaryUri, e);
+//                }
             }
         }
         finally {
@@ -373,8 +371,9 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             if (clientLog.isLogEnabled())
                 clientLog.close();
 
-            if (factory instanceof LifecycleAware)
-                ((LifecycleAware) factory).stop();
+            // TODO: Enable.
+//            if (factory instanceof LifecycleAware)
+//                ((LifecycleAware) factory).stop();
 
             // Reset initialized resources.
             rmtClient = null;
