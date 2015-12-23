@@ -743,7 +743,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         if (tx != null) {
             cctx.tm().txContext(tx);
 
-            set = cctx.tm().setTxTopologyHint(tx);
+            set = cctx.tm().setTxTopologyHint(tx.topologyVersionSnapshot());
         }
 
         try {
