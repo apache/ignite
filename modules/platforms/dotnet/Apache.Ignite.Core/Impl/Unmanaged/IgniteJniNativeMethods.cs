@@ -264,13 +264,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern int TxCommit(void* ctx, void* target, long id);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsCommitAsync")]
-        public static extern void TxCommitAsync(void* ctx, void* target, long id, long futId);
+        public static extern void* TxCommitAsync(void* ctx, void* target, long id, long futId);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsRollback")]
         public static extern int TxRollback(void* ctx, void* target, long id);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsRollbackAsync")]
-        public static extern void TxRollbackAsync(void* ctx, void* target, long id, long futId);
+        public static extern void* TxRollbackAsync(void* ctx, void* target, long id, long futId);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsClose")]
         public static extern int TxClose(void* ctx, void* target, long id);

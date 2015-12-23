@@ -617,9 +617,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget TransactionsCommitAsync(IUnmanagedTarget target, long id, long futId)
         {
-            JNI.TxCommitAsync(target.Context, target.Target, id, futId);
+            var res = JNI.TxCommitAsync(target.Context, target.Target, id, futId);
 
-            return null;  // TODO
+            return target.ChangeTarget(res);
         }
 
         internal static int TransactionsRollback(IUnmanagedTarget target, long id)
@@ -629,9 +629,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget TransactionsRollbackAsync(IUnmanagedTarget target, long id, long futId)
         {
-            JNI.TxRollbackAsync(target.Context, target.Target, id, futId);
+            var res = JNI.TxRollbackAsync(target.Context, target.Target, id, futId);
 
-            return null;  // TODO
+            return target.ChangeTarget(res);
         }
 
         internal static int TransactionsClose(IUnmanagedTarget target, long id)
