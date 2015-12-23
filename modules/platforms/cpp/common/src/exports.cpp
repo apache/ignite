@@ -323,7 +323,7 @@ extern "C" {
         return ctx->TransactionsCommit(static_cast<jobject>(obj), id);
     }
 
-    void IGNITE_CALL IgniteTransactionsCommitAsync(gcj::JniContext* ctx, void* obj, long long id, long long futId) {
+    void* IGNITE_CALL IgniteTransactionsCommitAsync(gcj::JniContext* ctx, void* obj, long long id, long long futId) {
         return ctx->TransactionsCommitAsync(static_cast<jobject>(obj), id, futId);
     }
 
@@ -331,7 +331,7 @@ extern "C" {
         return ctx->TransactionsRollback(static_cast<jobject>(obj), id);
     }
 
-    void IGNITE_CALL IgniteTransactionsRollbackAsync(gcj::JniContext* ctx, void* obj, long long id, long long futId) {
+    void* IGNITE_CALL IgniteTransactionsRollbackAsync(gcj::JniContext* ctx, void* obj, long long id, long long futId) {
         return ctx->TransactionsRollbackAsync(static_cast<jobject>(obj), id, futId);
     }
 

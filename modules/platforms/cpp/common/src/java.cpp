@@ -1776,12 +1776,14 @@ namespace ignite
                 return res;
             }
 
-            void JniContext::TransactionsCommitAsync(jobject obj, long long id, long long futId) {
+            void* JniContext::TransactionsCommitAsync(jobject obj, long long id, long long futId) {
                 JNIEnv* env = Attach();
 
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTransactions_txCommitAsync, id, futId);
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTransactions_txCommitAsync, id, futId);
 
                 ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
             }
 
             int JniContext::TransactionsRollback(jobject obj, long long id) {
@@ -1794,12 +1796,14 @@ namespace ignite
                 return res;
             }
 
-            void JniContext::TransactionsRollbackAsync(jobject obj, long long id, long long futId) {
+            void* JniContext::TransactionsRollbackAsync(jobject obj, long long id, long long futId) {
                 JNIEnv* env = Attach();
 
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTransactions_txRollbackAsync, id, futId);
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTransactions_txRollbackAsync, id, futId);
 
                 ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
             }
 
             int JniContext::TransactionsClose(jobject obj, long long id) {
