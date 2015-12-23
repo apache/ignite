@@ -18,14 +18,14 @@
 import template from './callout-cel.jade!';
 
 export default ['igniteCalloutCel', [() => {
-	return {
-		scope: {
-			title: '@'
-		},
-		restrict: 'E',
-		template,
-		replace: true,
-		transclude: true,
-		require: '^igniteCallout'
-	};
+    return {
+        scope: {
+            title: '@'
+        },
+        restrict: 'E',
+        template,
+        replace: true,
+        transclude: true,
+        require: '^igniteCallout'
+    };
 }]];

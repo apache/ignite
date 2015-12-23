@@ -16,16 +16,16 @@
  */
 
 export default ['igniteDialogTitle', [() => {
-	let link = ($scope, $element, $attrs, igniteDialog) => {
-		igniteDialog.title = $element.text();
+    const link = ($scope, $element, $attrs, igniteDialog) => {
+        igniteDialog.title = $element.text();
 
-		$element.hide();
-	};
+        $element.hide();
+    };
 
-	return {
-		scope: {},
-		restrict: 'E',
-		link,
-		require: '^igniteDialog'
-	};
+    return {
+        scope: {},
+        restrict: 'E',
+        link,
+        require: '^igniteDialog'
+    };
 }]];

@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-export default ['igniteDialogContent', ['$compile', ($compile) => {
-	let link = ($scope, $element, $attrs, igniteDialog) => {
-		igniteDialog.content = $element.html();
+export default ['igniteDialogContent', [() => {
+    const link = ($scope, $element, $attrs, igniteDialog) => {
+        igniteDialog.content = $element.html();
 
-		$element.hide();
-	};
+        $element.hide();
+    };
 
-	return {
-		scope: {},
-		restrict: 'E',
-		link,
-		require: '^igniteDialog'
-	};
+    return {
+        scope: {},
+        restrict: 'E',
+        link,
+        require: '^igniteDialog'
+    };
 }]];

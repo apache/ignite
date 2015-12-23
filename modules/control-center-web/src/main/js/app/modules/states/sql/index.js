@@ -14,21 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-import angular from 'angular'
+
+import angular from 'angular';
 
 angular
 .module('ignite-console.states.sql', [
-	'ui.router'
+    'ui.router'
 ])
 .config(['$stateProvider', function($stateProvider) {
     // set up the states
     $stateProvider
     .state('base.sql', {
         url: '/sql/{id}',
-		templateUrl: '/sql/sql.html',
-		data: {
-			loading: 'Loading notebook screen...'
-		}
-	});
+        templateUrl: '/sql/sql.html',
+        data: {
+            loading: 'Loading notebook screen...'
+        }
+    });
 }]);

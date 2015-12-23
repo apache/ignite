@@ -19,25 +19,25 @@ const SERVER_CFG = 'ServerConfigurationFactory';
 const CLIENT_CFG = 'ClientConfigurationFactory';
 
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
-    var ctrl = this;
+    const ctrl = this;
 
     // Scope methods.
     $scope.onLoad = onLoad;
 
-    // watchers definition
-    let clusterWatcher = (value) => {
+    // Watchers definition.
+    const clusterWatcher = (value) => {
         delete ctrl.data;
 
         if (!value)
             return;
 
-        let type = $scope.cfg ? CLIENT_CFG : SERVER_CFG;
+        const type = $scope.cfg ? CLIENT_CFG : SERVER_CFG;
 
         // TODO IGNITE-2054: need move $generatorJava to services.
         ctrl.data = $generatorJava.cluster($scope.cluster, 'factory', type, $scope.cfg);
     };
 
-    // Setup watchers. 
+    // Setup watchers.
     $scope.$watch('cfg', clusterWatcher, true);
     $scope.$watch('cluster', clusterWatcher);
 }];

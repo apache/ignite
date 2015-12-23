@@ -16,21 +16,21 @@
  */
 
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
-    var ctrl = this;
+    const ctrl = this;
 
     // Scope methods.
     $scope.onLoad = onLoad;
 
     // Watchers definition.
     // Watcher clean instance data if instance to cluster caches was change
-    let cleanMetadatas = (value) => {
+    const cleanMetadatas = () => {
         delete ctrl.class;
         delete ctrl.metadatas;
         delete ctrl.classes;
     };
 
     // Watcher updata metadata when changes caches and checkers useConstructor and includeKeyFields
-    let updateMetadatas = (value) => {
+    const updateMetadatas = () => {
         delete ctrl.metadatas;
 
         if (!ctrl.cluster || !ctrl.cluster.caches)
@@ -41,13 +41,13 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     };
 
     // Watcher update classes after
-    let updateClasses = (value) => {
+    const updateClasses = (value) => {
         delete ctrl.classes;
 
         if (!value)
             return;
 
-        let classes = ctrl.classes = [];
+        const classes = ctrl.classes = [];
 
         _.forEach(ctrl.metadatas, (meta) => {
             classes.push(meta.keyType);
@@ -56,7 +56,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     };
 
     // Update pojos class.
-    let updateClass = (value) => {
+    const updateClass = (value) => {
         if (!value || !ctrl.metadatas.length)
             return;
 
@@ -64,7 +64,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     };
 
     // Update pojos data.
-    let updatePojosData = (value) => {    
+    const updatePojosData = (value) => {
         if (!value)
             return;
 
@@ -74,10 +74,10 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
 
             if (meta.valueType === ctrl.class)
                 return ctrl.data = meta.valueClass;
-        })
+        });
     };
 
-    // Setup watchers. Watchers order is important. 
+    // Setup watchers. Watchers order is important.
     $scope.$watch('ctrl.cluster.caches', cleanMetadatas);
     $scope.$watch('ctrl.cluster.caches', updateMetadatas);
     $scope.$watch('ctrl.cluster.caches', updateClasses);

@@ -14,37 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import angular from 'angular';
 
 angular
 .module('ignite-console.states.login', [
-	'ui.router',
-	// services
-	'ignite-console.Auth'
+    'ui.router',
+    // services
+    'ignite-console.Auth'
 ])
 .config(['$stateProvider', function($stateProvider) {
-	// set up the states
-	$stateProvider
-	.state('login', {
-		url: '/login',
-		templateUrl: '/login.html'
-	});
+    // set up the states
+    $stateProvider
+    .state('login', {
+        url: '/login',
+        templateUrl: '/login.html'
+    });
 }])
 .run(['$rootScope', '$state', 'Auth', 'igniteTerms', function($root, $state, Auth, igniteTerms) {
-	$root.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+    $root.$on('$stateChangeStart', function(event, toState) {
         if (toState.name === igniteTerms.termsState)
             return;
 
-		if (!Auth.authorized && (toState.name !== 'login' && !_.startsWith(toState.name, 'password.'))) {
-			event.preventDefault();
+        if (!Auth.authorized && (toState.name !== 'login' && !_.startsWith(toState.name, 'password.'))) {
+            event.preventDefault();
 
-			$state.go('login');
-		}
-		else if (Auth.authorized && toState.name === 'login') {
-			event.preventDefault();
+            $state.go('login');
+        }
+        else if (Auth.authorized && toState.name === 'login') {
+            event.preventDefault();
 
-			$state.go('base.configuration.clusters');
-		}
-	});
+            $state.go('base.configuration.clusters');
+        }
+    });
 }]);

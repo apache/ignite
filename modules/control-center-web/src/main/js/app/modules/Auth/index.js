@@ -14,23 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-import angular from 'angular'
+
+import angular from 'angular';
 
 angular
 .module('ignite-console.Auth', [
-	
+
 ])
-.provider('Auth', function () {
-	var _auth = false;
+.provider('Auth', function() {
+    let _auth = false;
 
     try {
         _auth = localStorage.authorized === 'true';
-    } catch (ignore) {
+    }
+    catch (ignore) {
         // No-op.
     }
 
-    function _authorized (value) {
+    function _authorized(value) {
         try {
             return _auth = localStorage.authorized = !!value;
         } catch (ignore) {
@@ -39,18 +40,18 @@ angular
     }
 
     this.$get = ['$http', '$rootScope', '$state', '$common', 'User', function($http, $root, $state, $common, User) {
-    	return {
-    		get authorized () {
-    			return _auth;
-    		},
-            set authorized (auth) {
+        return {
+            get authorized() {
+                return _auth;
+            },
+            set authorized(auth) {
                 _authorized(auth);
             },
             auth(action, userInfo) {
                 $http.post('/api/v1/' + action, userInfo)
                     .then(User.read)
-                    .then(function (user) {
-                        if (action != 'password/forgot') {
+                    .then((user) => {
+                        if (action !== 'password/forgot') {
                             _authorized(true);
 
                             $root.$broadcast('user', user);
@@ -59,23 +60,23 @@ angular
                         } else
                             $state.go('password.send');
                     })
-                    .catch(function (errMsg) {
-                        $common.showPopoverMessage(undefined, undefined, 'user_email', errMsg.data);
+                    .catch(function(errMsg) {
+                        $common.showPopoverMessage(null, null, 'user_email', errMsg.data);
                     });
             },
-			logout() {
-				$http.post('/api/v1/logout')
-					.then(function () {
+            logout() {
+                $http.post('/api/v1/logout')
+                    .then(function() {
                         User.clean();
 
                         _authorized(false);
 
-						$state.go('login');
-					})
-					.catch(function (errMsg) {
-						$common.showError(errMsg);
-					});
-			}
-    	}
-    }]
+                        $state.go('login');
+                    })
+                    .catch(function(errMsg) {
+                        $common.showError(errMsg);
+                    });
+            }
+        };
+    }];
 });

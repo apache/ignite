@@ -15,26 +15,15 @@
  * limitations under the License.
  */
 
-export default ['$rootScope', '$scope', 'IgniteDialog', function($root, $scope, IgniteDialog) {
-    const ctrl = this;
+var gulp = require('gulp');
+var eslint = require('gulp-eslint');
 
-    const dialog = new IgniteDialog({
-        scope: $scope
-    });
+var paths = [
+    './app/**/*.js'
+];
 
-    ctrl.show = () => {
-        dialog.$promise.then(dialog.show);
-    };
-
-    $scope.$watch(() => ctrl.title, () => {
-        $scope.title = ctrl.title;
-    });
-
-    $scope.$watch(() => ctrl.content, () => {
-        $scope.content = ctrl.content;
-    });
-
-    $root.$on('$stateChangeStart', () => {
-        dialog.hide();
-    });
-}];
+gulp.task('eslint', function() {
+	return gulp.src(paths)
+		.pipe(eslint())
+		.pipe(eslint.format());
+});

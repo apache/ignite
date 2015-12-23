@@ -17,25 +17,25 @@
 
 import template from './dropdown.jade!';
 
-export default ['igniteFormFieldDropdown', ['IgniteFormGUID', guid => {
-	let link = scope => {
-		let {id} = scope; 
+export default ['igniteFormFieldDropdown', ['IgniteFormGUID', (guid) => {
+    const link = (scope) => {
+        const {id} = scope;
 
-		scope.id = id || guid();
-	};
+        scope.id = id || guid();
+    };
 
-	return {
-		restrict: 'E',
-		scope: {
-			id: '@',
-			name: '@',
-			options: '=',
-			ngModel: '='
-		},
-		link,
-		template,
-		replace: true,
-		transclude: true,
-		require: ['^form', '?^igniteFormField']
-	};
+    return {
+        restrict: 'E',
+        scope: {
+            id: '@',
+            name: '@',
+            options: '=',
+            ngModel: '='
+        },
+        link,
+        template,
+        replace: true,
+        transclude: true,
+        require: ['^form', '?^igniteFormField']
+    };
 }]];

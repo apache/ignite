@@ -15,47 +15,47 @@
  * limitations under the License.
  */
 
-import angular from 'angular'
+import angular from 'angular';
 
 angular
-    .module('ignite-console.terms', [
+.module('ignite-console.terms', [
 
-    ])
-    .provider('igniteTerms', function() {
-        var _rows = [
-            'Apache Ignite Web Console, version 1.0.0 beta',
-            '© 2015 The Apache Software Foundation.',
-            'Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation.'
-        ];
+])
+.provider('igniteTerms', function() {
+    let _rows = [
+        'Apache Ignite Web Console, version 1.0.0 beta',
+        '© 2015 The Apache Software Foundation.',
+        'Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation.'
+    ];
 
-        var _state;
+    let _state;
 
-        this.footerRows = function(rows) {
-            _rows = rows;
-        };
+    this.footerRows = function(rows) {
+        _rows = rows;
+    };
 
-        this.termsState = function(state) {
-            _state = state;
-        };
+    this.termsState = function(state) {
+        _state = state;
+    };
 
-        this.$get = [function() {
-            return {
-                footerRows: _rows,
-                termsState: _state
-            };
-        }]
-    })
-    .directive('igniteTerms', ['igniteTerms', function(igniteTerms) {
-        function controller() {
-            var ctrl = this;
-
-            ctrl.footerRows = igniteTerms.footerRows;
-            ctrl.termsState = igniteTerms.termsState;
-        }
-
+    this.$get = [function() {
         return {
-            restrict: 'A',
-            controller: controller,
-            controllerAs: 'terms'
-        }
-    }]);
+            footerRows: _rows,
+            termsState: _state
+        };
+    }];
+})
+.directive('igniteTerms', ['igniteTerms', function(igniteTerms) {
+    function controller() {
+        const ctrl = this;
+
+        ctrl.footerRows = igniteTerms.footerRows;
+        ctrl.termsState = igniteTerms.termsState;
+    }
+
+    return {
+        restrict: 'A',
+        controller,
+        controllerAs: 'terms'
+    };
+}]);
