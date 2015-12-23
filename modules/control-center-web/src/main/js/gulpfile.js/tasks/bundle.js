@@ -22,7 +22,8 @@ var concat = require('gulp-concat');
 var sequence = require('gulp-sequence');
 
 var paths = [
-    './app/**/*.js'
+    './app/**/*.js',
+    './app/**/*.jade'
 ];
 
 var legacy_paths = [
@@ -42,7 +43,7 @@ gulp.task('bundle', function(cb) {
 });
 
 // Package all external dependencies and ignite-console.
-gulp.task('bundle:ignite', function() {
+gulp.task('bundle:ignite', ['eslint'], function() {
 	if (util.env.debug) {
 		delete options.minify;
 	}
