@@ -243,18 +243,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         // No-op.
     }
 
-    [Serializable]
-    public class SleepCacheEntryProcessor : ICacheEntryProcessor<int, int, int, int>
-    {
-        /** <inheritdoc /> */
-        public int Process(IMutableCacheEntry<int, int> entry, int arg)
-        {
-            Thread.Sleep(20);
-
-            return arg;
-        }
-    }
-
     /// <summary>
     /// Binary exception.
     /// </summary>
@@ -680,6 +668,48 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Put(1, 1);
 
             Assert.AreEqual(1, cache.Get(1));
+        }
+
+        [Test]
+        [SuppressMessage("ReSharper", "MethodSupportsCancellation")]
+        public void TestPutAsyncCancel()
+        {
+            if (!TxEnabled())
+                return;
+
+            var cache = Cache();
+
+            // Get remote key (local operations execute synchronously).
+            var localNode = cache.Ignite.GetCluster().GetLocalNode();
+            var aff = cache.Ignite.GetAffinity(cache.Name);
+            var key = Enumerable.Range(1, 1000).FirstOrDefault(k => aff.MapKeyToNode(k).Id != localNode.Id);
+
+            var cts = new CancellationTokenSource();
+            var evt = new ManualResetEventSlim(false);
+
+            cache.PutAsync(key, 1, cts.Token).Wait();
+
+            var lockTask = Task.Factory.StartNew(() =>
+            {
+                using (var l = cache.Lock(key))
+                {
+                    l.Enter();
+                    evt.Set();
+                    Thread.Sleep(3000);
+                    l.Exit();
+                }
+            });
+
+            evt.Wait();  // wait for task to lock the key
+
+            var putTask = cache.PutAsync(key, 2, cts.Token);
+            cts.Cancel();
+            putTask.Wait();
+            Assert.IsTrue(putTask.IsCanceled);
+
+            Assert.AreEqual(1, cache.Get(key));
+
+            lockTask.Wait();
         }
 
         [Test]
@@ -2829,26 +2859,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestInvokeAsync()
         {
             TestInvoke(true);
-        }
-
-        [Test]
-        public void TestInvokeAsyncCancel()
-        {
-            var cache = Cache();
-
-            // No cancellation
-            var cts = new CancellationTokenSource();
-            var task = cache.InvokeAsync(300, new SleepCacheEntryProcessor(), 25, cts.Token);
-            Assert.AreEqual(25, task.Result);
-
-            // Cancel during execution
-            task = cache.InvokeAsync(300, new SleepCacheEntryProcessor(), 25, cts.Token);
-            cts.Cancel();
-            Assert.IsTrue(task.IsCanceled);
-
-            // Pass cancelled token
-            task = cache.InvokeAsync(300, new SleepCacheEntryProcessor(), 25, cts.Token);
-            Assert.IsTrue(task.IsCanceled);
         }
 
         private void TestInvoke(bool async)

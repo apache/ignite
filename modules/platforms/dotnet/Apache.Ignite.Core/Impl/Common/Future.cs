@@ -80,6 +80,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="cancellationToken">The cancellation token.</param>
         public Task<T> GetTask(CancellationToken cancellationToken)
         {
+            // OnTokenCancel will fire even if cancellationToken is already cancelled.
             cancellationToken.Register(OnTokenCancel);
 
             return Task;
