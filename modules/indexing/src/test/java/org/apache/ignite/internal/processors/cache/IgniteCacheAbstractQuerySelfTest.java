@@ -475,7 +475,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             Cache.Entry<BinaryObject, BinaryObject> entry = F.first(qry.getAll());
 
             assertNotNull(entry);
-            assertEquals(100500L, entry.getKey().field("id"));
+            assertEquals(Long.valueOf(100500L), entry.getKey().field("id"));
             assertEquals(val1, entry.getValue().deserialize());
         }
     }
