@@ -16,7 +16,7 @@
  */
 
 // TODO IGNITE-2055: use set version.
-const igniteVersion = '1.5.0-final';
+const igniteVersion = '1.5.0.final';
 
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     var ctrl = this;

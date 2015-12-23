@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-control-center-agent</artifactId>
-    <version>1.5.0-final-SNAPSHOT</version>
+    <version>1.5.0.final-SNAPSHOT</version>
 
     <properties>
         <jetty.version>9.2.12.v20150709</jetty.version>
