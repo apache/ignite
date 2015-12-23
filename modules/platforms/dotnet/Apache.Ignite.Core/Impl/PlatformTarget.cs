@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -687,9 +688,26 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Creates a task to listen for the last async op.
         /// </summary>
+        protected Task GetTask(CancellationToken cancellationToken)
+        {
+            return GetTask<object>(cancellationToken);
+        }
+
+        /// <summary>
+        /// Creates a task to listen for the last async op.
+        /// </summary>
         protected Task<T> GetTask<T>()
         {
             return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp)).Task;
+        }
+
+        /// <summary>
+        /// Creates a task to listen for the last async op.
+        /// </summary>
+        protected Task<T> GetTask<T>(CancellationToken cancellationToken)
+        {
+            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp))
+                .GetTask(cancellationToken);
         }
 
         #endregion

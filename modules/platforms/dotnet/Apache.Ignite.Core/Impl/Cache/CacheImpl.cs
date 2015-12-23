@@ -279,6 +279,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, CancellationToken cancellationToken, params object[] args)
+        {
+            AsyncInstance.LoadCache(p, args);
+
+            return AsyncInstance.GetTask(CacheOp.LoadCache, cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
             LoadCache0(p, args, (int)CacheOp.LocLoadCache);
@@ -290,6 +298,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             AsyncInstance.LocalLoadCache(p, args);
 
             return AsyncInstance.GetTask(CacheOp.LocLoadCache);
+        }
+
+        /** <inheritDoc /> */
+        public Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, CancellationToken cancellationToken, params object[] args)
+        {
+            AsyncInstance.LocalLoadCache(p, args);
+
+            return AsyncInstance.GetTask(CacheOp.LocLoadCache, cancellationToken);
         }
 
         /// <summary>
@@ -330,6 +346,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task<bool> ContainsKeyAsync(TK key, CancellationToken cancellationToken)
+        {
+            AsyncInstance.ContainsKey(key);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.ContainsKey, cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public bool ContainsKeys(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
@@ -343,6 +367,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             AsyncInstance.ContainsKeys(keys);
 
             return AsyncInstance.GetTask<bool>(CacheOp.ContainsKeys);
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> ContainsKeysAsync(IEnumerable<TK> keys, CancellationToken cancellationToken)
+        {
+            AsyncInstance.ContainsKeys(keys);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.ContainsKeys, cancellationToken);
         }
 
         /** <inheritDoc /> */
@@ -428,6 +460,20 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task<TV> GetAsync(TK key, CancellationToken cancellationToken)
+        {
+            AsyncInstance.Get(key);
+
+            return AsyncInstance.GetTask(CacheOp.Get, cancellationToken, reader =>
+            {
+                if (reader != null)
+                    return reader.ReadObject<TV>();
+
+                throw GetKeyNotFoundException();
+            });
+        }
+
+        /** <inheritDoc /> */
         public bool TryGet(TK key, out TV value)
         {
             IgniteArgumentCheck.NotNull(key, "key");
@@ -453,6 +499,16 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task<CacheResult<TV>> TryGetAsync(TK key, CancellationToken cancellationToken)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            AsyncInstance.Get(key);
+
+            return AsyncInstance.GetTask(CacheOp.Get, cancellationToken, GetCacheResult);
+        }
+
+        /** <inheritDoc /> */
         public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
@@ -475,6 +531,15 @@ namespace Apache.Ignite.Core.Impl.Cache
             return AsyncInstance.GetTask(CacheOp.GetAll, r => r == null ? null : ReadGetAllDictionary(r));
         }
 
+        /** <inheritDoc /> */
+        public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys, CancellationToken cancellationToken)
+        {
+            AsyncInstance.GetAll(keys);
+
+            return AsyncInstance.GetTask(CacheOp.GetAll, cancellationToken, 
+                r => r == null ? null : ReadGetAllDictionary(r));
+        }
+
         /** <inheritdoc /> */
         public void Put(TK key, TV val)
         {
@@ -491,6 +556,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             AsyncInstance.Put(key, val);
 
             return AsyncInstance.GetTask(CacheOp.Put);
+        }
+
+        /** <inheritDoc /> */
+        public Task PutAsync(TK key, TV val, CancellationToken cancellationToken)
+        {
+            AsyncInstance.Put(key, val);
+
+            return AsyncInstance.GetTask(CacheOp.Put, cancellationToken);
         }
 
         /** <inheritDoc /> */
@@ -512,6 +585,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task<CacheResult<TV>> GetAndPutAsync(TK key, TV val, CancellationToken cancellationToken)
+        {
+            AsyncInstance.GetAndPut(key, val);
+
+            return AsyncInstance.GetTask(CacheOp.GetAndPut, cancellationToken, GetCacheResult);
+        }
+
+        /** <inheritDoc /> */
         public CacheResult<TV> GetAndReplace(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
@@ -530,6 +611,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task<CacheResult<TV>> GetAndReplaceAsync(TK key, TV val, CancellationToken cancellationToken)
+        {
+            AsyncInstance.GetAndReplace(key, val);
+
+            return AsyncInstance.GetTask(CacheOp.GetAndReplace, cancellationToken, GetCacheResult);
+        }
+
+        /** <inheritDoc /> */
         public CacheResult<TV> GetAndRemove(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
@@ -543,6 +632,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             AsyncInstance.GetAndRemove(key);
 
             return AsyncInstance.GetTask(CacheOp.GetAndRemove, GetCacheResult);
+        }
+
+        /** <inheritDoc /> */
+        public Task<CacheResult<TV>> GetAndRemoveAsync(TK key, CancellationToken cancellationToken)
+        {
+            AsyncInstance.GetAndRemove(key);
+
+            return AsyncInstance.GetTask(CacheOp.GetAndRemove, cancellationToken, GetCacheResult);
         }
 
         /** <inheritdoc /> */
@@ -563,6 +660,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             return AsyncInstance.GetTask<bool>(CacheOp.PutIfAbsent);
         }
 
+        /** <inheritDoc /> */
+        public Task<bool> PutIfAbsentAsync(TK key, TV val, CancellationToken cancellationToken)
+        {
+            AsyncInstance.PutIfAbsent(key, val);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.PutIfAbsent, cancellationToken);
+        }
+
         /** <inheritdoc /> */
         public CacheResult<TV> GetAndPutIfAbsent(TK key, TV val)
         {
@@ -581,6 +686,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             return AsyncInstance.GetTask(CacheOp.GetAndPutIfAbsent, GetCacheResult);
         }
 
+        /** <inheritDoc /> */
+        public Task<CacheResult<TV>> GetAndPutIfAbsentAsync(TK key, TV val, CancellationToken cancellationToken)
+        {
+            AsyncInstance.GetAndPutIfAbsent(key, val);
+
+            return AsyncInstance.GetTask(CacheOp.GetAndPutIfAbsent, cancellationToken, GetCacheResult);
+        }
+
         /** <inheritdoc /> */
         public bool Replace(TK key, TV val)
         {
@@ -597,6 +710,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             AsyncInstance.Replace(key, val);
 
             return AsyncInstance.GetTask<bool>(CacheOp.Replace2);
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> ReplaceAsync(TK key, TV val, CancellationToken cancellationToken)
+        {
+            AsyncInstance.Replace(key, val);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.Replace2, cancellationToken);
         }
 
         /** <inheritdoc /> */
@@ -619,6 +740,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             return AsyncInstance.GetTask<bool>(CacheOp.Replace3);
         }
 
+        /** <inheritDoc /> */
+        public Task<bool> ReplaceAsync(TK key, TV oldVal, TV newVal, CancellationToken cancellationToken)
+        {
+            AsyncInstance.Replace(key, oldVal, newVal);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.Replace3, cancellationToken);
+        }
+
         /** <inheritdoc /> */
         public void PutAll(IDictionary<TK, TV> vals)
         {
@@ -633,6 +762,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             AsyncInstance.PutAll(vals);
 
             return AsyncInstance.GetTask(CacheOp.PutAll);
+        }
+
+        /** <inheritDoc /> */
+        public Task PutAllAsync(IDictionary<TK, TV> vals, CancellationToken cancellationToken)
+        {
+            AsyncInstance.PutAll(vals);
+
+            return AsyncInstance.GetTask(CacheOp.PutAll, cancellationToken);
         }
 
         /** <inheritdoc /> */
@@ -657,6 +794,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             return AsyncInstance.GetTask();
         }
 
+        /** <inheritDoc /> */
+        public Task ClearAsync(CancellationToken cancellationToken)
+        {
+            AsyncInstance.Clear();
+
+            return AsyncInstance.GetTask(cancellationToken);
+        }
+
         /** <inheritdoc /> */
         public void Clear(TK key)
         {
@@ -671,6 +816,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             AsyncInstance.Clear(key);
 
             return AsyncInstance.GetTask(CacheOp.Clear);
+        }
+
+        /** <inheritDoc /> */
+        public Task ClearAsync(TK key, CancellationToken cancellationToken)
+        {
+            AsyncInstance.Clear(key);
+
+            return AsyncInstance.GetTask(CacheOp.Clear, cancellationToken);
         }
 
         /** <inheritdoc /> */
@@ -730,6 +883,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task<bool> RemoveAsync(TK key, CancellationToken cancellationToken)
+        {
+            AsyncInstance.Remove(key);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.RemoveObj, cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public bool Remove(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
@@ -745,6 +906,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             AsyncInstance.Remove(key, val);
 
             return AsyncInstance.GetTask<bool>(CacheOp.RemoveBool);
+        }
+
+        /** <inheritDoc /> */
+        public Task<bool> RemoveAsync(TK key, TV val, CancellationToken cancellationToken)
+        {
+            AsyncInstance.Remove(key, val);
+
+            return AsyncInstance.GetTask<bool>(CacheOp.RemoveBool, cancellationToken);
         }
 
         /** <inheritDoc /> */
@@ -764,6 +933,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public Task RemoveAllAsync(IEnumerable<TK> keys, CancellationToken cancellationToken)
+        {
+            AsyncInstance.RemoveAll(keys);
+
+            return AsyncInstance.GetTask(CacheOp.RemoveAll, cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public void RemoveAll()
         {
             UU.CacheRemoveAll(Target);
@@ -775,6 +952,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             AsyncInstance.RemoveAll();
 
             return AsyncInstance.GetTask();
+        }
+
+        /** <inheritDoc /> */
+        public Task RemoveAllAsync(CancellationToken cancellationToken)
+        {
+            AsyncInstance.RemoveAll();
+
+            return AsyncInstance.GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */
@@ -795,6 +980,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             AsyncInstance.GetSize(modes);
 
             return AsyncInstance.GetTask<int>();
+        }
+
+        /** <inheritDoc /> */
+        public Task<int> GetSizeAsync(CancellationToken cancellationToken, params CachePeekMode[] modes)
+        {
+            AsyncInstance.GetSize(modes);
+
+            return AsyncInstance.GetTask<int>(cancellationToken);
         }
 
         /// <summary>
@@ -841,18 +1034,16 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             AsyncInstance.Invoke(key, processor, arg);
 
-            return AsyncInstance.GetTask(CacheOp.Invoke, r =>
-            {
-                if (r == null)
-                    return default(TRes);
+            return AsyncInstance.GetTask(CacheOp.Invoke, ReadInvokeResult<TRes>);
+        }
 
-                var hasError = r.ReadBoolean();
+        /** <inheritDoc /> */
+        public Task<TRes> InvokeAsync<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg, 
+            CancellationToken cancellationToken)
+        {
+            AsyncInstance.Invoke(key, processor, arg);
 
-                if (hasError)
-                    throw ReadException(r.Stream);
-
-                return r.ReadObject<TRes>();
-            });
+            return AsyncInstance.GetTask(CacheOp.Invoke, cancellationToken, ReadInvokeResult<TRes>);
         }
 
         /** <inheritdoc /> */
@@ -876,11 +1067,22 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, 
+            ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             AsyncInstance.InvokeAll(keys, processor, arg);
 
             return AsyncInstance.GetTask(CacheOp.InvokeAll, reader => ReadInvokeAllResults<TRes>(reader.Stream));
+        }
+
+        /** <inheritDoc /> */
+        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, 
+            ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg, CancellationToken cancellationToken)
+        {
+            AsyncInstance.InvokeAll(keys, processor, arg);
+
+            return AsyncInstance.GetTask(CacheOp.InvokeAll, cancellationToken, 
+                reader => ReadInvokeAllResults<TRes>(reader.Stream));
         }
 
         /** <inheritdoc /> */
@@ -1148,6 +1350,26 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return obj == null ? default(T) : (T) obj;
         }
+
+        /// <summary>
+        /// Reads result of Invoke operation.
+        /// </summary>
+        /// <typeparam name="TRes">The type of the result.</typeparam>
+        /// <param name="r">Reader.</param>
+        /// <returns>Result of the Invoke operation.</returns>
+        private TRes ReadInvokeResult<TRes>(BinaryReader r)
+        {
+            if (r == null)
+                return default(TRes);
+
+            var hasError = r.ReadBoolean();
+
+            if (hasError)
+                throw ReadException(r.Stream);
+
+            return r.ReadObject<TRes>();
+        }
+
 
         /// <summary>
         /// Reads results of InvokeAll operation.
