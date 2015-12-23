@@ -111,6 +111,7 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T getAdapter(Class<T> clazz) {
         if (clazz == FileSystem.class)
             return (T)fileSys;
