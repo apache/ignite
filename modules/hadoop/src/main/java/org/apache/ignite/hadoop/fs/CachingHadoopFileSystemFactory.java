@@ -139,18 +139,21 @@ public class CachingHadoopFileSystemFactory implements HadoopFileSystemFactory, 
         return fileSys;
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, uriStr);
 
         U.writeCollection(out, cfgPathStr);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         uriStr = U.readString(in);
 
         cfgPathStr = new ArrayList(U.readCollection(in));
     }
 
+    /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
         cfg = HadoopUtils.safeCreateConfiguration();
 
@@ -161,12 +164,14 @@ public class CachingHadoopFileSystemFactory implements HadoopFileSystemFactory, 
 
                     if (url == null) {
                         // If secConfPath is given, it should be resolvable:
-                        throw new IllegalArgumentException("Failed to resolve secondary file system configuration path " +
-
+                        throw new IgniteException("Failed to resolve secondary file system configuration path " +
                             "(ensure that it exists locally and you have read access to it): " + confPath);
                     }
 
                     cfg.addResource(url);
+                }
+                else {
+                    // TODO: Throw exception.
                 }
             }
         }
@@ -191,6 +196,7 @@ public class CachingHadoopFileSystemFactory implements HadoopFileSystemFactory, 
         cfg.setBoolean(prop, true);
     }
 
+    /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         try {
             fileSysLazyMap.close();

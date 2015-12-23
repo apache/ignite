@@ -164,6 +164,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
     /** IGFS mode resolver. */
     private IgfsModeResolver modeRslvr;
 
+    // TODO: Secondary file system must be changed to factory.
     /** Secondary file system instance. */
     private FileSystem secondaryFs;
 
