@@ -243,6 +243,18 @@ namespace Apache.Ignite.Core.Tests.Cache
         // No-op.
     }
 
+    [Serializable]
+    public class SleepCacheEntryProcessor : ICacheEntryProcessor<int, int, int, int>
+    {
+        /** <inheritdoc /> */
+        public int Process(IMutableCacheEntry<int, int> entry, int arg)
+        {
+            Thread.Sleep(20);
+
+            return arg;
+        }
+    }
+
     /// <summary>
     /// Binary exception.
     /// </summary>
@@ -2817,6 +2829,26 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestInvokeAsync()
         {
             TestInvoke(true);
+        }
+
+        [Test]
+        public void TestInvokeAsyncCancel()
+        {
+            var cache = Cache();
+
+            // No cancellation
+            var cts = new CancellationTokenSource();
+            var task = cache.InvokeAsync(300, new SleepCacheEntryProcessor(), 25, cts.Token);
+            Assert.AreEqual(25, task.Result);
+
+            // Cancel during execution
+            task = cache.InvokeAsync(300, new SleepCacheEntryProcessor(), 25, cts.Token);
+            cts.Cancel();
+            Assert.IsTrue(task.IsCanceled);
+
+            // Pass cancelled token
+            task = cache.InvokeAsync(300, new SleepCacheEntryProcessor(), 25, cts.Token);
+            Assert.IsTrue(task.IsCanceled);
         }
 
         private void TestInvoke(bool async)
