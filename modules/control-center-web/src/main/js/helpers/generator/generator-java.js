@@ -864,6 +864,7 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    $generatorJava.property(res, varName, cache, 'sqlSchema');
     $generatorJava.property(res, varName, cache, 'sqlOnheapRowCacheSize');
     $generatorJava.property(res, varName, cache, 'longQueryWarningTimeout');
 
@@ -1103,6 +1104,10 @@ $generatorJava.cacheServerNearCache = function (cache, varName, res) {
 
                 res.needEmptyLine = true;
             }
+
+            res.line(varName + '.setNearConfiguration(nearCfg);');
+
+            res.needEmptyLine = true;
         }
     }
 

@@ -21,27 +21,6 @@ namespace Apache.Ignite.Core.Binary
     using System.Collections;
 
     /// <summary>
-    /// Delegate for collection creation.
-    /// </summary>
-    /// <param name="size">Collection size.</param>
-    /// <returns>Collection.</returns>
-    public delegate ICollection CollectionFactory(int size);
-
-    /// <summary>
-    /// Delegate for adding element to collection.
-    /// </summary>
-    /// <param name="col">Collection.</param>
-    /// <param name="elem">Element to add.</param>
-    public delegate void CollectionAdder(ICollection col, object elem);
-
-    /// <summary>
-    /// Delegate for dictionary creation.
-    /// </summary>
-    /// <param name="size">Dictionary size.</param>
-    /// <returns>Dictionary.</returns>
-    public delegate IDictionary DictionaryFactory(int size);
-
-    /// <summary>
     /// Reader for binary objects. 
     /// </summary>
     public interface IBinaryReader 
@@ -253,7 +232,7 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="factory">Factory.</param>
         /// <param name="adder">Adder.</param>
         /// <returns>Collection.</returns>
-        ICollection ReadCollection(string fieldName, CollectionFactory factory, CollectionAdder adder);
+        ICollection ReadCollection(string fieldName, Func<int, ICollection> factory, Action<ICollection, object> adder);
 
         /// <summary>
         /// Read named dictionary.
@@ -268,7 +247,7 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="fieldName">Field name.</param>
         /// <param name="factory">Factory.</param>
         /// <returns>Dictionary.</returns>
-        IDictionary ReadDictionary(string fieldName, DictionaryFactory factory);
+        IDictionary ReadDictionary(string fieldName, Func<int, IDictionary> factory);
 
         /// <summary>
         /// Get raw reader. 

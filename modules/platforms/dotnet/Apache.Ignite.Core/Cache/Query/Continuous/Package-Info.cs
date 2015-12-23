@@ -18,7 +18,7 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// Contains APIs for creating and executing cache continuous queries.
+/// APIs for creating and executing cache continuous queries.
 /// </summary>
 namespace Apache.Ignite.Core.Cache.Query.Continuous
 {

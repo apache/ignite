@@ -702,6 +702,7 @@ $generatorXml.cacheQuery = function(cache, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    $generatorXml.property(res, cache, 'sqlSchema');
     $generatorXml.property(res, cache, 'sqlOnheapRowCacheSize');
     $generatorXml.property(res, cache, 'longQueryWarningTimeout');
 

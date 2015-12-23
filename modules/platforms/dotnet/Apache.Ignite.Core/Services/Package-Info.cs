@@ -18,7 +18,7 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// Contains Managed Services APIs.
+/// Managed Services APIs.
 /// </summary>
 namespace Apache.Ignite.Core.Services
 {
