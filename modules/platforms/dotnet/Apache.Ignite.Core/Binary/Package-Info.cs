@@ -18,7 +18,7 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// Contains Ignite Binary Objects API classes.
+/// Ignite Binary Objects API classes.
 /// </summary>
 namespace Apache.Ignite.Core.Binary
 {

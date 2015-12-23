@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::cache::Cache class.
+ */
+
 #ifndef _IGNITE_CACHE
 #define _IGNITE_CACHE
 

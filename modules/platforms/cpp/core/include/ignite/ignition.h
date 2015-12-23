@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::Ignition class.
+ */
+
 #ifndef _IGNITE_IGNITION
 #define _IGNITE_IGNITION
 

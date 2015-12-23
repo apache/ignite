@@ -33,6 +33,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public abstract class CacheObjectAdapter implements CacheObject, Externalizable {
     /** */
+    private static final long serialVersionUID = 2006765505127197251L;
+
+    /** */
     @GridToStringInclude
     @GridDirectTransient
     protected Object val;

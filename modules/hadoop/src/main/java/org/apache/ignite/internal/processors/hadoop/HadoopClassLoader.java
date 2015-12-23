@@ -33,6 +33,8 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopDaemon;
+import org.apache.ignite.internal.processors.hadoop.v2.HadoopJniBasedUnixGroupsMapping;
+import org.apache.ignite.internal.processors.hadoop.v2.HadoopNativeCodeLoader;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -64,6 +66,9 @@ public class HadoopClassLoader extends URLClassLoader {
 
     /** Name of the Hadoop daemon class. */
     public static final String HADOOP_DAEMON_CLASS_NAME = "org.apache.hadoop.util.Daemon";
+
+    /** */
+    private static final String HADOOP_UNIX_MAPPING_CLASS_NAME = "org.apache.hadoop.security.JniBasedUnixGroupsMapping";
 
     /** */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
@@ -144,6 +149,10 @@ public class HadoopClassLoader extends URLClassLoader {
             if (isHadoop(name)) { // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
                 if (name.endsWith(".util.ShutdownHookManager"))  // Dirty hack to get rid of Hadoop shutdown hooks.
                     return loadFromBytes(name, HadoopShutdownHookManager.class.getName());
+                else if (name.endsWith(".util.NativeCodeLoader"))
+                    return loadFromBytes(name, HadoopNativeCodeLoader.class.getName());
+                else if (name.equals(HADOOP_UNIX_MAPPING_CLASS_NAME))
+                    return loadFromBytes(name, HadoopJniBasedUnixGroupsMapping.class.getName());
                 else if (name.equals(HADOOP_DAEMON_CLASS_NAME))
                     // We replace this in order to be able to forcibly stop some daemon threads
                     // that otherwise never stop (e.g. PeerCache runnables):

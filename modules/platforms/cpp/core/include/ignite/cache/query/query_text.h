@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::cache::query::TextQuery class.
+ */
+
 #ifndef _IGNITE_CACHE_QUERY_TEXT
 #define _IGNITE_CACHE_QUERY_TEXT
 

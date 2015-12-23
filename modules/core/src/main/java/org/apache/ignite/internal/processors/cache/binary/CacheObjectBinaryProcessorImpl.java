@@ -206,7 +206,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             BinaryMarshaller pMarh0 = (BinaryMarshaller)marsh;
 
-            binaryCtx = new BinaryContext(metaHnd, ctx.config());
+            binaryCtx = new BinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class));
 
             IgniteUtils.invoke(BinaryMarshaller.class, pMarh0, "setBinaryContext", binaryCtx,
                 ctx.config());
@@ -435,6 +435,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return new GridMapEntry<>(marshalToBinary(e.getKey()), marshalToBinary(e.getValue()));
         }
 
+        if (binaryMarsh.mustDeserialize(obj))
+            return obj; // No need to go through marshal-unmarshal because result will be the same as initial object.
+
         byte[] arr = binaryMarsh.marshal(obj);
 
         assert arr.length > 0;
@@ -486,7 +489,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             BinaryMetadata oldMeta = metaDataCache.localPeek(key);
             BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
 
-            BinaryObjectException err = metaDataCache.invoke(key, new MetadataProcessor(mergedMeta));
+            AffinityTopologyVersion topVer = ctx.cache().context().lockedTopologyVersion(null);
+
+            BinaryObjectException err = metaDataCache.invoke(topVer, key, new MetadataProcessor(mergedMeta));
 
             if (err != null)
                 throw err;

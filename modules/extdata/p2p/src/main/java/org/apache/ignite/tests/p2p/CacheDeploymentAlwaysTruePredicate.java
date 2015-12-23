@@ -14,19 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.tests.p2p;
 
-package org.apache.ignite.examples.model.binary;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
- * Organization type enum.
+ *
  */
-public enum OrganizationType {
-    /** Non-profit organization. */
-    NON_PROFIT,
-
-    /** Private organization. */
-    PRIVATE,
-
-    /** Government organization. */
-    GOVERNMENT
+public class CacheDeploymentAlwaysTruePredicate implements IgniteBiPredicate<Object, Object> {
+    /** */
+    @Override public boolean apply(Object o, Object o2) {
+        return true;
+    }
 }
