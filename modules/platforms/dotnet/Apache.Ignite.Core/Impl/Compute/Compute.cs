@@ -124,6 +124,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TRes> ExecuteAsync<TJobRes, TRes>(IComputeTask<TJobRes, TRes> task, 
+            CancellationToken cancellationToken)
+        {
+            return _compute.Execute(task, null).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public TReduceRes Execute<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg)
         {
             return _compute.Execute<TArg, TJobRes, TReduceRes>(taskType, taskArg).Get();
@@ -133,6 +140,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         public Task<TReduceRes> ExecuteAsync<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg)
         {
             return _compute.Execute<TArg, TJobRes, TReduceRes>(taskType, taskArg).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task<TReduceRes> ExecuteAsync<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg, 
+            CancellationToken cancellationToken)
+        {
+            return _compute.Execute<TArg, TJobRes, TReduceRes>(taskType, taskArg).GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */
@@ -148,6 +162,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TReduceRes> ExecuteAsync<TArg, TReduceRes>(Type taskType, CancellationToken cancellationToken)
+        {
+            return _compute.Execute<object, TArg, TReduceRes>(taskType, null).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public TJobRes Call<TJobRes>(IComputeFunc<TJobRes> clo)
         {
             return _compute.Execute(clo).Get();
@@ -157,6 +177,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         public Task<TRes> CallAsync<TRes>(IComputeFunc<TRes> clo)
         {
             return _compute.Execute(clo).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task<TRes> CallAsync<TRes>(IComputeFunc<TRes> clo, CancellationToken cancellationToken)
+        {
+            return _compute.Execute(clo).GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */
@@ -172,15 +198,30 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TRes> AffinityCallAsync<TRes>(string cacheName, object affinityKey, IComputeFunc<TRes> clo, 
+            CancellationToken cancellationToken)
+        {
+            return _compute.AffinityCall(cacheName, affinityKey, clo).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public TJobRes Call<TJobRes>(Func<TJobRes> func)
         {
             return _compute.Execute(func).Get();
         }
 
         /** <inheritDoc /> */
-        public Task<TRes> CallAsync<TFuncRes, TRes>(IEnumerable<IComputeFunc<TFuncRes>> clos, IComputeReducer<TFuncRes, TRes> reducer)
+        public Task<TRes> CallAsync<TFuncRes, TRes>(IEnumerable<IComputeFunc<TFuncRes>> clos, 
+            IComputeReducer<TFuncRes, TRes> reducer)
         {
             return _compute.Execute(clos, reducer).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task<TRes> CallAsync<TFuncRes, TRes>(IEnumerable<IComputeFunc<TFuncRes>> clos, 
+            IComputeReducer<TFuncRes, TRes> reducer, CancellationToken cancellationToken)
+        {
+            return _compute.Execute(clos, reducer).GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */
@@ -193,6 +234,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         public Task<ICollection<TRes>> CallAsync<TRes>(IEnumerable<IComputeFunc<TRes>> clos)
         {
             return _compute.Execute(clos).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task<ICollection<TRes>> CallAsync<TRes>(IEnumerable<IComputeFunc<TRes>> clos, 
+            CancellationToken cancellationToken)
+        {
+            return _compute.Execute(clos).GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */
@@ -215,6 +263,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<ICollection<TRes>> BroadcastAsync<TRes>(IComputeFunc<TRes> clo, CancellationToken cancellationToken)
+        {
+            return _compute.Broadcast(clo).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public ICollection<TJobRes> Broadcast<T, TJobRes>(IComputeFunc<T, TJobRes> clo, T arg)
         {
             return _compute.Broadcast(clo, arg).Get();
@@ -227,6 +281,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<ICollection<TRes>> BroadcastAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg, 
+            CancellationToken cancellationToken)
+        {
+            return _compute.Broadcast(clo, arg).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public void Broadcast(IComputeAction action)
         {
             _compute.Broadcast(action).Get();
@@ -236,6 +297,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         public Task BroadcastAsync(IComputeAction action)
         {
             return _compute.Broadcast(action).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task BroadcastAsync(IComputeAction action, CancellationToken cancellationToken)
+        {
+            return _compute.Broadcast(action).GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */
@@ -269,6 +336,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task AffinityRunAsync(string cacheName, object affinityKey, IComputeAction action, 
+            CancellationToken cancellationToken)
+        {
+            return _compute.AffinityRun(cacheName, affinityKey, action).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public void Run(IEnumerable<IComputeAction> actions)
         {
             _compute.Run(actions).Get();
@@ -278,6 +352,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         public Task RunAsync(IEnumerable<IComputeAction> actions)
         {
             return _compute.Run(actions).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task RunAsync(IEnumerable<IComputeAction> actions, CancellationToken cancellationToken)
+        {
+            return _compute.Run(actions).GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */
@@ -293,6 +373,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TRes> ApplyAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg, 
+            CancellationToken cancellationToken)
+        {
+            return _compute.Apply(clo, arg).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public ICollection<TJobRes> Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, IEnumerable<TArg> args)
         {
             return _compute.Apply(clo, args).Get();
@@ -305,6 +392,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<ICollection<TRes>> ApplyAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, IEnumerable<TArg> args, 
+            CancellationToken cancellationToken)
+        {
+            return _compute.Apply(clo, args).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public TReduceRes Apply<TArg, TJobRes, TReduceRes>(IComputeFunc<TArg, TJobRes> clo, 
             IEnumerable<TArg> args, IComputeReducer<TJobRes, TReduceRes> rdc)
         {
@@ -312,9 +406,17 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public Task<TRes> ApplyAsync<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, IComputeReducer<TFuncRes, TRes> rdc)
+        public Task<TRes> ApplyAsync<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, 
+            IComputeReducer<TFuncRes, TRes> rdc)
         {
             return _compute.Apply(clo, args, rdc).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task<TRes> ApplyAsync<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, 
+            IComputeReducer<TFuncRes, TRes> rdc, CancellationToken cancellationToken)
+        {
+            return _compute.Apply(clo, args, rdc).GetTask(cancellationToken);
         }
     }
 }
