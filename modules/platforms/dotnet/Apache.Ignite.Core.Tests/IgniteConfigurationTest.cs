@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Tests
         {
             //  TODO:
             // Failed to add node to topology because local node is configured to use loopback address, but remote node is not (consider changing 'localAddress' configuration parameter) 
+            // We probably connect to some remote node, need to fix properties.
 
             var cfg = new IgniteConfiguration
             {
