@@ -17,40 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.InetSocketAddress;
-import java.sql.Timestamp;
-import java.util.AbstractQueue;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryCollectionFactory;
@@ -87,9 +53,43 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
 
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotEquals;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.InetSocketAddress;
+import java.sql.Timestamp;
+import java.util.AbstractQueue;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+
+import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.*;
+import static org.junit.Assert.*;
 
 /**
  * Binary marshaller tests.
@@ -2339,8 +2339,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         // Check direct field access.
         assertNull(objBin.field(fieldName));
-        assertEquals(1, objBin.field(fieldNameA));
-        assertEquals(2, objBin.field(fieldNameB));
+        assertEquals(Integer.valueOf(1), objBin.field(fieldNameA));
+        assertEquals(Integer.valueOf(2), objBin.field(fieldNameB));
 
         // Check metadata.
         BinaryType type = objBin.type();
@@ -2363,8 +2363,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assert fieldB.exists(objBin);
 
         assertNull(field.value(objBin));
-        assertEquals(1, fieldA.value(objBin));
-        assertEquals(2, fieldB.value(objBin));
+        assertEquals(Integer.valueOf(1), fieldA.value(objBin));
+        assertEquals(Integer.valueOf(2), fieldB.value(objBin));
 
         // Check object deserialization.
         DuplicateFieldsB deserialized = objBin.deserialize();
