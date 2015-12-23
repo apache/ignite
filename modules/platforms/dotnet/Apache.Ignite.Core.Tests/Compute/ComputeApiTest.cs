@@ -1010,16 +1010,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestRunActionAsyncCancel()
         {
-            var cts = new CancellationTokenSource();
+            using (var cts = new CancellationTokenSource())
+            {
+                // Cancel while executing
+                var task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
+                cts.Cancel();
+                Assert.IsTrue(task.IsCanceled);
 
-            // Cancel while executing
-            var task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
-            cts.Cancel();
-            Assert.IsTrue(task.IsCanceled);
-
-            // Use cancelled token
-            task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
-            Assert.IsTrue(task.IsCanceled);
+                // Use cancelled token
+                task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
+                Assert.IsTrue(task.IsCanceled);
+            }
         }
 
         /// <summary>
