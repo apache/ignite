@@ -26,4 +26,4 @@ gulp.task('eslint', function() {
 	return gulp.src(paths)
 		.pipe(eslint())
 		.pipe(eslint.format());
-})
+});

@@ -17,7 +17,7 @@
 
 import template from './dialog.jade!';
 
-export default ['IgniteDialog', ['$modal', $modal => {
+export default ['IgniteDialog', ['$modal', ($modal) => {
     const defaults = {
         template: template(),
         placement: 'center',

@@ -16,7 +16,7 @@
  */
 
 export default ['IgniteUiAceOnLoad', () => {
-    return editor => {
+    return (editor) => {
         editor.setReadOnly(true);
         editor.setOption('highlightActiveLine', false);
         editor.setAutoScrollEditorIntoView(true);

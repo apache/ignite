@@ -42,7 +42,7 @@ export default [
         $scope.tabsServer = { activeTab: 0 };
         $scope.tabsClient = { activeTab: 0 };
 
-        $scope.selectItem = cluster => {
+        $scope.selectItem = (cluster) => {
             delete ctrl.cluster;
 
             if (!cluster)
@@ -56,7 +56,7 @@ export default [
             sessionStorage.summarySelectedId = $scope.clusters.indexOf(cluster);
         };
 
-        const updateTab = cluster => {
+        const updateTab = (cluster) => {
             if (!cluster)
                 return;
 

@@ -31,7 +31,7 @@ globals:
     saveAs: true
 
 rules:
-    arrow-parens: [1, "as-needed"]
+    arrow-parens: [1, "always"]
     arrow-spacing: [1, { "before": true, "after": true }]
     accessor-pairs: 2
     block-scoped-var: 2

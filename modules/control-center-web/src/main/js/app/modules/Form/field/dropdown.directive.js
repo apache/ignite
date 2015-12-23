@@ -17,8 +17,8 @@
 
 import template from './dropdown.jade!';
 
-export default ['igniteFormFieldDropdown', ['IgniteFormGUID', guid => {
-    const link = scope => {
+export default ['igniteFormFieldDropdown', ['IgniteFormGUID', (guid) => {
+    const link = (scope) => {
         const {id} = scope;
 
         scope.id = id || guid();

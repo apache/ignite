@@ -16,7 +16,7 @@
  */
 
 export default ['hasPojo', [() => {
-    const filter = cache => {
+    const filter = (cache) => {
         return cache.metadatas && cache.metadatas.length;
     };
 

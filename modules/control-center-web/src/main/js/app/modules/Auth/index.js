@@ -50,7 +50,7 @@ angular
             auth(action, userInfo) {
                 $http.post('/api/v1/' + action, userInfo)
                     .then(User.read)
-                    .then(user => {
+                    .then((user) => {
                         if (action !== 'password/forgot') {
                             _authorized(true);
 

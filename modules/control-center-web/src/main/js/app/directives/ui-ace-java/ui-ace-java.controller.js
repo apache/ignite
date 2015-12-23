@@ -25,7 +25,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     $scope.onLoad = onLoad;
 
     // Watchers definition.
-    const clusterWatcher = value => {
+    const clusterWatcher = (value) => {
         delete ctrl.data;
 
         if (!value)

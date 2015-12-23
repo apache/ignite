@@ -17,7 +17,7 @@
 
 import template from './number.jade!';
 
-export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', guid => {
+export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
     const link = (scope, el, attrs, [form, label]) => {
         const {id, name} = scope;
         const field = form[name];

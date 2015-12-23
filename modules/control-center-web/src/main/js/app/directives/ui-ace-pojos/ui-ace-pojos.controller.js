@@ -41,7 +41,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     };
 
     // Watcher update classes after
-    const updateClasses = value => {
+    const updateClasses = (value) => {
         delete ctrl.classes;
 
         if (!value)
@@ -49,14 +49,14 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
 
         const classes = ctrl.classes = [];
 
-        _.forEach(ctrl.metadatas, meta => {
+        _.forEach(ctrl.metadatas, (meta) => {
             classes.push(meta.keyType);
             classes.push(meta.valueType);
         });
     };
 
     // Update pojos class.
-    const updateClass = value => {
+    const updateClass = (value) => {
         if (!value || !ctrl.metadatas.length)
             return;
 
@@ -64,11 +64,11 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     };
 
     // Update pojos data.
-    const updatePojosData = value => {
+    const updatePojosData = (value) => {
         if (!value)
             return;
 
-        _.forEach(ctrl.metadatas, meta => {
+        _.forEach(ctrl.metadatas, (meta) => {
             if (meta.keyType === ctrl.class)
                 return ctrl.data = meta.keyClass;
 

@@ -27,13 +27,13 @@ export default ['ConfigurationSummaryResource', ['$q', '$http', ($q, $http) => {
                     if (!clusters || !clusters.length)
                         return {};
 
-                    _.each(clusters, cluster => {
+                    _.each(clusters, (cluster) => {
                         cluster.igfss = _.filter(igfss, ({_id}) => _.contains(cluster.igfss, _id));
                         cluster.caches = _.filter(caches, ({_id}) => _.contains(cluster.caches, _id));
                     });
 
                     return {clusters};
-                }, err => {
+                }, (err) => {
                     return $q.reject(err);
                 });
         }
