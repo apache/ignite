@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Cache
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
@@ -535,6 +536,15 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="keys">Keys to clear.</param>
         Task ClearAllAsync(IEnumerable<TK> keys);
+
+        /// <summary>
+        /// Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
+        /// Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+        /// </summary>
+        /// <param name="keys">Keys to clear.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>Task.</returns>
+        Task ClearAllAsync(IEnumerable<TK> keys, CancellationToken cancellationToken);
 
         /// <summary>
         /// Clear entry from the cache and swap storage, without notifying listeners or CacheWriters.

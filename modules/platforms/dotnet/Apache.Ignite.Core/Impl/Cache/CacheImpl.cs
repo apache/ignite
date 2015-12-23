@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -131,6 +132,19 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Gets and resets task for previous asynchronous operation.
         /// </summary>
+        /// <param name="lastAsyncOp">The last async op id.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Task for previous asynchronous operation.
+        /// </returns>
+        private Task GetTask(CacheOp lastAsyncOp, CancellationToken cancellationToken)
+        {
+            return GetTask<object>(lastAsyncOp, cancellationToken);
+        }
+
+        /// <summary>
+        /// Gets and resets task for previous asynchronous operation.
+        /// </summary>
         /// <typeparam name="TResult">The type of the result.</typeparam>
         /// <param name="lastAsyncOp">The last async op id.</param>
         /// <param name="converter">The converter.</param>
@@ -143,6 +157,25 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, 
                 (int) lastAsyncOp), _flagKeepBinary, converter).Task;
+        }
+
+        /// <summary>
+        /// Gets and resets task for previous asynchronous operation.
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
+        /// <param name="lastAsyncOp">The last async op id.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="converter">The converter.</param>
+        /// <returns>
+        /// Task for previous asynchronous operation.
+        /// </returns>
+        private Task<TResult> GetTask<TResult>(CacheOp lastAsyncOp, CancellationToken cancellationToken, 
+            Func<BinaryReader, TResult> converter = null)
+        {
+            Debug.Assert(_flagAsync);
+
+            return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, 
+                (int) lastAsyncOp), _flagKeepBinary, converter).GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */
@@ -654,6 +687,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             AsyncInstance.ClearAll(keys);
 
             return AsyncInstance.GetTask(CacheOp.ClearAll);
+        }
+
+        /** <inheritDoc /> */
+        public Task ClearAllAsync(IEnumerable<TK> keys, CancellationToken cancellationToken)
+        {
+            AsyncInstance.ClearAll(keys);
+
+            return AsyncInstance.GetTask(CacheOp.ClearAll, cancellationToken);
         }
 
         /** <inheritdoc /> */
