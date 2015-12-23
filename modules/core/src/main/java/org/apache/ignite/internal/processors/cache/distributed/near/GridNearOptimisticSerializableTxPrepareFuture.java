@@ -84,7 +84,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridNearOptimisticSerializableTxPrepareFuture(GridCacheSharedContext cctx, GridNearTxLocal tx) {
+    public GridNearOptimisticSerializableTxPrepareFuture(GridCacheSharedContext cctx,
+        GridNearTxLocal tx) {
         super(cctx, tx);
 
         assert tx.optimistic() && tx.serializable() : tx;
@@ -304,7 +305,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             return;
         }
 
-        boolean set = cctx.tm().setTxTopologyHint(tx);
+        boolean set = cctx.tm().setTxTopologyHint(tx.topologyVersionSnapshot());
 
         try {
             prepare(tx.readEntries(), tx.writeEntries(), remap, topLocked);

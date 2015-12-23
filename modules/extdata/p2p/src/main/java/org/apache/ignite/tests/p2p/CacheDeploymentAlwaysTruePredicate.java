@@ -14,19 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.tests.p2p;
 
-package org.apache.ignite.yardstick.cache;
-
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
- * Ignite benchmark that performs transactional put operations
- * with {@link CacheMemoryMode#OFFHEAP_TIERED OFFHEAP TIRED} memory mode.
+ *
  */
-public class IgnitePutTxOffHeapBenchmark extends IgnitePutTxImplicitBenchmark {
-    /** {@inheritDoc} */
-    @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("tx-offheap");
+public class CacheDeploymentAlwaysTruePredicate implements IgniteBiPredicate<Object, Object> {
+    /** */
+    @Override public boolean apply(Object o, Object o2) {
+        return true;
     }
 }
