@@ -152,6 +152,9 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
                 throw new IgniteException("Failed to resolve secondary file system URI: " + uri);
             }
         }
+
+        assert cfg != null;
+        assert fullUri != null;
     }
 
     /** {@inheritDoc} */
