@@ -352,7 +352,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             false,
             true,
             loc,
-            keepBinary);
+            keepBinary,
+            false);
     }
 
     /**
@@ -366,7 +367,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     public UUID executeInternalQuery(CacheEntryUpdatedListener<?, ?> locLsnr,
         CacheEntryEventSerializableFilter rmtFilter,
         boolean loc,
-        boolean notifyExisting)
+        boolean notifyExisting,
+        boolean ignoreClassNotFound)
         throws IgniteCheckedException
     {
         return executeQuery0(
@@ -381,7 +383,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             false,
             true,
             loc,
-            false);
+            false,
+            ignoreClassNotFound);
     }
 
     /**
@@ -479,7 +482,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         boolean sync,
         boolean ignoreExpired,
         boolean loc,
-        final boolean keepBinary) throws IgniteCheckedException
+        final boolean keepBinary,
+        boolean ignoreClassNotFound) throws IgniteCheckedException
     {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
@@ -501,7 +505,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             taskNameHash,
             skipPrimaryCheck,
             cctx.isLocal(),
-            keepBinary);
+            keepBinary,
+            ignoreClassNotFound);
 
         IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL) ?
             F.nodeForNodeId(cctx.localNodeId()) : F.<ClusterNode>alwaysTrue();
@@ -709,7 +714,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 cfg.isSynchronous(),
                 false,
                 false,
-                keepBinary);
+                keepBinary,
+                false);
         }
 
         /**

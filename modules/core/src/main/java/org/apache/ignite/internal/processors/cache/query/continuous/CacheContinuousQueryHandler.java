@@ -148,6 +148,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** */
     private Map<Integer, Long> initUpdCntrs;
 
+    /** */
+    private transient boolean ignoreClassNotFound;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -184,7 +187,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         int taskHash,
         boolean skipPrimaryCheck,
         boolean locCache,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean ignoreClassNotFound) {
         assert topic != null;
         assert locLsnr != null;
 
@@ -201,6 +205,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.skipPrimaryCheck = skipPrimaryCheck;
         this.locCache = locCache;
         this.keepBinary = keepBinary;
+        this.ignoreClassNotFound = ignoreClassNotFound;
 
         cacheId = CU.cacheId(cacheName);
     }
@@ -599,7 +604,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 e.unmarshal(cctx, ldr);
             }
             catch (IgniteCheckedException ex) {
-                U.error(ctx.log(getClass()), "Failed to unmarshal entry.", ex);
+                if (ignoreClassNotFound)
+                    assert internal;
+                else
+                    U.error(ctx.log(getClass()), "Failed to unmarshal entry.", ex);
             }
         }
 
