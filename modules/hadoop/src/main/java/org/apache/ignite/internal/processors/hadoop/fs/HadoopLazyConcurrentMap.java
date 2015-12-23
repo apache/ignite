@@ -57,10 +57,6 @@ public class HadoopLazyConcurrentMap<K, V extends Closeable> {
         assert getClass().getClassLoader() == Ignite.class.getClassLoader();
     }
 
-    public int size () {
-        return map.size();
-    }
-
     /**
      * Gets cached or creates a new value of V.
      * Never returns null.
@@ -77,7 +73,7 @@ public class HadoopLazyConcurrentMap<K, V extends Closeable> {
             try {
                 if (closed)
                     throw new IllegalStateException("Failed to create value for key [" + k
-                        + "]: the map is already closed.");
+                        + "]: the map is already closed. this = " + System.identityHashCode(this));
 
                 final ValueWrapper wNew = new ValueWrapper(k);
 
@@ -115,6 +111,10 @@ public class HadoopLazyConcurrentMap<K, V extends Closeable> {
         try {
             if (closed)
                 return;
+
+            // TODO: debug:
+            System.out.println("##### closed: " + System.identityHashCode(this));
+            Thread.dumpStack();
 
             closed = true;
 

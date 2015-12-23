@@ -73,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_IGFS_LOG_BATCH_SIZE;
@@ -167,6 +168,9 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
     /** Secondary file system instance. */
     private AbstractFileSystem secondaryFs;
+
+    /** Secondary file system factory. */
+    private HadoopAbstractFileSystemFactory factory;
 
     /** Whether custom sequential reads before prefetch value is provided. */
     private boolean seqReadsBeforePrefetchOverride;
@@ -332,32 +336,14 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             }
 
             if (initSecondary) {
-//                Map<String, String> props = paths.properties();
-//
-//                String secUri = props.get(SECONDARY_FS_URI);
-//                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
-
-                HadoopAbstractFileSystemFactory factory
-                    = (HadoopAbstractFileSystemFactory)paths.getPayload();
+                factory = (HadoopAbstractFileSystemFactory)paths.getPayload();
 
                 A.ensure(secondaryUri != null, "File system factory uri should not be null.");
 
-                //secondaryUri = factory.uri();
-
                 try {
-                    //SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
-
                     secondaryFs = factory.get(user);
 
                     secondaryUri = secondaryFs.getUri();
-
-//                    assert secondaryUri != null;
-//
-//                    URI uri2 = ((DefaultHadoopFileSystemFactory)factory).uri();
-//                    assert secondaryUri.equals(uri2);
-
-                    //secondaryFs = secProvider.createAbstractFileSystem(user);
-                    //secondaryUri = secProvider.uri();
                 }
                 catch (IOException e) {
                     throw new IOException("Failed to connect to the secondary file system: " + secondaryUri, e);
@@ -379,6 +365,9 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
             if (clientLog.isLogEnabled())
                 clientLog.close();
+
+            if (factory instanceof LifecycleAware)
+                ((LifecycleAware) factory).stop();
 
             // Reset initialized resources.
             rmtClient = null;

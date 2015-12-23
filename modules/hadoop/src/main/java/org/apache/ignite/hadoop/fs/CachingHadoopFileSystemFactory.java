@@ -73,47 +73,54 @@ public class CachingHadoopFileSystemFactory implements HadoopFileSystemFactory, 
     /** */
     protected List<String> cfgPathStr;
 
-    int getCount = 0;
-
     /**
-     *
+     * Public non-arg constructor.
      */
     public CachingHadoopFileSystemFactory() {
-        //
-
-
-
+        // noop
     }
 
+    /** {@inheritDoc} */
     @Override public FileSystem create(String userName) throws IOException {
         A.ensure(cfg != null, "cfg");
-
-        if (getCount == 0)
-            assert fileSysLazyMap.size() == 0;
-
-        getCount++;
 
         return fileSysLazyMap.getOrCreate(userName);
     }
 
-    // TODO: Add getter.
-
     /**
      * Uri setter.
-     * @param uriStr
+     *
+     * @param uriStr The URI to set.
      */
     public void setUri(String uriStr) {
         this.uriStr = uriStr;
     }
 
-    // TODO: Add getter.
+    /**
+     * Gets the URI.
+     *
+     * @return The URI.
+     */
+    public URI getUri() {
+        return uri;
+    }
 
     /**
      * Configuration(s) setter, to be invoked from Spring config.
-     * @param cfgPaths
+     *
+     * @param cfgPaths The config paths collection to set.
      */
     public void setConfigPaths(List<String> cfgPaths) {
         this.cfgPathStr = cfgPaths;
+    }
+
+    /**
+     * Gets the config paths collection.
+     *
+     * @return The config paths collection.
+     */
+    public List<String> getConfigPaths() {
+        return cfgPathStr;
     }
 
     /**
@@ -159,7 +166,9 @@ public class CachingHadoopFileSystemFactory implements HadoopFileSystemFactory, 
 
         if (cfgPathStr != null) {
             for (String confPath : cfgPathStr) {
-                if (confPath != null) {
+                if (confPath == null)
+                    throw new IgniteException("Null config path encountered.");
+                else {
                     URL url = U.resolveIgniteUrl(confPath);
 
                     if (url == null) {
@@ -169,9 +178,6 @@ public class CachingHadoopFileSystemFactory implements HadoopFileSystemFactory, 
                     }
 
                     cfg.addResource(url);
-                }
-                else {
-                    // TODO: Throw exception.
                 }
             }
         }

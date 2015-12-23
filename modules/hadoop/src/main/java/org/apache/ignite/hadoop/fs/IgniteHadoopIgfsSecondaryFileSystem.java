@@ -68,14 +68,10 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware,
     HadoopPayloadAware {
     /** The default user name. It is used if no user context is set. */
-    private String dfltUsrName = IgfsUtils.fixUserName(null);
+    private @Nullable String dfltUsrName;
 
     /** */
     private HadoopFileSystemFactory fsFactory;
-
-    /** FileSystem instance created for the default user. Stored outside due to performance reasons. */
-    // TODO: Remove.
-    private volatile FileSystem dfltFs;
 
     /**
      * Default constructor for Spring.
@@ -90,6 +86,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * @param uri URI of file system.
      * @throws IgniteCheckedException In case of error.
      */
+    @Deprecated
     public IgniteHadoopIgfsSecondaryFileSystem(String uri) throws IgniteCheckedException {
         this(uri, null, null);
     }
@@ -128,14 +125,13 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             fac.setConfigPaths(Collections.singletonList(cfgPath));
 
         setFileSystemFactory(fac);
-        setUserName(userName);
+        setDefaultUserName(userName);
     }
 
-    // TODO: Add getter.
-    // TODO: Add docs.
     /**
+     * Sets secondary file system factory.
      *
-     * @param factory
+     * @param factory The factory to set.
      */
     public void setFileSystemFactory(HadoopFileSystemFactory factory) {
         A.ensure(factory != null, "Factory value must not be null.");
@@ -143,17 +139,31 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         this.fsFactory = factory;
     }
 
-    // TODO: Add getter.
-    // TODO: Add docs.
-    // TODO: Rename to "setDefaultUserName"
+    /**
+     * Gets the secondary file system factory.
+     *
+     * @return The secondary file system factory.
+     */
+    public HadoopFileSystemFactory getFileSystemFactory() {
+        return fsFactory;
+    }
 
     /**
+     * Sets the default user name.
      *
-     * @param usrName
+     * @param usrName The user name to set.
      */
-    public void setUserName(String usrName) {
-        // TODO: Move fix to start routine.
-        this.dfltUsrName = IgfsUtils.fixUserName(usrName);
+    public void setDefaultUserName(String usrName) {
+        this.dfltUsrName = usrName;
+    }
+
+    /**
+     * Gets the default user name.
+     *
+     * @return The default user name.
+     */
+    public String getDefaultUserName() {
+        return dfltUsrName;
     }
 
     /**
@@ -486,12 +496,9 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         String user = IgfsUserContext.currentUser();
 
         if (F.isEmpty(user))
-            user = dfltUsrName; // default is never empty.
+            user = IgfsUtils.fixUserName(dfltUsrName);
 
         assert !F.isEmpty(user);
-
-        if (F.eq(user, dfltUsrName))
-            return dfltFs; // optimization
 
         try {
             return fsFactory.create(user);
@@ -513,27 +520,8 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        Exception e = null;
-
-        try {
-            if (dfltFs != null)
-                dfltFs.close();
-        }
-        catch (Exception e0) {
-            e = e0;
-        }
-
-        try {
-            if (fsFactory instanceof LifecycleAware)
-                ((LifecycleAware)fsFactory).stop();
-        }
-        catch (IgniteException ie) {
-            if (e == null)
-                e = ie;
-        }
-
-        if (e != null)
-            throw new IgniteException(e);
+        if (fsFactory instanceof LifecycleAware)
+             ((LifecycleAware)fsFactory).stop();
     }
 
     /** {@inheritDoc} */

@@ -391,7 +391,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             IgniteHadoopIgfsSecondaryFileSystem sec = new IgniteHadoopIgfsSecondaryFileSystem();
 
             sec.setFileSystemFactory(fac);
-            sec.setUserName(SECONDARY_FS_USER);
+            sec.setDefaultUserName(SECONDARY_FS_USER);
 
             // NB: start() will be invoked upon IgfsImpl init.
             cfg.setSecondaryFileSystem(sec);
