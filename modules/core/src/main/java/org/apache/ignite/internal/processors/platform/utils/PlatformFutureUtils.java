@@ -444,7 +444,7 @@ public class PlatformFutureUtils {
 
         /** {@inheritDoc} */
         @Override public boolean isCancelled() {
-            return false;
+            return fut.isCancelled();
         }
     }
 
