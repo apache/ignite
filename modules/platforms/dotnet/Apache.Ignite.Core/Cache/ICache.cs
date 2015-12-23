@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Cache
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
-    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
@@ -128,15 +127,6 @@ namespace Apache.Ignite.Core.Cache
         Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args);
 
         /// <summary>
-        /// Executes <see cref="LocalLoadCache" /> on all cache nodes.
-        /// </summary>
-        /// <param name="p">Optional predicate. If provided, will be used to filter values to be put into cache.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <param name="args">Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />.</param>
-        /// <returns>Task.</returns>
-        Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, CancellationToken cancellationToken, params object[] args);
-
-        /// <summary>
         /// Delegates to <see cref="ICacheStore.LoadCache" /> method to load state
         /// from the underlying persistent storage. The loaded values will then be given
         /// to the optionally passed in predicate, and, if the predicate returns true,
@@ -165,18 +155,6 @@ namespace Apache.Ignite.Core.Cache
         Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args);
 
         /// <summary>
-        /// Delegates to <see cref="ICacheStore.LoadCache" /> method to load state
-        /// from the underlying persistent storage. The loaded values will then be given
-        /// to the optionally passed in predicate, and, if the predicate returns true,
-        /// will be stored in cache. If predicate is null, then all loaded values will be stored in cache.
-        /// </summary>
-        /// <param name="p">Optional predicate. If provided, will be used to filter values to be put into cache.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <param name="args">Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />.</param>
-        /// <returns>Task.</returns>
-        Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, CancellationToken cancellationToken, params object[] args);
-
-        /// <summary>
         /// Check if cache contains mapping for this key.
         /// </summary>
         /// <param name="key">Key.</param>
@@ -191,16 +169,6 @@ namespace Apache.Ignite.Core.Cache
         Task<bool> ContainsKeyAsync(TK key);
 
         /// <summary>
-        /// Check if cache contains mapping for this key.
-        /// </summary>
-        /// <param name="key">Key.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// True if cache contains mapping for this key.
-        /// </returns>
-        Task<bool> ContainsKeyAsync(TK key, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Check if cache contains mapping for these keys.
         /// </summary>
         /// <param name="keys">Keys.</param>
@@ -213,16 +181,6 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="keys">Keys.</param>
         /// <returns>True if cache contains mapping for all these keys.</returns>
         Task<bool> ContainsKeysAsync(IEnumerable<TK> keys);
-
-        /// <summary>
-        /// Check if cache contains mapping for these keys.
-        /// </summary>
-        /// <param name="keys">Keys.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// True if cache contains mapping for all these keys.
-        /// </returns>
-        Task<bool> ContainsKeysAsync(IEnumerable<TK> keys, CancellationToken cancellationToken);
 
         /// <summary>
         /// Peeks at cached value using optional set of peek modes. This method will sequentially
@@ -285,23 +243,8 @@ namespace Apache.Ignite.Core.Cache
         /// If key is not present in cache, KeyNotFoundException will be thrown.
         /// </summary>
         /// <param name="key">Key.</param>
-        /// <returns>Task.</returns>
+        /// <returns>Value.</returns>
         Task<TV> GetAsync(TK key);
-
-        /// <summary>
-        /// Retrieves value mapped to the specified key from cache. Throws an exception if t
-        /// If the value is not present in cache, then it will be looked up from swap storage. If
-        /// it's not present in swap, or if swap is disable, and if read-through is allowed, value
-        /// will be loaded from persistent store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// If key is not present in cache, KeyNotFoundException will be thrown.
-        /// </summary>
-        /// <param name="key">Key.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// Task.
-        /// </returns>
-        Task<TV> GetAsync(TK key, CancellationToken cancellationToken);
 
         /// <summary>
         /// Retrieves value mapped to the specified key from cache.
@@ -333,20 +276,6 @@ namespace Apache.Ignite.Core.Cache
         Task<CacheResult<TV>> TryGetAsync(TK key);
 
         /// <summary>
-        /// Retrieves value mapped to the specified key from cache.
-        /// If the value is not present in cache, then it will be looked up from swap storage. If
-        /// it's not present in swap, or if swap is disable, and if read-through is allowed, value
-        /// will be loaded from persistent store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// </summary>
-        /// <param name="key">Key.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        ///   <see cref="CacheResult{T}" /> containing a bool success flag and a value.
-        /// </returns>
-        Task<CacheResult<TV>> TryGetAsync(TK key, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Retrieves values mapped to the specified keys from cache.
         /// If some value is not present in cache, then it will be looked up from swap storage. If
         /// it's not present in swap, or if swap is disabled, and if read-through is allowed, value
@@ -369,20 +298,6 @@ namespace Apache.Ignite.Core.Cache
         Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys);
 
         /// <summary>
-        /// Retrieves values mapped to the specified keys from cache.
-        /// If some value is not present in cache, then it will be looked up from swap storage. If
-        /// it's not present in swap, or if swap is disabled, and if read-through is allowed, value
-        /// will be loaded from persistent store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// </summary>
-        /// <param name="keys">Keys.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// Map of key-value pairs.
-        /// </returns>
-        Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Associates the specified value with the specified key in the cache.
         /// <para />
         /// If the cache previously contained a mapping for the key,
@@ -401,18 +316,6 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key with which the specified value is to be associated.</param>
         /// <param name="val">Value to be associated with the specified key.</param>
         Task PutAsync(TK key, TV val);
-
-        /// <summary>
-        /// Associates the specified value with the specified key in the cache.
-        /// <para />
-        /// If the cache previously contained a mapping for the key,
-        /// the old value is replaced by the specified value.
-        /// </summary>
-        /// <param name="key">Key with which the specified value is to be associated.</param>
-        /// <param name="val">Value to be associated with the specified key.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>Task.</returns>
-        Task PutAsync(TK key, TV val, CancellationToken cancellationToken);
 
         /// <summary>
         /// Associates the specified value with the specified key in this cache,
@@ -435,18 +338,6 @@ namespace Apache.Ignite.Core.Cache
         /// The value associated with the key at the start of the operation.
         /// </returns>
         Task<CacheResult<TV>> GetAndPutAsync(TK key, TV val);
-
-        /// <summary>
-        /// Associates the specified value with the specified key in this cache,
-        /// returning an existing value if one existed.
-        /// </summary>
-        /// <param name="key">Key with which the specified value is to be associated.</param>
-        /// <param name="val">Value to be associated with the specified key.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// The value associated with the key at the start of the operation.
-        /// </returns>
-        Task<CacheResult<TV>> GetAndPutAsync(TK key, TV val, CancellationToken cancellationToken);
 
         /// <summary>
         /// Atomically replaces the value for a given key if and only if there is a value currently mapped by the key.
@@ -483,16 +374,6 @@ namespace Apache.Ignite.Core.Cache
         Task<CacheResult<TV>> GetAndRemoveAsync(TK key);
 
         /// <summary>
-        /// Atomically removes the entry for a key only if currently mapped to some value.
-        /// </summary>
-        /// <param name="key">Key with which the specified value is associated.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// The value if one existed.
-        /// </returns>
-        Task<CacheResult<TV>> GetAndRemoveAsync(TK key, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Atomically associates the specified key with the given value if it is not already associated with a value.
         /// </summary>
         /// <param name="key">Key with which the specified value is to be associated.</param>
@@ -507,17 +388,6 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="val">Value to be associated with the specified key.</param>
         /// <returns>True if a value was set.</returns>
         Task<bool> PutIfAbsentAsync(TK key, TV val);
-
-        /// <summary>
-        /// Atomically associates the specified key with the given value if it is not already associated with a value.
-        /// </summary>
-        /// <param name="key">Key with which the specified value is to be associated.</param>
-        /// <param name="val">Value to be associated with the specified key.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// True if a value was set.
-        /// </returns>
-        Task<bool> PutIfAbsentAsync(TK key, TV val, CancellationToken cancellationToken);
 
         /// <summary>
         /// Stores given key-value pair in cache only if cache had no previous mapping for it.
@@ -556,25 +426,6 @@ namespace Apache.Ignite.Core.Cache
         Task<CacheResult<TV>> GetAndPutIfAbsentAsync(TK key, TV val);
 
         /// <summary>
-        /// Stores given key-value pair in cache only if cache had no previous mapping for it.
-        /// If cache previously contained value for the given key, then this value is returned.
-        /// In case of PARTITIONED or REPLICATED caches, the value will be loaded from the primary node,
-        /// which in its turn may load the value from the swap storage, and consecutively, if it's not
-        /// in swap, from the underlying persistent storage.
-        /// If the returned value is not needed, method putxIfAbsent() should be used instead of this one to
-        /// avoid the overhead associated with returning of the previous value.
-        /// If write-through is enabled, the stored value will be persisted to store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// </summary>
-        /// <param name="key">Key to store in cache.</param>
-        /// <param name="val">Value to be associated with the given key.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// Previously contained value regardless of whether put happened or not.
-        /// </returns>
-        Task<CacheResult<TV>> GetAndPutIfAbsentAsync(TK key, TV val, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Stores given key-value pair in cache only if there is a previous mapping for it.
         /// If cache previously contained value for the given key, then this value is returned.
         /// In case of PARTITIONED or REPLICATED caches, the value will be loaded from the primary node,
@@ -603,23 +454,6 @@ namespace Apache.Ignite.Core.Cache
         Task<bool> ReplaceAsync(TK key, TV val);
 
         /// <summary>
-        /// Stores given key-value pair in cache only if there is a previous mapping for it.
-        /// If cache previously contained value for the given key, then this value is returned.
-        /// In case of PARTITIONED or REPLICATED caches, the value will be loaded from the primary node,
-        /// which in its turn may load the value from the swap storage, and consecutively, if it's not
-        /// in swap, rom the underlying persistent storage.
-        /// If write-through is enabled, the stored value will be persisted to store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// </summary>
-        /// <param name="key">Key to store in cache.</param>
-        /// <param name="val">Value to be associated with the given key.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// True if the value was replaced.
-        /// </returns>
-        Task<bool> ReplaceAsync(TK key, TV val, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Stores given key-value pair in cache only if only if the previous value is equal to the
         /// old value passed as argument.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
@@ -642,20 +476,6 @@ namespace Apache.Ignite.Core.Cache
         Task<bool> ReplaceAsync(TK key, TV oldVal, TV newVal);
 
         /// <summary>
-        /// Stores given key-value pair in cache only if only if the previous value is equal to the
-        /// old value passed as argument.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// </summary>
-        /// <param name="key">Key to store in cache.</param>
-        /// <param name="oldVal">Old value to match.</param>
-        /// <param name="newVal">Value to be associated with the given key.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// True if replace happened, false otherwise.
-        /// </returns>
-        Task<bool> ReplaceAsync(TK key, TV oldVal, TV newVal, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Stores given key-value pairs in cache.
         /// If write-through is enabled, the stored values will be persisted to store.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
@@ -672,16 +492,6 @@ namespace Apache.Ignite.Core.Cache
         Task PutAllAsync(IDictionary<TK, TV> vals);
 
         /// <summary>
-        /// Stores given key-value pairs in cache.
-        /// If write-through is enabled, the stored values will be persisted to store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// </summary>
-        /// <param name="vals">Key-value pairs to store in cache.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns></returns>
-        Task PutAllAsync(IDictionary<TK, TV> vals, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Attempts to evict all entries associated with keys. Note, that entry will be evicted only
         /// if it's not used (not participating in any locks or transactions).
         /// </summary>
@@ -696,15 +506,7 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Clears the contents of the cache, without notifying listeners or CacheWriters.
         /// </summary>
-        /// <returns>Task.</returns>
         Task ClearAsync();
-
-        /// <summary>
-        /// Clears the contents of the cache, without notifying listeners or CacheWriters.
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>Task.</returns>
-        Task ClearAsync(CancellationToken cancellationToken);
 
         /// <summary>
         /// Clear entry from the cache and swap storage, without notifying listeners or CacheWriters.
@@ -721,15 +523,6 @@ namespace Apache.Ignite.Core.Cache
         Task ClearAsync(TK key);
 
         /// <summary>
-        /// Clear entry from the cache and swap storage, without notifying listeners or CacheWriters.
-        /// Entry is cleared only if it is not currently locked, and is not participating in a transaction.
-        /// </summary>
-        /// <param name="key">Key to clear.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>Task.</returns>
-        Task ClearAsync(TK key, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
         /// Entry is cleared only if it is not currently locked, and is not participating in a transaction.
         /// </summary>
@@ -742,15 +535,6 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="keys">Keys to clear.</param>
         Task ClearAllAsync(IEnumerable<TK> keys);
-
-        /// <summary>
-        /// Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
-        /// Entry is cleared only if it is not currently locked, and is not participating in a transaction.
-        /// </summary>
-        /// <param name="keys">Keys to clear.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>Task.</returns>
-        Task ClearAllAsync(IEnumerable<TK> keys, CancellationToken cancellationToken);
 
         /// <summary>
         /// Clear entry from the cache and swap storage, without notifying listeners or CacheWriters.
@@ -801,23 +585,6 @@ namespace Apache.Ignite.Core.Cache
         Task<bool> RemoveAsync(TK key);
 
         /// <summary>
-        /// Removes given key mapping from cache. If cache previously contained value for the given key,
-        /// then this value is returned. In case of PARTITIONED or REPLICATED caches, the value will be
-        /// loaded from the primary node, which in its turn may load the value from the disk-based swap
-        /// storage, and consecutively, if it's not in swap, from the underlying persistent storage.
-        /// If the returned value is not needed, method removex() should always be used instead of this
-        /// one to avoid the overhead associated with returning of the previous value.
-        /// If write-through is enabled, the value will be removed from store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// </summary>
-        /// <param name="key">Key whose mapping is to be removed from cache.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// False if there was no matching key.
-        /// </returns>
-        Task<bool> RemoveAsync(TK key, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Removes given key mapping from cache if one exists and value is equal to the passed in value.
         /// If write-through is enabled, the value will be removed from store.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
@@ -838,19 +605,6 @@ namespace Apache.Ignite.Core.Cache
         Task<bool> RemoveAsync(TK key, TV val);
 
         /// <summary>
-        /// Removes given key mapping from cache if one exists and value is equal to the passed in value.
-        /// If write-through is enabled, the value will be removed from store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// </summary>
-        /// <param name="key">Key whose mapping is to be removed from cache.</param>
-        /// <param name="val">Value to match against currently cached value.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// True if entry was removed, false otherwise.
-        /// </returns>
-        Task<bool> RemoveAsync(TK key, TV val, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Removes given key mappings from cache.
         /// If write-through is enabled, the value will be removed from store.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
@@ -867,16 +621,6 @@ namespace Apache.Ignite.Core.Cache
         Task RemoveAllAsync(IEnumerable<TK> keys);
 
         /// <summary>
-        /// Removes given key mappings from cache.
-        /// If write-through is enabled, the value will be removed from store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// </summary>
-        /// <param name="keys">Keys whose mappings are to be removed from cache.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns></returns>
-        Task RemoveAllAsync(IEnumerable<TK> keys, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Removes all mappings from cache.
         /// If write-through is enabled, the value will be removed from store.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
@@ -889,15 +633,6 @@ namespace Apache.Ignite.Core.Cache
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
         /// </summary>
         Task RemoveAllAsync();
-
-        /// <summary>
-        /// Removes all mappings from cache.
-        /// If write-through is enabled, the value will be removed from store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns></returns>
-        Task RemoveAllAsync(CancellationToken cancellationToken);
 
         /// <summary>
         /// Gets the number of all entries cached on this node.
@@ -923,18 +658,6 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
         /// <returns>Cache size across all nodes.</returns>
         Task<int> GetSizeAsync(params CachePeekMode[] modes);
-
-        /// <summary>
-        /// Gets the number of all entries cached across all nodes.
-        /// <para />
-        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
-        /// <returns>
-        /// Cache size across all nodes.
-        /// </returns>
-        Task<int> GetSizeAsync(CancellationToken cancellationToken, params CachePeekMode[] modes);
 
         /// <summary>
         /// This method unswaps cache entries by given keys, if any, from swap storage into memory.
@@ -1014,25 +737,6 @@ namespace Apache.Ignite.Core.Cache
         Task<TRes> InvokeAsync<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 
         /// <summary>
-        /// Invokes an <see cref="ICacheEntryProcessor{K, V, A, R}" /> against the
-        /// <see cref="IMutableCacheEntry{K, V}" /> specified by the provided key.
-        /// If an entry does not exist for the specified key, an attempt is made to load it (if a loader is configured)
-        /// or a surrogate entry, consisting of the key with a null value is used instead.
-        /// </summary>
-        /// <typeparam name="TArg">The type of the argument.</typeparam>
-        /// <typeparam name="TRes">The type of the result.</typeparam>
-        /// <param name="key">The key.</param>
-        /// <param name="processor">The processor.</param>
-        /// <param name="arg">The argument.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// Result of the processing.
-        /// </returns>
-        /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
-        Task<TRes> InvokeAsync<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg, 
-            CancellationToken cancellationToken);
-
-        /// <summary>
         /// Invokes an <see cref="ICacheEntryProcessor{K, V, A, R}"/> against a set of keys.
         /// If an entry does not exist for the specified key, an attempt is made to load it (if a loader is configured)
         /// or a surrogate entry, consisting of the key with a null value is used instead.
@@ -1079,30 +783,6 @@ namespace Apache.Ignite.Core.Cache
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
         Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, 
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
-
-        /// <summary>
-        /// Invokes an <see cref="ICacheEntryProcessor{K, V, A, R}" /> against a set of keys.
-        /// If an entry does not exist for the specified key, an attempt is made to load it (if a loader is configured)
-        /// or a surrogate entry, consisting of the key with a null value is used instead.
-        /// The order that the entries for the keys are processed is undefined.
-        /// Implementations may choose to process the entries in any order, including concurrently.
-        /// Furthermore there is no guarantee implementations will use the same processor instance
-        /// to process each entry, as the case may be in a non-local cache topology.
-        /// </summary>
-        /// <typeparam name="TArg">The type of the argument.</typeparam>
-        /// <typeparam name="TRes">The type of the result.</typeparam>
-        /// <param name="keys">The keys.</param>
-        /// <param name="processor">The processor.</param>
-        /// <param name="arg">The argument.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// Map of <see cref="ICacheEntryProcessorResult{R}" /> of the processing per key, if any,
-        /// defined by the <see cref="ICacheEntryProcessor{K,V,A,R}" /> implementation.
-        /// No mappings will be returned for processors that return a null value for a key.
-        /// </returns>
-        /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
-        Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, 
-            ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg, CancellationToken cancellationToken);
 
         /// <summary>
         /// Creates an <see cref="ICacheLock"/> instance associated with passed key.

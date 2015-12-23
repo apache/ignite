@@ -671,48 +671,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [SuppressMessage("ReSharper", "MethodSupportsCancellation")]
-        public void TestPutAsyncCancel()
-        {
-            if (!TxEnabled())
-                return;
-
-            var cache = Cache();
-
-            // Get remote key (local operations execute synchronously).
-            var localNode = cache.Ignite.GetCluster().GetLocalNode();
-            var aff = cache.Ignite.GetAffinity(cache.Name);
-            var key = Enumerable.Range(1, 1000).FirstOrDefault(k => aff.MapKeyToNode(k).Id != localNode.Id);
-
-            var cts = new CancellationTokenSource();
-            var evt = new ManualResetEventSlim(false);
-
-            cache.PutAsync(key, 1, cts.Token).Wait();
-
-            var lockTask = Task.Factory.StartNew(() =>
-            {
-                using (var l = cache.Lock(key))
-                {
-                    l.Enter();
-                    evt.Set();
-                    Thread.Sleep(3000);
-                    l.Exit();
-                }
-            });
-
-            evt.Wait();  // wait for task to lock the key
-
-            var putTask = cache.PutAsync(key, 2, cts.Token);
-            cts.Cancel();
-            putTask.Wait();
-            Assert.IsTrue(putTask.IsCanceled);
-
-            Assert.AreEqual(1, cache.Get(key));
-
-            lockTask.Wait();
-        }
-
-        [Test]
         public void TestPutIfAbsent()
         {
             var cache = Cache();

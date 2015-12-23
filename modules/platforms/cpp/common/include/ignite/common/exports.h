@@ -73,7 +73,7 @@ extern "C" {
     void IGNITE_CALL IgniteCacheExitLock(gcj::JniContext* ctx, void* obj, long long id);
     bool IGNITE_CALL IgniteCacheTryEnterLock(gcj::JniContext* ctx, void* obj, long long id, long long timeout);
     void IGNITE_CALL IgniteCacheCloseLock(gcj::JniContext* ctx, void* obj, long long id);
-    void* IGNITE_CALL IgniteCacheRebalance(gcj::JniContext* ctx, void* obj, long long futId);
+    void IGNITE_CALL IgniteCacheRebalance(gcj::JniContext* ctx, void* obj, long long futId);
     int IGNITE_CALL IgniteCacheSize(gcj::JniContext* ctx, void* obj, int peekModes, bool loc);
 
     void IGNITE_CALL IgniteCacheStoreCallbackInvoke(gcj::JniContext* ctx, void* obj, long long memPtr);
@@ -111,9 +111,9 @@ extern "C" {
 
     long long IGNITE_CALL IgniteTransactionsStart(gcj::JniContext* ctx, void* obj, int concurrency, int isolation, long long timeout, int txSize);
     int IGNITE_CALL IgniteTransactionsCommit(gcj::JniContext* ctx, void* obj, long long id);
-    void* IGNITE_CALL IgniteTransactionsCommitAsync(gcj::JniContext* ctx, void* obj, long long id, long long futId);
+    void IGNITE_CALL IgniteTransactionsCommitAsync(gcj::JniContext* ctx, void* obj, long long id, long long futId);
     int IGNITE_CALL IgniteTransactionsRollback(gcj::JniContext* ctx, void* obj, long long id);
-    void* IGNITE_CALL IgniteTransactionsRollbackAsync(gcj::JniContext* ctx, void* obj, long long id, long long futId);
+    void IGNITE_CALL IgniteTransactionsRollbackAsync(gcj::JniContext* ctx, void* obj, long long id, long long futId);
     int IGNITE_CALL IgniteTransactionsClose(gcj::JniContext* ctx, void* obj, long long id);
     int IGNITE_CALL IgniteTransactionsState(gcj::JniContext* ctx, void* obj, long long id);
     bool IGNITE_CALL IgniteTransactionsSetRollbackOnly(gcj::JniContext* ctx, void* obj, long long id);

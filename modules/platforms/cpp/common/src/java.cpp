@@ -243,7 +243,7 @@ namespace ignite
             JniMethod M_PLATFORM_CACHE_EXIT_LOCK = JniMethod("exitLock", "(J)V", false);
             JniMethod M_PLATFORM_CACHE_TRY_ENTER_LOCK = JniMethod("tryEnterLock", "(JJ)Z", false);
             JniMethod M_PLATFORM_CACHE_CLOSE_LOCK = JniMethod("closeLock", "(J)V", false);
-            JniMethod M_PLATFORM_CACHE_REBALANCE = JniMethod("rebalance", "(J)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
+            JniMethod M_PLATFORM_CACHE_REBALANCE = JniMethod("rebalance", "(J)V", false);
             JniMethod M_PLATFORM_CACHE_SIZE = JniMethod("size", "(IZ)I", false);
 
             const char* C_PLATFORM_AFFINITY = "org/apache/ignite/internal/processors/platform/cache/affinity/PlatformAffinity";
@@ -264,8 +264,8 @@ namespace ignite
             JniMethod M_PLATFORM_TRANSACTIONS_TX_START = JniMethod("txStart", "(IIJI)J", false);
             JniMethod M_PLATFORM_TRANSACTIONS_TX_COMMIT = JniMethod("txCommit", "(J)I", false);
             JniMethod M_PLATFORM_TRANSACTIONS_TX_ROLLBACK = JniMethod("txRollback", "(J)I", false);
-            JniMethod M_PLATFORM_TRANSACTIONS_TX_COMMIT_ASYNC = JniMethod("txCommitAsync", "(JJ)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
-            JniMethod M_PLATFORM_TRANSACTIONS_TX_ROLLBACK_ASYNC = JniMethod("txRollbackAsync", "(JJ)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
+            JniMethod M_PLATFORM_TRANSACTIONS_TX_COMMIT_ASYNC = JniMethod("txCommitAsync", "(JJ)V", false);
+            JniMethod M_PLATFORM_TRANSACTIONS_TX_ROLLBACK_ASYNC = JniMethod("txRollbackAsync", "(JJ)V", false);
             JniMethod M_PLATFORM_TRANSACTIONS_TX_STATE = JniMethod("txState", "(J)I", false);
             JniMethod M_PLATFORM_TRANSACTIONS_TX_SET_ROLLBACK_ONLY = JniMethod("txSetRollbackOnly", "(J)Z", false);
             JniMethod M_PLATFORM_TRANSACTIONS_TX_CLOSE = JniMethod("txClose", "(J)I", false);
@@ -1487,14 +1487,12 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            void* JniContext::CacheRebalance(jobject obj, long long futId) {
+            void JniContext::CacheRebalance(jobject obj, long long futId) {
                 JNIEnv* env = Attach();
 
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCache_rebalance, futId);
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCache_rebalance, futId);
 
                 ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
             }
 
             int JniContext::CacheSize(jobject obj, int peekModes, bool loc, JniErrorInfo* err) {
@@ -1776,14 +1774,12 @@ namespace ignite
                 return res;
             }
 
-            void* JniContext::TransactionsCommitAsync(jobject obj, long long id, long long futId) {
+            void JniContext::TransactionsCommitAsync(jobject obj, long long id, long long futId) {
                 JNIEnv* env = Attach();
 
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTransactions_txCommitAsync, id, futId);
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTransactions_txCommitAsync, id, futId);
 
                 ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
             }
 
             int JniContext::TransactionsRollback(jobject obj, long long id) {
@@ -1796,14 +1792,12 @@ namespace ignite
                 return res;
             }
 
-            void* JniContext::TransactionsRollbackAsync(jobject obj, long long id, long long futId) {
+            void JniContext::TransactionsRollbackAsync(jobject obj, long long id, long long futId) {
                 JNIEnv* env = Attach();
 
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTransactions_txRollbackAsync, id, futId);
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTransactions_txRollbackAsync, id, futId);
 
                 ExceptionCheck(env);
-
-                return LocalToGlobal(env, res);
             }
 
             int JniContext::TransactionsClose(jobject obj, long long id) {

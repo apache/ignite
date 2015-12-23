@@ -163,7 +163,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern void CacheCloseLock(void* ctx, void* obj, long id);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheRebalance")]
-        public static extern void* CacheRebalance(void* ctx, void* obj, long futId);
+        public static extern void CacheRebalance(void* ctx, void* obj, long futId);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheSize")]
         public static extern int CacheSize(void* ctx, void* obj, int peekModes, [MarshalAs(UnmanagedType.U1)] bool loc);
@@ -264,13 +264,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern int TxCommit(void* ctx, void* target, long id);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsCommitAsync")]
-        public static extern void* TxCommitAsync(void* ctx, void* target, long id, long futId);
+        public static extern void TxCommitAsync(void* ctx, void* target, long id, long futId);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsRollback")]
         public static extern int TxRollback(void* ctx, void* target, long id);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsRollbackAsync")]
-        public static extern void* TxRollbackAsync(void* ctx, void* target, long id, long futId);
+        public static extern void TxRollbackAsync(void* ctx, void* target, long id, long futId);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTransactionsClose")]
         public static extern int TxClose(void* ctx, void* target, long id);

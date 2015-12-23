@@ -27,7 +27,6 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteFuture;
@@ -149,29 +148,29 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     /**
      * Commits tx in async mode.
      */
-    public PlatformListenable txCommitAsync(final long txId, final long futId) {
+    public void txCommitAsync(final long txId, final long futId) {
         final Transaction asyncTx = (Transaction)tx(txId).withAsync();
 
         asyncTx.commit();
 
-        return listenAndNotifyIntFuture(futId, asyncTx);
+        listenAndNotifyIntFuture(futId, asyncTx);
     }
 
     /**
      * Rolls back tx in async mode.
      */
-    public PlatformListenable txRollbackAsync(final long txId, final long futId) {
+    public void txRollbackAsync(final long txId, final long futId) {
         final Transaction asyncTx = (Transaction)tx(txId).withAsync();
 
         asyncTx.rollback();
 
-        return listenAndNotifyIntFuture(futId, asyncTx);
+        listenAndNotifyIntFuture(futId, asyncTx);
     }
 
     /**
      * Listens to the transaction future and notifies .NET int future.
      */
-    private PlatformListenable listenAndNotifyIntFuture(final long futId, final Transaction asyncTx) {
+    private void listenAndNotifyIntFuture(final long futId, final Transaction asyncTx) {
         IgniteFuture fut = asyncTx.future().chain(new C1<IgniteFuture, Object>() {
             private static final long serialVersionUID = 0L;
 
@@ -180,7 +179,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
             }
         });
 
-        return PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, this);
+        PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, this);
     }
 
     /**
