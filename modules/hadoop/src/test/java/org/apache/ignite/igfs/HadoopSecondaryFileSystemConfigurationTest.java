@@ -17,13 +17,6 @@
 
 package org.apache.ignite.igfs;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Collections;
-import java.util.concurrent.Callable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -48,6 +41,13 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -176,7 +176,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
 
         CachingHadoopFileSystemFactory fac = new CachingHadoopFileSystemFactory();
 
-        fac.setConfigPaths(Collections.singletonList(primaryConfFullPath));
+        fac.setConfigPaths(primaryConfFullPath);
         fac.setUri(primaryFsUriStr);
 
         fac.start();

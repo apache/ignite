@@ -122,7 +122,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         fac.setUri(uri);
 
         if (cfgPath != null)
-            fac.setConfigPaths(Collections.singletonList(cfgPath));
+            fac.setConfigPaths(cfgPath);
 
         setFileSystemFactory(fac);
         setDefaultUserName(userName);
