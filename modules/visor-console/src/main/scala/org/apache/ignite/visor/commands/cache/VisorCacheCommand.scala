@@ -866,6 +866,7 @@ object VisorCacheCommand {
         cacheT += ("Store Enabled", bool2Str(storeCfg.enabled()))
         cacheT += ("Store Class", safe(storeCfg.store()))
         cacheT += ("Store Factory Class", storeCfg.storeFactory())
+        cacheT += ("Store Keep Binary", storeCfg.storeKeepBinary())
         cacheT += ("Store Read Through", bool2Str(storeCfg.readThrough()))
         cacheT += ("Store Write Through", bool2Str(storeCfg.writeThrough()))
 

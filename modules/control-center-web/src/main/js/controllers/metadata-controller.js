@@ -200,7 +200,7 @@ consoleModule.controller('metadataController', [
                     jdbcDriverJar: '',
                     jdbcUrl: 'jdbc:[database]',
                     user: 'sa'
-                }
+                };
             }
 
             $scope.$watch('preset.drvIdx', function (drvIdx) {
@@ -251,8 +251,8 @@ consoleModule.controller('metadataController', [
 
             $scope.selectSchema = function () {
                 if ($common.isDefined($scope.loadMeta) && $common.isDefined($scope.loadMeta.displayedSchemas))
-                    $scope.loadMeta.allSchemasSelected = $scope.loadMeta.displayedSchemas.length > 0
-                        && _.every($scope.loadMeta.displayedSchemas, 'use', true);
+                    $scope.loadMeta.allSchemasSelected = $scope.loadMeta.displayedSchemas.length > 0 &&
+                        _.every($scope.loadMeta.displayedSchemas, 'use', true);
             };
 
             $scope.selectAllTables = function () {
@@ -265,8 +265,8 @@ consoleModule.controller('metadataController', [
 
             $scope.selectTable = function () {
                 if ($common.isDefined($scope.loadMeta) && $common.isDefined($scope.loadMeta.displayedTables))
-                    $scope.loadMeta.allTablesSelected = $scope.loadMeta.displayedTables.length > 0
-                        && _.every($scope.loadMeta.displayedTables, 'use', true);
+                    $scope.loadMeta.allTablesSelected = $scope.loadMeta.displayedTables.length > 0 &&
+                        _.every($scope.loadMeta.displayedTables, 'use', true);
             };
 
             $scope.$watch('loadMeta.displayedSchemas', $scope.selectSchema);
@@ -374,17 +374,19 @@ consoleModule.controller('metadataController', [
 
                 var preset = angular.copy($scope.preset);
 
-                if (preset.jdbcUrl == 'jdbc:h2:mem:test-drive-db') {
+                if (preset.jdbcUrl === 'jdbc:h2:mem:test-drive-db') {
                     preset.user = 'sa';
                     preset.password = '';
                 }
 
                 $http.post('/api/v1/agent/schemas', preset)
                     .success(function (schemas) {
-                        $scope.loadMeta.schemas = _.map(schemas, function (schema) { return {use: false, name: schema}});
+                        $scope.loadMeta.schemas = _.map(schemas, function (schema) {
+                            return {use: false, name: schema};
+                        });
                         $scope.loadMeta.action = 'schemas';
 
-                        if ($scope.loadMeta.schemas.length == 0)
+                        if ($scope.loadMeta.schemas.length === 0)
                             $scope.loadMetadataNext();
                         else
                             _.forEach($scope.loadMeta.schemas, function (sch) {
@@ -452,7 +454,7 @@ consoleModule.controller('metadataController', [
                 for (var i = 0; i < len; i++) {
                     var ch = name.charAt(i);
 
-                    if (ch == ' ' ||  ch == '_')
+                    if (ch === ' ' ||  ch === '_')
                         capitalizeNext = true;
                     else if (capitalizeNext) {
                         buf += ch.toLocaleUpperCase();
@@ -555,12 +557,16 @@ consoleModule.controller('metadataController', [
                         var valType = $commonUtils.toJavaPackageName($scope.ui.packageName) + '.' + toJavaClassName(tableName);
 
                         function queryField(name, jdbcType) {
-                            return {name: toJavaName(name), className: jdbcType.javaType}
+                            return {name: toJavaName(name), className: jdbcType.javaType};
                         }
 
                         function dbField(name, jdbcType) {
-                            return {databaseFieldName: name, databaseFieldType: jdbcType.dbName,
-                                javaFieldName: toJavaName(name), javaFieldType: jdbcType.javaType}
+                            return {
+                                databaseFieldName: name,
+                                databaseFieldType: jdbcType.dbName,
+                                javaFieldName: toJavaName(name),
+                                javaFieldType: jdbcType.javaType
+                            };
                         }
 
                         var _containKey = false;
@@ -603,7 +609,7 @@ consoleModule.controller('metadataController', [
                         }
 
                         var metaFound = _.find($scope.metadatas, function (meta) {
-                            return meta.valueType == valType;
+                            return meta.valueType === valType;
                         });
 
                         var meta = {
@@ -655,7 +661,7 @@ consoleModule.controller('metadataController', [
                         $confirmBatch.confirm(overwriteMessage, itemsToConfirm)
                             .then(function () {
                                 _saveBatch(_.filter(batch, function (item) {
-                                    return !item.skip
+                                    return !item.skip;
                                 }));
                             }, function () {
                                 $common.showError('Cache type metadata loading interrupted by user.');
@@ -669,22 +675,22 @@ consoleModule.controller('metadataController', [
                 else
                     $confirm.confirm('Some tables have no primary key.<br/>' +
                         'You will need to configure key type and key fields for such tables after load complete.')
-                        .then(function () { checkOverwrite(); })
+                        .then(function () { checkOverwrite(); });
             }
 
             $scope.loadMetadataNext = function () {
                 if ($scope.nextAvailable()) {
-                    if ($scope.loadMeta.action == 'connect')
+                    if ($scope.loadMeta.action === 'connect')
                         _loadSchemas();
-                    else if ($scope.loadMeta.action == 'schemas')
+                    else if ($scope.loadMeta.action === 'schemas')
                         _loadMetadata();
-                    else if ($scope.loadMeta.action == 'tables' && $scope.nextAvailable())
+                    else if ($scope.loadMeta.action === 'tables' && $scope.nextAvailable())
                         _saveMetadata();
                 }
             };
 
             $scope.nextTooltipText = function () {
-                if ($scope.loadMeta.action == 'tables' && !$scope.nextAvailable())
+                if ($scope.loadMeta.action === 'tables' && !$scope.nextAvailable())
                     return 'Select tables to continue';
 
                 return undefined;
@@ -699,7 +705,7 @@ consoleModule.controller('metadataController', [
             };
 
             $scope.loadMetadataPrev = function () {
-                if  ($scope.loadMeta.action == 'tables' && $scope.loadMeta.schemas.length > 0) {
+                if  ($scope.loadMeta.action === 'tables' && $scope.loadMeta.schemas.length > 0) {
                     $scope.loadMeta.action = 'schemas';
                     $scope.loadMeta.button = 'Next';
                     $scope.loadMeta.info = INFO_SELECT_SCHEMAS;
@@ -998,7 +1004,7 @@ consoleModule.controller('metadataController', [
                                     if (!$scope.ui.showValid) {
                                         var validFilter = $filter('metadatasValidation');
 
-                                        $scope.ui.showValid = validFilter($scope.metadatas, false, true).length == 0;
+                                        $scope.ui.showValid = validFilter($scope.metadatas, false, true).length === 0;
                                     }
                                 })
                                 .error(function (errMsg) {
@@ -1038,7 +1044,7 @@ consoleModule.controller('metadataController', [
                     return metadata._id == $scope.selectedItem._id;
                 });
 
-                if (idx == -1)
+                if (idx === -1)
                     $scope.selectItem(undefined, undefined);
             };
 
@@ -1073,9 +1079,19 @@ consoleModule.controller('metadataController', [
             };
 
             function tableDbFieldValue(field, index) {
-                return index < 0
-                    ? {databaseFieldName: field.newDatabaseFieldName, databaseFieldType: field.newDatabaseFieldType, javaFieldName: field.newJavaFieldName, javaFieldType: field.newJavaFieldType}
-                    : {databaseFieldName: field.curDatabaseFieldName, databaseFieldType: field.curDatabaseFieldType, javaFieldName: field.curJavaFieldName, javaFieldType: field.curJavaFieldType}
+                return (index < 0)
+                    ? {
+                        databaseFieldName: field.newDatabaseFieldName,
+                        databaseFieldType: field.newDatabaseFieldType,
+                        javaFieldName: field.newJavaFieldName,
+                        javaFieldType: field.newJavaFieldType
+                    }
+                    : {
+                        databaseFieldName: field.curDatabaseFieldName,
+                        databaseFieldType: field.curDatabaseFieldType,
+                        javaFieldName: field.curJavaFieldName,
+                        javaFieldType: field.curJavaFieldType
+                    };
             }
 
             $scope.tableDbFieldSaveVisible = function (field, index) {
@@ -1105,19 +1121,19 @@ consoleModule.controller('metadataController', [
 
                     if ($common.isDefined(model)) {
                         var idx = _.findIndex(model, function (dbMeta) {
-                            return dbMeta.databaseFieldName == dbFieldValue.databaseFieldName;
+                            return dbMeta.databaseFieldName === dbFieldValue.databaseFieldName;
                         });
 
                         // Found duplicate.
-                        if (idx >= 0 && index != idx)
+                        if (idx >= 0 && index !== idx)
                             return showPopoverMessage($scope.panels, 'store', $table.tableFieldId(index, 'DatabaseFieldName' + dbFieldTable.id), 'Field with such database name already exists!');
 
                         idx = _.findIndex(model, function (dbMeta) {
-                            return dbMeta.javaFieldName == dbFieldValue.javaFieldName;
+                            return dbMeta.javaFieldName === dbFieldValue.javaFieldName;
                         });
 
                         // Found duplicate.
-                        if (idx >= 0 && index != idx)
+                        if (idx >= 0 && index !== idx)
                             return showPopoverMessage($scope.panels, 'store', $table.tableFieldId(index, 'JavaFieldName' + dbFieldTable.id), 'Field with such java name already exists!');
 
                         if (index < 0) {
@@ -1169,11 +1185,11 @@ consoleModule.controller('metadataController', [
 
                 if ($common.isDefined(indexes)) {
                     var idx = _.findIndex(indexes, function (index) {
-                        return index.name == indexName;
+                        return index.name === indexName;
                     });
 
                     // Found duplicate.
-                    if (idx >= 0 && idx != curIdx)
+                    if (idx >= 0 && idx !== curIdx)
                         return showPopoverMessage($scope.panels, 'query', $table.tableFieldId(curIdx, 'IndexName'), 'Index with such name already exists!');
                 }
 
@@ -1207,7 +1223,7 @@ consoleModule.controller('metadataController', [
 
                 var indexName = index.name;
 
-                $table.tableNewItem({ui: 'table-index-fields', model: indexName, sorted: index.indexType == 'SORTED', indexIdx: indexIdx});
+                $table.tableNewItem({ui: 'table-index-fields', model: indexName, sorted: index.indexType === 'SORTED', indexIdx: indexIdx});
 
                 field.newFieldName = null;
                 field.newDirection = true;
@@ -1255,7 +1271,7 @@ consoleModule.controller('metadataController', [
                 field.curFieldName = indexItem.name;
                 field.curDirection = indexItem.direction;
 
-                $focus('curFieldName' + (index.indexType == 'SORTED' ? 'S' : '') + indexIdx + '-' + curIdx);
+                $focus('curFieldName' + (index.indexType === 'SORTED' ? 'S' : '') + indexIdx + '-' + curIdx);
             };
 
             $scope.tableIndexItemSaveVisible = function (field, index) {
@@ -1271,12 +1287,12 @@ consoleModule.controller('metadataController', [
 
                 if ($common.isDefined(fields)) {
                     var idx = _.findIndex(fields, function (field) {
-                        return field.name == indexItemValue.name;
+                        return field.name === indexItemValue.name;
                     });
 
                     // Found duplicate.
-                    if (idx >= 0 && idx != curIdx)
-                        return showPopoverMessage($scope.panels, 'query', $table.tableFieldId(curIdx, 'FieldName' + (index.indexType == 'SORTED' ? 'S' : '') + indexIdx + (curIdx >= 0 ? '-' : '')), 'Field with such name already exists in index!');
+                    if (idx >= 0 && idx !== curIdx)
+                        return showPopoverMessage($scope.panels, 'query', $table.tableFieldId(curIdx, 'FieldName' + (index.indexType === 'SORTED' ? 'S' : '') + indexIdx + (curIdx >= 0 ? '-' : '')), 'Field with such name already exists in index!');
                 }
 
                 if (curIdx < 0) {

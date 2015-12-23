@@ -174,6 +174,7 @@ var CacheSchema = new Schema({
     writeSynchronizationMode: {type: String, enum: ['FULL_SYNC', 'FULL_ASYNC', 'PRIMARY_SYNC']},
 
     sqlEscapeAll: Boolean,
+    sqlSchema: String,
     sqlOnheapRowCacheSize: Number,
     longQueryWarningTimeout: Number,
     indexedTypes: [{keyClass: String, valueClass: String}],
