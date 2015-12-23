@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
@@ -101,7 +102,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc /> */
         public void OnError(Exception err)
         {
-            _taskCompletionSource.TrySetException(err);
+            if (err is IgniteFutureCancelledException)
+                _taskCompletionSource.TrySetCanceled();
+            else
+                _taskCompletionSource.TrySetException(err);
         }
 
         /** <inheritdoc /> */
@@ -161,19 +165,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public bool Cancel()
         {
-            // TODO: Should we always cancel the task, or wait for future cancellation first?
-
-            _taskCompletionSource.TrySetCanceled(); // ???
-
             if (_unmanagedTarget == null)
                 return false;
 
-            var result = UnmanagedUtils.ListenableCancel(_unmanagedTarget);
-
-            if (result)
-                _taskCompletionSource.TrySetCanceled();
-
-            return result;
+            return UnmanagedUtils.ListenableCancel(_unmanagedTarget);
         }
 
         /// <summary>
