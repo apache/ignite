@@ -2339,8 +2339,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         // Check direct field access.
         assertNull(objBin.field(fieldName));
-        assertEquals(1, objBin.field(fieldNameA));
-        assertEquals(2, objBin.field(fieldNameB));
+        assertEquals(1, (int)objBin.field(fieldNameA));
+        assertEquals(2, (int)objBin.field(fieldNameB));
 
         // Check metadata.
         BinaryType type = objBin.type();
@@ -2363,8 +2363,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assert fieldB.exists(objBin);
 
         assertNull(field.value(objBin));
-        assertEquals(1, fieldA.value(objBin));
-        assertEquals(2, fieldB.value(objBin));
+        assertEquals(1, (int)fieldA.value(objBin));
+        assertEquals(2, (int)fieldB.value(objBin));
 
         // Check object deserialization.
         DuplicateFieldsB deserialized = objBin.deserialize();
