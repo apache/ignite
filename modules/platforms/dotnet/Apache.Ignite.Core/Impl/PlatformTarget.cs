@@ -718,26 +718,9 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Creates a task to listen for the last async op.
         /// </summary>
-        protected Task GetTask(CancellationToken cancellationToken)
-        {
-            return GetTask<object>(cancellationToken);
-        }
-
-        /// <summary>
-        /// Creates a task to listen for the last async op.
-        /// </summary>
         protected Task<T> GetTask<T>()
         {
             return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp)).Task;
-        }
-
-        /// <summary>
-        /// Creates a task to listen for the last async op.
-        /// </summary>
-        protected Task<T> GetTask<T>(CancellationToken cancellationToken)
-        {
-            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp))
-                .GetTask(cancellationToken);
         }
 
         #endregion
