@@ -14,6 +14,13 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-div
-    label.col-xs-4.col-sm-4.col-md-4(for='{{::field.for}}') {{::field.label}}:
-    div.col-xs-8.col-sm-8.col-md-8(ng-transclude='')
+.input-tip
+    input.form-control(
+        id='{{ id }}'
+        name='{{ name }}' 
+        placeholder='{{ placeholder }}' 
+        type='text' 
+        ng-model='ngModel'
+    )
+
+    span(ng-transclude='')

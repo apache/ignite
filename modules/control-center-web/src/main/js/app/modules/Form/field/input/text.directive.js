@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-import template from './dropdown.jade!';
+import template from './text.jade!';
 
-export default ['igniteFormFieldDropdown', ['IgniteFormGUID', (guid) => {
-    const link = (scope) => {
-        const {id} = scope;
+export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
+    const link = (scope, el, attrs, [form, label]) => {
+        const {id, name} = scope;
+        const field = form[name];
 
-        scope.id = id || guid();
+        scope.field = field;
+        label.for = scope.id = id || guid();
     };
 
     return {
@@ -30,7 +32,6 @@ export default ['igniteFormFieldDropdown', ['IgniteFormGUID', (guid) => {
             id: '@',
             name: '@',
             placeholder: '@',
-            options: '=',
             ngModel: '='
         },
         link,

@@ -20,10 +20,13 @@ import angular from 'angular';
 import ConfigurationSummaryCtrl from './summary/summary.controller';
 import ConfigurationSummaryResource from './summary/summary.resource';
 
+import clustersTransactions from './clusters/transactions.directive';
+
 angular
 .module('ignite-console.states.configuration', [
     'ui.router'
 ])
+.directive(...clustersTransactions)
 // Services.
 .service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {

@@ -1,0 +1,101 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+mixin ignite-form-field-tooltip(message)
+    i.tipField.fa.fa-question-circle(bs-tooltip='"#{message}"')
+
+- var model = 'backupItem.transactionConfiguration'
+
+.panel.panel-default
+    .panel-heading(bs-collapse-toggle)
+        label Transactions
+        i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for transactions"')
+    .panel-collapse(role='tabpanel' bs-collapse-target id='transactions')
+        .panel-body
+            .col-sm-6
+                .settings-row
+                    ignite-form-field(data-label='Concurrency')
+                        +ignite-form-field-tooltip('Cache transaction concurrency to use when one is not explicitly specified')
+                        ignite-form-field-dropdown(
+                            data-id='defaultTxConcurrency'
+                            data-name='defaultTxConcurrency'
+                            data-options="[\
+                                {value: 'OPTIMISTIC', label: 'OPTIMISTIC'},\
+                                {value: 'PESSIMISTIC', label: 'PESSIMISTIC'}\
+                            ]"
+                            data-ng-model='#{model}.defaultTxConcurrency'
+                            data-placeholder='PESSIMISTIC'
+                        )
+                .settings-row
+                    ignite-form-field(data-label='Isolation')
+                        +ignite-form-field-tooltip('Default transaction isolation')
+                        ignite-form-field-dropdown(
+                            data-id='transactionIsolation'
+                            data-name='transactionIsolation'
+                            data-options="[\
+                                {value: 'READ_COMMITTED', label: 'READ_COMMITTED'},\
+                                {value: 'REPEATABLE_READ', label: 'REPEATABLE_READ'},\
+                                {value: 'SERIALIZABLE', label: 'SERIALIZABLE'}\
+                            ]"
+                            data-ng-model='#{model}.transactionIsolation'
+                            data-placeholder='REPEATABLE_READ'
+                        )
+                .settings-row
+                    ignite-form-field(data-label='Default timeout')
+                        +ignite-form-field-tooltip('Default transaction timeout')
+                        ignite-form-field-input-number(
+                            data-id='defaultTxTimeout'
+                            data-name='defaultTxTimeout'
+                            data-ng-model='#{model}.defaultTxTimeout'
+                            data-placeholder='0'
+                        )
+                .settings-row
+                    ignite-form-field(data-label='Pessimistic log cleanup delay')
+                        +ignite-form-field-tooltip('Delay, in milliseconds, after which pessimistic recovery entries will be cleaned up for failed node')
+                        ignite-form-field-input-number(
+                            data-id='pessimisticTxLogLinger'
+                            data-name='pessimisticTxLogLinger'
+                            data-ng-model='#{model}.pessimisticTxLogLinger'
+                            data-placeholder='10000'
+                        )
+                .settings-row
+                    ignite-form-field(data-label='Pessimistic log size')
+                        +ignite-form-field-tooltip('Size of pessimistic transactions log stored on node in order to recover transaction commit if originating node has left grid before it has sent all messages to transaction nodes')
+                        ignite-form-field-input-number(
+                            data-id='pessimisticTxLogSize'
+                            data-name='pessimisticTxLogSize'
+                            data-ng-model='#{model}.pessimisticTxLogSize'
+                            data-placeholder='0'
+                        )
+                .settings-row
+                    ignite-form-field(data-label='Manager lookup')
+                        +ignite-form-field-tooltip('Class name of transaction manager finder for integration for JEE app servers')
+                        ignite-form-field-input-text(
+                            data-id='txManagerLookupClassName'
+                            data-name='txManagerLookupClassName'
+                            data-ng-model='#{model}.txManagerLookupClassName'
+                            data-placeholder='Enter fully qualified class name'
+                        )
+            .col-sm-6
+                .preview-panel(ng-init='mode = false')
+                    .preview-legend
+                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
+                        | &nbsp;
+                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
+                    .preview-content(ng-if='mode')
+                        ignite-ui-ace-java(data-cluster='clusters' data-cluster-cfg='#{model}')
+                    .preview-content(ng-if='!mode')
+                        ignite-ui-ace-xml(data-cluster='clusters' data-cluster-cfg='#{model}')

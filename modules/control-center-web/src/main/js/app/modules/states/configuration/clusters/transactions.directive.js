@@ -15,28 +15,12 @@
  * limitations under the License.
  */
 
-import template from './dropdown.jade!';
+import template from './transactions.jade!';
 
-export default ['igniteFormFieldDropdown', ['IgniteFormGUID', (guid) => {
-    const link = (scope) => {
-        const {id} = scope;
-
-        scope.id = id || guid();
-    };
-
+export default ['igniteConfigurationClustersTransactions', [() => {
     return {
         restrict: 'E',
-        scope: {
-            id: '@',
-            name: '@',
-            placeholder: '@',
-            options: '=',
-            ngModel: '='
-        },
-        link,
         template,
-        replace: true,
-        transclude: true,
-        require: ['^form', '?^igniteFormField']
+        replace: true
     };
 }]];

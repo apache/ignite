@@ -46,9 +46,10 @@ include ../includes/controls
             form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)
                 .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true' ng-click='triggerDigest = true')
                     +groups('general', 'backupItem')
-                    div(ng-show='ui.expanded')
+                    div(ng-show='true')
                         +advanced-options
                         +groups('advanced', 'backupItem')
+                        ignite-configuration-clusters-transactions
                 +advanced-options
                 .section(ng-show='ui.expanded')
                     +save-remove-buttons('cluster')

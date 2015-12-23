@@ -19,6 +19,7 @@ import angular from 'angular';
 import igniteFormField from './field/field.directive';
 import igniteFormFieldDropdown from './field/dropdown.directive';
 import igniteFormFieldInputNumber from './field/input/number.directive';
+import igniteFormFieldInputText from './field/input/text.directive';
 
 angular
 .module('ignite-console.Form', [
@@ -27,6 +28,7 @@ angular
 .directive(...igniteFormField)
 .directive(...igniteFormFieldDropdown)
 .directive(...igniteFormFieldInputNumber)
+.directive(...igniteFormFieldInputText)
 .factory('IgniteFormGUID', [() => {
     let guid = 0;
 
