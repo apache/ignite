@@ -1008,7 +1008,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Tests single action run.
         /// </summary>
         [Test]
-        public void TestRunActionCancel()
+        public void TestRunActionAsyncCancel()
         {
             var cts = new CancellationTokenSource();
 
