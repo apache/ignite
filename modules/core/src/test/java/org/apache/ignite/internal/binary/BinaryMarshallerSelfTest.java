@@ -17,6 +17,42 @@
 
 package org.apache.ignite.internal.binary;
 
+import junit.framework.Assert;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryMapFactory;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
+import sun.misc.Unsafe;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -51,43 +87,9 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import junit.framework.Assert;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryCollectionFactory;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryMapFactory;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import sun.misc.Unsafe;
 
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.*;
+import static org.junit.Assert.*;
 
 /**
  * Binary marshaller tests.
@@ -2315,6 +2317,63 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test duplicate fields.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDuplicateFields() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        DuplicateFieldsB obj = new DuplicateFieldsB(1, 2);
+
+        BinaryObjectImpl objBin = marshal(obj, marsh);
+
+        String fieldName = "x";
+        String fieldNameA = DuplicateFieldsA.class.getName() + "." + fieldName;
+        String fieldNameB = DuplicateFieldsB.class.getName() + "." + fieldName;
+
+        // Check "hasField".
+        assert !objBin.hasField(fieldName);
+        assert objBin.hasField(fieldNameA);
+        assert objBin.hasField(fieldNameB);
+
+        // Check direct field access.
+        assertNull(objBin.field(fieldName));
+        assertEquals(Integer.valueOf(1), objBin.field(fieldNameA));
+        assertEquals(Integer.valueOf(2), objBin.field(fieldNameB));
+
+        // Check metadata.
+        BinaryType type = objBin.type();
+
+        Collection<String> fieldNames = type.fieldNames();
+
+        assertEquals(2, fieldNames.size());
+
+        assert !fieldNames.contains(fieldName);
+        assert fieldNames.contains(fieldNameA);
+        assert fieldNames.contains(fieldNameB);
+
+        // Check field access through type.
+        BinaryField field = type.field(fieldName);
+        BinaryField fieldA = type.field(fieldNameA);
+        BinaryField fieldB = type.field(fieldNameB);
+
+        assert !field.exists(objBin);
+        assert fieldA.exists(objBin);
+        assert fieldB.exists(objBin);
+
+        assertNull(field.value(objBin));
+        assertEquals(Integer.valueOf(1), fieldA.value(objBin));
+        assertEquals(Integer.valueOf(2), fieldB.value(objBin));
+
+        // Check object deserialization.
+        DuplicateFieldsB deserialized = objBin.deserialize();
+
+        assertEquals(obj.xA(), deserialized.xA());
+        assertEquals(obj.xB(), deserialized.xB());
+    }
+
+    /**
      *
      */
     private static interface SomeItf {
@@ -4116,6 +4175,57 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             s = "readResolve";
 
             return this;
+        }
+    }
+
+    /**
+     * Class B for duplicate fields test.
+     */
+    private static class DuplicateFieldsA {
+        /** Field. */
+        int x;
+
+        /**
+         * Constructor.
+         *
+         * @param x Field.
+         */
+        protected DuplicateFieldsA(int x) {
+            this.x = x;
+        }
+
+        /**
+         * @return A's field.
+         */
+        public int xA() {
+            return x;
+        }
+    }
+
+    /**
+     * Class B for duplicate fields test.
+     */
+    private static class DuplicateFieldsB extends DuplicateFieldsA {
+        /** Field. */
+        int x;
+
+        /**
+         * Constructor.
+         *
+         * @param xA Field for parent class.
+         * @param xB Field for current class.
+         */
+        public DuplicateFieldsB(int xA, int xB) {
+            super(xA);
+
+            this.x = xB;
+        }
+
+        /**
+         * @return B's field.
+         */
+        public int xB() {
+            return x;
         }
     }
 

@@ -268,6 +268,16 @@ public class GridBinaryMarshaller {
     }
 
     /**
+     * Whether object must be deserialized anyway. I.e. it cannot be converted to BinaryObject.
+     *
+     * @param obj Object.
+     * @return {@code True} if object will be deserialized on unmarshal.
+     */
+    public boolean mustDeserialize(Object obj) {
+        return obj != null && ctx.mustDeserialize(obj.getClass());
+    }
+
+    /**
      * Gets writer for the given output stream.
      *
      * @param out Output stream.
