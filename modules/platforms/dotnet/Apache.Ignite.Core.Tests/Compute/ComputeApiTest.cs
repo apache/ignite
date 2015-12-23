@@ -1002,7 +1002,16 @@ namespace Apache.Ignite.Core.Tests.Compute
             _grid1.GetCompute().Run(new ComputeAction());
 
             Assert.AreEqual(1, ComputeAction.InvokeCount);
+        }
 
+        /// <summary>
+        /// Tests single action run.
+        /// </summary>
+        [Test]
+        public void TestRunActionCancel()
+        {
+            ComputeAction.InvokeCount = 0;
+            
             var cts = new CancellationTokenSource();
 
             var task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
@@ -1011,7 +1020,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.IsTrue(task.IsCanceled);
 
-            Assert.AreEqual(1, ComputeAction.InvokeCount);
+            Assert.AreEqual(0, ComputeAction.InvokeCount);
         }
 
         /// <summary>
