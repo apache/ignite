@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Cancels this instance.
         /// </summary>
-        public bool Cancel()
+        internal bool Cancel()
         {
             if (_unmanagedTarget == null)
                 return false;
@@ -177,7 +177,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Determines whether this instance is cancelled.
         /// </summary>
-        public bool IsCancelled()
+        internal bool IsCancelled()
         {
             if (_unmanagedTarget == null)
                 return false;
