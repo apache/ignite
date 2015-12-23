@@ -244,8 +244,6 @@ public class IgniteHadoopFileSystem extends FileSystem {
     @Override public void initialize(URI name, Configuration cfg) throws IOException {
         enterBusy();
 
-        assert !closeGuard.get();
-
         try {
             if (rmtClient != null)
                 throw new IOException("File system is already initialized: " + rmtClient);
@@ -297,7 +295,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
             igfsGrpBlockSize = handshake.blockSize();
 
-            final IgfsPaths paths = handshake.secondaryPaths();
+            IgfsPaths paths = handshake.secondaryPaths();
 
             // Initialize client logger.
             Boolean logEnabled = parameter(cfg, PARAM_IGFS_LOG_ENABLED, uriAuthority, false);
@@ -338,7 +336,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
                     throw new IOException("Failed to get secondary file system factory.", e);
                 }
 
-                A.ensure(factory != null, "Secondary file system factory should not be null.");
+                assert factory != null;
 
                 if (factory instanceof LifecycleAware)
                     ((LifecycleAware) factory).start();
@@ -436,7 +434,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             A.notNull(p, "p");
 
             if (mode(p) == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -466,7 +464,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             A.notNull(p, "p");
 
             if (mode(p) == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -497,7 +495,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
         try {
             if (mode(p) == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -528,7 +526,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             IgfsMode mode = mode(path);
 
             if (mode == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -602,7 +600,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
                     path + ", overwrite=" + overwrite + ", bufSize=" + bufSize + ']');
 
             if (mode == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -685,7 +683,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
                     ", path=" + path + ", bufSize=" + bufSize + ']');
 
             if (mode == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -750,7 +748,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             IgfsMode mode = mode(srcPath);
 
             if (mode == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -812,7 +810,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             IgfsMode mode = mode(path);
 
             if (mode == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -859,7 +857,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             IgfsMode mode = mode(path);
 
             if (mode == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -925,7 +923,14 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
     /** {@inheritDoc} */
     @Override public void setWorkingDirectory(Path newPath) {
-        final FileSystem secondaryFs = secondaryFs();
+        FileSystem secondaryFs;
+
+        try {
+            secondaryFs = secondaryFileSystem();
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Failed to obtain secondary file system instance.", e);
+        }
 
         if (newPath == null) {
             Path homeDir = getHomeDirectory();
@@ -967,7 +972,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             IgfsMode mode = mode(path);
 
             if (mode == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -1010,7 +1015,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
         try {
             if (mode(f) == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -1042,7 +1047,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
         try {
             if (mode(f) == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -1075,7 +1080,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             IgfsPath path = convert(status.getPath());
 
             if (mode(status.getPath()) == PROXY) {
-                final FileSystem secondaryFs = secondaryFs();
+                final FileSystem secondaryFs = secondaryFileSystem();
 
                 if (secondaryFs == null) {
                     assert mgmt;
@@ -1336,15 +1341,10 @@ public class IgniteHadoopFileSystem extends FileSystem {
      *
      * @return The secondary file system.
      */
-    private @Nullable FileSystem secondaryFs() {
+    private @Nullable FileSystem secondaryFileSystem() throws IOException{
         if (factory == null)
             return null;
 
-        try {
-            return factory.create(user);
-        }
-        catch (IOException ioe) {
-            throw new IgniteException();
-        }
+        return factory.create(user);
     }
 }
