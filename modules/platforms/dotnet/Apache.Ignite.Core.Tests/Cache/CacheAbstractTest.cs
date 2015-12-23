@@ -572,13 +572,6 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(1, map[1]);
             Assert.AreEqual(2, map[2]);
-
-            // Test cancellation
-            var cts = new CancellationTokenSource();
-            var task = Cache().GetAllAsync(new[] {0, 1, 2}, cts.Token);
-            cts.Cancel();
-
-            Assert.IsTrue(task.IsCanceled);
         }
 
         [Test]
