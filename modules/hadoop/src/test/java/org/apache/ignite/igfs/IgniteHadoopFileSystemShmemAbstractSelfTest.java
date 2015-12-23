@@ -46,7 +46,8 @@ public abstract class IgniteHadoopFileSystemShmemAbstractSelfTest extends Ignite
     @Override protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String gridName) {
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
-        endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
+        // TODO: this change is for debug purposes only:
+        endpointCfg.setType(IgfsIpcEndpointType.TCP/*IgfsIpcEndpointType.SHMEM*/);
         endpointCfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
 
         return endpointCfg;
