@@ -63,7 +63,8 @@ namespace Apache.Ignite.Core.Tests
                 NetworkTimeout = TimeSpan.FromMinutes(10),
                 NetworkSendRetryDelay = TimeSpan.FromMinutes(11),
                 WorkDirectory = Path.GetTempPath(),
-                JvmOptions = TestUtils.TestJavaOptions()
+                JvmOptions = TestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
             using (var ignite = Ignition.Start(cfg))
