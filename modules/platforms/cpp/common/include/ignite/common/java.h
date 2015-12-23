@@ -523,7 +523,7 @@ namespace ignite
                 void CacheExitLock(jobject obj, long long id);
                 bool CacheTryEnterLock(jobject obj, long long id, long long timeout);
                 void CacheCloseLock(jobject obj, long long id);
-                void CacheRebalance(jobject obj, long long futId);
+                void* CacheRebalance(jobject obj, long long futId);
                 int CacheSize(jobject obj, int peekModes, bool loc, JniErrorInfo* errInfo = NULL);
 
                 void CacheStoreCallbackInvoke(jobject obj, long long memPtr);

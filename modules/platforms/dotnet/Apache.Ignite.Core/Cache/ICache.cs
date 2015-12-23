@@ -411,7 +411,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key with which the specified value is to be associated.</param>
         /// <param name="val">Value to be associated with the specified key.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>Task./returns>
+        /// <returns>Task.</returns>
         Task PutAsync(TK key, TV val, CancellationToken cancellationToken);
 
         /// <summary>

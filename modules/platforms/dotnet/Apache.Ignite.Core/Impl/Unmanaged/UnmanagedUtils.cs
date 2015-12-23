@@ -417,9 +417,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget CacheRebalance(IUnmanagedTarget target, long futId)
         {
-            JNI.CacheRebalance(target.Context, target.Target, futId);
+            var res = JNI.CacheRebalance(target.Context, target.Target, futId);
 
-            return null; // TODO
+            return target.ChangeTarget(res);
         }
 
         internal static void CacheStoreCallbackInvoke(IUnmanagedTarget target, long memPtr)

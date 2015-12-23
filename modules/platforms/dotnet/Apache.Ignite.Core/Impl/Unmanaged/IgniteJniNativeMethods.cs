@@ -163,7 +163,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern void CacheCloseLock(void* ctx, void* obj, long id);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheRebalance")]
-        public static extern void CacheRebalance(void* ctx, void* obj, long futId);
+        public static extern void* CacheRebalance(void* ctx, void* obj, long futId);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteCacheSize")]
         public static extern int CacheSize(void* ctx, void* obj, int peekModes, [MarshalAs(UnmanagedType.U1)] bool loc);

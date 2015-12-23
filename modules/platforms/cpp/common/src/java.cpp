@@ -243,7 +243,7 @@ namespace ignite
             JniMethod M_PLATFORM_CACHE_EXIT_LOCK = JniMethod("exitLock", "(J)V", false);
             JniMethod M_PLATFORM_CACHE_TRY_ENTER_LOCK = JniMethod("tryEnterLock", "(JJ)Z", false);
             JniMethod M_PLATFORM_CACHE_CLOSE_LOCK = JniMethod("closeLock", "(J)V", false);
-            JniMethod M_PLATFORM_CACHE_REBALANCE = JniMethod("rebalance", "(J)V", false);
+            JniMethod M_PLATFORM_CACHE_REBALANCE = JniMethod("rebalance", "(J)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
             JniMethod M_PLATFORM_CACHE_SIZE = JniMethod("size", "(IZ)I", false);
 
             const char* C_PLATFORM_AFFINITY = "org/apache/ignite/internal/processors/platform/cache/affinity/PlatformAffinity";
@@ -1487,12 +1487,14 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            void JniContext::CacheRebalance(jobject obj, long long futId) {
+            void* JniContext::CacheRebalance(jobject obj, long long futId) {
                 JNIEnv* env = Attach();
 
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCache_rebalance, futId);
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCache_rebalance, futId);
 
                 ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
             }
 
             int JniContext::CacheSize(jobject obj, int peekModes, bool loc, JniErrorInfo* err) {

@@ -73,7 +73,7 @@ extern "C" {
     void IGNITE_CALL IgniteCacheExitLock(gcj::JniContext* ctx, void* obj, long long id);
     bool IGNITE_CALL IgniteCacheTryEnterLock(gcj::JniContext* ctx, void* obj, long long id, long long timeout);
     void IGNITE_CALL IgniteCacheCloseLock(gcj::JniContext* ctx, void* obj, long long id);
-    void IGNITE_CALL IgniteCacheRebalance(gcj::JniContext* ctx, void* obj, long long futId);
+    void* IGNITE_CALL IgniteCacheRebalance(gcj::JniContext* ctx, void* obj, long long futId);
     int IGNITE_CALL IgniteCacheSize(gcj::JniContext* ctx, void* obj, int peekModes, bool loc);
 
     void IGNITE_CALL IgniteCacheStoreCallbackInvoke(gcj::JniContext* ctx, void* obj, long long memPtr);

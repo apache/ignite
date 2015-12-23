@@ -203,8 +203,8 @@ extern "C" {
         ctx->CacheCloseLock(static_cast<jobject>(obj), id);
     }
 
-    void IGNITE_CALL IgniteCacheRebalance(gcj::JniContext* ctx, void* obj, long long futId) {
-        ctx->CacheRebalance(static_cast<jobject>(obj), futId);
+    void* IGNITE_CALL IgniteCacheRebalance(gcj::JniContext* ctx, void* obj, long long futId) {
+        return ctx->CacheRebalance(static_cast<jobject>(obj), futId);
     }
 
     int IGNITE_CALL IgniteCacheSize(gcj::JniContext* ctx, void* obj, int peekModes, bool loc) {
