@@ -62,7 +62,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
-import org.apache.ignite.hadoop.fs.v1.DefaultHadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEx;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsIpcIo;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsOutProc;
@@ -383,15 +383,15 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         cfg.setDefaultMode(mode);
 
         if (mode != PRIMARY) {
-            DefaultHadoopFileSystemFactory fac = new DefaultHadoopFileSystemFactory();
+            CachingHadoopFileSystemFactory fac = new CachingHadoopFileSystemFactory();
 
             fac.setUri(SECONDARY_URI);
             fac.setConfigPaths(Collections.singletonList(SECONDARY_CFG_PATH));
 
             IgniteHadoopIgfsSecondaryFileSystem sec = new IgniteHadoopIgfsSecondaryFileSystem();
 
-            sec.setFsFactory(fac);
-            sec.setDfltUserName(SECONDARY_FS_USER);
+            sec.setFileSystemFactory(fac);
+            sec.setUserName(SECONDARY_FS_USER);
 
             // NB: start() will be invoked upon IgfsImpl init.
             cfg.setSecondaryFileSystem(sec);

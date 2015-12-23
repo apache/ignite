@@ -264,12 +264,7 @@ public final class IgfsImpl implements IgfsEx {
         if (secondaryFs instanceof HadoopPayloadAware)
             secondaryFsPayload = ((HadoopPayloadAware) secondaryFs).getPayload();
 
-        secondaryPaths = new IgfsPaths(
-            //secondaryFs == null ? null : secondaryFs.properties(),
-            //secondaryFs == null ? null : secondaryFs.getSecondaryFileSystemFactory(),
-            secondaryFsPayload,
-            dfltMode,
-            modeRslvr.modesOrdered());
+        secondaryPaths = new IgfsPaths(secondaryFsPayload, dfltMode, modeRslvr.modesOrdered());
 
         // Check whether IGFS LRU eviction policy is set on data cache.
         String dataCacheName = igfsCtx.configuration().getDataCacheName();
@@ -317,7 +312,8 @@ public final class IgfsImpl implements IgfsEx {
                 batch.cancel();
 
             try {
-                secondaryFs.close();
+                if (secondaryFs instanceof LifecycleAware)
+                    ((LifecycleAware)secondaryFs).stop();
             }
             catch (Exception e) {
                 log.error("Failed to close secondary file system.", e);

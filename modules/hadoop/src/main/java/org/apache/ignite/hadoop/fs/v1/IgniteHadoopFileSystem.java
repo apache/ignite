@@ -44,6 +44,7 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Progressable;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -344,7 +345,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
                     ((LifecycleAware) factory).start();
 
                 try {
-                    secondaryFs = factory.get(user);
+                    secondaryFs = factory.create(user);
 
                     secondaryUri = secondaryFs.getUri();
 
