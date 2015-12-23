@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
@@ -68,16 +67,16 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware,
     HadoopPayloadAware {
     /** The default user name. It is used if no user context is set. */
-    private @Nullable String dfltUsrName;
+    private String dfltUsrName;
 
-    /** */
+    /** Factory. */
     private HadoopFileSystemFactory fsFactory;
 
     /**
      * Default constructor for Spring.
      */
     public IgniteHadoopIgfsSecondaryFileSystem() {
-        // noop.
+        // No-op.
     }
 
     /**
@@ -109,14 +108,16 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      *
      * @param uri URI of file system.
      * @param cfgPath Additional path to Hadoop configuration.
-     * @param userName User name.
+     * @param usrName User name.
      * @throws IgniteCheckedException In case of error.
      * @deprecated Arg-less constructor should be used instead, + setters. This constructor is
      *    supported for compatibility only.
      */
     @Deprecated
     public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath,
-        @Nullable String userName) throws IgniteCheckedException {
+        @Nullable String usrName) throws IgniteCheckedException {
+        setDefaultUserName(usrName);
+
         CachingHadoopFileSystemFactory fac = new CachingHadoopFileSystemFactory();
 
         fac.setUri(uri);
@@ -125,18 +126,24 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             fac.setConfigPaths(cfgPath);
 
         setFileSystemFactory(fac);
-        setDefaultUserName(userName);
     }
 
     /**
-     * Sets secondary file system factory.
+     * Gets the default user name.
      *
-     * @param factory The factory to set.
+     * @return The default user name.
      */
-    public void setFileSystemFactory(HadoopFileSystemFactory factory) {
-        A.ensure(factory != null, "Factory value must not be null.");
+    public String getDefaultUserName() {
+        return dfltUsrName;
+    }
 
-        this.fsFactory = factory;
+    /**
+     * Sets the default user name.
+     *
+     * @param dfltUsrName The user name to set.
+     */
+    public void setDefaultUserName(String dfltUsrName) {
+        this.dfltUsrName = dfltUsrName;
     }
 
     /**
@@ -149,21 +156,12 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     }
 
     /**
-     * Sets the default user name.
+     * Sets secondary file system factory.
      *
-     * @param usrName The user name to set.
+     * @param factory The factory to set.
      */
-    public void setDefaultUserName(String usrName) {
-        this.dfltUsrName = usrName;
-    }
-
-    /**
-     * Gets the default user name.
-     *
-     * @return The default user name.
-     */
-    public String getDefaultUserName() {
-        return dfltUsrName;
+    public void setFileSystemFactory(HadoopFileSystemFactory factory) {
+        this.fsFactory = factory;
     }
 
     /**
@@ -510,9 +508,10 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        // #start() should not ever be invoked if these properties are not set:
-        A.ensure(fsFactory != null, "factory");
-        A.ensure(dfltUsrName != null, "userName");
+        dfltUsrName = IgfsUtils.fixUserName(dfltUsrName);
+
+        if (fsFactory == null)
+            fsFactory = new CachingHadoopFileSystemFactory();
 
         if (fsFactory instanceof LifecycleAware)
             ((LifecycleAware) fsFactory).start();

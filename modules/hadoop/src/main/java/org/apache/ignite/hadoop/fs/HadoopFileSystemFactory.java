@@ -22,7 +22,7 @@ import java.io.Serializable;
 import org.apache.hadoop.fs.FileSystem;
 
 /**
- * This factory is {@link Serializable} because it should be transferable over the network.
+ * Hadoop file system factory. Used to construct instance of {@link FileSystem} for Ignite.
  * <p>
  * Implementations may choose not to construct a new instance, but instead
  * return a previously created instance.
@@ -33,9 +33,9 @@ public interface HadoopFileSystemFactory extends Serializable {
      * All the other data needed for the file system creation are expected to be contained
      * in this object instance.
      *
-     * @param userName The user name
+     * @param usrName The user name
      * @return The file system.
      * @throws IOException On error.
      */
-    public FileSystem create(String userName) throws IOException;
+    public FileSystem create(String usrName) throws IOException;
 }

@@ -36,7 +36,7 @@ import java.net.URL;
 import java.util.Arrays;
 
 /**
- * Caching Hadoop file system factory. File systems are cache on per-user basis.
+ * Simple Hadoop file system factory factory which delegates to {@code FileSystem.get()}.
  */
 public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Externalizable, LifecycleAware {
     /** File system URI. */
@@ -46,10 +46,10 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
     protected String[] cfgPaths;
 
     /** Configuration of the secondary filesystem, never null. */
-    protected Configuration cfg;
+    protected transient Configuration cfg;
 
     /** */
-    protected URI fullUri;
+    protected transient URI fullUri;
 
     /**
      * Public non-arg constructor.
@@ -121,18 +121,6 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        // if secondary fs URI is not given explicitly, try to get it from the configuration:
-        if (uri == null)
-            fullUri = FileSystem.getDefaultUri(cfg);
-        else {
-            try {
-                fullUri = new URI(uri);
-            }
-            catch (URISyntaxException use) {
-                throw new IgniteException("Failed to resolve secondary file system URI: " + uri);
-            }
-        }
-
         cfg = HadoopUtils.safeCreateConfiguration();
 
         if (cfgPaths != null) {
@@ -150,6 +138,18 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
 
                     cfg.addResource(url);
                 }
+            }
+        }
+
+        // If secondary fs URI is not given explicitly, try to get it from the configuration:
+        if (uri == null)
+            fullUri = FileSystem.getDefaultUri(cfg);
+        else {
+            try {
+                fullUri = new URI(uri);
+            }
+            catch (URISyntaxException use) {
+                throw new IgniteException("Failed to resolve secondary file system URI: " + uri);
             }
         }
     }
