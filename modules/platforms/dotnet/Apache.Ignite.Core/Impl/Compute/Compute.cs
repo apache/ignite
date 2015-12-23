@@ -87,6 +87,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg, CancellationToken cancellationToken)
+        {
+            return _compute.ExecuteJavaTaskAsync<TRes>(taskName, taskArg).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public TReduceRes Execute<TArg, TJobRes, TReduceRes>(IComputeTask<TArg, TJobRes, TReduceRes> task, TArg taskArg)
         {
             return _compute.Execute(task, taskArg).Get();
@@ -96,6 +102,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         public Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg)
         {
             return _compute.Execute(task, taskArg).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg, 
+            CancellationToken cancellationToken)
+        {
+            return _compute.Execute(task, taskArg).GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */
