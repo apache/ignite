@@ -92,7 +92,13 @@ public class IgfsPaths implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        writePayload(out);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        try (ObjectOutput oo = new ObjectOutputStream(baos)) {
+            oo.writeObject(payload);
+        }
+
+        U.writeByteArray(out, baos.toByteArray());
 
         U.writeEnum(out, dfltMode);
 
@@ -101,7 +107,10 @@ public class IgfsPaths implements Externalizable {
             out.writeInt(pathModes.size());
 
             for (T2<IgfsPath, IgfsMode> pathMode : pathModes) {
+                assert pathMode.getKey() != null;
+
                 pathMode.getKey().writeExternal(out);
+
                 U.writeEnum(out, pathMode.getValue());
             }
         }
@@ -109,30 +118,15 @@ public class IgfsPaths implements Externalizable {
             out.writeBoolean(false);
     }
 
-    /**
-     * Write payload.
-     *
-     * @param out Output stream.
-     * @throws IOException If failed.
-     */
-    private void writePayload(ObjectOutput out) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        ObjectOutput oo = new ObjectOutputStream(baos);
-
-        try {
-            oo.writeObject(payload);
-        }
-        finally {
-            oo.close();
-        }
-
-        U.writeByteArray(out, baos.toByteArray());
-    }
-
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        readPayload(in);
+        byte[] factoryBytes = U.readByteArray(in);
+
+        assert factoryBytes != null;
+
+        try (ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes))) {
+            payload = oi.readObject();
+        }
 
         dfltMode = IgfsMode.fromOrdinal(in.readByte());
 
@@ -143,32 +137,11 @@ public class IgfsPaths implements Externalizable {
 
             for (int i = 0; i < size; i++) {
                 IgfsPath path = new IgfsPath();
+
                 path.readExternal(in);
 
-                T2<IgfsPath, IgfsMode> entry = new T2<>(path, IgfsMode.fromOrdinal(in.readByte()));
-
-                pathModes.add(entry);
+                pathModes.add(new T2<>(path, IgfsMode.fromOrdinal(in.readByte())));
             }
-        }
-    }
-
-    /**
-     * Read payload.
-     *
-     * @param in Input stream.
-     * @throws IOException If failed.
-     * @throws ClassNotFoundException If failed.
-     */
-    private void readPayload(ObjectInput in) throws IOException, ClassNotFoundException {
-        byte[] factoryBytes = U.readByteArray(in);
-
-        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes));
-
-        try {
-            payload = oi.readObject();
-        }
-        finally {
-            oi.close();
         }
     }
 }
