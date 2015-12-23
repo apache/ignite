@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.io.OutputStream;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -117,13 +116,18 @@ class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystem {
         return igfs.usedSpaceSize();
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<String, String> properties() {
-        return Collections.emptyMap();
-    }
+//    /** {@inheritDoc} */
+//    @Override public Map<String, String> properties() {
+//        return Collections.emptyMap();
+//    }
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         // No-op.
     }
+
+//    /** {@inheritDoc} */
+//    @Override public HadoopFileSystemFactory<IgfsEx> getSecondaryFileSystemFactory() {
+//        return null;
+//    }
 }

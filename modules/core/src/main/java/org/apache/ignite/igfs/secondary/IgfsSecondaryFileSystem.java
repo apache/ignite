@@ -193,12 +193,20 @@ public interface IgfsSecondaryFileSystem {
      */
     public long usedSpaceSize() throws IgniteException;
 
-    /**
-     * Gets the implementation specific properties of file system.
-     *
-     * @return Map of properties.
-     */
-    public Map<String,String> properties();
+//    /**
+//     * Gets the implementation specific properties of file system.
+//     *
+//     * @return Map of properties.
+//     * @deprecated Should not be used.
+//     */
+//    @Deprecated
+//    public Map<String,String> properties();
+//
+//    /**
+//     *
+//     * @return The factory.
+//     */
+//    public @Nullable HadoopFileSystemFactory<F> getSecondaryFileSystemFactory();
 
 
     /**

@@ -29,9 +29,9 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_CONFIG_PATH;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_URI;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_USER_NAME;
+//import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_CONFIG_PATH;
+//import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_URI;
+//import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_USER_NAME;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 
 /**
@@ -65,14 +65,16 @@ public class VisorIgfsConfiguration implements Serializable {
     /** Number of batches that can be concurrently sent to remote node. */
     private int perNodeParallelBatchCnt;
 
-    /** URI of the secondary Hadoop file system. */
-    private String secondaryHadoopFileSysUri;
+//    /** URI of the secondary Hadoop file system. */
+//    private String secondaryHadoopFileSysUri;
+//
+//    /** Path for the secondary hadoop file system config. */
+//    private String secondaryHadoopFileSysCfgPath;
+//
+//    /** User name for the secondary hadoop file system config. */
+//    private String secondaryHadoopFileSysUserName;
 
-    /** Path for the secondary hadoop file system config. */
-    private String secondaryHadoopFileSysCfgPath;
-
-    /** User name for the secondary hadoop file system config. */
-    private String secondaryHadoopFileSysUserName;
+//    private HadoopFileSystemFactory factory;
 
     /** IGFS instance mode. */
     private IgfsMode dfltMode;
@@ -143,13 +145,16 @@ public class VisorIgfsConfiguration implements Serializable {
 
         IgfsSecondaryFileSystem secFs = igfs.getSecondaryFileSystem();
 
-        if (secFs != null) {
-            Map<String, String> props = secFs.properties();
-
-            cfg.secondaryHadoopFileSysUri = props.get(SECONDARY_FS_URI);
-            cfg.secondaryHadoopFileSysCfgPath = props.get(SECONDARY_FS_CONFIG_PATH);
-            cfg.secondaryHadoopFileSysUserName = props.get(SECONDARY_FS_USER_NAME);
-        }
+//        if (secFs != null) {
+//            //Map<String, String> props = secFs.properties();
+//
+//            //cfg.secondaryHadoopFileSysUri = props.get(SECONDARY_FS_URI);
+//            //cfg.secondaryHadoopFileSysCfgPath = props.get(SECONDARY_FS_CONFIG_PATH);
+//            //cfg.secondaryHadoopFileSysUserName = props.get(SECONDARY_FS_USER_NAME);
+//
+//            // Just take and save the factory object:
+//            cfg.factory = secFs.getSecondaryFileSystemFactory();
+//        }
 
         cfg.dfltMode = igfs.getDefaultMode();
         cfg.pathModes = igfs.getPathModes();
@@ -250,26 +255,35 @@ public class VisorIgfsConfiguration implements Serializable {
         return perNodeParallelBatchCnt;
     }
 
-    /**
-     * @return URI of the secondary Hadoop file system.
-     */
-    @Nullable public String secondaryHadoopFileSystemUri() {
-        return secondaryHadoopFileSysUri;
-    }
+//    /**
+//     * @return URI of the secondary Hadoop file system.
+//     */
+//    @Nullable public String secondaryHadoopFileSystemUri() {
+//        return secondaryHadoopFileSysUri;
+//    }
+//
+//    /**
+//     * @return User name of the secondary Hadoop file system.
+//     */
+//    @Nullable public String secondaryHadoopFileSystemUserName() {
+//        return secondaryHadoopFileSysUserName;
+//    }
+//
+//    /**
+//     * @return Path for the secondary hadoop file system config.
+//     */
+//    @Nullable public String secondaryHadoopFileSystemConfigPath() {
+//        return secondaryHadoopFileSysCfgPath;
+//    }
 
-    /**
-     * @return User name of the secondary Hadoop file system.
-     */
-    @Nullable public String secondaryHadoopFileSystemUserName() {
-        return secondaryHadoopFileSysUserName;
-    }
-
-    /**
-     * @return Path for the secondary hadoop file system config.
-     */
-    @Nullable public String secondaryHadoopFileSystemConfigPath() {
-        return secondaryHadoopFileSysCfgPath;
-    }
+//    /**
+//     *
+//     * @param <T>
+//     * @return
+//     */
+//    public <T> HadoopFileSystemFactory<T> secondaryFileSystemFactory() {
+//        return factory;
+//    }
 
     /**
      * @return IGFS instance mode.

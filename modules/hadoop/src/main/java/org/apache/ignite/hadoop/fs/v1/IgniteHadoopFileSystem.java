@@ -51,7 +51,6 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
-import org.apache.ignite.internal.processors.hadoop.SecondaryFileSystemProvider;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsInputStream;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsOutputStream;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProxyInputStream;
@@ -68,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_IGFS_LOG_BATCH_SIZE;
@@ -85,8 +85,6 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PREFER_LOCAL_WRITES;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_CONFIG_PATH;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_URI;
 
 /**
  * {@code IGFS} Hadoop 1.x file system driver over file system API. To use
@@ -189,7 +187,8 @@ public class IgniteHadoopFileSystem extends FileSystem {
     /** {@inheritDoc} */
     @Override public URI getUri() {
         if (uri == null)
-            throw new IllegalStateException("URI is null (was IgniteHadoopFileSystem properly initialized?).");
+            throw new IllegalStateException("URI is null (was IgniteHadoopFileSystem properly initialized?) [closed="
+                + closeGuard.get() + ']');
 
         return uri;
     }
@@ -242,6 +241,8 @@ public class IgniteHadoopFileSystem extends FileSystem {
     @Override public void initialize(URI name, Configuration cfg) throws IOException {
         enterBusy();
 
+        assert !closeGuard.get();
+
         try {
             if (rmtClient != null)
                 throw new IOException("File system is already initialized: " + rmtClient);
@@ -260,6 +261,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
                     "://[name]/[optional_path], actual=" + name + ']');
 
             uri = name;
+            System.out.println("uri initialized: " + uri);
 
             uriAuthority = uri.getAuthority();
 
@@ -293,7 +295,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
             igfsGrpBlockSize = handshake.blockSize();
 
-            IgfsPaths paths = handshake.secondaryPaths();
+            final IgfsPaths paths = handshake.secondaryPaths();
 
             // Initialize client logger.
             Boolean logEnabled = parameter(cfg, PARAM_IGFS_LOG_ENABLED, uriAuthority, false);
@@ -327,21 +329,32 @@ public class IgniteHadoopFileSystem extends FileSystem {
             }
 
             if (initSecondary) {
-                Map<String, String> props = paths.properties();
+//                Map<String, String> props = paths.properties();
+//
+//                String secUri = props.get(SECONDARY_FS_URI);
+//                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
 
-                String secUri = props.get(SECONDARY_FS_URI);
-                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
+//                byte[] secFsFacoryBytes = handshake.getSecondaryFileSystemFactoryBytes();
+
+                HadoopFileSystemFactory factory = (HadoopFileSystemFactory)paths.getPayload();
+
+                A.ensure(factory != null, "Secondary file system factory should not be null.");
+
+                if (factory instanceof LifecycleAware)
+                    ((LifecycleAware) factory).start();
 
                 try {
-                    SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
+                    secondaryFs = factory.get(user);
 
-                    secondaryFs = secProvider.createFileSystem(user);
+                    secondaryUri = secondaryFs.getUri();
 
-                    secondaryUri = secProvider.uri();
+                    A.ensure(secondaryUri != null, "Secondary file system uri should not be null.");
+
+                    //assert secondaryUri.equals(uri2);
                 }
                 catch (IOException e) {
                     if (!mgmt)
-                        throw new IOException("Failed to connect to the secondary file system: " + secUri, e);
+                        throw new IOException("Failed to connect to the secondary file system: " + secondaryUri, e);
                     else
                         LOG.warn("Visor failed to create secondary file system (operations on paths with PROXY mode " +
                             "will have no effect): " + e.getMessage());
@@ -355,6 +368,23 @@ public class IgniteHadoopFileSystem extends FileSystem {
             leaveBusy();
         }
     }
+
+//    /**
+//     *
+//     * @param in
+//     * @throws IOException
+//     * @throws ClassNotFoundException
+//     */
+//    static HadoopFileSystemFactory readFactory(byte[] factoryBytes) throws IOException, ClassNotFoundException {
+//        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes));
+//
+//        try {
+//            return (HadoopFileSystemFactory<F>) oi.readObject();
+//        }
+//        finally {
+//            oi.close();
+//        }
+//    }
 
     /** {@inheritDoc} */
     @Override protected void checkPath(Path path) {
@@ -409,8 +439,9 @@ public class IgniteHadoopFileSystem extends FileSystem {
         if (clientLog.isLogEnabled())
             clientLog.close();
 
-        if (secondaryFs != null)
-            U.closeQuiet(secondaryFs);
+        U.closeQuiet(secondaryFs);
+
+        System.out.println("closed " + uri);
 
         // Reset initialized resources.
         uri = null;

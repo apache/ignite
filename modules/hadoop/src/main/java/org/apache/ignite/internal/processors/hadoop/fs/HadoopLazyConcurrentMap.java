@@ -57,6 +57,10 @@ public class HadoopLazyConcurrentMap<K, V extends Closeable> {
         assert getClass().getClassLoader() == Ignite.class.getClassLoader();
     }
 
+    public int size () {
+        return map.size();
+    }
+
     /**
      * Gets cached or creates a new value of V.
      * Never returns null.

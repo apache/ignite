@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -37,8 +40,8 @@ public class IgfsPaths implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Additional secondary file system properties. */
-    private Map<String, String> props;
+    /** */
+    private Object payload;
 
     /** Default IGFS mode. */
     private IgfsMode dfltMode;
@@ -56,22 +59,15 @@ public class IgfsPaths implements Externalizable {
     /**
      * Constructor.
      *
-     * @param props Additional secondary file system properties.
      * @param dfltMode Default IGFS mode.
      * @param pathModes Path modes.
      */
-    public IgfsPaths(Map<String, String> props, IgfsMode dfltMode, @Nullable List<T2<IgfsPath,
-        IgfsMode>> pathModes) {
-        this.props = props;
+    public IgfsPaths(Object payload,
+                     IgfsMode dfltMode,
+                     @Nullable List<T2<IgfsPath, IgfsMode>> pathModes) {
+        this.payload = payload;
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
-    }
-
-    /**
-     * @return Secondary file system properties.
-     */
-    public Map<String, String> properties() {
-        return props;
     }
 
     /**
@@ -90,7 +86,10 @@ public class IgfsPaths implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeStringMap(out, props);
+//        U.writeStringMap(out, props);
+
+        writePayload(out);
+
         U.writeEnum(out, dfltMode);
 
         if (pathModes != null) {
@@ -106,9 +105,32 @@ public class IgfsPaths implements Externalizable {
             out.writeBoolean(false);
     }
 
+    /**
+     *
+     * @param out
+     * @throws IOException
+     */
+    private void writePayload(ObjectOutput out) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        ObjectOutput oo = new ObjectOutputStream(baos);
+
+        try {
+            oo.writeObject(payload);
+        }
+        finally {
+            oo.close();
+        }
+
+        U.writeByteArray(out, baos.toByteArray());
+    }
+
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        props = U.readStringMap(in);
+//        props = U.readStringMap(in);
+
+        readPayload(in);
+
         dfltMode = IgfsMode.fromOrdinal(in.readByte());
 
         if (in.readBoolean()) {
@@ -125,5 +147,28 @@ public class IgfsPaths implements Externalizable {
                 pathModes.add(entry);
             }
         }
+    }
+
+    /**
+     *
+     * @param in
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    private void readPayload(ObjectInput in) throws IOException, ClassNotFoundException {
+        byte[] factoryBytes = U.readByteArray(in);
+
+        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(factoryBytes));
+
+        try {
+            payload = oi.readObject();
+        }
+        finally {
+            oi.close();
+        }
+    }
+
+    public Object getPayload() {
+        return payload;
     }
 }
