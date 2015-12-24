@@ -41,6 +41,15 @@ namespace ignite
          * Convert internal Ignite type into ODBC SQL return code.
          */
         int SqlResultToReturnCode(SqlResult result);
+
+        enum SqlState
+        {
+            SQL_STATE_UNKNOWN,
+
+            SQL_STATE_01004_DATA_TRUNCATED,
+
+            SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED
+        };
     }
 }
 

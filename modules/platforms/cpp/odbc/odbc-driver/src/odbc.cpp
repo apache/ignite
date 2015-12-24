@@ -1088,6 +1088,37 @@ SQLRETURN SQL_API SQLNumParams(SQLHSTMT stmt, SQLSMALLINT* paramCnt)
     return SQL_SUCCESS;
 }
 
+SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
+                                  SQLHANDLE     handle,
+                                  SQLSMALLINT   recNum,
+                                  SQLSMALLINT   diagId,
+                                  SQLPOINTER    diagInfo,
+                                  SQLSMALLINT   bufferLen,
+                                  SQLSMALLINT*  resLen)
+{
+    using ignite::odbc::Environment;
+    using ignite::odbc::Connection;
+    using ignite::odbc::Statement;
+
+    LOG_MSG("SQLGetDiagField called\n");
+
+
+    return(SQL_NO_DATA_FOUND);
+}
+
+SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
+                                SQLHANDLE       handle,
+                                SQLSMALLINT     recNum,
+                                SQLCHAR*        sqlState,
+                                SQLINTEGER*     nativeError,
+                                SQLCHAR*        msgText,
+                                SQLSMALLINT     bufferLen,
+                                SQLSMALLINT*    resLen)
+{
+    LOG_MSG("SQLGetDiagRec called\n");
+    return(SQL_NO_DATA_FOUND);
+}
+
 //
 // ==== Not implemented ====
 //
@@ -1336,31 +1367,6 @@ SQLRETURN SQL_API SQLBulkOperations(SQLHSTMT       stmt,
 {
     LOG_MSG("SQLBulkOperations called\n");
     return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
-                                  SQLHANDLE     handle,
-                                  SQLSMALLINT   recNum,
-                                  SQLSMALLINT   diagId,
-                                  SQLPOINTER    diagInfo,
-                                  SQLSMALLINT   bufferLen,
-                                  SQLSMALLINT*  resLen)
-{
-    LOG_MSG("SQLGetDiagField called\n");
-    return(SQL_NO_DATA_FOUND);
-}
-
-SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
-                                SQLHANDLE       handle,
-                                SQLSMALLINT     recNum,
-                                SQLCHAR*        sqlState,
-                                SQLINTEGER*     nativeError,
-                                SQLCHAR*        msgText,
-                                SQLSMALLINT     bufferLen,
-                                SQLSMALLINT*    resLen)
-{
-    LOG_MSG("SQLGetDiagRec called\n");
-    return(SQL_NO_DATA_FOUND);
 }
 
 SQLRETURN SQL_API SQLTablePrivileges(SQLHSTMT      stmt,
