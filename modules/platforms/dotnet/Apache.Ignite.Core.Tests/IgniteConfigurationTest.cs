@@ -33,10 +33,6 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestAllConfigurationProperties()
         {
-            //  TODO:
-            // Failed to add node to topology because local node is configured to use loopback address, but remote node is not (consider changing 'localAddress' configuration parameter) 
-            // We probably connect to some remote node, need to fix properties.
-
             var cfg = new IgniteConfiguration
             {
                 DiscoveryConfiguration = new DiscoveryConfiguration
@@ -48,8 +44,8 @@ namespace Apache.Ignite.Core.Tests
                     JoinTimeout = TimeSpan.FromSeconds(5),
                     IpFinder = new MulticastIpFinder
                     {
-                        MulticastGroup = "228.111.111.222",
-                        MulticastPort = 54522,
+                        MulticastGroup = "228.111.111.225",
+                        MulticastPort = 58522,
                         AddressRequestAttempts = 5,
                         EndPoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" },
                         TimeToLive = 25,
