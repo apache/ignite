@@ -17,10 +17,27 @@
 
 namespace Apache.Ignite.Core.Tests.NuGet
 {
+    using NUnit.Framework;
+
     /// <summary>
     /// Cache test.
     /// </summary>
     public class CacheTest
     {
+        /// <summary>
+        /// Tests cache put/get.
+        /// </summary>
+        [Test]
+        public void TestPutGet()
+        {
+            using (var ignite = Ignition.Start())
+            {
+                var cache = ignite.CreateCache<int, int>("cache");
+
+                cache[1] = 5;
+
+                Assert.AreEqual(5, cache[1]);
+            }
+        }
     }
 }
