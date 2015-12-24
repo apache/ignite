@@ -30,7 +30,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Apache.Ignite.Core, Version=1.5.0.7794, Culture=neutral, PublicKeyToken=a487a7ff0b2aaa4a, processorArchitecture=AMD64">
+    <Reference Include="Apache.Ignite.Core">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>packages\Apache.Ignite.NET\lib\net40\Apache.Ignite.Core.dll</HintPath>
     </Reference>
