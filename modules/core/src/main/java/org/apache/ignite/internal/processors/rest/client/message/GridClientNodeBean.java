@@ -225,13 +225,17 @@ public class GridClientNodeBean implements Externalizable {
 
         String dfltCacheMode = null;
 
-        Map<String, String> cacheMap = U.newHashMap(caches.size());
+        Map<String, String> cacheMap = null;
 
-        for (GridClientCacheBean cacheBean : caches) {
-            if (cacheBean.getName() == null)
-                dfltCacheMode = cacheBean.getMode().toString();
-            else
-                cacheMap.put(cacheBean.getName(), cacheBean.getMode().toString());
+        if (caches != null) {
+            cacheMap = U.newHashMap(caches.size());
+
+            for (GridClientCacheBean cacheBean : caches) {
+                if (cacheBean.getName() == null)
+                    dfltCacheMode = cacheBean.getMode().toString();
+                else
+                    cacheMap.put(cacheBean.getName(), cacheBean.getMode().toString());
+            }
         }
 
         U.writeString(out, dfltCacheMode);
