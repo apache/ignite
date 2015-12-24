@@ -55,11 +55,8 @@ public class GridClientNodeBean implements Externalizable {
     /** Node attributes. */
     private Map<String, Object> attrs;
 
-    /** Mode for cache with {@code null} name. */
-    private String dfltCacheMode;
-
     /** Node caches. */
-    private Map<String, String> caches;
+    private Collection<GridClientCacheBean> caches;
 
     /**
      * Gets node ID.
@@ -177,37 +174,19 @@ public class GridClientNodeBean implements Externalizable {
     /**
      * Gets configured node caches.
      *
-     * @return Map where key is cache name and value is cache mode ("LOCAL", "REPLICATED", "PARTITIONED").
+     * @return Configured node caches.
      */
-    public Map<String, String> getCaches() {
+    public Collection<GridClientCacheBean> getCaches() {
         return caches;
     }
 
     /**
      * Sets configured node caches.
      *
-     * @param caches Map where key is cache name and value is cache mode ("LOCAL", "REPLICATED", "PARTITIONED").
+     * @param caches Configured node caches.
      */
-    public void setCaches(Map<String, String> caches) {
+    public void setCaches(Collection<GridClientCacheBean> caches) {
         this.caches = caches;
-    }
-
-    /**
-     * Gets mode for cache with null name.
-     *
-     * @return Default cache mode.
-     */
-    public String getDefaultCacheMode() {
-        return dfltCacheMode;
-    }
-
-    /**
-     * Sets mode for default cache.
-     *
-     * @param dfltCacheMode Default cache mode.
-     */
-    public void setDefaultCacheMode(String dfltCacheMode) {
-        this.dfltCacheMode = dfltCacheMode;
     }
 
     /**
@@ -242,10 +221,8 @@ public class GridClientNodeBean implements Externalizable {
         out.writeInt(tcpPort);
         out.writeInt(0); // Jetty port.
 
-        U.writeString(out, dfltCacheMode);
-
         U.writeMap(out, attrs);
-        U.writeMap(out, caches);
+        U.writeCollection(out, caches);
 
         U.writeCollection(out, tcpAddrs);
         U.writeCollection(out, tcpHostNames);
@@ -263,10 +240,8 @@ public class GridClientNodeBean implements Externalizable {
         tcpPort = in.readInt();
         in.readInt(); // Jetty port.
 
-        dfltCacheMode = U.readString(in);
-
         attrs = U.readMap(in);
-        caches = U.readMap(in);
+        caches = U.readCollection(in);
 
         tcpAddrs = U.readCollection(in);
         tcpHostNames = U.readCollection(in);
