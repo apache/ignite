@@ -101,8 +101,13 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestClientMode()
         {
-            using (var ignite = Ignition.Start())
-            using (var ignite2 = Ignition.Start(new IgniteConfiguration {GridName = "client", ClientMode = true}))
+            using (var ignite = Ignition.Start(new IgniteConfiguration {LocalHost = "127.0.0.1"}))
+            using (var ignite2 = Ignition.Start(new IgniteConfiguration
+            {
+                GridName = "client",
+                ClientMode = true,
+                LocalHost = "127.0.0.1"
+            }))
             {
                 const string cacheName = "cache";
 
@@ -131,7 +136,8 @@ namespace Apache.Ignite.Core.Tests
                         SocketTimeout = TimeSpan.MaxValue
                     },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions()
+                JvmOptions = TestUtils.TestJavaOptions(),
+                LocalHost = "127.0.0.1"
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -157,7 +163,7 @@ namespace Apache.Ignite.Core.Tests
                         JoinTimeout = TimeSpan.MinValue,
                     },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions()
+                JvmOptions = TestUtils.TestJavaOptions(),
             };
 
             Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
@@ -193,7 +199,8 @@ namespace Apache.Ignite.Core.Tests
                         IpFinder = ipFinder
                     },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions()
+                JvmOptions = TestUtils.TestJavaOptions(),
+                LocalHost = "127.0.0.1"
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -216,6 +223,5 @@ namespace Apache.Ignite.Core.Tests
                 }
             }
         }
-
     }
 }
