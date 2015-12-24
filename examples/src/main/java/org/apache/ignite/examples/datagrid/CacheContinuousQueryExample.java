@@ -99,6 +99,10 @@ public class CacheContinuousQueryExample {
                     // Wait for a while while callback is notified about remaining puts.
                     Thread.sleep(2000);
                 }
+                finally {
+                    // Distributed cache could be removed from cluster only by #destroyCache() call.
+                    ignite.destroyCache(CACHE_NAME);
+                }
             }
         }
     }

@@ -78,6 +78,10 @@ public class CacheEntryProcessorExample {
                 // Demonstrates usage of EntryProcessor.invokeAll(...) method.
                 incrementEntriesWithInvokeAll(cache);
             }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
+            }
         }
     }
 

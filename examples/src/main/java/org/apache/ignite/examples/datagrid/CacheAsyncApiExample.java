@@ -78,6 +78,10 @@ public class CacheAsyncApiExample {
                     }
                 });
             }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
+            }
         }
     }
 }

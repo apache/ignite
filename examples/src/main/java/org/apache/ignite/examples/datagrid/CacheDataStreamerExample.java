@@ -81,6 +81,10 @@ public class CacheDataStreamerExample {
 
                 System.out.println(">>> Loaded " + ENTRY_COUNT + " keys in " + (end - start) + "ms.");
             }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
+            }
         }
     }
 }
