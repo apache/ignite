@@ -37,6 +37,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
@@ -55,6 +56,7 @@ import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -89,6 +91,9 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
     /** Initialized nodes */
     private static final List<ClusterNode> nodes = new ArrayList<>();
+
+    /** */
+    private static GridTimeoutProcessor timeoutProcessor;
 
     /** Flag indicating if listener should reject messages. */
     private static boolean reject;
@@ -472,6 +477,12 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
+        timeoutProcessor = new GridTimeoutProcessor(new GridTestKernalContext(log));
+
+        timeoutProcessor.start();
+
+        timeoutProcessor.onKernalStart();
+
         for (int i = 0; i < getSpiCount(); i++) {
             CommunicationSpi<Message> spi = newCommunicationSpi();
 
@@ -484,6 +495,8 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
             node.order(i);
 
             GridSpiTestContext ctx = initSpiContext();
+
+            ctx.timeoutProcessor(timeoutProcessor);
 
             ctx.setLocalNode(node);
 
@@ -548,6 +561,14 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        if (timeoutProcessor != null) {
+            timeoutProcessor.onKernalStop(true);
+
+            timeoutProcessor.stop(true);
+
+            timeoutProcessor = null;
+        }
+
         for (CommunicationSpi<Message> spi : spis.values()) {
             spi.onContextDestroyed();
 

@@ -86,7 +86,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
         qry.setPageSize(arg.pageSize());
         qry.setLocal(arg.local());
 
-        return c.query(qry);
+        return c.withKeepBinary().query(qry);
     }
 
     /**
@@ -142,7 +142,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
 
                 long start = U.currentTimeMillis();
 
-                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(c.query(qry));
+                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
 
                 Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 
@@ -216,8 +216,14 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
      * Wrapper for cache iterator to behave like {@link QueryCursor}.
      */
     private static class VisorNearCacheCursor<T> implements QueryCursor<T> {
+        /** Wrapped iterator.  */
         private final Iterator<T> it;
 
+        /**
+         * Wrapping constructor.
+         *
+         * @param it Near cache iterator to wrap.
+         */
         private VisorNearCacheCursor(Iterator<T> it) {
             this.it = it;
         }

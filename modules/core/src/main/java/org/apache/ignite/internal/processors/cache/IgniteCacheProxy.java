@@ -64,6 +64,7 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -460,8 +461,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         if (filter instanceof ScanQuery) {
             IgniteBiPredicate<K, V> p = ((ScanQuery)filter).getFilter();
 
-            qry = ctx.queries().createScanQuery(p != null ? p : ACCEPT_ALL, ((ScanQuery)filter).getPartition(),
-                isKeepBinary);
+            qry = ctx.queries().createScanQuery(p, ((ScanQuery)filter).getPartition(), isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
@@ -618,7 +618,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             validate(qry);
 
-            CacheOperationContext opCtxCall = ctx.operationContextPerCall();
+            final CacheOperationContext opCtxCall = ctx.operationContextPerCall();
 
             if (qry instanceof ContinuousQuery)
                 return (QueryCursor<R>)queryContinuous((ContinuousQuery<K, V>)qry, qry.isLocal(),
@@ -630,7 +630,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
                     return (QueryCursor<R>)new QueryCursorImpl<>(new Iterable<Cache.Entry<K, V>>() {
                         @Override public Iterator<Cache.Entry<K, V>> iterator() {
-                            return ctx.kernalContext().query().queryLocal(ctx, p);
+                            return ctx.kernalContext().query().queryLocal(ctx, p,
+                                opCtxCall != null && opCtxCall.isKeepBinary());
                         }
                     });
 
@@ -1481,6 +1482,40 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @Override public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... args)
         throws EntryProcessorException {
         return invoke(key, (EntryProcessor<K, V, T>)entryProcessor, args);
+    }
+
+    /**
+     * @param topVer Locked topology version.
+     * @param key Key.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Invoke result.
+     */
+    public <T> T invoke(@Nullable AffinityTopologyVersion topVer,
+        K key,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) {
+        try {
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
+
+            try {
+                if (isAsync())
+                    throw new UnsupportedOperationException();
+                else {
+                    EntryProcessorResult<T> res = delegate.invoke(topVer, key, entryProcessor, args);
+
+                    return res != null ? res.get() : null;
+                }
+            }
+            finally {
+                onLeave(gate, prev);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
     }
 
     /** {@inheritDoc} */

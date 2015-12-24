@@ -97,6 +97,24 @@ public abstract class AbstractSchemaImportTest extends TestCase {
             " tsCol TIMESTAMP," +
             " arrCol BINARY(10))");
 
+        stmt.executeUpdate("CREATE SCHEMA IF NOT EXISTS TESTSCHEMA");
+
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS TESTSCHEMA.TST(pk INTEGER PRIMARY KEY, " +
+            " boolCol BOOLEAN NOT NULL," +
+            " byteCol TINYINT NOT NULL," +
+            " shortCol SMALLINT NOT NULL," +
+            " intCol INTEGER NOT NULL, " +
+            " longCol BIGINT NOT NULL," +
+            " floatCol REAL NOT NULL," +
+            " doubleCol DOUBLE NOT NULL," +
+            " doubleCol2 DOUBLE NOT NULL, " +
+            " bigDecimalCol DECIMAL(10, 0)," +
+            " strCol VARCHAR(10)," +
+            " dateCol DATE," +
+            " timeCol TIME," +
+            " tsCol TIMESTAMP, " +
+            " arrCol BINARY(10))");
+
         conn.commit();
 
         U.closeQuiet(stmt);

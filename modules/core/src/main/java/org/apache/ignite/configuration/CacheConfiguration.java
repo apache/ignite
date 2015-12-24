@@ -365,13 +365,16 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private IgnitePredicate<ClusterNode> nodeFilter;
 
     /** */
+    private String sqlSchema;
+
+    /** */
     private boolean sqlEscapeAll;
 
     /** */
-    private transient Class<?>[] indexedTypes;
+    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
 
     /** */
-    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
+    private transient Class<?>[] indexedTypes;
 
     /** */
     private boolean snapshotableIdx;
@@ -466,6 +469,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         rebalanceTimeout = cc.getRebalanceTimeout();
         rebalanceThrottle = cc.getRebalanceThrottle();
         snapshotableIdx = cc.isSnapshotableIndex();
+        sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
         sqlOnheapRowCacheSize = cc.getSqlOnheapRowCacheSize();
@@ -1770,13 +1774,47 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets timeout in milliseconds after which long query warning will be printed.
+     * Sets timeout in milliseconds after which long query warning will be printed.
      *
      * @param longQryWarnTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setLongQueryWarningTimeout(long longQryWarnTimeout) {
         this.longQryWarnTimeout = longQryWarnTimeout;
+
+        return this;
+    }
+
+    /**
+     * Gets custom name of the sql schema. If custom sql schema is not set then {@code null} will be returned and
+     * quoted case sensitive name will be used as sql schema.
+     *
+     * @return Schema name for current cache according to SQL ANSI-99. Could be {@code null}.
+     */
+    @Nullable public String getSqlSchema() {
+        return sqlSchema;
+    }
+
+    /**
+     * Sets sql schema to be used for current cache. This name will correspond to SQL ANSI-99 standard.
+     * Nonquoted identifiers are not case sensitive. Quoted identifiers are case sensitive.
+     * <p/>
+     * Be aware of using the same string in case sensitive and case insensitive manner simultaneously, since
+     * behaviour for such case is not specified.
+     * <p/>
+     * When sqlSchema is not specified, quoted {@code cacheName} is used instead.
+     * <p/>
+     * {@code sqlSchema} could not be an empty string. Has to be {@code "\"\""} instead.
+     *
+     * @param sqlSchema Schema name for current cache according to SQL ANSI-99. Should not be {@code null}.
+     *
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSqlSchema(String sqlSchema) {
+        A.ensure((sqlSchema != null), "Schema could not be null.");
+        A.ensure(!sqlSchema.isEmpty(), "Schema could not be empty.");
+
+        this.sqlSchema = sqlSchema;
 
         return this;
     }

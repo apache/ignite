@@ -62,6 +62,9 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     /** Marshaller. */
     private final Marshaller marsh;
 
+    /** */
+    private byte[] marshErrBytes;
+
     /**
      * @param ctx Kernal context.
      */
@@ -85,6 +88,9 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
+
+        marshErrBytes = marsh.marshal(new IgniteCheckedException("Failed to marshal response error, " +
+            "see node log for details."));
 
         flusher = new IgniteThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
             @Override protected void body() throws InterruptedException {
@@ -324,10 +330,10 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         try {
             errBytes = err != null ? marsh.marshal(err) : null;
         }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to marshal message.", e);
+        catch (Exception e) {
+            U.error(log, "Failed to marshal error [err=" + err + ", marshErr=" + e + ']', e);
 
-            return;
+            errBytes = marshErrBytes;
         }
 
         DataStreamerResponse res = new DataStreamerResponse(reqId, errBytes, forceLocDep);

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,17 +15,9 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core
-{
-    // Doxygen main page
+/**
+ * <!-- Package description. -->
+ * Model classes for Apache Ignite examples.
+ */
 
-    /**
-
-    \mainpage Apache Ignite.NET In-Memory Data Fabric
-
-    Apache Ignite.NET In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for 
-    computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with 
-    traditional disk-based or flash-based technologies.
-
-    */
-}
+package org.apache.ignite.examples.model;

@@ -142,11 +142,20 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * Initializes future.
      */
     public void init() {
-        AffinityTopologyVersion topVer = tx == null ?
-            (canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion()) :
-            tx.topologyVersion();
+        AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
-        map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+        if (lockedTopVer != null) {
+            canRemap = false;
+
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), lockedTopVer);
+        }
+        else {
+            AffinityTopologyVersion topVer = tx == null ?
+                (canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion()) :
+                tx.topologyVersion();
+
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+        }
 
         markInitialized();
     }
