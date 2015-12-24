@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -49,10 +52,8 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
 
         final Ignite ignite = startGrid(0);
 
-        Thread t = new Thread(new Runnable() {
-            @Override public void run() {
-                Thread.currentThread().setName("deploy-thread");
-
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
                 IgniteServices svcs = ignite.services();
 
                 IgniteServices services = svcs.withAsync();
@@ -67,13 +68,13 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
                 catch (IgniteException e) {
                     finishLatch.countDown();
                 }
-                catch (Throwable e) {
-                    log.error("Service deployment error: ", e);
+                finally {
+                    finishLatch.countDown();
                 }
-            }
-        });
 
-        t.start();
+                return null;
+            }
+        }, "deploy-thread");
 
         depLatch.await();
 
@@ -85,6 +86,8 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
             U.dumpThreads(log);
 
         assertTrue("Deploy future isn't completed", wait);
+
+        fut.get();
     }
 
     /**
