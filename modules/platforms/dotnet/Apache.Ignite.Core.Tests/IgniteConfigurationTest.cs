@@ -42,15 +42,9 @@ namespace Apache.Ignite.Core.Tests
                     MaxAckTimeout = TimeSpan.FromSeconds(3),
                     SocketTimeout = TimeSpan.FromSeconds(4),
                     JoinTimeout = TimeSpan.FromSeconds(5),
-                    IpFinder = new MulticastIpFinder
+                    IpFinder = new StaticIpFinder
                     {
-                        MulticastGroup = "228.111.111.225",
-                        MulticastPort = 58522,
-                        AddressRequestAttempts = 5,
-                        EndPoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" },
-                        TimeToLive = 25,
-                        LocalAddress = "127.0.0.1",
-                        ResponseTimeout = TimeSpan.FromSeconds(6)
+                        EndPoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
                     }
                 },
                 GridName = "gridName1",
@@ -80,19 +74,11 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(disco.SocketTimeout, resDisco.SocketTimeout);
                 Assert.AreEqual(disco.JoinTimeout, resDisco.JoinTimeout);
 
-                var ip = (MulticastIpFinder) disco.IpFinder;
-                var resIp = (MulticastIpFinder) resDisco.IpFinder;
-
-                Assert.AreEqual(ip.MulticastGroup, resIp.MulticastGroup);
-                Assert.AreEqual(ip.MulticastPort, resIp.MulticastPort);
-                Assert.AreEqual(ip.AddressRequestAttempts, resIp.AddressRequestAttempts);
+                var ip = (StaticIpFinder) disco.IpFinder;
+                var resIp = (StaticIpFinder) resDisco.IpFinder;
 
                 // There can be extra IPv6 endpoints
                 Assert.AreEqual(ip.EndPoints, resIp.EndPoints.Take(2).Select(x => x.Trim('/')).ToArray());
-
-                Assert.AreEqual(ip.TimeToLive, resIp.TimeToLive);
-                Assert.AreEqual(ip.LocalAddress, resIp.LocalAddress);
-                Assert.AreEqual(ip.ResponseTimeout, resIp.ResponseTimeout);
 
                 Assert.AreEqual(cfg.GridName, resCfg.GridName);
                 Assert.AreEqual(cfg.IncludedEventTypes, resCfg.IncludedEventTypes);
