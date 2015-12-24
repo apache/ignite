@@ -1009,107 +1009,111 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      */
     private void checkEvents(final List<T3<Object, Object, Object>> expEvts, final CacheEventListener2 lsnr,
         boolean lostAllow, boolean wait) throws Exception {
-        if (wait)
+        if (wait) {
             GridTestUtils.waitForCondition(new PA() {
-                @Override public boolean apply() {
+                @Override
+                public boolean apply() {
                     return expEvts.size() == lsnr.size();
                 }
             }, 2000L);
-
-        Map<Integer, List<CacheEntryEvent<?, ?>>> prevMap = new HashMap<>(lsnr.evts.size());
-
-        for (Map.Entry<Integer, List<CacheEntryEvent<?, ?>>> e : lsnr.evts.entrySet())
-            prevMap.put(e.getKey(), new ArrayList<>(e.getValue()));
-
-        List<T3<Object, Object, Object>> lostEvts = new ArrayList<>();
-
-        for (T3<Object, Object, Object> exp : expEvts) {
-            List<CacheEntryEvent<?, ?>> rcvdEvts = lsnr.evts.get(exp.get1());
-
-            if (F.eq(exp.get2(), exp.get3()))
-                continue;
-
-            if (rcvdEvts == null || rcvdEvts.isEmpty()) {
-                lostEvts.add(exp);
-
-                continue;
-            }
-
-            Iterator<CacheEntryEvent<?, ?>> iter = rcvdEvts.iterator();
-
-            boolean found = false;
-
-            while (iter.hasNext()) {
-                CacheEntryEvent<?, ?> e = iter.next();
-
-                if ((exp.get2() != null && e.getValue() != null && exp.get2().equals(e.getValue()))
-                    && equalOldValue(e, exp)) {
-                    found = true;
-
-                    iter.remove();
-
-                    break;
-                }
-            }
-
-            // Lost event is acceptable.
-            if (!found)
-                lostEvts.add(exp);
         }
 
-        boolean dup = false;
+        synchronized (lsnr) {
+            Map<Integer, List<CacheEntryEvent<?, ?>>> prevMap = new HashMap<>(lsnr.evts.size());
 
-        // Check duplicate.
-        if (!lsnr.evts.isEmpty()) {
-            for (List<CacheEntryEvent<?, ?>> evts : lsnr.evts.values()) {
-                if (!evts.isEmpty()) {
-                    for (CacheEntryEvent<?, ?> e : evts) {
-                        boolean found = false;
+            for (Map.Entry<Integer, List<CacheEntryEvent<?, ?>>> e : lsnr.evts.entrySet())
+                prevMap.put(e.getKey(), new ArrayList<>(e.getValue()));
 
-                        for (T3<Object, Object, Object> lostEvt : lostEvts) {
-                            if (e.getKey().equals(lostEvt.get1()) && e.getValue().equals(lostEvt.get2())) {
-                                found = true;
+            List<T3<Object, Object, Object>> lostEvts = new ArrayList<>();
 
-                                lostEvts.remove(lostEvt);
+            for (T3<Object, Object, Object> exp : expEvts) {
+                List<CacheEntryEvent<?, ?>> rcvdEvts = lsnr.evts.get(exp.get1());
+
+                if (F.eq(exp.get2(), exp.get3()))
+                    continue;
+
+                if (rcvdEvts == null || rcvdEvts.isEmpty()) {
+                    lostEvts.add(exp);
+
+                    continue;
+                }
+
+                Iterator<CacheEntryEvent<?, ?>> iter = rcvdEvts.iterator();
+
+                boolean found = false;
+
+                while (iter.hasNext()) {
+                    CacheEntryEvent<?, ?> e = iter.next();
+
+                    if ((exp.get2() != null && e.getValue() != null && exp.get2().equals(e.getValue()))
+                            && equalOldValue(e, exp)) {
+                        found = true;
+
+                        iter.remove();
+
+                        break;
+                    }
+                }
+
+                // Lost event is acceptable.
+                if (!found)
+                    lostEvts.add(exp);
+            }
+
+            boolean dup = false;
+
+            // Check duplicate.
+            if (!lsnr.evts.isEmpty()) {
+                for (List<CacheEntryEvent<?, ?>> evts : lsnr.evts.values()) {
+                    if (!evts.isEmpty()) {
+                        for (CacheEntryEvent<?, ?> e : evts) {
+                            boolean found = false;
+
+                            for (T3<Object, Object, Object> lostEvt : lostEvts) {
+                                if (e.getKey().equals(lostEvt.get1()) && e.getValue().equals(lostEvt.get2())) {
+                                    found = true;
+
+                                    lostEvts.remove(lostEvt);
+
+                                    break;
+                                }
+                            }
+
+                            if (!found) {
+                                dup = true;
 
                                 break;
                             }
                         }
+                    }
+                }
 
-                        if (!found) {
-                            dup = true;
-
-                            break;
+                if (dup) {
+                    for (List<CacheEntryEvent<?, ?>> e : lsnr.evts.values()) {
+                        if (!e.isEmpty()) {
+                            for (CacheEntryEvent<?, ?> event : e)
+                                log.error("Got duplicate event: " + event);
                         }
                     }
                 }
             }
 
-            if (dup) {
-                for (List<CacheEntryEvent<?, ?>> e : lsnr.evts.values()) {
-                    if (!e.isEmpty()) {
-                        for (CacheEntryEvent<?, ?> event : e)
-                            log.error("Got duplicate event: " + event);
-                    }
-                }
-            }
-        }
+            if (!lostAllow && lostEvts.size() > 100) {
+                log.error("Lost event cnt: " + lostEvts.size());
 
-        if (!lostAllow && lostEvts.size() > 100) {
+                for (T3<Object, Object, Object> e : lostEvts)
+                    log.error("Lost event: " + e);
+
+                fail("Lose events, see log for details.");
+            }
+
             log.error("Lost event cnt: " + lostEvts.size());
 
-            for (T3<Object, Object, Object> e : lostEvts)
-                log.error("Lost event: " + e);
+            expEvts.clear();
 
-            fail("Lose events, see log for details.");
+            lsnr.evts.clear();
+            lsnr.vals.clear();
         }
-
-        log.error("Lost event cnt: " + lostEvts.size());
-
-        expEvts.clear();
-
-        lsnr.evts.clear();
-        lsnr.vals.clear();
     }
 
     /**
@@ -2111,7 +2115,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         /**
          * @return Count events.
          */
-        public int size() {
+        public synchronized int size() {
             int size = 0;
 
             for (List<CacheEntryEvent<?, ?>> e : evts.values())
