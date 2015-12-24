@@ -28,7 +28,7 @@ import org.w3c.dom.Element;
 
 /**
  * Descriptor for particular field in a POJO object, specifying how this field
- * should be written to or loaded from Cassandra
+ * should be written to or loaded from Cassandra.
  */
 public abstract class PojoField {
     /** Name attribute of XML element describing Pojo field. */

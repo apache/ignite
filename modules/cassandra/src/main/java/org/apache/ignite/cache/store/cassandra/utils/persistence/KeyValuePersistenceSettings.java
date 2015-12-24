@@ -163,7 +163,7 @@ public class KeyValuePersistenceSettings {
     /**
      * Returns list of POJO fields to be mapped to Cassandra table columns.
      *
-     * @return POJO fields list
+     * @return POJO fields list.
      */
     @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getFields() {
@@ -181,7 +181,7 @@ public class KeyValuePersistenceSettings {
     /**
      * Returns list of Ignite cache key POJO fields to be mapped to Cassandra table columns.
      *
-     * @return POJO fields list
+     * @return POJO fields list.
      */
     @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getKeyFields() {
@@ -191,7 +191,7 @@ public class KeyValuePersistenceSettings {
     /**
      * Returns list of Ignite cache value POJO fields to be mapped to Cassandra table columns.
      *
-     * @return POJO fields list
+     * @return POJO fields list.
      */
     @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getValueFields() {
@@ -201,7 +201,7 @@ public class KeyValuePersistenceSettings {
     /**
      * Returns DDL statement to create Cassandra keyspace.
      *
-     * @return keyspace DDL statement.
+     * @return Keyspace DDL statement.
      */
     public String getKeyspaceDDLStatement() {
         StringBuilder builder = new StringBuilder();
@@ -225,7 +225,7 @@ public class KeyValuePersistenceSettings {
     /**
      * Returns DDL statement to create Cassandra table.
      *
-     * @return table DDL statement.
+     * @return Table DDL statement.
      */
     public String getTableDDLStatement() {
         String colsDDL = keyPersistenceSettings.getTableColumnsDDL() + ", " + valPersistenceSettings.getTableColumnsDDL();
@@ -274,11 +274,10 @@ public class KeyValuePersistenceSettings {
     }
 
     /**
-     * Loads Ignite cache persistence settings from resource
+     * Loads Ignite cache persistence settings from resource.
      *
-     * @param rsrc resource
-     *
-     * @return string containing xml with Ignite cache persistence settings
+     * @param rsrc Resource.
+     * @return String containing xml with Ignite cache persistence settings.
      */
     private String loadSettings(Resource rsrc) {
         StringBuilder settings = new StringBuilder();
@@ -334,9 +333,9 @@ public class KeyValuePersistenceSettings {
     }
 
     /**
-     * Initializes persistence settings from xml string
+     * Initializes persistence settings from XML string.
      *
-     * @param settings xml string containing Ignite cache persistence settings configuration
+     * @param settings XML string containing Ignite cache persistence settings configuration.
      */
     @SuppressWarnings("IfCanBeSwitch")
     private void init(String settings) {
@@ -355,18 +354,18 @@ public class KeyValuePersistenceSettings {
         Element root = doc.getDocumentElement();
 
         if (!PERSISTENCE_NODE.equals(root.getNodeName())) {
-            throw new IllegalArgumentException("Incorrect persistence settings specified. Root XML element " +
-                "should be 'persistence'");
+            throw new IllegalArgumentException("Incorrect persistence settings specified. " +
+                "Root XML element should be 'persistence'");
         }
 
         if (!root.hasAttribute(KEYSPACE_ATTR)) {
-            throw new IllegalArgumentException("Incorrect persistence settings '" + KEYSPACE_ATTR + "' attribute " +
-                "should be specified");
+            throw new IllegalArgumentException("Incorrect persistence settings '" + KEYSPACE_ATTR +
+                "' attribute should be specified");
         }
 
         if (!root.hasAttribute(TABLE_ATTR)) {
-            throw new IllegalArgumentException("Incorrect persistence settings '" + TABLE_ATTR + "' attribute " +
-                "should be specified");
+            throw new IllegalArgumentException("Incorrect persistence settings '" + TABLE_ATTR +
+                "' attribute should be specified");
         }
 
         keyspace = root.getAttribute(KEYSPACE_ATTR).trim();
@@ -376,8 +375,8 @@ public class KeyValuePersistenceSettings {
             ttl = extractIntAttribute(root, TTL_ATTR);
 
         if (!root.hasChildNodes()) {
-            throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification," +
-                " there are no key and value persistence settings specified");
+            throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification, " +
+                "there are no key and value persistence settings specified");
         }
 
         NodeList children = root.getChildNodes();
@@ -407,13 +406,13 @@ public class KeyValuePersistenceSettings {
         }
 
         if (keyPersistenceSettings == null) {
-            throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification," +
-                " there are no key persistence settings specified");
+            throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification, " +
+                "there are no key persistence settings specified");
         }
 
         if (valPersistenceSettings == null) {
-            throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification," +
-                " there are no value persistence settings specified");
+            throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification, " +
+                "there are no value persistence settings specified");
         }
 
         List<PojoField> keyFields = keyPersistenceSettings.getFields();
@@ -421,14 +420,14 @@ public class KeyValuePersistenceSettings {
 
         if (PersistenceStrategy.POJO.equals(keyPersistenceSettings.getStrategy()) &&
             (keyFields == null || keyFields.isEmpty())) {
-            throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification," +
-                " there are no key fields found");
+            throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification, " +
+                "there are no key fields found");
         }
 
         if (PersistenceStrategy.POJO.equals(valPersistenceSettings.getStrategy()) &&
             (valFields == null || valFields.isEmpty())) {
-            throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification," +
-                " there are no value fields found");
+            throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification, " +
+                "there are no value fields found");
         }
 
         if (keyFields == null || keyFields.isEmpty() || valFields == null || valFields.isEmpty())
@@ -437,8 +436,8 @@ public class KeyValuePersistenceSettings {
         for (PojoField keyField : keyFields) {
             for (PojoField valField : valFields) {
                 if (keyField.getColumn().equals(valField.getColumn())) {
-                    throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification," +
-                        " key column '" + keyField.getColumn() + "' also specified as a value column");
+                    throw new IllegalArgumentException("Incorrect Cassandra persistence settings specification, " +
+                        "key column '" + keyField.getColumn() + "' also specified as a value column");
                 }
             }
         }

@@ -31,15 +31,19 @@ import org.w3c.dom.NodeList;
 public class KeyPersistenceSettings extends PersistenceSettings {
     /** Partition key XML tag. */
     private static final String PARTITION_KEY_ELEMENT = "partitionKey";
+
     /** Cluster key XML tag. */
     private static final String CLUSTER_KEY_ELEMENT = "clusterKey";
+
     /** POJO field XML tag. */
     private static final String FIELD_ELEMENT = "field";
 
     /** POJO fields. */
     private List<PojoField> fields = new LinkedList<>();
+
     /** Partition key fields. */
     private List<PojoField> partKeyFields = new LinkedList<>();
+
     /** Cluster key fields. */
     private List<PojoField> clusterKeyFields = new LinkedList<>();
 

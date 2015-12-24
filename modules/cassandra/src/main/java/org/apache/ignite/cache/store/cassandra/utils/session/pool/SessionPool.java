@@ -76,7 +76,7 @@ public class SessionPool {
     }
 
     /** Sessions monitor sleep timeout. */
-    private static final long SLEEP_TIMEOUT = 60000; // 1 minute
+    private static final long SLEEP_TIMEOUT = 60000; // 1 minute.
 
     /** Sessions which were returned to pool. */
     private static final Map<CassandraSessionImpl, SessionWrapper> sessions = new HashMap<>();

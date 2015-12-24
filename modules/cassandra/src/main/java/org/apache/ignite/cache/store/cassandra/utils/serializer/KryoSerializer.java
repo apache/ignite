@@ -33,6 +33,9 @@ public class KryoSerializer implements Serializer {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final int DFLT_BUFFER_SIZE = 4096;
+
     /** Thread local instance of {@link com.esotericsoftware.kryo.Kryo} */
     private transient ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
         protected Kryo initialValue() {
@@ -50,7 +53,8 @@ public class KryoSerializer implements Serializer {
         Output out = null;
 
         try {
-            stream = new ByteArrayOutputStream(4096);
+            stream = new ByteArrayOutputStream(DFLT_BUFFER_SIZE);
+
             out = new Output(stream);
 
             kryos.get().writeClassAndObject(out, obj);
@@ -75,6 +79,7 @@ public class KryoSerializer implements Serializer {
         try {
             stream = new ByteArrayInputStream(buf.array());
             in = new Input(stream);
+
             return kryos.get().readClassAndObject(in);
         }
         catch (Throwable e) {
