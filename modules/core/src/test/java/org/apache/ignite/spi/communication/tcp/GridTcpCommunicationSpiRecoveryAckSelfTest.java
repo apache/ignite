@@ -179,8 +179,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
                                 @Override public boolean apply() {
                                     return recoveryDesc.messagesFutures().isEmpty();
                                 }
-                            }, spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() + 7000 :
-                                10_000);
+                            }, 10_000);
 
                             assertEquals("Unexpected messages: " + recoveryDesc.messagesFutures(), 0,
                                 recoveryDesc.messagesFutures().size());
