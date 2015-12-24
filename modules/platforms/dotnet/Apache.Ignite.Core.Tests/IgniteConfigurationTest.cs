@@ -30,6 +30,12 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class IgniteConfigurationTest
     {
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
+        {
+            Ignition.StopAll(true);
+        }
+
         [Test]
         public void TestAllConfigurationProperties()
         {
