@@ -17,17 +17,13 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import java.io.Serializable;
+import org.apache.ignite.internal.client.GridClientCacheMode;
 
 /**
  * Cache bean.
  */
-public class GridClientCacheBean implements Externalizable {
+public class GridClientCacheBean implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,12 +35,21 @@ public class GridClientCacheBean implements Externalizable {
     /**
      * Cache mode
      */
-    private CacheMode mode;
+    private GridClientCacheMode mode;
 
     /**
      * Custom name of the sql schema.
      */
     private String sqlSchema;
+
+    public GridClientCacheBean() {
+    }
+
+    public GridClientCacheBean(String name, GridClientCacheMode mode, String sqlSchema) {
+        this.name = name;
+        this.mode = mode;
+        this.sqlSchema = sqlSchema;
+    }
 
     /**
      * Gets cache name.
@@ -69,7 +74,7 @@ public class GridClientCacheBean implements Externalizable {
      *
      * @return Cache mode.
      */
-    public CacheMode getMode() {
+    public GridClientCacheMode getMode() {
         return mode;
     }
 
@@ -78,7 +83,7 @@ public class GridClientCacheBean implements Externalizable {
      *
      * @param mode Cache mode.
      */
-    public void setMode(CacheMode mode) {
+    public void setMode(GridClientCacheMode mode) {
         this.mode = mode;
     }
 
@@ -122,26 +127,6 @@ public class GridClientCacheBean implements Externalizable {
         GridClientCacheBean other = (GridClientCacheBean) obj;
 
         return name == null ? other.name == null : name.equals(other.name);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
-        U.writeEnum(out, mode);
-        U.writeString(out, sqlSchema);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readString(in);
-        mode = CacheMode.fromOrdinal(in.readByte());
-        sqlSchema = U.readString(in);
     }
 
     /**

@@ -929,7 +929,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         if (nodeBean.getCaches() != null) {
             for (GridClientCacheBean cacheBean : nodeBean.getCaches()) {
                 try {
-                    caches.put(cacheBean.getName(), GridClientCacheMode.valueOf(cacheBean.getMode().toString()));
+                    caches.put(cacheBean.getName(), cacheBean.getMode());
                 }
                 catch (IllegalArgumentException ignored) {
                     log.warning("Invalid cache mode received from remote node (will ignore) [srv=" + serverAddress() +

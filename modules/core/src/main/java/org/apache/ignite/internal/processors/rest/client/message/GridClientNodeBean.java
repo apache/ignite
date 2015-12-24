@@ -21,10 +21,12 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.client.GridClientCacheMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -221,8 +223,21 @@ public class GridClientNodeBean implements Externalizable {
         out.writeInt(tcpPort);
         out.writeInt(0); // Jetty port.
 
+        String dfltCacheMode = null;
+
+        Map<String, String> cacheMap = U.newHashMap(caches.size());
+
+        for (GridClientCacheBean cacheBean : caches) {
+            if (cacheBean.getName() == null)
+                dfltCacheMode = cacheBean.getMode().toString();
+            else
+                cacheMap.put(cacheBean.getName(), cacheBean.getMode().toString());
+        }
+
+        U.writeString(out, dfltCacheMode);
+
         U.writeMap(out, attrs);
-        U.writeCollection(out, caches);
+        U.writeMap(out, cacheMap);
 
         U.writeCollection(out, tcpAddrs);
         U.writeCollection(out, tcpHostNames);
@@ -240,8 +255,24 @@ public class GridClientNodeBean implements Externalizable {
         tcpPort = in.readInt();
         in.readInt(); // Jetty port.
 
+        String dfltCacheMode = U.readString(in);
+
         attrs = U.readMap(in);
-        caches = U.readCollection(in);
+
+        Map<String, String> cacheMap = U.readMap(in);
+
+        if (cacheMap == null && dfltCacheMode != null) {
+            cacheMap = U.newHashMap(1);
+
+            cacheMap.put(null, dfltCacheMode);
+        }
+
+        if (cacheMap != null) {
+            caches = new ArrayList<>(cacheMap.size());
+
+            for (Map.Entry<String, String> e : cacheMap.entrySet())
+                caches.add(new GridClientCacheBean(e.getKey(), GridClientCacheMode.valueOf(e.getValue()), null));
+        }
 
         tcpAddrs = U.readCollection(in);
         tcpHostNames = U.readCollection(in);
