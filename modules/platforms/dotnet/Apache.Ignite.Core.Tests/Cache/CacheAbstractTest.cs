@@ -3078,18 +3078,19 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestDestroy()
         {
-            // Create a cache with random name
             var cacheName = "template" + Guid.NewGuid();
 
             var ignite = GetIgnite(0);
 
             var cache = ignite.CreateCache<int, int>(cacheName);
 
-            cache[1] = 1;
+            Assert.IsNotNull(ignite.GetCache<int, int>(cacheName));
 
             ignite.DestroyCache(cache.Name);
 
-            Assert.Throws<IgniteException>(() => ignite.GetCache<int, int>(cacheName));
+            var ex = Assert.Throws<ArgumentException>(() => ignite.GetCache<int, int>(cacheName));
+
+            Assert.IsTrue(ex.Message.StartsWith("Cache doesn't exist"));
         }
 
 
