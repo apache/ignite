@@ -1961,7 +1961,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             if (req.initiatingNodeId() == null)
                                 desc.staticallyConfigured(true);
 
-                            desc.receivedOnDiscovery(true);
+                            if (joiningNodeId.equals(ctx.localNodeId()))
+                                desc.receivedOnDiscovery(true);
 
                             DynamicCacheDescriptor old = registeredCaches.put(maskNull(req.cacheName()), desc);
 

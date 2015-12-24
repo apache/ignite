@@ -533,7 +533,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      */
     private Object deserializeValue(@Nullable CacheObjectContext coCtx) {
         BinaryReaderExImpl reader = reader(null,
-            coCtx != null ? coCtx.kernalContext().config().getClassLoader() : null);
+            coCtx != null ? coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader());
 
         Object obj0 = reader.deserialize();
 

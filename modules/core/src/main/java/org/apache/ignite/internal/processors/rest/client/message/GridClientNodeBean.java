@@ -21,10 +21,12 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.client.GridClientCacheMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -55,11 +57,8 @@ public class GridClientNodeBean implements Externalizable {
     /** Node attributes. */
     private Map<String, Object> attrs;
 
-    /** Mode for cache with {@code null} name. */
-    private String dfltCacheMode;
-
     /** Node caches. */
-    private Map<String, String> caches;
+    private Collection<GridClientCacheBean> caches;
 
     /**
      * Gets node ID.
@@ -177,37 +176,19 @@ public class GridClientNodeBean implements Externalizable {
     /**
      * Gets configured node caches.
      *
-     * @return Map where key is cache name and value is cache mode ("LOCAL", "REPLICATED", "PARTITIONED").
+     * @return Configured node caches.
      */
-    public Map<String, String> getCaches() {
+    public Collection<GridClientCacheBean> getCaches() {
         return caches;
     }
 
     /**
      * Sets configured node caches.
      *
-     * @param caches Map where key is cache name and value is cache mode ("LOCAL", "REPLICATED", "PARTITIONED").
+     * @param caches Configured node caches.
      */
-    public void setCaches(Map<String, String> caches) {
+    public void setCaches(Collection<GridClientCacheBean> caches) {
         this.caches = caches;
-    }
-
-    /**
-     * Gets mode for cache with null name.
-     *
-     * @return Default cache mode.
-     */
-    public String getDefaultCacheMode() {
-        return dfltCacheMode;
-    }
-
-    /**
-     * Sets mode for default cache.
-     *
-     * @param dfltCacheMode Default cache mode.
-     */
-    public void setDefaultCacheMode(String dfltCacheMode) {
-        this.dfltCacheMode = dfltCacheMode;
     }
 
     /**
@@ -242,10 +223,25 @@ public class GridClientNodeBean implements Externalizable {
         out.writeInt(tcpPort);
         out.writeInt(0); // Jetty port.
 
+        String dfltCacheMode = null;
+
+        Map<String, String> cacheMap = null;
+
+        if (caches != null) {
+            cacheMap = U.newHashMap(caches.size());
+
+            for (GridClientCacheBean cacheBean : caches) {
+                if (cacheBean.getName() == null)
+                    dfltCacheMode = cacheBean.getMode().toString();
+                else
+                    cacheMap.put(cacheBean.getName(), cacheBean.getMode().toString());
+            }
+        }
+
         U.writeString(out, dfltCacheMode);
 
         U.writeMap(out, attrs);
-        U.writeMap(out, caches);
+        U.writeMap(out, cacheMap);
 
         U.writeCollection(out, tcpAddrs);
         U.writeCollection(out, tcpHostNames);
@@ -263,10 +259,24 @@ public class GridClientNodeBean implements Externalizable {
         tcpPort = in.readInt();
         in.readInt(); // Jetty port.
 
-        dfltCacheMode = U.readString(in);
+        String dfltCacheMode = U.readString(in);
 
         attrs = U.readMap(in);
-        caches = U.readMap(in);
+
+        Map<String, String> cacheMap = U.readMap(in);
+
+        if (cacheMap == null && dfltCacheMode != null) {
+            cacheMap = U.newHashMap(1);
+
+            cacheMap.put(null, dfltCacheMode);
+        }
+
+        if (cacheMap != null) {
+            caches = new ArrayList<>(cacheMap.size());
+
+            for (Map.Entry<String, String> e : cacheMap.entrySet())
+                caches.add(new GridClientCacheBean(e.getKey(), GridClientCacheMode.valueOf(e.getValue()), null));
+        }
 
         tcpAddrs = U.readCollection(in);
         tcpHostNames = U.readCollection(in);

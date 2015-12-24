@@ -134,13 +134,6 @@ public class GridNioRecoveryDescriptor {
     }
 
     /**
-     * @return Received messages count.
-     */
-    public long receivedCount() {
-        return rcvCnt;
-    }
-
-    /**
      * @return Maximum size of unacknowledged messages queue.
      */
     public int queueLimit() {
