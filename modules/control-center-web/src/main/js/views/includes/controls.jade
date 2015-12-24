@@ -286,6 +286,41 @@ mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
         .input-tip
             input.form-control(id='{{::"#{fieldName}" + #{idAddition}}}' type='text' ng-model=fieldNameModel placeholder='Field name' on-enter=btnVisibleAndSave on-escape='tableReset()')
 
+mixin table-binary-configurations(tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder)
+    .col-sm-12.group
+        .group-legend
+            label {{field.label}}
+            +group-tip('field.tip')
+            +group-btn-add('tableNewItem(field)', 'field.addTip')
+        .group-content-empty(ng-if='!(#{tblMdl} && #{tblMdl}.length > 0)') Not defined
+        .group-content(ng-show='#{tblMdl} && #{tblMdl}.length > 0')
+            table(id='{{field.model}}' st-table=tblMdl)
+                tbody: tr(ng-repeat='(rowIndex, item) in #{tblMdl}'): td
+                    hr(ng-if='$index !== 0')
+                    .settings-row(ng-repeat='tableField in field.fields')
+                        +table-row(['col-xs-4 col-sm-4 col-md-4'], ['col-xs-8 col-sm-8 col-md-8'])
+
+mixin table-row(lblClasses, fieldClasses)
+    - var lblRowClasses = lblClasses + ' details-label'
+
+    - var rowMdl = 'getModel(backupItem, field)[field.model][rowIndex][tableField.model]';
+    - var rowCommon = {'ng-model': rowMdl, 'ng-required': '{{tableField.required}}', 'ng-disabled': '{{tableField.disabled}}'};
+
+    div(ng-switch='tableField.type')
+        div.checkbox(ng-switch-when='check')
+            label(id='{{tableField.id + rowIndex}}')
+                input(type='checkbox')&attributes(rowCommon)
+                | {{tableField.label}}
+                +tipLabel('tableField.tip')
+        div(ng-switch-when='text')
+            label(class=lblRowClasses ng-class='{required: tableField.required}') {{tableField.label}}:
+            .div(class=fieldClasses)
+                +tipField('tableField.tip')
+                div(ng-if='$index===0')
+                    +btn-remove('tableRemove(backupItem, field, rowIndex)', 'field.removeTip')
+                .input-tip
+                    input.form-control(id='{{tableField.model + rowIndex}}' type='text' placeholder='{{tableField.placeholder}}')&attributes(rowCommon)
+
 mixin form-row(dataSource)
     +form-row-custom(['col-xs-4 col-sm-4 col-md-4'], ['col-xs-8 col-sm-8 col-md-8'], dataSource)
 
@@ -404,6 +439,8 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
             +table-pair('{{::field.label}}', fieldMdl, 'field', 'alias', 'Field name', 'Field Alias', false, false, '->')
         .group-section(ng-switch-when='pathModes' ng-hide=fieldHide)
             +table-igfs-path-mode('{{::field.label}}', fieldMdl, 'path', 'mode', 'Path', 'Mode')
+        .group-section(ng-switch-when='typeConfigurations' ng-hide=fieldHide)
+            +table-binary-configurations(fieldMdl, 'path', 'mode', 'Path', 'Mode')
         .group-section(ng-switch-when='table-db-fields' ng-hide=fieldHide)
             .col-sm-12.group
                 .group-legend

@@ -62,6 +62,21 @@ $generatorXml.property = function (res, obj, propName, setterName, dflt) {
     return false;
 };
 
+// Add property.
+$generatorXml.emptyBeanProperty = function (res, obj, propName) {
+    if ($commonUtils.isDefined(obj)) {
+        var val = obj[propName];
+
+        if ($commonUtils.isDefinedAndNotEmpty(val)) {
+            res.startBlock('<property name="' + propName + '">');
+            res.line('<bean class="' + val + '"/>');
+            res.endBlock('</property>');
+        }
+    }
+
+    return false;
+};
+
 // Add property for class name.
 $generatorXml.classNameProperty = function (res, obj, propName) {
     var val = obj[propName];
@@ -384,7 +399,42 @@ $generatorXml.clusterBinary = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    res.line('<todo>TODO</todo>');
+    var binary = cluster.binaryConfiguration;
+
+    if (binary && ($commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.serializer) ||
+        $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) || !binary.compactFooter)) {
+        res.startBlock('<property name="binaryConfiguration">');
+        res.startBlock('<bean class="org.apache.ignite.configuration.BinaryConfiguration">');
+
+        $generatorXml.emptyBeanProperty(res, binary, 'idMapper');
+        $generatorXml.emptyBeanProperty(res, binary, 'serializer');
+
+        if ($commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations)) {
+            res.startBlock('<property name="typeConfigurations">');
+            res.startBlock('<list>');
+
+            _.forEach(binary.typeConfigurations, function (type) {
+                res.startBlock('<bean class="org.apache.ignite.binary.BinaryTypeConfiguration">');
+
+                $generatorXml.property(res, type, 'typeName');
+                $generatorXml.emptyBeanProperty(res, type, 'idMapper');
+                $generatorXml.emptyBeanProperty(res, type, 'serializer');
+                $generatorXml.property(res, type, 'enum', undefined, false);
+
+                res.endBlock('</bean>');
+            });
+
+            res.endBlock('</list>');
+            res.endBlock('</property>');
+        }
+
+        $generatorXml.property(res, binary, 'compactFooter', undefined, true);
+
+        res.endBlock('</bean>');
+        res.endBlock('</property>');
+
+        res.needEmptyLine = true;
+    }
 
     return res;
 };
@@ -1438,6 +1488,8 @@ $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
     $generatorXml.clusterGeneral(cluster, res);
 
     $generatorXml.clusterAtomics(cluster, res);
+
+    $generatorXml.clusterBinary(cluster, res);
 
     $generatorXml.clusterCommunication(cluster, res);
 

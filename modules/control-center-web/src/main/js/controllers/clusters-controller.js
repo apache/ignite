@@ -35,12 +35,28 @@ consoleModule.controller('clustersController', [
 
         $scope.tableVisibleRow = $table.tableVisibleRow;
         $scope.tableReset = $table.tableReset;
-        $scope.tableNewItem = $table.tableNewItem;
+        $scope.tableNewItem = function (field) {
+            if (field.type === 'typeConfigurations') {
+                var binary = $scope.backupItem.binaryConfiguration;
+
+                if (!binary)
+                    $scope.backupItem.binaryConfiguration = { typeConfigurations: [{}] };
+                else if (!$common.isDefined(binary.typeConfigurations))
+                    binary.typeConfigurations = [{}];
+                else
+                    binary.typeConfigurations.push({});
+            }
+            else
+                $table.tableNewItem(field);
+        };
         $scope.tableNewItemActive = $table.tableNewItemActive;
         $scope.tableEditing = $table.tableEditing;
         $scope.tableStartEdit = $table.tableStartEdit;
         $scope.tableRemove = function (item, field, index) {
-            $table.tableRemove(item, field, index);
+            if (field.type === 'typeConfigurations')
+                $scope.backupItem.binaryConfiguration.typeConfigurations.splice(index, 1);
+            else
+                $table.tableRemove(item, field, index);
         };
 
         $scope.tableSimpleSave = $table.tableSimpleSave;
@@ -370,7 +386,11 @@ consoleModule.controller('clustersController', [
         function prepareNewItem(id) {
             var newItem = {
                 discovery: {kind: 'Multicast', Vm: {addresses: ['127.0.0.1:47500..47510']}, Multicast: {}},
-                deploymentMode: 'SHARED'
+                deploymentMode: 'SHARED',
+                binaryConfiguration: {
+                    typeConfigurations: [],
+                    compactFooter: true
+                }
             };
 
             newItem.caches = id && _.find($scope.caches, {value: id}) ? [id] : [];
@@ -405,6 +425,66 @@ consoleModule.controller('clustersController', [
         function validate(item) {
             if ($common.isEmptyString(item.name))
                 return showPopoverMessage($scope.panels, 'general', 'clusterName', 'Name should not be empty');
+
+            var b = item.binaryConfiguration;
+
+            if ($common.isDefined(b)) {
+                if (!$common.isEmptyString(b.idMapper) && !$common.isValidJavaClass('ID mapper', b.idMapper, false, 'idMapper', false, $scope.panels, 'binary')) {
+                    $scope.ui.expanded = true;
+
+                    return false;
+                }
+
+                if (!$common.isEmptyString(b.serializer) && !$common.isValidJavaClass('Serializer', b.serializer, false, 'serializer', false, $scope.panels, 'binary')) {
+                    $scope.ui.expanded = true;
+
+                    return false;
+                }
+
+                if (!$common.isEmptyArray(b.typeConfigurations)) {
+                    var sameName = function (t, ix) {
+                        return ix < typeIx && t.typeName === type.typeName;
+                    };
+
+                    for (var typeIx = 0; typeIx < b.typeConfigurations.length; typeIx++) {
+                        var type = b.typeConfigurations[typeIx];
+
+                        if ($common.isEmptyString(type.typeName)) {
+                            $scope.ui.expanded = true;
+
+                            showPopoverMessage($scope.panels, 'binary', 'typeName' + typeIx, 'Type name should be specified');
+
+                            return false;
+                        }
+
+                        if (!$common.isEmptyString(type.typeName) && !$common.isValidJavaClass('Type name', type.typeName, false, 'typeName' + typeIx, false, $scope.panels, 'binary')) {
+                            $scope.ui.expanded = true;
+
+                            return false;
+                        }
+
+                        if (!$common.isEmptyString(type.idMapper) && !$common.isValidJavaClass('ID mapper', type.idMapper, false, 'idMapper' + typeIx, false, $scope.panels, 'binary')) {
+                            $scope.ui.expanded = true;
+
+                            return false;
+                        }
+
+                        if (!$common.isEmptyString(type.serializer) && !$common.isValidJavaClass('Serializer', type.serializer, false, 'serializer' + typeIx, false, $scope.panels, 'binary')) {
+                            $scope.ui.expanded = true;
+
+                            return false;
+                        }
+
+                        if (_.find(b.typeConfigurations, sameName)) {
+                            $scope.ui.expanded = true;
+
+                            showPopoverMessage($scope.panels, 'binary', 'typeName' + typeIx, 'Type with such name is already specified');
+
+                            return false;
+                        }
+                    }
+                }
+            }
 
             var c = item.communication;
 

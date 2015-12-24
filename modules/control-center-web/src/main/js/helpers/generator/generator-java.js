@@ -546,7 +546,61 @@ $generatorJava.clusterBinary = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    res.line('// TODO');
+    var binary = cluster.binaryConfiguration;
+
+    if (binary && ($commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.serializer) ||
+        $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) || !binary.compactFooter)) {
+        var varName = 'binary';
+
+        $generatorJava.declareVariable(res, varName, 'org.apache.ignite.configuration.BinaryConfiguration');
+
+        if ($commonUtils.isDefinedAndNotEmpty(binary.idMapper))
+            res.line(varName + '.setIdMapper(new ' + res.importClass(binary.idMapper) + '());');
+
+        if ($commonUtils.isDefinedAndNotEmpty(binary.serializer))
+            res.line(varName + '.setSerializer(new ' + res.importClass(binary.serializer) + '());');
+
+        res.needEmptyLine = $commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.serializer);
+
+        if ($commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations)) {
+            var arrVar = 'types';
+
+            $generatorJava.declareVariable(res, arrVar, 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.binary.BinaryTypeConfiguration');
+
+            _.forEach(binary.typeConfigurations, function (type) {
+                var typeVar = 'typeCfg';
+
+                $generatorJava.declareVariable(res, typeVar, 'org.apache.ignite.binary.BinaryTypeConfiguration');
+
+                $generatorJava.property(res, typeVar, type, 'typeName');
+
+                if ($commonUtils.isDefinedAndNotEmpty(type.idMapper))
+                    res.line(typeVar + '.setIdMapper(new ' + res.importClass(type.idMapper) + '());');
+
+                if ($commonUtils.isDefinedAndNotEmpty(type.serializer))
+                    res.line(typeVar + '.setSerializer(new ' + res.importClass(type.serializer) + '());');
+
+
+                $generatorJava.property(res, typeVar, type, 'enum', undefined, undefined, false);
+
+                res.needEmptyLine = true;
+
+                res.line(arrVar + '.add(' + typeVar + ');');
+
+                res.needEmptyLine = true;
+            });
+
+            res.line(varName + '.setTypeConfigurations(' + arrVar + ');');
+
+            res.needEmptyLine = true;
+        }
+
+        $generatorJava.property(res, binary, 'compactFooter', undefined, true);
+
+        res.line('cfg.setBinaryConfiguration(' + varName + ')');
+
+        res.needEmptyLine = true;
+    }
 
     return res;
 };
@@ -2049,6 +2103,8 @@ $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
     $generatorJava.clusterGeneral(cluster, clientNearCfg, res);
 
     $generatorJava.clusterAtomics(cluster, res);
+
+    $generatorJava.clusterBinary(cluster, res);
 
     $generatorJava.clusterCommunication(cluster, res);
 
