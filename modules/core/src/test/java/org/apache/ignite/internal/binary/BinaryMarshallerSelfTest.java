@@ -2532,11 +2532,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             assertNull(bVal);
 
-            for (NonSerializableA a : bArr) {
+            for (NonSerializableA a : bArr)
                 a.checkAfterUnmarshalled();
-            }
 
-            assertEquals(floatVal, 567.89F);
+            assertEquals(floatVal, 567.89F, 0);
         }
     }
 
