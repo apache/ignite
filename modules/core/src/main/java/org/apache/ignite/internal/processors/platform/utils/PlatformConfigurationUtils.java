@@ -257,6 +257,9 @@ import java.util.Map;
         String workDir = in.readString();
         if (workDir != null) cfg.setWorkDirectory(workDir);
 
+        String localHost = in.readString();
+        if (localHost != null) cfg.setLocalHost(localHost);
+
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
     }
@@ -550,6 +553,7 @@ import java.util.Map;
         w.writeLong(cfg.getNetworkSendRetryDelay());
         w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
+        w.writeString(cfg.getLocalHost());
     }
 
     /**

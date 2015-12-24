@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core
             NetworkSendRetryDelay = r.ReadLongAsTimespan();
             NetworkTimeout = r.ReadLongAsTimespan();
             WorkDirectory = r.ReadString();
-
+            LocalHost = r.ReadString();
 
             // Local data (not from reader)
             JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
@@ -255,5 +255,16 @@ namespace Apache.Ignite.Core
         /// If not provided, a folder under <see cref="IgniteHome"/> will be used.
         /// </summary>
         public string WorkDirectory { get; set; }
+
+        /// <summary>
+        /// Gets or sets system-wide local address or host for all Ignite components to bind to. 
+        /// If provided it will override all default local bind settings within Ignite.
+        /// <para />
+        /// If <c>null</c> then Ignite tries to use local wildcard address.That means that all services 
+        /// will be available on all network interfaces of the host machine. 
+        /// <para />
+        /// It is strongly recommended to set this parameter for all production environments.
+        /// </summary>
+        public string LocalHost { get; set; }
     }
 }

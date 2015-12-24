@@ -296,6 +296,7 @@ namespace Apache.Ignite.Core
             WriteNullableTimespan(writer,  cfg.NetworkTimeout);
             writer.WriteIntArray(cfg.IncludedEventTypes == null ? null : cfg.IncludedEventTypes.ToArray());
             writer.WriteString(cfg.WorkDirectory);
+            writer.WriteString(cfg.LocalHost);
 
             // Cache config
             var caches = cfg.CacheConfiguration;
