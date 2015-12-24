@@ -58,7 +58,8 @@ namespace Apache.Ignite.Core.Tests
                 NetworkSendRetryDelay = TimeSpan.FromMinutes(11),
                 WorkDirectory = Path.GetTempPath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath()
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                LocalHost = "127.0.0.1"
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -93,6 +94,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.JvmClasspath, resCfg.JvmClasspath);
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
                 Assert.IsTrue(File.Exists(resCfg.JvmDllPath));
+                Assert.AreEqual(cfg.LocalHost, resCfg.LocalHost);
             }
         }
 
