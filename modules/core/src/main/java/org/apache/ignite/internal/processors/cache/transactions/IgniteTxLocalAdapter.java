@@ -2952,6 +2952,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             if (pessimistic()) {
                 assert loadFut == null || loadFut.isDone() : loadFut;
 
+                if (loadFut != null)
+                    loadFut.get();
+
                 final Collection<KeyCacheObject> enlisted = Collections.singleton(cacheKey);
 
                 if (log.isDebugEnabled())
@@ -3124,6 +3127,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             if (pessimistic()) {
                 assert loadFut == null || loadFut.isDone() : loadFut;
 
+                if (loadFut != null) {
+                    try {
+                        loadFut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        return new GridFinishedFuture(e);
+                    }
+                }
+
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for put on keys: " + enlisted);
 
@@ -3191,8 +3203,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     }
 
     /**
+     * @param cacheCtx Cache context.
      * @param loadFut Missing keys load future.
      * @param ret Future result.
+     * @param keepBinary Keep binary flag.
      * @return Future.
      */
     private IgniteInternalFuture optimisticPutFuture(
@@ -3382,7 +3396,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         // Otherwise, during rollback we will not know whether locks need
         // to be rolled back.
         if (pessimistic()) {
-            assert loadFut.isDone() : loadFut;
+            assert loadFut == null || loadFut.isDone() : loadFut;
+
+            if (loadFut != null) {
+                try {
+                    loadFut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    return new GridFinishedFuture<>(e);
+                }
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Before acquiring transaction lock for remove on keys: " + enlisted);

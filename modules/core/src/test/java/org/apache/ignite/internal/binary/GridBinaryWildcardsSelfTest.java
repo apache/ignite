@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -213,7 +214,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
         assertTrue(typeIds.containsKey("innerclass".hashCode()));
-        assertFalse(typeIds.containsKey("gridbinarytestclass2".hashCode()));
+        assertFalse(typeIds.containsKey(100));
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
@@ -225,7 +226,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      */
     public void testClassNamesJar() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
-            new BinaryTypeConfiguration("org.apache.ignite.binary.testjar.*"),
+            new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
 
@@ -258,7 +259,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
                 return 0;
             }
         }, Arrays.asList(
-            new BinaryTypeConfiguration("org.apache.ignite.binary.testjar.*"),
+            new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
 
@@ -277,7 +278,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      */
     public void testTypeConfigurationsJar() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
-            new BinaryTypeConfiguration("org.apache.ignite.binary.testjar.*"),
+            new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
 
@@ -310,7 +311,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
                 return 0;
             }
         }, Arrays.asList(
-            new BinaryTypeConfiguration("org.apache.ignite.binary.testjar.*"),
+            new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
 
@@ -343,7 +344,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
                 return 0;
             }
         }, Arrays.asList(
-            new BinaryTypeConfiguration("org.apache.ignite.binary.testjar.*"),
+            new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
 
@@ -362,7 +363,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      */
     public void testOverrideJar() throws Exception {
         BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(
-            "org.apache.ignite.binary.testjar.GridBinaryTestClass2");
+            "org.apache.ignite.internal.binary.test.GridBinaryTestClass2");
 
         typeCfg.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
@@ -375,7 +376,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
         });
 
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
-            new BinaryTypeConfiguration("org.apache.ignite.binary.testjar.*"),
+            new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             typeCfg));
 
         BinaryContext ctx = binaryContext(marsh);
@@ -451,7 +452,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         iCfg.setBinaryConfiguration(bCfg);
 
-        BinaryContext ctx = new BinaryContext(BinaryNoopMetadataHandler.instance(), iCfg);
+        BinaryContext ctx = new BinaryContext(BinaryNoopMetadataHandler.instance(), iCfg, new NullLogger());
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

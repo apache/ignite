@@ -197,7 +197,9 @@ public class RandomEvictionPolicySelfTest extends
                 }
             }, 10);
 
-            assert g.cache(null).size() <= max;
+            int size = g.cache(null).size();
+
+            assertTrue("Unexpected cache size [size=" + size + ", max=" + max + ']', size <= max);
 
             info(policy(0));
         }

@@ -54,10 +54,10 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
         try {
             jcache(0).query(new SqlQuery<TestKey, String>(String.class, "field like '" + key + "'")).getAll();
 
-            assertTrue("p2p marshalling failed, but error response was not sent", binaryMarshaller());
+            fail("p2p marshalling failed, but error response was not sent");
         }
         catch (CacheException e) {
-            assertFalse("Unexpected exception: " + e, binaryMarshaller());
+            // No-op.
         }
     }
 

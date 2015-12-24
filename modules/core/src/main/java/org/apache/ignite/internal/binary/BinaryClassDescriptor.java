@@ -17,10 +17,20 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReflectiveSerializer;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.jetbrains.annotations.Nullable;
+import sun.misc.Unsafe;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -35,22 +45,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
-
-import static java.lang.reflect.Modifier.isStatic;
-import static java.lang.reflect.Modifier.isTransient;
 
 /**
  * Binary class descriptor.
@@ -65,7 +61,7 @@ public class BinaryClassDescriptor {
     /** */
     private final Class<?> cls;
 
-    /** */
+    /** Configured serializer. */
     private final BinarySerializer serializer;
 
     /** ID mapper. */
@@ -127,7 +123,6 @@ public class BinaryClassDescriptor {
      * @param serializer Serializer.
      * @param metaDataEnabled Metadata enabled flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
-     * @param predefined Whether the class is predefined or not.
      * @throws BinaryObjectException In case of error.
      */
     BinaryClassDescriptor(
@@ -140,12 +135,18 @@ public class BinaryClassDescriptor {
         @Nullable BinaryIdMapper idMapper,
         @Nullable BinarySerializer serializer,
         boolean metaDataEnabled,
-        boolean registered,
-        boolean predefined
+        boolean registered
     ) throws BinaryObjectException {
         assert ctx != null;
         assert cls != null;
         assert idMapper != null;
+
+        // If serializer is not defined at this point, then we have to user OptimizedMarshaller.
+        useOptMarshaller = serializer == null;
+
+        // Reset reflective serializer so that we rely on existing reflection-based serialization.
+        if (serializer instanceof BinaryReflectiveSerializer)
+            serializer = null;
 
         this.ctx = ctx;
         this.cls = cls;
@@ -161,15 +162,23 @@ public class BinaryClassDescriptor {
 
         excluded = MarshallerExclusions.isExcluded(cls);
 
-        useOptMarshaller = !predefined && initUseOptimizedMarshallerFlag();
-
         if (excluded)
             mode = BinaryWriteMode.EXCLUSION;
+        else if (useOptMarshaller)
+            mode = BinaryWriteMode.OPTIMIZED; // Will not be used anywhere.
         else {
             if (cls == BinaryEnumObjectImpl.class)
                 mode = BinaryWriteMode.BINARY_ENUM;
             else
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
+        }
+
+        if (useOptMarshaller && userType) {
+            U.quietAndWarn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be written in binary format because " +
+                "it either implements Externalizable interface or have writeObject/readObject methods. Please " +
+                "ensure that all nodes have this class in classpath. To enable binary serialization either " +
+                "implement " + Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
+                "BinaryTypeConfiguration.setSerializer() method.");
         }
 
         switch (mode) {
@@ -215,6 +224,7 @@ public class BinaryClassDescriptor {
             case BINARY_ENUM:
             case ENUM_ARR:
             case CLASS:
+            case OPTIMIZED:
             case EXCLUSION:
                 ctor = null;
                 fields = null;
@@ -224,7 +234,6 @@ public class BinaryClassDescriptor {
                 break;
 
             case BINARY:
-            case EXTERNALIZABLE:
                 ctor = constructor(cls);
                 fields = null;
                 stableFieldsMeta = null;
@@ -240,21 +249,24 @@ public class BinaryClassDescriptor {
 
                 BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
 
+                Set<String> duplicates = duplicateFields(cls);
+
                 Collection<String> names = new HashSet<>();
                 Collection<Integer> ids = new HashSet<>();
 
                 for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                     for (Field f : c.getDeclaredFields()) {
-                        int mod = f.getModifiers();
-
-                        if (!isStatic(mod) && !isTransient(mod)) {
+                        if (serializeField(f)) {
                             f.setAccessible(true);
 
                             String name = f.getName();
 
-                            if (!names.add(name))
-                                throw new BinaryObjectException("Duplicate field name [fieldName=" + name +
-                                    ", cls=" + cls.getName() + ']');
+                            if (duplicates.contains(name))
+                                name = BinaryUtils.qualifiedFieldName(c, name);
+
+                            boolean added = names.add(name);
+
+                            assert added : name;
 
                             int fieldId = idMapper.fieldId(typeId, name);
 
@@ -267,8 +279,11 @@ public class BinaryClassDescriptor {
 
                             schemaBuilder.addField(fieldId);
 
-                            if (metaDataEnabled)
+                            if (metaDataEnabled) {
+                                assert stableFieldsMeta != null;
+
                                 stableFieldsMeta.put(name, fieldInfo.mode().typeId());
+                            }
                         }
                     }
                 }
@@ -284,8 +299,7 @@ public class BinaryClassDescriptor {
                 throw new BinaryObjectException("Invalid mode: " + mode);
         }
 
-        if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.EXTERNALIZABLE ||
-            mode == BinaryWriteMode.OBJECT) {
+        if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) {
             readResolveMtd = U.findNonPublicMethod(cls, "readResolve");
             writeReplaceMtd = U.findNonPublicMethod(cls, "writeReplace");
         }
@@ -293,6 +307,42 @@ public class BinaryClassDescriptor {
             readResolveMtd = null;
             writeReplaceMtd = null;
         }
+    }
+
+    /**
+     * Find all fields with duplicate names in the class.
+     *
+     * @param cls Class.
+     * @return Fields with duplicate names.
+     */
+    private static Set<String> duplicateFields(Class cls) {
+        Set<String> all = new HashSet<>();
+        Set<String> duplicates = new HashSet<>();
+
+        for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+            for (Field f : c.getDeclaredFields()) {
+                if (serializeField(f)) {
+                    String name = f.getName();
+
+                    if (!all.add(name))
+                        duplicates.add(name);
+                }
+            }
+        }
+
+        return duplicates;
+    }
+
+    /**
+     * Whether the field must be serialized.
+     *
+     * @param f Field.
+     * @return {@code True} if must be serialized.
+     */
+    private static boolean serializeField(Field f) {
+        int mod = f.getModifiers();
+
+        return !Modifier.isStatic(mod) && !Modifier.isTransient(mod);
     }
 
     /**
@@ -384,6 +434,7 @@ public class BinaryClassDescriptor {
     void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
         assert obj != null;
         assert writer != null;
+        assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
 
         writer.typeId(typeId);
 
@@ -608,25 +659,6 @@ public class BinaryClassDescriptor {
 
                 break;
 
-            case EXTERNALIZABLE:
-                if (preWrite(writer, obj)) {
-                    writer.rawWriter();
-
-                    try {
-                        ((Externalizable)obj).writeExternal(writer);
-
-                        postWrite(writer, obj);
-                    }
-                    catch (IOException e) {
-                        throw new BinaryObjectException("Failed to write Externalizable object: " + obj, e);
-                    }
-                    finally {
-                        writer.popSchema();
-                    }
-                }
-
-                break;
-
             case OBJECT:
                 if (preWrite(writer, obj)) {
                     try {
@@ -656,6 +688,7 @@ public class BinaryClassDescriptor {
      */
     Object read(BinaryReaderExImpl reader) throws BinaryObjectException {
         assert reader != null;
+        assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
 
         Object res;
 
@@ -669,21 +702,6 @@ public class BinaryClassDescriptor {
                     serializer.readBinary(res, reader);
                 else
                     ((Binarylizable)res).readBinary(reader);
-
-                break;
-
-            case EXTERNALIZABLE:
-                res = newInstance();
-
-                reader.setHandle(res);
-
-                try {
-                    ((Externalizable)res).readExternal(reader);
-                }
-                catch (IOException | ClassNotFoundException e) {
-                    throw new BinaryObjectException("Failed to read Externalizable object: " +
-                        res.getClass().getName(), e);
-                }
 
                 break;
 
@@ -784,30 +802,5 @@ public class BinaryClassDescriptor {
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to get constructor for class: " + cls.getName(), e);
         }
-    }
-
-    /**
-     * Determines whether to use {@link OptimizedMarshaller} for serialization or
-     * not.
-     *
-     * @return {@code true} if to use, {@code false} otherwise.
-     */
-    @SuppressWarnings("unchecked")
-    private boolean initUseOptimizedMarshallerFlag() {
-        for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-            try {
-                Method writeObj = c.getDeclaredMethod("writeObject", ObjectOutputStream.class);
-                Method readObj = c.getDeclaredMethod("readObject", ObjectInputStream.class);
-
-                if (!Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
-                    writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class)
-                    return true;
-            }
-            catch (NoSuchMethodException ignored) {
-                // No-op.
-            }
-        }
-
-        return false;
     }
 }
