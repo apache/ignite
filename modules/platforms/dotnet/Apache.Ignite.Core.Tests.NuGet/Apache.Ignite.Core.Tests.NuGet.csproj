@@ -31,8 +31,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Apache.Ignite.Core, Version=1.5.0.7794, Culture=neutral, PublicKeyToken=a487a7ff0b2aaa4a, processorArchitecture=AMD64">
-      <HintPath>packages\Apache.Ignite.NET.1.5.0.7794\lib\net40\Apache.Ignite.Core.dll</HintPath>
-      <Private>True</Private>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Apache.Ignite.NET\lib\net40\Apache.Ignite.Core.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework, Version=2.6.4.14350, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -52,17 +52,13 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Config\default-config.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>
-if not exist "$(TargetDir)Libs" md "$(TargetDir)Libs"
-xcopy /s /y "$(SolutionDir)packages\Apache.Ignite.NET.1.5.0.7794\Jars\*.*" "$(TargetDir)Libs"</PostBuildEvent>
+    <PostBuildEvent>if not exist $(TargetDir)Libs md $(TargetDir)Libs
+xcopy /s /y  $(ProjectDir)packages\Apache.Ignite.NET\Jars $(TargetDir)Libs</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
