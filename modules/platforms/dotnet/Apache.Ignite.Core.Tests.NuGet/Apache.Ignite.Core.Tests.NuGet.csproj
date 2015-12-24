@@ -55,6 +55,11 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Apache.Ignite.Core.Tests.NuGet.sln.DotSettings" />
+    <None Include="install-package.cmd" />
+    <None Include="NuGet.config" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if not exist $(TargetDir)Libs md $(TargetDir)Libs
