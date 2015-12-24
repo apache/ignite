@@ -59,6 +59,7 @@ public class CacheTransactionExample {
 
             cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, Account> cache = ignite.getOrCreateCache(cfg)) {
                 // Initialize.
                 cache.put(1, new Account(1, 100));
@@ -80,6 +81,7 @@ public class CacheTransactionExample {
 
                 System.out.println(">>> Cache transaction example finished.");
             } finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
                 ignite.destroyCache(CACHE_NAME);
             }
         }

@@ -114,6 +114,7 @@ public class HibernateL2CacheExample {
             System.out.println();
             System.out.println(">>> Hibernate L2 cache example started.");
 
+            // Auto-close cache at the end of the example.
             try (
                 // Create all required caches.
                 IgniteCache c1 = createCache(UPDATE_TIMESTAMPS_CACHE_NAME, ATOMIC);
@@ -191,6 +192,7 @@ public class HibernateL2CacheExample {
                 printStats(sesFactory);
             }
             finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
                 ignite.destroyCache(UPDATE_TIMESTAMPS_CACHE_NAME);
                 ignite.destroyCache(STANDART_QUERY_CACHE_NAME);
                 ignite.destroyCache(USER_CACHE_NAME);

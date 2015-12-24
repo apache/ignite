@@ -89,6 +89,7 @@ public class CacheQueryExample {
             personCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
             personCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
 
+            // Auto-close cache at the end of the example.
             try (
                 IgniteCache<Long, Organization> orgCache = ignite.getOrCreateCache(orgCacheCfg);
                 IgniteCache<AffinityKey<Long>, Person> personCache = ignite.getOrCreateCache(personCacheCfg)
@@ -119,6 +120,7 @@ public class CacheQueryExample {
                 sqlFieldsQueryWithJoin();
             }
             finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
                 ignite.destroyCache(PERSON_CACHE);
                 ignite.destroyCache(ORG_CACHE);
             }

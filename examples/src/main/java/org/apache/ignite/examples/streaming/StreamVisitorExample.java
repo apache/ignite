@@ -54,6 +54,7 @@ public class StreamVisitorExample {
 
     /** Cache name. */
     private static final String CACHE_NAME = "instCache";
+    private static final String MARKET_TICKET_CACHE_NAME = "marketTicks";
 
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
@@ -72,7 +73,7 @@ public class StreamVisitorExample {
 
             // Auto-close caches at the end of the example.
             try (
-                IgniteCache<String, Double> mktCache = ignite.getOrCreateCache("marketTicks"); // Default config.
+                IgniteCache<String, Double> mktCache = ignite.getOrCreateCache(MARKET_TICKET_CACHE_NAME); // Default config.
                 IgniteCache<String, Instrument> instCache = ignite.getOrCreateCache(instCfg)
             ) {
                 try (IgniteDataStreamer<String, Double> mktStmr = ignite.dataStreamer(mktCache.getName())) {
@@ -146,7 +147,7 @@ public class StreamVisitorExample {
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
                 ignite.destroyCache(CACHE_NAME);
-                ignite.destroyCache(instCfg.getName());
+                ignite.destroyCache(MARKET_TICKET_CACHE_NAME);
             }
         }
     }

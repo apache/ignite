@@ -93,6 +93,7 @@ public class CacheStarSchemaExample {
                 Integer.class, DimProduct.class
             );
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, FactPurchase> factCache = ignite.getOrCreateCache(factCacheCfg);
                  IgniteCache<Integer, Object> dimCache = ignite.getOrCreateCache(dimCacheCfg)) {
                 populateDimensions(dimCache);
@@ -102,6 +103,7 @@ public class CacheStarSchemaExample {
                 queryProductPurchases();
             }
             finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
                 ignite.destroyCache(PARTITIONED_CACHE_NAME);
                 ignite.destroyCache(REPLICATED_CACHE_NAME);
             }

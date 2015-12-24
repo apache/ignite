@@ -56,6 +56,7 @@ public class CacheEventsExample {
             System.out.println();
             System.out.println(">>> Cache events example started.");
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 // This optional local callback is called for each event notification
                 // that passed remote predicate listener.

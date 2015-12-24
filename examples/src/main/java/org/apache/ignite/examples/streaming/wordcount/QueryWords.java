@@ -84,6 +84,7 @@ public class QueryWords {
                 }
             }
             finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
                 ignite.destroyCache(cfg.getName());
             }
         }
