@@ -191,6 +191,7 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_CACHE = JniMethod("cache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_CREATE_CACHE = JniMethod("createCache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE = JniMethod("getOrCreateCache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_DESTROY_CACHE = JniMethod("destroyCache", "(Ljava/lang/String;)V", false);
             JniMethod M_PLATFORM_PROCESSOR_AFFINITY = JniMethod("affinity", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_DATA_STREAMER = JniMethod("dataStreamer", "(Ljava/lang/String;Z)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_TRANSACTIONS = JniMethod("transactions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
@@ -629,6 +630,7 @@ namespace ignite
                 m_PlatformProcessor_cache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CACHE);
                 m_PlatformProcessor_createCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CREATE_CACHE);
                 m_PlatformProcessor_getOrCreateCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE);
+                m_PlatformProcessor_destroyCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_DESTROY_CACHE);
                 m_PlatformProcessor_affinity = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_AFFINITY);
                 m_PlatformProcessor_dataStreamer = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_DATA_STREAMER);
                 m_PlatformProcessor_transactions = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_TRANSACTIONS);
@@ -1130,6 +1132,24 @@ namespace ignite
             jobject JniContext::ProcessorGetOrCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo)
             {
                 return ProcessorCache0(obj, name, jvm->GetMembers().m_PlatformProcessor_getOrCreateCache, errInfo);
+            }
+
+            void JniContext::ProcessorDestroyCache(jobject obj, const char* name) {
+                ProcessorDestroyCache(obj, name, NULL);
+            }
+
+            void JniContext::ProcessorDestroyCache(jobject obj, const char* name, JniErrorInfo* errInfo)
+            {
+                JNIEnv* env = Attach();
+
+                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformProcessor_destroyCache, name0);
+
+                if (name0)
+                    env->DeleteLocalRef(name0);
+
+                ExceptionCheck(env, errInfo);
             }
 
             jobject JniContext::ProcessorAffinity(jobject obj, const char* name) {
