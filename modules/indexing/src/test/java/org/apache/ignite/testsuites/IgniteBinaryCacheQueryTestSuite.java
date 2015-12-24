@@ -18,6 +18,9 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.BinarySerializationQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.BinarySerializationQueryWithReflectiveSerializerSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.CachePartitionedQueryMetricsDistributedSelfTest;
 import org.apache.ignite.internal.processors.cache.CachePartitionedQueryMetricsLocalSelfTest;
@@ -32,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheQuerySerializationSe
 import org.apache.ignite.internal.processors.cache.GridCacheReduceQueryMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryWrappedObjectFieldsQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheCollocatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDuplicateEntityConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFieldsQueryNoDataSelfTest;
@@ -50,6 +54,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheQueryOffheapEvicts
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryOffheapMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryDuplicateIndexObjectPartitionedAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicNearEnabledFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicNearEnabledQuerySelfTest;
@@ -69,7 +75,6 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.query.GridCacheSwapScanQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverAtomicPrimaryWriteOrderSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverAtomicReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxReplicatedSelfTest;
@@ -94,25 +99,31 @@ import org.apache.ignite.internal.processors.cache.reducefields.GridCacheReduceF
 import org.apache.ignite.internal.processors.cache.reducefields.GridCacheReduceFieldsQueryLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.reducefields.GridCacheReduceFieldsQueryPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.reducefields.GridCacheReduceFieldsQueryReplicatedSelfTest;
-import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Test suite for cache queries.
+ * Cache query suite with binary marshaller.
  */
-public class IgniteCacheQuerySelfTestSuite extends TestSuite {
+public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
     /**
-     * @return Test suite.
-     * @throws Exception If failed.
+     * @return Suite.
+     * @throws Exception In case of error.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Cache Queries Test Suite");
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        // Parsing
+        TestSuite suite = new TestSuite("Grid Cache Query Test Suite using BinaryMarshaller");
+
+        // Serialization.
+        suite.addTestSuite(BinarySerializationQuerySelfTest.class);
+        suite.addTestSuite(BinarySerializationQueryWithReflectiveSerializerSelfTest.class);
+
+        // Parsing.
         suite.addTestSuite(GridQueryParsingTest.class);
 
         // Config.
@@ -120,7 +131,6 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // Queries tests.
         suite.addTestSuite(IgniteSqlSplitterSelfTest.class);
-        suite.addTestSuite(IgniteSqlSchemaIndexingTest.class);
         suite.addTestSuite(GridCacheQueryIndexDisabledSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryLoadSelfTest.class);
         suite.addTestSuite(IgniteCacheLocalQuerySelfTest.class);
@@ -151,6 +161,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReduceQueryMultithreadedSelfTest.class);
         suite.addTestSuite(GridCacheCrossCacheQuerySelfTest.class);
         suite.addTestSuite(GridCacheQuerySerializationSelfTest.class);
+        suite.addTestSuite(IgniteCacheBinaryObjectsScanSelfTest.class);
         suite.addTestSuite(IgniteBinaryObjectFieldsQuerySelfTest.class);
         suite.addTestSuite(IgniteBinaryWrappedObjectFieldsQuerySelfTest.class);
 
@@ -198,7 +209,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheQueryIndexingDisabledSelfTest.class);
 
-        suite.addTestSuite(GridCacheSwapScanQuerySelfTest.class);
+        //Should be adjusted. Not ready to be used with BinaryMarshaller.
+        //suite.addTestSuite(GridCacheBinarySwapScanQuerySelfTest.class);
 
         suite.addTestSuite(GridOrderedMessageCancelSelfTest.class);
 
@@ -206,7 +218,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(BaseH2CompareQueryTest.class);
         suite.addTestSuite(H2CompareBigQueryTest.class);
 
-        // Cache query metrics.
+        // Metrics tests
         suite.addTestSuite(CacheLocalQueryMetricsSelfTest.class);
         suite.addTestSuite(CachePartitionedQueryMetricsDistributedSelfTest.class);
         suite.addTestSuite(CachePartitionedQueryMetricsLocalSelfTest.class);
@@ -216,6 +228,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         //Unmarshallig query test.
         suite.addTestSuite(IgniteCacheP2pUnmarshallingQueryErrorTest.class);
         suite.addTestSuite(IgniteCacheNoClassQuerySelfTest.class);
+
+        suite.addTestSuite(GridCacheBinaryDuplicateIndexObjectPartitionedAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest.class);
 
         return suite;
     }
