@@ -3076,6 +3076,24 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        public void TestDestroy()
+        {
+            // Create a cache with random name
+            var cacheName = "template" + Guid.NewGuid();
+
+            var ignite = GetIgnite(0);
+
+            var cache = ignite.CreateCache<int, int>(cacheName);
+
+            cache[1] = 1;
+
+            ignite.DestroyCache(cache.Name);
+
+            Assert.Throws<IgniteException>(() => ignite.GetCache<int, int>(cacheName));
+        }
+
+
+        [Test]
         public void TestIndexer()
         {
             var cache = Cache();
