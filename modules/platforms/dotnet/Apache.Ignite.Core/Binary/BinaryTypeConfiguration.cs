@@ -108,6 +108,14 @@ namespace Apache.Ignite.Core.Binary
         public bool IsEnum { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether raw mode serialization should be used.
+        /// <para />
+        /// Raw mode does not include field names, improving performance and memory usage.
+        /// However, queries do not support raw objects.
+        /// </summary>
+        public bool SerializeRaw { get; set; }
+
+        /// <summary>
         /// Returns a string that represents the current object.
         /// </summary>
         /// <returns>
