@@ -697,14 +697,13 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestPrimitiveFieldsReflective([Values(false, true)] bool raw)
         {
-            ICollection<BinaryTypeConfiguration> typeCfgs = 
-                new List<BinaryTypeConfiguration>();
-
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof (PrimitiveFieldType)) {SerializeRaw = raw});
-
-            BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
-
-            Marshaller marsh = new Marshaller(cfg);
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration(typeof (PrimitiveFieldType)) {SerializeRaw = raw}
+                }
+            });
 
             PrimitiveFieldType obj = new PrimitiveFieldType();
 
@@ -1014,19 +1013,16 @@ namespace Apache.Ignite.Core.Tests.Binary
          * <summary>Check write of object fields through reflective serializer.</summary>
          */
         [Test]
-        public void TestObjectReflective()
+        public void TestObjectReflective([Values(false, true)] bool raw)
         {
-            ICollection<BinaryTypeConfiguration> typeCfgs = 
-                new List<BinaryTypeConfiguration>();
-
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(OuterObjectType)));
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(InnerObjectType)));
-
-            BinaryConfiguration cfg = new BinaryConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
-
-            Marshaller marsh = new Marshaller(cfg);
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration(typeof (OuterObjectType)) {SerializeRaw = raw},
+                    new BinaryTypeConfiguration(typeof (InnerObjectType)) {SerializeRaw = raw}
+                }
+            });
 
             CheckObject(marsh, new OuterObjectType(), new InnerObjectType());
         }
