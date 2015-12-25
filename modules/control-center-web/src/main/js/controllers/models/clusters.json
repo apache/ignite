@@ -1728,65 +1728,6 @@
           ]
         }
       ]
-    },
-    {
-      "label": "Thread pools size",
-      "group": "pools",
-      "tip": [
-        "Settings for node thread pools"
-      ],
-      "fields": [
-        {
-          "label": "Public",
-          "id": "publicThreadPoolSize",
-          "type": "number",
-          "model": "publicThreadPoolSize",
-          "placeholder": "max(8, availableProcessors) * 2",
-          "tip": [
-            "Thread pool that is in charge of processing ComputeJob, GridJobs and user messages sent to node"
-          ]
-        },
-        {
-          "label": "System",
-          "id": "systemThreadPoolSize",
-          "type": "number",
-          "model": "systemThreadPoolSize",
-          "placeholder": "max(8, availableProcessors) * 2",
-          "tip": [
-            "Thread pool that is in charge of processing internal system messages"
-          ]
-        },
-        {
-          "label": "Management",
-          "id": "managementThreadPoolSize",
-          "type": "number",
-          "model": "managementThreadPoolSize",
-          "placeholder": 4,
-          "tip": [
-            "Thread pool that is in charge of processing internal and Visor ComputeJob, GridJobs"
-          ]
-        },
-        {
-          "label": "IGFS",
-          "id": "igfsThreadPoolSize",
-          "type": "number",
-          "model": "igfsThreadPoolSize",
-          "placeholder": "availableProcessors",
-          "tip": [
-            "Thread pool that is in charge of processing outgoing IGFS messages"
-          ]
-        },
-        {
-          "label": "Rebalance",
-          "id": "rebalanceThreadPoolSize",
-          "type": "number",
-          "model": "rebalanceThreadPoolSize",
-          "placeholder": 1,
-          "tip": [
-            "Max count of threads can be used at rebalancing"
-          ]
-        }
-      ]
     }
   ]
 }

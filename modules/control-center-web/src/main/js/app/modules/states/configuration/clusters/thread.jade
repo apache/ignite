@@ -1,0 +1,95 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+mixin ignite-form-field-tooltip(message)
+    i.tipField.fa.fa-question-circle(bs-tooltip='"#{message}"')
+
+- var model = 'backupItem'
+
+form.panel.panel-default(bs-collapse ng-model='panel' name='pools')
+    .panel-heading(bs-collapse-toggle)
+        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+        label Thread pools size
+        i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for node thread pools"')
+        //- i.pull-right.fa.fa-undo(
+            ng-show='!preview["pools"].allDefaults' 
+            ng-click='#{model} = {}; $event.stopPropagation()' 
+            bs-tooltip 
+            data-title='"Undo unsaved changes"')
+    .panel-collapse(role='tabpanel' bs-collapse-target id='pools')
+        .panel-body
+            .col-sm-6
+                .settings-row
+                    ignite-form-field(data-label='Public')
+                        +ignite-form-field-tooltip('Thread pool that is in charge of processing ComputeJob, GridJobs and user messages sent to node')
+                        ignite-form-field-input-number(
+                            data-id='publicThreadPoolSize'
+                            data-name='publicThreadPoolSize'
+                            data-ng-model='#{model}.publicThreadPoolSize'
+                            data-placeholder='max(8, availableProcessors) * 2'
+                        )
+                .settings-row
+                    ignite-form-field(data-label='System')
+                        +ignite-form-field-tooltip('Thread pool that is in charge of processing internal system messages')
+                        ignite-form-field-input-number(
+                            data-id='systemThreadPoolSize'
+                            data-name='systemThreadPoolSize'
+                            data-ng-model='#{model}.systemThreadPoolSize'
+                            data-placeholder='max(8, availableProcessors) * 2'
+                        )
+                .settings-row
+                    ignite-form-field(data-label='Management')
+                        +ignite-form-field-tooltip('Thread pool that is in charge of processing internal and Visor ComputeJob, GridJobs')
+                        ignite-form-field-input-number(
+                            data-id='managementThreadPoolSize'
+                            data-name='managementThreadPoolSize'
+                            data-ng-model='#{model}.managementThreadPoolSize'
+                            data-placeholder='4'
+                        )
+                .settings-row
+                    ignite-form-field(data-label='IGFS')
+                        +ignite-form-field-tooltip('Thread pool that is in charge of processing outgoing IGFS messages')
+                        ignite-form-field-input-number(
+                            data-id='igfsThreadPoolSize'
+                            data-name='igfsThreadPoolSize'
+                            data-ng-model='#{model}.igfsThreadPoolSize'
+                            data-placeholder='availableProcessors'
+                        )
+                .settings-row
+                    ignite-form-field(data-label='Rebalance')
+                        +ignite-form-field-tooltip('Max count of threads can be used at rebalancing')
+                        ignite-form-field-input-number(
+                            data-irebalanceThreadPoolSized=''
+                            data-name='rebalanceThreadPoolSize'
+                            data-ng-model='#{model}.rebalanceThreadPoolSize'
+                            data-placeholder='1'
+                        )
+            .col-sm-6
+                .preview-panel(ng-init='mode = false')
+                    .preview-legend
+                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
+                        | &nbsp;
+                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
+                    .preview-content(
+                        ng-if='!preview["pools"].allDefaults && mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["pools"].java')
+                    .preview-content(
+                        ng-if='!preview["pools"].allDefaults && !mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["pools"].xml')
+                    .preview-content-empty(ng-if='preview["pools"].allDefaults')
+                        label All Defaults

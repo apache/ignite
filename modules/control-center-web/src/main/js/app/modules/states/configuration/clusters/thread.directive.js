@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-import template from './transactions.jade!';
+import template from './thread.jade!';
 
-export default ['igniteConfigurationClustersTransactions', [() => {
+export default ['igniteConfigurationClustersThread', [() => {
     return {
         scope: true,
         restrict: 'E',
