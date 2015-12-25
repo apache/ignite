@@ -31,10 +31,8 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -51,10 +49,6 @@ import org.jsr166.ConcurrentHashMap8;
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.ObjectStreamException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
@@ -81,10 +75,7 @@ import java.util.jar.JarFile;
 /**
  * Binary context.
  */
-public class BinaryContext implements Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class BinaryContext {
     /** */
     private static final ClassLoader dfltLdr = U.gridClassLoader();
 
@@ -125,9 +116,6 @@ public class BinaryContext implements Externalizable {
     private MarshallerContext marshCtx;
 
     /** */
-    private String gridName;
-
-    /** */
     private IgniteConfiguration igniteCfg;
 
     /** Logger. */
@@ -161,8 +149,6 @@ public class BinaryContext implements Externalizable {
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
         this.log = log;
-
-        gridName = igniteCfg.getGridName();
 
         colTypes.put(ArrayList.class, GridBinaryMarshaller.ARR_LIST);
         colTypes.put(LinkedList.class, GridBinaryMarshaller.LINKED_LIST);
@@ -725,34 +711,6 @@ public class BinaryContext implements Externalizable {
         }
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, igniteCfg.getGridName());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        gridName = U.readString(in);
-    }
-
-    /**
-     * @return Binary context.
-     * @throws ObjectStreamException In case of error.
-     */
-    protected Object readResolve() throws ObjectStreamException {
-        try {
-            IgniteKernal g = IgnitionEx.gridx(gridName);
-
-            if (g == null)
-                throw new IllegalStateException("Failed to find grid for name: " + gridName);
-
-            return ((CacheObjectBinaryProcessorImpl)g.context().cacheObjects()).binaryContext();
-        }
-        catch (IllegalStateException e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
     }
 
     /**

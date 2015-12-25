@@ -418,7 +418,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var refSerializer = serializer as BinaryReflectiveSerializer;
 
                 if (refSerializer != null)
-                    refSerializer.Register(type, typeId, nameMapper, idMapper);
+                    refSerializer.Register(type, typeId, nameMapper, idMapper, typeCfg.SerializeRaw);
 
                 if (typeCfg.IsEnum != type.IsEnum)
                     throw new BinaryObjectException(
@@ -428,7 +428,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                             typeCfg.IsEnum, type.IsEnum));
 
                 AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
-                    typeCfg.AffinityKeyFieldName, type.IsEnum);
+                    typeCfg.AffinityKeyFieldName, type.IsEnum, typeCfg.SerializeRaw);
             }
             else
             {
@@ -438,7 +438,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
-                    typeCfg.AffinityKeyFieldName, typeCfg.IsEnum);
+                    typeCfg.AffinityKeyFieldName, typeCfg.IsEnum, typeCfg.SerializeRaw);
             }
         }
 
@@ -467,9 +467,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="serializer">Serializer.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         /// <param name="isEnum">Enum flag.</param>
+        /// <param name="raw">Raw serialization flag.</param>
         private void AddType(Type type, int typeId, string typeName, bool userType, 
             bool keepDeserialized, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper,
-            IBinarySerializer serializer, string affKeyFieldName, bool isEnum)
+            IBinarySerializer serializer, string affKeyFieldName, bool isEnum, bool raw)
         {
             long typeKey = BinaryUtils.TypeKey(userType, typeId);
 
@@ -491,7 +492,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 throw new BinaryObjectException("Conflicting type name: " + typeName);
 
             var descriptor = new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, 
-                serializer, keepDeserialized, affKeyFieldName, isEnum);
+                serializer, keepDeserialized, affKeyFieldName, isEnum, raw);
 
             if (type != null)
                 _typeToDesc[type] = descriptor;
@@ -511,7 +512,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var serializer = new BinarySystemTypeSerializer<T>(ctor);
 
-            AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, null, false);
+            AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, null, false,
+                false);
         }
 
         /// <summary>

@@ -85,8 +85,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="typeId">Type ID.</param>
         /// <param name="converter">Name converter.</param>
         /// <param name="idMapper">ID mapper.</param>
+        /// <param name="raw">Raw mode.</param>
         public void Register(Type type, int typeId, IBinaryNameMapper converter,
-            IBinaryIdMapper idMapper)
+            IBinaryIdMapper idMapper, bool raw)
         {
             if (type.GetInterface(typeof(IBinarizable).Name) != null)
                 return;
@@ -126,7 +127,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fields.Sort(Compare);
 
-            Descriptor desc = new Descriptor(fields);
+            Descriptor desc = new Descriptor(fields, raw);
 
             _types[type] = desc;
         }
@@ -171,7 +172,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// Constructor.
             /// </summary>
             /// <param name="fields">Fields.</param>
-            public Descriptor(List<FieldInfo> fields)
+            /// <param name="raw">Raw mode.</param>
+            public Descriptor(List<FieldInfo> fields, bool raw)
             {
                 _wActions = new List<BinaryReflectiveWriteAction>(fields.Count);
                 _rActions = new List<BinaryReflectiveReadAction>(fields.Count);
@@ -181,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     BinaryReflectiveWriteAction writeAction;
                     BinaryReflectiveReadAction readAction;
 
-                    BinaryReflectiveActions.TypeActions(field, out writeAction, out readAction);
+                    BinaryReflectiveActions.GetTypeActions(field, out writeAction, out readAction, raw);
 
                     _wActions.Add(writeAction);
                     _rActions.Add(readAction);
