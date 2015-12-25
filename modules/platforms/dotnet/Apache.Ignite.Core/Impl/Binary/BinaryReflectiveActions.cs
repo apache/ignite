@@ -354,9 +354,54 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets the reader with a specified write action.
+        /// </summary>
+        private static BinaryReflectiveWriteAction GetRawWriter<T>(FieldInfo field,
+            Expression<Action<IBinaryRawWriter, T>> write,
+            bool convertFieldValToObject = false)
+        {
+            Debug.Assert(field != null);
+            Debug.Assert(field.DeclaringType != null);   // non-static
+            Debug.Assert(write != null);
+
+            // Get field value
+            var targetParam = Expression.Parameter(typeof(object));
+            var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
+            Expression fldExpr = Expression.Field(targetParamConverted, field);
+
+            if (convertFieldValToObject)
+                fldExpr = Expression.Convert(fldExpr, typeof (object));
+
+            // Call Writer method
+            var writerParam = Expression.Parameter(typeof(IBinaryRawWriter));
+            var writeExpr = Expression.Invoke(write, writerParam, fldExpr);
+
+            // Compile and return
+            return Expression.Lambda<BinaryReflectiveWriteAction>(writeExpr, targetParam, writerParam).Compile();
+        }
+
+        /// <summary>
         /// Gets the writer with a specified generic method.
         /// </summary>
-        private static BinaryReflectiveWriteAction GetWriter(FieldInfo field, MethodInfo method, 
+        private static BinaryReflectiveWriteAction GetWriter(FieldInfo field, MethodInfo method,
+            params Type[] genericArgs)
+        {
+            return GetWriter0(field, method, false, genericArgs);
+        }
+
+        /// <summary>
+        /// Gets the writer with a specified generic method.
+        /// </summary>
+        private static BinaryReflectiveWriteAction GetRawWriter(FieldInfo field, MethodInfo method,
+            params Type[] genericArgs)
+        {
+            return GetWriter0(field, method, true, genericArgs);
+        }
+
+        /// <summary>
+        /// Gets the writer with a specified generic method.
+        /// </summary>
+        private static BinaryReflectiveWriteAction GetWriter0(FieldInfo field, MethodInfo method, bool raw, 
             params Type[] genericArgs)
         {
             Debug.Assert(field != null);
@@ -373,9 +418,11 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Call Writer method
             var writerParam = Expression.Parameter(typeof(IBinaryWriter));
-            var fldNameParam = Expression.Constant(BinaryUtils.CleanFieldName(field.Name));
             var writeMethod = method.MakeGenericMethod(genericArgs);
-            var writeExpr = Expression.Call(writerParam, writeMethod, fldNameParam, fldExpr);
+            var writeExpr = raw
+                ? Expression.Call(writerParam, writeMethod, fldExpr)
+                : Expression.Call(writerParam, writeMethod, Expression.Constant(BinaryUtils.CleanFieldName(field.Name)),
+                    fldExpr);
 
             // Compile and return
             return Expression.Lambda<BinaryReflectiveWriteAction>(writeExpr, targetParam, writerParam).Compile();
@@ -407,9 +454,51 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets the reader with a specified read action.
+        /// </summary>
+        private static BinaryReflectiveReadAction GetRawReader<T>(FieldInfo field, 
+            Expression<Func<IBinaryRawReader, T>> read)
+        {
+            Debug.Assert(field != null);
+            Debug.Assert(field.DeclaringType != null);   // non-static
+
+            // Call Reader method
+            var readerParam = Expression.Parameter(typeof(IBinaryRawReader));
+            Expression readExpr = Expression.Invoke(read, readerParam);
+
+            if (typeof(T) != field.FieldType)
+                readExpr = Expression.Convert(readExpr, field.FieldType);
+
+            // Assign field value
+            var targetParam = Expression.Parameter(typeof(object));
+            var assignExpr = Expression.Call(DelegateConverter.GetWriteFieldMethod(field), targetParam, readExpr);
+
+            // Compile and return
+            return Expression.Lambda<BinaryReflectiveReadAction>(assignExpr, targetParam, readerParam).Compile();
+        }
+
+        /// <summary>
         /// Gets the reader with a specified generic method.
         /// </summary>
-        private static BinaryReflectiveReadAction GetReader(FieldInfo field, MethodInfo method, 
+        private static BinaryReflectiveReadAction GetReader(FieldInfo field, MethodInfo method,
+            params Type[] genericArgs)
+        {
+            return GetReader0(field, method, false, genericArgs);
+        }
+
+        /// <summary>
+        /// Gets the reader with a specified generic method.
+        /// </summary>
+        private static BinaryReflectiveReadAction GetRawReader(FieldInfo field, MethodInfo method,
+            params Type[] genericArgs)
+        {
+            return GetReader0(field, method, true, genericArgs);
+        }
+
+        /// <summary>
+        /// Gets the reader with a specified generic method.
+        /// </summary>
+        private static BinaryReflectiveReadAction GetReader0(FieldInfo field, MethodInfo method, bool raw, 
             params Type[] genericArgs)
         {
             Debug.Assert(field != null);
@@ -420,9 +509,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Call Reader method
             var readerParam = Expression.Parameter(typeof (IBinaryReader));
-            var fldNameParam = Expression.Constant(BinaryUtils.CleanFieldName(field.Name));
             var readMethod = method.MakeGenericMethod(genericArgs);
-            Expression readExpr = Expression.Call(readerParam, readMethod, fldNameParam);
+            Expression readExpr = raw
+                ? Expression.Call(readerParam, readMethod)
+                : Expression.Call(readerParam, readMethod, Expression.Constant(BinaryUtils.CleanFieldName(field.Name)));
 
             if (readMethod.ReturnType != field.FieldType)
                 readExpr = Expression.Convert(readExpr, field.FieldType);
