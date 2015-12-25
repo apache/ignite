@@ -79,17 +79,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="field">The field.</param>
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
-        public static void TypeActions(FieldInfo field, out BinaryReflectiveWriteAction writeAction, 
-            out BinaryReflectiveReadAction readAction)
+        /// <param name="raw">Raw mode.</param>
+        public static void GetTypeActions(FieldInfo field, out BinaryReflectiveWriteAction writeAction, out BinaryReflectiveReadAction readAction, bool raw)
         {
             var type = field.FieldType;
 
             if (type.IsPrimitive)
-                HandlePrimitive(field, out writeAction, out readAction);
+                HandlePrimitive(field, out writeAction, out readAction, raw);
             else if (type.IsArray)
-                HandleArray(field, out writeAction, out readAction);
+                HandleArray(field, out writeAction, out readAction, raw);
             else
-                HandleOther(field, out writeAction, out readAction);
+                HandleOther(field, out writeAction, out readAction, raw);
         }
 
         /// <summary>
@@ -98,9 +98,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="field">The field.</param>
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
+        /// <param name="raw">Raw mode.</param>
         /// <exception cref="IgniteException">Unsupported primitive type:  + type.Name</exception>
-        private static void HandlePrimitive(FieldInfo field, out BinaryReflectiveWriteAction writeAction,
-            out BinaryReflectiveReadAction readAction)
+        private static void HandlePrimitive(FieldInfo field, out BinaryReflectiveWriteAction writeAction, out BinaryReflectiveReadAction readAction, bool raw)
         {
             var type = field.FieldType;
 
@@ -174,8 +174,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="field">The field.</param>
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
-        private static void HandleArray(FieldInfo field, out BinaryReflectiveWriteAction writeAction,
-            out BinaryReflectiveReadAction readAction)
+        /// <param name="raw">Raw mode.</param>
+        private static void HandleArray(FieldInfo field, out BinaryReflectiveWriteAction writeAction, out BinaryReflectiveReadAction readAction, bool raw)
         {
             Type elemType = field.FieldType.GetElementType();
 
@@ -272,8 +272,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="field">The field.</param>
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
-        private static void HandleOther(FieldInfo field, out BinaryReflectiveWriteAction writeAction,
-            out BinaryReflectiveReadAction readAction)
+        /// <param name="raw">Raw mode.</param>
+        private static void HandleOther(FieldInfo field, out BinaryReflectiveWriteAction writeAction, out BinaryReflectiveReadAction readAction, bool raw)
         {
             var type = field.FieldType;
 
@@ -334,6 +334,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(field != null);
             Debug.Assert(field.DeclaringType != null);   // non-static
+            Debug.Assert(write != null);
 
             // Get field value
             var targetParam = Expression.Parameter(typeof(object));
@@ -360,6 +361,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(field != null);
             Debug.Assert(field.DeclaringType != null);   // non-static
+            Debug.Assert(method != null);
 
             if (genericArgs.Length == 0)
                 genericArgs = new[] {field.FieldType};
