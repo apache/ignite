@@ -418,7 +418,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var refSerializer = serializer as BinaryReflectiveSerializer;
 
                 if (refSerializer != null)
-                    refSerializer.Register(type, typeId, nameMapper, idMapper);
+                    refSerializer.Register(type, typeId, nameMapper, idMapper, typeCfg.SerializeRaw);
 
                 if (typeCfg.IsEnum != type.IsEnum)
                     throw new BinaryObjectException(
