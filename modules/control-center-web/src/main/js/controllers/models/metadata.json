@@ -226,7 +226,7 @@
       "type": "check",
       "model": "tablesOnly",
       "tip": [
-        "If selected then only tables metadata will be parsed",
+        "If selected, then only tables metadata will be parsed",
         "Otherwise table and view metadata will be parsed"
       ]
     }
