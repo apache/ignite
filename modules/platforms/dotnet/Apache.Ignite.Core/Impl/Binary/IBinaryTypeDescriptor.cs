@@ -78,6 +78,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         bool IsEnum { get; }
 
         /// <summary>
+        /// Gets a value indicating whether this type should be serialized in raw mode.
+        /// </summary>
+        bool SerializeRaw { get; }
+
+        /// <summary>
         /// Write type structure.
         /// </summary>
         BinaryStructure WriterTypeStructure { get; }
