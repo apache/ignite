@@ -949,14 +949,14 @@ namespace Apache.Ignite.Core.Tests.Binary
          * <summary>Check write of object with collections.</summary>
          */
         [Test]
-        public void TestCollectionsReflective()
+        public void TestCollectionsReflective([Values(false, true)] bool raw)
         {
             var marsh = new Marshaller(new BinaryConfiguration
             {
-                TypeConfigurations = new List<BinaryTypeConfiguration>
+                TypeConfigurations = new []
                 {
-                    new BinaryTypeConfiguration(typeof (CollectionsType)),
-                    new BinaryTypeConfiguration(typeof (InnerObjectType))
+                    new BinaryTypeConfiguration(typeof (CollectionsType)) {SerializeRaw = raw},
+                    new BinaryTypeConfiguration(typeof (InnerObjectType)) {SerializeRaw = raw}
                 }
             });
             
@@ -1033,11 +1033,12 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         [Test]
-        public void TestStructsReflective()
+        public void TestStructsReflective([Values(false, true)] bool raw)
         {
             var marsh = new Marshaller(new BinaryConfiguration
             {
-                TypeConfigurations = new[] {new BinaryTypeConfiguration(typeof (ReflectiveStruct))}
+                TypeConfigurations =
+                    new[] {new BinaryTypeConfiguration(typeof (ReflectiveStruct)) {SerializeRaw = raw}}
             });
 
             var obj = new ReflectiveStruct(15, 28.8);
