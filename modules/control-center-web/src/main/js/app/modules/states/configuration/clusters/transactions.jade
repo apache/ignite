@@ -19,10 +19,16 @@ mixin ignite-form-field-tooltip(message)
 
 - var model = 'backupItem.transactionConfiguration'
 
-.panel.panel-default
+form.panel.panel-default(bs-collapse ng-model='panel' name='transactions')
     .panel-heading(bs-collapse-toggle)
+        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
         label Transactions
         i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for transactions"')
+        i.pull-right.fa.fa-undo(
+            ng-show='!preview["transactions"].allDefaults' 
+            ng-click='#{model} = {}; $event.stopPropagation()' 
+            bs-tooltip 
+            data-title='"Undo unsaved changes"')
     .panel-collapse(role='tabpanel' bs-collapse-target id='transactions')
         .panel-body
             .col-sm-6
@@ -95,7 +101,13 @@ mixin ignite-form-field-tooltip(message)
                         a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
                         | &nbsp;
                         a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-cluster='clusters' data-cluster-cfg='#{model}')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-cluster='clusters' data-cluster-cfg='#{model}')
+                    .preview-content(
+                        ng-if='!preview["transactions"].allDefaults && mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["transactions"].java')
+                    .preview-content(
+                        ng-if='!preview["transactions"].allDefaults && !mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["transactions"].xml')
+                    .preview-content-empty(ng-if='preview["transactions"].allDefaults')
+                        label All Defaults
