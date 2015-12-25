@@ -110,7 +110,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writeAction = raw
                     ? GetRawWriter<bool>(field, (w, o) => w.WriteBoolean(o))
                     : GetWriter<bool>(field, (f, w, o) => w.WriteBoolean(f, o));
-
                 readAction = raw
                     ? GetRawReader(field, r => r.ReadBoolean())
                     : GetReader(field, (f, r) => r.ReadBoolean(f));
@@ -120,78 +119,87 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writeAction = raw
                     ? GetRawWriter<sbyte>(field, (w, o) => w.WriteByte(unchecked((byte) o)))
                     : GetWriter<sbyte>(field, (f, w, o) => w.WriteByte(f, unchecked((byte) o)));
-
-                readAction = GetReader(field, (f, r) => unchecked ((sbyte) r.ReadByte(f)));
+                readAction = raw
+                    ? GetRawReader(field, r => unchecked ((sbyte) r.ReadByte()))
+                    : GetReader(field, (f, r) => unchecked ((sbyte) r.ReadByte(f)));
             }
             else if (type == typeof (byte))
             {
                 writeAction = raw
                     ? GetRawWriter<byte>(field, (w, o) => w.WriteByte(o))
                     : GetWriter<byte>(field, (f, w, o) => w.WriteByte(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadByte(f));
+                readAction = raw ? GetRawReader(field, r => r.ReadByte()) : GetReader(field, (f, r) => r.ReadByte(f));
             }
             else if (type == typeof (short))
             {
                 writeAction = raw
                     ? GetRawWriter<short>(field, (w, o) => w.WriteShort(o))
                     : GetWriter<short>(field, (f, w, o) => w.WriteShort(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadShort(f));
+                readAction = raw ? GetRawReader(field, r => r.ReadShort()) : GetReader(field, (f, r) => r.ReadShort(f));
             }
             else if (type == typeof (ushort))
             {
                 writeAction = raw
                     ? GetRawWriter<ushort>(field, (w, o) => w.WriteShort(unchecked((short) o)))
                     : GetWriter<ushort>(field, (f, w, o) => w.WriteShort(f, unchecked((short) o)));
-                readAction = GetReader(field, (f, r) => unchecked((ushort) r.ReadShort(f)));
+                readAction = raw
+                    ? GetRawReader(field, r => unchecked((ushort) r.ReadShort()))
+                    : GetReader(field, (f, r) => unchecked((ushort) r.ReadShort(f)));
             }
             else if (type == typeof (char))
             {
                 writeAction = raw
                     ? GetRawWriter<char>(field, (w, o) => w.WriteChar(o))
                     : GetWriter<char>(field, (f, w, o) => w.WriteChar(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadChar(f));
+                readAction = raw ? GetRawReader(field, r => r.ReadChar()) : GetReader(field, (f, r) => r.ReadChar(f));
             }
             else if (type == typeof (int))
             {
                 writeAction = raw
                     ? GetRawWriter<int>(field, (w, o) => w.WriteInt(o))
                     : GetWriter<int>(field, (f, w, o) => w.WriteInt(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadInt(f));
+                readAction = raw ? GetRawReader(field, r => r.ReadInt()) : GetReader(field, (f, r) => r.ReadInt(f));
             }
             else if (type == typeof (uint))
             {
                 writeAction = raw
                     ? GetRawWriter<uint>(field, (w, o) => w.WriteInt(unchecked((int) o)))
                     : GetWriter<uint>(field, (f, w, o) => w.WriteInt(f, unchecked((int) o)));
-                readAction = GetReader(field, (f, r) => unchecked((uint) r.ReadInt(f)));
+                readAction = raw
+                    ? GetRawReader(field, r => unchecked((uint) r.ReadInt()))
+                    : GetReader(field, (f, r) => unchecked((uint) r.ReadInt(f)));
             }
             else if (type == typeof (long))
             {
                 writeAction = raw
                     ? GetRawWriter<long>(field, (w, o) => w.WriteLong(o))
                     : GetWriter<long>(field, (f, w, o) => w.WriteLong(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadLong(f));
+                readAction = raw ? GetRawReader(field, r => r.ReadLong()) : GetReader(field, (f, r) => r.ReadLong(f));
             }
             else if (type == typeof (ulong))
             {
                 writeAction = raw
                     ? GetRawWriter<ulong>(field, (w, o) => w.WriteLong(unchecked((long) o)))
                     : GetWriter<ulong>(field, (f, w, o) => w.WriteLong(f, unchecked((long) o)));
-                readAction = GetReader(field, (f, r) => unchecked((ulong) r.ReadLong(f)));
+                readAction = raw
+                    ? GetRawReader(field, r => unchecked((ulong) r.ReadLong()))
+                    : GetReader(field, (f, r) => unchecked((ulong) r.ReadLong(f)));
             }
             else if (type == typeof (float))
             {
                 writeAction = raw
                     ? GetRawWriter<float>(field, (w, o) => w.WriteFloat(o))
                     : GetWriter<float>(field, (f, w, o) => w.WriteFloat(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadFloat(f));
+                readAction = raw ? GetRawReader(field, r => r.ReadFloat()) : GetReader(field, (f, r) => r.ReadFloat(f));
             }
             else if (type == typeof (double))
             {
                 writeAction = raw
                     ? GetRawWriter<double>(field, (w, o) => w.WriteDouble(o))
                     : GetWriter<double>(field, (f, w, o) => w.WriteDouble(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDouble(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadDouble())
+                    : GetReader(field, (f, r) => r.ReadDouble(f));
             }
             else
                 throw new IgniteException("Unsupported primitive type: " + type.Name);
@@ -214,119 +222,153 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writeAction = raw
                     ? GetRawWriter<bool[]>(field, (w, o) => w.WriteBooleanArray(o))
                     : GetWriter<bool[]>(field, (f, w, o) => w.WriteBooleanArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadBooleanArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadBooleanArray())
+                    : GetReader(field, (f, r) => r.ReadBooleanArray(f));
             }
             else if (elemType == typeof (byte))
             {
                 writeAction = raw
                     ? GetRawWriter<byte[]>(field, (w, o) => w.WriteByteArray(o))
                     : GetWriter<byte[]>(field, (f, w, o) => w.WriteByteArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadByteArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadByteArray())
+                    : GetReader(field, (f, r) => r.ReadByteArray(f));
             }
             else if (elemType == typeof (sbyte))
             {
                 writeAction = raw
                     ? GetRawWriter<sbyte[]>(field, (w, o) => w.WriteByteArray((byte[]) (Array) o))
                     : GetWriter<sbyte[]>(field, (f, w, o) => w.WriteByteArray(f, (byte[]) (Array) o));
-                readAction = GetReader(field, (f, r) => (sbyte[]) (Array) r.ReadByteArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => (sbyte[]) (Array) r.ReadByteArray())
+                    : GetReader(field, (f, r) => (sbyte[]) (Array) r.ReadByteArray(f));
             }
             else if (elemType == typeof (short))
             {
                 writeAction = raw
                     ? GetRawWriter<short[]>(field, (w, o) => w.WriteShortArray(o))
                     : GetWriter<short[]>(field, (f, w, o) => w.WriteShortArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadShortArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadShortArray())
+                    : GetReader(field, (f, r) => r.ReadShortArray(f));
             }
             else if (elemType == typeof (ushort))
             {
                 writeAction = raw
                     ? GetRawWriter<ushort[]>(field, (w, o) => w.WriteShortArray((short[]) (Array) o))
                     : GetWriter<ushort[]>(field, (f, w, o) => w.WriteShortArray(f, (short[]) (Array) o));
-                readAction = GetReader(field, (f, r) => (ushort[]) (Array) r.ReadShortArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => (ushort[]) (Array) r.ReadShortArray())
+                    : GetReader(field, (f, r) => (ushort[]) (Array) r.ReadShortArray(f));
             }
             else if (elemType == typeof (char))
             {
                 writeAction = raw
                     ? GetRawWriter<char[]>(field, (w, o) => w.WriteCharArray(o))
                     : GetWriter<char[]>(field, (f, w, o) => w.WriteCharArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadCharArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadCharArray())
+                    : GetReader(field, (f, r) => r.ReadCharArray(f));
             }
             else if (elemType == typeof (int))
             {
                 writeAction = raw
                     ? GetRawWriter<int[]>(field, (w, o) => w.WriteIntArray(o))
                     : GetWriter<int[]>(field, (f, w, o) => w.WriteIntArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadIntArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadIntArray())
+                    : GetReader(field, (f, r) => r.ReadIntArray(f));
             }
             else if (elemType == typeof (uint))
             {
                 writeAction = raw
                     ? GetRawWriter<uint[]>(field, (w, o) => w.WriteIntArray((int[]) (Array) o))
                     : GetWriter<uint[]>(field, (f, w, o) => w.WriteIntArray(f, (int[]) (Array) o));
-                readAction = GetReader(field, (f, r) => (uint[]) (Array) r.ReadIntArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => (uint[]) (Array) r.ReadIntArray())
+                    : GetReader(field, (f, r) => (uint[]) (Array) r.ReadIntArray(f));
             }
             else if (elemType == typeof (long))
             {
                 writeAction = raw
                     ? GetRawWriter<long[]>(field, (w, o) => w.WriteLongArray(o))
                     : GetWriter<long[]>(field, (f, w, o) => w.WriteLongArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadLongArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadLongArray())
+                    : GetReader(field, (f, r) => r.ReadLongArray(f));
             }
             else if (elemType == typeof (ulong))
             {
                 writeAction = raw
                     ? GetRawWriter<ulong[]>(field, (w, o) => w.WriteLongArray((long[]) (Array) o))
                     : GetWriter<ulong[]>(field, (f, w, o) => w.WriteLongArray(f, (long[]) (Array) o));
-                readAction = GetReader(field, (f, r) => (ulong[]) (Array) r.ReadLongArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => (ulong[]) (Array) r.ReadLongArray())
+                    : GetReader(field, (f, r) => (ulong[]) (Array) r.ReadLongArray(f));
             }
             else if (elemType == typeof (float))
             {
                 writeAction = raw
                     ? GetRawWriter<float[]>(field, (w, o) => w.WriteFloatArray(o))
                     : GetWriter<float[]>(field, (f, w, o) => w.WriteFloatArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadFloatArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadFloatArray())
+                    : GetReader(field, (f, r) => r.ReadFloatArray(f));
             }
             else if (elemType == typeof (double))
             {
                 writeAction = raw
                     ? GetRawWriter<double[]>(field, (w, o) => w.WriteDoubleArray(o))
                     : GetWriter<double[]>(field, (f, w, o) => w.WriteDoubleArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDoubleArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadDoubleArray())
+                    : GetReader(field, (f, r) => r.ReadDoubleArray(f));
             }
             else if (elemType == typeof (decimal?))
             {
                 writeAction = raw
                     ? GetRawWriter<decimal?[]>(field, (w, o) => w.WriteDecimalArray(o))
                     : GetWriter<decimal?[]>(field, (f, w, o) => w.WriteDecimalArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDecimalArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadDecimalArray())
+                    : GetReader(field, (f, r) => r.ReadDecimalArray(f));
             }
             else if (elemType == typeof (string))
             {
                 writeAction = raw
                     ? GetRawWriter<string[]>(field, (w, o) => w.WriteStringArray(o))
                     : GetWriter<string[]>(field, (f, w, o) => w.WriteStringArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadStringArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadStringArray())
+                    : GetReader(field, (f, r) => r.ReadStringArray(f));
             }
             else if (elemType == typeof (Guid?))
             {
                 writeAction = raw
                     ? GetRawWriter<Guid?[]>(field, (w, o) => w.WriteGuidArray(o))
                     : GetWriter<Guid?[]>(field, (f, w, o) => w.WriteGuidArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadGuidArray(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadGuidArray())
+                    : GetReader(field, (f, r) => r.ReadGuidArray(f));
             }
             else if (elemType.IsEnum)
             {
                 writeAction = raw
                     ? GetRawWriter(field, MthdWriteEnumArray, elemType)
                     : GetWriter(field, MthdWriteEnumArray, elemType);
-                readAction = GetReader(field, MthdReadEnumArray, elemType);
+                readAction = raw
+                    ? GetRawReader(field, MthdReadEnumArray, elemType)
+                    : GetReader(field, MthdReadEnumArray, elemType);
             }
             else
             {
                 writeAction = raw
                     ? GetRawWriter(field, MthdWriteObjArray, elemType)
                     : GetWriter(field, MthdWriteObjArray, elemType);
-                readAction = GetReader(field, MthdReadObjArray, elemType);
+                readAction = raw
+                    ? GetRawReader(field, MthdReadObjArray, elemType)
+                    : GetReader(field, MthdReadObjArray, elemType);
             }
         }
 
@@ -353,14 +395,18 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writeAction = raw
                     ? GetRawWriter<decimal>(field, (w, o) => w.WriteDecimal(o))
                     : GetWriter<decimal>(field, (f, w, o) => w.WriteDecimal(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDecimal(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadDecimal())
+                    : GetReader(field, (f, r) => r.ReadDecimal(f));
             }
             else if (type == typeof (string))
             {
                 writeAction = raw
                     ? GetRawWriter<string>(field, (w, o) => w.WriteString(o))
                     : GetWriter<string>(field, (f, w, o) => w.WriteString(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadString(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadString())
+                    : GetReader(field, (f, r) => r.ReadString(f));
             }
             else if (type == typeof (Guid))
             {
@@ -374,14 +420,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writeAction = raw
                     ? GetRawWriter<Guid?>(field, (w, o) => w.WriteGuid(o))
                     : GetWriter<Guid?>(field, (f, w, o) => w.WriteGuid(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadGuid(f));
+                readAction = raw ? GetRawReader(field, r => r.ReadGuid()) : GetReader(field, (f, r) => r.ReadGuid(f));
             }
             else if (type.IsEnum)
             {
                 writeAction = raw
                     ? GetRawWriter<object>(field, (w, o) => w.WriteEnum(o), true)
                     : GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o), true);
-                readAction = GetReader(field, MthdReadEnum);
+                readAction = raw ? GetRawReader(field, MthdReadEnum) : GetReader(field, MthdReadEnum);
             }
             else if (type == BinaryUtils.TypDictionary ||
                      type.GetInterface(BinaryUtils.TypDictionary.FullName) != null && !type.IsGenericType)
@@ -389,7 +435,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writeAction = raw
                     ? GetRawWriter<IDictionary>(field, (w, o) => w.WriteDictionary(o))
                     : GetWriter<IDictionary>(field, (f, w, o) => w.WriteDictionary(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDictionary(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadDictionary())
+                    : GetReader(field, (f, r) => r.ReadDictionary(f));
             }
             else if (type == BinaryUtils.TypCollection ||
                      type.GetInterface(BinaryUtils.TypCollection.FullName) != null && !type.IsGenericType)
@@ -397,12 +445,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writeAction = raw
                     ? GetRawWriter<ICollection>(field, (w, o) => w.WriteCollection(o))
                     : GetWriter<ICollection>(field, (f, w, o) => w.WriteCollection(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadCollection(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadCollection())
+                    : GetReader(field, (f, r) => r.ReadCollection(f));
             }
             else
             {
                 writeAction = raw ? GetRawWriter(field, MthdWriteObj) : GetWriter(field, MthdWriteObj);
-                readAction = GetReader(field, MthdReadObj);
+                readAction = raw ? GetRawReader(field, MthdReadObj) : GetReader(field, MthdReadObj);
             }
         }
 
