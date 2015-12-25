@@ -112,6 +112,9 @@ namespace Apache.Ignite.Core.Binary
         /// <para />
         /// Raw mode does not include field names, improving performance and memory usage.
         /// However, queries do not support raw objects.
+        /// <para />
+        /// This flag is only applicable when default reflective serialization is used, 
+        /// that is, type does not implement <see cref="IBinarizable"/>.
         /// </summary>
         public bool SerializeRaw { get; set; }
 
