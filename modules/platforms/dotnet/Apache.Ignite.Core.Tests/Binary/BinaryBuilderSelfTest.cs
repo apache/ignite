@@ -265,7 +265,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(0, meta.Fields.Count);
 
             // Populate it with field.
-            IBinaryObjectBuilder builder = _grid.GetBinary().GetBuilder(binObj);
+            IBinaryObjectBuilder builder = binObj.ToBuilder();
 
             Assert.IsNull(builder.GetField<object>("val"));
 
@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(BinaryTypeNames.TypeNameObject, meta.GetFieldTypeName("val"));
 
             // Perform field remove.
-            builder = _grid.GetBinary().GetBuilder(binObj);
+            builder = binObj.ToBuilder();
 
             Assert.AreEqual(val, builder.GetField<object>("val"));
 
@@ -314,7 +314,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 .SetField("val2", inner)
                 .Build();
 
-            binObj = _grid.GetBinary().GetBuilder(binObj).RemoveField("val").Build();
+            binObj = binObj.ToBuilder().RemoveField("val").Build();
 
             Remove obj = binObj.Deserialize<Remove>();
 
@@ -636,7 +636,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(6, obj.FDouble);
 
             // Overwrite.
-            binObj = _grid.GetBinary().GetBuilder(binObj)
+            binObj = binObj.ToBuilder()
                 .SetField<byte>("fByte", 7)
                 .SetField("fBool", false)
                 .SetField<short>("fShort", 8)
