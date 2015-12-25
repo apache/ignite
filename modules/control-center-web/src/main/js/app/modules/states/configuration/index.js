@@ -23,6 +23,7 @@ import ConfigurationSummaryResource from './summary/summary.resource';
 import clustersTransactions from './clusters/transactions.directive';
 import clustersThread from './clusters/thread.directive';
 import clustersTime from './clusters/time.directive';
+import clustersSwap from './clusters/swap.directive';
 
 angular
 .module('ignite-console.states.configuration', [
@@ -31,6 +32,7 @@ angular
 .directive(...clustersTransactions)
 .directive(...clustersThread)
 .directive(...clustersTime)
+.directive(...clustersSwap)
 // Services.
 .service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {

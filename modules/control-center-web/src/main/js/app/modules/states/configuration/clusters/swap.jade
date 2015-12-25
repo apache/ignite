@@ -1,0 +1,65 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+mixin ignite-form-field-tooltip(message)
+    i.tipField.fa.fa-question-circle(bs-tooltip='"#{message}"')
+
+- var model = 'backupItem.swapSpaceSpi'
+
+form.panel.panel-default(bs-collapse ng-model='panel' name='swap')
+    .panel-heading(bs-collapse-toggle)
+        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+        label Swap
+        i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for overflow data to disk if it cannot fit in memory"')
+        //- i.pull-right.fa.fa-undo(
+            ng-show='!preview["swap"].allDefaults' 
+            ng-click='#{model} = {}; $event.stopPropagation()' 
+            bs-tooltip 
+            data-title='"Undo unsaved changes"')
+    .panel-collapse(role='tabpanel' bs-collapse-target id='swap')
+        .panel-body
+            .col-sm-6
+                .settings-row
+                    ignite-form-field(data-label='Swap space SPI')
+                        ignite-form-field-tooltip
+                            | Provides a mechanism in grid for storing data on disk#[br]
+                            | Ignite cache uses swap space to overflow data to disk if it cannot fit in memory
+                        ignite-form-field-dropdown(
+                            data-id='defaultTxConcurrency'
+                            data-name='defaultTxConcurrency'
+                            data-options="[\
+                                {value: 'FileSwapSpaceSpi', label: 'File-based swap'},\
+                                {value: undefined, label: 'Not set'}\
+                            ]"
+                            data-ng-model='#{model}.defaultTxConcurrency'
+                            data-placeholder='PESSIMISTIC'
+                        )
+            .col-sm-6
+                .preview-panel(ng-init='mode = false')
+                    .preview-legend
+                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
+                        | &nbsp;
+                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
+                    .preview-content(
+                        ng-if='!preview["pools"].allDefaults && mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["pools"].java')
+                    .preview-content(
+                        ng-if='!preview["pools"].allDefaults && !mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["pools"].xml')
+                    .preview-content-empty(ng-if='preview["pools"].allDefaults')
+                        label All Defaults

@@ -15,24 +15,13 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import igniteFormField from './field/field.directive';
-import igniteFormFieldTooltip from './field/tooltip.directive';
-import igniteFormFieldDropdown from './field/dropdown.directive';
-import igniteFormFieldInputNumber from './field/input/number.directive';
-import igniteFormFieldInputText from './field/input/text.directive';
+import template from './swap.jade!';
 
-angular
-.module('ignite-console.Form', [
-
-])
-.directive(...igniteFormField)
-.directive(...igniteFormFieldTooltip)
-.directive(...igniteFormFieldDropdown)
-.directive(...igniteFormFieldInputNumber)
-.directive(...igniteFormFieldInputText)
-.factory('IgniteFormGUID', [() => {
-    let guid = 0;
-
-    return () => `form-field-${guid++}`;
-}]);
+export default ['igniteConfigurationClustersSwap', [() => {
+    return {
+        scope: true,
+        restrict: 'E',
+        template,
+        replace: true
+    };
+}]];

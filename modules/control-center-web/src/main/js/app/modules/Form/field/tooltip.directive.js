@@ -15,24 +15,24 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import igniteFormField from './field/field.directive';
-import igniteFormFieldTooltip from './field/tooltip.directive';
-import igniteFormFieldDropdown from './field/dropdown.directive';
-import igniteFormFieldInputNumber from './field/input/number.directive';
-import igniteFormFieldInputText from './field/input/text.directive';
+const template = `<i class='tipField fa fa-question-circle'></i>`;
 
-angular
-.module('ignite-console.Form', [
+export default ['igniteFormFieldTooltip', ['$tooltip', ($tooltip) => {
+    const link = ($scope, $element, $attrs, $ctrls, $transclude) => {
+        const content = Array.prototype.slice
+        .apply($transclude($scope))
+        .reduce((html, el) => html += el.outerHTML, '');
 
-])
-.directive(...igniteFormField)
-.directive(...igniteFormFieldTooltip)
-.directive(...igniteFormFieldDropdown)
-.directive(...igniteFormFieldInputNumber)
-.directive(...igniteFormFieldInputText)
-.factory('IgniteFormGUID', [() => {
-    let guid = 0;
+        $tooltip($element, { title: content });
+    };
 
-    return () => `form-field-${guid++}`;
-}]);
+    return {
+        restrict: 'E',
+        scope: {},
+        template,
+        link,
+        replace: true,
+        transclude: true,
+        require: '^form'
+    };
+}]];
