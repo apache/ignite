@@ -895,15 +895,15 @@ namespace Apache.Ignite.Core.Tests.Binary
          * <summary>Check write of object with enums.</summary>
          */
         [Test]
-        public void TestEnumsReflective()
+        public void TestEnumsReflective([Values(false, true)] bool raw)
         {
             Marshaller marsh =
                 new Marshaller(new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
                     {
-                        new BinaryTypeConfiguration(typeof (EnumType)),
-                        new BinaryTypeConfiguration(typeof (TestEnum))
+                        new BinaryTypeConfiguration(typeof (EnumType)) {SerializeRaw = raw},
+                        new BinaryTypeConfiguration(typeof (TestEnum)) {SerializeRaw = raw}
                     }
                 });
 
@@ -919,18 +919,21 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
-            // Test enum field in binary form
-            var binEnum = portObj.GetField<IBinaryObject>("PEnum");
-            Assert.AreEqual(obj.PEnum.GetHashCode(), binEnum.GetHashCode());
-            Assert.AreEqual((int) obj.PEnum, binEnum.EnumValue);
-            Assert.AreEqual(obj.PEnum, binEnum.Deserialize<TestEnum>());
-            Assert.AreEqual(obj.PEnum, binEnum.Deserialize<object>());
-            Assert.AreEqual(typeof(TestEnum), binEnum.Deserialize<object>().GetType());
-            Assert.AreEqual(null, binEnum.GetField<object>("someField"));
-            Assert.IsFalse(binEnum.HasField("anyField"));
+            if (!raw)
+            {
+                // Test enum field in binary form
+                var binEnum = portObj.GetField<IBinaryObject>("PEnum");
+                Assert.AreEqual(obj.PEnum.GetHashCode(), binEnum.GetHashCode());
+                Assert.AreEqual((int) obj.PEnum, binEnum.EnumValue);
+                Assert.AreEqual(obj.PEnum, binEnum.Deserialize<TestEnum>());
+                Assert.AreEqual(obj.PEnum, binEnum.Deserialize<object>());
+                Assert.AreEqual(typeof (TestEnum), binEnum.Deserialize<object>().GetType());
+                Assert.AreEqual(null, binEnum.GetField<object>("someField"));
+                Assert.IsFalse(binEnum.HasField("anyField"));
 
-            var binEnumArr = portObj.GetField<IBinaryObject[]>("PEnumArray");
-            Assert.IsTrue(binEnumArr.Select(x => x.Deserialize<TestEnum>()).SequenceEqual(obj.PEnumArray));
+                var binEnumArr = portObj.GetField<IBinaryObject[]>("PEnumArray");
+                Assert.IsTrue(binEnumArr.Select(x => x.Deserialize<TestEnum>()).SequenceEqual(obj.PEnumArray));
+            }
 
             EnumType newObj = portObj.Deserialize<EnumType>();
 
