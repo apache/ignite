@@ -34,6 +34,21 @@ namespace
     /** SQL state 01004 constant. */
     const std::string STATE_01004 = "01004";
 
+    /** SQL state 08001 constant. */
+    const std::string STATE_08001 = "08001";
+
+    /** SQL state 08002 constant. */
+    const std::string STATE_08002 = "08002";
+
+    /** SQL state 08003 constant. */
+    const std::string STATE_08003 = "08003";
+
+    /** SQL state HY000 constant. */
+    const std::string STATE_HY000 = "HY000";
+
+    /** SQL state HY001 constant. */
+    const std::string STATE_HY001 = "HY001";
+
     /** SQL state HYC00 constant. */
     const std::string STATE_HYC00 = "HYC00";
 }
@@ -162,14 +177,39 @@ namespace ignite
                 case SQL_STATE_01004_DATA_TRUNCATED:
                     return STATE_01004;
 
+                case SQL_STATE_08001_CANNOT_CONNECT:
+                    return STATE_08001;
+
+                case SQL_STATE_08002_ALREADY_CONNECTED:
+                    return STATE_08002;
+
+                case SQL_STATE_08003_NOT_CONNECTED:
+                    return STATE_08003;
+
+                case SQL_STATE_HY000_GENERAL_ERROR:
+                    return STATE_HY000;
+
+                case SQL_STATE_HY001_MEMORY_ALLOCATION:
+                    return STATE_HY001;
+
                 case SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED:
-                    return STATE_01004;
+                    return STATE_HYC00;
 
                 default:
                     break;
             }
 
             return STATE_UNKNOWN;
+        }
+
+        int32_t StatusDiagnosticRecord::GetRowNumber() const
+        {
+            return rowNum;
+        }
+
+        int32_t StatusDiagnosticRecord::GetColumnNumber() const
+        {
+            return columnNum;
         }
 
         HeaderDiagnosticRecord::HeaderDiagnosticRecord() :
@@ -243,7 +283,7 @@ namespace ignite
             return static_cast<int32_t>(statusRecords.size());
         }
 
-        StatusDiagnosticRecord& HeaderDiagnosticRecord::GetStatusRecord(int32_t idx)
+        const StatusDiagnosticRecord& HeaderDiagnosticRecord::GetStatusRecord(int32_t idx) const
         {
             return statusRecords[idx];
         }
@@ -252,6 +292,141 @@ namespace ignite
         {
             return result == SQL_RESULT_SUCCESS || 
                    result == SQL_RESULT_SUCCESS_WITH_INFO;
+        }
+
+        SqlResult HeaderDiagnosticRecord::GetField(int32_t recNum, DiagnosticField field, app::ApplicationDataBuffer& buffer) const
+        {
+            if (recNum < 1 || recNum > statusRecords.size() + 1)
+                return SQL_RESULT_NO_DATA;
+
+            if (recNum == 1)
+            {
+                // Header record.
+
+                switch (field)
+                {
+                    case IGNITE_SQL_DIAG_HEADER_CURSOR_ROW_COUNT:
+                    {
+                        buffer.PutInt64(GetRowCount());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION:
+                    {
+                        buffer.PutString(GetDynamicFunction());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION_CODE:
+                    {
+                        buffer.PutInt32(GetDynamicFunctionCode());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_HEADER_NUMBER:
+                    {
+                        buffer.PutInt32(GetStatusRecordsNumber());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_HEADER_RETURNCODE:
+                    {
+                        buffer.PutInt32(GetReturnCode());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_HEADER_ROW_COUNT:
+                    {
+                        buffer.PutInt64(GetRowsAffected());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    default:
+                        break;
+                }
+            }
+            else
+            {
+                // Status record.
+                const StatusDiagnosticRecord& record = GetStatusRecord(recNum);
+
+                switch (field)
+                {
+                    case IGNITE_SQL_DIAG_STATUS_CLASS_ORIGIN:
+                    {
+                        buffer.PutString(record.GetClassOrigin());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_STATUS_COLUMN_NUMBER:
+                    {
+                        buffer.PutInt32(record.GetColumnNumber());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_STATUS_CONNECTION_NAME:
+                    {
+                        buffer.PutString(record.GetConnectionName());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_STATUS_MESSAGE_TEXT:
+                    {
+                        buffer.PutString(record.GetMessage());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_STATUS_NATIVE:
+                    {
+                        buffer.PutInt32(0);
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_STATUS_ROW_NUMBER:
+                    {
+                        buffer.PutInt64(record.GetRowNumber());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_STATUS_SERVER_NAME:
+                    {
+                        buffer.PutString(record.GetServerName());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_STATUS_SQLSTATE:
+                    {
+                        buffer.PutString(record.GetSqlState());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    case IGNITE_SQL_DIAG_STATUS_SUBCLASS_ORIGIN:
+                    {
+                        buffer.PutString(record.GetSubclassOrigin());
+
+                        return SQL_RESULT_SUCCESS;
+                    }
+
+                    default:
+                        break;
+                }
+            }
+
+            return SQL_RESULT_ERROR;
         }
     }
 }

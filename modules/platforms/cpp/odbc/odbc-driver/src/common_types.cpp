@@ -47,6 +47,61 @@ namespace ignite
                     return SQL_ERROR;
             }
         }
+
+        DiagnosticField DiagnosticFieldToInternal(int16_t field)
+        {
+            switch (field)
+            {
+                case SQL_DIAG_CURSOR_ROW_COUNT:
+                    return IGNITE_SQL_DIAG_HEADER_CURSOR_ROW_COUNT;
+
+                case SQL_DIAG_DYNAMIC_FUNCTION:
+                    return IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION;
+
+                case SQL_DIAG_DYNAMIC_FUNCTION_CODE:
+                    return IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION_CODE;
+
+                case SQL_DIAG_NUMBER:
+                    return IGNITE_SQL_DIAG_HEADER_NUMBER;
+
+                case SQL_DIAG_RETURNCODE:
+                    return IGNITE_SQL_DIAG_HEADER_RETURNCODE;
+
+                case SQL_DIAG_ROW_COUNT:
+                    return IGNITE_SQL_DIAG_HEADER_ROW_COUNT;
+
+                case SQL_DIAG_CLASS_ORIGIN:
+                    return IGNITE_SQL_DIAG_STATUS_CLASS_ORIGIN;
+
+                case SQL_DIAG_COLUMN_NUMBER:
+                    return IGNITE_SQL_DIAG_STATUS_COLUMN_NUMBER;
+
+                case SQL_DIAG_CONNECTION_NAME:
+                    return IGNITE_SQL_DIAG_STATUS_CONNECTION_NAME;
+
+                case SQL_DIAG_MESSAGE_TEXT:
+                    return IGNITE_SQL_DIAG_STATUS_MESSAGE_TEXT;
+
+                case SQL_DIAG_NATIVE:
+                    return IGNITE_SQL_DIAG_STATUS_NATIVE;
+
+                case SQL_DIAG_ROW_NUMBER:
+                    return IGNITE_SQL_DIAG_STATUS_ROW_NUMBER;
+
+                case SQL_DIAG_SERVER_NAME:
+                    return IGNITE_SQL_DIAG_STATUS_SERVER_NAME;
+
+                case SQL_DIAG_SQLSTATE:
+                    return IGNITE_SQL_DIAG_STATUS_SQLSTATE;
+
+                case SQL_DIAG_SUBCLASS_ORIGIN:
+                    return IGNITE_SQL_DIAG_STATUS_SUBCLASS_ORIGIN;
+
+                default:
+                    break;
+            }
+            return IGNITE_SQL_DIAG_UNKNOWN;
+        }
     }
 }
 

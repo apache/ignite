@@ -1090,18 +1090,43 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
                                   SQLHANDLE     handle,
                                   SQLSMALLINT   recNum,
                                   SQLSMALLINT   diagId,
-                                  SQLPOINTER    diagInfo,
+                                  SQLPOINTER    buffer,
                                   SQLSMALLINT   bufferLen,
                                   SQLSMALLINT*  resLen)
 {
-    using ignite::odbc::Environment;
-    using ignite::odbc::Connection;
-    using ignite::odbc::Statement;
+    using namespace ignite::odbc::type_traits;
+    using namespace ignite::odbc;
+
+    using ignite::odbc::app::ApplicationDataBuffer;
 
     LOG_MSG("SQLGetDiagField called\n");
 
+    int64_t outResLen;
+    ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_DEFAULT, buffer, bufferLen, &outResLen);
 
-    return(SQL_NO_DATA_FOUND);
+    SqlResult result;
+
+    DiagnosticField field = DiagnosticFieldToInternal(diagId);
+
+    switch (handleType)
+    {
+        case SQL_HANDLE_DBC:
+        {
+            Connection *connection = reinterpret_cast<Connection*>(handle);
+
+            result = connection->GetDiagnosticRecord().GetField(recNum, field, outBuffer);
+
+            break;
+        }
+
+        default:
+            return SQL_NO_DATA;
+    }
+
+    if (result == SQL_RESULT_SUCCESS)
+        *resLen = static_cast<SQLSMALLINT>(outResLen);
+
+    return SqlResultToReturnCode(result);
 }
 
 SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,

@@ -24,6 +24,7 @@
 
 #include <ignite/common/common.h>
 #include "ignite/odbc/common_types.h"
+#include "ignite/odbc/app/application_data_buffer.h"
 
 namespace ignite
 {
@@ -105,6 +106,24 @@ namespace ignite
              * @return A five-character SQLSTATE diagnostic code.
              */
             const std::string& GetSqlState() const;
+
+            /**
+             * Get row number.
+             *
+             * @return The row number in the rowset, or the parameter number in
+             *         the set of parameters, with which the status record is 
+             *         associated.
+             */
+            int32_t GetRowNumber() const;
+
+            /**
+             * Get column number.
+             *
+             * @return Contains the value that represents the column number
+             *         in the result set or the parameter number in the set
+             *         of parameters.
+             */
+            int32_t GetColumnNumber() const;
 
         private:
             /** SQL state diagnostic code. */
@@ -241,7 +260,7 @@ namespace ignite
              * @param idx Status record index.
              * @return Status record instance reference.
              */
-            StatusDiagnosticRecord& GetStatusRecord(int32_t idx);
+            const StatusDiagnosticRecord& GetStatusRecord(int32_t idx) const;
 
             /**
              * Check if the record is in the success state.
@@ -249,6 +268,16 @@ namespace ignite
              * @return True if the record is in the success state.
              */
             bool IsSuccessful() const;
+
+            /**
+             * Get value of the field and put it in buffer.
+             *
+             * @param recNum Diagnostic record number.
+             * @param field Record field.
+             * @param buffer Buffer to put data to.
+             * @return Operation result.
+             */
+            SqlResult GetField(int32_t recNum, DiagnosticField field, app::ApplicationDataBuffer& buffer) const;
 
         private:
             IGNITE_NO_COPY_ASSIGNMENT(HeaderDiagnosticRecord);

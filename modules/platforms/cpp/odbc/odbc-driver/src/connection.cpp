@@ -148,7 +148,13 @@ namespace ignite
             statement = new Statement(*this);
 
             if (!statement)
+            {
                 AddStatusRecord(SQL_STATE_HY001_MEMORY_ALLOCATION, "Not enough memory.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            return SQL_RESULT_SUCCESS;
         }
 
         bool Connection::Send(const int8_t* data, size_t len)

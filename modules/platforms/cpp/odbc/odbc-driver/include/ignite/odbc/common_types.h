@@ -18,6 +18,8 @@
 #ifndef _IGNITE_ODBC_DRIVER_COMMON_TYPES
 #define _IGNITE_ODBC_DRIVER_COMMON_TYPES
 
+#include <stdint.h>
+
 namespace ignite
 {
     namespace odbc
@@ -90,6 +92,30 @@ namespace ignite
              */
             SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED
         };
+
+        enum DiagnosticField
+        {
+            IGNITE_SQL_DIAG_HEADER_CURSOR_ROW_COUNT,
+            IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION,
+            IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION_CODE,
+            IGNITE_SQL_DIAG_HEADER_NUMBER,
+            IGNITE_SQL_DIAG_HEADER_RETURNCODE,
+            IGNITE_SQL_DIAG_HEADER_ROW_COUNT,
+
+            IGNITE_SQL_DIAG_STATUS_CLASS_ORIGIN,
+            IGNITE_SQL_DIAG_STATUS_COLUMN_NUMBER,
+            IGNITE_SQL_DIAG_STATUS_CONNECTION_NAME,
+            IGNITE_SQL_DIAG_STATUS_MESSAGE_TEXT,
+            IGNITE_SQL_DIAG_STATUS_NATIVE,
+            IGNITE_SQL_DIAG_STATUS_ROW_NUMBER,
+            IGNITE_SQL_DIAG_STATUS_SERVER_NAME,
+            IGNITE_SQL_DIAG_STATUS_SQLSTATE,
+            IGNITE_SQL_DIAG_STATUS_SUBCLASS_ORIGIN,
+
+            IGNITE_SQL_DIAG_UNKNOWN
+        };
+
+        DiagnosticField DiagnosticFieldToInternal(int16_t field);
     }
 }
 
