@@ -47,6 +47,9 @@ public class GridH2QueryContext {
     /** */
     private final Key key;
 
+    /** */
+    private volatile boolean cleared;
+
     /** Index snapshots. */
     @GridToStringInclude
     private Map<Long, Object> snapshots;
@@ -357,7 +360,7 @@ public class GridH2QueryContext {
         qctx.remove();
 
         if (!onlyThreadLoc && x.key.type == MAP)
-            doClear(x.key);
+            doClear(x.key, false);
     }
 
     /**
@@ -367,19 +370,22 @@ public class GridH2QueryContext {
      * @param type Query type.
      */
     public static void clear(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
-        doClear(new Key(locNodeId, nodeId, qryId, type));
+        doClear(new Key(locNodeId, nodeId, qryId, type), false);
     }
 
     /**
      * @param key Context key.
+     * @param nodeStop Node is stopping.
      */
-    private static void doClear(Key key) {
+    private static void doClear(Key key, boolean nodeStop) {
         assert key.type == MAP : key.type;
 
         GridH2QueryContext x = qctxs.remove(key);
 
         if (x == null)
             return;
+
+        x.cleared = true;
 
         assert x.key.equals(key);
 
@@ -392,10 +398,17 @@ public class GridH2QueryContext {
 
         List<GridReservable> r = x.reservations;
 
-        if (!F.isEmpty(r)) {
+        if (!nodeStop && !F.isEmpty(r)) {
             for (int i = 0; i < r.size(); i++)
                 r.get(i).release();
         }
+    }
+
+    /**
+     * @return {@code true} If the context is cleared.
+     */
+    public boolean isCleared() {
+        return cleared;
     }
 
     /**
@@ -405,7 +418,7 @@ public class GridH2QueryContext {
     public static void clearAfterDeadNode(UUID locNodeId, UUID nodeId) {
         for (Key key : qctxs.keySet()) {
             if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId))
-                doClear(key);
+                doClear(key, false);
         }
     }
 
@@ -415,7 +428,7 @@ public class GridH2QueryContext {
     public static void clearLocalNodeStop(UUID locNodeId) {
         for (Key key : qctxs.keySet()) {
             if (key.locNodeId.equals(locNodeId))
-                doClear(key);
+                doClear(key, true);
         }
     }
 

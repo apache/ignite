@@ -1409,6 +1409,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             assert remainingRanges > 0;
 
             for (int attempt = 0;; attempt++) {
+                if (qctx.isCleared())
+                    throw new GridH2RetryException("Query is cancelled.");
+
                 if (kernalContext().isStopping())
                     throw new GridH2RetryException("Stopping node.");
 
