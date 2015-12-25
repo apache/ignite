@@ -695,12 +695,12 @@ namespace Apache.Ignite.Core.Tests.Binary
          * <summary>Check write of primitive fields through reflection.</summary>
          */
         [Test]
-        public void TestPrimitiveFieldsReflective()
+        public void TestPrimitiveFieldsReflective([Values(false, true)] bool raw)
         {
             ICollection<BinaryTypeConfiguration> typeCfgs = 
                 new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof (PrimitiveFieldType)) {SerializeRaw = raw});
 
             BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
 
