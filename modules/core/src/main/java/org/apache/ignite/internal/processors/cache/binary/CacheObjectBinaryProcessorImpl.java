@@ -491,6 +491,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             AffinityTopologyVersion topVer = ctx.cache().context().lockedTopologyVersion(null);
 
+            if (topVer == null)
+                topVer = ctx.cache().context().exchange().readyAffinityVersion();
+
             BinaryObjectException err = metaDataCache.invoke(topVer, key, new MetadataProcessor(mergedMeta));
 
             if (err != null)

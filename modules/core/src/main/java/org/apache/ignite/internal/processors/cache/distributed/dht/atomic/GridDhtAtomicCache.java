@@ -1290,59 +1290,48 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         GridCacheReturn retVal = null;
 
-                        IgniteTxManager tm = ctx.tm();
+                        if (keys.size() > 1 &&                             // Several keys ...
+                            writeThrough() && !req.skipStore() &&          // and store is enabled ...
+                            !ctx.store().isLocal() &&                      // and this is not local store ...
+                            !ctx.dr().receiveEnabled()                     // and no DR.
+                            ) {
+                            // This method can only be used when there are no replicated entries in the batch.
+                            UpdateBatchResult updRes = updateWithBatch(node,
+                                hasNear,
+                                req,
+                                res,
+                                locked,
+                                ver,
+                                dhtFut,
+                                completionCb,
+                                ctx.isDrEnabled(),
+                                taskName,
+                                expiry,
+                                sndPrevVal);
 
-                        // Needed for metadata cache transaction.
-                        boolean set = tm.setTxTopologyHint(req.topologyVersion());
+                            deleted = updRes.deleted();
+                            dhtFut = updRes.dhtFuture();
 
-                        try {
-                            if (keys.size() > 1 &&                             // Several keys ...
-                                writeThrough() && !req.skipStore() &&          // and store is enabled ...
-                                !ctx.store().isLocal() &&                      // and this is not local store ...
-                                !ctx.dr().receiveEnabled()                     // and no DR.
-                                ) {
-                                // This method can only be used when there are no replicated entries in the batch.
-                                UpdateBatchResult updRes = updateWithBatch(node,
-                                    hasNear,
-                                    req,
-                                    res,
-                                    locked,
-                                    ver,
-                                    dhtFut,
-                                    completionCb,
-                                    ctx.isDrEnabled(),
-                                    taskName,
-                                    expiry,
-                                    sndPrevVal);
-
-                                deleted = updRes.deleted();
-                                dhtFut = updRes.dhtFuture();
-
-                                if (req.operation() == TRANSFORM)
-                                    retVal = updRes.invokeResults();
-                            }
-                            else {
-                                UpdateSingleResult updRes = updateSingle(node,
-                                    hasNear,
-                                    req,
-                                    res,
-                                    locked,
-                                    ver,
-                                    dhtFut,
-                                    completionCb,
-                                    ctx.isDrEnabled(),
-                                    taskName,
-                                    expiry,
-                                    sndPrevVal);
-
-                                retVal = updRes.returnValue();
-                                deleted = updRes.deleted();
-                                dhtFut = updRes.dhtFuture();
-                            }
+                            if (req.operation() == TRANSFORM)
+                                retVal = updRes.invokeResults();
                         }
-                        finally {
-                            if (set)
-                                tm.setTxTopologyHint(null);
+                        else {
+                            UpdateSingleResult updRes = updateSingle(node,
+                                hasNear,
+                                req,
+                                res,
+                                locked,
+                                ver,
+                                dhtFut,
+                                completionCb,
+                                ctx.isDrEnabled(),
+                                taskName,
+                                expiry,
+                                sndPrevVal);
+
+                            retVal = updRes.returnValue();
+                            deleted = updRes.deleted();
+                            dhtFut = updRes.dhtFuture();
                         }
 
                         if (retVal == null)
