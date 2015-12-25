@@ -1675,59 +1675,6 @@
           }
         }
       ]
-    },
-    {
-      "label": "Time configuration",
-      "group": "time",
-      "tip": [
-        "Time settings for CLOCK write ordering mode"
-      ],
-      "fields": [
-        {
-          "label": "Samples size",
-          "id": "clockSyncSamples",
-          "type": "number",
-          "model": "clockSyncSamples",
-          "placeholder": 8,
-          "tip": [
-            "Number of samples used to synchronize clocks between different nodes",
-            "Clock synchronization is used for cache version assignment in CLOCK order mode"
-          ]
-        },
-        {
-          "label": "Frequency",
-          "id": "clockSyncFrequency",
-          "type": "number",
-          "model": "clockSyncFrequency",
-          "placeholder": 120000,
-          "tip": [
-            "Frequency at which clock is synchronized between nodes, in milliseconds",
-            "Clock synchronization is used for cache version assignment in CLOCK order mode"
-          ]
-        },
-        {
-          "label": "Port base",
-          "id": "timeServerPortBase",
-          "type": "number",
-          "model": "timeServerPortBase",
-          "max": 65535,
-          "placeholder": 31100,
-          "tip": [
-            "Time server provides clock synchronization between nodes",
-            "Base UPD port number for grid time server. Time server will be started on one of free ports in range"
-          ]
-        },
-        {
-          "label": "Port range",
-          "id": "timeServerPortRange",
-          "type": "number",
-          "model": "timeServerPortRange",
-          "placeholder": 100,
-          "tip": [
-            "Time server port range"
-          ]
-        }
-      ]
     }
   ]
 }

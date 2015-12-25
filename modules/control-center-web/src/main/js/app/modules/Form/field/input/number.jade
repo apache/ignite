@@ -17,11 +17,11 @@
 .input-tip
     input.form-control(
         id='{{ id }}'
-        name='{{ name }}' 
-        placeholder='{{ placeholder }}' 
-        type='number' 
-        min='0' 
-        max='Number.MAX_VALUE' 
+        name='{{ name }}'
+        placeholder='{{ placeholder }}'
+        type='number'
+        min='{{ min || 0 }}'
+        max='{{ max || Number.MAX_VALUE }}'
         ng-model='ngModel'
     )
 

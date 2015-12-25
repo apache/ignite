@@ -15,31 +15,13 @@
  * limitations under the License.
  */
 
-import template from './number.jade!';
+import template from './time.jade!';
 
-export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
-    const link = (scope, el, attrs, [form, label]) => {
-        const {id, name} = scope;
-        const field = form[name];
-
-        scope.field = field;
-        label.for = scope.id = id || guid();
-    };
-
+export default ['igniteConfigurationClustersTime', [() => {
     return {
+        scope: true,
         restrict: 'E',
-        scope: {
-            id: '@',
-            name: '@',
-            placeholder: '@',
-            min: '@',
-            max: '@',
-            ngModel: '='
-        },
-        link,
         template,
-        replace: true,
-        transclude: true,
-        require: ['^form', '?^igniteFormField']
+        replace: true
     };
 }]];
