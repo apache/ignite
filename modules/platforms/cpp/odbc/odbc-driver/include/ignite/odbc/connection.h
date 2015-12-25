@@ -22,14 +22,20 @@
 
 #include <vector>
 
+#include "ignite/odbc/parser.h"
 #include "ignite/odbc/socket_client.h"
-#include "ignite/odbc/statement.h"
 #include "ignite/odbc/config/connection_info.h"
+#include "ignite/odbc/diagnostic_record.h"
 
 namespace ignite
 {
     namespace odbc
     {
+        class Statement;
+
+        /**
+         * ODBC node connection.
+         */
         class Connection
         {
             friend class Environment;
@@ -41,9 +47,20 @@ namespace ignite
 
             /**
              * Get connection info.
+             *
              * @return Connection info.
              */
             const config::ConnectionInfo& GetInfo() const;
+
+            /**
+             * Get info of any type.
+             *
+             * @param type Info type.
+             * @param buf Result buffer pointer.
+             * @param buflen Result buffer length.
+             * @param reslen Result value length pointer.
+             */
+            void GetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen);
 
             /**
              * Establish connection to ODBC server.
@@ -51,16 +68,15 @@ namespace ignite
              * @param host Host.
              * @param port Port.
              * @param cache Cache name to connect to.
-             * @return True on success.
              */
-            bool Establish(const std::string& host, uint16_t port, const std::string& cache);
+            void Establish(const std::string& host, uint16_t port, const std::string& cache);
 
             /**
              * Release established connection.
              *
-             * @return True on success.
+             * @return Operation result.
              */
-            bool Release();
+            void Release();
 
             /**
              * Create statement associated with the connection.
@@ -91,13 +107,30 @@ namespace ignite
              *
              * @return Cache name.
              */
-            const std::string& GetCache() const
-            {
-                return cache;
-            }
+            const std::string& GetCache() const;
+
+            /**
+             * Create diagnostic record associated with the Connection instance.
+             *
+             * @param sqlState SQL state.
+             * @param message Message.
+             * @param rowNum Associated row number.
+             * @param columnNum Associated column number.
+             * @return StatusDiagnosticRecord associated with the instance.
+             */
+            StatusDiagnosticRecord CreateStatusRecord(SqlState sqlState,
+                const std::string& message, int32_t rowNum = 0, int32_t columnNum = 0);
+
+            /**
+             * Get diagnostic record.
+             *
+             * @return Diagnostic record.
+             */
+            const HeaderDiagnosticRecord& GetDiagnosticRecord() const;
 
             /**
              * Synchronously send request message and receive response.
+             *
              * @param req Request message.
              * @param rsp Response message.
              * @return True on success.
@@ -128,9 +161,57 @@ namespace ignite
             IGNITE_NO_COPY_ASSIGNMENT(Connection);
 
             /**
+             * Establish connection to ODBC server.
+             * Internal call.
+             *
+             * @param host Host.
+             * @param port Port.
+             * @param cache Cache name to connect to.
+             * @return Operation result.
+             */
+            SqlResult InternalEstablish(const std::string& host, uint16_t port, const std::string& cache);
+
+            /**
+             * Release established connection.
+             * Internal call.
+             *
+             * @return Operation result.
+             */
+            SqlResult InternalRelease();
+
+            /**
+             * Get info of any type.
+             * Internal call.
+             *
+             * @param type Info type.
+             * @param buf Result buffer pointer.
+             * @param buflen Result buffer length.
+             * @param reslen Result value length pointer.
+             * @return Operation result.
+             */
+            SqlResult InternalGetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen);
+            
+            /**
+             * Create statement associated with the connection.
+             * Internal call.
+             *
+             * @param Pointer to valid instance on success and NULL on failure.
+             * @return Operation result.
+             */
+            SqlResult InternalCreateStatement(Statement*& statement);
+
+            /**
              * Constructor.
              */
             Connection();
+
+            /**
+             * Add new status record.
+             *
+             * @param sqlState SQL state.
+             * @param message Message.
+             */
+            void AddStatusRecord(SqlState sqlState, const std::string& message);
 
             /** Socket. */
             tcp::SocketClient socket;
@@ -143,6 +224,9 @@ namespace ignite
 
             /** Message parser. */
             Parser parser;
+
+            /** Diagnostic record. */
+            HeaderDiagnosticRecord diagnosticRecord;
         };
     }
 }

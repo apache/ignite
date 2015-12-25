@@ -53,6 +53,13 @@ namespace ignite
                  * @param len String length.
                  */
                 void FillFromConnectString(const char* str, size_t len);
+                
+                /**
+                 * Fill configuration data using connection string.
+                 *
+                 * @param str Connect string.
+                 */
+                void FillFromConnectString(const std::string& str);
 
                 /**
                  * Convert configure to connect string.

@@ -23,6 +23,7 @@
 #include <map>
 
 #include <ignite/common/common.h>
+#include <ignite/odbc/common_types.h>
 
 namespace ignite
 {
@@ -58,7 +59,7 @@ namespace ignite
                  * Destructor.
                  */
                 ~ConnectionInfo();
-            
+
                 /**
                  * Get info of any type.
                  * @param type Info type.
@@ -67,7 +68,7 @@ namespace ignite
                  * @param reslen Result value length pointer.
                  * @return True on success.
                  */
-                bool GetInfo(InfoType type, void* buf, short buflen, short* reslen) const;
+                SqlResult GetInfo(InfoType type, void* buf, short buflen, short* reslen) const;
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(ConnectionInfo);

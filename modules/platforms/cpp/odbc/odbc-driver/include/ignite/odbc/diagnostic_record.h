@@ -169,7 +169,7 @@ namespace ignite
              *
              * @param retCode Operation return code.
              */
-            void SetHeaderRecord(SqlResult retCode);
+            void SetHeaderRecord(SqlResult result);
 
             /**
              * Add status record to diagnostic records.
@@ -184,11 +184,18 @@ namespace ignite
             void Reset();
 
             /**
+             * Get result of the last operation.
+             *
+             * @return Result of the last operation.
+             */
+            SqlResult GetOperaionResult() const;
+
+            /**
              * Get return code of the last operation.
              *
              * @return Return code of the last operation.
              */
-            SqlResult GetReturnCode() const;
+            int GetReturnCode() const;
 
             /**
              * Get row count.
@@ -236,6 +243,13 @@ namespace ignite
              */
             StatusDiagnosticRecord& GetStatusRecord(int32_t idx);
 
+            /**
+             * Check if the record is in the success state.
+             *
+             * @return True if the record is in the success state.
+             */
+            bool IsSuccessful() const;
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(HeaderDiagnosticRecord);
 
@@ -257,8 +271,11 @@ namespace ignite
              */
             int32_t dynamicFunctionCode;
 
-            /** Header record field. Return code returned by the function. */
-            SqlResult returnCode;
+            /**
+             * Operation result. This field is mapped to "Return code" header
+             * record field.
+             */
+            SqlResult result;
 
             /**
              * Header record field. The number of rows affected by an insert,

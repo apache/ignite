@@ -176,7 +176,7 @@ namespace ignite
             rowCount(0),
             dynamicFunction(),
             dynamicFunctionCode(0),
-            returnCode(SQL_RESULT_SUCCESS),
+            result(SQL_RESULT_SUCCESS),
             rowsAffected(0)
         {
             // No-op.
@@ -187,12 +187,12 @@ namespace ignite
             // No-op.
         }
 
-        void HeaderDiagnosticRecord::SetHeaderRecord(SqlResult retCode)
+        void HeaderDiagnosticRecord::SetHeaderRecord(SqlResult result)
         {
             rowCount = 0;
             dynamicFunction.clear();
             dynamicFunctionCode = 0;
-            returnCode = retCode;
+            this->result = result;
             rowsAffected = 0;
         }
 
@@ -208,9 +208,14 @@ namespace ignite
             statusRecords.clear();
         }
 
-        SqlResult HeaderDiagnosticRecord::GetReturnCode() const
+        SqlResult HeaderDiagnosticRecord::GetOperaionResult() const
         {
-            return returnCode;
+            return result;
+        }
+
+        int HeaderDiagnosticRecord::GetReturnCode() const
+        {
+            return SqlResultToReturnCode(result);
         }
 
         int64_t HeaderDiagnosticRecord::GetRowCount() const
@@ -241,6 +246,12 @@ namespace ignite
         StatusDiagnosticRecord& HeaderDiagnosticRecord::GetStatusRecord(int32_t idx)
         {
             return statusRecords[idx];
+        }
+
+        bool HeaderDiagnosticRecord::IsSuccessful() const
+        {
+            return result == SQL_RESULT_SUCCESS || 
+                   result == SQL_RESULT_SUCCESS_WITH_INFO;
         }
     }
 }

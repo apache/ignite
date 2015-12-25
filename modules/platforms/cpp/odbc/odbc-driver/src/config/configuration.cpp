@@ -121,6 +121,11 @@ namespace ignite
                     cache = dflt::cache;
             }
 
+            void Configuration::FillFromConnectString(const std::string& str)
+            {
+                FillFromConnectString(str.data(), str.size());
+            }
+
             std::string Configuration::ToConnectString() const
             {
                 std::stringstream connect_string_buffer;

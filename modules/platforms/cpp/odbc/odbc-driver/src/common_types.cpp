@@ -33,15 +33,18 @@ namespace ignite
         {
             switch (result)
             {
-            case SQL_RESULT_SUCCESS: 
-                return SQL_SUCCESS;
+                case SQL_RESULT_SUCCESS: 
+                    return SQL_SUCCESS;
 
-            case SQL_RESULT_NO_DATA:
-                return SQL_NO_DATA;
+                case SQL_RESULT_SUCCESS_WITH_INFO:
+                    return SQL_SUCCESS_WITH_INFO;
 
-            case SQL_RESULT_ERROR:
-            default:
-                return SQL_ERROR;
+                case SQL_RESULT_NO_DATA:
+                    return SQL_NO_DATA;
+
+                case SQL_RESULT_ERROR:
+                default:
+                    return SQL_ERROR;
             }
         }
     }

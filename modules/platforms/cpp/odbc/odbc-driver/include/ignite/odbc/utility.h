@@ -37,16 +37,21 @@
 extern FILE* log_file;
 void logInit(const char*);
 
-#   define LOG_MSG(fmt, ...) \
-    do { \
-        logInit("D:\\odbc.log"); \
-        fprintf(log_file, "%s: " fmt, __FUNCTION__, __VA_ARGS__); \
-        fflush(log_file); \
+#   define LOG_MSG(fmt, ...)                                        \
+    do {                                                            \
+        logInit("D:\\odbc.log");                                    \
+        fprintf(log_file, "%s: " fmt, __FUNCTION__, __VA_ARGS__);   \
+        fflush(log_file);                                           \
     } while (false)
 
 #else
 #   define LOG_MSG(...)
 #endif
+
+#define IGNITE_ODBC_API_CALL(diagnosticRecord, ...) \
+        diagnosticRecord.Reset();                   \
+        SqlResult result = (__VA_ARGS__);           \
+        diagnosticRecord.SetHeaderRecord(result)
 
 namespace ignite
 {

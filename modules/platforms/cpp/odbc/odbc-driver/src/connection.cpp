@@ -19,8 +19,9 @@
 
 #include <sstream>
 
-#include "ignite/odbc/connection.h"
 #include "ignite/odbc/utility.h"
+#include "ignite/odbc/statement.h"
+#include "ignite/odbc/connection.h"
 
 // TODO: implement appropriate protocol with de-/serialisation.
 namespace
@@ -47,7 +48,12 @@ namespace ignite
             // No-op.
         }
 
-        const config::ConnectionInfo & Connection::GetInfo() const
+        void Connection::AddStatusRecord(SqlState sqlState, const std::string & message)
+        {
+            diagnosticRecord.AddStatusRecord(CreateStatusRecord(sqlState, message));
+        }
+
+        const config::ConnectionInfo& Connection::GetInfo() const
         {
             // Connection info is the same for all connections now.
             static config::ConnectionInfo info;
@@ -55,36 +61,94 @@ namespace ignite
             return info;
         }
 
-        bool Connection::Establish(const std::string& host, uint16_t port, const std::string& cache)
+        void Connection::GetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen)
+        {
+            IGNITE_ODBC_API_CALL(diagnosticRecord, InternalGetInfo(type, buf, buflen, reslen));
+        }
+
+        SqlResult Connection::InternalGetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen)
+        {
+            const config::ConnectionInfo& info = GetInfo();
+
+            SqlResult res = info.GetInfo(type, buf, buflen, reslen);
+
+            if (res != SQL_RESULT_SUCCESS)
+                AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED, "Not implemented.");
+
+            return res;
+        }
+
+        void Connection::Establish(const std::string& host, uint16_t port, const std::string& cache)
+        {
+            IGNITE_ODBC_API_CALL(diagnosticRecord, InternalEstablish(host, port, cache));
+        }
+
+        SqlResult Connection::InternalEstablish(const std::string & host, uint16_t port, const std::string & cache)
         {
             if (connected)
-                return false;
+            {
+                AddStatusRecord(SQL_STATE_08002_ALREADY_CONNECTED, "Already connected.");
+
+                return SQL_RESULT_ERROR;
+            }
 
             if (cache.empty())
-                return false;
+            {
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Cache is not specified.");
+
+                return SQL_RESULT_ERROR;
+            }
 
             this->cache = cache;
 
             connected = socket.Connect(host.c_str(), port);
 
-            return connected;
+            if (!connected)
+            {
+                AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, "Failed to establish connection with the host.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            return SQL_RESULT_SUCCESS;
         }
 
-        bool Connection::Release()
+        void Connection::Release()
+        {
+            IGNITE_ODBC_API_CALL(diagnosticRecord, InternalRelease());
+        }
+
+        SqlResult Connection::InternalRelease()
         {
             if (!connected)
-                return false;
+            {
+                AddStatusRecord(SQL_STATE_08003_NOT_CONNECTED, "Connection is not open.");
+
+                return SQL_RESULT_ERROR;
+            }
 
             socket.Close();
 
             connected = false;
 
-            return !connected;
+            return SQL_RESULT_SUCCESS;
         }
 
         Statement* Connection::CreateStatement()
         {
-            return new Statement(*this);
+            Statement* statement;
+
+            IGNITE_ODBC_API_CALL(diagnosticRecord, InternalCreateStatement(statement));
+
+            return statement;
+        }
+
+        SqlResult Connection::InternalCreateStatement(Statement*& statement)
+        {
+            statement = new Statement(*this);
+
+            if (!statement)
+                AddStatusRecord(SQL_STATE_HY001_MEMORY_ALLOCATION, "Not enough memory.");
         }
 
         bool Connection::Send(const int8_t* data, size_t len)
@@ -144,6 +208,22 @@ namespace ignite
             }
 
             return true;
+        }
+
+        const std::string& Connection::GetCache() const
+        {
+            return cache;
+        }
+
+        StatusDiagnosticRecord Connection::CreateStatusRecord(SqlState sqlState,
+            const std::string& message, int32_t rowNum, int32_t columnNum)
+        {
+            return StatusDiagnosticRecord(sqlState, message, "", "", rowNum, columnNum);
+        }
+
+        const HeaderDiagnosticRecord& Connection::GetDiagnosticRecord() const
+        {
+            return diagnosticRecord;
         }
     }
 }

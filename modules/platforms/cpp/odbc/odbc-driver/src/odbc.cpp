@@ -34,6 +34,7 @@
 #include "ignite/odbc/type_traits.h"
 #include "ignite/odbc/environment.h"
 #include "ignite/odbc/connection.h"
+#include "ignite/odbc/statement.h"
 
 #ifdef ODBC_DEBUG
 
@@ -115,11 +116,9 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC        conn,
     if (!connection)
         return SQL_INVALID_HANDLE;
 
-    const ConnectionInfo& info = connection->GetInfo();
+    connection->GetInfo(infoType, infoValue, infoValueMax, length);
 
-    bool success = info.GetInfo(infoType, infoValue, infoValueMax, length);
-
-    return success ? SQL_SUCCESS : SQL_ERROR;
+    return connection->GetDiagnosticRecord().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLAllocHandle(SQLSMALLINT type, SQLHANDLE parent, SQLHANDLE* result)
@@ -169,7 +168,7 @@ SQLRETURN SQL_API SQLAllocConnect(SQLHENV env, SQLHDBC* conn)
 
     if (!environment)
         return SQL_INVALID_HANDLE;
-    
+
     Connection *connection = environment->CreateConnection();
 
     if (!connection)
@@ -196,12 +195,9 @@ SQLRETURN SQL_API SQLAllocStmt(SQLHDBC conn, SQLHSTMT* stmt)
 
     Statement *statement = connection->CreateStatement();
 
-    if (!statement)
-        return SQL_ERROR;
-
     *stmt = reinterpret_cast<SQLHSTMT>(statement);
 
-    return SQL_SUCCESS;
+    return connection->GetDiagnosticRecord().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLFreeHandle(SQLSMALLINT type, SQLHANDLE handle)
@@ -326,6 +322,9 @@ SQLRETURN SQL_API SQLDriverConnect(SQLHDBC      conn,
                                    SQLUSMALLINT driverCompletion)
 {
     using ignite::odbc::Connection;
+    using ignite::odbc::HeaderDiagnosticRecord;
+    using ignite::utility::SqlStringToString;
+    using ignite::utility::CopyStringToBuffer;
 
     UNREFERENCED_PARAMETER(windowHandle);
 
@@ -337,33 +336,31 @@ SQLRETURN SQL_API SQLDriverConnect(SQLHDBC      conn,
     if (!connection)
         return SQL_INVALID_HANDLE;
 
-    if (inConnectionStringLen == SQL_NTS && inConnectionString)
-        inConnectionStringLen = static_cast<SQLSMALLINT>(strlen((char*)inConnectionString));
+    std::string connectStr = SqlStringToString(inConnectionString, inConnectionStringLen);
 
     ignite::odbc::config::Configuration config;
 
-    config.FillFromConnectString(reinterpret_cast<const char*>(inConnectionString), inConnectionStringLen);
+    config.FillFromConnectString(connectStr);
 
-    bool connected = connection->Establish(config.GetHost(), config.GetPort(), config.GetCache());
+    connection->Establish(config.GetHost(), config.GetPort(), config.GetCache());
 
-    if (!connected)
-        return SQL_ERROR;
+    const HeaderDiagnosticRecord& diag = connection->GetDiagnosticRecord();
 
-    if (outConnectionString && outConnectionStringBufferLen > 0)
-    {
-        std::string out_connection_str = config.ToConnectString();
+    if (!diag.IsSuccessful())
+        return diag.GetReturnCode();
 
-        LOG_MSG("%s\n", out_connection_str.c_str());
+    std::string outConnectStr = config.ToConnectString();
 
-        strncpy((char*)outConnectionString, out_connection_str.c_str(), outConnectionStringBufferLen - 1);
+    size_t reslen = CopyStringToBuffer(outConnectStr,
+        reinterpret_cast<char*>(outConnectionString),
+        static_cast<size_t>(outConnectionStringBufferLen));
 
-        outConnectionString[outConnectionStringBufferLen - 1] = '\0';
+    if (outConnectionStringLen)
+        *outConnectionStringLen = static_cast<SQLSMALLINT>(reslen);
 
-        if (outConnectionStringLen)
-            *outConnectionStringLen = static_cast<SQLSMALLINT>(strlen(reinterpret_cast<char*>(outConnectionString)));
-    }
+    LOG_MSG("%s\n", outConnectionString);
 
-    return SQL_SUCCESS;
+    return diag.GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLConnect(SQLHDBC        conn,
@@ -375,6 +372,7 @@ SQLRETURN SQL_API SQLConnect(SQLHDBC        conn,
                              SQLSMALLINT    authLen)
 {
     using ignite::odbc::Connection;
+    using ignite::odbc::HeaderDiagnosticRecord;
     using ignite::utility::SqlStringToString;
 
     LOG_MSG("SQLConnect called\n");
@@ -384,17 +382,17 @@ SQLRETURN SQL_API SQLConnect(SQLHDBC        conn,
     if (!connection)
         return SQL_INVALID_HANDLE;
 
-    ignite::odbc::config::Configuration defaultConfig;
+    ignite::odbc::config::Configuration config;
 
     std::string server = SqlStringToString(serverName, serverNameLen);
 
-    if (server != defaultConfig.GetDsn())
+    //TODO: move into Establish()
+    if (server != config.GetDsn())
         return SQL_ERROR;
 
-    bool connected = connection->Establish(defaultConfig.GetHost(), 
-        defaultConfig.GetPort(), defaultConfig.GetCache());
+    connection->Establish(config.GetHost(), config.GetPort(), config.GetCache());
 
-    return connected ? SQL_SUCCESS : SQL_ERROR;
+    return connection->GetDiagnosticRecord().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLDisconnect(SQLHDBC conn)
@@ -408,9 +406,9 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC conn)
     if (!connection)
         return SQL_INVALID_HANDLE;
 
-    bool success = connection->Release();
+    connection->Release();
 
-    return success ? SQL_SUCCESS : SQL_ERROR;
+    return connection->GetDiagnosticRecord().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLPrepare(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryLen)

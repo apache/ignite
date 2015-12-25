@@ -32,7 +32,6 @@
 #include "ignite/odbc/query/query.h"
 #include "ignite/odbc/app/application_data_buffer.h"
 #include "ignite/odbc/app/parameter.h"
-#include "ignite/odbc/parser.h"
 #include "ignite/odbc/common_types.h"
 #include "ignite/odbc/cursor.h"
 #include "ignite/odbc/utility.h"

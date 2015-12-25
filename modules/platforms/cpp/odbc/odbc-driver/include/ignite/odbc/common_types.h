@@ -30,6 +30,9 @@ namespace ignite
             /** Success. */
             SQL_RESULT_SUCCESS,
 
+            /** Success with info. */
+            SQL_RESULT_SUCCESS_WITH_INFO,
+
             /** Error. */
             SQL_RESULT_ERROR,
 
@@ -42,12 +45,49 @@ namespace ignite
          */
         int SqlResultToReturnCode(SqlResult result);
 
+        /**
+         * Provides detailed information about the cause of a warning or error.
+         */
         enum SqlState
         {
+            /** Undefined state. Internal, should never be exposed to user. */
             SQL_STATE_UNKNOWN,
 
+            /** Output data has been truncated. */
             SQL_STATE_01004_DATA_TRUNCATED,
 
+            /**
+             * The driver was unable to establish a connection with the data
+             * source.
+             */
+            SQL_STATE_08001_CANNOT_CONNECT,
+
+            /**
+             * The specified ConnectionHandle had already been used
+             * to establish a connection with a data source, and the connection
+             * was still open.
+             */
+            SQL_STATE_08002_ALREADY_CONNECTED,
+
+            /** The connection specified was not open. */
+            SQL_STATE_08003_NOT_CONNECTED,
+
+            /**
+             * An error occurred for which there was no specific SQLSTATE
+             * and for which no implementation-specific SQLSTATE was defined.
+             */
+            SQL_STATE_HY000_GENERAL_ERROR,
+
+            /**
+             * The driver was unable to allocate memory for the specified
+             * handle.
+             */
+            SQL_STATE_HY001_MEMORY_ALLOCATION,
+
+            /**
+             * The driver does not support the feature of ODBC behavior that
+             * the application requested.
+             */
             SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED
         };
     }
