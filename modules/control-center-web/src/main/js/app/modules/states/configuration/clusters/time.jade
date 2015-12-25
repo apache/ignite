@@ -34,7 +34,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='time')
             .col-sm-6
                 .settings-row
                     ignite-form-field(data-label='Samples size')
-                        +ignite-form-field-tooltip('')
+                        +ignite-form-field-tooltip('Number of samples used to synchronize clocks between different nodes<br/>Clock synchronization is used for cache version assignment in CLOCK order mode')
                         ignite-form-field-input-number(
                             data-id='clockSyncSamples'
                             data-name='clockSyncSamples'
@@ -43,7 +43,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='time')
                         )
                 .settings-row
                     ignite-form-field(data-label='Frequency')
-                        +ignite-form-field-tooltip('')
+                        +ignite-form-field-tooltip('Frequency at which clock is synchronized between nodes, in milliseconds<br/>Clock synchronization is used for cache version assignment in CLOCK order mode')
                         ignite-form-field-input-number(
                             data-id='clockSyncFrequency'
                             data-name='clockSyncFrequency'
@@ -52,7 +52,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='time')
                         )
                 .settings-row
                     ignite-form-field(data-label='Port base')
-                        +ignite-form-field-tooltip('')
+                        +ignite-form-field-tooltip('Time server provides clock synchronization between nodes<br/>Base UPD port number for grid time server. Time server will be started on one of free ports in range')
                         ignite-form-field-input-number(
                             data-id='timeServerPortBase'
                             data-name='timeServerPortBase'
@@ -62,7 +62,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='time')
                         )
                 .settings-row
                     ignite-form-field(data-label='Port range')
-                        +ignite-form-field-tooltip('')
+                        +ignite-form-field-tooltip('Time server port range')
                         ignite-form-field-input-number(
                             data-id='timeServerPortRange'
                             data-name='timeServerPortRange'
