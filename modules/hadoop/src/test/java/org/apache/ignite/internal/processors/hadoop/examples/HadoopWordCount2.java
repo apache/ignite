@@ -65,7 +65,7 @@ public class HadoopWordCount2 {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
 
-        setTasksClasses(job, true, true, true, true/*outputCompression*/);
+        setTasksClasses(job, true, true, true, false);
 
         FileInputFormat.setInputPaths(job, new Path(input));
         FileOutputFormat.setOutputPath(job, new Path(output));

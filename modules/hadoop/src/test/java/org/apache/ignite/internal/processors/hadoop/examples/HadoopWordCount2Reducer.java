@@ -23,8 +23,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.ignite.internal.processors.hadoop.HadoopAbstractWordCountTest;
-import org.apache.ignite.internal.processors.hadoop.SnappyUtil;
 
 /**
  * Combiner and Reducer phase of WordCount job.
@@ -57,14 +55,13 @@ public class HadoopWordCount2Reducer extends Reducer<Text, IntWritable, Text, In
     /** {@inheritDoc} */
     @Override protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
+
         wasSetUp = true;
     }
 
     /** {@inheritDoc} */
     @Override public void setConf(Configuration conf) {
         wasConfigured = true;
-
-        SnappyUtil.printDiagnosticAndTestSnappy(HadoopAbstractWordCountTest.snappyCompressOutput, getClass(), conf);
     }
 
     /** {@inheritDoc} */

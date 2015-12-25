@@ -32,7 +32,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.hadoop.util.NativeCodeLoader;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopDaemon;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager;
 import org.apache.ignite.internal.util.typedef.F;
@@ -68,7 +70,7 @@ public class HadoopClassLoader extends URLClassLoader {
     public static final String HADOOP_DAEMON_CLASS_NAME = "org.apache.hadoop.util.Daemon";
 
     /** Name of libhadoop library. */
-    private static final String LIBHADOOP = "libhadoop";
+    private static final String LIBHADOOP = "hadoop";
 
     /** */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
@@ -122,12 +124,10 @@ public class HadoopClassLoader extends URLClassLoader {
         this.name = name;
 
         try {
-            copyNativeLibraries(org.apache.hadoop.util.NativeCodeLoader.class.getName(), LIBHADOOP);
+            copyNativeLibraries();
         }
-        catch (Throwable t) {
-            t.printStackTrace();
-
-            throw new RuntimeException(t);
+        catch (IgniteCheckedException ice) {
+            U.quietAndWarn(null, "Failed to load the Hadoop native library load forcing class: " + ice.toString());
         }
     }
 
@@ -153,56 +153,44 @@ public class HadoopClassLoader extends URLClassLoader {
      * mix classes from different class loaders.
      * In addition, native libraries can be unloaded when their corresponding class loaders are garbage collected.
      * ----------------------------------------------------
-     *
-     * @param checkingClsName The class whose loading must force the native lib to load.
-     * @param libraryName The name of the library to search for name. Actually this should be a unique substring that
-     *                    should be contained only in the target lib name.
      */
-    private void copyNativeLibraries(final String checkingClsName, final String libraryName) {
+    private void copyNativeLibraries() throws IgniteCheckedException {
+        final String checkingClsName = NativeCodeLoader.class.getName();
+
+        final String libraryName = LIBHADOOP;
+
         try {
             // This must trigger native library load.
             Class.forName(checkingClsName, true, APP_CLS_LDR);
         }
         catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Failed to find " + checkingClsName + " class.", e);
+            throw new IgniteCheckedException("Failed to find " + checkingClsName + " class.", e);
         }
 
-        ClassLoader ldr = APP_CLS_LDR;
+        try {
+            final Vector<Object> curVector = U.field(this, "nativeLibraries");
 
-        boolean added = false;
+            ClassLoader ldr = APP_CLS_LDR;
 
-        final Vector curVector = U.field(this, "nativeLibraries");
+            while (ldr != null) {
+                Vector vector = U.field(ldr, "nativeLibraries");
 
-        for (Object lib: curVector) {
-            String libName = U.field(lib, "name");
+                for (Object lib : vector) {
+                    String libName = U.field(lib, "name");
 
-            if (libName.contains(libraryName)) {
-                U.debug("Library " + libraryName + " is already contained in this classloader.");
+                    if (libName.contains(libraryName)) {
+                        curVector.add(lib);
 
-                return;
-            }
-        }
-
-        ldrLoop: while (ldr != null) {
-            Vector vector = U.field(ldr, "nativeLibraries");
-
-            for (Object lib : vector) {
-                String libName = U.field(lib, "name");
-
-                if (libName.contains(libraryName)) {
-                    curVector.add(lib);
-
-                    added = true;
-
-                    break ldrLoop;
+                        return;
+                    }
                 }
+
+                ldr = ldr.getParent();
             }
-
-            ldr = ldr.getParent();
         }
-
-        if (!added)
-            U.debug("Failed to find native library " + libraryName + ". Subsequent calls to native methods will fail.");
+        catch (IgniteException ie) {
+            throw new IgniteCheckedException("Failed to get or assign a field.", ie);
+        }
     }
 
     /**

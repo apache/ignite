@@ -45,10 +45,6 @@ public abstract class HadoopAbstractWordCountTest extends HadoopAbstractSelfTest
     /** Output path. */
     protected static final String PATH_OUTPUT = "/output";
 
-    /** If to use Snappy data compression.
-     *  Note that this flag == 'true' mandates the "libhadoop" native library to be loaded. */
-    public static final boolean snappyCompressOutput = true;
-
     /** IGFS instance. */
     protected IgfsEx igfs;
 

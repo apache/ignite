@@ -24,8 +24,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.ignite.internal.processors.hadoop.HadoopAbstractWordCountTest;
-import org.apache.ignite.internal.processors.hadoop.SnappyUtil;
 
 /**
  * Mapper phase of WordCount job.
@@ -66,8 +64,6 @@ public class HadoopWordCount2Mapper extends Mapper<Object, Text, Text, IntWritab
     /** {@inheritDoc} */
     @Override public void setConf(Configuration conf) {
         wasConfigured = true;
-
-        SnappyUtil.printDiagnosticAndTestSnappy(HadoopAbstractWordCountTest.snappyCompressOutput, getClass(), conf);
     }
 
     /** {@inheritDoc} */

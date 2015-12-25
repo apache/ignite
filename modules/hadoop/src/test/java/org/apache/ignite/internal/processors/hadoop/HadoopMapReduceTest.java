@@ -34,6 +34,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -144,8 +145,6 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
      * @throws Exception If fails.
      */
     public void testWholeMapReduceExecution() throws Exception {
-        SnappyUtil.printDiagnosticAndTestSnappy(snappyCompressOutput, getClass(), null);
-
         IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
         igfs.mkdirs(inDir);
@@ -185,7 +184,7 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
 
             Job job = Job.getInstance(jobConf);
 
-            HadoopWordCount2.setTasksClasses(job, useNewMapper, useNewCombiner, useNewReducer, snappyCompressOutput);
+            HadoopWordCount2.setTasksClasses(job, useNewMapper, useNewCombiner, useNewReducer, compressOutputSnappy());
 
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(IntWritable.class);
@@ -220,6 +219,15 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
                 actual
             );
         }
+    }
+
+    /**
+     * Gets if to compress output data with Snappy.
+     *
+     * @return If to compress output data with Snappy.
+     */
+    protected boolean compressOutputSnappy() {
+        return false;
     }
 
     /**

@@ -53,8 +53,6 @@ public class HadoopWordCount1Reduce extends MapReduceBase implements Reducer<Tex
     @Override public void configure(JobConf job) {
         super.configure(job);
 
-        SnappyUtil.printDiagnosticAndTestSnappy(HadoopAbstractWordCountTest.snappyCompressOutput, getClass(), job);
-
         wasConfigured = true;
     }
 }
