@@ -933,6 +933,11 @@ namespace Apache.Ignite.Core.Tests.Binary
                 var binEnumArr = portObj.GetField<IBinaryObject[]>("PEnumArray");
                 Assert.IsTrue(binEnumArr.Select(x => x.Deserialize<TestEnum>()).SequenceEqual(obj.PEnumArray));
             }
+            else
+            {
+                Assert.IsFalse(portObj.HasField("PEnum"));
+                Assert.IsFalse(portObj.HasField("PEnumArray"));
+            }
 
             EnumType newObj = portObj.Deserialize<EnumType>();
 
