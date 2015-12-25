@@ -30,13 +30,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopDaemon;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopNativeCodeLoader;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.objectweb.asm.AnnotationVisitor;
@@ -65,6 +66,9 @@ public class HadoopClassLoader extends URLClassLoader {
 
     /** Name of the Hadoop daemon class. */
     public static final String HADOOP_DAEMON_CLASS_NAME = "org.apache.hadoop.util.Daemon";
+
+    /** Name of libhadoop library. */
+    private static final String LIBHADOOP = "libhadoop";
 
     /** */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
@@ -116,6 +120,89 @@ public class HadoopClassLoader extends URLClassLoader {
         assert !(getParent() instanceof HadoopClassLoader);
 
         this.name = name;
+
+        try {
+            copyNativeLibraries(org.apache.hadoop.util.NativeCodeLoader.class.getName(), LIBHADOOP);
+        }
+        catch (Throwable t) {
+            t.printStackTrace();
+
+            throw new RuntimeException(t);
+        }
+    }
+
+    /**
+     * Hack to borrow NativeLibrary object from parent class loader.
+     * This is done in order to overcome the JDK limitation, that each native lib may
+     * be loaded only with one class loader at a certain time moment.
+     * Please see the following doc for more detail:
+     * http://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/invocation.html#library_version
+     * ----------------------------------------------------
+     * In JDK 1.1, once a native library is loaded, it is visible from all class loaders. Therefore two classes in
+     * different class loaders may link with the same native method. This leads to two problems:
+     * A class may mistakenly link with native libraries loaded by a class with the same name in a different class
+     * loader.
+     * Native methods can easily mix classes from different class loaders. This breaks the name space separation offered
+     * by class loaders, and leads to type safety problems.
+     * In the JDK, each class loader manages its own set of native libraries. The same JNI native library cannot be
+     * loaded into more than one class loader. Doing so causes UnsatisfiedLinkError to be thrown. For example,
+     * System.loadLibrary throws an UnsatisfiedLinkError when used to load a native library into two class loaders.
+     * The benefits of the new approach are:
+     *
+     * Name space separation based on class loaders is preserved in native libraries. A native library cannot easily
+     * mix classes from different class loaders.
+     * In addition, native libraries can be unloaded when their corresponding class loaders are garbage collected.
+     * ----------------------------------------------------
+     *
+     * @param checkingClsName The class whose loading must force the native lib to load.
+     * @param libraryName The name of the library to search for name. Actually this should be a unique substring that
+     *                    should be contained only in the target lib name.
+     */
+    private void copyNativeLibraries(final String checkingClsName, final String libraryName) {
+        try {
+            // This must trigger native library load.
+            Class.forName(checkingClsName, true, APP_CLS_LDR);
+        }
+        catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to find " + checkingClsName + " class.", e);
+        }
+
+        ClassLoader ldr = APP_CLS_LDR;
+
+        boolean added = false;
+
+        final Vector curVector = U.field(this, "nativeLibraries");
+
+        for (Object lib: curVector) {
+            String libName = U.field(lib, "name");
+
+            if (libName.contains(libraryName)) {
+                U.debug("Library " + libraryName + " is already contained in this classloader.");
+
+                return;
+            }
+        }
+
+        ldrLoop: while (ldr != null) {
+            Vector vector = U.field(ldr, "nativeLibraries");
+
+            for (Object lib : vector) {
+                String libName = U.field(lib, "name");
+
+                if (libName.contains(libraryName)) {
+                    curVector.add(lib);
+
+                    added = true;
+
+                    break ldrLoop;
+                }
+            }
+
+            ldr = ldr.getParent();
+        }
+
+        if (!added)
+            U.debug("Failed to find native library " + libraryName + ". Subsequent calls to native methods will fail.");
     }
 
     /**
@@ -125,10 +212,12 @@ public class HadoopClassLoader extends URLClassLoader {
      * @return {@code true} if we need to check this class.
      */
     private static boolean isHadoopIgfs(String cls) {
-        String ignitePackagePrefix = "org.apache.ignite";
-        int len = ignitePackagePrefix.length();
+        String ignitePkgPrefix = "org.apache.ignite";
 
-        return cls.startsWith(ignitePackagePrefix) && (cls.indexOf("igfs.", len) != -1 || cls.indexOf(".fs.", len) != -1 || cls.indexOf("hadoop.", len) != -1);
+        int len = ignitePkgPrefix.length();
+
+        return cls.startsWith(ignitePkgPrefix) && (cls.indexOf("igfs.", len) != -1 ||
+            cls.indexOf(".fs.", len) != -1 || cls.indexOf("hadoop.", len) != -1);
     }
 
     /**
@@ -145,8 +234,6 @@ public class HadoopClassLoader extends URLClassLoader {
             if (isHadoop(name)) { // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
                 if (name.endsWith(".util.ShutdownHookManager"))  // Dirty hack to get rid of Hadoop shutdown hooks.
                     return loadFromBytes(name, HadoopShutdownHookManager.class.getName());
-                else if (name.endsWith(".util.NativeCodeLoader"))
-                    return loadFromBytes(name, HadoopNativeCodeLoader.class.getName());
                 else if (name.equals(HADOOP_DAEMON_CLASS_NAME))
                     // We replace this in order to be able to forcibly stop some daemon threads
                     // that otherwise never stop (e.g. PeerCache runnables):

@@ -26,6 +26,8 @@ import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.ignite.internal.processors.hadoop.HadoopAbstractWordCountTest;
+import org.apache.ignite.internal.processors.hadoop.SnappyUtil;
 
 /**
  * Combiner and Reducer phase of WordCount job.
@@ -47,8 +49,11 @@ public class HadoopWordCount1Reduce extends MapReduceBase implements Reducer<Tex
         output.collect(key, new IntWritable(sum));
     }
 
+    /** {@inheritDoc} */
     @Override public void configure(JobConf job) {
         super.configure(job);
+
+        SnappyUtil.printDiagnosticAndTestSnappy(HadoopAbstractWordCountTest.snappyCompressOutput, getClass(), job);
 
         wasConfigured = true;
     }

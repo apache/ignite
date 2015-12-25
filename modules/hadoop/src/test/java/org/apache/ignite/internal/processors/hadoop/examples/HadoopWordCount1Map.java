@@ -27,6 +27,8 @@ import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.ignite.internal.processors.hadoop.HadoopAbstractWordCountTest;
+import org.apache.ignite.internal.processors.hadoop.SnappyUtil;
 
 /**
  * Mapper phase of WordCount job.
@@ -60,6 +62,8 @@ public class HadoopWordCount1Map extends MapReduceBase implements Mapper<LongWri
 
     /** {@inheritDoc} */
     @Override public void configure(JobConf job) {
+        SnappyUtil.printDiagnosticAndTestSnappy(HadoopAbstractWordCountTest.snappyCompressOutput, getClass(), job);
+
         super.configure(job);
 
         wasConfigured = true;

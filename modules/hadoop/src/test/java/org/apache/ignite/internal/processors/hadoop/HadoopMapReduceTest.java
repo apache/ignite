@@ -144,6 +144,8 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
      * @throws Exception If fails.
      */
     public void testWholeMapReduceExecution() throws Exception {
+        SnappyUtil.printDiagnosticAndTestSnappy(snappyCompressOutput, getClass(), null);
+
         IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
         igfs.mkdirs(inDir);
@@ -183,7 +185,7 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
 
             Job job = Job.getInstance(jobConf);
 
-            HadoopWordCount2.setTasksClasses(job, useNewMapper, useNewCombiner, useNewReducer);
+            HadoopWordCount2.setTasksClasses(job, useNewMapper, useNewCombiner, useNewReducer, snappyCompressOutput);
 
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(IntWritable.class);
@@ -207,13 +209,15 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
 
             checkOwner(new IgfsPath(outFile));
 
+            String actual = readAndSortFile(outFile, job.getConfiguration());
+
             assertEquals("Use new mapper: " + useNewMapper + ", new combiner: " + useNewCombiner + ", new reducer: " +
                 useNewReducer,
                 "blue\t" + blue + "\n" +
                 "green\t" + green + "\n" +
                 "red\t" + red + "\n" +
                 "yellow\t" + yellow + "\n",
-                readAndSortFile(outFile)
+                actual
             );
         }
     }
