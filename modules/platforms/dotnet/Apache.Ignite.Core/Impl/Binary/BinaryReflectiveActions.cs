@@ -101,6 +101,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static readonly MethodInfo MthdWriteObjRaw =
             typeof(IBinaryRawWriter).GetMethod("WriteObject");
 
+        /** Method: raw writer */
+        private static readonly MethodInfo MthdGetRawWriter =
+            typeof(IBinaryWriter).GetMethod("GetRawWriter");
+
+        /** Method: raw writer */
+        private static readonly MethodInfo MthdGetRawReader =
+            typeof(IBinaryReader).GetMethod("GetRawReader");
+
         /// <summary>
         /// Lookup read/write actions for the given type.
         /// </summary>
@@ -441,7 +449,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writeAction = raw
                     ? GetRawWriter<Guid>(field, (w, o) => w.WriteGuid(o))
                     : GetWriter<Guid>(field, (f, w, o) => w.WriteGuid(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadObject<Guid>(f));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadObject<Guid>())
+                    : GetReader(field, (f, r) => r.ReadObject<Guid>(f));
             }
             else if (nullable && nullableType == typeof (Guid))
             {
@@ -532,8 +542,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 fldExpr = Expression.Convert(fldExpr, typeof (object));
 
             // Call Writer method
-            var writerParam = Expression.Parameter(typeof(IBinaryRawWriter));
-            var writeExpr = Expression.Invoke(write, writerParam, fldExpr);
+            var writerParam = Expression.Parameter(typeof(IBinaryWriter));
+            var writeExpr = Expression.Invoke(write, Expression.Call(writerParam, MthdGetRawWriter), fldExpr);
 
             // Compile and return
             return Expression.Lambda<BinaryReflectiveWriteAction>(writeExpr, targetParam, writerParam).Compile();
@@ -576,10 +586,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             var fldExpr = Expression.Field(targetParamConverted, field);
 
             // Call Writer method
-            var writerParam = Expression.Parameter(typeof(IBinaryWriter));
+            var writerParam = Expression.Parameter(typeof (IBinaryWriter));
+
             var writeMethod = method.MakeGenericMethod(genericArgs);
+
             var writeExpr = raw
-                ? Expression.Call(writerParam, writeMethod, fldExpr)
+                ? Expression.Call(Expression.Call(writerParam, MthdGetRawWriter), writeMethod, fldExpr)
                 : Expression.Call(writerParam, writeMethod, Expression.Constant(BinaryUtils.CleanFieldName(field.Name)),
                     fldExpr);
 
@@ -622,8 +634,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(field.DeclaringType != null);   // non-static
 
             // Call Reader method
-            var readerParam = Expression.Parameter(typeof(IBinaryRawReader));
-            Expression readExpr = Expression.Invoke(read, readerParam);
+            var readerParam = Expression.Parameter(typeof(IBinaryReader));
+            Expression readExpr = Expression.Invoke(read, Expression.Call(readerParam, MthdGetRawReader));
 
             if (typeof(T) != field.FieldType)
                 readExpr = Expression.Convert(readExpr, field.FieldType);
@@ -670,7 +682,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var readerParam = Expression.Parameter(typeof (IBinaryReader));
             var readMethod = method.MakeGenericMethod(genericArgs);
             Expression readExpr = raw
-                ? Expression.Call(readerParam, readMethod)
+                ? Expression.Call(Expression.Call(readerParam, MthdGetRawReader), readMethod)
                 : Expression.Call(readerParam, readMethod, Expression.Constant(BinaryUtils.CleanFieldName(field.Name)));
 
             if (readMethod.ReturnType != field.FieldType)
