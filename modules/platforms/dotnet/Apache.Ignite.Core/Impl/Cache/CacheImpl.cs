@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache.Query;
@@ -901,6 +902,12 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return new CacheImpl<TK, TV>(_ignite, UU.CacheWithNoRetries(Target), Marshaller,
                 _flagSkipStore, _flagKeepBinary, _flagAsync, true);
+        }
+
+        /** <inheritDoc /> */
+        public IDataStreamer<TK, TV> GetDataStreamer()
+        {
+            return _ignite.GetDataStreamer<TK, TV>(Name);
         }
 
         /// <summary>

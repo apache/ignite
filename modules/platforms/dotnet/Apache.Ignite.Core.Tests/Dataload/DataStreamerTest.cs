@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestTryFlush()
         {
-            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            using (var ldr = _cache.GetDataStreamer())
             {
                 var fut = ldr.AddData(1, 1);
 

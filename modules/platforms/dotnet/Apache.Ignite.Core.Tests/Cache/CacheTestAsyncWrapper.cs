@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Datastream;
 
     /// <summary>
     /// Wraps IGridCache implementation to simplify async mode testing.
@@ -513,6 +514,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         public ICache<TK, TV> WithNoRetries()
         {
             return _cache.WithNoRetries();
+        }
+
+        /** <inheritDoc /> */
+        public IDataStreamer<TK, TV> GetDataStreamer()
+        {
+            return _cache.GetDataStreamer();
         }
 
         /** <inheritDoc /> */
