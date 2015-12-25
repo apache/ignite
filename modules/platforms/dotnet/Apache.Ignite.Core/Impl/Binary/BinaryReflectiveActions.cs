@@ -383,19 +383,19 @@ namespace Apache.Ignite.Core.Impl.Binary
             else if (elemType.IsEnum)
             {
                 writeAction = raw
-                    ? GetRawWriter(field, MthdWriteEnumArray, elemType)
+                    ? GetRawWriter(field, MthdWriteEnumArrayRaw, elemType)
                     : GetWriter(field, MthdWriteEnumArray, elemType);
                 readAction = raw
-                    ? GetRawReader(field, MthdReadEnumArray, elemType)
+                    ? GetRawReader(field, MthdReadEnumArrayRaw, elemType)
                     : GetReader(field, MthdReadEnumArray, elemType);
             }
             else
             {
                 writeAction = raw
-                    ? GetRawWriter(field, MthdWriteObjArray, elemType)
+                    ? GetRawWriter(field, MthdWriteObjArrayRaw, elemType)
                     : GetWriter(field, MthdWriteObjArray, elemType);
                 readAction = raw
-                    ? GetRawReader(field, MthdReadObjArray, elemType)
+                    ? GetRawReader(field, MthdReadObjArrayRaw, elemType)
                     : GetReader(field, MthdReadObjArray, elemType);
             }
         }
@@ -455,7 +455,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writeAction = raw
                     ? GetRawWriter<object>(field, (w, o) => w.WriteEnum(o), true)
                     : GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o), true);
-                readAction = raw ? GetRawReader(field, MthdReadEnum) : GetReader(field, MthdReadEnum);
+                readAction = raw ? GetRawReader(field, MthdReadEnumRaw) : GetReader(field, MthdReadEnum);
             }
             else if (type == BinaryUtils.TypDictionary ||
                      type.GetInterface(BinaryUtils.TypDictionary.FullName) != null && !type.IsGenericType)
@@ -479,8 +479,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             else
             {
-                writeAction = raw ? GetRawWriter(field, MthdWriteObj) : GetWriter(field, MthdWriteObj);
-                readAction = raw ? GetRawReader(field, MthdReadObj) : GetReader(field, MthdReadObj);
+                writeAction = raw ? GetRawWriter(field, MthdWriteObjRaw) : GetWriter(field, MthdWriteObj);
+                readAction = raw ? GetRawReader(field, MthdReadObjRaw) : GetReader(field, MthdReadObj);
             }
         }
 
