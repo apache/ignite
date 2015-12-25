@@ -23,9 +23,10 @@
         bs-select 
         bs-options='item.value as item.label for item in options' 
 
-        ng-attr-data-container='' 
         ng-model='ngModel'
         ng-class='{ placeholder: ngModel === undefined || ngModel === null}'
+
+        tabindex='0'
     )
 
     span(ng-transclude='')
