@@ -49,29 +49,57 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static readonly MethodInfo MthdReadEnum =
             typeof(IBinaryReader).GetMethod("ReadEnum", new[] { typeof(string) });
 
+        /** Method: read enum. */
+        private static readonly MethodInfo MthdReadEnumRaw =
+            typeof (IBinaryRawReader).GetMethod("ReadEnum");
+
         /** Method: read enum array. */
         private static readonly MethodInfo MthdReadEnumArray =
             typeof(IBinaryReader).GetMethod("ReadEnumArray", new[] { typeof(string) });
+
+        /** Method: read enum array. */
+        private static readonly MethodInfo MthdReadEnumArrayRaw =
+            typeof(IBinaryRawReader).GetMethod("ReadEnumArray");
 
         /** Method: read array. */
         private static readonly MethodInfo MthdReadObjArray =
             typeof(IBinaryReader).GetMethod("ReadArray", new[] { typeof(string) });
 
+        /** Method: read array. */
+        private static readonly MethodInfo MthdReadObjArrayRaw =
+            typeof(IBinaryRawReader).GetMethod("ReadArray");
+
         /** Method: read object. */
         private static readonly MethodInfo MthdReadObj=
             typeof(IBinaryReader).GetMethod("ReadObject", new[] { typeof(string) });
+
+        /** Method: read object. */
+        private static readonly MethodInfo MthdReadObjRaw=
+            typeof(IBinaryRawReader).GetMethod("ReadObject");
 
         /** Method: write enum array. */
         private static readonly MethodInfo MthdWriteEnumArray =
             typeof(IBinaryWriter).GetMethod("WriteEnumArray");
 
+        /** Method: write enum array. */
+        private static readonly MethodInfo MthdWriteEnumArrayRaw =
+            typeof(IBinaryRawWriter).GetMethod("WriteEnumArray");
+
         /** Method: write array. */
         private static readonly MethodInfo MthdWriteObjArray =
             typeof(IBinaryWriter).GetMethod("WriteArray");
 
-        /** Method: read object. */
+        /** Method: write array. */
+        private static readonly MethodInfo MthdWriteObjArrayRaw =
+            typeof(IBinaryRawWriter).GetMethod("WriteArray");
+
+        /** Method: write object. */
         private static readonly MethodInfo MthdWriteObj =
             typeof(IBinaryWriter).GetMethod("WriteObject");
+
+        /** Method: write object. */
+        private static readonly MethodInfo MthdWriteObjRaw =
+            typeof(IBinaryRawWriter).GetMethod("WriteObject");
 
         /// <summary>
         /// Lookup read/write actions for the given type.
