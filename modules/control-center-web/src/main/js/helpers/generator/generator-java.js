@@ -548,8 +548,7 @@ $generatorJava.clusterBinary = function (cluster, res) {
 
     var binary = cluster.binaryConfiguration;
 
-    if (binary && ($commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.serializer) ||
-        $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) || !binary.compactFooter)) {
+    if ($generatorCommon.binaryIsDefined(binary)) {
         var varName = 'binary';
 
         $generatorJava.declareVariable(res, varName, 'org.apache.ignite.configuration.BinaryConfiguration');
@@ -568,38 +567,85 @@ $generatorJava.clusterBinary = function (cluster, res) {
             $generatorJava.declareVariable(res, arrVar, 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.binary.BinaryTypeConfiguration');
 
             _.forEach(binary.typeConfigurations, function (type) {
-                var typeVar = 'typeCfg';
-
-                $generatorJava.declareVariable(res, typeVar, 'org.apache.ignite.binary.BinaryTypeConfiguration');
-
-                $generatorJava.property(res, typeVar, type, 'typeName');
-
-                if ($commonUtils.isDefinedAndNotEmpty(type.idMapper))
-                    res.line(typeVar + '.setIdMapper(new ' + res.importClass(type.idMapper) + '());');
-
-                if ($commonUtils.isDefinedAndNotEmpty(type.serializer))
-                    res.line(typeVar + '.setSerializer(new ' + res.importClass(type.serializer) + '());');
-
-
-                $generatorJava.property(res, typeVar, type, 'enum', undefined, undefined, false);
-
-                res.needEmptyLine = true;
-
-                res.line(arrVar + '.add(' + typeVar + ');');
-
-                res.needEmptyLine = true;
+                // TODO IGNITE-2269 Replace using of separated methods for binary type configurations to extended constructors.
+                res.line(arrVar + '.add(' + $generatorJava.binaryTypeFunctionName(type.typeName) + '());');
             });
+
+            res.needEmptyLine = true;
 
             res.line(varName + '.setTypeConfigurations(' + arrVar + ');');
 
             res.needEmptyLine = true;
         }
 
-        $generatorJava.property(res, binary, 'compactFooter', undefined, true);
-
-        res.line('cfg.setBinaryConfiguration(' + varName + ')');
+        $generatorJava.property(res, varName, binary, 'compactFooter', undefined, undefined, true);
 
         res.needEmptyLine = true;
+
+        res.line('cfg.setBinaryConfiguration(' + varName + ');');
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
+// TODO IGNITE-2269 Remove specified methods after implamentation of extended constructors.
+// Construct binary type configuration factory method name.
+$generatorJava.binaryTypeFunctionName = function (typeName) {
+    var dotIdx = typeName.lastIndexOf('.');
+
+    var shortName = dotIdx > 0 ? typeName.substr(dotIdx + 1) : typeName;
+
+    return $commonUtils.toJavaName('binaryType', shortName);
+};
+
+// TODO IGNITE-2269 Remove specified methods after implamentation of extended constructors.
+// Generate factory method for specified BinaryTypeConfiguration.
+$generatorJava.binaryTypeConfiguration = function (type, res) {
+    var typeName = type.typeName;
+
+    res.line('/**');
+    res.line(' * Create binary type configuration for ' + typeName + '.');
+    res.line(' *');
+    res.line(' * @return Configured binary type.');
+    res.line(' */');
+    res.startBlock('private static BinaryTypeConfiguration ' + $generatorJava.binaryTypeFunctionName(typeName) + '() {');
+
+    $generatorJava.resetVariables(res);
+
+    var typeVar = 'typeCfg';
+
+    $generatorJava.declareVariable(res, typeVar, 'org.apache.ignite.binary.BinaryTypeConfiguration');
+
+    $generatorJava.property(res, typeVar, type, 'typeName');
+
+    if ($commonUtils.isDefinedAndNotEmpty(type.idMapper))
+        res.line(typeVar + '.setIdMapper(new ' + res.importClass(type.idMapper) + '());');
+
+    if ($commonUtils.isDefinedAndNotEmpty(type.serializer))
+        res.line(typeVar + '.setSerializer(new ' + res.importClass(type.serializer) + '());');
+
+    $generatorJava.property(res, typeVar, type, 'enum', undefined, undefined, false);
+
+    res.needEmptyLine = true;
+
+    res.line('return ' + typeVar + ';');
+    res.endBlock('}');
+
+    res.needEmptyLine = true;
+};
+
+// TODO IGNITE-2269 Remove specified methods after implamentation of extended constructors.
+// Generates binary type configuration factory methods.
+$generatorJava.binaryTypeConfigurations = function (binary, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($commonUtils.isDefined(binary)) {
+        _.forEach(binary.typeConfigurations, function (type) {
+            $generatorJava.binaryTypeConfiguration(type, res);
+        });
     }
 
     return res;
@@ -2205,6 +2251,9 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
 
         $generatorJava.clusterCaches(cluster.caches, cluster.igfss, isSrvCfg, res);
 
+        // TODO IGNITE-2269 Remove specified methods after implamentation of extended constructors.
+        $generatorJava.binaryTypeConfigurations(cluster.binaryConfiguration, res);
+
         res.needEmptyLine = true;
 
         if (clientNearCfg) {
@@ -2270,6 +2319,9 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
 
     res.startBlock('public static void main(String[] args) throws Exception {');
 
+    if (factoryCls)
+        res.importClass(factoryCls);
+
     if (clientNearCfg) {
         res.line(res.importClass('org.apache.ignite.Ignite') + ' ignite = ' +
             res.importClass('org.apache.ignite.Ignition') + '.start(' + cfg + ');');
@@ -2294,12 +2346,8 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
             res.needEmptyLine = true;
         }
     }
-    else {
-        if (factoryCls)
-            res.importClass(factoryCls);
-
+    else
         res.line(res.importClass('org.apache.ignite.Ignition') + '.start(' + cfg + ');');
-    }
 
     res.endBlock('}');
 

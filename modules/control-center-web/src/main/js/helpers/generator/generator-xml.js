@@ -401,8 +401,7 @@ $generatorXml.clusterBinary = function (cluster, res) {
 
     var binary = cluster.binaryConfiguration;
 
-    if (binary && ($commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.serializer) ||
-        $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) || !binary.compactFooter)) {
+    if ($generatorCommon.binaryIsDefined(binary)) {
         res.startBlock('<property name="binaryConfiguration">');
         res.startBlock('<bean class="org.apache.ignite.configuration.BinaryConfiguration">');
 
