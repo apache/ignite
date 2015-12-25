@@ -64,7 +64,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if not exist $(TargetDir)Libs md $(TargetDir)Libs
-xcopy /s /y  $(ProjectDir)packages\Apache.Ignite.NET\Jars $(TargetDir)Libs</PostBuildEvent>
+xcopy /s /y  $(ProjectDir)pkg\Jars $(TargetDir)Libs</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>cd $(ProjectDir)
