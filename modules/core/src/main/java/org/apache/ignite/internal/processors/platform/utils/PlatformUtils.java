@@ -788,6 +788,7 @@ public class PlatformUtils {
                     writer.writeString(typ.getAffinityKeyFieldName());
                     writer.writeObject(typ.getKeepDeserialized());
                     writer.writeBoolean(typ.isEnum());
+                    writer.writeBoolean(typ.serializeRaw());
                 }
             });
 
