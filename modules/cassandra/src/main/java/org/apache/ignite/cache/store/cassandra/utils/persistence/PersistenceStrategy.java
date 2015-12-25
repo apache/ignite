@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.store.cassandra.utils.persistence;
 
 /**
- * Describes persistence strategy to be used to persist object data into Cassandra
+ * Describes persistence strategy to be used to persist object data into Cassandra.
  */
 public enum PersistenceStrategy {
     /**
@@ -37,11 +37,11 @@ public enum PersistenceStrategy {
      * <ul>
      *     <li>
      *         org.apache.ignite.cache.store.cassandra.utils.serializer.JavaSerializer - uses standard Java
-     *         serialization framework
+     *         serialization framework.
      *     </li>
      *     <li>
      *        org.apache.ignite.cache.store.cassandra.utils.serializer.KryoSerializer - uses Kryo serialization
-     *        framework
+     *        framework.
      *     </li>
      * </ul>
      */
@@ -58,5 +58,5 @@ public enum PersistenceStrategy {
      *     <li>Collections of primitive java types like List<Integer>, Map<Integer, String>, Set<Long></li>
      * </ul>
      */
-    POJO,
+    POJO
 }
