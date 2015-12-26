@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include "ignite/odbc/connection.h"
 #include "ignite/odbc/environment.h"
 
 namespace ignite

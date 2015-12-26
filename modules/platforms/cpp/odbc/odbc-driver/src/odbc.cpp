@@ -326,7 +326,7 @@ SQLRETURN SQL_API SQLDriverConnect(SQLHDBC      conn,
                                    SQLUSMALLINT driverCompletion)
 {
     using ignite::odbc::Connection;
-    using ignite::odbc::HeaderDiagnosticRecord;
+    using ignite::odbc::DiagnosticRecordStorage;
     using ignite::utility::SqlStringToString;
     using ignite::utility::CopyStringToBuffer;
 
@@ -348,7 +348,7 @@ SQLRETURN SQL_API SQLDriverConnect(SQLHDBC      conn,
 
     connection->Establish(config.GetHost(), config.GetPort(), config.GetCache());
 
-    const HeaderDiagnosticRecord& diag = connection->GetDiagnosticRecord();
+    const DiagnosticRecordStorage& diag = connection->GetDiagnosticRecord();
 
     if (!diag.IsSuccessful())
         return diag.GetReturnCode();
@@ -376,7 +376,7 @@ SQLRETURN SQL_API SQLConnect(SQLHDBC        conn,
                              SQLSMALLINT    authLen)
 {
     using ignite::odbc::Connection;
-    using ignite::odbc::HeaderDiagnosticRecord;
+    using ignite::odbc::DiagnosticRecordStorage;
     using ignite::utility::SqlStringToString;
 
     LOG_MSG("SQLConnect called\n");
@@ -1162,7 +1162,7 @@ SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
         {
             Connection *connection = reinterpret_cast<Connection*>(handle);
 
-            const HeaderDiagnosticRecord& records = connection->GetDiagnosticRecord();
+            const DiagnosticRecordStorage& records = connection->GetDiagnosticRecord();
 
             if (recNum < 1 || recNum > records.GetStatusRecordsNumber())
             {
@@ -1171,7 +1171,7 @@ SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
                 break;
             }
 
-            const StatusDiagnosticRecord& record = records.GetStatusRecord(recNum);
+            const DiagnosticRecord& record = records.GetStatusRecord(recNum);
 
             if (sqlState)
                 CopyStringToBuffer(record.GetSqlState(), reinterpret_cast<char*>(sqlState), 6);

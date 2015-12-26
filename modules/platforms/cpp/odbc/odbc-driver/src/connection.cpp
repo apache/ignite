@@ -223,13 +223,13 @@ namespace ignite
             return cache;
         }
 
-        StatusDiagnosticRecord Connection::CreateStatusRecord(SqlState sqlState,
+        DiagnosticRecord Connection::CreateStatusRecord(SqlState sqlState,
             const std::string& message, int32_t rowNum, int32_t columnNum)
         {
-            return StatusDiagnosticRecord(sqlState, message, "", "", rowNum, columnNum);
+            return DiagnosticRecord(sqlState, message, "", "", rowNum, columnNum);
         }
 
-        const HeaderDiagnosticRecord& Connection::GetDiagnosticRecord() const
+        const DiagnosticRecordStorage& Connection::GetDiagnosticRecord() const
         {
             return diagnosticRecord;
         }

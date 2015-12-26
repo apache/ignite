@@ -33,13 +33,13 @@ namespace ignite
         /**
          * Status diagnostic record.
          */
-        class StatusDiagnosticRecord
+        class DiagnosticRecord
         {
         public:
             /**
              * Default constructor.
              */
-            StatusDiagnosticRecord();
+            DiagnosticRecord();
 
             /**
              * Constructor.
@@ -51,14 +51,14 @@ namespace ignite
              * @param rowNum Associated row number.
              * @param columnNum Associated column number.
              */
-            StatusDiagnosticRecord(SqlState sqlState, const std::string& message,
+            DiagnosticRecord(SqlState sqlState, const std::string& message,
                 const std::string& connectionName, const std::string& serverName,
                 int32_t rowNum = 0, int32_t columnNum = 0);
 
             /**
              * Destructor.
              */
-            ~StatusDiagnosticRecord();
+            ~DiagnosticRecord();
 
             /**
              * Get class origin.
@@ -170,18 +170,18 @@ namespace ignite
          * This class provides interface for interaction with all handle
          * diagnostic records. That means both header and status records.
          */
-        class HeaderDiagnosticRecord
+        class DiagnosticRecordStorage
         {
         public:
             /**
              * Default constructor.
              */
-            HeaderDiagnosticRecord();
+            DiagnosticRecordStorage();
 
             /**
              * Destructor.
              */
-            ~HeaderDiagnosticRecord();
+            ~DiagnosticRecordStorage();
 
             /**
              * Set header record values.
@@ -195,7 +195,7 @@ namespace ignite
              *
              * @param record Status record.
              */
-            void AddStatusRecord(const StatusDiagnosticRecord& record);
+            void AddStatusRecord(const DiagnosticRecord& record);
 
             /**
              * Reset diagnostic records state.
@@ -260,7 +260,7 @@ namespace ignite
              * @param idx Status record index.
              * @return Status record instance reference.
              */
-            const StatusDiagnosticRecord& GetStatusRecord(int32_t idx) const;
+            const DiagnosticRecord& GetStatusRecord(int32_t idx) const;
 
             /**
              * Check if the record is in the success state.
@@ -280,7 +280,7 @@ namespace ignite
             SqlResult GetField(int32_t recNum, DiagnosticField field, app::ApplicationDataBuffer& buffer) const;
 
         private:
-            IGNITE_NO_COPY_ASSIGNMENT(HeaderDiagnosticRecord);
+            IGNITE_NO_COPY_ASSIGNMENT(DiagnosticRecordStorage);
 
             /**
              * Header record field. This field contains the count of rows
@@ -313,7 +313,7 @@ namespace ignite
             int32_t rowsAffected;
 
             /** Status records. */
-            std::vector<StatusDiagnosticRecord> statusRecords;
+            std::vector<DiagnosticRecord> statusRecords;
         };
     }
 }

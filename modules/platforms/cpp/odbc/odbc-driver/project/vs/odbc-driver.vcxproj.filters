@@ -23,6 +23,9 @@
     <Filter Include="Code\system">
       <UniqueIdentifier>{7ab279dc-6586-4b32-aca7-0add0c0ab68a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\diagnostic">
+      <UniqueIdentifier>{df33e506-b5d8-423f-bcc5-1825242a3e28}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\odbc.cpp">
@@ -91,8 +94,8 @@
     <ClCompile Include="..\..\src\query\primary_keys_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\diagnostic_record.cpp">
-      <Filter>Code</Filter>
+    <ClCompile Include="..\..\src\diagnostic\diagnostic_record.cpp">
+      <Filter>Code\diagnostic</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -177,8 +180,8 @@
     <ClInclude Include="..\..\include\ignite\odbc\meta\primary_key_meta.h">
       <Filter>Code\meta</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\diagnostic_record.h">
-      <Filter>Code</Filter>
+    <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record.h">
+      <Filter>Code\diagnostic</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -18,7 +18,7 @@
 #include <set>
 #include <string>
 
-#include "ignite/odbc/diagnostic_record.h"
+#include "ignite/odbc/diagnostic/diagnostic_record.h"
 
 namespace
 {
@@ -58,7 +58,7 @@ namespace ignite
 {
     namespace odbc
     {
-        StatusDiagnosticRecord::StatusDiagnosticRecord() :
+        DiagnosticRecord::DiagnosticRecord() :
             sqlState(SQL_STATE_UNKNOWN),
             message(),
             connectionName(),
@@ -69,7 +69,7 @@ namespace ignite
             // No-op.
         }
 
-        StatusDiagnosticRecord::StatusDiagnosticRecord(SqlState sqlState,
+        DiagnosticRecord::DiagnosticRecord(SqlState sqlState,
             const std::string& message, const std::string& connectionName,
             const std::string& serverName, int32_t rowNum, int32_t columnNum) :
             sqlState(sqlState),
@@ -82,12 +82,12 @@ namespace ignite
             // No-op.
         }
 
-        StatusDiagnosticRecord::~StatusDiagnosticRecord()
+        DiagnosticRecord::~DiagnosticRecord()
         {
             // No-op.
         }
 
-        const std::string& StatusDiagnosticRecord::GetClassOrigin() const
+        const std::string& DiagnosticRecord::GetClassOrigin() const
         {
             const std::string& state = GetSqlState();
 
@@ -97,7 +97,7 @@ namespace ignite
             return ORIGIN_ISO_9075;
         }
 
-        const std::string& StatusDiagnosticRecord::GetSubclassOrigin() const
+        const std::string& DiagnosticRecord::GetSubclassOrigin() const
         {
             static std::set<std::string> odbcSubclasses;
 
@@ -155,22 +155,22 @@ namespace ignite
             return ORIGIN_ISO_9075;
         }
 
-        const std::string& StatusDiagnosticRecord::GetMessage() const
+        const std::string& DiagnosticRecord::GetMessage() const
         {
             return message;
         }
 
-        const std::string& StatusDiagnosticRecord::GetConnectionName() const
+        const std::string& DiagnosticRecord::GetConnectionName() const
         {
             return connectionName;
         }
 
-        const std::string& StatusDiagnosticRecord::GetServerName() const
+        const std::string& DiagnosticRecord::GetServerName() const
         {
             return serverName;
         }
 
-        const std::string& StatusDiagnosticRecord::GetSqlState() const
+        const std::string& DiagnosticRecord::GetSqlState() const
         {
             switch (sqlState)
             {
@@ -202,17 +202,17 @@ namespace ignite
             return STATE_UNKNOWN;
         }
 
-        int32_t StatusDiagnosticRecord::GetRowNumber() const
+        int32_t DiagnosticRecord::GetRowNumber() const
         {
             return rowNum;
         }
 
-        int32_t StatusDiagnosticRecord::GetColumnNumber() const
+        int32_t DiagnosticRecord::GetColumnNumber() const
         {
             return columnNum;
         }
 
-        HeaderDiagnosticRecord::HeaderDiagnosticRecord() :
+        DiagnosticRecordStorage::DiagnosticRecordStorage() :
             rowCount(0),
             dynamicFunction(),
             dynamicFunctionCode(0),
@@ -222,12 +222,12 @@ namespace ignite
             // No-op.
         }
 
-        HeaderDiagnosticRecord::~HeaderDiagnosticRecord()
+        DiagnosticRecordStorage::~DiagnosticRecordStorage()
         {
             // No-op.
         }
 
-        void HeaderDiagnosticRecord::SetHeaderRecord(SqlResult result)
+        void DiagnosticRecordStorage::SetHeaderRecord(SqlResult result)
         {
             rowCount = 0;
             dynamicFunction.clear();
@@ -236,65 +236,65 @@ namespace ignite
             rowsAffected = 0;
         }
 
-        void HeaderDiagnosticRecord::AddStatusRecord(const StatusDiagnosticRecord& record)
+        void DiagnosticRecordStorage::AddStatusRecord(const DiagnosticRecord& record)
         {
             statusRecords.push_back(record);
         }
 
-        void HeaderDiagnosticRecord::Reset()
+        void DiagnosticRecordStorage::Reset()
         {
             SetHeaderRecord(SQL_RESULT_ERROR);
 
             statusRecords.clear();
         }
 
-        SqlResult HeaderDiagnosticRecord::GetOperaionResult() const
+        SqlResult DiagnosticRecordStorage::GetOperaionResult() const
         {
             return result;
         }
 
-        int HeaderDiagnosticRecord::GetReturnCode() const
+        int DiagnosticRecordStorage::GetReturnCode() const
         {
             return SqlResultToReturnCode(result);
         }
 
-        int64_t HeaderDiagnosticRecord::GetRowCount() const
+        int64_t DiagnosticRecordStorage::GetRowCount() const
         {
             return rowCount;
         }
 
-        const std::string & HeaderDiagnosticRecord::GetDynamicFunction() const
+        const std::string & DiagnosticRecordStorage::GetDynamicFunction() const
         {
             return dynamicFunction;
         }
 
-        int32_t HeaderDiagnosticRecord::GetDynamicFunctionCode() const
+        int32_t DiagnosticRecordStorage::GetDynamicFunctionCode() const
         {
             return dynamicFunctionCode;
         }
 
-        int32_t HeaderDiagnosticRecord::GetRowsAffected() const
+        int32_t DiagnosticRecordStorage::GetRowsAffected() const
         {
             return rowsAffected;
         }
 
-        int32_t HeaderDiagnosticRecord::GetStatusRecordsNumber() const
+        int32_t DiagnosticRecordStorage::GetStatusRecordsNumber() const
         {
             return static_cast<int32_t>(statusRecords.size());
         }
 
-        const StatusDiagnosticRecord& HeaderDiagnosticRecord::GetStatusRecord(int32_t idx) const
+        const DiagnosticRecord& DiagnosticRecordStorage::GetStatusRecord(int32_t idx) const
         {
             return statusRecords[idx - 1];
         }
 
-        bool HeaderDiagnosticRecord::IsSuccessful() const
+        bool DiagnosticRecordStorage::IsSuccessful() const
         {
             return result == SQL_RESULT_SUCCESS || 
                    result == SQL_RESULT_SUCCESS_WITH_INFO;
         }
 
-        SqlResult HeaderDiagnosticRecord::GetField(int32_t recNum, DiagnosticField field, app::ApplicationDataBuffer& buffer) const
+        SqlResult DiagnosticRecordStorage::GetField(int32_t recNum, DiagnosticField field, app::ApplicationDataBuffer& buffer) const
         {
             // Header record.
             switch (field)
@@ -349,7 +349,7 @@ namespace ignite
                 return SQL_RESULT_NO_DATA;
 
             // Status record.
-            const StatusDiagnosticRecord& record = GetStatusRecord(recNum);
+            const DiagnosticRecord& record = GetStatusRecord(recNum);
 
             switch (field)
             {

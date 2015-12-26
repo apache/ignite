@@ -18,14 +18,17 @@
 #ifndef _IGNITE_ODBC_DRIVER_ENVIRONMENT
 #define _IGNITE_ODBC_DRIVER_ENVIRONMENT
 
-#include <stdint.h>
-
-#include "ignite/odbc/connection.h"
+#include "ignite/odbc/diagnostic/diagnostic_record.h"
 
 namespace ignite
 {
     namespace odbc
     {
+        class Connection;
+
+        /**
+         * ODBC environment.
+         */
         class Environment
         {
         public:
@@ -42,7 +45,7 @@ namespace ignite
             /**
              * Create connection associated with the environment.
              *
-             * @return Pointer to valid instance on success and NULL on failure.
+             * @return Pointer to valid instance on success or NULL on failure.
              */
             Connection* CreateConnection();
 
