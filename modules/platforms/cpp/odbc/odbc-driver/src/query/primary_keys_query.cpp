@@ -52,9 +52,10 @@ namespace ignite
     {
         namespace query
         {
-            PrimaryKeysQuery::PrimaryKeysQuery(Connection& connection, 
-                const std::string& catalog, const std::string& schema,
-                const std::string& table) :
+            PrimaryKeysQuery::PrimaryKeysQuery(diagnostic::Diagnosable& diag,
+                Connection& connection, const std::string& catalog,
+                const std::string& schema, const std::string& table) :
+                Query(diag),
                 connection(connection),
                 catalog(catalog),
                 schema(schema),
@@ -86,7 +87,7 @@ namespace ignite
                 // No-op.
             }
 
-            bool PrimaryKeysQuery::Execute()
+            SqlResult PrimaryKeysQuery::Execute()
             {
                 if (executed)
                     Close();
@@ -95,7 +96,7 @@ namespace ignite
 
                 executed = true;
 
-                return true;
+                return SQL_RESULT_SUCCESS;
             }
 
             const meta::ColumnMetaVector & PrimaryKeysQuery::GetMeta() const
@@ -106,7 +107,11 @@ namespace ignite
             SqlResult PrimaryKeysQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
             {
                 if (!executed)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+
                     return SQL_RESULT_ERROR;
+                }
 
                 if (cursor == meta.end())
                     return SQL_RESULT_NO_DATA;
@@ -167,13 +172,13 @@ namespace ignite
                 return SQL_RESULT_SUCCESS;
             }
 
-            bool PrimaryKeysQuery::Close()
+            SqlResult PrimaryKeysQuery::Close()
             {
                 meta.clear();
 
                 executed = false;
 
-                return true;
+                return SQL_RESULT_SUCCESS;
             }
 
             bool PrimaryKeysQuery::DataAvailable() const

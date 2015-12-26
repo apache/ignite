@@ -49,8 +49,10 @@ namespace ignite
     {
         namespace query
         {
-            TableMetadataQuery::TableMetadataQuery(Connection& connection, const std::string& catalog,
-                const std::string& schema, const std::string& table, const std::string& tableType) :
+            TableMetadataQuery::TableMetadataQuery(diagnostic::Diagnosable& diag,
+                Connection& connection, const std::string& catalog,const std::string& schema,
+                const std::string& table, const std::string& tableType) :
+                Query(diag),
                 connection(connection),
                 catalog(catalog),
                 schema(schema),
@@ -81,20 +83,22 @@ namespace ignite
             {
                 // No-op.
             }
-            
-            bool TableMetadataQuery::Execute()
+
+            SqlResult TableMetadataQuery::Execute()
             {
                 if (executed)
                     Close();
 
-                bool success = MakeRequestGetTablesMeta();
+                SqlResult result = MakeRequestGetTablesMeta();
 
-                executed = success;
+                if (result == SQL_RESULT_SUCCESS)
+                {
+                    executed = true;
 
-                if (success)
                     cursor = meta.begin();
+                }
 
-                return success;
+                return result;
             }
 
             const meta::ColumnMetaVector& TableMetadataQuery::GetMeta() const
@@ -105,7 +109,11 @@ namespace ignite
             SqlResult TableMetadataQuery::FetchNextRow(app::ColumnBindingMap& columnBindings)
             {
                 if (!executed)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+
                     return SQL_RESULT_ERROR;
+                }
 
                 if (cursor == meta.end())
                     return SQL_RESULT_NO_DATA;
@@ -160,13 +168,13 @@ namespace ignite
                 return SQL_RESULT_SUCCESS;
             }
 
-            bool TableMetadataQuery::Close()
+            SqlResult TableMetadataQuery::Close()
             {
                 meta.clear();
 
                 executed = false;
 
-                return true;
+                return SQL_RESULT_SUCCESS;
             }
 
             bool TableMetadataQuery::DataAvailable() const
@@ -179,7 +187,7 @@ namespace ignite
                 return 0;
             }
 
-            bool TableMetadataQuery::MakeRequestGetTablesMeta()
+            SqlResult TableMetadataQuery::MakeRequestGetTablesMeta()
             {
                 QueryGetTablesMetaRequest req(catalog, schema, table, tableType);
                 QueryGetTablesMetaResponse rsp;
@@ -187,13 +195,19 @@ namespace ignite
                 bool success = connection.SyncMessage(req, rsp);
 
                 if (!success)
-                    return false;
+                {
+                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, "Connection terminated.");
+
+                    return SQL_RESULT_ERROR;
+                }
 
                 if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
                 {
                     LOG_MSG("Error: %s\n", rsp.GetError().c_str());
 
-                    return false;
+                    diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
+
+                    return SQL_RESULT_ERROR;
                 }
 
                 meta = rsp.GetMeta();
@@ -207,29 +221,7 @@ namespace ignite
                     LOG_MSG("\n");
                 }
 
-                return true;
-            }
-
-            bool TableMetadataQuery::SpecialSemanticsAllCatalogs()
-            {
-                return catalog == "%" &&
-                       schema.empty() &&
-                       table.empty();
-            }
-
-            bool TableMetadataQuery::SpecialSemanticsAllSchemas()
-            {
-                return schema == "%" &&
-                       catalog.empty() &&
-                       table.empty();
-            }
-
-            bool TableMetadataQuery::SpecialSemanticsAllTableTypes()
-            {
-                return tableType == "%" &&
-                       catalog.empty() &&
-                       schema.empty() &&
-                       table.empty();
+                return SQL_RESULT_SUCCESS;
             }
         }
     }

@@ -28,10 +28,11 @@ namespace ignite
     {
         namespace query
         {
-            ForeignKeysQuery::ForeignKeysQuery(Connection& connection, 
+            ForeignKeysQuery::ForeignKeysQuery(diagnostic::Diagnosable& diag, Connection& connection,
                 const std::string& primaryCatalog, const std::string& primarySchema,
                 const std::string& primaryTable, const std::string& foreignCatalog,
                 const std::string& foreignSchema, const std::string& foreignTable) :
+                Query(diag),
                 connection(connection),
                 primaryCatalog(primaryCatalog),
                 primarySchema(primarySchema),
@@ -74,11 +75,11 @@ namespace ignite
                 // No-op.
             }
 
-            bool ForeignKeysQuery::Execute()
+            SqlResult ForeignKeysQuery::Execute()
             {
                 executed = true;
 
-                return true;
+                return SQL_RESULT_SUCCESS;
             }
 
             const meta::ColumnMetaVector & ForeignKeysQuery::GetMeta() const
@@ -94,11 +95,11 @@ namespace ignite
                 return SQL_RESULT_NO_DATA;
             }
 
-            bool ForeignKeysQuery::Close()
+            SqlResult ForeignKeysQuery::Close()
             {
                 executed = false;
 
-                return true;
+                return SQL_RESULT_SUCCESS;
             }
 
             bool ForeignKeysQuery::DataAvailable() const

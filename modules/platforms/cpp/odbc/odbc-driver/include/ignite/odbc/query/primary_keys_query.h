@@ -37,12 +37,14 @@ namespace ignite
                 /**
                  * Constructor.
                  *
+                 * @param diag Diagnostics collector.
                  * @param connection Statement-associated connection.
                  * @param catalog Catalog name.
                  * @param schema Schema name.
                  * @param table Table name.
                  */
-                PrimaryKeysQuery(Connection& connection, const std::string& catalog,
+                PrimaryKeysQuery(diagnostic::Diagnosable& diag,
+                    Connection& connection, const std::string& catalog,
                     const std::string& schema, const std::string& table);
 
                 /**
@@ -55,7 +57,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual bool Execute();
+                virtual SqlResult Execute();
 
                 /**
                  * Get column metadata.
@@ -76,7 +78,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual bool Close();
+                virtual SqlResult Close();
 
                 /**
                  * Check if data is available.

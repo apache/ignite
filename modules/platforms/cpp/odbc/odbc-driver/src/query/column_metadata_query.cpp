@@ -70,8 +70,10 @@ namespace ignite
     {
         namespace query
         {
-            ColumnMetadataQuery::ColumnMetadataQuery(Connection& connection, const std::string& schema,
-                                         const std::string& table, const std::string& column) :
+            ColumnMetadataQuery::ColumnMetadataQuery(diagnostic::Diagnosable& diag, 
+                Connection& connection, const std::string& schema,
+                const std::string& table, const std::string& column) :
+                Query(diag),
                 connection(connection),
                 schema(schema),
                 table(table),
@@ -110,17 +112,22 @@ namespace ignite
             {
                 // No-op.
             }
-            
-            bool ColumnMetadataQuery::Execute()
+
+            SqlResult ColumnMetadataQuery::Execute()
             {
-                bool success = MakeRequestGetColumnsMeta();
+                if (executed)
+                    Close();
 
-                executed = success;
+                SqlResult result = MakeRequestGetColumnsMeta();
 
-                if (success)
+                if (result == SQL_RESULT_SUCCESS)
+                {
+                    executed = true;
+
                     cursor = meta.begin();
+                }
 
-                return success;
+                return result;
             }
 
             const meta::ColumnMetaVector& ColumnMetadataQuery::GetMeta() const
@@ -131,7 +138,11 @@ namespace ignite
             SqlResult ColumnMetadataQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
             {
                 if (!executed)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+
                     return SQL_RESULT_ERROR;
+                }
 
                 if (cursor == meta.end())
                     return SQL_RESULT_NO_DATA;
@@ -233,13 +244,13 @@ namespace ignite
                 return SQL_RESULT_SUCCESS;
             }
 
-            bool ColumnMetadataQuery::Close()
+            SqlResult ColumnMetadataQuery::Close()
             {
                 meta.clear();
 
                 executed = false;
 
-                return true;
+                return SQL_RESULT_SUCCESS;
             }
 
             bool ColumnMetadataQuery::DataAvailable() const
@@ -252,7 +263,7 @@ namespace ignite
                 return 0;
             }
 
-            bool ColumnMetadataQuery::MakeRequestGetColumnsMeta()
+            SqlResult ColumnMetadataQuery::MakeRequestGetColumnsMeta()
             {
                 QueryGetColumnsMetaRequest req(schema, table, column);
                 QueryGetColumnsMetaResponse rsp;
@@ -260,13 +271,19 @@ namespace ignite
                 bool success = connection.SyncMessage(req, rsp);
 
                 if (!success)
-                    return false;
+                {
+                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, "Connection terminated.");
+
+                    return SQL_RESULT_ERROR;
+                }
 
                 if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
                 {
                     LOG_MSG("Error: %s\n", rsp.GetError().c_str());
 
-                    return false;
+                    diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
+
+                    return SQL_RESULT_ERROR;
                 }
 
                 meta = rsp.GetMeta();
@@ -280,7 +297,7 @@ namespace ignite
                     LOG_MSG("\n");
                 }
 
-                return true;
+                return SQL_RESULT_SUCCESS;
             }
         }
     }

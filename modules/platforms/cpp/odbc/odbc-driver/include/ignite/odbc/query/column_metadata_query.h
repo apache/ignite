@@ -39,12 +39,14 @@ namespace ignite
                 /**
                  * Constructor.
                  *
+                 * @param diag Diagnostics collector.
                  * @param connection Associated connection.
                  * @param schema Schema search pattern.
                  * @param table Table search pattern.
                  * @param column Column search pattern.
                  */
-                ColumnMetadataQuery(Connection& connection, const std::string& schema,
+                ColumnMetadataQuery(diagnostic::Diagnosable& diag,
+                    Connection& connection, const std::string& schema,
                     const std::string& table, const std::string& column);
 
                 /**
@@ -57,7 +59,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual bool Execute();
+                virtual SqlResult Execute();
 
                 /**
                  * Get column metadata.
@@ -78,7 +80,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual bool Close();
+                virtual SqlResult Close();
 
                 /**
                  * Check if data is available.
@@ -100,9 +102,9 @@ namespace ignite
                 /**
                  * Make get columns metadata requets and use response to set internal state.
                  *
-                 * @return True on success.
+                 * @return Operation result.
                  */
-                bool MakeRequestGetColumnsMeta();
+                SqlResult MakeRequestGetColumnsMeta();
 
                 /** Connection associated with the statement. */
                 Connection& connection;

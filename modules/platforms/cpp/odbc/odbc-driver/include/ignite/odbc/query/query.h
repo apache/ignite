@@ -22,6 +22,7 @@
 
 #include <map>
 
+#include "ignite/odbc/diagnostic/diagnosable.h"
 #include "ignite/odbc/meta/column_meta.h"
 #include "ignite/odbc/common_types.h"
 #include "ignite/odbc/row.h"
@@ -51,14 +52,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual bool Execute() = 0;
-
-                /**
-                 * Get column metadata.
-                 *
-                 * @return Column metadata.
-                 */
-                virtual const meta::ColumnMetaVector& GetMeta() const = 0;
+                virtual SqlResult Execute() = 0;
 
                 /**
                  * Fetch next result row to application buffers.
@@ -72,7 +66,14 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual bool Close() = 0;
+                virtual SqlResult Close() = 0;
+
+                /**
+                 * Get column metadata.
+                 *
+                 * @return Column metadata.
+                 */
+                virtual const meta::ColumnMetaVector& GetMeta() const = 0;
 
                 /**
                  * Check if data is available.
@@ -92,10 +93,14 @@ namespace ignite
                 /**
                  * Constructor.
                  */
-                Query() 
+                Query(diagnostic::Diagnosable& diag) :
+                    diag(diag)
                 {
                     // No-op.
                 }
+
+                /** Diagnostics collector. */
+                diagnostic::Diagnosable& diag;
             };
         }
     }

@@ -39,14 +39,16 @@ namespace ignite
                 /**
                  * Constructor.
                  *
+                 * @param diag Diagnostics collector.
                  * @param connection Associated connection.
                  * @param catalog Catalog search pattern.
                  * @param schema Schema search pattern.
                  * @param table Table search pattern.
                  * @param tableType Table type search pattern.
                  */
-                TableMetadataQuery(Connection& connection, const std::string& catalog,
-                    const std::string& schema, const std::string& table, const std::string& tableType);
+                TableMetadataQuery(diagnostic::Diagnosable& diag, Connection& connection,
+                    const std::string& catalog, const std::string& schema,
+                    const std::string& table, const std::string& tableType);
 
                 /**
                  * Destructor.
@@ -58,7 +60,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual bool Execute();
+                virtual SqlResult Execute();
 
                 /**
                  * Get column metadata.
@@ -79,7 +81,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual bool Close();
+                virtual SqlResult Close();
 
                 /**
                  * Check if data is available.
@@ -103,28 +105,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                bool MakeRequestGetTablesMeta();
-
-                /**
-                 * Check if it is special semantic case for the SQL_ALL_CATALOGS.
-                 *
-                 * @return True if it is special semantic case for the SQL_ALL_CATALOGS.
-                 */
-                bool SpecialSemanticsAllCatalogs();
-
-                /**
-                 * Check if it is special semantic case for the SQL_ALL_SCHEMAS.
-                 *
-                 * @return True if it is special semantic case for the SQL_ALL_SCHEMAS.
-                 */
-                bool SpecialSemanticsAllSchemas();
-
-                /**
-                 * Check if it is special semantic case for the SQL_ALL_TABLE_TYPES .
-                 *
-                 * @return True if it is special semantic case for the SQL_ALL_TABLE_TYPES .
-                 */
-                bool SpecialSemanticsAllTableTypes();
+                SqlResult MakeRequestGetTablesMeta();
 
                 /** Connection associated with the statement. */
                 Connection& connection;

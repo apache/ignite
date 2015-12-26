@@ -39,8 +39,14 @@ namespace ignite
             public:
                 /**
                  * Constructor.
+                 *
+                 * @param diag Diagnostics collector.
+                 * @param connection Associated connection.
+                 * @param sql SQL query string.
+                 * @param params SQL params.
                  */
-                DataQuery(Connection& connection, const std::string& sql, const app::ParameterBindingMap& params);
+                DataQuery(diagnostic::Diagnosable& diag, Connection& connection,
+                    const std::string& sql, const app::ParameterBindingMap& params);
 
                 /**
                  * Destructor.
@@ -52,7 +58,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual bool Execute();
+                virtual SqlResult Execute();
 
                 /**
                  * Get column metadata.
@@ -73,7 +79,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual bool Close();
+                virtual SqlResult Close();
 
                 /**
                  * Check if data is available.
@@ -98,21 +104,21 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                bool MakeRequestExecute();
+                SqlResult MakeRequestExecute();
 
                 /**
                  * Make query close request.
                  *
                  * @return True on success.
                  */
-                bool MakeRequestClose();
+                SqlResult MakeRequestClose();
 
                 /**
                  * Make data fetch request and use response to set internal state.
                  *
                  * @return True on success.
                  */
-                bool MakeRequestFetch();
+                SqlResult MakeRequestFetch();
 
                 /** Connection associated with the statement. */
                 Connection& connection;

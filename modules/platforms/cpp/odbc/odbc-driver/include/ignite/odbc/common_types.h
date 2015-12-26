@@ -58,6 +58,9 @@ namespace ignite
             /** Output data has been truncated. */
             SQL_STATE_01004_DATA_TRUNCATED,
 
+            /** Error in row. */
+            SQL_STATE_01S01_ERROR_IN_ROW,
+
             /** Invalid cursor state. */
             SQL_STATE_24000_INVALID_CURSOR_STATE,
 
@@ -90,10 +93,21 @@ namespace ignite
             SQL_STATE_HY001_MEMORY_ALLOCATION,
 
             /**
+             * Function sequence error.
+             */
+            SQL_STATE_HY010_SEQUENCE_ERROR,
+
+            /**
              * The driver does not support the feature of ODBC behavior that
              * the application requested.
              */
-            SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED
+            SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+
+            /**
+             * The connection timeout period expired before the data source
+             * responded to the request.
+             */
+            SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT
         };
 
         enum DiagnosticField

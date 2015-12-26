@@ -118,7 +118,7 @@ namespace ignite
 
             std::string sql(query, len);
 
-            currentQuery.reset(new query::DataQuery(connection, sql, paramBindings));
+            currentQuery.reset(new query::DataQuery(*this, connection, sql, paramBindings));
 
             return false;
         }
@@ -149,7 +149,7 @@ namespace ignite
             if (cache.empty())
                 cache = connection.GetCache();
 
-            currentQuery.reset(new query::ColumnMetadataQuery(connection, cache, table, column));
+            currentQuery.reset(new query::ColumnMetadataQuery(*this, connection, cache, table, column));
 
             return currentQuery->Execute();
         }
@@ -165,7 +165,7 @@ namespace ignite
             if (cache.empty())
                 cache = connection.GetCache();
 
-            currentQuery.reset(new query::TableMetadataQuery(connection, catalog, cache, table, tableType));
+            currentQuery.reset(new query::TableMetadataQuery(*this, connection, catalog, cache, table, tableType));
 
             return currentQuery->Execute();
         }
@@ -178,7 +178,7 @@ namespace ignite
             if (currentQuery.get())
                 currentQuery->Close();
 
-            currentQuery.reset(new query::ForeignKeysQuery(connection, primaryCatalog, primarySchema, 
+            currentQuery.reset(new query::ForeignKeysQuery(*this, connection, primaryCatalog, primarySchema,
                 primaryTable, foreignCatalog, foreignSchema, foreignTable));
 
             return currentQuery->Execute();
@@ -190,7 +190,7 @@ namespace ignite
             if (currentQuery.get())
                 currentQuery->Close();
 
-            currentQuery.reset(new query::PrimaryKeysQuery(connection, catalog, schema, table));
+            currentQuery.reset(new query::PrimaryKeysQuery(*this, connection, catalog, schema, table));
 
             return currentQuery->Execute();
         }

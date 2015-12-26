@@ -36,6 +36,7 @@ namespace ignite
                 /**
                  * Constructor.
                  *
+                 * @param diag Diagnostics collector.
                  * @param connection Statement-associated connection.
                  * @param primaryCatalog Primary key catalog name.
                  * @param primarySchema Primary key schema name.
@@ -44,7 +45,7 @@ namespace ignite
                  * @param foreignSchema Foreign key schema name.
                  * @param foreignTable Foreign key table name.
                  */
-                ForeignKeysQuery(Connection& connection,
+                ForeignKeysQuery(diagnostic::Diagnosable& diag, Connection& connection,
                     const std::string& primaryCatalog, const std::string& primarySchema,
                     const std::string& primaryTable, const std::string& foreignCatalog,
                     const std::string& foreignSchema, const std::string& foreignTable);
@@ -59,7 +60,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual bool Execute();
+                virtual SqlResult Execute();
 
                 /**
                  * Get column metadata.
@@ -80,7 +81,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual bool Close();
+                virtual SqlResult Close();
 
                 /**
                  * Check if data is available.

@@ -25,9 +25,13 @@ namespace ignite
     {
         namespace query
         {
-            DataQuery::DataQuery(Connection& connection, const std::string& sql, 
+            DataQuery::DataQuery(diagnostic::Diagnosable& diag,
+                Connection& connection, const std::string& sql,
                 const app::ParameterBindingMap& params) :
-                connection(connection), sql(sql), params(params)
+                Query(diag),
+                connection(connection),
+                sql(sql),
+                params(params)
             {
                 // No-op.
             }
@@ -37,10 +41,14 @@ namespace ignite
                 Close();
             }
             
-            bool DataQuery::Execute()
+            SqlResult DataQuery::Execute()
             {
                 if (cursor.get())
-                    return false;
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query cursor is in open state already.");
+
+                    return SQL_RESULT_ERROR;
+                }
 
                 return MakeRequestExecute();
             }
@@ -53,17 +61,21 @@ namespace ignite
             SqlResult DataQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
             {
                 if (!cursor.get())
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+
                     return SQL_RESULT_ERROR;
+                }
 
                 if (!cursor->HasNext())
                     return SQL_RESULT_NO_DATA;
 
                 if (cursor->NeedDataUpdate())
                 {
-                    bool success = MakeRequestFetch();
+                    SqlResult result = MakeRequestFetch();
 
-                    if (!success)
-                        return SQL_RESULT_ERROR;
+                    if (result != SQL_RESULT_SUCCESS)
+                        return result;
 
                     if (!cursor->HasNext())
                         return SQL_RESULT_NO_DATA;
@@ -73,9 +85,12 @@ namespace ignite
 
                 Row* row = cursor->GetRow();
 
-
                 if (!row)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Unknown error.");
+
                     return SQL_RESULT_ERROR;
+                }
 
                 for (int32_t i = 1; i < row->GetSize() + 1; ++i)
                 {
@@ -89,22 +104,31 @@ namespace ignite
                         success = row->SkipColumn();
 
                     if (!success)
+                    {
+                        diag.AddStatusRecord(SQL_STATE_01S01_ERROR_IN_ROW, "Can not retrieve row column.", 0, i);
+
                         return SQL_RESULT_ERROR;
+                    }
                 }
 
                 return SQL_RESULT_SUCCESS;
             }
 
-            bool DataQuery::Close()
+            SqlResult DataQuery::Close()
             {
                 if (!cursor.get())
-                    return false;
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query cursor is not in open state.");
 
-                MakeRequestClose();
+                    return SQL_RESULT_ERROR;
+                }
 
-                cursor.reset();
+                SqlResult result = MakeRequestClose();
 
-                return false;
+                if (result == SQL_RESULT_SUCCESS)
+                    cursor.reset();
+
+                return result;
             }
 
             bool DataQuery::DataAvailable() const
@@ -119,7 +143,7 @@ namespace ignite
                 return 0;
             }
 
-            bool DataQuery::MakeRequestExecute()
+            SqlResult DataQuery::MakeRequestExecute()
             {
                 const std::string& cacheName = connection.GetCache();
 
@@ -129,13 +153,19 @@ namespace ignite
                 bool success = connection.SyncMessage(req, rsp);
 
                 if (!success)
-                    return false;
+                {
+                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, "Connection terminated.");
+
+                    return SQL_RESULT_ERROR;
+                }
 
                 if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
                 {
                     LOG_MSG("Error: %s\n", rsp.GetError().c_str());
 
-                    return false;
+                    diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
+
+                    return SQL_RESULT_ERROR;
                 }
 
                 cursor.reset(new Cursor(rsp.GetQueryId()));
@@ -153,10 +183,10 @@ namespace ignite
                     LOG_MSG("\n");
                 }
 
-                return true;
+                return SQL_RESULT_SUCCESS;
             }
 
-            bool DataQuery::MakeRequestClose()
+            SqlResult DataQuery::MakeRequestClose()
             {
                 QueryCloseRequest req(cursor->GetQueryId());
                 QueryCloseResponse rsp;
@@ -164,7 +194,11 @@ namespace ignite
                 bool success = connection.SyncMessage(req, rsp);
 
                 if (!success)
-                    return false;
+                {
+                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, "Connection terminated.");
+
+                    return SQL_RESULT_ERROR;
+                }
 
                 LOG_MSG("Query id: %lld\n", rsp.GetQueryId());
 
@@ -172,13 +206,15 @@ namespace ignite
                 {
                     LOG_MSG("Error: %s\n", rsp.GetError().c_str());
 
-                    return false;
+                    diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
+
+                    return SQL_RESULT_ERROR;
                 }
 
-                return true;
+                return SQL_RESULT_SUCCESS;
             }
 
-            bool DataQuery::MakeRequestFetch()
+            SqlResult DataQuery::MakeRequestFetch()
             {
                 std::auto_ptr<ResultPage> resultPage(new ResultPage());
 
@@ -191,18 +227,24 @@ namespace ignite
                 LOG_MSG("Request status: %s\n", success ? "Success" : "Failure");
 
                 if (!success)
-                    return false;
+                {
+                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, "Connection terminated.");
+
+                    return SQL_RESULT_ERROR;
+                }
 
                 if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
                 {
                     LOG_MSG("Error: %s\n", rsp.GetError().c_str());
 
-                    return false;
+                    diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
+
+                    return SQL_RESULT_ERROR;
                 }
 
                 cursor->UpdateData(resultPage);
 
-                return true;
+                return SQL_RESULT_SUCCESS;
             }
         }
     }
