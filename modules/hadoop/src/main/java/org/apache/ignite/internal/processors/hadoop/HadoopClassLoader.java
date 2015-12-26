@@ -34,7 +34,6 @@ import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hadoop.util.NativeCodeLoader;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopDaemon;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager;
 import org.apache.ignite.internal.util.typedef.F;
@@ -70,7 +69,7 @@ public class HadoopClassLoader extends URLClassLoader {
     public static final String HADOOP_DAEMON_CLASS_NAME = "org.apache.hadoop.util.Daemon";
 
     /** Name of libhadoop library. */
-    private static final String LIBHADOOP = "hadoop";
+    private static final String LIBHADOOP = "hadoop.";
 
     /** */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
@@ -123,12 +122,7 @@ public class HadoopClassLoader extends URLClassLoader {
 
         this.name = name;
 
-        try {
-            copyNativeLibraries();
-        }
-        catch (IgniteCheckedException ice) {
-            U.quietAndWarn(null, "Failed to load the Hadoop native library load forcing class: " + ice.toString());
-        }
+        initializeNativeLibraries();
     }
 
     /**
@@ -154,20 +148,11 @@ public class HadoopClassLoader extends URLClassLoader {
      * In addition, native libraries can be unloaded when their corresponding class loaders are garbage collected.
      * ----------------------------------------------------
      */
-    private void copyNativeLibraries() throws IgniteCheckedException {
-        final String checkingClsName = NativeCodeLoader.class.getName();
-
-        final String libraryName = LIBHADOOP;
-
+    private void initializeNativeLibraries() {
         try {
             // This must trigger native library load.
-            Class.forName(checkingClsName, true, APP_CLS_LDR);
-        }
-        catch (ReflectiveOperationException e) {
-            throw new IgniteCheckedException("Failed to find " + checkingClsName + " class.", e);
-        }
+            Class.forName(NativeCodeLoader.class.getName(), true, APP_CLS_LDR);
 
-        try {
             final Vector<Object> curVector = U.field(this, "nativeLibraries");
 
             ClassLoader ldr = APP_CLS_LDR;
@@ -178,7 +163,7 @@ public class HadoopClassLoader extends URLClassLoader {
                 for (Object lib : vector) {
                     String libName = U.field(lib, "name");
 
-                    if (libName.contains(libraryName)) {
+                    if (libName.contains(LIBHADOOP)) {
                         curVector.add(lib);
 
                         return;
@@ -188,8 +173,9 @@ public class HadoopClassLoader extends URLClassLoader {
                 ldr = ldr.getParent();
             }
         }
-        catch (IgniteException ie) {
-            throw new IgniteCheckedException("Failed to get or assign a field.", ie);
+        catch (Exception e) {
+            U.quietAndWarn(null, "Failed to initialize Hadoop native library " +
+                "(native Hadoop methods might not work properly): " + e);
         }
     }
 

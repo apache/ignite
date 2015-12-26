@@ -1,81 +1,42 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.hadoop;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.compress.CompressionInputStream;
 import org.apache.hadoop.io.compress.CompressionOutputStream;
 import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.io.compress.snappy.SnappyCompressor;
 import org.apache.hadoop.util.NativeCodeLoader;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility class to check Snappy compression.
  */
-public class SnappyUtil {
+public class HadoopSnappyUtil {
     /** Length of data. */
     static final int BYTE_SIZE = 1024 * 50;
-
-    /**
-     * A hack method that adds ${HADOOP_HOME}/lib/native/ to the value of
-     * "java.library.path" System property.
-     * The method can be invoked several times, and no extra additions will happen: the path will not be added
-     * if it is already added.
-     *
-     * @throws Exception If Hadoop home or the native folder is not found.
-     * @return 'true' if the path was added.
-     */
-    public static boolean addHadoopNativeLibToJavaLibraryPath() throws Exception {
-        String envHadoopHome = System.getenv("HADOOP_HOME");
-
-        String hadoopHome = System.getProperty("HADOOP_HOME", envHadoopHome);
-
-        if (hadoopHome == null)
-            throw new IgniteCheckedException("HADOOP_HOME not defined.");
-
-        Path nativeDir = Paths.get(hadoopHome, "lib", "native");
-
-        if (!Files.exists(nativeDir) || !Files.isDirectory(nativeDir))
-            throw new IgniteException("Hadoop native lib dir not found or is not a directory [dir=" + nativeDir + ']');
-
-        Field f = ClassLoader.class.getDeclaredField("usr_paths");
-
-        f.setAccessible(true);
-
-        String[] usr_paths0 = (String[])f.get(null);
-
-        final String[] newPath;
-
-        if (usr_paths0 == null)
-            newPath = new String[1];
-        else {
-            Set<String> set = new HashSet<>(Arrays.asList(usr_paths0));
-
-            if (set.contains(nativeDir.toString()))
-                return false; // Nothing to do.
-
-            newPath = Arrays.copyOf(usr_paths0, usr_paths0.length + 1);
-        }
-
-        newPath[newPath.length - 1] = nativeDir.toString();
-
-        f.set(null, newPath);
-
-        return true;
-    }
 
     /**
      *

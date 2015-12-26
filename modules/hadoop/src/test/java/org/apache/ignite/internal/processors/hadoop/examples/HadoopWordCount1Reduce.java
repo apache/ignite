@@ -26,8 +26,6 @@ import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.ignite.internal.processors.hadoop.HadoopAbstractWordCountTest;
-import org.apache.ignite.internal.processors.hadoop.SnappyUtil;
 
 /**
  * Combiner and Reducer phase of WordCount job.
