@@ -418,6 +418,7 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC conn)
 SQLRETURN SQL_API SQLPrepare(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryLen)
 {
     using ignite::odbc::Statement;
+    using ignite::utility::SqlStringToString;
 
     LOG_MSG("SQLPrepare called\n");
 
@@ -426,15 +427,13 @@ SQLRETURN SQL_API SQLPrepare(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryLen)
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-    const char* sql = reinterpret_cast<char*>(query);
-    size_t len = queryLen == SQL_NTS ? strlen(sql) : static_cast<size_t>(queryLen);
+    std::string sql = SqlStringToString(query, queryLen);
 
-    LOG_MSG("SQL: %s\n", sql);
-    LOG_MSG("Length: %u\n", len);
+    LOG_MSG("SQL: %s\n", sql.c_str());
 
-    statement->PrepareSqlQuery(sql, len);
+    statement->PrepareSqlQuery(sql);
 
-    return SQL_SUCCESS;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLExecute(SQLHSTMT stmt)
@@ -448,14 +447,15 @@ SQLRETURN SQL_API SQLExecute(SQLHSTMT stmt)
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-    bool success = statement->ExecuteSqlQuery();
+    statement->ExecuteSqlQuery();
 
-    return success ? SQL_SUCCESS : SQL_ERROR;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLExecDirect(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryLen)
 {
     using ignite::odbc::Statement;
+    using ignite::utility::SqlStringToString;
 
     LOG_MSG("SQLExecDirect called\n");
 
@@ -464,15 +464,13 @@ SQLRETURN SQL_API SQLExecDirect(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryL
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-    const char* sql = reinterpret_cast<char*>(query);
-    size_t len = queryLen == SQL_NTS ? strlen(sql) : static_cast<size_t>(queryLen);
+    std::string sql = SqlStringToString(query, queryLen);
 
-    LOG_MSG("SQL: %s\n", sql);
-    LOG_MSG("Length: %u\n", len);
+    LOG_MSG("SQL: %s\n", sql.c_str());
 
-    bool success = statement->ExecuteSqlQuery(sql, len);
+    statement->ExecuteSqlQuery(sql);
 
-    return success ? SQL_SUCCESS : SQL_ERROR;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLBindCol(SQLHSTMT       stmt,
@@ -511,7 +509,7 @@ SQLRETURN SQL_API SQLBindCol(SQLHSTMT       stmt,
     else
         statement->UnbindColumn(colNum);
 
-    return SQL_SUCCESS;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLFetch(SQLHSTMT stmt)
@@ -525,7 +523,9 @@ SQLRETURN SQL_API SQLFetch(SQLHSTMT stmt)
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-    return SqlResultToReturnCode(statement->FetchRow());
+    statement->FetchRow();
+
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLFetchScroll(SQLHSTMT       stmt,
@@ -574,17 +574,14 @@ SQLRETURN SQL_API SQLNumResultCols(SQLHSTMT stmt, SQLSMALLINT *columnNum)
 
     if (!statement)
         return SQL_INVALID_HANDLE;
+    
+    int32_t res = statement->GetColumnNumber();
 
-    const ColumnMetaVector* meta = statement->GetMeta();
-
-    if (!meta)
-        return SQL_ERROR;
-
-    *columnNum = static_cast<SQLSMALLINT>(meta->size());
+    *columnNum = static_cast<SQLSMALLINT>(res);
 
     LOG_MSG("columnNum: %d\n", *columnNum);
 
-    return SQL_SUCCESS;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLTables(SQLHSTMT    stmt,
@@ -617,9 +614,9 @@ SQLRETURN SQL_API SQLTables(SQLHSTMT    stmt,
     LOG_MSG("table: %s\n", table.c_str());
     LOG_MSG("tableType: %s\n", tableTypeStr.c_str());
 
-    bool success = statement->ExecuteGetTablesMetaQuery(catalog, schema, table, tableTypeStr);
+    statement->ExecuteGetTablesMetaQuery(catalog, schema, table, tableTypeStr);
 
-    return success ? SQL_SUCCESS : SQL_ERROR;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLColumns(SQLHSTMT       stmt,
@@ -652,9 +649,9 @@ SQLRETURN SQL_API SQLColumns(SQLHSTMT       stmt,
     LOG_MSG("table: %s\n", table.c_str());
     LOG_MSG("column: %s\n", column.c_str());
 
-    bool success = statement->ExecuteGetColumnsMetaQuery(schema, table, column);
+    statement->ExecuteGetColumnsMetaQuery(schema, table, column);
 
-    return success ? SQL_SUCCESS : SQL_ERROR;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLMoreResults(SQLHSTMT stmt)
@@ -668,6 +665,7 @@ SQLRETURN SQL_API SQLMoreResults(SQLHSTMT stmt)
     if (!statement)
         return SQL_INVALID_HANDLE;
 
+    //TODO: reset diagnostic here.
     return statement->DataAvailable() ? SQL_SUCCESS : SQL_NO_DATA;
 }
 
@@ -721,7 +719,7 @@ SQLRETURN SQL_API SQLBindParameter(SQLHSTMT     stmt,
     else
         statement->UnbindParameter(paramIdx);
 
-    return SQL_SUCCESS;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLNativeSql(SQLHDBC      conn,
@@ -777,10 +775,10 @@ SQLRETURN SQL_API SQLColAttribute(SQLHSTMT        stmt,
         return res;
     }
 
-    bool success = statement->GetColumnAttribute(columnNum, fieldId,
-        reinterpret_cast<char*>(strAttr), bufferLen, strAttrLen, numericAttr);
+    statement->GetColumnAttribute(columnNum, fieldId, reinterpret_cast<char*>(strAttr),
+        bufferLen, strAttrLen, numericAttr);
 
-    return success ? SQL_SUCCESS : SQL_ERROR;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
@@ -802,7 +800,7 @@ SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-    bool success = statement->GetColumnAttribute(columnNum, SQL_DESC_NAME,
+    statement->GetColumnAttribute(columnNum, SQL_DESC_NAME,
         reinterpret_cast<char*>(columnNameBuf), columnNameBufLen, columnNameLen, 0);
 
     int64_t dataTypeRes;
@@ -810,10 +808,10 @@ SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
     int64_t decimalDigitsRes;
     int64_t nullableRes;
 
-    success = success && statement->GetColumnAttribute(columnNum, SQL_DESC_TYPE, 0, 0, 0, &dataTypeRes);
-    success = success && statement->GetColumnAttribute(columnNum, SQL_DESC_PRECISION, 0, 0, 0, &columnSizeRes);
-    success = success && statement->GetColumnAttribute(columnNum, SQL_DESC_SCALE, 0, 0, 0, &decimalDigitsRes);
-    success = success && statement->GetColumnAttribute(columnNum, SQL_DESC_NULLABLE, 0, 0, 0, &nullableRes);
+    statement->GetColumnAttribute(columnNum, SQL_DESC_TYPE, 0, 0, 0, &dataTypeRes);
+    statement->GetColumnAttribute(columnNum, SQL_DESC_PRECISION, 0, 0, 0, &columnSizeRes);
+    statement->GetColumnAttribute(columnNum, SQL_DESC_SCALE, 0, 0, 0, &decimalDigitsRes);
+    statement->GetColumnAttribute(columnNum, SQL_DESC_NULLABLE, 0, 0, 0, &nullableRes);
 
     LOG_MSG("columnNum: %lld\n", columnNum);
     LOG_MSG("dataTypeRes: %lld\n", dataTypeRes);
@@ -828,7 +826,7 @@ SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
     *decimalDigits = static_cast<SQLSMALLINT>(decimalDigitsRes);
     *nullable = static_cast<SQLSMALLINT>(nullableRes);
 
-    return success ? SQL_SUCCESS : SQL_ERROR;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 
@@ -843,14 +841,11 @@ SQLRETURN SQL_API SQLRowCount(SQLHSTMT stmt, SQLLEN* rowCnt)
     if (!statement)
         return SQL_INVALID_HANDLE;
 
-    int64_t res;
+    int64_t res = statement->AffectedRows();
 
-    bool success = statement->AffectedRows(res);
+    *rowCnt = static_cast<SQLLEN>(res);
 
-    if (success)
-        *rowCnt = static_cast<SQLLEN>(res);
-
-    return SQL_SUCCESS;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLForeignKeys(SQLHSTMT       stmt,
@@ -891,10 +886,10 @@ SQLRETURN SQL_API SQLForeignKeys(SQLHSTMT       stmt,
     LOG_MSG("foreignSchema: %s\n", foreignSchema.c_str());
     LOG_MSG("foreignTable: %s\n", foreignTable.c_str());
 
-    bool success = statement->ExecuteGetForeignKeysQuery(primaryCatalog, primarySchema,
+    statement->ExecuteGetForeignKeysQuery(primaryCatalog, primarySchema,
         primaryTable, foreignCatalog, foreignSchema, foreignTable);
 
-    return success ? SQL_SUCCESS : SQL_ERROR;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLGetStmtAttr(SQLHSTMT       stmt,
@@ -913,6 +908,7 @@ SQLRETURN SQL_API SQLGetStmtAttr(SQLHSTMT       stmt,
     if (!statement)
         return SQL_INVALID_HANDLE;
 
+    //TODO: move this logic into Statement.
     switch (attr)
     {
         case SQL_ATTR_APP_ROW_DESC:
@@ -994,6 +990,7 @@ SQLRETURN SQL_API SQLSetStmtAttr(SQLHSTMT    stmt,
     if (!statement)
         return SQL_INVALID_HANDLE;
 
+    //TODO: move this logic into Statement.
     switch (attr)
     {
         case SQL_ATTR_ROW_ARRAY_SIZE:
@@ -1069,9 +1066,9 @@ SQLRETURN SQL_API SQLPrimaryKeys(SQLHSTMT       stmt,
     LOG_MSG("schema: %s\n", schema.c_str());
     LOG_MSG("table: %s\n", table.c_str());
 
-    bool success = statement->ExecuteGetPrimaryKeysQuery(catalog, schema, table);
+    statement->ExecuteGetPrimaryKeysQuery(catalog, schema, table);
 
-    return success ? SQL_ERROR : SQL_SUCCESS;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLNumParams(SQLHSTMT stmt, SQLSMALLINT* paramCnt)
@@ -1087,7 +1084,7 @@ SQLRETURN SQL_API SQLNumParams(SQLHSTMT stmt, SQLSMALLINT* paramCnt)
 
     *paramCnt = static_cast<SQLSMALLINT>(statement->GetParametersNumber());
 
-    return SQL_SUCCESS;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
@@ -1099,6 +1096,7 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
                                   SQLSMALLINT*  resLen)
 {
     using namespace ignite::odbc;
+    using namespace ignite::odbc::diagnostic;
     using namespace ignite::odbc::type_traits;
 
     using ignite::odbc::app::ApplicationDataBuffer;
@@ -1115,19 +1113,12 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
     switch (handleType)
     {
         case SQL_HANDLE_ENV:
-        {
-            Environment *environment = reinterpret_cast<Environment*>(handle);
-
-            result = environment->GetDiagnosticRecords().GetField(recNum, field, outBuffer);
-
-            break;
-        }
-
         case SQL_HANDLE_DBC:
+        case SQL_HANDLE_STMT:
         {
-            Connection *connection = reinterpret_cast<Connection*>(handle);
+            Diagnosable *diag = reinterpret_cast<Diagnosable*>(handle);
 
-            result = connection->GetDiagnosticRecords().GetField(recNum, field, outBuffer);
+            result = diag->GetDiagnosticRecords().GetField(recNum, field, outBuffer);
 
             break;
         }
@@ -1170,19 +1161,12 @@ SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
     switch (handleType)
     {
         case SQL_HANDLE_ENV:
-        {
-            Environment *environment = reinterpret_cast<Environment*>(handle);
-
-            records = &environment->GetDiagnosticRecords();
-
-            break;
-        }
-
         case SQL_HANDLE_DBC:
+        case SQL_HANDLE_STMT:
         {
-            Connection *connection = reinterpret_cast<Connection*>(handle);
+            Diagnosable *diag = reinterpret_cast<Diagnosable*>(handle);
 
-            records = &connection->GetDiagnosticRecords();
+            records = &diag->GetDiagnosticRecords();
 
             break;
         }

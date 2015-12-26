@@ -91,6 +91,13 @@ namespace ignite
             size_t* GetColumnBindOffsetPtr();
 
             /**
+             * Get number of columns in the result set.
+             *
+             * @return Columns number.
+             */
+            int32_t GetColumnNumber();
+
+            /**
              * Bind parameter.
              *
              * @param paramIdx Parameter index.
@@ -115,7 +122,7 @@ namespace ignite
              *
              * @return Number of binded parameters.
              */
-            uint16_t GetParametersNumber() const;
+            uint16_t GetParametersNumber();
 
             /**
              * Set parameter binding offset pointer.
@@ -136,10 +143,25 @@ namespace ignite
              *
              * @note Only SELECT queries are supported currently.
              * @param query SQL query.
-             * @param len Query length.
-             * @return True on success.
              */
-            bool PrepareSqlQuery(const char* query, size_t len);
+            void PrepareSqlQuery(const std::string& query);
+
+            /**
+             * Prepare SQL query.
+             *
+             * @note Only SELECT queries are supported currently.
+             * @param query SQL query.
+             * @param len Query length.
+             */
+            void PrepareSqlQuery(const char* query, size_t len);
+            
+            /**
+             * Execute SQL query.
+             *
+             * @note Only SELECT queries are supported currently.
+             * @param query SQL query.
+             */
+            void ExecuteSqlQuery(const std::string& query);
 
             /**
              * Execute SQL query.
@@ -147,17 +169,15 @@ namespace ignite
              * @note Only SELECT queries are supported currently.
              * @param query SQL query.
              * @param len Query length.
-             * @return True on success.
              */
-            bool ExecuteSqlQuery(const char* query, size_t len);
+            void ExecuteSqlQuery(const char* query, size_t len);
 
             /**
              * Execute SQL query.
              *
              * @note Only SELECT queries are supported currently.
-             * @return True on success.
              */
-            bool ExecuteSqlQuery();
+            void ExecuteSqlQuery();
 
             /**
              * Get columns metadata.
@@ -167,8 +187,8 @@ namespace ignite
              * @param column Column search pattern.
              * @return True on success.
              */
-            bool ExecuteGetColumnsMetaQuery(const std::string& schema, const std::string& table,
-                const std::string& column);
+            void ExecuteGetColumnsMetaQuery(const std::string& schema,
+                const std::string& table, const std::string& column);
 
             /**
              * Get tables metadata.
@@ -179,8 +199,9 @@ namespace ignite
              * @param tableType Table type search pattern.
              * @return True on success.
              */
-            bool ExecuteGetTablesMetaQuery(const std::string& catalog, const std::string& schema,
-                const std::string& table, const std::string& tableType);
+            void ExecuteGetTablesMetaQuery(const std::string& catalog,
+                const std::string& schema, const std::string& table,
+                const std::string& tableType);
 
             /**
              * Get foreign keys.
@@ -193,7 +214,7 @@ namespace ignite
              * @param foreignTable Foreign key table name.
              * @return True on success.
              */
-            bool ExecuteGetForeignKeysQuery(const std::string& primaryCatalog, 
+            void ExecuteGetForeignKeysQuery(const std::string& primaryCatalog,
                 const std::string& primarySchema, const std::string& primaryTable,
                 const std::string& foreignCatalog, const std::string& foreignSchema,
                 const std::string& foreignTable);
@@ -206,8 +227,8 @@ namespace ignite
              * @param table Table name.
              * @return True on success.
              */
-            bool ExecuteGetPrimaryKeysQuery(const std::string& catalog, const std::string& schema,
-                const std::string& table);
+            void ExecuteGetPrimaryKeysQuery(const std::string& catalog,
+                const std::string& schema, const std::string& table);
 
             /**
              * Close statement.
@@ -216,10 +237,8 @@ namespace ignite
 
             /**
              * Fetch query result row.
-             *
-             * @return Operation result.
              */
-            SqlResult FetchRow();
+            void FetchRow();
 
             /**
              * Get column metadata.
@@ -244,18 +263,16 @@ namespace ignite
              * @param buflen String buffer size.
              * @param reslen Buffer to put resulting string length to.
              * @param numbuf Numeric value buffer.
-             * @return True on success and false otherwise.
              */
-            bool GetColumnAttribute(uint16_t colIdx, uint16_t attrId, char* strbuf,
+            void GetColumnAttribute(uint16_t colIdx, uint16_t attrId, char* strbuf,
                 int16_t buflen, int16_t* reslen, int64_t* numbuf);
 
             /**
              * Get number of rows affected by the statement.
              *
-             * @param rowCnt Number of rows affected by the statement.
-             * @return True on success.
+             * @return Number of rows affected by the statement.
              */
-            bool AffectedRows(int64_t& rowCnt) const;
+            int64_t AffectedRows();
 
             /**
              * Set rows fetched buffer pointer.
@@ -295,6 +312,122 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalClose();
+
+            /**
+             * Prepare SQL query.
+             *
+             * @note Only SELECT queries are supported currently.
+             * @param query SQL query.
+             * @param len Query length.
+             * @return Operation result.
+             */
+            SqlResult InternalPrepareSqlQuery(const char* query, size_t len);
+            
+            /**
+             * Execute SQL query.
+             *
+             * @note Only SELECT queries are supported currently.
+             * @param query SQL query.
+             * @param len Query length.
+             * @return Operation result.
+             */
+            SqlResult InternalExecuteSqlQuery(const char* query, size_t len);
+
+            /**
+             * Execute SQL query.
+             *
+             * @note Only SELECT queries are supported currently.
+             * @return Operation result.
+             */
+            SqlResult InternalExecuteSqlQuery();
+
+            /**
+             * Fetch query result row.
+             *
+             * @return Operation result.
+             */
+            SqlResult InternalFetchRow();
+
+            /**
+             * Get number of columns in the result set.
+             *
+             * @param res Columns number.
+             * @return Operation result.
+             */
+            SqlResult InternalGetColumnNumber(int32_t &res);
+
+            /**
+             * Get columns metadata.
+             *
+             * @param schema Schema search pattern.
+             * @param table Table search pattern.
+             * @param column Column search pattern.
+             * @return Operation result.
+             */
+            SqlResult InternalExecuteGetColumnsMetaQuery(const std::string& schema,
+                const std::string& table, const std::string& column);
+
+            /**
+             * Get tables metadata.
+             *
+             * @param catalog Catalog search pattern.
+             * @param schema Schema search pattern.
+             * @param table Table search pattern.
+             * @param tableType Table type search pattern.
+             * @return Operation result.
+             */
+            SqlResult InternalExecuteGetTablesMetaQuery(const std::string& catalog,
+                const std::string& schema, const std::string& table,
+                const std::string& tableType);
+
+            /**
+             * Get foreign keys.
+             *
+             * @param primaryCatalog Primary key catalog name.
+             * @param primarySchema Primary key schema name.
+             * @param primaryTable Primary key table name.
+             * @param foreignCatalog Foreign key catalog name.
+             * @param foreignSchema Foreign key schema name.
+             * @param foreignTable Foreign key table name.
+             * @return Operation result.
+             */
+            SqlResult InternalExecuteGetForeignKeysQuery(const std::string& primaryCatalog,
+                const std::string& primarySchema, const std::string& primaryTable,
+                const std::string& foreignCatalog, const std::string& foreignSchema,
+                const std::string& foreignTable);
+
+            /**
+             * Get primary keys.
+             *
+             * @param catalog Catalog name.
+             * @param schema Schema name.
+             * @param table Table name.
+             * @return Operation result.
+             */
+            SqlResult InternalExecuteGetPrimaryKeysQuery(const std::string& catalog,
+                const std::string& schema, const std::string& table);
+
+            /**
+             * Get column attribute.
+             *
+             * @param colIdx Column index.
+             * @param attrId Attribute ID.
+             * @param strbuf Buffer for string attribute value.
+             * @param buflen String buffer size.
+             * @param reslen Buffer to put resulting string length to.
+             * @param numbuf Numeric value buffer.
+             * @return Operation result.
+             */
+            SqlResult InternalGetColumnAttribute(uint16_t colIdx, uint16_t attrId,
+                char* strbuf, int16_t buflen, int16_t* reslen, int64_t* numbuf);
+
+            /**
+             * Get number of rows affected by the statement.
+             *
+             * @param rowCnt Number of rows affected by the statement.
+             * @return Operation result.
+             */
+            SqlResult InternalAffectedRows(int64_t& rowCnt);
 
             /**
              * Constructor.

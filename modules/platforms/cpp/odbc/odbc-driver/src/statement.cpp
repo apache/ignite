@@ -54,19 +54,31 @@ namespace ignite
 
         void Statement::BindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer)
         {
+            diagnosticRecords.Reset();
+
             columnBindings[columnIdx] = buffer;
 
             columnBindings[columnIdx].SetPtrToOffsetPtr(&columnBindOffset);
+
+            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         void Statement::UnbindColumn(uint16_t columnIdx)
         {
+            diagnosticRecords.Reset();
+
             columnBindings.erase(columnIdx);
+
+            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         void Statement::UnbindAllColumns()
         {
+            diagnosticRecords.Reset();
+
             columnBindings.clear();
+
+            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         void Statement::SetColumnBindOffsetPtr(size_t * ptr)
@@ -79,31 +91,76 @@ namespace ignite
             return columnBindOffset;
         }
 
+        int32_t Statement::GetColumnNumber()
+        {
+            int32_t res;
+
+            IGNITE_ODBC_API_CALL(InternalGetColumnNumber(res));
+
+            return res;
+        }
+
+        SqlResult Statement::InternalGetColumnNumber(int32_t &res)
+        {
+            const meta::ColumnMetaVector* meta = GetMeta();
+
+            if (!meta)
+            {
+                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not executed.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            res = static_cast<int32_t>(meta->size());
+
+            return SQL_RESULT_SUCCESS;
+        }
+
         void Statement::BindParameter(uint16_t paramIdx, const app::Parameter& param)
         {
+            diagnosticRecords.Reset();
+
             paramBindings[paramIdx] = param;
 
             paramBindings[paramIdx].GetBuffer().SetPtrToOffsetPtr(&paramBindOffset);
+
+            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         void Statement::UnbindParameter(uint16_t paramIdx)
         {
+            diagnosticRecords.Reset();
+
             paramBindings.erase(paramIdx);
+
+            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         void Statement::UnbindAllParameters()
         {
+            diagnosticRecords.Reset();
+
             paramBindings.clear();
+
+            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
-        uint16_t Statement::GetParametersNumber() const
+        uint16_t Statement::GetParametersNumber()
         {
+            diagnosticRecords.Reset();
+
             return static_cast<uint16_t>(paramBindings.size());
+
+            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         void Statement::SetParamBindOffsetPtr(size_t* ptr)
         {
+            diagnosticRecords.Reset();
+
             paramBindOffset = ptr;
+
+            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         size_t * Statement::GetParamBindOffsetPtr()
@@ -111,7 +168,17 @@ namespace ignite
             return paramBindOffset;
         }
 
-        bool Statement::PrepareSqlQuery(const char* query, size_t len)
+        void Statement::PrepareSqlQuery(const std::string& query)
+        {
+            return PrepareSqlQuery(query.data(), query.size());
+        }
+
+        void Statement::PrepareSqlQuery(const char* query, size_t len)
+        {
+            IGNITE_ODBC_API_CALL(InternalPrepareSqlQuery(query, len));
+        }
+
+        SqlResult Statement::InternalPrepareSqlQuery(const char* query, size_t len)
         {
             if (currentQuery.get())
                 currentQuery->Close();
@@ -120,25 +187,53 @@ namespace ignite
 
             currentQuery.reset(new query::DataQuery(*this, connection, sql, paramBindings));
 
-            return false;
+            return SQL_RESULT_SUCCESS;
         }
 
-        bool Statement::ExecuteSqlQuery(const char* query, size_t len)
+        void Statement::ExecuteSqlQuery(const std::string& query)
         {
-            PrepareSqlQuery(query, len);
-
-            return ExecuteSqlQuery();
+            ExecuteSqlQuery(query.data(), query.size());
         }
 
-        bool Statement::ExecuteSqlQuery()
+        void Statement::ExecuteSqlQuery(const char* query, size_t len)
+        {
+            IGNITE_ODBC_API_CALL(InternalExecuteSqlQuery(query, len));
+        }
+
+        SqlResult Statement::InternalExecuteSqlQuery(const char* query, size_t len)
+        {
+            SqlResult result = InternalPrepareSqlQuery(query, len);
+
+            if (result != SQL_RESULT_SUCCESS)
+                return result;
+
+            return InternalExecuteSqlQuery();
+        }
+
+        void Statement::ExecuteSqlQuery()
+        {
+            IGNITE_ODBC_API_CALL(InternalExecuteSqlQuery());
+        }
+
+        SqlResult Statement::InternalExecuteSqlQuery()
         {
             if (!currentQuery.get())
-                return false;
+            {
+                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not prepared.");
+
+                return SQL_RESULT_ERROR;
+            }
 
             return currentQuery->Execute();
         }
 
-        bool Statement::ExecuteGetColumnsMetaQuery(const std::string& schema, 
+        void Statement::ExecuteGetColumnsMetaQuery(const std::string& schema,
+            const std::string& table, const std::string& column)
+        {
+            IGNITE_ODBC_API_CALL(InternalExecuteGetColumnsMetaQuery(schema, table, column));
+        }
+
+        SqlResult Statement::InternalExecuteGetColumnsMetaQuery(const std::string& schema,
             const std::string& table, const std::string& column)
         {
             if (currentQuery.get())
@@ -154,7 +249,13 @@ namespace ignite
             return currentQuery->Execute();
         }
 
-        bool Statement::ExecuteGetTablesMetaQuery(const std::string& catalog, 
+        void Statement::ExecuteGetTablesMetaQuery(const std::string& catalog,
+            const std::string& schema, const std::string& table, const std::string& tableType)
+        {
+            IGNITE_ODBC_API_CALL(InternalExecuteGetTablesMetaQuery(catalog, schema, table, tableType));
+        }
+
+        SqlResult Statement::InternalExecuteGetTablesMetaQuery(const std::string& catalog,
             const std::string& schema, const std::string& table, const std::string& tableType)
         {
             if (currentQuery.get())
@@ -170,7 +271,16 @@ namespace ignite
             return currentQuery->Execute();
         }
 
-        bool Statement::ExecuteGetForeignKeysQuery(const std::string& primaryCatalog,
+        void Statement::ExecuteGetForeignKeysQuery(const std::string& primaryCatalog,
+            const std::string& primarySchema, const std::string& primaryTable,
+            const std::string& foreignCatalog, const std::string& foreignSchema,
+            const std::string& foreignTable)
+        {
+            IGNITE_ODBC_API_CALL(InternalExecuteGetForeignKeysQuery(primaryCatalog,
+                primarySchema, primaryTable, foreignCatalog, foreignSchema, foreignTable));
+        }
+
+        SqlResult Statement::InternalExecuteGetForeignKeysQuery(const std::string& primaryCatalog,
             const std::string& primarySchema, const std::string& primaryTable,
             const std::string& foreignCatalog, const std::string& foreignSchema,
             const std::string& foreignTable)
@@ -184,7 +294,13 @@ namespace ignite
             return currentQuery->Execute();
         }
 
-        bool Statement::ExecuteGetPrimaryKeysQuery(const std::string& catalog, const std::string& schema,
+        void Statement::ExecuteGetPrimaryKeysQuery(const std::string& catalog, const std::string& schema,
+            const std::string& table)
+        {
+            IGNITE_ODBC_API_CALL(InternalExecuteGetPrimaryKeysQuery(catalog, schema, table));
+        }
+
+        SqlResult Statement::InternalExecuteGetPrimaryKeysQuery(const std::string& catalog, const std::string& schema,
             const std::string& table)
         {
             if (currentQuery.get())
@@ -204,25 +320,35 @@ namespace ignite
         {
             if (!currentQuery.get())
             {
-                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE, "Invalid cursor name.");
+                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE, "Cursor is not in the open state.");
 
                 return SQL_RESULT_ERROR;
             }
 
-            currentQuery->Close();
+            SqlResult result = currentQuery->Close();
 
-            currentQuery.reset();
+            if (result == SQL_RESULT_SUCCESS)
+                currentQuery.reset();
 
-            return SQL_RESULT_SUCCESS;
+            return result;
         }
 
-        SqlResult Statement::FetchRow()
+        void Statement::FetchRow()
+        {
+            IGNITE_ODBC_API_CALL(InternalFetchRow());
+        }
+
+        SqlResult Statement::InternalFetchRow()
         {
             if (rowsFetched)
                 *rowsFetched = 0;
 
             if (!currentQuery.get())
+            {
+                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE, "Cursor is not in the open state.");
+
                 return SQL_RESULT_ERROR;
+            }
 
             SqlResult res = currentQuery->FetchNextRow(columnBindings);
 
@@ -253,16 +379,32 @@ namespace ignite
             return currentQuery.get() && currentQuery->DataAvailable();
         }
 
-        bool Statement::GetColumnAttribute(uint16_t colIdx, uint16_t attrId, char* strbuf,
-            int16_t buflen, int16_t* reslen, int64_t* numbuf)
+        void Statement::GetColumnAttribute(uint16_t colIdx, uint16_t attrId,
+            char* strbuf, int16_t buflen, int16_t* reslen, int64_t* numbuf)
+        {
+            IGNITE_ODBC_API_CALL(InternalGetColumnAttribute(colIdx, attrId,
+                strbuf, buflen, reslen, numbuf));
+        }
+
+        SqlResult Statement::InternalGetColumnAttribute(uint16_t colIdx,
+            uint16_t attrId, char* strbuf, int16_t buflen, int16_t* reslen,
+            int64_t* numbuf)
         {
             const meta::ColumnMetaVector *meta = GetMeta();
 
             if (!meta)
-                return false;
+            {
+                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not executed.");
+
+                return SQL_RESULT_ERROR;
+            }
 
             if (colIdx > meta->size() + 1 || colIdx < 1)
-                return false;
+            {
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Column index is out of range.", 0, colIdx);
+
+                return SQL_RESULT_ERROR;
+            }
 
             const meta::ColumnMeta& columnMeta = meta->at(colIdx - 1);
 
@@ -286,17 +428,37 @@ namespace ignite
                     *reslen = static_cast<int16_t>(outSize);
             }
 
-            return found;
+            if (!found)
+            {
+                AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED, "Unknown attribute.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            return SQL_RESULT_SUCCESS;
         }
 
-        bool Statement::AffectedRows(int64_t& rowCnt) const
+        int64_t Statement::AffectedRows()
+        {
+            int64_t rowCnt = 0;
+
+            IGNITE_ODBC_API_CALL(InternalAffectedRows(rowCnt));
+
+            return rowCnt;
+        }
+
+        SqlResult Statement::InternalAffectedRows(int64_t& rowCnt)
         {
             if (!currentQuery.get())
-                return false;
+            {
+                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not executed.");
+
+                return SQL_RESULT_ERROR;
+            }
 
             rowCnt = currentQuery->AffectedRows();
 
-            return true;
+            return SQL_RESULT_SUCCESS;
         }
 
         void Statement::SetRowsFetchedPtr(size_t* ptr)
