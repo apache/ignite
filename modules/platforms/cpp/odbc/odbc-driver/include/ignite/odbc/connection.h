@@ -25,7 +25,7 @@
 #include "ignite/odbc/parser.h"
 #include "ignite/odbc/socket_client.h"
 #include "ignite/odbc/config/connection_info.h"
-#include "ignite/odbc/diagnostic/diagnostic_record.h"
+#include "ignite/odbc/diagnostic/diagnostic_record_storage.h"
 
 namespace ignite
 {
@@ -118,7 +118,7 @@ namespace ignite
              * @param columnNum Associated column number.
              * @return DiagnosticRecord associated with the instance.
              */
-            DiagnosticRecord CreateStatusRecord(SqlState sqlState,
+            diagnostic::DiagnosticRecord CreateStatusRecord(SqlState sqlState,
                 const std::string& message, int32_t rowNum = 0, int32_t columnNum = 0);
 
             /**
@@ -126,7 +126,7 @@ namespace ignite
              *
              * @return Diagnostic record.
              */
-            const DiagnosticRecordStorage& GetDiagnosticRecord() const;
+            const diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() const;
 
             /**
              * Synchronously send request message and receive response.
@@ -226,7 +226,7 @@ namespace ignite
             Parser parser;
 
             /** Diagnostic records. */
-            DiagnosticRecordStorage diagnosticRecord;
+            diagnostic::DiagnosticRecordStorage diagnosticRecord;
         };
     }
 }

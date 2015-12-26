@@ -122,7 +122,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC        conn,
 
     connection->GetInfo(infoType, infoValue, infoValueMax, length);
 
-    return connection->GetDiagnosticRecord().GetReturnCode();
+    return connection->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLAllocHandle(SQLSMALLINT type, SQLHANDLE parent, SQLHANDLE* result)
@@ -201,7 +201,7 @@ SQLRETURN SQL_API SQLAllocStmt(SQLHDBC conn, SQLHSTMT* stmt)
 
     *stmt = reinterpret_cast<SQLHSTMT>(statement);
 
-    return connection->GetDiagnosticRecord().GetReturnCode();
+    return connection->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLFreeHandle(SQLSMALLINT type, SQLHANDLE handle)
@@ -326,7 +326,7 @@ SQLRETURN SQL_API SQLDriverConnect(SQLHDBC      conn,
                                    SQLUSMALLINT driverCompletion)
 {
     using ignite::odbc::Connection;
-    using ignite::odbc::DiagnosticRecordStorage;
+    using ignite::odbc::diagnostic::DiagnosticRecordStorage;
     using ignite::utility::SqlStringToString;
     using ignite::utility::CopyStringToBuffer;
 
@@ -348,7 +348,7 @@ SQLRETURN SQL_API SQLDriverConnect(SQLHDBC      conn,
 
     connection->Establish(config.GetHost(), config.GetPort(), config.GetCache());
 
-    const DiagnosticRecordStorage& diag = connection->GetDiagnosticRecord();
+    const DiagnosticRecordStorage& diag = connection->GetDiagnosticRecords();
 
     if (!diag.IsSuccessful())
         return diag.GetReturnCode();
@@ -376,7 +376,7 @@ SQLRETURN SQL_API SQLConnect(SQLHDBC        conn,
                              SQLSMALLINT    authLen)
 {
     using ignite::odbc::Connection;
-    using ignite::odbc::DiagnosticRecordStorage;
+    using ignite::odbc::diagnostic::DiagnosticRecordStorage;
     using ignite::utility::SqlStringToString;
 
     LOG_MSG("SQLConnect called\n");
@@ -396,7 +396,7 @@ SQLRETURN SQL_API SQLConnect(SQLHDBC        conn,
 
     connection->Establish(config.GetHost(), config.GetPort(), config.GetCache());
 
-    return connection->GetDiagnosticRecord().GetReturnCode();
+    return connection->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLDisconnect(SQLHDBC conn)
@@ -412,7 +412,7 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC conn)
 
     connection->Release();
 
-    return connection->GetDiagnosticRecord().GetReturnCode();
+    return connection->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLPrepare(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryLen)
@@ -1098,8 +1098,8 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
                                   SQLSMALLINT   bufferLen,
                                   SQLSMALLINT*  resLen)
 {
-    using namespace ignite::odbc::type_traits;
     using namespace ignite::odbc;
+    using namespace ignite::odbc::type_traits;
 
     using ignite::odbc::app::ApplicationDataBuffer;
 
@@ -1118,7 +1118,7 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
         {
             Connection *connection = reinterpret_cast<Connection*>(handle);
 
-            result = connection->GetDiagnosticRecord().GetField(recNum, field, outBuffer);
+            result = connection->GetDiagnosticRecords().GetField(recNum, field, outBuffer);
 
             break;
         }
@@ -1145,9 +1145,10 @@ SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
                                 SQLSMALLINT     msgBufferLen,
                                 SQLSMALLINT*    msgLen)
 {
-    using namespace ignite::odbc::type_traits;
-    using namespace ignite::odbc;
     using namespace ignite::utility;
+    using namespace ignite::odbc;
+    using namespace ignite::odbc::diagnostic;
+    using namespace ignite::odbc::type_traits;
 
     using ignite::odbc::app::ApplicationDataBuffer;
 
@@ -1162,7 +1163,7 @@ SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
         {
             Connection *connection = reinterpret_cast<Connection*>(handle);
 
-            const DiagnosticRecordStorage& records = connection->GetDiagnosticRecord();
+            const DiagnosticRecordStorage& records = connection->GetDiagnosticRecords();
 
             if (recNum < 1 || recNum > records.GetStatusRecordsNumber())
             {

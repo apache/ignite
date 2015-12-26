@@ -97,6 +97,9 @@
     <ClCompile Include="..\..\src\diagnostic\diagnostic_record.cpp">
       <Filter>Code\diagnostic</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\diagnostic\diagnostic_record_storage.cpp">
+      <Filter>Code\diagnostic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -181,6 +184,9 @@
       <Filter>Code\meta</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record.h">
+      <Filter>Code\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record_storage.h">
       <Filter>Code\diagnostic</Filter>
     </ClInclude>
   </ItemGroup>
