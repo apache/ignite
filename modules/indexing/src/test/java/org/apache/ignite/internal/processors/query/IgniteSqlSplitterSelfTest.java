@@ -241,7 +241,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      * Test HAVING clause.
      */
     public void testHaving() {
-        IgniteCache<Integer, Integer> c = ignite(0).getOrCreateCache(cacheConfig("ints", true,
+        IgniteCache<Integer, Integer> c = ignite(0).getOrCreateCache(cacheConfig("having", true,
             Integer.class, Integer.class));
 
         try {
