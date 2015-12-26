@@ -245,6 +245,21 @@ public class GridH2QueryContext {
     }
 
     /**
+     * Clear taken snapshots.
+     */
+    public void clearSnapshots() {
+        if (F.isEmpty(snapshots))
+            return;
+
+        for (Object snapshot : snapshots.values()) {
+            if (snapshot instanceof GridReservable)
+                ((GridReservable)snapshot).release();
+        }
+
+        snapshots = null;
+    }
+
+    /**
      * @param idxId Index ID.
      * @return Index snapshot or {@code null} if none.
      */
@@ -389,12 +404,7 @@ public class GridH2QueryContext {
 
         assert x.key.equals(key);
 
-        if (!F.isEmpty(x.snapshots)) {
-            for (Object snapshot : x.snapshots.values()) {
-                if (snapshot instanceof GridReservable)
-                    ((GridReservable)snapshot).release();
-            }
-        }
+        x.clearSnapshots();
 
         List<GridReservable> r = x.reservations;
 

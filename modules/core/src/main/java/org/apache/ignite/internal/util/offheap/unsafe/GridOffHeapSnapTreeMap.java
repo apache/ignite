@@ -1048,7 +1048,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
     private volatile StoppableRecycleQueue recycleBin;
 
     /** */
-    private final AtomicInteger reservations = new AtomicInteger();
+    private AtomicInteger reservations;
 
     /** */
     private volatile boolean closing;
@@ -1125,7 +1125,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
     @Override public void close() {
         closing = true;
 
-        if (reservations.compareAndSet(0, -1))
+        if (reservations == null || reservations.compareAndSet(0, -1))
             doClose();
     }
 
@@ -1192,6 +1192,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer,V extends 
         copy.holderRef = rootHolder(holderRef);
         markShared(root());
 
+        copy.reservations = new AtomicInteger();
         copy.size = new AtomicInteger(size());
         copy.recycleBin = new StoppableRecycleQueue();
 

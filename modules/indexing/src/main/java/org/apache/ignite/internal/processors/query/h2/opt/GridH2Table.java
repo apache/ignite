@@ -395,6 +395,8 @@ public class GridH2Table extends TableBase {
 
             if (reuseExisting && s == null) { // Existing snapshot was invalidated before we were able to reserve it.
                 // Release already taken snapshots.
+                qctx.clearSnapshots();
+
                 for (int j = 1; j < i; j++)
                     index(j).releaseSnapshot();
 
