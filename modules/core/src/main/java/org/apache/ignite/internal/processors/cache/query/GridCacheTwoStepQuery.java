@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -45,7 +46,10 @@ public class GridCacheTwoStepQuery {
     private boolean explain;
 
     /** */
-    private Set<String> spaces;
+    private Collection<String> spaces;
+
+    /** */
+    private Set<String> schemas;
 
     /** */
     private Set<String> tbls;
@@ -57,11 +61,11 @@ public class GridCacheTwoStepQuery {
     private boolean skipMergeTbl;
 
     /**
-     * @param spaces All spaces accessed in query.
-     * @param tbls Tables.
+     * @param schemas Schema names in query.
+     * @param tbls Tables in query.
      */
-    public GridCacheTwoStepQuery(Set<String> spaces, Set<String> tbls) {
-        this.spaces = spaces;
+    public GridCacheTwoStepQuery(Set<String> schemas, Set<String> tbls) {
+        this.schemas = schemas;
         this.tbls = tbls;
     }
 
@@ -160,15 +164,22 @@ public class GridCacheTwoStepQuery {
     /**
      * @return Spaces.
      */
-    public Set<String> spaces() {
+    public Collection<String> spaces() {
         return spaces;
     }
 
     /**
      * @param spaces Spaces.
      */
-    public void spaces(Set<String> spaces) {
+    public void spaces(Collection<String> spaces) {
         this.spaces = spaces;
+    }
+
+    /**
+     * @return Schemas.
+     */
+    public Set<String> schemas() {
+        return schemas;
     }
 
     /**
@@ -178,8 +189,9 @@ public class GridCacheTwoStepQuery {
     public GridCacheTwoStepQuery copy(Object[] args) {
         assert !explain;
 
-        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(spaces, tbls);
+        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(schemas, tbls);
 
+        cp.spaces = spaces;
         cp.rdc = rdc.copy(args);
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;

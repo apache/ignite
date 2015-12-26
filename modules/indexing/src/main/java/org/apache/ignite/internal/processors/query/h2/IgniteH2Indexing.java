@@ -953,7 +953,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String sql = generateQuery(qry, tbl);
 
-        Connection conn = connectionForThread(tbl.schema());
+        Connection conn = connectionForThread(tbl.schemaName());
 
         initLocalQueryContext(conn, false, filter);
 
@@ -1104,6 +1104,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), groupByCollocated,
                     distributedJoins);
+
+                // Setup spaces from schemas.
+                if (!twoStepQry.schemas().isEmpty()) {
+                    Collection<String> spaces = new ArrayList<>(twoStepQry.schemas().size());
+
+                    for (String schema : twoStepQry.schemas())
+                        spaces.add(space(schema));
+
+                    twoStepQry.spaces(spaces);
+                }
 
                 meta = meta(stmt.getMetaData());
             }
@@ -1701,7 +1711,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         throws IgniteCheckedException {
         String schema = schemaNameFromCacheConf(ccfg);
 
-        if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(), cctx, ccfg)) != null)
+        if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(), schema, cctx, ccfg)) != null)
             throw new IgniteCheckedException("Cache already registered: " + U.maskName(ccfg.getName()));
 
         space2schema.put(emptyIfNull(ccfg.getName()), schema);
@@ -2460,7 +2470,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param cctx Cache context.
          * @param ccfg Cache configuration.
          */
-        private Schema(@Nullable String spaceName, GridCacheContext<?,?> cctx, CacheConfiguration<?,?> ccfg) {
+        private Schema(String spaceName, String schemaName, GridCacheContext<?,?> cctx, CacheConfiguration<?,?> ccfg) {
             this.spaceName = spaceName;
             this.cctx = cctx;
             this.schemaName = schemaName;

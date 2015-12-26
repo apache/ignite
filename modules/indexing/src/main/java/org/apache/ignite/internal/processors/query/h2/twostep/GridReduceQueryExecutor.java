@@ -1043,7 +1043,7 @@ public class GridReduceQueryExecutor {
      * @param allSpaces All spaces.
      * @return List of all extra spaces or {@code null} if none.
      */
-    private List<String> extraSpaces(String mainSpace, Set<String> allSpaces) {
+    private List<String> extraSpaces(String mainSpace, Collection<String> allSpaces) {
         if (F.isEmpty(allSpaces) || (allSpaces.size() == 1 && allSpaces.contains(mainSpace)))
             return null;
 
