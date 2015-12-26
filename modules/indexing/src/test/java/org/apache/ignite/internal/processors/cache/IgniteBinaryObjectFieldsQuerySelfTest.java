@@ -45,9 +45,6 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /** */
     public static final String PERSON_KEY_CLS_NAME = "org.apache.ignite.tests.p2p.cache.PersonKey";
 
-    /** */
-    public static final String PERSON_CLS_NAME = "org.apache.ignite.tests.p2p.cache.Person";
-
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -56,6 +53,14 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
 
     /** */
     private static ClassLoader extClassLoader;
+
+    /**
+     * Gets Person class name.
+     * @return class name.
+     */
+    protected String getPersonClassName(){
+        return "org.apache.ignite.tests.p2p.cache.Person";
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -91,7 +96,8 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
         cache.setCacheMode(cacheMode);
         cache.setAtomicityMode(atomicity);
 
-        cache.setIndexedTypes(extClassLoader.loadClass(PERSON_KEY_CLS_NAME), extClassLoader.loadClass(PERSON_CLS_NAME));
+        cache.setIndexedTypes(extClassLoader.loadClass(PERSON_KEY_CLS_NAME),
+            extClassLoader.loadClass(getPersonClassName()));
 
         return cache;
     }
@@ -251,7 +257,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
      */
     private void populate(IgniteCache<Object, Object> cache) throws Exception {
         Class<?> keyCls = extClassLoader.loadClass(PERSON_KEY_CLS_NAME);
-        Class<?> cls = extClassLoader.loadClass(PERSON_CLS_NAME);
+        Class<?> cls = extClassLoader.loadClass(getPersonClassName());
 
         for (int i = 0; i < 100; i++) {
             Object key = keyCls.newInstance();
