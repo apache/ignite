@@ -30,13 +30,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.ignite.agent.AgentConfiguration;
 import org.apache.ignite.agent.remote.Remote;
 import org.apache.ignite.agent.testdrive.AgentMetadataTestDrive;
 import org.apache.ignite.schema.parser.DbMetadataReader;
 import org.apache.ignite.schema.parser.DbTable;
+import org.apache.log4j.Logger;
 
 import static org.apache.ignite.agent.AgentUtils.resolvePath;
 
@@ -86,18 +85,18 @@ public class DatabaseMetadataExtractor {
     @Remote
     public Collection<String> schemas(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
         Properties jdbcInfo) throws SQLException {
-        log.log(Level.FINE, "Start collecting database schemas [driver jar=" + jdbcDriverJarPath +
+        log.debug("Start collecting database schemas [driver jar=" + jdbcDriverJarPath +
             ", driver class=" + jdbcDriverCls + ", url=" + jdbcUrl + "]");
 
         try (Connection conn = connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo)) {
             Collection<String> schemas = DbMetadataReader.getInstance().schemas(conn);
 
-            log.log(Level.FINE, "Finished collection of schemas [url=" + jdbcUrl + ", count="+ schemas.size() +"]");
+            log.debug("Finished collection of schemas [url=" + jdbcUrl + ", count="+ schemas.size() +"]");
 
             return schemas;
         }
         catch (SQLException e) {
-            log.log(Level.SEVERE, "Failed to collect schemas", e);
+            log.error("Failed to collect schemas", e);
 
             throw e;
         }
@@ -115,18 +114,18 @@ public class DatabaseMetadataExtractor {
     @Remote
     public Collection<DbTable> metadata(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
         Properties jdbcInfo, List<String> schemas, boolean tblsOnly) throws SQLException {
-        log.log(Level.FINE, "Start collecting database metadata [driver jar=" + jdbcDriverJarPath +
+        log.debug("Start collecting database metadata [driver jar=" + jdbcDriverJarPath +
             ", driver class=" + jdbcDriverCls + ", url=" + jdbcUrl + "]");
 
         try (Connection conn = connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo)) {
             Collection<DbTable> metadata = DbMetadataReader.getInstance().metadata(conn, schemas, tblsOnly);
 
-            log.log(Level.FINE, "Finished collection of metadata [url=" + jdbcUrl + ", count="+ metadata.size() +"]");
+            log.debug("Finished collection of metadata [url=" + jdbcUrl + ", count="+ metadata.size() +"]");
 
             return metadata;
         }
         catch (SQLException e) {
-            log.log(Level.SEVERE, "Failed to collect metadata", e);
+            log.error("Failed to collect metadata", e);
 
             throw e;
         }
@@ -139,12 +138,12 @@ public class DatabaseMetadataExtractor {
     @Remote
     public List<JdbcDriver> availableDrivers() {
         if (driversFolder == null) {
-            log.log(Level.INFO, "JDBC drivers folder not specified, returning empty list");
+            log.info("JDBC drivers folder not specified, returning empty list");
 
             return Collections.emptyList();
         }
 
-        log.log(Level.FINE, "Collecting JDBC drivers in folder: " + driversFolder.getPath());
+        log.debug("Collecting JDBC drivers in folder: " + driversFolder.getPath());
 
         File[] list = driversFolder.listFiles(new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
@@ -153,7 +152,7 @@ public class DatabaseMetadataExtractor {
         });
 
         if (list == null) {
-            log.log(Level.INFO, "JDBC drivers folder has no files, returning empty list");
+            log.info("JDBC drivers folder has no files, returning empty list");
 
             return Collections.emptyList();
         }
@@ -171,14 +170,14 @@ public class DatabaseMetadataExtractor {
 
                     res.add(new JdbcDriver(file.getName(), jdbcDriverCls));
 
-                    log.log(Level.FINE, "Found: [driver=" + file + ", class=" + jdbcDriverCls + "]");
+                    log.debug("Found: [driver=" + file + ", class=" + jdbcDriverCls + "]");
                 }
             }
             catch (IOException e) {
                 res.add(new JdbcDriver(file.getName(), null));
 
-                log.log(Level.INFO, "Found: [driver=" + file + "]");
-                log.log(Level.INFO, "Failed to detect driver class: " + e.getMessage());
+                log.info("Found: [driver=" + file + "]");
+                log.info("Failed to detect driver class: " + e.getMessage());
             }
         }
 

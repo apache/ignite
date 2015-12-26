@@ -17,12 +17,12 @@
 
 package org.apache.ignite.agent;
 
+import org.apache.log4j.Logger;
+
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.ProtectionDomain;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Utility methods.
@@ -55,7 +55,7 @@ public class AgentUtils {
 
             // Should not happen, but to make sure our code is not broken.
             if (domain == null || domain.getCodeSource() == null || domain.getCodeSource().getLocation() == null) {
-                log.log(Level.WARNING, "Failed to resolve agent jar location!");
+                log.warn("Failed to resolve agent jar location!");
 
                 return null;
             }
@@ -72,7 +72,7 @@ public class AgentUtils {
             return new File(classesUri).getParentFile();
         }
         catch (URISyntaxException | SecurityException ignored) {
-            log.log(Level.WARNING, "Failed to resolve agent jar location!");
+            log.warn("Failed to resolve agent jar location!");
 
             return null;
         }

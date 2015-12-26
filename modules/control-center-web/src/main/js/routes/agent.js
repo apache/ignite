@@ -64,8 +64,6 @@ router.get('/download/zip', function (req, res) {
         prop.push('#Uncomment following options if needed:');
         prop.push('#node-uri=http://localhost:8080');
         prop.push('#driver-folder=./jdbc-drivers');
-        prop.push('#test-drive-metadata=true');
-        prop.push('#test-drive-sql=true');
 
         zip.file(agentFld + '/default.properties', prop.join('\n'));
 
@@ -83,17 +81,11 @@ router.post('/topology', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        client.ignite().cluster(false).then(function (clusters) {
-            var caches = clusters.map(function (cluster) {
-                return Object.keys(cluster._caches).map(function (key) {
-                    return {name: key, mode: cluster._caches[key]};
-                });
-            });
-
-            res.json(_.uniq(_.reject(_.flatten(caches), { mode: 'LOCAL' }), function(cache) {
-                return cache.name;
-            }));
-        }, function (err) {
+        client.ignite().cluster(req.body.attr, req.body.mtr).then(
+            function (clusters) {
+                res.json(clusters);
+            },
+            function (err) {
             var mStatusCode = /.*Status code:\s+(\d+)(?:\s|$)/g.exec(err);
 
             res.status(mStatusCode != null && mStatusCode[1] ? mStatusCode[1] : 500).send(err);
@@ -208,10 +200,6 @@ router.post('/cache/metadata', function (req, res) {
 
             for (var meta of caches) {
                 var cacheTypes = meta.types.map(function (typeName) {
-                    var cacheName = meta.cacheName ? meta.cacheName : '<default>';
-
-                    var fullTypeName = '"' + (meta.cacheName ? meta.cacheName : "") + '".' + typeName;
-
                     var fields = meta.fields[typeName];
 
                     var columns = [];
@@ -224,7 +212,7 @@ router.post('/cache/metadata', function (req, res) {
                             name: fieldName,
                             clazz: fieldClass,
                             system: fieldName == "_KEY" || fieldName == "_VAL",
-                            cacheName: cacheName,
+                            cacheName: meta.cacheName,
                             typeName: typeName
                         });
                     }
@@ -240,7 +228,7 @@ router.post('/cache/metadata', function (req, res) {
                                 name: field,
                                 order: index.descendings.indexOf(field) < 0,
                                 unique: index.unique,
-                                cacheName: cacheName,
+                                cacheName: meta.cacheName,
                                 typeName: typeName
                             });
                         }
@@ -250,7 +238,7 @@ router.post('/cache/metadata', function (req, res) {
                                 type: 'index',
                                 name: index.name,
                                 children: fields,
-                                cacheName: cacheName,
+                                cacheName: meta.cacheName,
                                 typeName: typeName
                             });
                     }
@@ -258,9 +246,9 @@ router.post('/cache/metadata', function (req, res) {
                     columns = _.sortBy(columns, 'name');
 
                     if (!_.isEmpty(indexes))
-                        columns = columns.concat({type: 'indexes', name: 'Indexes', cacheName: cacheName, typeName: typeName, children: indexes });
+                        columns = columns.concat({type: 'indexes', name: 'Indexes', cacheName: meta.cacheName, typeName: typeName, children: indexes });
 
-                    return {type: 'type', name: cacheName + '.' + typeName, fullName: fullTypeName,  children: columns };
+                    return {type: 'type', cacheName: meta.cacheName,  typeName: typeName, children: columns };
                 });
 
                 if (!_.isEmpty(cacheTypes))
@@ -285,11 +273,11 @@ router.post('/testdrive/sql', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        client.enableTestDriveSQL(function (err, drivers) {
+        client.enableTestDriveSQL(function (err, enabled) {
             if (err)
                 return res.status(500).send(err);
 
-            res.sendStatus(200);
+            res.status(200).send(enabled);
         });
     }
 });

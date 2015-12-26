@@ -16,13 +16,10 @@
  */
 
 // Controller for SQL notebook screen.
-consoleModule.controller('sqlController', function ($animate, $scope, $controller, $http, $timeout, $common, $confirm,
-    $interval, $modal, $popover, $loading, $location, $anchorScroll, $state, uiGridExporterConstants) {
-    // Initialize the super class and extend it.
-    angular.extend(this, $controller('agent-download', {$scope: $scope}));
+consoleModule.controller('sqlController', function ($http, $timeout, $interval, $scope, $animate,  $location, $anchorScroll, $state,
+    $modal, $popover, $loading, $common, $confirm, $agentDownload, uiGridExporterConstants) {
 
     $scope.agentGoal = 'execute sql statements';
-    $scope.agentTestDriveOption = '--test-drive-sql';
 
     $scope.joinTip = $common.joinTip;
 
@@ -59,6 +56,10 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
             iExpanded: 'fa fa-minus-square-o',
             iCollapsed: 'fa fa-plus-square-o'
         }
+    };
+
+    var _mask = function (cacheName) {
+        return _.isEmpty(cacheName) ? '<default>' : cacheName;
     };
 
     // Time line X axis descriptor.
@@ -272,7 +273,7 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
                 else
                     $scope.rebuildScrollParagraphs();
 
-                $scope.startTopologyListening(getTopology);
+                $agentDownload.startTopologyListening(getTopology);
             })
             .error(function () {
                 $scope.notebook = undefined;
@@ -448,10 +449,14 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
         return panel_idx >= 0;
     };
 
-    function getTopology(caches, onSuccess) {
+    function getTopology(clusters, onSuccess) {
         onSuccess();
 
-        $scope.caches = _.sortBy(caches, 'name');
+        var caches = _.flattenDeep(clusters.map(function (cluster) { return cluster._caches; }));
+
+        $scope.caches = _.sortBy(_.uniq(_.reject(caches, { mode: 'LOCAL' }), function (cache) {
+            return _mask(cache.name);
+        }), 'name');
 
         _setActiveCache();
     }
@@ -1442,7 +1447,8 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
     };
 
     $scope.dblclickMetadata = function (paragraph, node) {
-        paragraph.ace.insert(node.type == 'type' ? node.fullName : node.name);
+        paragraph.ace.insert(node.name);
+
         var position = paragraph.ace.selection.getCursor();
 
         paragraph.query = paragraph.ace.getValue();
@@ -1461,7 +1467,24 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
 
         $http.post('/api/v1/agent/cache/metadata')
             .success(function (metadata) {
-                $scope.metadata = _.sortBy(metadata, 'name');
+                $scope.metadata = _.sortBy(metadata, _.filter(metadata, function (meta) {
+                    var cacheName = _mask(meta.cacheName);
+
+                    var cache = _.find($scope.caches, { name: cacheName });
+
+                    if (cache) {
+                        meta.name = (cache.sqlSchema ? cache.sqlSchema : (_.isEmpty(cache.cacheName) ? '"' + cacheName + '"' : "")) + '.' + meta.typeName;
+
+                        meta.displayMame = _mask(meta.cacheName) + '.' + meta.typeName;
+
+                        if (cache.sqlSchema)
+                            meta.children.unshift({type: 'plain', name: 'sqlSchema: ' + cache.sqlSchema});
+
+                        meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode});
+                    }
+
+                    return cache;
+                }), 'name');
             })
             .error(function (errMsg) {
                 $common.showError(errMsg);

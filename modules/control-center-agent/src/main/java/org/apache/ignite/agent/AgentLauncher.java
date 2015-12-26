@@ -22,11 +22,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import org.apache.ignite.agent.handlers.RestExecutor;
-import org.apache.ignite.agent.testdrive.AgentMetadataTestDrive;
-import org.apache.ignite.agent.testdrive.AgentSqlTestDrive;
+import org.apache.log4j.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
@@ -53,7 +51,7 @@ public class AgentLauncher {
      */
     @SuppressWarnings("BusyWait")
     public static void main(String[] args) throws Exception {
-        log.log(Level.INFO, "Starting Apache Ignite Web Console Agent...");
+        log.info("Starting Apache Ignite Web Console Agent...");
 
         AgentConfiguration cfg = new AgentConfiguration();
 
@@ -71,13 +69,13 @@ public class AgentLauncher {
             File f = resolvePath(prop);
 
             if (f == null)
-                log.log(Level.WARNING, "Failed to find agent property file: '" + prop + "'");
+                log.warn("Failed to find agent property file: '" + prop + "'");
             else
                 propCfg.load(f.toURI().toURL());
         }
         catch (IOException ignore) {
             if (!AgentConfiguration.DFLT_CFG_PATH.equals(prop))
-                log.log(Level.WARNING, "Failed to load agent property file: '" + prop + "'", ignore);
+                log.warn("Failed to load agent property file: '" + prop + "'", ignore);
         }
 
         cfg.merge(propCfg);
@@ -93,15 +91,6 @@ public class AgentLauncher {
         System.out.println(cfg);
         System.out.println();
 
-        if (cfg.testDriveSql() && cfg.nodeUri() != null)
-            log.log(Level.WARNING,
-                "URI for connect to Ignite REST server will be ignored because --test-drive-sql option was specified.");
-
-        if (!cfg.testDriveSql() && !cfg.testDriveMetadata()) {
-            System.out.println("To start web-agent in test-drive mode, pass \"-tm\" and \"-ts\" parameters");
-            System.out.println();
-        }
-
         if (cfg.token() == null) {
             String webHost;
 
@@ -109,7 +98,7 @@ public class AgentLauncher {
                 webHost = new URI(cfg.serverUri()).getHost();
             }
             catch (URISyntaxException e) {
-                log.log(Level.SEVERE, "Failed to parse Ignite Web Console uri", e);
+                log.error("Failed to parse Ignite Web Console uri", e);
 
                 return;
             }
@@ -121,12 +110,6 @@ public class AgentLauncher {
 
             cfg.token(System.console().readLine().trim());
         }
-
-        if (cfg.testDriveMetadata())
-            AgentMetadataTestDrive.testDrive();
-
-        if (cfg.testDriveSql())
-            AgentSqlTestDrive.testDrive(cfg);
 
         RestExecutor restExecutor = new RestExecutor(cfg);
 
@@ -149,7 +132,7 @@ public class AgentLauncher {
                 while (!Thread.interrupted()) {
                     AgentSocket agentSock = new AgentSocket(cfg, restExecutor);
 
-                    log.log(Level.INFO, "Connecting to: " + cfg.serverUri());
+                    log.info("Connecting to: " + cfg.serverUri());
 
                     URI uri = URI.create(cfg.serverUri());
 

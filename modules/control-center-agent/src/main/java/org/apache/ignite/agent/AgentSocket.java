@@ -24,14 +24,13 @@ import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.concurrent.CountDownLatch;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.net.ssl.SSLHandshakeException;
 import org.apache.ignite.agent.handlers.DatabaseMetadataExtractor;
 import org.apache.ignite.agent.handlers.RestExecutor;
 import org.apache.ignite.agent.remote.Remote;
 import org.apache.ignite.agent.remote.RemoteHandler;
 import org.apache.ignite.agent.remote.WebSocketSender;
+import org.apache.log4j.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -82,7 +81,7 @@ public class AgentSocket implements WebSocketSender {
      */
     @OnWebSocketClose
     public void onClose(int statusCode, String reason) {
-        log.log(Level.WARNING, String.format("Connection closed: %d - %s.", statusCode, reason));
+        log.warn(String.format("Connection closed: %d - %s.", statusCode, reason));
 
         if (remote != null)
             remote.close();
@@ -95,7 +94,7 @@ public class AgentSocket implements WebSocketSender {
      */
     @OnWebSocketConnect
     public void onConnect(Session ses) {
-        log.log(Level.INFO, "Connection established.");
+        log.info("Connection established.");
 
         this.ses = ses;
 
@@ -128,7 +127,7 @@ public class AgentSocket implements WebSocketSender {
             return true;
         }
         catch (IOException ignored) {
-            log.log(Level.SEVERE, "Failed to send message to Control Center.");
+            log.error("Failed to send message to Control Center.");
 
             return false;
         }
@@ -141,15 +140,15 @@ public class AgentSocket implements WebSocketSender {
     @OnWebSocketError
     public void onError(Session ses, Throwable error) {
         if (error instanceof ConnectException)
-            log.log(Level.WARNING, error.getMessage());
+            log.warn(error.getMessage());
         else if (error instanceof SSLHandshakeException) {
-            log.log(Level.SEVERE, "Failed to establish SSL connection to Ignite Console. Start agent with " +
+            log.error("Failed to establish SSL connection to Ignite Console. Start agent with " +
                 "\"-Dtrust.all=true\" to skip certificate validation in case of using self-signed certificate.", error);
 
             System.exit(1);
         }
         else
-            log.log(Level.SEVERE, "Connection error.", error);
+            log.error("Connection error.", error);
 
         if (remote != null)
             remote.close();

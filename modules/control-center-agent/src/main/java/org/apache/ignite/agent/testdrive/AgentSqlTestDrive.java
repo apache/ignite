@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,8 +29,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -46,16 +43,18 @@ import org.apache.ignite.agent.testdrive.model.Employee;
 import org.apache.ignite.agent.testdrive.model.EmployeeKey;
 import org.apache.ignite.agent.testdrive.model.Parking;
 import org.apache.ignite.agent.testdrive.model.ParkingKey;
-import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.log4j.Logger;
 
 /**
  * Test drive for SQL.
@@ -105,37 +104,33 @@ public class AgentSqlTestDrive {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(name);
 
         // Configure cacheEmployee types.
-        Collection<CacheTypeMetadata> meta = new ArrayList<>();
+        Collection<QueryEntity> queryEntities = new ArrayList<>();
 
         // COUNTRY.
-        CacheTypeMetadata type = new CacheTypeMetadata();
+        QueryEntity type = new QueryEntity();
 
-        meta.add(type);
+        queryEntities.add(type);
 
         type.setKeyType(CountryKey.class.getName());
         type.setValueType(Country.class.getName());
 
         // Query fields for COUNTRY.
-        Map<String, Class<?>> qryFlds = new LinkedHashMap<>();
+        LinkedHashMap<String, String> qryFlds = new LinkedHashMap<>();
 
-        qryFlds.put("id", int.class);
-        qryFlds.put("countryName", String.class);
+        qryFlds.put("id", "java.lang.Integer");
+        qryFlds.put("countryName", "java.lang.String");
 
-        type.setQueryFields(qryFlds);
+        type.setFields(qryFlds);
 
-        // Ascending fields for COUNTRY.
-        Map<String, Class<?>> ascFlds = new LinkedHashMap<>();
+        // Indexes for COUNTRY.
+        type.setIndexes(Collections.singletonList(new QueryIndex("id")));
 
-        ascFlds.put("id", int.class);
-
-        type.setAscendingFields(ascFlds);
-
-        ccfg.setTypeMetadata(meta);
+        ccfg.setQueryEntities(queryEntities);
 
         // DEPARTMENT.
-        type = new CacheTypeMetadata();
+        type = new QueryEntity();
 
-        meta.add(type);
+        queryEntities.add(type);
 
         type.setKeyType(DepartmentKey.class.getName());
         type.setValueType(Department.class.getName());
@@ -143,26 +138,22 @@ public class AgentSqlTestDrive {
         // Query fields for DEPARTMENT.
         qryFlds = new LinkedHashMap<>();
 
-        qryFlds.put("departmentId", int.class);
-        qryFlds.put("departmentName", String.class);
-        qryFlds.put("countryId", Integer.class);
-        qryFlds.put("managerId", Integer.class);
+        qryFlds.put("departmentId", "java.lang.Integer");
+        qryFlds.put("departmentName", "java.lang.String");
+        qryFlds.put("countryId", "java.lang.Integer");
+        qryFlds.put("managerId", "java.lang.Integer");
 
-        type.setQueryFields(qryFlds);
+        type.setFields(qryFlds);
 
-        // Ascending fields for DEPARTMENT.
-        ascFlds = new LinkedHashMap<>();
+        // Indexes for DEPARTMENT.
+        type.setIndexes(Collections.singletonList(new QueryIndex("departmentId")));
 
-        ascFlds.put("departmentId", int.class);
-
-        type.setAscendingFields(ascFlds);
-
-        ccfg.setTypeMetadata(meta);
+        ccfg.setQueryEntities(queryEntities);
 
         // EMPLOYEE.
-        type = new CacheTypeMetadata();
+        type = new QueryEntity();
 
-        meta.add(type);
+        queryEntities.add(type);
 
         type.setKeyType(EmployeeKey.class.getName());
         type.setValueType(Employee.class.getName());
@@ -170,46 +161,40 @@ public class AgentSqlTestDrive {
         // Query fields for EMPLOYEE.
         qryFlds = new LinkedHashMap<>();
 
-        qryFlds.put("employeeId", int.class);
-        qryFlds.put("firstName", String.class);
-        qryFlds.put("lastName", String.class);
-        qryFlds.put("email", String.class);
-        qryFlds.put("phoneNumber", String.class);
-        qryFlds.put("hireDate", java.sql.Date.class);
-        qryFlds.put("job", String.class);
-        qryFlds.put("salary", Double.class);
-        qryFlds.put("managerId", Integer.class);
-        qryFlds.put("departmentId", Integer.class);
+        qryFlds.put("employeeId", "java.lang.Integer");
+        qryFlds.put("firstName", "java.lang.String");
+        qryFlds.put("lastName", "java.lang.String");
+        qryFlds.put("email", "java.lang.String");
+        qryFlds.put("phoneNumber", "java.lang.String");
+        qryFlds.put("hireDate", "java.sql.Date");
+        qryFlds.put("job", "java.lang.String");
+        qryFlds.put("salary", "java.lang.Double");
+        qryFlds.put("managerId", "java.lang.Integer");
+        qryFlds.put("departmentId", "java.lang.Integer");
 
-        type.setQueryFields(qryFlds);
+        type.setFields(qryFlds);
 
-        // Ascending fields for EMPLOYEE.
-        ascFlds = new LinkedHashMap<>();
+        // Indexes for EMPLOYEE.
+        Collection<QueryIndex> indexes = new ArrayList<>();
 
-        ascFlds.put("employeeId", int.class);
+        indexes.add(new QueryIndex("employeeId"));
+        indexes.add(new QueryIndex("salary", false));
 
-        type.setAscendingFields(ascFlds);
+        // Group indexes for EMPLOYEE.
+        LinkedHashMap<String, Boolean> grpItems = new LinkedHashMap<>();
 
-        // Desc fields for EMPLOYEE.
-        Map<String, Class<?>> descFlds = new LinkedHashMap<>();
+        grpItems.put("firstName", Boolean.FALSE);
+        grpItems.put("lastName", Boolean.TRUE);
 
-        descFlds.put("salary", Double.class);
+        QueryIndex grpIdx = new QueryIndex(grpItems, QueryIndexType.SORTED);
 
-        type.setDescendingFields(descFlds);
+        grpIdx.setName("EMP_NAMES");
 
-        // Groups for EMPLOYEE.
-        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = new LinkedHashMap<>();
+        indexes.add(grpIdx);
 
-        LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> grpItems = new LinkedHashMap<>();
+        type.setIndexes(indexes);
 
-        grpItems.put("firstName", new IgniteBiTuple<Class<?>, Boolean>(String.class, false));
-        grpItems.put("lastName", new IgniteBiTuple<Class<?>, Boolean>(String.class, true));
-
-        grps.put("EMP_NAMES", grpItems);
-
-        type.setGroups(grps);
-
-        ccfg.setTypeMetadata(meta);
+        ccfg.setQueryEntities(queryEntities);
 
         return ccfg;
     }
@@ -222,39 +207,37 @@ public class AgentSqlTestDrive {
     private static <K, V> CacheConfiguration<K, V> cacheCar(String name) {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(name);
 
+        ccfg.setSqlSchema(name.replace('-', '_'));
+
         // Configure cacheEmployee types.
-        Collection<CacheTypeMetadata> meta = new ArrayList<>();
+        Collection<QueryEntity> queryEntities = new ArrayList<>();
 
         // CAR.
-        CacheTypeMetadata type = new CacheTypeMetadata();
+        QueryEntity type = new QueryEntity();
 
-        meta.add(type);
+        queryEntities.add(type);
 
         type.setKeyType(CarKey.class.getName());
         type.setValueType(Car.class.getName());
 
         // Query fields for CAR.
-        Map<String, Class<?>> qryFlds = new LinkedHashMap<>();
+        LinkedHashMap<String, String> qryFlds = new LinkedHashMap<>();
 
-        qryFlds.put("carId", int.class);
-        qryFlds.put("parkingId", int.class);
-        qryFlds.put("carName", String.class);
+        qryFlds.put("carId", "java.lang.Integer");
+        qryFlds.put("parkingId", "java.lang.Integer");
+        qryFlds.put("carName", "java.lang.String");
 
-        type.setQueryFields(qryFlds);
+        type.setFields(qryFlds);
 
-        // Ascending fields for CAR.
-        Map<String, Class<?>> ascFlds = new LinkedHashMap<>();
+        // Indexes for CAR.
+        type.setIndexes(Collections.singletonList(new QueryIndex("carId")));
 
-        ascFlds.put("carId", int.class);
-
-        type.setAscendingFields(ascFlds);
-
-        ccfg.setTypeMetadata(meta);
+        ccfg.setQueryEntities(queryEntities);
 
         // PARKING.
-        type = new CacheTypeMetadata();
+        type = new QueryEntity();
 
-        meta.add(type);
+        queryEntities.add(type);
 
         type.setKeyType(ParkingKey.class.getName());
         type.setValueType(Parking.class.getName());
@@ -262,19 +245,15 @@ public class AgentSqlTestDrive {
         // Query fields for PARKING.
         qryFlds = new LinkedHashMap<>();
 
-        qryFlds.put("parkingId", int.class);
-        qryFlds.put("parkingName", String.class);
+        qryFlds.put("parkingId", "java.lang.Integer");
+        qryFlds.put("parkingName", "java.lang.String");
 
-        type.setQueryFields(qryFlds);
+        type.setFields(qryFlds);
 
-        // Ascending fields for PARKING.
-        ascFlds = new LinkedHashMap<>();
+        // Indexes for PARKING.
+        type.setIndexes(Collections.singletonList(new QueryIndex("parkingId")));
 
-        ascFlds.put("parkingId", int.class);
-
-        type.setAscendingFields(ascFlds);
-
-        ccfg.setTypeMetadata(meta);
+        ccfg.setQueryEntities(queryEntities);
 
         return ccfg;
     }
@@ -303,7 +282,7 @@ public class AgentSqlTestDrive {
      * @param range Time range in milliseconds.
      */
     private static void populateCacheEmployee(Ignite ignite, String name, long range) {
-        log.log(Level.FINE, "TEST-DRIVE-SQL: Start population cache: '" + name + "' with data...");
+        log.trace("TEST-DRIVE-SQL: Start population cache: '" + name + "' with data...");
 
         IgniteCache<CountryKey, Country> cacheCountry = ignite.cache(name);
 
@@ -332,7 +311,7 @@ public class AgentSqlTestDrive {
                     round(r * 5000, 2) , mgrId, rnd.nextInt(DEP_CNT)));
         }
 
-        log.log(Level.FINE, "TEST-DRIVE-SQL: Finished population cache: '" + name + "' with data.");
+        log.trace("TEST-DRIVE-SQL: Finished population cache: '" + name + "' with data.");
     }
 
     /**
@@ -340,7 +319,7 @@ public class AgentSqlTestDrive {
      * @param name Cache name.
      */
     private static void populateCacheCar(Ignite ignite, String name) {
-        log.log(Level.FINE, "TEST-DRIVE-SQL: Start population cache: '" + name + "' with data...");
+        log.trace("TEST-DRIVE-SQL: Start population cache: '" + name + "' with data...");
 
         IgniteCache<ParkingKey, Parking> cacheParking = ignite.cache(name);
 
@@ -353,7 +332,7 @@ public class AgentSqlTestDrive {
             cacheCar.put(new CarKey(i), new Car(i, rnd.nextInt(PARK_CNT), "Car " + (i + 1)));
 
 
-        log.log(Level.FINE, "TEST-DRIVE-SQL: Finished population cache: '" + name + "' with data.");
+        log.trace("TEST-DRIVE-SQL: Finished population cache: '" + name + "' with data.");
     }
 
     /**
@@ -422,6 +401,7 @@ public class AgentSqlTestDrive {
                         }
                 }
                 catch (IllegalStateException ignored) {
+                    // No-op.
                 }
                 catch (Throwable e) {
                     if (!e.getMessage().contains("cache is stopped"))
@@ -460,7 +440,7 @@ public class AgentSqlTestDrive {
      */
     public static boolean testDrive(AgentConfiguration acfg) {
         if (initLatch.compareAndSet(false, true)) {
-            log.log(Level.INFO, "TEST-DRIVE-SQL: Starting embedded node for sql test-drive...");
+            log.info("TEST-DRIVE-SQL: Starting embedded node for sql test-drive...");
 
             try {
                 IgniteConfiguration cfg = new IgniteConfiguration();
@@ -484,7 +464,7 @@ public class AgentSqlTestDrive {
 
                 cfg.setCacheConfiguration(cacheEmployee(EMPLOYEE_CACHE_NAME), cacheCar(CAR_CACHE_NAME));
 
-                log.log(Level.FINE, "TEST-DRIVE-SQL: Start embedded node with indexed enabled caches...");
+                log.trace("TEST-DRIVE-SQL: Start embedded node with indexed enabled caches...");
 
                 IgniteEx ignite = (IgniteEx)Ignition.start(cfg);
 
@@ -494,19 +474,19 @@ public class AgentSqlTestDrive {
                 Integer port = ignite.localNode().attribute(IgniteNodeAttributes.ATTR_REST_JETTY_PORT);
 
                 if (F.isEmpty(host) || port == null) {
-                    log.log(Level.SEVERE, "TEST-DRIVE-SQL: Failed to start embedded node with rest!");
+                    log.error("TEST-DRIVE-SQL: Failed to start embedded node with rest!");
 
                     return false;
                 }
 
                 acfg.nodeUri(String.format("http://%s:%d", "0.0.0.0".equals(host) ? "127.0.0.1" : host, port));
 
-                log.log(Level.INFO, "TEST-DRIVE-SQL: Embedded node for sql test-drive successfully started");
+                log.info("TEST-DRIVE-SQL: Embedded node for sql test-drive successfully started");
 
                 startLoad(ignite, 20);
             }
             catch (Exception e) {
-                log.log(Level.SEVERE, "TEST-DRIVE-SQL: Failed to start embedded node for sql test-drive!", e);
+                log.error("TEST-DRIVE-SQL: Failed to start embedded node for sql test-drive!", e);
 
                 return false;
             }

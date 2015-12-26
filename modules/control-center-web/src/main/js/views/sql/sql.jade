@@ -110,7 +110,7 @@ mixin chart-settings(mdl)
                                             lable.labelField.labelFormField Caches:
                                             i.fa.fa-database.tipField(title='Click to show cache types metadata dialog' bs-popover data-template-url='/sql/cache-metadata.html', data-placement='bottom', data-trigger='click')
                                             .input-tip
-                                                input.form-control(type='text' st-search placeholder='Filter caches...')
+                                                input.form-control(type='text' st-search='name' placeholder='Filter caches...')
                                             table.links
                                                 tbody.scrollable-y(style='max-height: 15em;display:block;' ng-model='paragraph.cacheName' bs-radio-group)
                                                     tr(ng-repeat='cache in displayedCaches track by cache.name')

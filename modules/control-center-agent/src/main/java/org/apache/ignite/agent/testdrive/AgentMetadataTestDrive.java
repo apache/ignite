@@ -21,11 +21,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.log4j.Logger;
 import org.h2.tools.RunScript;
 import org.h2.tools.Server;
 
@@ -56,7 +54,7 @@ public class AgentMetadataTestDrive {
      */
     public static void testDrive() {
         if (initLatch.compareAndSet(false, true)) {
-            log.log(Level.FINE, "TEST-DRIVE: Prepare in-memory H2 database...");
+            log.info("TEST-DRIVE: Prepare in-memory H2 database...");
 
             try {
                 Connection conn = DriverManager.getConnection("jdbc:h2:mem:test-drive-db;DB_CLOSE_DELAY=-1", "sa", "");
@@ -64,26 +62,26 @@ public class AgentMetadataTestDrive {
                 File sqlScript = resolvePath("test-drive/test-drive.sql");
 
                 if (sqlScript == null) {
-                    log.log(Level.SEVERE, "TEST-DRIVE: Failed to find test drive script file: test-drive/test-drive.sql");
-                    log.log(Level.SEVERE, "TEST-DRIVE: Test drive for metadata not started");
+                    log.error("TEST-DRIVE: Failed to find test drive script file: test-drive/test-drive.sql");
+                    log.error("TEST-DRIVE: Test drive for metadata not started");
 
                     return;
                 }
 
                 RunScript.execute(conn, new FileReader(sqlScript));
 
-                log.log(Level.FINE, "TEST-DRIVE: Sample tables created.");
+                log.info("TEST-DRIVE: Sample tables created.");
 
                 conn.close();
 
                 Server.createTcpServer("-tcpDaemon").start();
 
-                log.log(Level.INFO, "TEST-DRIVE: TcpServer stared.");
+                log.info("TEST-DRIVE: TcpServer stared.");
 
-                log.log(Level.INFO, "TEST-DRIVE: JDBC URL for test drive metadata load: jdbc:h2:mem:test-drive-db");
+                log.info("TEST-DRIVE: JDBC URL for test drive metadata load: jdbc:h2:mem:test-drive-db");
             }
             catch (Exception e) {
-                log.log(Level.SEVERE, "TEST-DRIVE: Failed to start test drive for metadata!", e);
+                log.error("TEST-DRIVE: Failed to start test drive for metadata!", e);
             }
         }
     }

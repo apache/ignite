@@ -1061,85 +1061,69 @@ consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
 consoleModule.service('$confirmBatch', function ($rootScope, $modal,  $q) {
     var scope = $rootScope.$new();
 
-    var contentGenerator = function () {
-        return 'No content';
-    };
-
-    var deferred;
-
-    var stepConfirmModal = $modal({templateUrl: '/templates/batch-confirm.html', scope: scope, placement: 'center', show: false});
+    scope.confirmModal = $modal({templateUrl: '/templates/batch-confirm.html', scope: scope, placement: 'center', show: false});
 
     function _done(cancel) {
-        if (cancel)
-            deferred.reject('cancelled');
-        else
-            deferred.resolve();
+        scope.confirmModal.hide();
 
-        stepConfirmModal.hide();
+        if (cancel)
+            scope.deferred.reject('cancelled');
+        else
+            scope.deferred.resolve();
     }
 
-    var items = [];
-    var curIx = 0;
-
     function _nextElement(skip) {
-        items[curIx].skip = skip;
+        scope.items[scope.curIx++].skip = skip;
 
-        curIx++;
-
-        if (curIx < items.length)
-            scope.batchConfirm.content = contentGenerator(items[curIx]);
+        if (scope.curIx < scope.items.length)
+            scope.content = scope.contentGenerator(scope.items[scope.curIx]);
         else
             _done();
     }
 
-    scope.batchConfirm = {
-        applyToAll: false,
-        cancel: function () {
+    scope.cancel = function () {
             _done(true);
-        },
-        skip: function () {
-            if (this.applyToAll) {
-                for (var i = curIx; i < items.length; i++)
-                    items[i].skip = true;
+    };
+
+    scope.skip = function (applyToAll) {
+        if (applyToAll) {
+            for (var i = scope.curIx; i < scope.items.length; i++)
+                scope.items[i].skip = true;
 
                 _done();
             }
             else
                 _nextElement(true);
-        },
-        overwrite: function () {
-            if (this.applyToAll)
+    };
+
+    scope.overwrite = function (applyToAll) {
+        if (applyToAll)
                 _done();
             else
                 _nextElement(false);
-        },
-        reset: function (itemsToConfirm) {
-            items = itemsToConfirm;
-            curIx = 0;
-            this.applyToAll = false;
-            this.content = (items && items.length > 0) ? contentGenerator(items[0]) : undefined;
-        }
     };
 
+    return {
     /**
      * Show confirm all dialog.
      *
-     * @param confirmMessageFx Function to generate a confirm message.
+         * @param confirmMessageFn Function to generate a confirm message.
      * @param itemsToConfirm Array of element to process by confirm.
      */
-    stepConfirmModal.confirm = function (confirmMessageFx, itemsToConfirm) {
-        contentGenerator = confirmMessageFx;
+        confirm: function (confirmMessageFn, itemsToConfirm) {
+            scope.deferred = $q.defer();
 
-        scope.batchConfirm.reset(itemsToConfirm);
+            scope.contentGenerator = confirmMessageFn;
 
-        deferred = $q.defer();
+            scope.items = itemsToConfirm;
+            scope.curIx = 0;
+            scope.content = (scope.items && scope.items.length > 0) ? scope.contentGenerator(scope.items[0]) : undefined;
 
-        stepConfirmModal.show();
+            scope.confirmModal.$promise.then(scope.confirmModal.show);
 
-        return deferred.promise;
+            return scope.deferred.promise;
+        }
     };
-
-    return stepConfirmModal;
 });
 
 // 'Clone' popup service.
@@ -1935,13 +1919,15 @@ consoleModule.controller('auth', [
     }]);
 
 // Download agent controller.
-consoleModule.controller('agent-download', [
-    '$http', '$common', '$scope', '$interval', '$modal', '$loading', '$state',
-        function ($http, $common, $scope, $interval, $modal, $loading, $state) {
-        $scope.loadingAgentOptions = { text: 'Enabling test-drive SQL...' };
+consoleModule.service('$agentDownload', [
+    '$http', '$interval', '$rootScope', '$state', '$modal', '$loading', '$common',
+        function ($http, $interval, $rootScope, $state, $modal, $loading, $common) {
+        var scope = $rootScope.$new();
+
+        scope.loadingOptions = { text: 'Enabling test-drive SQL...' };
 
         // Pre-fetch modal dialogs.
-        var _agentDownloadModal = $modal({scope: $scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
+        var _agentDownloadModal = $modal({scope: scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
 
         var _agentDownloadHide = _agentDownloadModal.hide;
 
@@ -1957,16 +1943,16 @@ consoleModule.controller('agent-download', [
         /**
          * Close dialog and go by specified link.
          */
-        $scope.goBack = function () {
+        scope.back = function () {
             _stopInterval();
 
             _agentDownloadModal.hide();
 
-            if (_agentDownloadModal.backLink)
-                $state.go(_agentDownloadModal.backLink);
+            if (_agentDownloadModal.backState)
+                $state.go(_agentDownloadModal.backState);
         };
 
-        $scope.downloadAgent = function () {
+        scope.downloadAgent = function () {
             var lnk = document.createElement('a');
 
             lnk.setAttribute('href', '/api/v1/agent/download/zip');
@@ -1980,18 +1966,21 @@ consoleModule.controller('agent-download', [
             document.body.removeChild(lnk);
         };
 
-        $scope.enableTestDriveSQL = function () {
-            $loading.start('loadingAgent');
+        scope.enableTestDriveSQL = function () {
+            $loading.start('startTestDriveSQL');
 
             $http.post('/api/v1/agent/testdrive/sql')
-                .success(function (result) {
-                    if (!result)
-                        $common.showError('Failed to start test-drive sql', 'top-right', 'body', true);
+                .success(function (enabled) {
+                    if (!enabled)
+                        $common.showError('Failed to start demo', 'top-right', 'body', true);
                 })
-                .error(function (errMsg, status) {
-                    $loading.finish('loadingAgent');
+                .catch(function (errMsg, status) {
+                    console.log(errMsg);
 
                     _handleException(errMsg, status);
+                })
+                .finally(function () {
+                    $loading.finish('startTestDriveSQL');
                 });
         };
 
@@ -2002,22 +1991,27 @@ consoleModule.controller('agent-download', [
          * @param status Error code.
          * @param timedOut True if request timedOut.
          */
-        var _handleException = function (errMsg, status, timedOut) {
+        function _handleException (errMsg, status, timedOut) {
             if (_agentDownloadModal.skipSingleError)
                 _agentDownloadModal.skipSingleError = false;
             else if (!_agentDownloadModal.$isShown)
                 _agentDownloadModal.$promise.then(_agentDownloadModal.show);
 
-            $scope.nodeFailedConnection = status === 404 || timedOut;
+            scope.nodeFailedConnection = status === 404 || timedOut;
 
             if (status === 500)
                 $common.showError(errMsg, 'top-right', 'body', true);
-        };
+        }
 
         /**
          * Start interval to agent listening.
          */
-        function _startInterval() {
+        function _startInterval(awaitFirstSuccess) {
+            _agentDownloadModal.skipSingleError = false;
+
+            // Stop refresh after first success.
+            _agentDownloadModal.awaitFirstSuccess = awaitFirstSuccess;
+
             _agentDownloadModal.updatePromise = $interval(function () {
                 _tryWithAgent();
             }, 5000, 0, false);
@@ -2036,75 +2030,73 @@ consoleModule.controller('agent-download', [
          * Try to access agent and execute specified function.
          */
         function _tryWithAgent() {
-            var timeout = 3000,
-                timedOut = false;
+            var _timeout = 3000,
+                _timedOut = false;
 
             setTimeout(function () {
-                timedOut = true;
-            }, timeout);
+                _timedOut = true;
+            }, _timeout);
 
-            $http.post(_agentDownloadModal.checkUrl, undefined, {timeout: timeout})
+            $http.post(_agentDownloadModal.check.url, _agentDownloadModal.check.params, {timeout: _timeout})
                 .success(function (result) {
                     _agentDownloadModal.skipSingleError = true;
-
-                    _agentDownloadModal.hide();
 
                     if (_agentDownloadModal.awaitFirstSuccess)
                         _stopInterval();
 
-                    $loading.finish('loadingAgent');
+                    $loading.finish('startTestDriveSQL');
 
-                    _agentDownloadModal.checkFn(result, _agentDownloadModal.hide, _handleException);
+                    _agentDownloadModal.check.cb(result, _agentDownloadModal.hide, _handleException);
                 })
                 .error(function (errMsg, status) {
-                    _handleException(errMsg, status, timedOut);
+                    _handleException(errMsg, status, _timedOut);
                 });
         }
 
-        /**
-         * Start awaiting agent start using ping.
-         *
-         * @param checkFn Function to execute by timer when agent available.
-         */
-        $scope.awaitAgent = function (checkFn) {
-            _agentDownloadModal.skipSingleError = false;
+        return {
+            /**
+             * Start listening topology from node.
+             *
+             * @param success Function to execute by timer when agent available.
+             * @param attr
+             * @param mtr
+             */
+            startTopologyListening: function (success, attr, mtr) {
+                _agentDownloadModal.check = {
+                    url: '/api/v1/agent/topology',
+                    params: {attr: !!attr, mtr: !!mtr},
+                    cb: success
+                };
 
-            _agentDownloadModal.checkUrl = '/api/v1/agent/ping';
+                _agentDownloadModal.backState = 'base.configuration.clusters';
 
-            _agentDownloadModal.checkFn = checkFn;
+                scope.backText = 'Back to Configuration';
 
-            // Stop refresh after first success.
-            _agentDownloadModal.awaitFirstSuccess = true;
+                _startInterval();
+            },
+            /**
+             * Start awaiting agent start using ping.
+             *
+             * @param success Function to execute by timer when agent available.
+             */
+            awaitAgent: function (success) {
+                _agentDownloadModal.check = {
+                    url: '/api/v1/agent/ping',
+                    cb: success
+                };
 
-            $scope.agentDownloadBackTo = 'Metadata';
+                _agentDownloadModal.backState = 'base.configuration.metadata';
 
-            _startInterval();
-        };
+                scope.backText = 'Back to Metadata';
 
-        /**
-         * Start listening topology from node.
-         *
-         * @param checkFn Function to execute by timer when agent available.
-         */
-        $scope.startTopologyListening = function (checkFn) {
-            _agentDownloadModal.skipSingleError = false;
-
-            _agentDownloadModal.checkUrl = '/api/v1/agent/topology';
-
-            _agentDownloadModal.checkFn = checkFn;
-
-            _agentDownloadModal.backLink = 'base.configuration.clusters';
-
-            $scope.agentDownloadBackTo = 'Configuration';
-
-            _startInterval();
-        };
-
-        /**
-         * Stop listening of agent by ping.
-         */
-        $scope.finishAgentListening = function () {
-            _stopInterval();
+                _startInterval(true);
+            },
+            /**
+             * Stop listening of agent by ping.
+             */
+            stopAwaitAgent: function () {
+                _stopInterval();
+            }
         };
     }]);
 

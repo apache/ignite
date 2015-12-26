@@ -38,51 +38,51 @@ public class AgentLoggingConfigurator {
      * Perform configure.
      */
     public static void configure() {
-        try {
-            if (System.getProperty(CFG_PATH_PROPERTY) != null) {
-                File logCfg = new File(System.getProperty(CFG_PATH_PROPERTY));
+//        try {
+//            if (System.getProperty(CFG_PATH_PROPERTY) != null) {
+//                File logCfg = new File(System.getProperty(CFG_PATH_PROPERTY));
+//
+//                if (!logCfg.isFile()) {
+//                    System.err.println("Failed to load logging configuration, file not found: " + logCfg);
+//
+//                    System.exit(1);
+//                }
+//
+////                readConfiguration(logCfg);
+//
+//                return;
+//            }
 
-                if (!logCfg.isFile()) {
-                    System.err.println("Failed to load logging configuration, file not found: " + logCfg);
+//            File agentHome = AgentUtils.getAgentHome();
 
-                    System.exit(1);
-                }
-
-                readConfiguration(logCfg);
-
-                return;
-            }
-
-            File agentHome = AgentUtils.getAgentHome();
-
-            if (agentHome != null) {
-                File logCfg = new File(agentHome, PROPERTIES_FILE);
-
-                if (logCfg.isFile()) {
-                    readConfiguration(logCfg);
-
-                    return;
-                }
-            }
-
-            LogManager.getLogManager().readConfiguration(AgentLauncher.class.getResourceAsStream("/"
-                + PROPERTIES_FILE));
-        }
-        catch (IOException e) {
-            System.err.println("Failed to load logging configuration.");
-
-            e.printStackTrace();
-
-            System.exit(1);
-        }
+//            if (agentHome != null) {
+//                File logCfg = new File(agentHome, PROPERTIES_FILE);
+//
+//                if (logCfg.isFile()) {
+//                    readConfiguration(logCfg);
+//
+//                    return;
+//                }
+//            }
+//
+//            LogManager.getLogManager().readConfiguration(AgentLauncher.class.getResourceAsStream("/"
+//                + PROPERTIES_FILE));
+//        }
+//        catch (IOException e) {
+//            System.err.println("Failed to load logging configuration.");
+//
+//            e.printStackTrace();
+//
+//            System.exit(1);
+//        }
     }
 
-    /**
-     * @param file File.
-     */
-    private static void readConfiguration(File file) throws IOException {
-        try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
-            LogManager.getLogManager().readConfiguration(in);
-        }
-    }
+//    /**
+//     * @param file File.
+//     */
+//    private static void readConfiguration(File file) throws IOException {
+//        try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
+//            LogManager.getLogManager().readConfiguration(in);
+//        }
+//    }
 }

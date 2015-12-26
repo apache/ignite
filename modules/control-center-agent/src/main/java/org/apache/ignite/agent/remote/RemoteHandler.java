@@ -30,9 +30,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.http.auth.AuthenticationException;
+import org.apache.log4j.Logger;
 
 /**
  * Allow to execute methods remotely from NodeJS server by web-socket command.
@@ -156,7 +155,7 @@ public class RemoteHandler implements AutoCloseable {
                     if (reqId != null)
                         sendException(reqId, e.getClass().getName(), e.getMessage());
                     else
-                        log.log(Level.SEVERE, "Exception on execute remote method.", e);
+                        log.error("Exception on execute remote method.", e);
 
                     return;
                 }

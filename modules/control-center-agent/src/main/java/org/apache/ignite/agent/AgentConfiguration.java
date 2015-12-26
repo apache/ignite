@@ -73,17 +73,6 @@ public class AgentConfiguration {
     private String driversFolder;
 
     /** */
-    @Parameter(names = { "-tm", "--test-drive-metadata" },
-        description = "Start H2 database with sample tables in same process. " +
-            "JDBC URL for connecting to sample database: jdbc:h2:mem:test-drive-db")
-    private Boolean meta;
-
-    /** */
-    @Parameter(names = { "-ts", "--test-drive-sql" },
-        description = "Create cache and populate it with sample data for use in query")
-    private Boolean sql;
-
-    /** */
     @Parameter(names = { "-h", "--help" }, help = true, description = "Print this help message")
     private Boolean help;
 
@@ -151,34 +140,6 @@ public class AgentConfiguration {
     }
 
     /**
-     * @return {@code true} If metadata test drive should be started.
-     */
-    public Boolean testDriveMetadata() {
-        return meta != null ? meta : false;
-    }
-
-    /**
-     * @param meta Set to {@code true} if metadata test drive should be started.
-     */
-    public void testDriveMetadata(Boolean meta) {
-        this.meta = meta;
-    }
-
-    /**
-     * @return {@code true} If SQL test drive should be started.
-     */
-    public Boolean testDriveSql() {
-        return sql != null ? sql : false;
-    }
-
-    /**
-     * @param sql Set to {@code true} if SQL test drive should be started.
-     */
-    public void testDriveSql(Boolean sql) {
-        this.sql = sql;
-    }
-
-    /**
      * @return {@code true} If agent options usage should be printed.
      */
     public Boolean help() {
@@ -214,16 +175,6 @@ public class AgentConfiguration {
 
         if (val != null)
             driversFolder(val);
-
-        val = (String)props.remove("test-drive-metadata");
-
-        if (val != null)
-            testDriveMetadata(Boolean.valueOf(val));
-
-        val = (String)props.remove("test-drive-sql");
-
-        if (val != null)
-            testDriveSql(Boolean.valueOf(val));
     }
 
     /**
@@ -247,12 +198,6 @@ public class AgentConfiguration {
 
         if (driversFolder == null)
             driversFolder(cmd.driversFolder());
-
-        if (meta == null)
-            testDriveMetadata(cmd.testDriveMetadata());
-
-        if (sql == null)
-            testDriveSql(cmd.testDriveSql());
     }
 
     /** {@inheritDoc} */
@@ -286,10 +231,7 @@ public class AgentConfiguration {
                 drvFld = new File(agentHome, "jdbc-drivers").getPath();
         }
 
-        sb.append("Path to JDBC drivers folder   : ").append(drvFld).append('\n');
-
-        sb.append("Test-drive for load metadata  : ").append(testDriveMetadata()).append('\n');
-        sb.append("Test-drive for execute query  : ").append(testDriveSql());
+        sb.append("Path to JDBC drivers folder   : ").append(drvFld);
 
         return sb.toString();
     }

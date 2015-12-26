@@ -16,16 +16,12 @@
  */
 
 // Controller for Metadata screen.
-consoleModule.controller('metadataController', [
-    '$scope', '$state', '$controller', '$filter', '$http', '$modal', '$common', '$timeout', '$focus', '$confirm', '$confirmBatch', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
-    function ($scope, $state, $controller, $filter, $http, $modal, $common, $timeout, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
+consoleModule.controller('metadataController', function ($filter, $http, $timeout, $state, $scope, $controller, $modal,
+     $common,  $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard, $agentDownload) {
             $unsavedChangesGuard.install($scope);
 
             // Initialize the super class and extend it.
             angular.extend(this, $controller('save-remove', {$scope: $scope}));
-
-            // Initialize the super class and extend it.
-            angular.extend(this, $controller('agent-download', {$scope: $scope}));
 
             $scope.ui = $common.formUI();
 
@@ -33,7 +29,6 @@ consoleModule.controller('metadataController', [
                 .reverse().join('.') + '.model');
 
             $scope.agentGoal = 'load metadata from database schema';
-            $scope.agentTestDriveOption = '--test-drive-metadata';
 
             $scope.joinTip = $common.joinTip;
             $scope.getModel = $common.getModel;
@@ -185,10 +180,10 @@ consoleModule.controller('metadataController', [
             $scope.ui.showValid = true;
 
             function _findPreset(idx) {
-                var jdbcDriverClass = $scope.jdbcDriverJars[idx].jdbcDriverClass;
+                var selected = $scope.jdbcDriverJars[idx];
 
                 idx = _.findIndex(_dbPresets, function (preset) {
-                    return preset.jdbcDriverClass === jdbcDriverClass;
+                    return preset.jdbcDriverClass === selected.jdbcDriverClass;
                 });
 
                 if (idx >= 0)
@@ -196,10 +191,10 @@ consoleModule.controller('metadataController', [
 
                 return {
                     db: 'unknown',
-                    jdbcDriverClass: jdbcDriverClass,
-                    jdbcDriverJar: '',
+                    jdbcDriverClass: selected.jdbcDriverClass,
+                    jdbcDriverJar: selected.jdbcDriverJar,
                     jdbcUrl: 'jdbc:[database]',
-                    user: 'sa'
+                    user: 'admin'
                 };
             }
 
@@ -207,11 +202,14 @@ consoleModule.controller('metadataController', [
                 if (_.isNumber(drvIdx)) {
                     var preset = $scope.jdbcDriverJars[drvIdx];
 
+                    var jdbcDriverJar = preset.jdbcDriverJar;
+
                     if (!preset.testDrive)
                         preset = _findPreset(drvIdx);
 
                     var newPreset = angular.copy(preset);
 
+                    newPreset.jdbcDriverJar = jdbcDriverJar;
                     newPreset.drvIdx = drvIdx;
                     newPreset.tablesOnly = $scope.preset.tablesOnly;
 
@@ -279,7 +277,7 @@ consoleModule.controller('metadataController', [
             var hideLoadMetadata = loadMetaModal.hide;
 
             loadMetaModal.hide = function () {
-                $scope.finishAgentListening();
+                $agentDownload.stopAwaitAgent();
 
                 hideLoadMetadata();
             };
@@ -299,8 +297,8 @@ consoleModule.controller('metadataController', [
                 $scope.loadMeta.action = 'drivers';
                 $scope.loadMeta.loadingOptions = LOADING_JDBC_DRIVERS;
 
-                $scope.awaitAgent(function (result, onSuccess, onException) {
-                    loadMetaModal.show();
+            $agentDownload.awaitAgent(function (result, onSuccess, onException) {
+                loadMetaModal.$promise.then(loadMetaModal.show);
 
                     // Get available JDBC drivers via agent.
                     if ($scope.loadMeta.action == 'drivers') {
@@ -378,6 +376,7 @@ consoleModule.controller('metadataController', [
                     preset.user = 'sa';
                     preset.password = '';
                 }
+
 
                 $http.post('/api/v1/agent/schemas', preset)
                     .success(function (schemas) {
@@ -679,21 +678,17 @@ consoleModule.controller('metadataController', [
             }
 
             $scope.loadMetadataNext = function () {
-                if ($scope.nextAvailable()) {
-                    if ($scope.loadMeta.action === 'connect')
-                        _loadSchemas();
-                    else if ($scope.loadMeta.action === 'schemas')
-                        _loadMetadata();
-                    else if ($scope.loadMeta.action === 'tables' && $scope.nextAvailable())
-                        _saveMetadata();
-                }
+            if (!$scope.nextAvailable())
+                return;
+
+            $scope.loadMeta.action === 'connect' && _loadSchemas();
+            $scope.loadMeta.action === 'schemas' && _loadMetadata();
+            $scope.loadMeta.action === 'tables' && _saveMetadata();
             };
 
             $scope.nextTooltipText = function () {
                 if ($scope.loadMeta.action === 'tables' && !$scope.nextAvailable())
                     return 'Select tables to continue';
-
-                return undefined;
             };
 
             $scope.nextAvailable = function () {
@@ -1336,5 +1331,5 @@ consoleModule.controller('metadataController', [
                         $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
                     });
             };
-        }]
+    }
 );

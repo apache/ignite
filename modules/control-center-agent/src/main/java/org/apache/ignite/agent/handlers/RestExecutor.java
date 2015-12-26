@@ -24,8 +24,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.commons.codec.Charsets;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
@@ -41,6 +39,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.ignite.agent.AgentConfiguration;
 import org.apache.ignite.agent.remote.Remote;
 import org.apache.ignite.agent.testdrive.AgentSqlTestDrive;
+import org.apache.log4j.Logger;
 
 import static org.apache.ignite.agent.AgentConfiguration.DFLT_NODE_PORT;
 
@@ -89,7 +88,7 @@ public class RestExecutor {
     @Remote
     public RestResult executeRest(String path, Map<String, String> params, String mtd, Map<String, String> headers,
         String body) throws IOException, URISyntaxException {
-        log.log(Level.FINE, "Start execute REST command [url=/" + path + ", method=" + mtd +
+        log.debug("Start execute REST command [url=/" + path + ", method=" + mtd +
             ", parameters=" + params + "]");
 
         URIBuilder builder = new URIBuilder(cfg.nodeUri());
@@ -160,7 +159,7 @@ public class RestExecutor {
             return new RestResult(resp.getStatusLine().getStatusCode(), new String(out.toByteArray(), charset));
         }
         catch (ConnectException e) {
-            log.log(Level.FINE, "Failed connect to node and execute REST command [uri=" + builder.build() + "]");
+            log.debug("Failed connect to node and execute REST command [uri=" + builder.build() + "]");
 
             return new RestResult(404, "Failed connect to node and execute REST command.");
         }
