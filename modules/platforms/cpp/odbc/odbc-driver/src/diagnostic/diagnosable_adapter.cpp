@@ -16,46 +16,33 @@
  */
 
 #include "ignite/odbc/connection.h"
-#include "ignite/odbc/environment.h"
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
 namespace ignite
 {
     namespace odbc
     {
-        Environment::Environment()
+        namespace diagnostic
         {
-            // HACK: move it to library-wide initialisation.
-            InitNetworking();
-            // No-op.
-        }
-
-        Environment::~Environment()
-        {
-            // No-op.
-        }
-
-        Connection* Environment::CreateConnection()
-        {
-            Connection* connection;
-
-            IGNITE_ODBC_API_CALL(InternalCreateConnection(connection));
-
-            return connection;
-        }
-
-
-        SqlResult Environment::InternalCreateConnection(Connection*& connection)
-        {
-            connection = new Connection;
-
-            if (!connection)
+            void DiagnosableAdapter::AddStatusRecord(SqlState sqlState,
+                const std::string& message, int32_t rowNum, int32_t columnNum)
             {
-                AddStatusRecord(SQL_STATE_HY001_MEMORY_ALLOCATION, "Not enough memory.");
-
-                return SQL_RESULT_ERROR;
+                if (connection)
+                {
+                    diagnosticRecords.AddStatusRecord(
+                        connection->CreateStatusRecord(sqlState, message, rowNum, columnNum));
+                }
+                else
+                {
+                    diagnosticRecords.AddStatusRecord(
+                        DiagnosticRecord(sqlState, message, "", "", rowNum, columnNum));
+                }
             }
 
-            return SQL_RESULT_SUCCESS;
+            void DiagnosableAdapter::AddStatusRecord(SqlState sqlState, const std::string & message)
+            {
+                AddStatusRecord(sqlState, message, 0, 0);
+            }
         }
     }
 }

@@ -18,7 +18,7 @@
 #ifndef _IGNITE_ODBC_DRIVER_ENVIRONMENT
 #define _IGNITE_ODBC_DRIVER_ENVIRONMENT
 
-#include "ignite/odbc/diagnostic/diagnostic_record_storage.h"
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
 namespace ignite
 {
@@ -29,7 +29,7 @@ namespace ignite
         /**
          * ODBC environment.
          */
-        class Environment
+        class Environment : public diagnostic::DiagnosableAdapter
         {
         public:
             /**
@@ -49,13 +49,6 @@ namespace ignite
              */
             Connection* CreateConnection();
 
-            /**
-             * Get diagnostic record.
-             *
-             * @return Diagnostic record.
-             */
-            const diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() const;
-
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Environment);
 
@@ -66,18 +59,7 @@ namespace ignite
              * @return Pointer to valid instance on success or NULL on failure.
              * @return Operation result.
              */
-            SqlResult InternalCreateConnection(Connection *& connection);
-
-            /**
-             * Add new status record.
-             *
-             * @param sqlState SQL state.
-             * @param message Message.
-             */
-            void AddStatusRecord(SqlState sqlState, const std::string & message);
-
-            /** Diagnostic records. */
-            diagnostic::DiagnosticRecordStorage diagnosticRecords;
+            SqlResult InternalCreateConnection(Connection*& connection);
         };
     }
 }

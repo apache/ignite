@@ -32,6 +32,7 @@
 #include "ignite/odbc/query/query.h"
 #include "ignite/odbc/app/application_data_buffer.h"
 #include "ignite/odbc/app/parameter.h"
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 #include "ignite/odbc/common_types.h"
 #include "ignite/odbc/cursor.h"
 #include "ignite/odbc/utility.h"
@@ -46,7 +47,7 @@ namespace ignite
          * SQL-statement abstraction. Holds SQL query user buffers data and
          * call result.
          */
-        class Statement
+        class Statement : public diagnostic::DiagnosableAdapter
         {
             friend class Connection;
         public:
@@ -210,10 +211,8 @@ namespace ignite
 
             /**
              * Close statement.
-             *
-             * @return True on success.
              */
-            bool Close();
+            void Close();
 
             /**
              * Fetch query result row.
@@ -287,7 +286,15 @@ namespace ignite
             uint16_t* GetRowStatusesPtr();
 
         private:
-            IGNITE_NO_COPY_ASSIGNMENT(Statement)
+            IGNITE_NO_COPY_ASSIGNMENT(Statement);
+
+            /**
+             * Close statement.
+             * Internal call.
+             *
+             * @return Operation result.
+             */
+            SqlResult InternalClose();
 
             /**
              * Constructor.

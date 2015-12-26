@@ -58,6 +58,9 @@ namespace ignite
             /** Output data has been truncated. */
             SQL_STATE_01004_DATA_TRUNCATED,
 
+            /** Invalid cursor state. */
+            SQL_STATE_24000_INVALID_CURSOR_STATE,
+
             /**
              * The driver was unable to establish a connection with the data
              * source.

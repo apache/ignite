@@ -311,9 +311,9 @@ SQLRETURN SQL_API SQLCloseCursor(SQLHSTMT stmt)
 
     Statement *statement = reinterpret_cast<Statement*>(stmt);
 
-    bool success = statement->Close();
+    statement->Close();
 
-    return success ? SQL_SUCCESS : SQL_ERROR;
+    return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
 SQLRETURN SQL_API SQLDriverConnect(SQLHDBC      conn,

@@ -195,16 +195,25 @@ namespace ignite
             return currentQuery->Execute();
         }
 
-        bool Statement::Close()
+        void Statement::Close()
+        {
+            IGNITE_ODBC_API_CALL(InternalClose());
+        }
+
+        SqlResult Statement::InternalClose()
         {
             if (!currentQuery.get())
-                return false;
+            {
+                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE, "Invalid cursor name.");
+
+                return SQL_RESULT_ERROR;
+            }
 
             currentQuery->Close();
 
             currentQuery.reset();
 
-            return true;
+            return SQL_RESULT_SUCCESS;
         }
 
         SqlResult Statement::FetchRow()

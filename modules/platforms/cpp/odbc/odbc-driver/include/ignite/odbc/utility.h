@@ -48,11 +48,6 @@ void logInit(const char*);
 #   define LOG_MSG(...)
 #endif
 
-#define IGNITE_ODBC_API_CALL(diagnosticRecords, ...) \
-        diagnosticRecords.Reset();                   \
-        SqlResult result = (__VA_ARGS__);           \
-        diagnosticRecords.SetHeaderRecord(result)
-
 namespace ignite
 {
     namespace utility
