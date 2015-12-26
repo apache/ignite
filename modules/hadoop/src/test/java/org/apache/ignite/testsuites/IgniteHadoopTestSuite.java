@@ -194,7 +194,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         X.println("Will use Hadoop version: " + ver);
 
-        String downloadPath = "hadoop/common/hadoop-" + ver + "/hadoop-" + ver + ".tar.gz";
+        String downloadPath = "hadoop/core/hadoop-" + ver + "/hadoop-" + ver + ".tar.gz";
 
         download("Hadoop", "HADOOP_HOME", downloadPath, "hadoop-" + ver);
     }
@@ -219,6 +219,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
         }
 
         List<String> urls = F.asList(
+            "http://archive.apache.org/dist/",
             "http://apache-mirror.rbc.ru/pub/apache/",
             "http://www.eu.apache.org/dist/",
             "http://www.us.apache.org/dist/");
