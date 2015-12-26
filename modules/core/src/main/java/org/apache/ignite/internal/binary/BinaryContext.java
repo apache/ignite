@@ -18,19 +18,21 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -47,10 +49,6 @@ import org.jsr166.ConcurrentHashMap8;
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.ObjectStreamException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
@@ -77,10 +75,7 @@ import java.util.jar.JarFile;
 /**
  * Binary context.
  */
-public class BinaryContext implements Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class BinaryContext {
     /** */
     private static final ClassLoader dfltLdr = U.gridClassLoader();
 
@@ -121,13 +116,13 @@ public class BinaryContext implements Externalizable {
     private MarshallerContext marshCtx;
 
     /** */
-    private String gridName;
-
-    /** */
     private IgniteConfiguration igniteCfg;
 
+    /** Logger. */
+    private IgniteLogger log;
+
     /** */
-    private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller();
+    private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller(false);
 
     /** Compact footer flag. */
     private boolean compactFooter;
@@ -145,15 +140,15 @@ public class BinaryContext implements Externalizable {
     /**
      * @param metaHnd Meta data handler.
      * @param igniteCfg Ignite configuration.
+     * @param log Logger.
      */
-    public BinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg) {
+    public BinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg, IgniteLogger log) {
         assert metaHnd != null;
         assert igniteCfg != null;
 
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
-
-        gridName = igniteCfg.getGridName();
+        this.log = log;
 
         colTypes.put(ArrayList.class, GridBinaryMarshaller.ARR_LIST);
         colTypes.put(LinkedList.class, GridBinaryMarshaller.LINKED_LIST);
@@ -194,19 +189,34 @@ public class BinaryContext implements Externalizable {
         registerPredefinedType(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
         registerPredefinedType(Object[].class, GridBinaryMarshaller.OBJ_ARR);
 
+        // Special collections.
         registerPredefinedType(ArrayList.class, 0);
         registerPredefinedType(LinkedList.class, 0);
         registerPredefinedType(HashSet.class, 0);
         registerPredefinedType(LinkedHashSet.class, 0);
-
         registerPredefinedType(HashMap.class, 0);
         registerPredefinedType(LinkedHashMap.class, 0);
+
+        // Classes with overriden default serialization flag.
+        registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class));
 
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
         registerPredefinedType(T2.class, 62);
 
+        registerPredefinedType(BinaryObjectImpl.class, 0);
+        registerPredefinedType(BinaryObjectOffheapImpl.class, 0);
+        registerPredefinedType(BinaryMetadataKey.class, 0);
+        registerPredefinedType(BinaryMetadata.class, 0);
+
         // IDs range [200..1000] is used by Ignite internal APIs.
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger log() {
+        return log;
     }
 
     /**
@@ -214,6 +224,21 @@ public class BinaryContext implements Externalizable {
      */
     public BinaryMarshaller marshaller() {
         return marsh;
+    }
+
+    /**
+     * Check whether class must be deserialized anyway.
+     *
+     * @param cls Class.
+     * @return {@code True} if must be deserialized.
+     */
+    public boolean mustDeserialize(Class cls) {
+        BinaryClassDescriptor desc = descByCls.get(cls);
+
+        if (desc == null)
+            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null;
+        else
+            return desc.useOptimizedMarshaller();
     }
 
     /**
@@ -504,8 +529,7 @@ public class BinaryContext implements Externalizable {
                 BinaryInternalIdMapper.defaultInstance(),
                 null,
                 false,
-                true, /* registered */
-                false /* predefined */
+                true /* registered */
             );
 
             BinaryClassDescriptor old = descByCls.putIfAbsent(cls, desc);
@@ -541,6 +565,8 @@ public class BinaryContext implements Externalizable {
             throw new BinaryObjectException("Failed to register class.", e);
         }
 
+        BinarySerializer serializer = serializerForClass(cls);
+
         String affFieldName = affinityFieldName(cls);
 
         BinaryClassDescriptor desc = new BinaryClassDescriptor(this,
@@ -550,10 +576,9 @@ public class BinaryContext implements Externalizable {
             typeName,
             affFieldName,
             idMapper,
-            null,
+            serializer,
             true,
-            registered,
-            false /* predefined */
+            registered
         );
 
         if (!deserialize) {
@@ -573,6 +598,30 @@ public class BinaryContext implements Externalizable {
         mappers.putIfAbsent(typeId, idMapper);
 
         return desc;
+    }
+
+    /**
+     * Get serializer for class taking in count default one.
+     *
+     * @param cls Class.
+     * @return Serializer for class or {@code null} if none exists.
+     */
+    private @Nullable BinarySerializer serializerForClass(Class cls) {
+        BinarySerializer serializer = defaultSerializer();
+
+        if (serializer == null && canUseReflectiveSerializer(cls))
+            serializer = new BinaryReflectiveSerializer();
+
+        return serializer;
+    }
+
+    /**
+     * @return Default serializer.
+     */
+    private BinarySerializer defaultSerializer() {
+        BinaryConfiguration binCfg = igniteCfg.getBinaryConfiguration();
+
+        return binCfg != null ? binCfg.getSerializer() : null;
     }
 
     /**
@@ -664,32 +713,13 @@ public class BinaryContext implements Externalizable {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, igniteCfg.getGridName());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        gridName = U.readString(in);
-    }
-
     /**
-     * @return Binary context.
-     * @throws ObjectStreamException In case of error.
+     * @param cls Class.
+     * @param id Type ID.
+     * @return GridBinaryClassDescriptor.
      */
-    protected Object readResolve() throws ObjectStreamException {
-        try {
-            IgniteKernal g = IgnitionEx.gridx(gridName);
-
-            if (g == null)
-                throw new IllegalStateException("Failed to find grid for name: " + gridName);
-
-            return ((CacheObjectBinaryProcessorImpl)g.context().cacheObjects()).binaryContext();
-        }
-        catch (IllegalStateException e) {
-            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
-        }
+    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id) {
+        return registerPredefinedType(cls, id, null);
     }
 
     /**
@@ -697,8 +727,11 @@ public class BinaryContext implements Externalizable {
      * @param id Type ID.
      * @return GridBinaryClassDescriptor.
      */
-    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id) {
+    public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName) {
         String typeName = typeName(cls.getName());
+
+        if (id == 0)
+            id = BinaryInternalIdMapper.defaultInstance().typeId(typeName);
 
         BinaryClassDescriptor desc = new BinaryClassDescriptor(
             this,
@@ -706,18 +739,20 @@ public class BinaryContext implements Externalizable {
             false,
             id,
             typeName,
-            null,
+            affFieldName,
             BinaryInternalIdMapper.defaultInstance(),
-            null,
+            new BinaryReflectiveSerializer(),
             false,
-            true, /* registered */
-            true /* predefined */
+            true /* registered */
         );
 
         predefinedTypeNames.put(typeName, id);
         predefinedTypes.put(id, desc);
 
         descByCls.put(cls, desc);
+
+        if (affFieldName != null)
+            affKeyFieldNames.putIfAbsent(id, affFieldName);
 
         return desc;
     }
@@ -770,6 +805,14 @@ public class BinaryContext implements Externalizable {
         Collection<BinarySchema> schemas = null;
 
         if (cls != null) {
+            if (serializer == null) {
+                // At this point we must decide whether to rely on Java serialization mechanics or not.
+                // If no serializer is provided, we examine the class and if it doesn't contain non-trivial
+                // serialization logic we are safe to fallback to reflective binary serialization.
+                if (canUseReflectiveSerializer(cls))
+                    serializer = new BinaryReflectiveSerializer();
+            }
+
             BinaryClassDescriptor desc = new BinaryClassDescriptor(
                 this,
                 cls,
@@ -780,8 +823,7 @@ public class BinaryContext implements Externalizable {
                 idMapper,
                 serializer,
                 true,
-                true, /* registered */
-                false /* predefined */
+                true /* registered */
             );
 
             fieldsMeta = desc.fieldsMeta();
@@ -794,6 +836,16 @@ public class BinaryContext implements Externalizable {
         }
 
         metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));
+    }
+
+    /**
+     * Check whether reflective serializer can be used for class.
+     *
+     * @param cls Class.
+     * @return {@code True} if reflective serializer can be used.
+     */
+    private static boolean canUseReflectiveSerializer(Class cls) {
+        return BinaryUtils.isBinarylizable(cls) || !BinaryUtils.isCustomJavaSerialization(cls);
     }
 
     /**
@@ -1059,6 +1111,7 @@ public class BinaryContext implements Externalizable {
                 idMapper = other.idMapper;
                 serializer = other.serializer;
                 affKeyFieldName = other.affKeyFieldName;
+                isEnum = other.isEnum;
                 canOverride = other.canOverride;
             }
             else if (!other.canOverride)

@@ -4243,11 +4243,11 @@ public abstract class IgniteUtils {
     /**
      * Mask component name to make sure that it is not {@code null}.
      *
-     * @param cacheName Component name to mask, possibly {@code null}.
+     * @param name Component name to mask, possibly {@code null}.
      * @return Component name.
      */
-    public static String maskName(@Nullable String cacheName) {
-        return cacheName == null ? "default" : cacheName;
+    public static String maskName(@Nullable String name) {
+        return name == null ? "default" : name;
     }
 
     /**

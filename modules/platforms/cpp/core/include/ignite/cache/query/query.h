@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Includes all query API headers.
+ */
+
 #ifndef _IGNITE_QUERY
 #define _IGNITE_QUERY
 

@@ -764,8 +764,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         throws IgniteCheckedException {
         IgniteInternalCache<K, V> prj0 = cctx.cache();
 
-        if (qry.keepBinary())
-            prj0 = prj0.keepBinary();
+        prj0 = prj0.keepBinary();
 
         final IgniteInternalCache<K, V> prj = prj0;
 
@@ -820,7 +819,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                 @Override public K next() {
                                     KeyCacheObject key = iter0.next();
 
-                                    return key.value(cctx.cacheObjectContext(), false);
+                                    return (K)cctx.unwrapBinaryIfNeeded(key, true);
                                 }
 
                                 @Override public void remove() {
@@ -863,8 +862,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                 CacheObject cacheVal =
                                     entry != null ? entry.peek(true, false, false, topVer, expiryPlc) : null;
 
-                                // TODO 950 nocopy
-                                val = (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheVal, qry.keepBinary());
+                                val = (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheVal, true);
                             }
                             catch (GridCacheEntryRemovedException e) {
                                 val = null;

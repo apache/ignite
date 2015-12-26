@@ -15,44 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.model.binary;
+package org.apache.ignite.examples.model;
 
-import java.sql.Timestamp;
+import java.util.Collection;
 
 /**
- * This class represents organization object.
+ * This class represents employee object.
  */
-public class Organization {
+public class Employee {
     /** Name. */
     private String name;
+
+    /** Salary. */
+    private long salary;
 
     /** Address. */
     private Address addr;
 
-    /** Type. */
-    private OrganizationType type;
-
-    /** Last update time. */
-    private Timestamp lastUpdated;
+    /** Departments. */
+    private Collection<String> departments;
 
     /**
      * Required for binary deserialization.
      */
-    public Organization() {
+    public Employee() {
         // No-op.
     }
 
     /**
      * @param name Name.
+     * @param salary Salary.
      * @param addr Address.
-     * @param type Type.
-     * @param lastUpdated Last update time.
+     * @param departments Departments.
      */
-    public Organization(String name, Address addr, OrganizationType type, Timestamp lastUpdated) {
+    public Employee(String name, long salary, Address addr, Collection<String> departments) {
         this.name = name;
+        this.salary = salary;
         this.addr = addr;
-        this.type = type;
-        this.lastUpdated = lastUpdated;
+        this.departments = departments;
     }
 
     /**
@@ -63,6 +63,13 @@ public class Organization {
     }
 
     /**
+     * @return Salary.
+     */
+    public long salary() {
+        return salary;
+    }
+
+    /**
      * @return Address.
      */
     public Address address() {
@@ -70,24 +77,17 @@ public class Organization {
     }
 
     /**
-     * @return Type.
+     * @return Departments.
      */
-    public OrganizationType type() {
-        return type;
-    }
-
-    /**
-     * @return Last update time.
-     */
-    public Timestamp lastUpdated() {
-        return lastUpdated;
+    public Collection<String> departments() {
+        return departments;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Organization [name=" + name +
+        return "Employee [name=" + name +
+            ", salary=" + salary +
             ", address=" + addr +
-            ", type=" + type +
-            ", lastUpdated=" + lastUpdated + ']';
+            ", departments=" + departments + ']';
     }
 }

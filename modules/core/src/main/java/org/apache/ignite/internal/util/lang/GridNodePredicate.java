@@ -100,13 +100,18 @@ public class GridNodePredicate implements IgnitePredicate<ClusterNode>, Iterable
     public GridNodePredicate(@Nullable ClusterNode... nodes) {
         if (F.isEmpty(nodes))
             ids = Collections.emptySet();
-        else if (nodes.length == 1)
-            ids = Collections.singleton(nodes[0].id());
+        else if (nodes.length == 1) {
+            ClusterNode node = nodes[0];
+
+            ids = node != null ? Collections.singleton(node.id()) : Collections.<UUID>emptySet();
+        }
         else {
             ids = U.newHashSet(nodes.length);
 
-            for (ClusterNode n : nodes)
-                ids.add(n.id());
+            for (ClusterNode n : nodes) {
+                if (n != null)
+                    ids.add(n.id());
+            }
         }
     }
 

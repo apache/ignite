@@ -35,6 +35,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -45,6 +47,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(2);
@@ -61,7 +66,7 @@ public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true));
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(IP_FINDER));
 
         if (getTestGridName(0).equals(gridName))
             cfg.setClientMode(true);
@@ -126,7 +131,7 @@ public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
         private Collection<GridNearLockRequest> reqs = new ConcurrentLinkedDeque<>();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
                 GridIoMessage ioMsg = (GridIoMessage)msg;
@@ -135,7 +140,7 @@ public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
                     reqs.add((GridNearLockRequest)ioMsg.message());
             }
 
-            super.sendMessage(node, msg, ackClosure);
+            super.sendMessage(node, msg, ackC);
         }
 
         /**

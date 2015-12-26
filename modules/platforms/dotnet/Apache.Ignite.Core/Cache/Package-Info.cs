@@ -18,7 +18,7 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// Contains main Data Grid APIs.
+/// Main Data Grid APIs.
 /// </summary>
 namespace Apache.Ignite.Core.Cache
 {

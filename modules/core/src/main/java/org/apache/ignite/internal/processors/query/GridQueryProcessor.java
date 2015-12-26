@@ -17,6 +17,56 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.events.CacheQueryExecutedEvent;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerFuture;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
+
+import javax.cache.Cache;
+import javax.cache.CacheException;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
@@ -39,52 +89,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import javax.cache.Cache;
-import javax.cache.CacheException;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.cache.CacheTypeMetadata;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.events.CacheQueryExecutedEvent;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
-import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
-import org.apache.ignite.internal.util.lang.GridClosureException;
-import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFuture;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
@@ -194,6 +198,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         idx.registerCache(cctx, cctx.config());
 
         try {
+            List<Class<?>> mustDeserializeClss = null;
+
+            boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
+
+            CacheObjectContext coCtx = binaryEnabled ? ctx.cacheObjects().contextForCache(ccfg) : null;
+
             if (!F.isEmpty(ccfg.getQueryEntities())) {
                 for (QueryEntity qryEntity : ccfg.getQueryEntities()) {
                     if (F.isEmpty(qryEntity.getValueType()))
@@ -203,14 +213,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
-                    Class<?> keyCls = U.classForName(qryEntity.getKeyType(), Object.class);
+                    Class<?> keyCls = U.classForName(qryEntity.getKeyType(), null);
                     Class<?> valCls = U.classForName(qryEntity.getValueType(), null);
+
+                    // If local node has the classes and they are externalizable, we must use reflection properties.
+                    boolean keyMustDeserialize = mustDeserializeBinary(keyCls);
+                    boolean valMustDeserialize = mustDeserializeBinary(valCls);
+
+                    boolean keyOrValMustDeserialize = keyMustDeserialize || valMustDeserialize;
+
+                    if (keyCls == null)
+                        keyCls = Object.class;
 
                     String simpleValType = valCls == null ? typeName(qryEntity.getValueType()) : typeName(valCls);
 
                     desc.name(simpleValType);
 
-                    if (ctx.cacheObjects().isBinaryEnabled(ccfg)) {
+                    if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
                         if (SQL_TYPES.contains(valCls))
                             desc.valueClass(valCls);
@@ -235,10 +254,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         desc.keyClass(keyCls);
                     }
 
+                    if (binaryEnabled && keyOrValMustDeserialize) {
+                        if (mustDeserializeClss == null)
+                            mustDeserializeClss = new ArrayList<>();
+
+                        if (keyMustDeserialize)
+                            mustDeserializeClss.add(keyCls);
+
+                        if (valMustDeserialize)
+                            mustDeserializeClss.add(valCls);
+                    }
+
                     TypeId typeId;
                     TypeId altTypeId = null;
 
-                    if (valCls == null || ctx.cacheObjects().isBinaryEnabled(ccfg)) {
+                    if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
                         processBinaryMeta(qryEntity, desc);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
@@ -253,7 +283,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             desc.affinityKey(affField);
                     }
                     else {
-                        processClassMeta(qryEntity, desc);
+                        processClassMeta(qryEntity, desc, coCtx);
 
                         typeId = new TypeId(ccfg.getName(), valCls);
                         altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
@@ -283,12 +313,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
-                    Class<?> keyCls = U.classForName(meta.getKeyType(), Object.class);
+                    Class<?> keyCls = U.classForName(meta.getKeyType(), null);
                     Class<?> valCls = U.classForName(meta.getValueType(), null);
+
+                    // If local node has the classes and they are externalizable, we must use reflection properties.
+                    boolean keyMustDeserialize = mustDeserializeBinary(keyCls);
+                    boolean valMustDeserialize = mustDeserializeBinary(valCls);
+
+                    boolean keyOrValMustDeserialize = keyMustDeserialize || valMustDeserialize;
+
+                    if (keyCls == null)
+                        keyCls = Object.class;
 
                     desc.name(meta.getSimpleValueType());
 
-                    if (ctx.cacheObjects().isBinaryEnabled(ccfg)) {
+                    if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
                         if (SQL_TYPES.contains(valCls))
                             desc.valueClass(valCls);
@@ -305,10 +344,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         desc.keyClass(keyCls);
                     }
 
+                    if (binaryEnabled && keyOrValMustDeserialize) {
+                        if (mustDeserializeClss == null)
+                            mustDeserializeClss = new ArrayList<>();
+
+                        if (keyMustDeserialize)
+                            mustDeserializeClss.add(keyCls);
+
+                        if (valMustDeserialize)
+                            mustDeserializeClss.add(valCls);
+                    }
+
                     TypeId typeId;
                     TypeId altTypeId = null;
 
-                    if (valCls == null || ctx.cacheObjects().isBinaryEnabled(ccfg)) {
+                    if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
                         processBinaryMeta(meta, desc);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
@@ -317,7 +367,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             altTypeId = new TypeId(ccfg.getName(), valCls);
                     }
                     else {
-                        processClassMeta(meta, desc);
+                        processClassMeta(meta, desc, coCtx);
 
                         typeId = new TypeId(ccfg.getName(), valCls);
                         altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
@@ -334,12 +384,37 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             // Indexed types must be translated to CacheTypeMetadata in CacheConfiguration.
+
+            if (mustDeserializeClss != null) {
+                U.quietAndWarn(log, "Some classes in query configuration cannot be written in binary format " +
+                    "because they either implement Externalizable interface or have writeObject/readObject methods. " +
+                    "Instances of these classes will be deserialized in order to build indexes. Please ensure that " +
+                    "all nodes have these classes in classpath. To enable binary serialization either implement " +
+                    Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
+                    "BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
+            }
         }
         catch (IgniteCheckedException | RuntimeException e) {
             idx.unregisterCache(ccfg);
 
             throw e;
         }
+    }
+
+    /**
+     * Check whether type still must be deserialized when binary marshaller is set.
+     *
+     * @param cls Class.
+     * @return {@code True} if will be deserialized.
+     */
+    private boolean mustDeserializeBinary(Class cls) {
+        if (cls != null && ctx.config().getMarshaller() instanceof BinaryMarshaller) {
+            CacheObjectBinaryProcessorImpl proc0 = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
+
+            return proc0.binaryContext().mustDeserialize(cls);
+        }
+        else
+            return false;
     }
 
     /**
@@ -678,7 +753,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Query.
      * @return Cursor.
      */
-    public <K, V> Iterator<Cache.Entry<K, V>> queryLocal(final GridCacheContext<?, ?> cctx, final SqlQuery qry) {
+    public <K, V> Iterator<Cache.Entry<K, V>> queryLocal(
+        final GridCacheContext<?, ?> cctx,
+        final SqlQuery qry,
+        final boolean keepBinary
+    ) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -724,8 +803,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 IgniteBiTuple<K, V> t = i.next();
 
                                 return new CacheEntryImpl<>(
-                                    t.getKey(),
-                                    t.getValue());
+                                    (K)cctx.unwrapBinaryIfNeeded(t.getKey(), keepBinary, false),
+                                    (V)cctx.unwrapBinaryIfNeeded(t.getValue(), keepBinary, false));
                             }
 
                             @Override public void remove() {
@@ -909,6 +988,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             clsName = clsName.substring(0, clsName.length() - 2) + "_array";
         }
 
+        int parentEnd = clsName.lastIndexOf('$');
+
+        if (parentEnd >= 0)
+            clsName = clsName.substring(parentEnd + 1);
+
         return clsName;
     }
 
@@ -1068,9 +1152,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param meta Type metadata.
      * @param d Type descriptor.
+     * @param coCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    private void processClassMeta(CacheTypeMetadata meta, TypeDescriptor d)
+    private void processClassMeta(CacheTypeMetadata meta, TypeDescriptor d, CacheObjectContext coCtx)
         throws IgniteCheckedException {
         Map<String,String> aliases = meta.getAliases();
 
@@ -1084,13 +1169,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert valCls != null;
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet())
-            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.ASC, null, aliases);
+            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.ASC, null, aliases, coCtx);
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet())
-            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.DESC, null, aliases);
+            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.DESC, null, aliases, coCtx);
 
         for (String txtField : meta.getTextFields())
-            addToIndex(d, keyCls, valCls, txtField, String.class, 0, IndexType.TEXT, null, aliases);
+            addToIndex(d, keyCls, valCls, txtField, String.class, 0, IndexType.TEXT, null, aliases, coCtx);
 
         Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
 
@@ -1109,7 +1194,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         descending = false;
 
                     addToIndex(d, keyCls, valCls, idxField.getKey(), idxField.getValue().get1(), order,
-                        descending ? IndexType.DESC : IndexType.ASC, idxName, aliases);
+                        descending ? IndexType.DESC : IndexType.ASC, idxName, aliases, coCtx);
 
                     order++;
                 }
@@ -1122,7 +1207,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 valCls,
                 entry.getKey(),
                 entry.getValue(),
-                aliases);
+                aliases,
+                coCtx);
 
             d.addProperty(prop, false);
         }
@@ -1149,7 +1235,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         int idxOrder,
         IndexType idxType,
         String idxName,
-        Map<String,String> aliases
+        Map<String,String> aliases,
+        CacheObjectContext coCtx
     ) throws IgniteCheckedException {
         String propName;
         Class<?> propCls;
@@ -1164,7 +1251,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 valCls,
                 pathStr,
                 resType,
-                aliases);
+                aliases,
+                coCtx);
 
             d.addProperty(prop, false);
 
@@ -1293,7 +1381,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void processClassMeta(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
+    private void processClassMeta(
+        QueryEntity qryEntity,
+        TypeDescriptor d,
+        CacheObjectContext coCtx
+    ) throws IgniteCheckedException {
         Map<String,String> aliases = qryEntity.getAliases();
 
         if (aliases == null)
@@ -1305,7 +1397,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 d.valueClass(),
                 entry.getKey(),
                 U.classForName(entry.getValue(), Object.class),
-                aliases);
+                aliases,
+                coCtx);
 
 
             d.addProperty(prop, false);
@@ -1407,16 +1500,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private static ClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr, Class<?> resType,
-        Map<String,String> aliases) throws IgniteCheckedException {
+        Map<String,String> aliases, CacheObjectContext coCtx) throws IgniteCheckedException {
         ClassProperty res = buildClassProperty(
             true,
             keyCls,
             pathStr,
             resType,
-            aliases);
+            aliases,
+            coCtx);
 
         if (res == null) // We check key before value consistently with BinaryProperty.
-            res = buildClassProperty(false, valCls, pathStr, resType, aliases);
+            res = buildClassProperty(false, valCls, pathStr, resType, aliases, coCtx);
 
         if (res == null)
             throw new IgniteCheckedException("Failed to initialize property '" + pathStr + "' for " +
@@ -1435,7 +1529,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Property instance corresponding to the given path.
      */
     static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
-        Map<String,String> aliases) {
+        Map<String,String> aliases, CacheObjectContext coCtx) {
         String[] path = pathStr.split("\\.");
 
         ClassProperty res = null;
@@ -1459,7 +1553,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ClassProperty tmp = null;
 
             try {
-                tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias);
+                tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias, coCtx);
             }
             catch (NoSuchMethodException ignore) {
                 // No-op.
@@ -1467,7 +1561,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (tmp == null) {
                 try {
-                    tmp = new ClassProperty(cls.getDeclaredField(prop), key, alias);
+                    tmp = new ClassProperty(cls.getDeclaredField(prop), key, alias, coCtx);
                 }
                 catch (NoSuchFieldException ignored) {
                     // No-op.
@@ -1476,7 +1570,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (tmp == null) {
                 try {
-                    tmp = new ClassProperty(cls.getMethod(prop), key, alias);
+                    tmp = new ClassProperty(cls.getMethod(prop), key, alias, coCtx);
                 }
                 catch (NoSuchMethodException ignored) {
                     // No-op.
@@ -1616,12 +1710,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** */
         private boolean key;
 
+        /** */
+        private CacheObjectContext coCtx;
+
         /**
          * Constructor.
          *
          * @param member Element.
          */
-        ClassProperty(Member member, boolean key, String name) {
+        ClassProperty(Member member, boolean key, String name, @Nullable CacheObjectContext coCtx) {
             this.member = member;
             this.key = key;
 
@@ -1632,11 +1729,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ((AccessibleObject) member).setAccessible(true);
 
             field = member instanceof Field;
+
+            this.coCtx = coCtx;
         }
 
         /** {@inheritDoc} */
         @Override public Object value(Object key, Object val) throws IgniteCheckedException {
-            Object x = this.key ? key : val;
+            Object x = unwrap(this.key ? key : val);
 
             if (parent != null)
                 x = parent.value(key, val);
@@ -1659,6 +1758,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             catch (Exception e) {
                 throw new IgniteCheckedException(e);
             }
+        }
+
+        /**
+         * Unwraps cache object, if needed.
+         *
+         * @param o Object to unwrap.
+         * @return Unwrapped object.
+         */
+        private Object unwrap(Object o) {
+            return coCtx == null ? o : o instanceof CacheObject ? ((CacheObject)o).value(coCtx, false) : o;
         }
 
         /** {@inheritDoc} */
