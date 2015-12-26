@@ -16,9 +16,13 @@
  */
 
 #ifdef _WIN32
+
 #   define _WINSOCKAPI_
 #   include <windows.h>
+
 #   undef min
+#   undef GetMessage
+
 #endif //_WIN32
 
 #include <cstdio>
@@ -1120,7 +1124,10 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
         }
 
         default:
-            return SQL_NO_DATA;
+        {
+            result = SQL_RESULT_NO_DATA;
+            break;
+        }
     }
 
     if (result == SQL_RESULT_SUCCESS)
@@ -1134,12 +1141,64 @@ SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
                                 SQLSMALLINT     recNum,
                                 SQLCHAR*        sqlState,
                                 SQLINTEGER*     nativeError,
-                                SQLCHAR*        msgText,
-                                SQLSMALLINT     bufferLen,
-                                SQLSMALLINT*    resLen)
+                                SQLCHAR*        msgBuffer,
+                                SQLSMALLINT     msgBufferLen,
+                                SQLSMALLINT*    msgLen)
 {
+    using namespace ignite::odbc::type_traits;
+    using namespace ignite::odbc;
+    using namespace ignite::utility;
+
+    using ignite::odbc::app::ApplicationDataBuffer;
+
     LOG_MSG("SQLGetDiagRec called\n");
-    return(SQL_NO_DATA_FOUND);
+    
+
+    SqlResult result;
+    
+    switch (handleType)
+    {
+        case SQL_HANDLE_DBC:
+        {
+            Connection *connection = reinterpret_cast<Connection*>(handle);
+
+            const HeaderDiagnosticRecord& records = connection->GetDiagnosticRecord();
+
+            if (recNum < 1 || recNum > records.GetStatusRecordsNumber())
+            {
+                result = SQL_RESULT_NO_DATA;
+
+                break;
+            }
+
+            const StatusDiagnosticRecord& record = records.GetStatusRecord(recNum);
+
+            if (sqlState)
+                CopyStringToBuffer(record.GetSqlState(), reinterpret_cast<char*>(sqlState), 6);
+
+            if (nativeError)
+                *nativeError = 0;
+
+            int64_t outResLen;
+            ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_CHAR, msgBuffer, msgBufferLen, &outResLen);
+
+            outBuffer.PutString(record.GetMessage());
+
+            *msgLen = static_cast<SQLSMALLINT>(outResLen);
+
+            result = SQL_RESULT_SUCCESS;
+
+            break;
+        }
+
+        default:
+        {
+            result = SQL_RESULT_NO_DATA;
+            break;
+        }
+    }
+
+    return  SqlResultToReturnCode(result);
 }
 
 //
@@ -1373,7 +1432,7 @@ SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC     conn,
     if (!connection)
         return SQL_INVALID_HANDLE;
 
-    return SQL_ERROR;
+    return SQL_SUCCESS;
 }
 
 SQLRETURN SQL_API SQLSetEnvAttr(SQLHENV     env,

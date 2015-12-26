@@ -25,8 +25,6 @@
 #include <sqlext.h>
 #include <odbcinst.h>
 
-#include <cassert>
-
 #include <algorithm>
 #include <string>
 #include <sstream>
@@ -722,14 +720,10 @@ namespace ignite
             template<typename T>
             T* ApplicationDataBuffer::ApplyOffset(T* ptr) const
             {
-                if (!ptr)
+                if (!ptr || !offset || !*offset)
                     return ptr;
 
-                assert(offset != 0);
-
-                const size_t *app_offset_ptr = *offset;
-
-                return app_offset_ptr ? utility::GetPointerWithOffset(ptr, *app_offset_ptr) : ptr;
+                return utility::GetPointerWithOffset(ptr, **offset);
             }
         }
     }

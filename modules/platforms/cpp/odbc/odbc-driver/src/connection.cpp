@@ -23,6 +23,8 @@
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
 
+#define IGNITE_ODBC_CONNECTION_API_CALL(x) IGNITE_ODBC_API_CALL(diagnosticRecord, (x))
+
 // TODO: implement appropriate protocol with de-/serialisation.
 namespace
 {
@@ -63,7 +65,7 @@ namespace ignite
 
         void Connection::GetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen)
         {
-            IGNITE_ODBC_API_CALL(diagnosticRecord, InternalGetInfo(type, buf, buflen, reslen));
+            IGNITE_ODBC_CONNECTION_API_CALL(InternalGetInfo(type, buf, buflen, reslen));
         }
 
         SqlResult Connection::InternalGetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen)
@@ -80,7 +82,7 @@ namespace ignite
 
         void Connection::Establish(const std::string& host, uint16_t port, const std::string& cache)
         {
-            IGNITE_ODBC_API_CALL(diagnosticRecord, InternalEstablish(host, port, cache));
+            IGNITE_ODBC_CONNECTION_API_CALL(InternalEstablish(host, port, cache));
         }
 
         SqlResult Connection::InternalEstablish(const std::string & host, uint16_t port, const std::string & cache)
@@ -115,7 +117,7 @@ namespace ignite
 
         void Connection::Release()
         {
-            IGNITE_ODBC_API_CALL(diagnosticRecord, InternalRelease());
+            IGNITE_ODBC_CONNECTION_API_CALL(InternalRelease());
         }
 
         SqlResult Connection::InternalRelease()
@@ -138,7 +140,7 @@ namespace ignite
         {
             Statement* statement;
 
-            IGNITE_ODBC_API_CALL(diagnosticRecord, InternalCreateStatement(statement));
+            IGNITE_ODBC_CONNECTION_API_CALL(InternalCreateStatement(statement));
 
             return statement;
         }
