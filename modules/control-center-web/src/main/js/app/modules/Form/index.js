@@ -21,6 +21,7 @@ import igniteFormFieldTooltip from './field/tooltip.directive';
 import igniteFormFieldDropdown from './field/dropdown.directive';
 import igniteFormFieldInputNumber from './field/input/number.directive';
 import igniteFormFieldInputText from './field/input/text.directive';
+import igniteFormFieldInputCheckbox from './field/input/checkbox.directive';
 
 angular
 .module('ignite-console.Form', [
@@ -31,6 +32,7 @@ angular
 .directive(...igniteFormFieldDropdown)
 .directive(...igniteFormFieldInputNumber)
 .directive(...igniteFormFieldInputText)
+.directive(...igniteFormFieldInputCheckbox)
 .factory('IgniteFormGUID', [() => {
     let guid = 0;
 

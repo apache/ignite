@@ -1,0 +1,114 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+- var model = 'backupItem'
+
+form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
+    .panel-heading(bs-collapse-toggle)
+        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+        label SSL configuration
+        i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for SSL configuration"')
+        i.pull-right.fa.fa-undo(
+            ng-show='!preview["sslConfiguration"].allDefaults' 
+            ng-click='#{model} = {}; $event.stopPropagation()' 
+            bs-tooltip 
+            data-title='"Undo unsaved changes"')
+    .panel-collapse(role='tabpanel' bs-collapse-target id='sslConfiguration')
+        .panel-body
+            .col-sm-6
+                .settings-row
+                    ignite-form-field(data-label='Enabled')
+                        ignite-form-field-tooltip
+                            | Flag indicating whether to configure SSL configuration
+                        ignite-form-field-input-checkbox(
+                            data-id='sslEnabled'
+                            data-name='sslEnabled'
+                            data-ng-model='#{model}.sslEnabled'
+                        )
+                        
+                //- .settings-row
+                    .col-sm-12.panel-details(ng-if='#{model}.expanded && #{model}.kind')
+                        .details-row
+                            ignite-form-field(data-label='Base directory')
+                                ignite-form-field-tooltip
+                                    | Base directory where to write files
+                                ignite-form-field-input-text(
+                                    data-id='baseDirectory'
+                                    data-name='baseDirectory'
+                                    data-ng-model='#{model}.FileSwapSpaceSpi.baseDirectory'
+                                    data-placeholder='swapspace'
+                                )
+                        .details-row
+                            ignite-form-field(data-label='Read stripe size')
+                                ignite-form-field-tooltip
+                                    | Read stripe size defines number of file channels to be used concurrently
+                                ignite-form-field-input-number(
+                                    data-id='readStripesNumber'
+                                    data-name='readStripesNumber'
+                                    data-ng-model='#{model}.FileSwapSpaceSpi.readStripesNumber'
+                                    data-placeholder='available CPU cores'
+                                )
+                        .details-row
+                            ignite-form-field(data-label='Maximum sparsity')
+                                ignite-form-field-tooltip
+                                    | This property defines maximum acceptable wasted file space to whole file size ratio#[br]
+                                    | When this ratio becomes higher than specified number compacting thread starts working
+                                ignite-form-field-input-number(
+                                    data-id='maximumSparsity'
+                                    data-name='maximumSparsity'
+                                    data-ng-model='#{model}.FileSwapSpaceSpi.maximumSparsity'
+                                    data-placeholder='0.5'
+                                )
+                        .details-row
+                            ignite-form-field(data-label='Max write queue size')
+                                ignite-form-field-tooltip
+                                    | Max write queue size in bytes#[br]
+                                    | If there are more values are waiting for being written to disk then specified size, SPI will block on store operation
+                                ignite-form-field-input-number(
+                                    data-id='maxWriteQueueSize'
+                                    data-name='maxWriteQueueSize'
+                                    data-ng-model='#{model}.FileSwapSpaceSpi.maxWriteQueueSize'
+                                    data-placeholder='1024 * 1024'
+                                )
+                        .details-row
+                            ignite-form-field(data-label='Write buffer size')
+                                ignite-form-field-tooltip
+                                    | Write buffer size in bytes#[br]
+                                    | Write to disk occurs only when this buffer is full
+                                ignite-form-field-input-number(
+                                    data-id='writeBufferSize'
+                                    data-name='writeBufferSize'
+                                    data-ng-model='#{model}.FileSwapSpaceSpi.writeBufferSize'
+                                    data-placeholder='Available CPU cores'
+                                )
+
+
+            .col-sm-6
+                .preview-panel(ng-init='mode = false')
+                    .preview-legend
+                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
+                        | &nbsp;
+                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
+                    .preview-content(
+                        ng-if='!preview["sslConfiguration"].allDefaults && mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["sslConfiguration"].java')
+                    .preview-content(
+                        ng-if='!preview["sslConfiguration"].allDefaults && !mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["sslConfiguration"].xml')
+                    .preview-content-empty(ng-if='preview["sslConfiguration"].allDefaults')
+                        label All Defaults

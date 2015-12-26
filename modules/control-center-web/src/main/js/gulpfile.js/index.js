@@ -27,5 +27,5 @@ gulp.task('default', ['build']);
 
 // Build + watch + connect task.
 gulp.task('watch', function (cb) {
-    return sequence('build', 'connect', ['bundle:ignite:watch', 'bundle:legacy:watch', 'sass:watch', 'jade:watch', 'copy:watch'])(cb);
+    return sequence('build', ['bundle:ignite:watch', 'bundle:legacy:watch', 'sass:watch', 'jade:watch', 'copy:watch'])(cb);
 });
