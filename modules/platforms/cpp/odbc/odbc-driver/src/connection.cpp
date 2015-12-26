@@ -23,7 +23,7 @@
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
 
-#define IGNITE_ODBC_CONNECTION_API_CALL(x) IGNITE_ODBC_API_CALL(diagnosticRecord, (x))
+#define IGNITE_ODBC_CONNECTION_API_CALL(x) IGNITE_ODBC_API_CALL(diagnosticRecords, (x))
 
 // TODO: implement appropriate protocol with de-/serialisation.
 namespace
@@ -52,7 +52,7 @@ namespace ignite
 
         void Connection::AddStatusRecord(SqlState sqlState, const std::string & message)
         {
-            diagnosticRecord.AddStatusRecord(CreateStatusRecord(sqlState, message));
+            diagnosticRecords.AddStatusRecord(CreateStatusRecord(sqlState, message));
         }
 
         const config::ConnectionInfo& Connection::GetInfo() const
@@ -231,7 +231,7 @@ namespace ignite
 
         const diagnostic::DiagnosticRecordStorage& Connection::GetDiagnosticRecords() const
         {
-            return diagnosticRecord;
+            return diagnosticRecords;
         }
     }
 }

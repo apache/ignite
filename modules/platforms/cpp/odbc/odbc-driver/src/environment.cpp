@@ -18,6 +18,8 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/environment.h"
 
+#define IGNITE_ODBC_ENVIRONMENT_API_CALL(x) IGNITE_ODBC_API_CALL(diagnosticRecords, (x))
+
 namespace ignite
 {
     namespace odbc
@@ -34,9 +36,38 @@ namespace ignite
             // No-op.
         }
 
+        void Environment::AddStatusRecord(SqlState sqlState, const std::string & message)
+        {
+            diagnosticRecords.AddStatusRecord(diagnostic::DiagnosticRecord(sqlState, message, "", ""));
+        }
+
         Connection* Environment::CreateConnection()
         {
-            return new Connection();
+            Connection* connection;
+
+            IGNITE_ODBC_ENVIRONMENT_API_CALL(InternalCreateConnection(connection));
+
+            return connection;
+        }
+
+
+        SqlResult Environment::InternalCreateConnection(Connection*& connection)
+        {
+            connection = new Connection;
+
+            if (!connection)
+            {
+                AddStatusRecord(SQL_STATE_HY001_MEMORY_ALLOCATION, "Not enough memory.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            return SQL_RESULT_SUCCESS;
+        }
+
+        const diagnostic::DiagnosticRecordStorage & Environment::GetDiagnosticRecords() const
+        {
+            return diagnosticRecords;
         }
     }
 }

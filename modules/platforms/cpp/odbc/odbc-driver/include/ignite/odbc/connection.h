@@ -190,7 +190,7 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalGetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen);
-            
+
             /**
              * Create statement associated with the connection.
              * Internal call.
@@ -226,7 +226,7 @@ namespace ignite
             Parser parser;
 
             /** Diagnostic records. */
-            diagnostic::DiagnosticRecordStorage diagnosticRecord;
+            diagnostic::DiagnosticRecordStorage diagnosticRecords;
         };
     }
 }

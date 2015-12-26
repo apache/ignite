@@ -1114,6 +1114,15 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
 
     switch (handleType)
     {
+        case SQL_HANDLE_ENV:
+        {
+            Environment *environment = reinterpret_cast<Environment*>(handle);
+
+            result = environment->GetDiagnosticRecords().GetField(recNum, field, outBuffer);
+
+            break;
+        }
+
         case SQL_HANDLE_DBC:
         {
             Connection *connection = reinterpret_cast<Connection*>(handle);
@@ -1153,53 +1162,54 @@ SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
     using ignite::odbc::app::ApplicationDataBuffer;
 
     LOG_MSG("SQLGetDiagRec called\n");
-    
 
-    SqlResult result;
+    SqlResult result = SQL_RESULT_NO_DATA;
+
+    const DiagnosticRecordStorage* records = 0;
     
     switch (handleType)
     {
+        case SQL_HANDLE_ENV:
+        {
+            Environment *environment = reinterpret_cast<Environment*>(handle);
+
+            records = &environment->GetDiagnosticRecords();
+
+            break;
+        }
+
         case SQL_HANDLE_DBC:
         {
             Connection *connection = reinterpret_cast<Connection*>(handle);
 
-            const DiagnosticRecordStorage& records = connection->GetDiagnosticRecords();
-
-            if (recNum < 1 || recNum > records.GetStatusRecordsNumber())
-            {
-                result = SQL_RESULT_NO_DATA;
-
-                break;
-            }
-
-            const DiagnosticRecord& record = records.GetStatusRecord(recNum);
-
-            if (sqlState)
-                CopyStringToBuffer(record.GetSqlState(), reinterpret_cast<char*>(sqlState), 6);
-
-            if (nativeError)
-                *nativeError = 0;
-
-            int64_t outResLen;
-            ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_CHAR, msgBuffer, msgBufferLen, &outResLen);
-
-            outBuffer.PutString(record.GetMessage());
-
-            *msgLen = static_cast<SQLSMALLINT>(outResLen);
-
-            result = SQL_RESULT_SUCCESS;
+            records = &connection->GetDiagnosticRecords();
 
             break;
         }
 
         default:
-        {
-            result = SQL_RESULT_NO_DATA;
             break;
-        }
     }
 
-    return  SqlResultToReturnCode(result);
+    if (!records || recNum < 1 || recNum > records->GetStatusRecordsNumber())
+        return SQL_NO_DATA;
+
+    const DiagnosticRecord& record = records->GetStatusRecord(recNum);
+
+    if (sqlState)
+        CopyStringToBuffer(record.GetSqlState(), reinterpret_cast<char*>(sqlState), 6);
+
+    if (nativeError)
+        *nativeError = 0;
+
+    int64_t outResLen;
+    ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_CHAR, msgBuffer, msgBufferLen, &outResLen);
+
+    outBuffer.PutString(record.GetMessage());
+
+    *msgLen = static_cast<SQLSMALLINT>(outResLen);
+
+    return SQL_SUCCESS;
 }
 
 //
