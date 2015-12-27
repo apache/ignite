@@ -618,7 +618,7 @@ public class GridReduceQueryExecutor {
                             .topologyVersion(topVer)
                             .pageSize(r.pageSize)
                             .caches(join(space, extraSpaces))
-                            .tables(qry.tables())
+                            .tables(distributedJoins ? qry.tables() : null)
                             .partitions(convert(partsMap))
                             .queries(mapQrys)
                             .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0),

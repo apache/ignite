@@ -275,9 +275,8 @@ public class GridH2Table extends TableBase {
 
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
-        return qctx == null || // Outside of Ignite query context.
-            qctx.type() != MAP || // LOCAL and REDUCE queries.
-            (qctx.type() == MAP && !qctx.hasIndexSnapshots()); // Backward compatibility.
+        // On MAP queries with distributed joins we lock tables before the queries.
+        return qctx == null || qctx.type() != MAP || !qctx.hasIndexSnapshots();
     }
 
     /**
@@ -292,7 +291,7 @@ public class GridH2Table extends TableBase {
         Lock l;
 
         // Try to reuse existing snapshots outside of the lock.
-        for (long waitTime = 25;; waitTime *= 2) { // Increase wait time to avoid starvation.
+        for (long waitTime = 200;; waitTime *= 2) { // Increase wait time to avoid starvation.
             snapshots = actualSnapshot.get();
 
             if (snapshots != null) { // Reuse existing snapshot without locking.
@@ -395,7 +394,8 @@ public class GridH2Table extends TableBase {
 
             if (reuseExisting && s == null) { // Existing snapshot was invalidated before we were able to reserve it.
                 // Release already taken snapshots.
-                qctx.clearSnapshots();
+                if (qctx != null)
+                    qctx.clearSnapshots();
 
                 for (int j = 1; j < i; j++)
                     index(j).releaseSnapshot();
