@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.kafka.connect;
+package org.apache.ignite.stream.kafka;
 
 import java.io.File;
 import java.io.IOException;
@@ -195,6 +195,15 @@ public class TestKafkaBroker {
      */
     public String getBrokerAddress() {
         return BROKER_HOST + ":" + BROKER_PORT;
+    }
+
+    /**
+     * Obtains Zookeeper address.
+     *
+     * @return Zookeeper address.
+     */
+    public String getZookeeperAddress() {
+        return BROKER_HOST + ":" + ZK_PORT;
     }
 
     /**

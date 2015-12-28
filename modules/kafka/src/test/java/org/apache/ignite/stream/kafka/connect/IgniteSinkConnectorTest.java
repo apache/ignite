@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.stream.kafka.TestKafkaBroker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.connect.connector.ConnectorContext;
@@ -49,7 +50,7 @@ import org.easymock.EasyMock;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
- * Tests for IgniteSinkConnector.
+ * Tests for {@link IgniteSinkConnector}.
  */
 public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     /** Number of input messages. */
@@ -221,6 +222,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         props.put(ConnectorConfig.NAME_CONFIG, "test-connector");
         props.put(ConnectorConfig.CONNECTOR_CLASS_CONFIG, IgniteSinkConnector.class.getName());
         props.put(IgniteSinkConstants.CACHE_NAME, "testCache");
+        props.put(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE, "true");
         props.put(IgniteSinkConstants.CACHE_CFG_PATH, "example-ignite.xml");
 
         return props;

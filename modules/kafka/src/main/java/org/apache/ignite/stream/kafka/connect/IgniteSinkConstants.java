@@ -17,21 +17,22 @@
 
 package org.apache.ignite.stream.kafka.connect;
 
-import junit.framework.TestSuite;
-
 /**
- * Tests for Kafka Connect for Ignite.
+ * Sink configuration strings.
  */
-public class IgniteSinkTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Apache Kafka Sink Test Suite");
+public class IgniteSinkConstants {
+    /** Ignite configuration file path. */
+    public static final String CACHE_CFG_PATH = "igniteCfg";
 
-        suite.addTest(new TestSuite(IgniteSinkConnectorTest.class));
+    /** Cache name. */
+    public static final String CACHE_NAME = "cacheName";
 
-        return suite;
-    }
+    /** Flag to enable overwriting existing values in cache. */
+    public static final String CACHE_ALLOW_OVERWRITE = "cacheAllowOverwrite";
+
+    /** Size of per-node buffer before data is sent to remote node. */
+    public static final String CACHE_PER_NODE_DATA_SIZE = "cachePerNodeDataSize";
+
+    /** Maximum number of parallel stream operations per node. */
+    public static final String CACHE_PER_NODE_PAR_OPS = "cachePerNodeParOps";
 }

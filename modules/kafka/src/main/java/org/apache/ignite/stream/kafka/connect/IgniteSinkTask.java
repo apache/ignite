@@ -18,11 +18,9 @@
 package org.apache.ignite.stream.kafka.connect;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -42,10 +40,7 @@ public class IgniteSinkTask extends SinkTask {
     /** Ignite instance. */
     private static Ignite ignite;
 
-    /** Cache name. */
-    private String cacheName;
-
-    private List<SinkRecord> buffer;
+    private static IgniteDataStreamer dataStreamer;
 
     /** {@inheritDoc} */
     @Override public String version() {
@@ -55,11 +50,19 @@ public class IgniteSinkTask extends SinkTask {
     /**
      * Initializes grid client from configPath.
      *
-     * @param configPath Ignite Spring config file.
+     * @param props Task properties.
      */
-    private static synchronized void initializeIgnite(String configPath) {
-        if (ignite == null)
-            ignite = Ignition.start(configPath);
+    private static synchronized void initializeIgnite(Map<String, String> props) {
+        if (ignite == null) {
+            ignite = Ignition.start(props.get(IgniteSinkConstants.CACHE_CFG_PATH));
+            dataStreamer = ignite.dataStreamer(props.get(IgniteSinkConstants.CACHE_NAME));
+            if (props.containsKey(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE))
+                dataStreamer.allowOverwrite(Boolean.parseBoolean(props.get(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE)));
+            if (props.containsKey(IgniteSinkConstants.CACHE_PER_NODE_DATA_SIZE))
+                dataStreamer.perNodeBufferSize(Integer.parseInt(props.get(IgniteSinkConstants.CACHE_PER_NODE_DATA_SIZE)));
+            if (props.containsKey(IgniteSinkConstants.CACHE_PER_NODE_PAR_OPS))
+                dataStreamer.perNodeParallelOperations(Integer.parseInt(props.get(IgniteSinkConstants.CACHE_PER_NODE_PAR_OPS)));
+        }
     }
 
     /**
@@ -67,6 +70,8 @@ public class IgniteSinkTask extends SinkTask {
      */
     private static synchronized void finalizeIgnite() {
         if (ignite != null) {
+            dataStreamer.close();
+            dataStreamer = null;
             ignite.close();
             ignite = null;
         }
@@ -78,11 +83,7 @@ public class IgniteSinkTask extends SinkTask {
      * @param props Properties.
      */
     @Override public void start(Map<String, String> props) {
-        buffer = new LinkedList<>();
-
-        cacheName = props.get(IgniteSinkConstants.CACHE_NAME);
-
-        initializeIgnite(props.get(IgniteSinkConstants.CACHE_CFG_PATH));
+        initializeIgnite(props);
     }
 
     /**
@@ -93,8 +94,14 @@ public class IgniteSinkTask extends SinkTask {
     @Override public void put(Collection<SinkRecord> records) {
         try {
             for (SinkRecord record : records) {
-                if (record.key() != null)
-                    buffer.add(record);
+                if (record.key() != null) {
+                    // Data is flushed asynchronously when CACHE_PER_NODE_DATA_SIZE is reached
+                    dataStreamer.addData(record.key(), record.value());
+                }
+                else {
+                    log.error("Failed to stream a record with null key!");
+                }
+
             }
         }
         catch (ConnectException e) {
@@ -109,15 +116,8 @@ public class IgniteSinkTask extends SinkTask {
      * @param offsets Offset information.
      */
     @Override public void flush(Map<TopicPartition, OffsetAndMetadata> offsets) {
-        final Map<Object, Object> recordMap = new HashMap<>();
-
-        for (SinkRecord record : buffer)
-            recordMap.put(record.key(), record.value());
-
-        buffer.clear();
-
-        if (ignite != null && recordMap.size() > 0)
-            ignite.cache(cacheName).putAll(recordMap);
+        if (dataStreamer != null)
+            dataStreamer.flush();
     }
 
     /**
