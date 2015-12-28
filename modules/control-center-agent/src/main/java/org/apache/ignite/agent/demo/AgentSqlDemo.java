@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.agent.testdrive;
+package org.apache.ignite.agent.demo;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,16 +33,16 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.agent.AgentConfiguration;
-import org.apache.ignite.agent.testdrive.model.Car;
-import org.apache.ignite.agent.testdrive.model.CarKey;
-import org.apache.ignite.agent.testdrive.model.Country;
-import org.apache.ignite.agent.testdrive.model.CountryKey;
-import org.apache.ignite.agent.testdrive.model.Department;
-import org.apache.ignite.agent.testdrive.model.DepartmentKey;
-import org.apache.ignite.agent.testdrive.model.Employee;
-import org.apache.ignite.agent.testdrive.model.EmployeeKey;
-import org.apache.ignite.agent.testdrive.model.Parking;
-import org.apache.ignite.agent.testdrive.model.ParkingKey;
+import org.apache.ignite.agent.demo.model.Car;
+import org.apache.ignite.agent.demo.model.CarKey;
+import org.apache.ignite.agent.demo.model.Country;
+import org.apache.ignite.agent.demo.model.CountryKey;
+import org.apache.ignite.agent.demo.model.Department;
+import org.apache.ignite.agent.demo.model.DepartmentKey;
+import org.apache.ignite.agent.demo.model.Employee;
+import org.apache.ignite.agent.demo.model.EmployeeKey;
+import org.apache.ignite.agent.demo.model.Parking;
+import org.apache.ignite.agent.demo.model.ParkingKey;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -57,22 +57,22 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.log4j.Logger;
 
 /**
- * Test drive for SQL.
+ * Demo for SQL.
  *
  * Cache will be created and populated with data to query.
  */
-public class AgentSqlTestDrive {
+public class AgentSqlDemo {
     /** */
-    private static final Logger log = Logger.getLogger(AgentMetadataTestDrive.class.getName());
+    private static final Logger log = Logger.getLogger(AgentMetadataDemo.class.getName());
 
     /** */
     private static final AtomicBoolean initLatch = new AtomicBoolean();
 
     /** */
-    private static final String EMPLOYEE_CACHE_NAME = "test-drive-employee";
+    private static final String EMPLOYEE_CACHE_NAME = "demo-employee";
 
     /** */
-    private static final String CAR_CACHE_NAME = "test-drive-car";
+    private static final String CAR_CACHE_NAME = "demo-car";
 
     /** */
     private static final Random rnd = new Random();
@@ -280,7 +280,7 @@ public class AgentSqlTestDrive {
      * @param range Time range in milliseconds.
      */
     private static void populateCacheEmployee(Ignite ignite, String name, long range) {
-        log.trace("TEST-DRIVE-SQL: Start population cache: '" + name + "' with data...");
+        log.trace("DEMO: Start population cache: '" + name + "' with data...");
 
         IgniteCache<CountryKey, Country> cacheCountry = ignite.cache(name);
 
@@ -309,7 +309,7 @@ public class AgentSqlTestDrive {
                     round(r * 5000, 2) , mgrId, rnd.nextInt(DEP_CNT)));
         }
 
-        log.trace("TEST-DRIVE-SQL: Finished population cache: '" + name + "' with data.");
+        log.trace("DEMO: Finished population cache: '" + name + "' with data.");
     }
 
     /**
@@ -317,7 +317,7 @@ public class AgentSqlTestDrive {
      * @param name Cache name.
      */
     private static void populateCacheCar(Ignite ignite, String name) {
-        log.trace("TEST-DRIVE-SQL: Start population cache: '" + name + "' with data...");
+        log.trace("DEMO: Start population cache: '" + name + "' with data...");
 
         IgniteCache<ParkingKey, Parking> cacheParking = ignite.cache(name);
 
@@ -330,7 +330,7 @@ public class AgentSqlTestDrive {
             cacheCar.put(new CarKey(i), new Car(i, rnd.nextInt(PARK_CNT), "Car " + (i + 1)));
 
 
-        log.trace("TEST-DRIVE-SQL: Finished population cache: '" + name + "' with data.");
+        log.trace("DEMO: Finished population cache: '" + name + "' with data.");
     }
 
     /**
@@ -373,7 +373,7 @@ public class AgentSqlTestDrive {
 
         populateCacheCar(ignite, CAR_CACHE_NAME);
 
-        ScheduledExecutorService cachePool = newScheduledThreadPool(2, "test-drive-sql-load-cache-tasks");
+        ScheduledExecutorService cachePool = newScheduledThreadPool(2, "demo-sql-load-cache-tasks");
 
         cachePool.scheduleWithFixedDelay(new Runnable() {
             @Override public void run() {
@@ -438,7 +438,7 @@ public class AgentSqlTestDrive {
      */
     public static boolean testDrive(AgentConfiguration acfg) {
         if (initLatch.compareAndSet(false, true)) {
-            log.info("TEST-DRIVE-SQL: Starting embedded node for sql test-drive...");
+            log.info("DEMO: Starting embedded node for sql test-drive...");
 
             try {
                 IgniteConfiguration cfg = new IgniteConfiguration();
@@ -462,7 +462,7 @@ public class AgentSqlTestDrive {
 
                 cfg.setCacheConfiguration(cacheEmployee(EMPLOYEE_CACHE_NAME), cacheCar(CAR_CACHE_NAME));
 
-                log.trace("TEST-DRIVE-SQL: Start embedded node with indexed enabled caches...");
+                log.trace("DEMO: Start embedded node with indexed enabled caches...");
 
                 IgniteEx ignite = (IgniteEx)Ignition.start(cfg);
 
@@ -472,19 +472,19 @@ public class AgentSqlTestDrive {
                 Integer port = ignite.localNode().attribute(IgniteNodeAttributes.ATTR_REST_JETTY_PORT);
 
                 if (F.isEmpty(host) || port == null) {
-                    log.error("TEST-DRIVE-SQL: Failed to start embedded node with rest!");
+                    log.error("DEMO: Failed to start embedded node with rest!");
 
                     return false;
                 }
 
                 acfg.nodeUri(String.format("http://%s:%d", "0.0.0.0".equals(host) ? "127.0.0.1" : host, port));
 
-                log.info("TEST-DRIVE-SQL: Embedded node for sql test-drive successfully started");
+                log.info("DEMO: Embedded node for sql test-drive successfully started");
 
                 startLoad(ignite, 20);
             }
             catch (Exception e) {
-                log.error("TEST-DRIVE-SQL: Failed to start embedded node for sql test-drive!", e);
+                log.error("DEMO: Failed to start embedded node for sql test-drive!", e);
 
                 return false;
             }

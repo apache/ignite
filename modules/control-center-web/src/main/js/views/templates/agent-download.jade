@@ -14,7 +14,7 @@
 
 .modal.center(tabindex='-1' role='dialog')
     .modal-dialog
-        .modal-content(dw-loading='startTestDriveSQL' dw-loading-options='loadingOptions')
+        .modal-content(dw-loading='startDemoSQL' dw-loading-options='loadingOptions')
             #errors-container.modal-header.header
                 h4.modal-title(ng-if='!nodeFailedConnection') Connection to Ignite Web Agent is not established
                 h4.modal-title(ng-if='nodeFailedConnection') Connection to Ignite Node is not established
@@ -51,5 +51,5 @@
                         | &nbsp; in agent folder for more information
             .modal-footer
                 button.btn.btn-default(ng-click='back()') {{::backText}}
-                button.btn.btn-primary(ng-if='nodeFailedConnection' ng-click='enableTestDriveSQL()') Start demo
+                button.btn.btn-primary(ng-if='nodeFailedConnection' ng-click='startDemoSQL()') Start demo
                 button.btn.btn-primary(ng-if='!nodeFailedConnection' ng-click='downloadAgent()') Download zip

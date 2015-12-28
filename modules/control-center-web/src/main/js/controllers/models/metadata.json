@@ -179,7 +179,7 @@
       "label": "JDBC Driver",
       "id": "jdbcDriverClass",
       "type": "text",
-      "disabled": "jdbcDriverJars[preset.drvIdx].testDrive",
+      "disabled": "jdbcDriverJars[preset.drvIdx].demo",
       "model": "jdbcDriverClass",
       "placeholder": "Full class name of JDBC driver",
       "tip": [
@@ -190,7 +190,7 @@
       "label": "JDBC URL",
       "id": "jdbcUrl",
       "type": "text",
-      "disabled": "jdbcDriverJars[preset.drvIdx].testDrive",
+      "disabled": "jdbcDriverJars[preset.drvIdx].demo",
       "model": "jdbcUrl",
       "placeholder": "JDBC URL",
       "tip": [
@@ -202,7 +202,7 @@
       "label": "User",
       "id": "user",
       "type": "text",
-      "disabled": "jdbcDriverJars[preset.drvIdx].testDrive",
+      "disabled": "jdbcDriverJars[preset.drvIdx].demo",
       "model": "user",
       "tip": [
         "User name for connecting to database"
@@ -212,7 +212,7 @@
       "label": "Password",
       "id": "password",
       "type": "password",
-      "disabled": "jdbcDriverJars[preset.drvIdx].testDrive",
+      "disabled": "jdbcDriverJars[preset.drvIdx].demo",
       "model": "password",
       "onEnter": "loadMetadataNext()",
       "tip": [

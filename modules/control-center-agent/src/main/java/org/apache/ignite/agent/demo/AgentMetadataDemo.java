@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.agent.testdrive;
+package org.apache.ignite.agent.demo;
 
 import java.io.File;
 import java.io.FileReader;
@@ -30,13 +30,13 @@ import org.h2.tools.Server;
 import static org.apache.ignite.agent.AgentUtils.resolvePath;
 
 /**
- * Test drive for metadata load from database.
+ * Demo for metadata load from database.
  *
  * H2 database will be started and several tables will be created.
  */
-public class AgentMetadataTestDrive {
+public class AgentMetadataDemo {
     /** */
-    private static final Logger log = Logger.getLogger(AgentMetadataTestDrive.class.getName());
+    private static final Logger log = Logger.getLogger(AgentMetadataDemo.class.getName());
 
     /** */
     private static final AtomicBoolean initLatch = new AtomicBoolean();
@@ -46,7 +46,7 @@ public class AgentMetadataTestDrive {
      * @return true if url is used for test-drive.
      */
     public static boolean isTestDriveUrl(String jdbcUrl) {
-        return "jdbc:h2:mem:test-drive-db".equals(jdbcUrl);
+        return "jdbc:h2:mem:demo-db".equals(jdbcUrl);
     }
 
     /**
@@ -54,34 +54,34 @@ public class AgentMetadataTestDrive {
      */
     public static void testDrive() {
         if (initLatch.compareAndSet(false, true)) {
-            log.info("TEST-DRIVE: Prepare in-memory H2 database...");
+            log.info("DEMO: Prepare in-memory H2 database...");
 
             try {
-                Connection conn = DriverManager.getConnection("jdbc:h2:mem:test-drive-db;DB_CLOSE_DELAY=-1", "sa", "");
+                Connection conn = DriverManager.getConnection("jdbc:h2:mem:demo-db;DB_CLOSE_DELAY=-1", "sa", "");
 
-                File sqlScript = resolvePath("test-drive/test-drive.sql");
+                File sqlScript = resolvePath("demo/demo-db.sql");
 
                 if (sqlScript == null) {
-                    log.error("TEST-DRIVE: Failed to find test drive script file: test-drive/test-drive.sql");
-                    log.error("TEST-DRIVE: Test drive for metadata not started");
+                    log.error("DEMO: Failed to find demo database init script file: demo/demo-db.sql");
+                    log.error("DEMO: Failed to start demo for metadata");
 
                     return;
                 }
 
                 RunScript.execute(conn, new FileReader(sqlScript));
 
-                log.info("TEST-DRIVE: Sample tables created.");
+                log.info("DEMO: Sample tables created.");
 
                 conn.close();
 
                 Server.createTcpServer("-tcpDaemon").start();
 
-                log.info("TEST-DRIVE: TcpServer stared.");
+                log.info("DEMO: TcpServer stared.");
 
-                log.info("TEST-DRIVE: JDBC URL for test drive metadata load: jdbc:h2:mem:test-drive-db");
+                log.info("DEMO: JDBC URL for test drive metadata load: jdbc:h2:mem:demo-db");
             }
             catch (Exception e) {
-                log.error("TEST-DRIVE: Failed to start test drive for metadata!", e);
+                log.error("DEMO: Failed to start test drive for metadata!", e);
             }
         }
     }

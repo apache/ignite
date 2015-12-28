@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.agent.testdrive.model;
+package org.apache.ignite.agent.demo.model;
 
 import java.io.Serializable;
 

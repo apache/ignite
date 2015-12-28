@@ -1,4 +1,4 @@
 Ignite Web Agent
 ======================================
 
-This is folder for test-drive files.
+This is folder for demo files.

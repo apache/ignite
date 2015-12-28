@@ -1924,7 +1924,7 @@ consoleModule.service('$agentDownload', [
         function ($http, $interval, $rootScope, $state, $modal, $loading, $common) {
         var scope = $rootScope.$new();
 
-        scope.loadingOptions = { text: 'Enabling test-drive SQL...' };
+        scope.loadingOptions = { text: 'Starting SQL demo...' };
 
         // Pre-fetch modal dialogs.
         var _agentDownloadModal = $modal({scope: scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
@@ -1966,21 +1966,19 @@ consoleModule.service('$agentDownload', [
             document.body.removeChild(lnk);
         };
 
-        scope.enableTestDriveSQL = function () {
-            $loading.start('startTestDriveSQL');
+        scope.startDemoSQL = function () {
+            $loading.start('startDemoSQL');
 
-            $http.post('/api/v1/agent/testdrive/sql')
+            $http.post('/api/v1/agent/demo/sql/start')
                 .success(function (enabled) {
                     if (!enabled)
-                        $common.showError('Failed to start demo', 'top-right', 'body', true);
+                        $common.showError('Failed to start SQL demo', 'top-right', 'body', true);
                 })
                 .catch(function (errMsg, status) {
-                    console.log(errMsg);
-
                     _handleException(errMsg, status);
                 })
                 .finally(function () {
-                    $loading.finish('startTestDriveSQL');
+                    $loading.finish('startDemoSQL');
                 });
         };
 
@@ -2044,7 +2042,7 @@ consoleModule.service('$agentDownload', [
                     if (_agentDownloadModal.awaitFirstSuccess)
                         _stopInterval();
 
-                    $loading.finish('startTestDriveSQL');
+                    $loading.finish('startDemoSQL');
 
                     _agentDownloadModal.check.cb(result, _agentDownloadModal.hide, _handleException);
                 })

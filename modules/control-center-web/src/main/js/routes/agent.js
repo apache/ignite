@@ -269,11 +269,11 @@ router.post('/ping', function (req, res) {
 });
 
 /* Enable test-drive for sql. */
-router.post('/testdrive/sql', function (req, res) {
+router.post('/demo/sql/start', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        client.enableTestDriveSQL(function (err, enabled) {
+        client.startDemoSQL(function (err, enabled) {
             if (err)
                 return res.status(500).send(err);
 

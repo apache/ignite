@@ -151,7 +151,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
             function _savePreset (preset) {
                 try {
-                    if (preset.testDrive)
+                    if (preset.demo)
                         return;
 
                     var oldPreset = _.find(_dbPresets, { jdbcDriverClass: preset.jdbcDriverClass });
@@ -204,7 +204,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                     var jdbcDriverJar = preset.jdbcDriverJar;
 
-                    if (!preset.testDrive)
+                    if (!preset.demo)
                         preset = _findPreset(drvIdx);
 
                     var newPreset = angular.copy(preset);
@@ -317,14 +317,14 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                                     if (_h2DrvJar) {
                                         $scope.jdbcDriverJars.push({
-                                            label: 'Test-drive metadata',
+                                            label: 'Demo database for load metadata',
                                             value: $scope.jdbcDriverJars.length,
                                             jdbcDriverJar: _h2DrvJar.jdbcDriverJar,
                                             jdbcDriverClass: 'org.h2.Driver',
-                                            jdbcUrl: 'jdbc:h2:mem:test-drive-db',
+                                            jdbcUrl: 'jdbc:h2:mem:demo-db',
                                             user: 'sa',
                                             password: '',
-                                            testDrive: true
+                                            demo: true
                                         });
                                     }
 
@@ -372,11 +372,10 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                 var preset = angular.copy($scope.preset);
 
-                if (preset.jdbcUrl === 'jdbc:h2:mem:test-drive-db') {
+                if (preset.jdbcUrl === 'jdbc:h2:mem:demo-db') {
                     preset.user = 'sa';
                     preset.password = '';
                 }
-
 
                 $http.post('/api/v1/agent/schemas', preset)
                     .success(function (schemas) {
@@ -678,12 +677,12 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             }
 
             $scope.loadMetadataNext = function () {
-            if (!$scope.nextAvailable())
-                return;
+                if (!$scope.nextAvailable())
+                    return;
 
-            $scope.loadMeta.action === 'connect' && _loadSchemas();
-            $scope.loadMeta.action === 'schemas' && _loadMetadata();
-            $scope.loadMeta.action === 'tables' && _saveMetadata();
+                $scope.loadMeta.action === 'connect' && _loadSchemas();
+                $scope.loadMeta.action === 'schemas' && _loadMetadata();
+                $scope.loadMeta.action === 'tables' && _saveMetadata();
             };
 
             $scope.nextTooltipText = function () {

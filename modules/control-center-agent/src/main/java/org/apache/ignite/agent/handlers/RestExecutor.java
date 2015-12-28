@@ -38,7 +38,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.ignite.agent.AgentConfiguration;
 import org.apache.ignite.agent.remote.Remote;
-import org.apache.ignite.agent.testdrive.AgentSqlTestDrive;
+import org.apache.ignite.agent.demo.AgentSqlDemo;
 import org.apache.log4j.Logger;
 
 import static org.apache.ignite.agent.AgentConfiguration.DFLT_NODE_PORT;
@@ -169,8 +169,8 @@ public class RestExecutor {
      * Enable test-drive SQL.
      */
     @Remote
-    public boolean enableTestDriveSQL() {
-        return AgentSqlTestDrive.testDrive(cfg);
+    public boolean startDemoSQL() {
+        return AgentSqlDemo.testDrive(cfg);
     }
 
     /**
