@@ -418,7 +418,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         tables.forEach(function (tbl) {
                             Object.defineProperty(tbl, 'label', {
                                 get: function () {
-                                    return this.schema + '.' + this.tbl;
+                                    return tbl.schema + '.' + tbl.tbl;
                                 }
                             });
 

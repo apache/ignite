@@ -39,7 +39,7 @@
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>jdbc-drivers/*.*</include>
-                <include>test-drive/*.*</include>
+                <include>demo/*.*</include>
                 <include>README*</include>
                 <include>LICENSE*</include>
                 <include>NOTICE*</include>
