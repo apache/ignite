@@ -41,11 +41,6 @@ public class AgentLauncher {
     /** */
     private static final int RECONNECT_INTERVAL = 3000;
 
-    /** Static initializer. */
-    static {
-        AgentLoggingConfigurator.configure();
-    }
-
     /**
      * @param args Args.
      */
