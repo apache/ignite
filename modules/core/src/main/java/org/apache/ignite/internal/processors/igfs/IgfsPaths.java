@@ -33,6 +33,7 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -74,16 +75,11 @@ public class IgfsPaths implements Externalizable {
         if (payload == null)
             payloadBytes = null;
         else {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-            try (ObjectOutput oo = new ObjectOutputStream(baos)) {
-                oo.writeObject(payload);
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Failed to serialize secondary file system factory: " + payload, e);
-            }
+            new JdkMarshaller().marshal(payload, out);
 
-            payloadBytes = baos.toByteArray();
+            payloadBytes = out.toByteArray();
         }
     }
 
@@ -106,16 +102,13 @@ public class IgfsPaths implements Externalizable {
      *
      * @throws IgniteCheckedException If failed to deserialize the payload.
      */
-    @Nullable public Object getPayload() throws IgniteCheckedException {
+    @Nullable public Object getPayload(ClassLoader clsLdr) throws IgniteCheckedException {
         if (payloadBytes == null)
             return null;
         else {
-            try (ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(payloadBytes))) {
-                return oi.readObject();
-            }
-            catch (IOException | ClassNotFoundException e) {
-                throw new IgniteCheckedException("Failed to deserialize secondary file system factory. ", e);
-            }
+            ByteArrayInputStream in = new ByteArrayInputStream(payloadBytes);
+
+            return new JdkMarshaller().unmarshal(in, clsLdr);
         }
     }
 

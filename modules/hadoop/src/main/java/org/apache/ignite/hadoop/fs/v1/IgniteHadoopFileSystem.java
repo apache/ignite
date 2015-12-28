@@ -330,7 +330,9 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
             if (initSecondary) {
                 try {
-                    factory = (HadoopFileSystemFactory) paths.getPayload();
+                    Object payload0 = paths.getPayload(getClass().getClassLoader());
+
+                    factory = (HadoopFileSystemFactory) paths.getPayload(getClass().getClassLoader());
                 }
                 catch (IgniteCheckedException e) {
                     throw new IOException("Failed to get secondary file system factory.", e);
@@ -505,8 +507,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
                 }
 
                 secondaryFs.setOwner(toSecondary(p), username, grpName);
-            }
-            else if (rmtClient.update(convert(p), F.asMap(PROP_USER_NAME, username, PROP_GROUP_NAME, grpName)) == null)
+            } else if (rmtClient.update(convert(p), F.asMap(PROP_USER_NAME, username, PROP_GROUP_NAME, grpName)) == null)
                 throw new IOException("Failed to set file permission (file not found?)" +
                     " [path=" + p + ", userName=" + username + ", groupName=" + grpName + ']');
         }
