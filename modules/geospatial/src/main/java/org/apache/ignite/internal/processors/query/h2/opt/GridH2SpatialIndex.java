@@ -28,20 +28,18 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.h2.engine.Constants;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
-import org.h2.index.IndexCondition;
 import org.h2.index.IndexType;
 import org.h2.index.SingleRowCursor;
 import org.h2.index.SpatialIndex;
+import org.h2.index.SpatialTreeIndex;
 import org.h2.message.DbException;
 import org.h2.mvstore.MVStore;
 import org.h2.mvstore.rtree.MVRTreeMap;
 import org.h2.mvstore.rtree.SpatialKey;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.Table;
 import org.h2.table.TableFilter;
@@ -231,32 +229,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override protected long getCostRangeIndex(int[] masks, long rowCnt, TableFilter[] filters, int filter,
-        SortOrder sortOrder) {
-        rowCnt += Constants.COST_ROW_OFFSET;
-        long cost = rowCnt;
-        long rows = rowCnt;
-
-        if (masks == null)
-            return cost;
-
-        for (Column column : columns) {
-            int idx = column.getColumnId();
-            int mask = masks[idx];
-            if ((mask & IndexCondition.SPATIAL_INTERSECTS) != 0) {
-                cost = 3 + rows / 4;
-
-                break;
-            }
-        }
-
-        return cost;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder) {
-        return getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder);
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
+        return SpatialTreeIndex.getCostRangeIndex(masks, rowCnt, columns);
     }
 
     /** {@inheritDoc} */

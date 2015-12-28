@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
-import org.h2.engine.Constants;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -261,7 +260,7 @@ public abstract class GridMergeIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
-        return getRowCountApproximation() + Constants.COST_ROW_OFFSET;
+        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, true);
     }
 
     /** {@inheritDoc} */

@@ -35,10 +35,10 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
-import org.h2.engine.Constants;
 import org.h2.engine.Database;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
+import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
 import org.h2.index.IndexLookupBatch;
@@ -841,7 +841,7 @@ public class GridH2Table extends TableBase {
      * Wrapper type for primary key.
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class ScanIndex implements Index {
+    static class ScanIndex extends BaseIndex {
         /** */
         static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
 
@@ -934,9 +934,10 @@ public class GridH2Table extends TableBase {
         @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
             SortOrder sortOrder) {
             long rows = getRowCountApproximation();
+            double baseCost = getCostRangeIndex(masks, rows, filters, filter, sortOrder, true);
             int mul = delegate.getDistributedMultiplier(ses, filters, filter);
 
-            return  mul * (rows + Constants.COST_ROW_OFFSET);
+            return  mul * baseCost;
         }
 
         /** {@inheritDoc} */
