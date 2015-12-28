@@ -96,6 +96,7 @@ public class TestKafkaBroker {
     public void createTopic(String topic, int partitions, int replicationFactor)
         throws TimeoutException, InterruptedException {
         List<KafkaServer> servers = new ArrayList<>();
+
         servers.add(kafkaSrv);
 
         TestUtils.createTopic(zkUtils, topic, partitions, replicationFactor,

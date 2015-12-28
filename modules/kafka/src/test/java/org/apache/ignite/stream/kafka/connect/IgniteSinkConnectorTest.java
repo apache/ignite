@@ -88,7 +88,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        IgniteConfiguration cfg = loadConfiguration("modules/kafka-connect/src/test/resources/example-ignite.xml");
+        IgniteConfiguration cfg = loadConfiguration("modules/kafka/src/test/resources/example-ignite.xml");
 
         cfg.setClientMode(false);
 

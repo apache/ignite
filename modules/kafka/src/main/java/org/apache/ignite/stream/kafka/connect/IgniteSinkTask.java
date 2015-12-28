@@ -40,6 +40,7 @@ public class IgniteSinkTask extends SinkTask {
     /** Ignite instance. */
     private static Ignite ignite;
 
+    /** Data streamer. */
     private static IgniteDataStreamer dataStreamer;
 
     /** {@inheritDoc} */
@@ -55,7 +56,9 @@ public class IgniteSinkTask extends SinkTask {
     private static synchronized void initializeIgnite(Map<String, String> props) {
         if (ignite == null) {
             ignite = Ignition.start(props.get(IgniteSinkConstants.CACHE_CFG_PATH));
+
             dataStreamer = ignite.dataStreamer(props.get(IgniteSinkConstants.CACHE_NAME));
+
             if (props.containsKey(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE))
                 dataStreamer.allowOverwrite(Boolean.parseBoolean(props.get(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE)));
             if (props.containsKey(IgniteSinkConstants.CACHE_PER_NODE_DATA_SIZE))
@@ -72,6 +75,7 @@ public class IgniteSinkTask extends SinkTask {
         if (ignite != null) {
             dataStreamer.close();
             dataStreamer = null;
+
             ignite.close();
             ignite = null;
         }

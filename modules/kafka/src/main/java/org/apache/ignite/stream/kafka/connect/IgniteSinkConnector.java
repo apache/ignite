@@ -75,6 +75,7 @@ public class IgniteSinkConnector extends SinkConnector {
     @Override public List<Map<String, String>> taskConfigs(int maxTasks) {
         List<Map<String, String>> taskConfigs = new ArrayList<>();
         Map<String, String> taskProps = new HashMap<>();
+
         taskProps.putAll(configProps);
 
         for (int i = 0; i < maxTasks; i++) {

@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
 import kafka.serializer.Decoder;
