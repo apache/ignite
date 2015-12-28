@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientCache
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeMetricsBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientResponse;
@@ -926,24 +927,14 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         Map<String, GridClientCacheMode> caches = new HashMap<>();
 
         if (nodeBean.getCaches() != null) {
-            for (Map.Entry<String, String> e : nodeBean.getCaches().entrySet()) {
+            for (GridClientCacheBean cacheBean : nodeBean.getCaches()) {
                 try {
-                    caches.put(e.getKey(), GridClientCacheMode.valueOf(e.getValue()));
+                    caches.put(cacheBean.getName(), cacheBean.getMode());
                 }
                 catch (IllegalArgumentException ignored) {
                     log.warning("Invalid cache mode received from remote node (will ignore) [srv=" + serverAddress() +
-                        ", cacheName=" + e.getKey() + ", cacheMode=" + e.getValue() + ']');
+                        ", cacheName=" + cacheBean.getName() + ", cacheMode=" + cacheBean.getMode() + ']');
                 }
-            }
-        }
-
-        if (nodeBean.getDefaultCacheMode() != null) {
-            try {
-                caches.put(null, GridClientCacheMode.valueOf(nodeBean.getDefaultCacheMode()));
-            }
-            catch (IllegalArgumentException ignored) {
-                log.warning("Invalid cache mode received for default cache from remote node (will ignore) [srv="
-                    + serverAddress() + ", cacheMode=" + nodeBean.getDefaultCacheMode() + ']');
             }
         }
 

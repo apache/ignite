@@ -789,7 +789,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startProcessor(new ClusterProcessor(ctx));
 
-            fillNodeAttributes();
+            fillNodeAttributes(notifyEnabled);
 
             U.onGridStart();
 
@@ -1203,10 +1203,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Creates attributes map and fills it in.
      *
+     * @param notifyEnabled Update notifier flag.
      * @throws IgniteCheckedException thrown if was unable to set up attribute.
      */
     @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
-    private void fillNodeAttributes() throws IgniteCheckedException {
+    private void fillNodeAttributes(boolean notifyEnabled) throws IgniteCheckedException {
         final String[] incProps = cfg.getIncludeProperties();
 
         try {
@@ -1243,6 +1244,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     ctx.addNodeAttribute(key, e.getValue());
                 }
             }
+
+            ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_UPDATE_NOTIFIER_ENABLED, notifyEnabled);
 
             if (log.isDebugEnabled())
                 log.debug("Added system properties to node attributes.");

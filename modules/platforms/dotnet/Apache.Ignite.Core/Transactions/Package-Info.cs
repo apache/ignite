@@ -18,7 +18,7 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// Contains transaction-related classes.
+/// Transaction-related classes.
 /// </summary>
 namespace Apache.Ignite.Core.Transactions
 {

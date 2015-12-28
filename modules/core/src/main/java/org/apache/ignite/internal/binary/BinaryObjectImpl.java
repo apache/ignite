@@ -17,16 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -43,7 +33,18 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.UUID;
+
+import static java.nio.charset.StandardCharsets.*;
 
 /**
  * Binary object implementation.
@@ -427,8 +428,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(ctx);
-
         if (detachAllowed) {
             int len = length();
 
@@ -445,7 +444,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ctx = (BinaryContext)in.readObject();
+        ctx = GridBinaryMarshaller.threadLocalContext();
 
         arr = new byte[in.readInt()];
 
@@ -532,7 +531,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Object.
      */
     private Object deserializeValue(@Nullable CacheObjectContext coCtx) {
-        BinaryReaderExImpl reader = reader(null);
+        BinaryReaderExImpl reader = reader(null,
+            coCtx != null ? coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader());
 
         Object obj0 = reader.deserialize();
 
@@ -560,10 +560,23 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param rCtx Reader context.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr) {
+        if (ldr == null)
+            ldr = ctx.configuration().getClassLoader();
+
         return new BinaryReaderExImpl(ctx,
             BinaryHeapInputStream.create(arr, start),
-            ctx.configuration().getClassLoader(),
+            ldr,
             rCtx);
+    }
+
+    /**
+     * Create new reader for this object.
+     *
+     * @param rCtx Reader context.
+     * @return Reader.
+     */
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx) {
+        return reader(rCtx, null);
     }
 }

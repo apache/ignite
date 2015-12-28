@@ -841,7 +841,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Query.
      * @return Cursor.
      */
-    public <K, V> Iterator<Cache.Entry<K, V>> queryLocal(final GridCacheContext<?, ?> cctx, final SqlQuery qry) {
+    public <K, V> Iterator<Cache.Entry<K, V>> queryLocal(
+        final GridCacheContext<?, ?> cctx,
+        final SqlQuery qry,
+        final boolean keepBinary
+    ) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -887,8 +891,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 IgniteBiTuple<K, V> t = i.next();
 
                                 return new CacheEntryImpl<>(
-                                    t.getKey(),
-                                    t.getValue());
+                                    (K)cctx.unwrapBinaryIfNeeded(t.getKey(), keepBinary, false),
+                                    (V)cctx.unwrapBinaryIfNeeded(t.getValue(), keepBinary, false));
                             }
 
                             @Override public void remove() {
@@ -1071,6 +1075,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (clsName.endsWith("[]")) {
             clsName = clsName.substring(0, clsName.length() - 2) + "_array";
         }
+
+        int parentEnd = clsName.lastIndexOf('$');
+
+        if (parentEnd >= 0)
+            clsName = clsName.substring(parentEnd + 1);
 
         return clsName;
     }

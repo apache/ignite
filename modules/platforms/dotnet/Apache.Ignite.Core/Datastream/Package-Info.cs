@@ -18,7 +18,7 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// Contains Ignite Streamer classes.
+/// Ignite Streamer classes.
 /// </summary>
 namespace Apache.Ignite.Core.Datastream
 {
