@@ -11,6 +11,8 @@ Apache Ignite In-Memory Data Fabric 1.5
 * Added MQTT Streamer.
 * Added Twitter Streamer.
 * Added Ignite Sink (integration with Apache Flume).
+* Added Apache Camel Streamer.
+* Added OSGi support.
 * Fixed optimistic serializable transactions: implemented "deadlock-free" locking algorithm.
 * Fixed failover for continuous queries.
 * Fixed compilation and runtime errors under OpenJDK and IBM JDK.
