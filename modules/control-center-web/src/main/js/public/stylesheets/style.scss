@@ -1097,6 +1097,44 @@ button.form-control {
     .clickable { cursor: pointer; }
 }
 
+.theme-line .popover.summary-project-structure {
+    @extend .popover.settings;
+
+    z-index: 1030;
+    min-width: 305px;
+
+    .popover-title {
+        color: black;
+
+        line-height: 27px;
+
+        padding: 3px 5px 3px 10px;
+
+        white-space: nowrap;
+        overflow: hidden;
+        -o-text-overflow: ellipsis;
+        text-overflow: ellipsis;
+
+        .close {
+            float: right;
+            top: 0;
+            right: 0;
+            position: relative;
+            margin-left: 10px;
+            line-height: 27px;
+        }
+    }
+
+    > .popover-content {
+        overflow: auto;
+
+        white-space: nowrap;
+
+        min-height: 300px;
+        max-height: 300px;
+    }
+}
+
 .theme-line .popover.validation-error {
     max-width: 400px;
     color: $brand-primary;
