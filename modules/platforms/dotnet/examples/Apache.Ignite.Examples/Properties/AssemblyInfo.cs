@@ -31,6 +31,6 @@
 
 [assembly: Guid("41a0cb95-3435-4c78-b867-900b28e2c9ee")]
 
-[assembly: AssemblyVersion("1.5.0.7782")]
-[assembly: AssemblyFileVersion("1.5.0.7782")]
-[assembly: AssemblyInformationalVersion("1.5.0-final")]
+[assembly: AssemblyVersion("1.5.0.7794")]
+[assembly: AssemblyFileVersion("1.5.0.7794")]
+[assembly: AssemblyInformationalVersion("1.5.0.final")]
