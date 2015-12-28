@@ -207,8 +207,6 @@ public class AgentSqlTestDrive {
     private static <K, V> CacheConfiguration<K, V> cacheCar(String name) {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(name);
 
-        ccfg.setSqlSchema(name.replace('-', '_'));
-
         // Configure cacheEmployee types.
         Collection<QueryEntity> queryEntities = new ArrayList<>();
 
