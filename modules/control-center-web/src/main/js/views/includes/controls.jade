@@ -215,7 +215,7 @@ mixin details-row(lblClasses, fieldClasses)
                                     label.placeholder {{::detail.placeholder}}
                                     +btn-save('tableSimpleSaveVisible(detail, -1)', 'tableSimpleSave(tableSimpleValid, backupItem, detail, -1)')
                                     .input-tip.form-group.has-feedback
-                                        input.form-control(id='new{{::detail.focusId}}' name='{{detail.model}}' type='text' ng-model='detail.newValue' ng-focus='tableNewItem(detail)' placeholder='{{::detail.placeholder}}' on-enter='tableSimpleSaveVisible(detail, -1) && tableSimpleSave(tableSimpleValid, backupItem, detail, -1)' on-escape='tableReset()')&attributes(customValidators)
+                                        input.form-control(id='new{{::detail.focusId}}' name='{{detail.model}}' type='text' ng-model='detail.newValue' placeholder='{{::detail.placeholder}}' on-enter='tableSimpleSaveVisible(detail, -1) && tableSimpleSave(tableSimpleValid, backupItem, detail, -1)' on-escape='tableReset()')&attributes(customValidators)
                                         +ico-exclamation('{{detail.model}}', 'ipaddress', 'Invalid address, see help for format description.')
 
 mixin table-db-field-edit(prefix, focusId, index)

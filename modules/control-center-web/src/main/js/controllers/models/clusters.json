@@ -54,6 +54,7 @@
                 {
                   "label": "Addresses",
                   "type": "table-simple",
+                  "ui": "table-simple",
                   "path": "discovery.Vm",
                   "model": "addresses",
                   "reordering": true,
@@ -140,6 +141,7 @@
                 {
                   "label": "Addresses",
                   "type": "table-simple",
+                  "ui": "table-simple",
                   "path": "discovery.Multicast",
                   "model": "addresses",
                   "reordering": true,
@@ -232,6 +234,7 @@
                 {
                   "label": "Regions",
                   "type": "table-simple",
+                  "ui": "table-simple",
                   "path": "discovery.Cloud",
                   "model": "regions",
                   "placeholder": "Region name",
@@ -249,8 +252,8 @@
                 },
                 {
                   "label": "Zones",
-                  "ui": "table-simple",
                   "type": "table-simple",
+                  "ui": "table-simple",
                   "path": "discovery.Cloud",
                   "model": "zones",
                   "placeholder": "Zone name",
@@ -1070,6 +1073,7 @@
           "label": "Local class path exclude",
           "id": "peerClassLoadingLocalClassPathExclude",
           "type": "table-simple",
+          "ui": "table-simple",
           "model": "peerClassLoadingLocalClassPathExclude",
           "hide": "!backupItem.peerClassLoadingEnabled",
           "focusId": "PeerClsPathExclude",
@@ -1600,6 +1604,7 @@
         {
           "label": "Trust managers",
           "type": "table-simple",
+          "ui": "table-simple",
           "path": "sslContextFactory",
           "model": "trustManagers",
           "placeholder": "Trust manager",
