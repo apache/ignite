@@ -39,6 +39,86 @@ export default [
         $scope.tableVisibleRow = $table.tableVisibleRow;
         $scope.widthIsSufficient = $common.widthIsSufficient;
 
+        $scope.projectStructureOptions = {
+            nodeChildren: 'children',
+            injectClasses: {
+                iExpanded: 'fa fa-folder-open-o',
+                iCollapsed: 'fa fa-folder-o'
+            }
+        };
+
+        const projectStructureRoot = {
+            type: 'folder',
+            name: 'project.zip',
+            children: [
+                {
+                    type: 'folder',
+                    name: 'config',
+                    children: [
+                        { type: 'file', name: 'ServerConfig.xml' },
+                        { type: 'file', name: 'ClientConfig.xml' }
+                    ]
+                },
+                {
+                    type: 'folder',
+                    name: 'jdbc-drivers',
+                    children: [
+                        { type: 'file', name: 'README.txt' }
+                    ]
+                },
+                {
+                    type: 'folder',
+                    name: 'src',
+                    children: [
+                        {
+                            type: 'folder',
+                            name: 'main',
+                            children: [
+                                {
+                                    type: 'folder',
+                                    name: 'java',
+                                    children: [
+                                        {
+                                            type: 'folder',
+                                            name: 'src-config',
+                                            title: 'config',
+                                            children: [
+                                                { type: 'file', name: 'ClientConfigurationFactory.java' },
+                                                { type: 'file', name: 'ServerConfigurationFactory.java' }
+                                            ]
+                                        },
+                                        {
+                                            type: 'folder',
+                                            name: 'pojo.model',
+                                            children: [
+                                                { type: 'file', name: 'GeneratedPojo.java' }
+                                            ]
+                                        },
+                                        {
+                                            type: 'folder',
+                                            name: 'startup',
+                                            children: [
+                                                { type: 'file', name: 'ClientNodeCodeStartup.java' },
+                                                { type: 'file', name: 'ClientNodeSpringStartup.java' },
+                                                { type: 'file', name: 'ServerNodeCodeStartup.java' },
+                                                { type: 'file', name: 'ServerNodeSpringStartup.java' }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                { type: 'file', name: 'Dockerfile' },
+                { type: 'file', name: 'pom.xml' },
+                { type: 'file', name: 'README.txt' }
+            ]
+        };
+
+        $scope.projectStructure = [projectStructureRoot];
+        $scope.projectStructureExpanded = [projectStructureRoot];
+
         $scope.tabsServer = { activeTab: 0 };
         $scope.tabsClient = { activeTab: 0 };
 
@@ -88,8 +168,8 @@ export default [
             zip.file(serverXml, $generatorXml.cluster(cluster));
             zip.file(clientXml, $generatorXml.cluster(cluster, clientNearCfg));
 
-            zip.file(srcPath + 'factory/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ServerConfigurationFactory', null));
-            zip.file(srcPath + 'factory/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ClientConfigurationFactory', clientNearCfg));
+            zip.file(srcPath + 'config/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ServerConfigurationFactory', null));
+            zip.file(srcPath + 'config/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ClientConfigurationFactory', clientNearCfg));
 
             zip.file(srcPath + 'startup/ServerNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeSpringStartup', '"' + serverXml + '"'));
             zip.file(srcPath + 'startup/ClientNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeSpringStartup', '"' + clientXml + '"'));

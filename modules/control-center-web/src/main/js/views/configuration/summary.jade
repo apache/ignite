@@ -27,9 +27,8 @@ mixin ignite-form-field-tooltip(message)
 .docs-body
     ignite-callout
         ignite-callout-cel(data-title='On This Screen')
-            li Download XML Config
-            li Download Java Code
-            li Download Docker File
+            li Download Project
+            li Preview generated XML, Java and Docker files
             li
                 ignite-dialog More info
                     ignite-dialog-title Summary screen
@@ -38,8 +37,10 @@ mixin ignite-form-field-tooltip(message)
                         | Database table POJO classes for cluster's metadata available on "POJO" tab.#[br]
                         | Use "Download" button to receive configurations in ZIP file.#[br]
                         | Go back to change configuration on #[a(ui-sref='base.configuration.clusters') clusters],&nbsp;
-                        | #[a(ui-sref='base.configuration.caches') caches] or #[a(ui-sref='base.configuration.metadata') metadata] screen.
-                
+                        | #[a(ui-sref='base.configuration.caches') caches] or #[a(ui-sref='base.configuration.metadata') metadata] screen.#[br]
+                        | Read #[a(href='https://apacheignite.readme.io/docs') Ignite Documentation].#[br]
+                        | Download #[a(href='https://ignite.apache.org/download.cgi#binaries') Ignite Binary Release].
+
         ignite-callout-cel(data-title='Next Steps')
             li Deploy Ignite Servers
             li Connect Ignite Clients
@@ -57,10 +58,9 @@ mixin ignite-form-field-tooltip(message)
 
             div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)')
                 .padding-top-dflt(bs-affix)
-                    button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip data-title='Download configuration' data-placement='bottom') Download
-
+                    button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip data-title='Download project' data-placement='bottom') Download project
+                    a(bs-popover data-template-url='/configuration/summary-project-structure.html', data-placement='bottom', data-trigger='click' data-auto-close='true') Project structure
                     hr
-
                 .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
                     .panel.panel-default
                         .panel-heading(role='tab' bs-collapse-toggle)

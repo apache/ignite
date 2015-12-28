@@ -34,7 +34,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
         const type = $scope.cfg ? CLIENT_CFG : SERVER_CFG;
 
         // TODO IGNITE-2054: need move $generatorJava to services.
-        ctrl.data = $generatorJava.cluster($scope.cluster, 'factory', type, $scope.cfg);
+        ctrl.data = $generatorJava.cluster($scope.cluster, 'config', type, $scope.cfg);
     };
 
     // Setup watchers.
