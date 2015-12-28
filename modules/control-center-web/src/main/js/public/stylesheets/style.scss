@@ -637,7 +637,8 @@ button.form-control {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        max-width: calc(100% - 85px)
+        max-width: calc(100% - 85px);
+        cursor: pointer;
     }
 
     .btn-group {

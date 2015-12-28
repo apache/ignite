@@ -22,7 +22,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 
+import com.beust.jcommander.ParameterException;
 import org.apache.ignite.agent.handlers.RestExecutor;
 import org.apache.log4j.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -50,11 +52,22 @@ public class AgentLauncher {
 
         AgentConfiguration cfg = new AgentConfiguration();
 
-        JCommander jCommander = new JCommander(cfg, args);
+        JCommander jCommander = new JCommander(cfg);
 
         String osName = System.getProperty("os.name").toLowerCase();
 
         jCommander.setProgramName("ignite-web-agent." + (osName.contains("win") ? "bat" : "sh"));
+
+        try {
+            jCommander.parse(args);
+        }
+        catch (ParameterException pe) {
+            log.error("Failed to parse command line parameters: " + Arrays.toString(args), pe);
+
+            jCommander.usage();
+
+            return;
+        }
 
         String prop = cfg.configPath();
 
