@@ -1,4 +1,4 @@
-﻿/*
+﻿﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -31,6 +31,6 @@ using System.Reflection;
 
 [assembly: Guid("ce65ec7c-d3cf-41ad-8f45-f90d5af68d77")]
 
-[assembly: AssemblyVersion("1.5.0.7794")]
-[assembly: AssemblyFileVersion("1.5.0.7794")]
-[assembly: AssemblyInformationalVersion("1.5.0.final")]
+[assembly: AssemblyVersion("1.5.1.7927")]
+[assembly: AssemblyFileVersion("1.5.1.7927")]
+[assembly: AssemblyInformationalVersion("1.5.1.final")]

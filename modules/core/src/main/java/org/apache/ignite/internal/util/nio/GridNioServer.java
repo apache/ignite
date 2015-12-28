@@ -309,6 +309,13 @@ public class GridNioServer<T> {
     }
 
     /**
+     * @return Configured port.
+     */
+    public int port() {
+        return locAddr != null ? locAddr.getPort() : -1;
+    }
+
+    /**
      * Creates and returns a builder for a new instance of this class.
      *
      * @return Builder for new instance.

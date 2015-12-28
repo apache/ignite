@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>1.5.0.final-SNAPSHOT</version>
+    <version>1.5.1.final-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -476,25 +476,28 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.apache.resources</groupId>
-                                <artifactId>apache-source-release-assembly-descriptor</artifactId>
-                                <version>1.0.4</version>
-                            </dependency>
-                        </dependencies>
                         <executions>
                             <execution>
+                                <!-- skip default -->
                                 <id>source-release-assembly</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <skipAssembly>true</skipAssembly>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>source-release-assembly-ignite</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
                                 <configuration>
                                     <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                                    <descriptorRefs>
-                                        <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
-                                    </descriptorRefs>
+                                    <descriptors>
+                                        <descriptor>assembly/release-sources.xml</descriptor>
+                                    </descriptors>
                                     <tarLongFileMode>gnu</tarLongFileMode>
                                     <finalName>${project.artifactId}-${project.version}-src</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
