@@ -1517,7 +1517,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
             }
 
             // Show a basic modal from a controller
-            $modal({scope: scope, template: '/templates/message.html', show: true});
+            $modal({scope: scope, template: '/templates/message.html', placement:'center', show: true});
         }
     }
 });
