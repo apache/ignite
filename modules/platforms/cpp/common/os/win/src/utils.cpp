@@ -164,7 +164,7 @@ namespace ignite
              */
             std::string ClasspathExploded(const std::string& path, bool down)
             {
-                std::string res = std::string();
+                std::string res;
 
                 if (FileExists(path))
                 {

@@ -18,11 +18,11 @@
 #include <dirent.h>
 #include <dlfcn.h>
 
-#include "ignite/impl/utils.h"
+#include <ignite/common/utils.h>
 
 namespace ignite
 {
-    namespace impl
+    namespace common
     {
         namespace utils
         {
@@ -168,7 +168,7 @@ namespace ignite
              */
             std::string ClasspathExploded(const std::string& path, bool down)
             {
-                std::string res = std::string();
+                std::string res;
 
                 if (FileExists(path))
                 {
