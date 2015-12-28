@@ -18,7 +18,7 @@ Test drive of Ignite Web Agent:
 
     1) Get security token on Web Console "Profile" screen.
 
-    2) Demp for metadata load from database.
+    2) Demo for metadata load from database.
        In this mode an in-memory H2 database will started.
        How to evaluate:
          2.1) Go to Ignite Web Console "Metadata" screen.
