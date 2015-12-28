@@ -37,22 +37,11 @@ public class FairAffinityDynamicCacheSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
-    public FairAffinityDynamicCacheSelfTest(){
-        super(false);
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
-
-        cfg.setDiscoverySpi(disco);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         return cfg;
     }
@@ -71,8 +60,6 @@ public class FairAffinityDynamicCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartStopCache() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-647");
-
         CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
@@ -94,6 +81,6 @@ public class FairAffinityDynamicCacheSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        destFut.get(2000L);
+        destFut.get(5000L);
     }
 }
