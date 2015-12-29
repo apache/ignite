@@ -232,17 +232,6 @@ public class GridFunc {
     };
 
     /** */
-    private static final IgniteCallable<?> ATOMIC_REF_FACTORY = new IgniteCallable<AtomicReference>() {
-        @Override public AtomicReference call() {
-            return new AtomicReference();
-        }
-
-        @Override public String toString() {
-            return "Atomic reference factory.";
-        }
-    };
-
-    /** */
     private static final IgniteCallable<?> MAP_FACTORY = new IgniteCallable<Map>() {
         @Override public Map call() {
             return new HashMap();
@@ -2130,40 +2119,6 @@ public class GridFunc {
     }
 
     /**
-     * Utility map getter. This method analogous to {@link #addIfAbsent(Map, Object, Callable)}
-     * method but this one doesn't put the default value into the map when key is not found.
-     *
-     * @param map Map to get value from.
-     * @param key Map key (can be {@code null}).
-     * @param c Optional factory closure for the default value to be returned in
-     *      when {@code key} is not found. If closure is not provided - {@code null} will be returned.
-     * @param <K> Map key type.
-     * @param <V> Map value type.
-     * @return Value for the {@code key} or default value produced by {@code c} if key is not
-     *      found (or {@code null} if key is not found and closure is not provided).
-     * @throws GridClosureException Thrown in case when callable throws exception.
-     * @see #newLinkedList()
-     * @see #newList()
-     * @see #newSet()
-     * @see #newMap()
-     * @see #newAtomicLong()
-     * @see #newAtomicInt()
-     * @see #newAtomicRef()
-     * @see #newAtomicBoolean()
-     */
-    @Nullable public static <K, V> V returnIfAbsent(Map<? extends K, ? extends V> map, @Nullable K key,
-        @Nullable Callable<V> c) {
-        A.notNull(map, "map");
-
-        try {
-            return !map.containsKey(key) ? c == null ? null : c.call() : map.get(key);
-        }
-        catch (Exception e) {
-            throw wrap(e);
-        }
-    }
-
-    /**
      * Returns a factory closure that creates new {@link ConcurrentLinkedDeque8} instance.
      * Note that this method does not create a new closure but returns a static one.
      *
@@ -2211,45 +2166,6 @@ public class GridFunc {
      */
     public static IgniteCallable<AtomicLong> newAtomicLong() {
         return ATOMIC_LONG_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link AtomicReference} instance
-     * initialized to {@code null}. Note that this method does not create a new closure
-     * but returns a static one.
-     *
-     * @param <T> Type of the atomic reference.
-     * @return Factory closure that creates new {@link AtomicReference} instance
-     *      initialized to {@code null} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> IgniteCallable<AtomicReference<T>> newAtomicRef() {
-        return (IgniteCallable<AtomicReference<T>>)ATOMIC_REF_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link AtomicBoolean} instance
-     * initialized to {@code false}. Note that this method does not create a new
-     * closure but returns a static one.
-     *
-     * @return Factory closure that creates new {@link AtomicBoolean} instance
-     *      initialized to {@code false} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    public static IgniteCallable<AtomicBoolean> newAtomicBoolean() {
-        return ATOMIC_BOOL_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link LinkedList} instance.
-     * Note that this method does not create a new closure but returns a static one.
-     *
-     * @param <T> Type parameters for the created {@link LinkedList}.
-     * @return Factory closure that creates new {@link LinkedList} instance every time its {@link
-     *         org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> IgniteCallable<LinkedList<T>> newLinkedList() {
-        return (IgniteCallable<LinkedList<T>>)LINKED_LIST_FACTORY;
     }
 
     /**
@@ -2983,14 +2899,11 @@ public class GridFunc {
      *      found (or {@code null} if key is not found and closure is not provided). Note that
      *      in case when key is not found the default value will be put into the map.
      * @throws GridClosureException Thrown in case when callable throws exception.
-     * @see #newLinkedList()
      * @see #newList()
      * @see #newSet()
      * @see #newMap()
      * @see #newAtomicLong()
      * @see #newAtomicInt()
-     * @see #newAtomicRef()
-     * @see #newAtomicBoolean()
      */
     @Nullable public static <K, V> V addIfAbsent(Map<? super K, V> map, @Nullable K key,
         @Nullable Callable<? extends V> c) {
@@ -3082,25 +2995,6 @@ public class GridFunc {
         for (X x : c)
             if (isAll(x, p))
                 f.apply(x);
-    }
-
-    /**
-     * Calls given {@code side-effect only} closure over the each element of the provided array.
-     *
-     * @param c Array to call closure over.
-     * @param f Side-effect only closure to call over the array.
-     * @param p Optional set of predicates. Only if collection element evaluates
-     *      to {@code true} for given predicates the closure will be applied to it.
-     *      If no predicates provided - closure will be applied to all collection
-     *      elements.
-     * @param <X> Type of the free variable for the closure and type of the array
-     *      elements.
-     */
-    @SuppressWarnings("RedundantTypeArguments")
-    public static <X> void forEach(X[] c, IgniteInClosure<? super X> f, @Nullable IgnitePredicate<? super X>... p) {
-        A.notNull(c, "c", f, "f");
-
-        F.<X>forEach(asList(c), f, p);
     }
 
     /**
@@ -4257,95 +4151,6 @@ public class GridFunc {
      */
     public static GridClosureException wrap(Throwable e) {
         return new GridClosureException(e);
-    }
-
-    /**
-     * Checks if two collections passed in intersect.
-     *
-     * @param <E> Element type.
-     * @param s1 Set1.
-     * @param s2 Set2.
-     * @return {@code True} if there is an intersection, {@code false} otherwise.
-     */
-    public static <E> boolean intersects(Iterable<E> s1, Collection<E>... s2) {
-        for (E e1 : s1) {
-            for (Collection<E> s : s2) {
-                if (s.contains(e1))
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Waits until all passed futures will be executed.
-     *
-     * @param futs Futures. If none provided - this method is no-op.
-     * @throws IgniteCheckedException If any of the futures failed.
-     */
-    public static <T> void awaitAll(@Nullable Collection<IgniteInternalFuture<T>> futs) throws IgniteCheckedException {
-        awaitAll(0, null, futs);
-    }
-
-    /**
-     * Waits until all passed futures will be executed.
-     *
-     * @param timeout Timeout for waiting ({@code 0} for forever).
-     * @param futs Futures. If none provided - this method is no-op.
-     * @throws IgniteCheckedException If any of the futures failed.
-     */
-    public static <T> void awaitAll(long timeout, @Nullable Collection<IgniteInternalFuture<T>> futs) throws IgniteCheckedException {
-        awaitAll(timeout, null, futs);
-    }
-
-    /**
-     * Awaits for all futures to complete and optionally reduces all results into one.
-     *
-     * @param timeout Timeout for waiting ({@code 0} for forever).
-     * @param rdc Optional reducer. If not {@code null}, then results will be reduced into one.
-     * @param futs List of futures to wait for.
-     * @param <T> Return type of the futures.
-     * @param <R> Return type of the reducer.
-     * @return Reduced result if reducer is provided, {@code null} otherwise.
-     * @throws IgniteCheckedException If any of the futures failed.
-     */
-    @Nullable public static <T, R> R awaitAll(long timeout, @Nullable IgniteReducer<T, R> rdc,
-        @Nullable Collection<IgniteInternalFuture<T>> futs) throws IgniteCheckedException {
-        if (futs == null || futs.isEmpty())
-            return null;
-
-        long end = timeout == 0 ? Long.MAX_VALUE : U.currentTimeMillis() + timeout;
-
-        // Overflow.
-        if (end < 0)
-            end = Long.MAX_VALUE;
-
-        // Note that it is important to wait in the natural order of collection and
-        // not via listen method, because caller may actually add to this collection
-        // concurrently while this method is in progress.
-        for (IgniteInternalFuture<T> fut : futs) {
-            T t;
-
-            if (timeout > 0) {
-                long left = end - U.currentTimeMillis();
-
-                if (left <= 0 && !fut.isDone())
-                    throw new IgniteFutureTimeoutCheckedException("Timed out waiting for all futures: " + futs);
-
-                if (fut.isDone() && left < 0)
-                    left = 0;
-
-                t = fut.get(left);
-            }
-            else
-                t = fut.get();
-
-            if (rdc != null)
-                rdc.collect(t);
-        }
-
-        return rdc == null ? null : rdc.reduce();
     }
 
     /**
