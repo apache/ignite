@@ -17,8 +17,11 @@
 
 namespace Apache.Ignite.Core.Cache.Store
 {
+    using System;
+
     /// <summary>
     /// Factory that produces <see cref="ICacheStore"/> instances.
+    /// Implementation can be passed over the wire and thus should be marked with <see cref="SerializableAttribute"/>.
     /// </summary>
     public interface ICacheStoreFactory
     {
