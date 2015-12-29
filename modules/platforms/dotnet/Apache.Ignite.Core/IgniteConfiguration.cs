@@ -46,12 +46,55 @@ namespace Apache.Ignite.Core
         public const int DefaultJvmMaxMem = 1024;
 
         /// <summary>
+        /// Default metrics expire time.
+        /// </summary>
+        public static readonly TimeSpan DefaultMetricsExpireTime = TimeSpan.MaxValue;
+
+        /// <summary>
+        /// Default metrics history size.
+        /// </summary>
+        public const int DefaultMetricsHistorySize = 10000;
+
+        /// <summary>
+        /// Default metrics log frequency.
+        /// </summary>
+        public static readonly TimeSpan DefaultMetricsLogFrequency = TimeSpan.FromMilliseconds(60000);
+
+        /// <summary>
+        /// Default metrics update frequency.
+        /// </summary>
+        public static readonly TimeSpan DefaultMetricsUpdateFrequency = TimeSpan.FromMilliseconds(2000);
+
+        /// <summary>
+        /// Default network timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultNetworkTimeout = TimeSpan.FromMilliseconds(5000);
+
+        /// <summary>
+        /// Default network retry delay.
+        /// </summary>
+        public static readonly TimeSpan DefaultNetworkRetryDelay = TimeSpan.FromMilliseconds(1000);
+
+        /// <summary>
+        /// Default network retry count.
+        /// </summary>
+        public const int DefaultNetworkRetryCount = 3;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
         /// </summary>
         public IgniteConfiguration()
         {
             JvmInitialMemoryMb = DefaultJvmInitMem;
             JvmMaxMemoryMb = DefaultJvmMaxMem;
+
+            MetricsExpireTime = DefaultMetricsExpireTime;
+            MetricsHistorySize = DefaultMetricsHistorySize;
+            MetricsLogFrequency = DefaultMetricsLogFrequency;
+            MetricsUpdateFrequency = DefaultMetricsUpdateFrequency;
+            NetworkTimeout = DefaultNetworkTimeout;
+            NetworkSendRetryCount = DefaultNetworkRetryCount;
+            NetworkSendRetryDelay = DefaultNetworkRetryDelay;
         }
 
         /// <summary>
@@ -217,7 +260,7 @@ namespace Apache.Ignite.Core
         /// Client node cannot hold data in the caches.
         /// Default is null and takes this setting from Spring configuration.
         /// </summary>
-        public bool? ClientMode { get; set; }
+        public bool ClientMode { get; set; }
 
         /// <summary>
         /// Gets or sets a set of event types (<see cref="EventType" />) to be recorded by Ignite. 
@@ -227,40 +270,40 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the time after which a certain metric value is considered expired.
         /// </summary>
-        public TimeSpan? MetricsExpireTime { get; set; }
+        public TimeSpan MetricsExpireTime { get; set; }
 
         /// <summary>
         /// Gets or sets the number of metrics kept in history to compute totals and averages.
         /// </summary>
-        public int? MetricsHistorySize { get; set; }
+        public int MetricsHistorySize { get; set; }
 
         /// <summary>
         /// Gets or sets the frequency of metrics log print out.
         /// <see cref="TimeSpan.Zero"/> to disable metrics print out.
         /// </summary>
-        public TimeSpan? MetricsLogFrequency { get; set; }
+        public TimeSpan MetricsLogFrequency { get; set; }
 
         /// <summary>
         /// Gets or sets the job metrics update frequency.
         /// <see cref="TimeSpan.Zero"/> to update metrics on job start/finish.
         /// Negative value to never update metrics.
         /// </summary>
-        public TimeSpan? MetricsUpdateFrequency { get; set; }
+        public TimeSpan MetricsUpdateFrequency { get; set; }
 
         /// <summary>
         /// Gets or sets the network send retry count.
         /// </summary>
-        public int? NetworkSendRetryCount { get; set; }
+        public int NetworkSendRetryCount { get; set; }
 
         /// <summary>
         /// Gets or sets the network send retry delay.
         /// </summary>
-        public TimeSpan? NetworkSendRetryDelay { get; set; }
+        public TimeSpan NetworkSendRetryDelay { get; set; }
 
         /// <summary>
         /// Gets or sets the network timeout.
         /// </summary>
-        public TimeSpan? NetworkTimeout { get; set; }
+        public TimeSpan NetworkTimeout { get; set; }
 
         /// <summary>
         /// Gets or sets the work directory.
