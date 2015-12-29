@@ -43,7 +43,7 @@ namespace ignite
 
             SocketClient::~SocketClient()
             {
-                // No-op.
+                Close();
             }
 
             bool SocketClient::Connect(const char* hostname, uint16_t port)
