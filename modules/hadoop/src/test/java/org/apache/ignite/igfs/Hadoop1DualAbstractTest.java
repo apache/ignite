@@ -77,6 +77,8 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
         IgniteHadoopIgfsSecondaryFileSystem second =
             new IgniteHadoopIgfsSecondaryFileSystem(secondaryUri, secondaryConfFullPath);
 
+        second.start();
+
         FileSystem fileSystem = second.fileSystem();
 
         igfsSecondary = new HadoopFileSystemUniversalFileSystemAdapter(fileSystem);

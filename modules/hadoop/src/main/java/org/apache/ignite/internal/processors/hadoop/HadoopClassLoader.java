@@ -270,6 +270,15 @@ public class HadoopClassLoader extends URLClassLoader {
      * @return {@code true} If the class has external dependencies.
      */
     boolean hasExternalDependencies(final String clsName, final Set<String> visited) {
+        if (clsName.equals("org.apache.ignite.hadoop.fs.HadoopFileSystemFactory"))
+            return true;
+
+        if (clsName.contains("BasicHadoopFileSystemFactory"))
+            return true;
+
+        if (clsName.contains("CachingHadoopFileSystemFactory"))
+            return true;
+
         if (isHadoop(clsName)) // Hadoop must not be in classpath but Idea sucks, so filtering explicitly as external.
             return true;
 
@@ -361,6 +370,9 @@ public class HadoopClassLoader extends URLClassLoader {
             };
 
             void onClass(String depCls) {
+                if (clsName.equals("org.apache.ignite.hadoop.fs.HadoopFileSystemFactory"))
+                    System.out.println("ON_CLASS: " + depCls);
+
                 assert validateClassName(depCls) : depCls;
 
                 if (depCls.startsWith("java.")) // Filter out platform classes.
@@ -429,6 +441,9 @@ public class HadoopClassLoader extends URLClassLoader {
 
             @Override public MethodVisitor visitMethod(int i, String name, String desc, String signature,
                 String[] exceptions) {
+                if (clsName.equals("org.apache.ignite.hadoop.fs.HadoopFileSystemFactory"))
+                    System.out.println("VISIT_METHOD: " + name);
+
                 if (exceptions != null) {
                     for (String e : exceptions)
                         onType(e);

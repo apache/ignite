@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.fs;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -73,7 +74,7 @@ public class HadoopLazyConcurrentMap<K, V extends Closeable> {
             try {
                 if (closed)
                     throw new IllegalStateException("Failed to create value for key [" + k
-                        + "]: the map is already closed.");
+                        + "]: the map is already closed. this = " + System.identityHashCode(this));
 
                 final ValueWrapper wNew = new ValueWrapper(k);
 
@@ -204,8 +205,8 @@ public class HadoopLazyConcurrentMap<K, V extends Closeable> {
          *
          * @param key the key to create value for
          * @return the value.
-         * @throws IgniteException on failure.
+         * @throws IOException On failure.
          */
-        public V createValue(K key);
+        public V createValue(K key) throws IOException;
     }
 }

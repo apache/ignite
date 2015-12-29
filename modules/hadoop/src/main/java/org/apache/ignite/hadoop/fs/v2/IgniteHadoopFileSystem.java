@@ -17,22 +17,6 @@
 
 package org.apache.ignite.hadoop.fs.v2;
 
-import java.io.BufferedOutputStream;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -57,7 +41,6 @@ import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
-import org.apache.ignite.internal.processors.hadoop.SecondaryFileSystemProvider;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsInputStream;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsOutputStream;
@@ -76,6 +59,23 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedOutputStream;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_IGFS_LOG_BATCH_SIZE;
 import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_IGFS_LOG_DIR;
 import static org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem.getFsHadoopUser;
@@ -92,8 +92,6 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PREFER_LOCAL_WRITES;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_CONFIG_PATH;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_URI;
 
 /**
  * {@code IGFS} Hadoop 2.x file system driver over file system API. To use
@@ -335,21 +333,26 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             }
 
             if (initSecondary) {
-                Map<String, String> props = paths.properties();
+                throw new IOException("Proxy mode is not supported for the V2 file system.");
 
-                String secUri = props.get(SECONDARY_FS_URI);
-                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
-
-                try {
-                    SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
-
-                    secondaryFs = secProvider.createAbstractFileSystem(user);
-
-                    secondaryUri = secProvider.uri();
-                }
-                catch (IOException e) {
-                    throw new IOException("Failed to connect to the secondary file system: " + secUri, e);
-                }
+                // TODO: Enable.
+//                try {
+//                    factory = (HadoopAbstractFileSystemFactory) paths.getPayload();
+//                }
+//                catch (IgniteCheckedException e) {
+//                    throw new IOException("Failed to get secondary file system factory.", e);
+//                }
+//
+//                A.ensure(secondaryUri != null, "File system factory uri should not be null.");
+//
+//                try {
+//                    secondaryFs = factory.get(user);
+//
+//                    secondaryUri = secondaryFs.getUri();
+//                }
+//                catch (IOException e) {
+//                    throw new IOException("Failed to connect to the secondary file system: " + secondaryUri, e);
+//                }
             }
         }
         finally {
@@ -367,6 +370,10 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
             if (clientLog.isLogEnabled())
                 clientLog.close();
+
+            // TODO: Enable.
+//            if (factory instanceof LifecycleAware)
+//                ((LifecycleAware) factory).stop();
 
             // Reset initialized resources.
             rmtClient = null;
