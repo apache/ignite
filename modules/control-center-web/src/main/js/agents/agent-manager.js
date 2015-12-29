@@ -73,7 +73,7 @@ AgentManager.prototype._addClient = function(userId, client) {
 
 /**
  * @param userId
- * @return {Client}
+ * @returns {Client}
  */
 AgentManager.prototype.findClient = function(userId) {
     var clientsList = this._clients[userId];
@@ -166,7 +166,7 @@ Client.prototype.authResult = function(error) {
  * @param {String} jdbcUrl
  * @param {Object} jdbcInfo
  * @param {Function} cb Callback. Take two arguments: {Object} exception, {Object} result.
- * @return {Array} List of tables (see org.apache.ignite.schema.parser.DbTable java class)
+ * @returns {Array} List of tables (see org.apache.ignite.schema.parser.DbTable java class)
  */
 Client.prototype.metadataSchemas = function(jdbcDriverJarPath, jdbcDriverClass, jdbcUrl, jdbcInfo, cb) {
     this._invokeRmtMethod('schemas', arguments)
@@ -180,7 +180,7 @@ Client.prototype.metadataSchemas = function(jdbcDriverJarPath, jdbcDriverClass, 
  * @param {Array} schemas
  * @param {Boolean} tablesOnly
  * @param {Function} cb Callback. Take two arguments: {Object} exception, {Object} result.
- * @return {Array} List of tables (see org.apache.ignite.schema.parser.DbTable java class)
+ * @returns {Array} List of tables (see org.apache.ignite.schema.parser.DbTable java class)
  */
 Client.prototype.metadataTables = function(jdbcDriverJarPath, jdbcDriverClass, jdbcUrl, jdbcInfo, schemas, tablesOnly, cb) {
     this._invokeRmtMethod('metadata', arguments)
@@ -188,7 +188,7 @@ Client.prototype.metadataTables = function(jdbcDriverJarPath, jdbcDriverClass, j
 
 /**
  * @param {Function} cb Callback. Take two arguments: {Object} exception, {Object} result.
- * @return {Array} List of jars from driver folder.
+ * @returns {Array} List of jars from driver folder.
  */
 Client.prototype.availableDrivers = function(cb) {
     this._invokeRmtMethod('availableDrivers', arguments)
@@ -196,7 +196,7 @@ Client.prototype.availableDrivers = function(cb) {
 
 /**
  * @param {Function} cb Callback. Take two arguments: {Object} exception, {Object} result.
- * @return {Boolean} If test-drive SQL was enabled.
+ * @returns {Boolean} If test-drive SQL was enabled.
  */
 Client.prototype.startDemoSQL = function(cb) {
     this._invokeRmtMethod('startDemoSQL', arguments)
@@ -269,7 +269,7 @@ Client.prototype._rmtCallRes = function(msg) {
 };
 
 /**
- * @return {Ignite}
+ * @returns {Ignite}
  */
 Client.prototype.ignite = function() {
     return this._ignite;
@@ -291,7 +291,7 @@ function argsToArray(args) {
     var res = [];
 
     for (var i = 0; i < args.length; i++)
-        res.push(args[i])
+        res.push(args[i]);
 
     return res;
 }
@@ -311,7 +311,7 @@ exports.createManager = function(srv) {
 };
 
 /**
- * @return {AgentManager}
+ * @returns {AgentManager}
  */
 exports.getAgentManager = function() {
     return manager;

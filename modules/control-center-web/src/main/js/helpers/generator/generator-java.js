@@ -1792,8 +1792,18 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
         res.needEmptyLine = true;
 
         var javaName = field.javaFieldName;
+        var javaType = field.javaFieldType;
 
-        res.startBlock('if (' + javaName + ' != null ? !' + javaName + '.equals(that.' + javaName + ') : that.' + javaName + ' != null)');
+        if ($dataStructures.isJavaPrimitive(javaType)) {
+            if ('float' === javaType)
+                res.startBlock('if (Float.compare(' + javaName + ', that.' + javaName + ') != 0)');
+            else if ('double' === javaType)
+                res.startBlock('if (Double.compare(' + javaName + ', that.' + javaName + ') != 0)');
+            else
+                res.startBlock('if (' + javaName + ' != that.' + javaName + ')');
+        }
+        else
+            res.startBlock('if (' + javaName + ' != null ? !' + javaName + '.equals(that.' + javaName + ') : that.' + javaName + ' != null)');
 
         res.line('return false;');
         res.endBlock();
@@ -1811,15 +1821,46 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     res.startBlock('@Override public int hashCode() {');
 
     var first = true;
+    var tempVar = false;
 
     _.forEach(allFields, function (field) {
         var javaName = field.javaFieldName;
+        var javaType = field.javaFieldType;
 
         if (!first)
             res.needEmptyLine = true;
 
-        res.line(first ? 'int res = ' + javaName + ' != null ? ' + javaName + '.hashCode() : 0;'
-            : 'res = 31 * res + (' + javaName + ' != null ? ' + javaName + '.hashCode() : 0);');
+        if ($dataStructures.isJavaPrimitive(javaType)) {
+            if ('boolean' === javaType)
+                res.line(first ? 'int res = ' + javaName + ' ? 1 : 0;' : 'res = 31 * res + (' + javaName + ' ? 1 : 0);');
+            else if ('byte' === javaType || 'short' === javaType)
+                res.line(first ? 'int res = (int)' + javaName + ';' : 'res = 31 * res + (int)' + javaName + ';');
+            else if ('int' === javaType)
+                res.line(first ? 'int res = ' + javaName + ';' : 'res = 31 * res + ' + javaName + ';');
+            else if ('long' === javaType)
+                res.line(first
+                    ? 'int res = (int)(' + javaName + ' ^ (' + javaName + ' >>> 32));'
+                    : 'res = 31 * res + (int)(' + javaName + ' ^ (' + javaName + ' >>> 32));');
+            else if ('float' === javaType)
+                res.line( first
+                    ? 'int res = ' + javaName + ' != +0.0f ? Float.floatToIntBits(' + javaName + ') : 0;'
+                    : 'res = 31 * res + (' + javaName + ' != +0.0f ? Float.floatToIntBits(' + javaName + ') : 0);');
+            else if ('double' === javaType) {
+                res.line((tempVar ? 'ig_hash_temp' : 'long ig_hash_temp') +
+                        ' = Double.doubleToLongBits(' + javaName + ');');
+
+                res.needEmptyLine = true;
+
+                res.line(first
+                        ? 'int res = (int)(ig_hash_temp ^ (ig_hash_temp >>> 32));'
+                        : 'res = 31 * res + (int)(ig_hash_temp ^ (ig_hash_temp >>> 32));');
+
+                    tempVar = true;
+            }
+        }
+        else
+            res.line(first ? 'int res = ' + javaName + ' != null ? ' + javaName + '.hashCode() : 0;'
+                : 'res = 31 * res + (' + javaName + ' != null ? ' + javaName + '.hashCode() : 0);');
 
         first = false;
     });
@@ -1834,7 +1875,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     res.startBlock('@Override public String toString() {');
 
     if (allFields.length > 0) {
-        field = allFields[0];
+        var field = allFields[0];
 
         res.startBlock('return \"' + type + ' [' + field.javaFieldName + '=\" + ' + field.javaFieldName + ' +', type);
 
@@ -1895,7 +1936,7 @@ $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
 
 /**
  * @param type Full type name.
- * @return Field java type name.
+ * @returns Field java type name.
  */
 $generatorJava.javaTypeName = function(type) {
     var ix = $generatorJava.javaBuildInClasses.indexOf(type);

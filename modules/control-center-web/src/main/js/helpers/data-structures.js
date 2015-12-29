@@ -48,6 +48,9 @@ $dataStructures.EVENT_GROUPS = {
         'EVT_IGFS_META_UPDATED', 'EVT_IGFS_DIR_CREATED', 'EVT_IGFS_DIR_RENAMED', 'EVT_IGFS_DIR_DELETED']
 };
 
+// Java build-in primitive.
+$dataStructures.JAVA_BUILD_IN_PRIMITIVES = ['boolean', 'byte', 'double', 'float', 'int', 'long', 'short'];
+
 // Pairs of Java build-in classes.
 $dataStructures.JAVA_BUILD_IN_CLASSES = [
     {short: 'BigDecimal', full: 'java.math.BigDecimal'},
@@ -81,6 +84,15 @@ $dataStructures.isJavaBuildInClass = function (clsName) {
     }
 
     return false;
+};
+
+/**
+ *
+ * @param clsName Class name to check.
+ * @returns {boolean} 'true' if givent class name is java primitive.
+ */
+$dataStructures.isJavaPrimitive = function (clsName) {
+    return _.includes($dataStructures.JAVA_BUILD_IN_PRIMITIVES, clsName);
 };
 
 /**

@@ -171,6 +171,9 @@ $generatorCommon.builder = function (deep) {
      * @returns {String} Short class name or full class name in case of names conflict.
      */
     res.importClass = function (clsName) {
+        if ($dataStructures.isJavaPrimitive(clsName))
+            return clsName;
+
         var fullClassName = $dataStructures.fullClassName(clsName);
 
         var dotIdx = fullClassName.lastIndexOf('.');

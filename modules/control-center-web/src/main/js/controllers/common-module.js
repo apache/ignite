@@ -164,6 +164,11 @@ consoleModule.service('$common', [
             'BigDecimal', 'Boolean', 'Byte', 'Date', 'Double', 'Float', 'Integer', 'Long', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
         ];
 
+        var javaBuildInTypes = [
+            'BigDecimal', 'boolean', 'Boolean', 'byte', 'Byte', 'Date', 'double', 'Double', 'float', 'Float',
+            'int', 'Integer', 'long', 'Long', 'short', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
+        ];
+
         var javaBuildInFullNameClasses = [
             'java.math.BigDecimal', 'java.lang.Boolean', 'java.lang.Byte', 'java.sql.Date', 'java.lang.Double',
             'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short', 'java.lang.String',
@@ -201,14 +206,14 @@ consoleModule.service('$common', [
         ];
 
         var ALL_JDBC_TYPES = [
-            {dbName: 'BIT', dbType: -7, javaType: 'Boolean'},
-            {dbName: 'TINYINT', dbType: -6, javaType: 'Byte'},
-            {dbName: 'SMALLINT', dbType:  5, javaType: 'Short'},
-            {dbName: 'INTEGER', dbType: 4, javaType: 'Integer'},
-            {dbName: 'BIGINT', dbType: -5, javaType: 'Long'},
-            {dbName: 'FLOAT', dbType: 6, javaType: 'Float'},
-            {dbName: 'REAL', dbType: 7, javaType: 'Double'},
-            {dbName: 'DOUBLE', dbType: 8, javaType: 'Double'},
+            {dbName: 'BIT', dbType: -7, javaType: 'Boolean', primitiveType: 'boolean'},
+            {dbName: 'TINYINT', dbType: -6, javaType: 'Byte', primitiveType: 'byte'},
+            {dbName: 'SMALLINT', dbType:  5, javaType: 'Short', primitiveType: 'short'},
+            {dbName: 'INTEGER', dbType: 4, javaType: 'Integer', primitiveType: 'int'},
+            {dbName: 'BIGINT', dbType: -5, javaType: 'Long', primitiveType: 'long'},
+            {dbName: 'FLOAT', dbType: 6, javaType: 'Float', primitiveType: 'float'},
+            {dbName: 'REAL', dbType: 7, javaType: 'Double', primitiveType: 'double'},
+            {dbName: 'DOUBLE', dbType: 8, javaType: 'Double', primitiveType: 'double'},
             {dbName: 'NUMERIC', dbType: 2, javaType: 'BigDecimal'},
             {dbName: 'DECIMAL', dbType: 3, javaType: 'BigDecimal'},
             {dbName: 'CHAR', dbType: 1, javaType: 'String'},
@@ -230,7 +235,7 @@ consoleModule.service('$common', [
             {dbName: 'CLOB', dbType: 2005, javaType: 'String'},
             {dbName: 'REF', dbType: 2006, javaType: 'Object'},
             {dbName: 'DATALINK', dbType: 70, javaType: 'Object'},
-            {dbName: 'BOOLEAN', dbType: 16, javaType: 'Boolean'},
+            {dbName: 'BOOLEAN', dbType: 16, javaType: 'Boolean', primitiveType: 'boolean'},
             {dbName: 'ROWID', dbType: -8, javaType: 'Object'},
             {dbName: 'NCHAR', dbType: -15, javaType: 'String'},
             {dbName: 'NVARCHAR', dbType: -9, javaType: 'String'},
@@ -729,6 +734,7 @@ consoleModule.service('$common', [
                 return res ? res : {dbName: 'Unknown', javaType: 'Unknown'};
             },
             javaBuildInClasses: javaBuildInClasses,
+            javaBuildInTypes: javaBuildInTypes,
             isJavaBuildInClass: isJavaBuildInClass,
             isValidJavaIdentifier: isValidJavaIdentifier,
             isValidJavaClass: function (msg, ident, allowBuildInClass, elemId, packageOnly, panels, panelId) {

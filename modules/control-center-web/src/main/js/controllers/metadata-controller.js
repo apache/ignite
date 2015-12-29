@@ -282,7 +282,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
             $scope.supportedJdbcTypes = $common.mkOptions($common.SUPPORTED_JDBC_TYPES);
 
-            $scope.supportedJavaTypes = $common.mkOptions($common.javaBuildInClasses);
+            $scope.supportedJavaTypes = $common.mkOptions($common.javaBuildInTypes);
 
             $scope.sortDirections = [
                 {value: true, label: 'ASC'},
@@ -617,12 +617,13 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     return {name: toJavaName(name), className: jdbcType.javaType};
                 }
 
-                function dbField(name, jdbcType) {
+                function dbField(name, jdbcType, nullable) {
                     return {
                         databaseFieldName: name,
                         databaseFieldType: jdbcType.dbName,
                         javaFieldName: toJavaName(name),
-                        javaFieldType: jdbcType.javaType
+                        javaFieldType: nullable ? jdbcType.javaType :
+                            (jdbcType.primitiveType ? jdbcType.primitiveType : jdbcType.javaType)
                     };
                 }
 
@@ -647,16 +648,17 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         _.forEach(table.cols, function (col) {
                             var colName = col.name;
                             var jdbcType = $common.findJdbcType(col.type);
+                            var nullable = col.nullable;
 
                             qryFields.push(queryField(colName, jdbcType));
 
                             if (col.key) {
-                                keyFields.push(dbField(colName, jdbcType));
+                                keyFields.push(dbField(colName, jdbcType, nullable));
 
                                 _containKey = true;
                             }
                             else
-                                valFields.push(dbField(colName, jdbcType));
+                                valFields.push(dbField(colName, jdbcType, nullable));
                         });
 
                         containKey &= _containKey;
