@@ -17,15 +17,16 @@
 .input-tip
     input.form-control(
         id='{{ id }}'
-        name='{{ name }}' 
+        name='{{ name }}'
         placeholder='{{ placeholder }}' 
-        type='text' 
+        data-min-length='1'
+
+        bs-typeahead
+        bs-options='item for item in options' 
+        retain-selection
+        container='body'
 
         ng-model='ngModel'
-        ng-required='{{ required }}'
-
-        data-java-keywords='{{ javaKeywords }}'
-        data-java-package-specified='{{ javaPackageSpecified }}'
     )
 
     span(ng-transclude='')

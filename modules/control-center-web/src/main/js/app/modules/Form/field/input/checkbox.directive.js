@@ -24,6 +24,8 @@ export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', (guid) => {
 
         scope.field = field;
         label.for = scope.id = id || guid();
+
+        label.type = 'internal';
     };
 
     return {

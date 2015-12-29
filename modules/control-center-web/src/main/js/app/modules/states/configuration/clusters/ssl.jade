@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-- var model = 'backupItem'
+- var model = 'backupItem.sslContextFactory'
 
 form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
     .panel-heading(bs-collapse-toggle)
@@ -30,15 +30,117 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
         .panel-body
             .col-sm-6
                 .settings-row
-                    ignite-form-field(data-label='Enabled')
-                        ignite-form-field-tooltip
-                            | Flag indicating whether to configure SSL configuration
+                    ignite-form-field.checkbox
                         ignite-form-field-input-checkbox(
                             data-id='sslEnabled'
                             data-name='sslEnabled'
-                            data-ng-model='#{model}.sslEnabled'
+                            data-ng-model='backupItem.sslEnabled'
                         )
-                        
+                        | Enabled
+                        ignite-form-field-tooltip
+                            | Flag indicating whether to configure SSL configuration
+                
+                .settings-row(ng-if='backupItem.sslEnabled')
+                    ignite-form-field(data-label='Algorithm to create a key manager')
+                        ignite-form-field-tooltip
+                            | Sets key manager algorithm that will be used to create a key manager,#[br]
+                            | Notice that in most cased default value suites well, however, on Android platform this value need to be set to X509
+                        ignite-form-field-input-datalist(
+                            data-id='keyAlgorithm'
+                            data-name='keyAlgorithm'
+                            data-options="['SumX509', 'X509']"
+                            data-ng-model='#{model}.keyAlgorithm'
+                            data-placeholder='SumX509'
+                        )
+
+                .settings-row(ng-if='backupItem.sslEnabled')
+                    ignite-form-field(data-label='Key store file')
+                        ignite-form-field-tooltip
+                            | Path to the key store file,#[br]
+                            | This is a mandatory parameter since ssl context could not be initialized without key manager
+                        ignite-form-field-input-text(
+                            data-id='keyStoreFilePath'
+                            data-name='keyStoreFilePath'
+                            data-ng-model='#{model}.keyStoreFilePath'
+                            data-placeholder='Path to the key store file'
+                            data-ng-required='true'
+                        )
+
+                .settings-row(ng-if='backupItem.sslEnabled')
+                    ignite-form-field(data-label='Key store type')
+                        ignite-form-field-tooltip
+                            | Key store type used in context initialization
+                        ignite-form-field-input-datalist(
+                            data-id='keyStoreType'
+                            data-name='keyStoreType'
+                            data-options="['JKS', 'PCKS11', 'PCKS12']"
+                            data-ng-model='#{model}.keyStoreType'
+                            data-placeholder='JKS'
+                        )
+
+                .settings-row(ng-if='backupItem.sslEnabled')
+                    ignite-form-field(data-label='Protocol')
+                        ignite-form-field-tooltip
+                            | Protocol for secure transport
+                        ignite-form-field-input-datalist(
+                            data-id='protocol'
+                            data-name='protocol'
+                            data-options="['TSL', 'SSL']"
+                            data-ng-model='#{model}.protocol'
+                            data-placeholder='TSL'
+                        )
+
+                .settings-row(ng-if='backupItem.sslEnabled')
+                    ignite-form-group(data-label='Trust managers')
+                        ignite-form-group-tooltip
+                            | Pre-configured trust managers
+                        ignite-form-group-add
+                            | Add new trust manager.
+                        .group-content-empty(ng-if='!(#{model}.trustManagers.length)')
+                            |  Not defined
+                        .group-content(ng-if='#{model}.trustManagers.length')
+                            ignite-form-field(ng-repeat='model in #{model}.trustManagers track by $index' type='internal')
+                                a.labelFormField  {{ $index+1 }}) {{ model }}
+                                i.tipField.fa.fa-remove(
+                                    bs-tooltip='"Remove trust manager"'
+                                    ng-click='#{model}.trustManagers.splice(#{model}.trustManagers.indexOf(model), 1)'
+                                )
+                        .group-content(
+                            ng-form='form' 
+                            ng-submit='#{model}.trustManagers.push("test")'
+                        )
+                            ignite-form-field(type='internal')
+                                i.tipField.fa.fa-floppy-o(
+                                    ng-show='field'
+                                    ng-click='form.$valid && #{model}.trustManagers.push(field)'
+                                    bs-tooltip 
+                                    data-title='Click icon or press [Enter] to save item' 
+                                )
+                                ignite-form-field-input-text(
+                                    data-name='field'
+                                    data-ng-model='field'
+                                    data-placeholder='Enter fully qualified class name'
+                                    data-java-keywords='true'
+                                    data-java-package-specified='true'
+                                    on-enter='form.$valid && #{model}.trustManagers.push(field)'
+                                )
+                                    i.fa.fa-exclamation-triangle.form-control-feedback(
+                                        ng-show='form.field.$error.javaKeywords'
+                                        bs-tooltip
+                                        data-title='Trust manager could not contains reserved java keyword: ""!'
+                                    )
+
+                                    i.fa.fa-exclamation-triangle.form-control-feedback(
+                                        ng-show='form.field.$error.javaPackageSpecified'
+                                        bs-tooltip
+                                        data-title='Trust manager does not have package specified!'
+                                    )
+
+                //- data-ng-model-options='{ updateOn: "blur"}'
+                                        data-java-class='true'
+                                        
+                                        data-java-identifier='true'                
+
                 //- .settings-row
                     .col-sm-12.panel-details(ng-if='#{model}.expanded && #{model}.kind')
                         .details-row

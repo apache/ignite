@@ -22,6 +22,13 @@ import igniteFormFieldDropdown from './field/dropdown.directive';
 import igniteFormFieldInputNumber from './field/input/number.directive';
 import igniteFormFieldInputText from './field/input/text.directive';
 import igniteFormFieldInputCheckbox from './field/input/checkbox.directive';
+import igniteFormFieldInputDatalist from './field/input/datalist.directive';
+import igniteFormGroup from './group/group.directive';
+import igniteFormGroupTooltip from './group/tooltip.directive';
+import igniteFormGroupAdd from './group/add.directive';
+// Validators.
+import javaKeywords from './validator/java-keywords.directive';
+import javaPackageSpecified from './validator/java-package-specified.directive';
 
 angular
 .module('ignite-console.Form', [
@@ -33,6 +40,13 @@ angular
 .directive(...igniteFormFieldInputNumber)
 .directive(...igniteFormFieldInputText)
 .directive(...igniteFormFieldInputCheckbox)
+.directive(...igniteFormFieldInputDatalist)
+.directive(...igniteFormGroup)
+.directive(...igniteFormGroupTooltip)
+.directive(...igniteFormGroupAdd)
+// Validators
+.directive(...javaKeywords)
+.directive(...javaPackageSpecified)
 .factory('IgniteFormGUID', [() => {
     let guid = 0;
 

@@ -15,28 +15,29 @@
  * limitations under the License.
  */
 
-import template from './field.jade!';
+import JAVA_KEYWORDS from 'app/data/java-keywords.json!';
 
-export default ['igniteFormField', [() => {
-    const controller = [function() {
-        const ctrl = this;
+export default ['javaKeywords', [() => {
+    const link = (scope, el, attrs, [ngModel]) => {
+        const validate = (isValid) => {
+            ngModel.$setValidity('javaKeywords', isValid);
+        };
 
-        ctrl.type = ctrl.type || 'external';
-    }];
+        if (typeof attrs.javaKeywords === 'undefined' || !attrs.javaKeywords)
+            return;
+
+        ngModel.$parsers.push((value) => {
+            const keywords = JAVA_KEYWORDS.filter((key) => value && !!~value.indexOf(key));
+
+            validate(!keywords.length);
+
+            return value;
+        });
+    };
 
     return {
-        restrict: 'E',
-        scope: {},
-        bindToController: {
-            for: '@',
-            label: '@',
-            type: '@'
-        },
-        template,
-        controller,
-        controllerAs: 'field',
-        replace: true,
-        transclude: true,
-        require: '^form'
+        restrict: 'A',
+        link,
+        require: ['ngModel']
     };
 }]];

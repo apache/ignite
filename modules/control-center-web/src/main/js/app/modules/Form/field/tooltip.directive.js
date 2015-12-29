@@ -24,6 +24,9 @@ export default ['igniteFormFieldTooltip', ['$tooltip', ($tooltip) => {
         .reduce((html, el) => html += el.outerHTML, '');
 
         $tooltip($element, { title: content });
+
+        if ($element.parent('label').length)
+            $element.addClass('tipLabel').removeClass('tipField');
     };
 
     return {

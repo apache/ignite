@@ -15,28 +15,15 @@
  * limitations under the License.
  */
 
-import template from './field.jade!';
+import template from './table.jade!';
 
-export default ['igniteFormField', [() => {
-    const controller = [function() {
-        const ctrl = this;
-
-        ctrl.type = ctrl.type || 'external';
-    }];
-
+export default ['igniteFormGroupTable', [() => {
     return {
         restrict: 'E',
         scope: {},
-        bindToController: {
-            for: '@',
-            label: '@',
-            type: '@'
-        },
         template,
-        controller,
-        controllerAs: 'field',
         replace: true,
         transclude: true,
-        require: '^form'
+        require: ['^form', '^igniteFormGroup']
     };
 }]];

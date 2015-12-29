@@ -15,28 +15,28 @@
  * limitations under the License.
  */
 
-import template from './field.jade!';
+import template from './datalist.jade!';
 
-export default ['igniteFormField', [() => {
-    const controller = [function() {
-        const ctrl = this;
+export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', (guid) => {
+    const link = (scope) => {
+        const {id} = scope;
 
-        ctrl.type = ctrl.type || 'external';
-    }];
+        scope.id = id || guid();
+    };
 
     return {
         restrict: 'E',
-        scope: {},
-        bindToController: {
-            for: '@',
-            label: '@',
-            type: '@'
+        scope: {
+            id: '@',
+            name: '@',
+            placeholder: '@',
+            options: '=',
+            ngModel: '='
         },
+        link,
         template,
-        controller,
-        controllerAs: 'field',
         replace: true,
         transclude: true,
-        require: '^form'
+        require: ['^form', '?^igniteFormField']
     };
 }]];

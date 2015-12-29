@@ -24,6 +24,7 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
 
         scope.field = field;
         label.for = scope.id = id || guid();
+        label.required = scope.required || false;
     };
 
     return {
@@ -32,7 +33,13 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
             id: '@',
             name: '@',
             placeholder: '@',
-            ngModel: '='
+            required: '=ngRequired',
+            ngModel: '=',
+
+            javaClass: '=',
+            javaKeywords: '=',
+            javaIdentifier: '=',
+            javaPackageSpecified: '='
         },
         link,
         template,

@@ -15,28 +15,26 @@
  * limitations under the License.
  */
 
-import template from './field.jade!';
+const template = `<i class='group-legend-btn fa fa-plus'></i>`;
 
-export default ['igniteFormField', [() => {
-    const controller = [function() {
-        const ctrl = this;
+export default ['igniteFormGroupAdd', ['$tooltip', ($tooltip) => {
+    const link = ($scope, $element, $attrs, $ctrls, $transclude) => {
+        const content = Array.prototype.slice
+        .apply($transclude($scope))
+        .reduce((html, el) => html += el.outerHTML, '');
 
-        ctrl.type = ctrl.type || 'external';
-    }];
+        $tooltip($element, { title: content });
+
+        $element.closest('.group').find('.group-legend').append($element);
+    };
 
     return {
         restrict: 'E',
         scope: {},
-        bindToController: {
-            for: '@',
-            label: '@',
-            type: '@'
-        },
         template,
-        controller,
-        controllerAs: 'field',
+        link,
         replace: true,
         transclude: true,
-        require: '^form'
+        require: ['^form', '^igniteFormGroup']
     };
 }]];

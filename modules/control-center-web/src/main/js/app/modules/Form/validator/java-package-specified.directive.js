@@ -15,28 +15,25 @@
  * limitations under the License.
  */
 
-import template from './field.jade!';
+export default ['javaPackageSpecified', [() => {
+    const link = (scope, el, attrs, [ngModel]) => {
+        const validate = (isValid) => {
+            ngModel.$setValidity('javaPackageSpecified', isValid);
+        };
 
-export default ['igniteFormField', [() => {
-    const controller = [function() {
-        const ctrl = this;
+        if (typeof attrs.javaPackageSpecified === 'undefined' || !attrs.javaPackageSpecified)
+            return;
 
-        ctrl.type = ctrl.type || 'external';
-    }];
+        ngModel.$parsers.push((value) => {
+            validate(!value || !(value.split('.').length < 2));
+
+            return value;
+        });
+    };
 
     return {
-        restrict: 'E',
-        scope: {},
-        bindToController: {
-            for: '@',
-            label: '@',
-            type: '@'
-        },
-        template,
-        controller,
-        controllerAs: 'field',
-        replace: true,
-        transclude: true,
-        require: '^form'
+        restrict: 'A',
+        link,
+        require: ['ngModel']
     };
 }]];

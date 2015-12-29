@@ -14,18 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.input-tip
-    input.form-control(
-        id='{{ id }}'
-        name='{{ name }}' 
-        placeholder='{{ placeholder }}' 
-        type='text' 
-
-        ng-model='ngModel'
-        ng-required='{{ required }}'
-
-        data-java-keywords='{{ javaKeywords }}'
-        data-java-package-specified='{{ javaPackageSpecified }}'
-    )
-
-    span(ng-transclude='')
+.group-section
+    .group
+        .group-legend
+            label {{::group.label}}
+        div(ng-transclude='')
