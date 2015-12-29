@@ -158,8 +158,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
         [Obsolete("Instead, use IgniteConfiguration(string springConfigUrl) constructor or " +
-                  "Ignition.LoadSpringConfiguration to load Spring XML. Using SpringConfigUrl will overwrite " +
-                  "all IgniteConfiguration properties with values from XML file.")]
+                  "Ignition.LoadSpringConfiguration to load Spring XML.")]
         public string SpringConfigUrl { get; set; }
 
         /// <summary>

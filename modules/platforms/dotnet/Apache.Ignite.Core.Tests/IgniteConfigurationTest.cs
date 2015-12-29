@@ -106,6 +106,12 @@ namespace Apache.Ignite.Core.Tests
         }
 
         [Test]
+        public void TestLoadSpringXml()
+        {
+            // TODO: Test various combinations
+        }
+
+        [Test]
         public void TestClientMode()
         {
             using (var ignite = Ignition.Start(new IgniteConfiguration {LocalHost = "127.0.0.1"}))
