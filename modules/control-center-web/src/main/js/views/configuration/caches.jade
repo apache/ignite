@@ -41,7 +41,7 @@ include ../includes/controls
             hr
             +main-table('caches', 'caches', 'cacheName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')
             .padding-top-dflt(bs-affix)
-                .panel-tip-container(data-placement='bottom' bs-tooltip data-title='Create new cache')
+                .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new cache')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cache
                 +save-remove-buttons('cache')
                 hr

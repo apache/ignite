@@ -39,7 +39,7 @@ include ../includes/controls
             hr
             +main-table('IGFS', 'igfss', 'igfsName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
             .padding-top-dflt(bs-affix)
-                .panel-tip-container(data-placement='bottom' bs-tooltip data-title='Create new IGFS')
+                .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new IGFS')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add IGFS
                 +save-remove-buttons('IGFS')
                 hr

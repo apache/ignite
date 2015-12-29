@@ -63,7 +63,7 @@ include ../includes/controls
                                                         a(ng-class='{active: row._id == selectedItem._id}' ng-click='selectItem(row)') {{$index + 1}}) {{row.valueType}}
                                     label.placeholder(ng-show='(displayedRows | metadatasValidation:ui.showValid:true).length == 0') No metadata found
             .padding-top-dflt(bs-affix)
-                .panel-tip-container(data-placement='bottom' bs-tooltip data-title='Create new metadata')
+                .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new metadata')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add metadata
                 .panel-tip-container(bs-tooltip data-title='Load new metadata from database' data-placement='bottom')
                     button.btn.btn-primary(ng-click='showLoadMetadataModal()') Load from database

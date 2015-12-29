@@ -58,7 +58,7 @@ mixin ignite-form-field-tooltip(message)
 
             div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)')
                 .padding-top-dflt(bs-affix)
-                    button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip data-title='Download project' data-placement='bottom') Download project
+                    button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip='' data-title='Download project' data-placement='bottom') Download project
                     a(bs-popover data-template-url='/configuration/summary-project-structure.html', data-placement='bottom', data-trigger='click' data-auto-close='true') Project structure
                     hr
                 .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
