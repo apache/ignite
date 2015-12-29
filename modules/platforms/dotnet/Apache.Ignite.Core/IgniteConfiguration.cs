@@ -147,8 +147,10 @@ namespace Apache.Ignite.Core
         /// URL to Spring configuration file.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
-        [Obsolete("Instead, use IgniteConfiguration(string springConfigUrl) constructor or " +
-                  "Ignition.LoadSpringConfiguration to load Spring XML.")]
+        [Obsolete("Ignite.NET can be configured natively without Spring. " +
+                  "Setting this property will ignore all other properties except " +
+                  "IgniteHome, Assemblies, SuppressWarnings, LifecycleBeans, JvmOptions, JvmdllPath, IgniteHome, " +
+                  "JvmInitialMemoryMb, JvmMaxMemoryMb.")]
         public string SpringConfigUrl { get; set; }
 
         /// <summary>
