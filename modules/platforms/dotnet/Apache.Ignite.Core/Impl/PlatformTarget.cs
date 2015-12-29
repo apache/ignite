@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -285,6 +286,26 @@ namespace Apache.Ignite.Core.Impl
                 FinishMarshal(writer);
 
                 return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+            }
+        }
+
+        /// <summary>
+        /// Perform out operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="action">Action to be performed on the stream.</param>
+        /// <returns></returns>
+        protected IUnmanagedTarget DoOutOpObject(int type, Action<BinaryWriter> action)
+        {
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = _marsh.StartMarshal(stream);
+
+                action(writer);
+
+                FinishMarshal(writer);
+
+                return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
             }
         }
 
@@ -633,6 +654,37 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Created future.</returns>
+        protected Future<T> GetFuture<T>(Func<long, int, IUnmanagedTarget> listenAction, bool keepBinary = false,
+            Func<BinaryReader, T> convertFunc = null)
+        {
+            var futType = FutureType.Object;
+
+            var type = typeof(T);
+
+            if (type.IsPrimitive)
+                IgniteFutureTypeMap.TryGetValue(type, out futType);
+
+            var fut = convertFunc == null && futType != FutureType.Object
+                ? new Future<T>()
+                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, convertFunc));
+
+            var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
+
+            var futTarget = listenAction(futHnd, (int) futType);
+
+            fut.SetTarget(futTarget);
+
+            return fut;
+        }
+
+        /// <summary>
+        /// Creates a future and starts listening.
+        /// </summary>
+        /// <typeparam name="T">Future result type</typeparam>
+        /// <param name="listenAction">The listen action.</param>
+        /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
+        /// <param name="convertFunc">The function to read future result from stream.</param>
+        /// <returns>Created future.</returns>
         protected Future<T> GetFuture<T>(Action<long, int> listenAction, bool keepBinary = false,
             Func<BinaryReader, T> convertFunc = null)
         {
@@ -649,10 +701,11 @@ namespace Apache.Ignite.Core.Impl
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
-            listenAction(futHnd, (int)futType);
+            listenAction(futHnd, (int) futType);
 
             return fut;
         }
+
 
         /// <summary>
         /// Creates a task to listen for the last async op.
