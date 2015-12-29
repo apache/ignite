@@ -41,8 +41,8 @@ mixin lbl(txt)
                     .details-row(ng-show='profileUser.showToken')
                         +lbl('Security token:')
                         label {{profileUser.token}}
-                        i.tipLabel.fa.fa-refresh(ng-click='generateToken()' bs-tooltip data-title='Generate random security token')
-                        i.tipLabel.fa.fa-clipboard(ng-click-copy='{{profileUser.token}}' bs-tooltip data-title='Copy security token to clipboard')
+                        i.tipLabel.fa.fa-refresh(ng-click='generateToken()' bs-tooltip='' data-title='Generate random security token')
+                        i.tipLabel.fa.fa-clipboard(ng-click-copy='{{profileUser.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
                         i.tipLabel.fa.fa-question-circle(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
                     .details-row
                         .advanced-options

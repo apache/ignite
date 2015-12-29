@@ -65,7 +65,7 @@ include ../includes/controls
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new metadata')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add metadata
-                .panel-tip-container(bs-tooltip data-title='Load new metadata from database' data-placement='bottom')
+                .panel-tip-container(bs-tooltip='' data-title='Load new metadata from database' data-placement='bottom')
                     button.btn.btn-primary(ng-click='showLoadMetadataModal()') Load from database
                 +save-remove-buttons('metadata')
             hr

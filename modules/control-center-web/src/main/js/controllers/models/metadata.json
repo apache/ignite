@@ -88,8 +88,8 @@
         {
           "label": "Indexes",
           "id": "indexes",
+          "type": "table-indexes",
           "ui": "table-indexes",
-          "type": "indexes",
           "model": "indexes",
           "addTip": "Add new index",
           "removeTip": "Remove index",

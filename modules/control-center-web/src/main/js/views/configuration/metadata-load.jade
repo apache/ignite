@@ -99,4 +99,4 @@ mixin chk(mdl, change, tip)
             .modal-footer
                 label.labelField {{loadMeta.info}}
                 button.btn.btn-primary(ng-show='loadMeta.action != "connect"' ng-click='loadMetadataPrev()') Prev
-                a.btn.btn-primary(ng-click='loadMetadataNext()' ng-disabled='!nextAvailable()' bs-tooltip data-title='{{nextTooltipText()}}' data-placement='bottom') {{loadMeta.button}}
+                a.btn.btn-primary(ng-click='loadMetadataNext()' ng-disabled='!nextAvailable()' bs-tooltip='' data-title='{{nextTooltipText()}}' data-placement='bottom') {{loadMeta.button}}
