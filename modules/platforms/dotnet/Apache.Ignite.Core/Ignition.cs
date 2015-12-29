@@ -198,16 +198,6 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Loads configuration from Spring XML file.
-        /// </summary>
-        /// <param name="springCfgPath">Path to the Spring XML file.</param>
-        /// <returns>Resulting configuration.</returns>
-        public static IgniteConfiguration LoadSpringConfiguration(string springCfgPath)
-        {
-            return new IgniteConfiguration(springCfgPath);
-        }
-
-        /// <summary>
         /// Check whether GC is set to server mode.
         /// </summary>
         /// <param name="cfg">Configuration.</param>

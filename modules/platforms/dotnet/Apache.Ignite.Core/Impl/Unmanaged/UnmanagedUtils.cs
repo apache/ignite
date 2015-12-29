@@ -18,11 +18,9 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Binary;
     using JNI = IgniteJniNativeMethods;
 
     /// <summary>
@@ -102,38 +100,38 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.IgnitionStopAll(ctx, cancel);
         }
 
-        internal static void IgnitionLoadSpringConfig(string cfgPath, IgniteConfiguration target)
-        {
-            Debug.Assert(target != null);
+        //internal static void IgnitionLoadSpringConfig(string cfgPath, IgniteConfiguration target)
+        //{
+        //    Debug.Assert(target != null);
 
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfgPath);
+        //    using (var stream = IgniteManager.Memory.Allocate().GetStream())
+        //    {
+        //        sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfgPath);
 
-                try
-                {
-                    var res = JNI.IgnitionLoadSpringConfig(cfgPath0, stream.SynchronizeOutput());
+        //        try
+        //        {
+        //            var res = JNI.IgnitionLoadSpringConfig(cfgPath0, stream.SynchronizeOutput());
 
-                    if (!res)
-                        throw new IgniteException("Failed to load Spring configuration: unknown error.");
+        //            if (!res)
+        //                throw new IgniteException("Failed to load Spring configuration: unknown error.");
 
-                    stream.SynchronizeInput();
+        //            stream.SynchronizeInput();
 
-                    var success = stream.ReadBool();
+        //            var success = stream.ReadBool();
 
-                    var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
+        //            var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
 
-                    if (!success)
-                        throw new IgniteException(reader.ReadString());
+        //            if (!success)
+        //                throw new IgniteException(reader.ReadString());
 
-                    target.Read(reader);
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(new IntPtr(cfgPath0));
-                }
-            }
-        }
+        //            target.Read(reader);
+        //        }
+        //        finally
+        //        {
+        //            Marshal.FreeHGlobal(new IntPtr(cfgPath0));
+        //        }
+        //    }
+        //}
 
         internal static void ProcessorReleaseStart(IUnmanagedTarget target)
         {
