@@ -1169,14 +1169,16 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
     var table = {name: 'none', editIndex: -1};
 
     function _tableReset() {
+        table.field = undefined;
         table.name = 'none';
         table.editIndex = -1;
 
         $common.hidePopover();
     }
 
-    function _tableState(name, editIndex) {
-        table.name = name;
+    function _tableState(field, editIndex, specName) {
+        table.field = field;
+        table.name = specName || field.model;
         table.editIndex = editIndex;
     }
 
@@ -1199,7 +1201,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
     }
 
     function _tableStartEdit(item, field, index) {
-        _tableState(field.model, index);
+        _tableState(field, index);
 
         var val = _model(item, field)[field.model][index];
 
@@ -1234,7 +1236,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
     }
 
     function _tableNewItem(field) {
-        _tableState(field.model, -1);
+        _tableState(field, -1);
 
         var ui = _tableUI(field);
 
@@ -1264,21 +1266,14 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
 
             _tableFocus(field.focusId, -1);
         }
-        else if (ui === 'table-index-fields') {
-            _tableFocus('FieldName' + (field.sorted ? 'S' : '') + field.indexIdx, -1);
-        }
     }
 
     return {
         tableVisibleRow: function (rows, row) {
             return !row || !row._id || _.findIndex(rows, function(item) {return item._id === row._id;}) >= 0;
         },
-        tableState: function (name, editIndex) {
-            _tableState(name, editIndex);
-        },
-        tableReset: function () {
-            _tableReset();
-        },
+        tableState: _tableState,
+        tableReset: _tableReset,
         tableNewItem: _tableNewItem,
         tableNewItemActive: function (field) {
             return table.name === field.model && table.editIndex < 0;
@@ -1286,16 +1281,24 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
         tableEditing: function (field, index) {
             return table.name === field.model && table.editIndex === index;
         },
+        tableEditedRowIndex: function () {
+            return table.editIndex;
+        },
+        tableField: function () {
+            return table.field;
+        },
         tableStartEdit: _tableStartEdit,
         tableRemove: function (item, field, index) {
             _tableReset();
 
             _model(item, field)[field.model].splice(index, 1);
         },
-        tableSimpleSave: function (valueValid, item, field, index) {
+        tableSimpleSave: function (valueValid, item, field, index, stopEdit) {
             var simpleValue = _tableSimpleValue(field, index);
 
-            if (valueValid(item, field, simpleValue, index)) {
+            var valid = valueValid(item, field, simpleValue, index);
+
+            if (valid) {
                 _tableReset();
 
                 if (index < 0) {
@@ -1304,19 +1307,24 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
                     else
                         _model(item, field)[field.model] = [simpleValue];
 
-                    _tableNewItem(field);
+                    if (!stopEdit)
+                        _tableNewItem(field);
                 }
                 else {
                     var arr = _model(item, field)[field.model];
 
                     arr[index] = simpleValue;
 
-                    if (index < arr.length - 1)
-                        _tableStartEdit(item, field, index + 1);
-                    else
-                        _tableNewItem(field);
+                    if (!stopEdit) {
+                        if (index < arr.length - 1)
+                            _tableStartEdit(item, field, index + 1);
+                        else
+                            _tableNewItem(field);
+                    }
                 }
             }
+
+            return valid;
         },
         tableSimpleSaveVisible: function (field, index) {
             return !$common.isEmptyString(_tableSimpleValue(field, index));
@@ -1335,8 +1343,10 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
             return index < _model(item, field)[field.model].length - 1;
         },
         tablePairValue: _tablePairValue,
-        tablePairSave: function (pairValid, item, field, index) {
-            if (pairValid(item, field, index)) {
+        tablePairSave: function (pairValid, item, field, index, stopEdit) {
+            var valid = pairValid(item, field, index);
+
+            if (valid) {
                 var pairValue = _tablePairValue(field, index);
 
                 var pairModel = {};
@@ -1350,7 +1360,8 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
                     else
                         item[field.model] = [pairModel];
 
-                    _tableNewItem(field);
+                    if (!stopEdit)
+                        _tableNewItem(field);
                 }
                 else {
                     pairModel = item[field.model][index];
@@ -1358,12 +1369,16 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
                     pairModel[field.keyName] = pairValue.key;
                     pairModel[field.valueName] = pairValue.value;
 
-                    if (index < item[field.model].length - 1)
-                        _tableStartEdit(item, field, index + 1);
-                    else
-                        _tableNewItem(field);
+                    if (!stopEdit) {
+                        if (index < item[field.model].length - 1)
+                            _tableStartEdit(item, field, index + 1);
+                        else
+                            _tableNewItem(field);
+                    }
                 }
             }
+
+            return valid;
         },
         tablePairSaveVisible: function (field, index) {
             var pairValue = _tablePairValue(field, index);

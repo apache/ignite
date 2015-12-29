@@ -39,19 +39,82 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             $scope.panelExpanded = $common.panelExpanded;
 
             $scope.tableVisibleRow = $table.tableVisibleRow;
-            $scope.tableReset = $table.tableReset;
-            $scope.tableNewItem = $table.tableNewItem;
+
+            $scope.tableSave = function (field, index, stopEdit) {
+                if ($table.tableEditing({model: 'table-index-fields'}, $table.tableEditedRowIndex())) {
+                    if ($scope.tableIndexItemSaveVisible(field, index))
+                        return $scope.tableIndexItemSave(field, field.indexIdx, index, stopEdit);
+                }
+                else {
+                    switch (field.type) {
+                        case 'fields':
+                        case 'aliases':
+                            if ($table.tablePairSaveVisible(field, index))
+                                return $table.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
+
+                            break;
+
+                        case 'indexes':
+                            if ($scope.tableIndexSaveVisible(field, index))
+                                return $scope.tableIndexSave(field, index, stopEdit);
+
+                            break;
+
+                        case 'table-db-fields':
+                            if ($scope.tableDbFieldSaveVisible(field, index))
+                                return $scope.tableDbFieldSave(field, index, stopEdit);
+
+                            break;
+                    }
+                }
+
+                return true;
+            };
+
+            $scope.tableReset = function (save) {
+                var field = $table.tableField();
+
+                if (!save || !$common.isDefined(field) || $scope.tableSave(field, $table.tableEditedRowIndex(), true)) {
+                    $table.tableReset();
+
+                    return true;
+                }
+
+                return false;
+            };
+
+            $scope.tableNewItem = function (field) {
+                if ($scope.tableReset(true))
+                    $table.tableNewItem(field);
+            };
+
             $scope.tableNewItemActive = $table.tableNewItemActive;
+
+            $scope.tableStartEdit = function (item, field, index) {
+                if ($scope.tableReset(true))
+                    $table.tableStartEdit(item, field, index);
+            };
+
             $scope.tableEditing = $table.tableEditing;
-            $scope.tableStartEdit = $table.tableStartEdit;
+
             $scope.tableRemove = function (item, field, index) {
-                $table.tableRemove(item, field, index);
+                if ($scope.tableReset(true))
+                    $table.tableRemove(item, field, index);
             };
 
             $scope.tableSimpleSave = $table.tableSimpleSave;
             $scope.tableSimpleSaveVisible = $table.tableSimpleSaveVisible;
-            $scope.tableSimpleUp = $table.tableSimpleUp;
-            $scope.tableSimpleDown = $table.tableSimpleDown;
+
+            $scope.tableSimpleUp = function (item, field, index) {
+                if ($scope.tableReset(true))
+                    $table.tableSimpleUp(item, field, index);
+            };
+
+            $scope.tableSimpleDown = function (item, field, index) {
+                if ($scope.tableReset(true))
+                    $table.tableSimpleDown(item, field, index);
+            };
+
             $scope.tableSimpleDownVisible = $table.tableSimpleDownVisible;
 
             $scope.tablePairStartEdit = $table.tablePairStartEdit;
@@ -301,7 +364,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 loadMetaModal.$promise.then(loadMetaModal.show);
 
                     // Get available JDBC drivers via agent.
-                    if ($scope.loadMeta.action == 'drivers') {
+                    if ($scope.loadMeta.action === 'drivers') {
                         $loading.start('loadingMetadataFromDb');
 
                         $http.post('/api/v1/agent/drivers')
@@ -478,12 +541,12 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                     $http.post('/api/v1/configuration/metadata/save/batch', batch)
                         .success(function (savedBatch) {
-                            var lastItem = undefined;
+                            var lastItem;
                             var newItems = [];
 
                             _.forEach(savedBatch, function (savedItem) {
                                 var idx = _.findIndex($scope.metadatas, function (meta) {
-                                    return meta._id == savedItem._id;
+                                    return meta._id === savedItem._id;
                                 });
 
                                 if (idx >= 0)
@@ -538,6 +601,19 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                 var containKey = true;
 
+                function queryField(name, jdbcType) {
+                    return {name: toJavaName(name), className: jdbcType.javaType};
+                }
+
+                function dbField(name, jdbcType) {
+                    return {
+                        databaseFieldName: name,
+                        databaseFieldType: jdbcType.dbName,
+                        javaFieldName: toJavaName(name),
+                        javaFieldType: jdbcType.javaType
+                    };
+                }
+
                 _.forEach($scope.loadMeta.tables, function (table) {
                     if (table.use) {
                         var qryFields = [];
@@ -553,19 +629,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                             dupCnt++;
 
                         var valType = $commonUtils.toJavaPackageName($scope.ui.packageName) + '.' + toJavaClassName(tableName);
-
-                        function queryField(name, jdbcType) {
-                            return {name: toJavaName(name), className: jdbcType.javaType};
-                        }
-
-                        function dbField(name, jdbcType) {
-                            return {
-                                databaseFieldName: name,
-                                databaseFieldType: jdbcType.dbName,
-                                javaFieldName: toJavaName(name),
-                                javaFieldType: jdbcType.javaType
-                            };
-                        }
 
                         var _containKey = false;
 
@@ -748,7 +811,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                                 if (lastSelectedMetadata) {
                                     var idx = _.findIndex($scope.metadatas, function (metadata) {
-                                        return metadata._id == lastSelectedMetadata;
+                                        return metadata._id === lastSelectedMetadata;
                                     });
 
                                     if (idx >= 0)
@@ -830,8 +893,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                 $common.confirmUnsavedChanges($scope.ui.isDirty(), selectItem);
 
-                $scope.ui.formTitle = $common.isDefined($scope.backupItem) && $scope.backupItem._id
-                    ? 'Selected metadata: ' + $scope.backupItem.valueType
+                $scope.ui.formTitle = $common.isDefined($scope.backupItem) && $scope.backupItem._id ?
+                    'Selected metadata: ' + $scope.backupItem.valueType
                     : 'New metadata';
             };
 
@@ -844,14 +907,14 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
             // Add new metadata.
             $scope.createItem = function (cacheId) {
-                $table.tableReset();
+                if ($scope.tableReset(true)) {
+                    $timeout(function () {
+                        $common.ensureActivePanel($scope.panels, 'query');
+                        $common.ensureActivePanel($scope.panels, 'general', 'keyType');
+                    });
 
-                $timeout(function () {
-                    $common.ensureActivePanel($scope.panels, 'query');
-                    $common.ensureActivePanel($scope.panels, 'general', 'keyType');
-                });
-
-                $scope.selectItem(undefined, prepareNewItem(cacheId));
+                    $scope.selectItem(undefined, prepareNewItem(cacheId));
+                }
             };
 
             // Check metadata logical consistency.
@@ -924,7 +987,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         var savedMeta = res[0];
 
                         var idx = _.findIndex($scope.metadatas, function (metadata) {
-                            return metadata._id == savedMeta._id;
+                            return metadata._id === savedMeta._id;
                         });
 
                         if (idx >= 0)
@@ -943,27 +1006,27 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
             // Save cache type metadata.
             $scope.saveItem = function () {
-                $table.tableReset();
+                if ($scope.tableReset(true)) {
+                    var item = $scope.backupItem;
 
-                var item = $scope.backupItem;
-
-                if (validate(item))
-                    save(item);
+                    if (validate(item))
+                        save(item);
+                }
             };
 
             // Save cache type metadata with new name.
             $scope.cloneItem = function () {
-                $table.tableReset();
+                if ($scope.tableReset(true)) {
+                    if (validate($scope.backupItem))
+                        $clone.confirm($scope.backupItem.valueType).then(function (newName) {
+                            var item = angular.copy($scope.backupItem);
 
-                if (validate($scope.backupItem))
-                    $clone.confirm($scope.backupItem.valueType).then(function (newName) {
-                        var item = angular.copy($scope.backupItem);
+                            item._id = undefined;
+                            item.valueType = newName;
 
-                        item._id = undefined;
-                        item.valueType = newName;
-
-                        save(item);
-                    });
+                            save(item);
+                        });
+                }
             };
 
             // Remove metadata from db.
@@ -983,7 +1046,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                     var metadatas = $scope.metadatas;
 
                                     var idx = _.findIndex(metadatas, function (metadata) {
-                                        return metadata._id == _id;
+                                        return metadata._id === _id;
                                     });
 
                                     if (idx >= 0) {
@@ -1035,7 +1098,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 var validFilter = $filter('metadatasValidation');
 
                 var idx = _.findIndex(validFilter($scope.metadatas, $scope.ui.showValid, true), function (metadata) {
-                    return metadata._id == $scope.selectedItem._id;
+                    return metadata._id === $scope.selectedItem._id;
                 });
 
                 if (idx === -1)
@@ -1057,11 +1120,11 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                     if ($common.isDefined(model)) {
                         var idx = _.findIndex(model, function (pair) {
-                            return pair[pairField.searchCol] == pairValue[pairField.valueCol];
+                            return pair[pairField.searchCol] === pairValue[pairField.valueCol];
                         });
 
                         // Found duplicate by key.
-                        if (idx >= 0 && idx != index)
+                        if (idx >= 0 && idx !== index)
                             return showPopoverMessage($scope.panels, 'query', $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
                     }
 
@@ -1073,8 +1136,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             };
 
             function tableDbFieldValue(field, index) {
-                return (index < 0)
-                    ? {
+                return (index < 0) ?
+                    {
                         databaseFieldName: field.newDatabaseFieldName,
                         databaseFieldType: field.newDatabaseFieldType,
                         javaFieldName: field.newJavaFieldName,
@@ -1100,7 +1163,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 valueFields: {msg: 'Value field', id: 'ValueField'}
             };
 
-            $scope.tableDbFieldSave = function (field, index) {
+            $scope.tableDbFieldSave = function (field, index, stopEdit) {
                 var dbFieldTable = dbFieldTables[field.model];
 
                 if (dbFieldTable) {
@@ -1148,13 +1211,19 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         item[field.model] = model;
                     }
 
-                    if (index < 0)
-                        $table.tableNewItem(field);
-                    else  if (index < model.length - 1)
-                        $table.tableStartEdit(item, field, index + 1);
-                    else
-                        $table.tableNewItem(field);
+                    if (!stopEdit) {
+                        if (index < 0)
+                            $table.tableNewItem(field);
+                        else if (index < model.length - 1)
+                            $table.tableStartEdit(item, field, index + 1);
+                        else
+                            $table.tableNewItem(field);
+                    }
+
+                    return true;
                 }
+
+                return false;
             };
 
             function tableIndexName(field, index) {
@@ -1169,7 +1238,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 return !$common.isEmptyString(tableIndexName(field, index)) && $common.isDefined(tableIndexType(field, index));
             };
 
-            $scope.tableIndexSave = function (field, curIdx) {
+            $scope.tableIndexSave = function (field, curIdx, stopEdit) {
                 var indexName = tableIndexName(field, curIdx);
                 var indexType = tableIndexType(field, curIdx);
 
@@ -1187,6 +1256,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         return showPopoverMessage($scope.panels, 'query', $table.tableFieldId(curIdx, 'IndexName'), 'Index with such name already exists!');
                 }
 
+                $table.tableReset();
+
                 if (curIdx < 0) {
                     var newIndex = {name: indexName, indexType: indexType};
 
@@ -1200,79 +1271,88 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     item.indexes[curIdx].indexType = indexType;
                 }
 
-                if (curIdx < 0)
-                    $scope.tableIndexNewItem(field, item.indexes.length - 1);
-                else {
-                    var index = item.indexes[curIdx];
+                if (!stopEdit) {
+                    if (curIdx < 0)
+                        $scope.tableIndexNewItem(field, item.indexes.length - 1);
+                    else {
+                        var index = item.indexes[curIdx];
 
-                    if (index.fields && index.fields.length > 0)
-                        $scope.tableIndexItemStartEdit(field, curIdx, 0);
-                    else
-                        $scope.tableIndexNewItem(field, curIdx);
+                        if (index.fields && index.fields.length > 0)
+                            $scope.tableIndexItemStartEdit(field, curIdx, 0);
+                        else
+                            $scope.tableIndexNewItem(field, curIdx);
+                    }
                 }
+
+                return true;
             };
 
             $scope.tableIndexNewItem = function (field, indexIdx) {
-                var index = $scope.backupItem.indexes[indexIdx];
+                if ($scope.tableReset(true)) {
+                    var index = $scope.backupItem.indexes[indexIdx];
 
-                var indexName = index.name;
+                    $table.tableState(field, -1, 'table-index-fields');
+                    $table.tableFocusInvalidField('FieldName' + (index.indexType === 'SORTED' ? 'S' : ''), indexIdx);
 
-                $table.tableNewItem({ui: 'table-index-fields', model: indexName, sorted: index.indexType === 'SORTED', indexIdx: indexIdx});
-
-                field.newFieldName = null;
-                field.newDirection = true;
+                    field.newFieldName = null;
+                    field.newDirection = true;
+                    field.indexIdx = indexIdx;
+                }
             };
 
-            $scope.tableIndexNewItemActive = function (itemIndex) {
+            $scope.tableIndexNewItemActive = function (field, itemIndex) {
                 var indexes = $scope.backupItem.indexes;
 
                 if (indexes) {
                     var index = indexes[itemIndex];
 
                     if (index)
-                        return $table.tableNewItemActive({model: index.name});
+                        return $table.tableNewItemActive({model: 'table-index-fields'}) && field.indexIdx === itemIndex;
                 }
 
                 return false;
             };
 
-            $scope.tableIndexItemEditing = function (itemIndex, curIdx) {
+            $scope.tableIndexItemEditing = function (field, itemIndex, curIdx) {
                 var indexes = $scope.backupItem.indexes;
 
                 if (indexes) {
                     var index = indexes[itemIndex];
 
                     if (index)
-                        return $table.tableEditing({model: index.name}, curIdx);
+                        return $table.tableEditing({model: 'table-index-fields'}, curIdx) && field.indexIdx === itemIndex;
                 }
 
                 return false;
             };
 
             function tableIndexItemValue(field, index) {
-                return index < 0
-                    ? {name: field.newFieldName, direction: field.newDirection}
+                return index < 0 ?
+                    {name: field.newFieldName, direction: field.newDirection}
                     : {name: field.curFieldName, direction: field.curDirection};
             }
 
             $scope.tableIndexItemStartEdit = function (field, indexIdx, curIdx) {
-                var index = $scope.backupItem.indexes[indexIdx];
+                if ($scope.tableReset(true)) {
+                    var index = $scope.backupItem.indexes[indexIdx];
 
-                $table.tableState(index.name, curIdx);
+                    $table.tableState(field, curIdx, 'table-index-fields');
 
-                var indexItem = index.fields[curIdx];
+                    var indexItem = index.fields[curIdx];
 
-                field.curFieldName = indexItem.name;
-                field.curDirection = indexItem.direction;
+                    field.curFieldName = indexItem.name;
+                    field.curDirection = indexItem.direction;
+                    field.indexIdx = indexIdx;
 
-                $focus('curFieldName' + (index.indexType === 'SORTED' ? 'S' : '') + indexIdx + '-' + curIdx);
+                    $focus('curFieldName' + (index.indexType === 'SORTED' ? 'S' : '') + field.indexIdx + '-' + curIdx);
+                }
             };
 
             $scope.tableIndexItemSaveVisible = function (field, index) {
                 return !$common.isEmptyString(tableIndexItemValue(field, index).name);
             };
 
-            $scope.tableIndexItemSave = function (field, indexIdx, curIdx) {
+            $scope.tableIndexItemSave = function (field, indexIdx, curIdx, stopEdit) {
                 var indexItemValue = tableIndexItemValue(field, curIdx);
 
                 var index = $scope.backupItem.indexes[indexIdx];
@@ -1289,22 +1369,31 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         return showPopoverMessage($scope.panels, 'query', $table.tableFieldId(curIdx, 'FieldName' + (index.indexType === 'SORTED' ? 'S' : '') + indexIdx + (curIdx >= 0 ? '-' : '')), 'Field with such name already exists in index!');
                 }
 
+                $table.tableReset();
+
                 if (curIdx < 0) {
                     if (index.fields)
                         index.fields.push(indexItemValue);
                     else
                         index.fields = [indexItemValue];
 
-                    $scope.tableIndexNewItem(field, indexIdx);
+                    if (!stopEdit)
+                        $scope.tableIndexNewItem(field, indexIdx);
                 }
                 else {
                     index.fields[curIdx] = indexItemValue;
 
-                    if (curIdx < index.fields.length - 1)
-                        $scope.tableIndexItemStartEdit(field, indexIdx, curIdx + 1);
-                    else
-                        $scope.tableIndexNewItem(field, indexIdx);
+                    if (!stopEdit) {
+                        if (curIdx < index.fields.length - 1)
+                            $scope.tableIndexItemStartEdit(field, indexIdx, curIdx + 1);
+                        else
+                            $scope.tableIndexNewItem(field, indexIdx);
+                    }
                 }
+
+                field.indexIdx = -1;
+
+                return true;
             };
 
             $scope.tableRemoveIndexItem = function (index, curIdx) {

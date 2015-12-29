@@ -567,8 +567,10 @@ $generatorJava.clusterBinary = function (cluster, res) {
             $generatorJava.declareVariable(res, arrVar, 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.binary.BinaryTypeConfiguration');
 
             _.forEach(binary.typeConfigurations, function (type) {
-                // TODO IGNITE-2269 Replace using of separated methods for binary type configurations to extended constructors.
-                res.line(arrVar + '.add(' + $generatorJava.binaryTypeFunctionName(type.typeName) + '());');
+                if (!$commonUtils.isDefinedAndNotEmpty(type.typeName)) {
+                    // TODO IGNITE-2269 Replace using of separated methods for binary type configurations to extended constructors.
+                    res.line(arrVar + '.add(' + $generatorJava.binaryTypeFunctionName(type.typeName) + '());');
+                }
             });
 
             res.needEmptyLine = true;
@@ -1616,7 +1618,7 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
 
 // Generate cluster caches.
 $generatorJava.clusterCacheUse = function (caches, igfss, res) {
-    function clusterCacheInvoke(res, cache, names) {
+    function clusterCacheInvoke(cache, names) {
         names.push($generatorJava.cacheVariableName(cache, names) + '(' + ($generatorCommon.cacheHasDatasource(cache) ? 'props' : '') + ')');
     }
 
@@ -1626,7 +1628,7 @@ $generatorJava.clusterCacheUse = function (caches, igfss, res) {
     var names = [];
 
     _.forEach(caches, function (cache) {
-        clusterCacheInvoke(res, cache, names);
+        clusterCacheInvoke(cache, names);
     });
 
     if (names.length > 0) {
@@ -1639,8 +1641,8 @@ $generatorJava.clusterCacheUse = function (caches, igfss, res) {
     var igfsNames = [];
 
     _.forEach(igfss, function (igfs) {
-        clusterCacheInvoke(res, $generatorCommon.igfsDataCache(igfs), igfsNames);
-        clusterCacheInvoke(res, $generatorCommon.igfsMetaCache(igfs), igfsNames);
+        clusterCacheInvoke($generatorCommon.igfsDataCache(igfs), igfsNames);
+        clusterCacheInvoke($generatorCommon.igfsMetaCache(igfs), igfsNames);
     });
 
     if (igfsNames.length > 0) {
