@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.IgnitionStopAll(ctx, cancel);
         }
 
-        internal static IgniteConfiguration IgnitionLoadSpringConfig(UnmanagedContext ctx, string cfgPath)
+        internal static IgniteConfiguration IgnitionLoadSpringConfig(string cfgPath)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -109,11 +109,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 try
                 {
-                    JNI.IgnitionLoadSpringConfig(ctx.NativeContext, cfgPath0, stream.SynchronizeOutput());
+                    JNI.IgnitionLoadSpringConfig(cfgPath0, stream.SynchronizeOutput());
 
                     stream.SynchronizeInput();
 
-                    return new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(stream));
+                    var success = stream.ReadBool();
+
+                    var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
+
+                    if (success)
+                        return new IgniteConfiguration(reader);
+
+                    throw new IgniteException(reader.ReadString());
                 }
                 finally
                 {

@@ -41,7 +41,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern void IgnitionStopAll(void* ctx, [MarshalAs(UnmanagedType.U1)] bool cancel);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteIgnitionLoadSpringConfig")]
-        public static extern void IgnitionLoadSpringConfig(void* ctx, sbyte* cfgPath, long dataPtr);
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool IgnitionLoadSpringConfig(sbyte* cfgPath, long dataPtr);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorReleaseStart")]
         public static extern void ProcessorReleaseStart(void* ctx, void* obj);
