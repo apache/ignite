@@ -148,36 +148,6 @@ public class PlatformIgnition {
     }
 
     /**
-     * Loads and returns Spring config.
-     *
-     * @param springCfgPath Path to the config.
-     * @param memPtr Target memory pointer.
-     */
-    public static void loadSpringConfig(String springCfgPath, long memPtr) {
-        assert memPtr != 0;
-
-        PlatformMemoryManager memMgr = new PlatformMemoryManagerImpl(null, 1024);
-
-        try (PlatformMemory outMem = memMgr.allocate()) {
-            PlatformOutputStream out = outMem.output();
-            GridBinaryMarshaller marshaller = PlatformUtils.marshaller();
-            BinaryRawWriterEx writer = marshaller.writer(out);
-
-            try {
-                writer.writeBoolean(true);  // success
-                PlatformConfigurationUtils.writeIgniteConfiguration(writer, configuration(springCfgPath));
-            }
-            catch (Throwable t) {
-                out.position(0);
-                writer.writeBoolean(false);  // failure
-                writer.writeString(X.getFullStackTrace(t));
-            }
-
-            out.synchronize();
-        }
-    }
-
-    /**
      * Create configuration.
      *
      * @param springCfgPath Path to Spring XML.

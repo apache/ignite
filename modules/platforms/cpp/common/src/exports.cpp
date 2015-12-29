@@ -46,10 +46,6 @@ extern "C" {
         return ctx->IgnitionStopAll(cancel);
     }
 
-    bool IGNITE_CALL IgniteIgnitionLoadSpringConfig(char* cfgPath, long long dataPtr) {
-        return gcj::JniContext::IgnitionLoadSpringConfig(cfgPath, dataPtr);
-    }
-
     void IGNITE_CALL IgniteProcessorReleaseStart(gcj::JniContext* ctx, void* obj) {
         return ctx->ProcessorReleaseStart(static_cast<jobject>(obj));
     }

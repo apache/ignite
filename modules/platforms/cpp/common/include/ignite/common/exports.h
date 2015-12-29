@@ -30,7 +30,6 @@ extern "C" {
     long long IGNITE_CALL IgniteIgnitionEnvironmentPointer(gcj::JniContext* ctx, char* name);
     bool IGNITE_CALL IgniteIgnitionStop(gcj::JniContext* ctx, char* name, bool cancel);
     void IGNITE_CALL IgniteIgnitionStopAll(gcj::JniContext* ctx, bool cancel);
-    bool IGNITE_CALL IgniteIgnitionLoadSpringConfig(char* cfgPath, long long dataPtr);
 
     void IGNITE_CALL IgniteProcessorReleaseStart(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProcessorProjection(gcj::JniContext* ctx, void* obj);

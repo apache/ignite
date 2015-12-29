@@ -357,7 +357,6 @@ namespace ignite
             JniMethod M_PLATFORM_IGNITION_ENVIRONMENT_POINTER = JniMethod("environmentPointer", "(Ljava/lang/String;)J", true);
             JniMethod M_PLATFORM_IGNITION_STOP = JniMethod("stop", "(Ljava/lang/String;Z)Z", true);
             JniMethod M_PLATFORM_IGNITION_STOP_ALL = JniMethod("stopAll", "(Z)V", true);
-            JniMethod M_PLATFORM_IGNITION_LOAD_SPRING_CONFIG = JniMethod("loadSpringConfig", "(Ljava/lang/String;J)V", true);
 
             const char* C_PLATFORM_ABSTRACT_QRY_CURSOR = "org/apache/ignite/internal/processors/platform/cache/query/PlatformAbstractQueryCursor";
             JniMethod M_PLATFORM_ABSTRACT_QRY_CURSOR_ITER = JniMethod("iterator", "()V", false);
@@ -624,7 +623,6 @@ namespace ignite
                 m_PlatformIgnition_environmentPointer = FindMethod(env, c_PlatformIgnition, M_PLATFORM_IGNITION_ENVIRONMENT_POINTER);
                 m_PlatformIgnition_stop = FindMethod(env, c_PlatformIgnition, M_PLATFORM_IGNITION_STOP);
                 m_PlatformIgnition_stopAll = FindMethod(env, c_PlatformIgnition, M_PLATFORM_IGNITION_STOP_ALL);
-                m_PlatformIgnition_loadSpringConfig = FindMethod(env, c_PlatformIgnition, M_PLATFORM_IGNITION_LOAD_SPRING_CONFIG);
 
                 c_PlatformMessaging = FindClass(env, C_PLATFORM_MESSAGING);
                 m_PlatformMessaging_withAsync = FindMethod(env, c_PlatformMessaging, M_PLATFORM_MESSAGING_WITH_ASYNC);
@@ -1078,72 +1076,6 @@ namespace ignite
                     jvm->GetMembers().m_PlatformIgnition_stopAll, cancel);
 
                 ExceptionCheck(env, errInfo);
-            }
-
-            bool JniContext::IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr)
-            {
-                return IgnitionLoadSpringConfig(cfgPath, dataPtr, NULL);
-            }
-
-            bool JniContext::IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr, JniErrorInfo* errInfo)
-            {
-                JavaVM* jvm = JVM.GetJvm();
-
-                if (jvm)
-                {
-                    JNIEnv* env;
-
-                    jint attachRes = jvm->AttachCurrentThread(reinterpret_cast<void**>(&env), NULL);
-
-                    if (attachRes == JNI_OK)
-                    {
-                        AttachHelper::OnThreadAttach();
-
-                        jstring cfgPath0 = env->NewStringUTF(cfgPath);
-
-                        env->CallStaticVoidMethod(
-                            JVM.GetMembers().c_PlatformIgnition,
-                            JVM.GetMembers().m_PlatformIgnition_loadSpringConfig,
-                            cfgPath0,
-                            dataPtr);
-
-                        if (env->ExceptionCheck())
-                        {
-                            jthrowable err = env->ExceptionOccurred();
-
-                            if (PRINT_EXCEPTION)
-                                env->CallVoidMethod(err, JVM.GetJavaMembers().m_Throwable_printStackTrace);
-
-                            env->ExceptionClear();
-
-                            if (errInfo)
-                            {
-                                // Get error class name and message.
-                                jclass cls = env->GetObjectClass(err);
-                                jstring clsName = static_cast<jstring>(env->CallObjectMethod(cls, JVM.GetJavaMembers().m_Class_getName));
-                                jstring msg = static_cast<jstring>(env->CallObjectMethod(err, JVM.GetJavaMembers().m_Throwable_getMessage));
-
-                                env->DeleteLocalRef(cls);
-
-                                int clsNameLen;
-                                std::string clsName0 = JavaStringToCString(env, clsName, &clsNameLen);
-
-                                int msgLen;
-                                std::string msg0 = JavaStringToCString(env, msg, &msgLen);
-
-                                JniErrorInfo errInfo0(IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), msg0.c_str());
-
-                                *errInfo = errInfo0;
-                            }
-
-                            return false;
-                        }
-
-                        return true;
-                    }
-                } 
-                
-                return false;
             }
 
             void JniContext::ProcessorReleaseStart(jobject obj) {
