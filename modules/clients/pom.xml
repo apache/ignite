@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-clients</artifactId>
-    <version>1.5.0.final-SNAPSHOT</version>
+    <version>1.5.1.final-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -142,7 +142,7 @@
             <id>docs</id>
             <activation>
                 <property>
-                    <name>!skipClientDocs</name>
+                    <name>clientDocs</name>
                 </property>
             </activation>
             <build>

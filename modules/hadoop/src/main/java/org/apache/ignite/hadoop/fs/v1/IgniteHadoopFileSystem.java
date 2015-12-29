@@ -1100,6 +1100,13 @@ public class IgniteHadoopFileSystem extends FileSystem {
     }
 
     /**
+     * @return {@code true} If secondary file system is initialized.
+     */
+    public boolean hasSecondaryFileSystem() {
+        return secondaryFs != null;
+    }
+
+    /**
      * Convert the given path to path acceptable by the primary file system.
      *
      * @param path Path.

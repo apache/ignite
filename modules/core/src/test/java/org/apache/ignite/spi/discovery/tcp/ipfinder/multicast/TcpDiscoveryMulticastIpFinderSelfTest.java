@@ -101,11 +101,11 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
 
             assertEquals(1, addrs1.size());
             assertEquals(2, addrs2.size());
-            assertEquals(3, addrs3.size());
+            assertTrue("Unexpected number of addresses: " + addrs3, addrs3.size() == 2 || addrs3.size() == 3);
 
-            assertEquals(3, ipFinder1.getRegisteredAddresses().size());
-            assertEquals(3, ipFinder2.getRegisteredAddresses().size());
-            assertEquals(3, ipFinder3.getRegisteredAddresses().size());
+            checkRequestAddresses(ipFinder1, 3);
+            checkRequestAddresses(ipFinder2, 3);
+            checkRequestAddresses(ipFinder3, 3);
         }
         finally {
             if (ipFinder1 != null)
@@ -117,5 +117,18 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
             if (ipFinder3 != null)
                 ipFinder3.close();
         }
+    }
+
+    /**
+     * @param ipFinder IP finder.
+     * @param exp Expected number of addresses.
+     */
+    private void checkRequestAddresses(TcpDiscoveryMulticastIpFinder ipFinder, int exp) {
+        for (int i = 0; i < 10; i++) {
+            if (ipFinder.getRegisteredAddresses().size() == exp)
+                return;
+        }
+
+        assertEquals(exp, ipFinder.getRegisteredAddresses().size());
     }
 }

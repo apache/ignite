@@ -215,12 +215,14 @@ public final class IgfsImpl implements IgfsEx {
         Map<String, IgfsMode> cfgModes = new LinkedHashMap<>();
         Map<String, IgfsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
 
-        dfltModes.put("/ignite/primary", PRIMARY);
+        if (cfg.isInitializeDefaultPathsModes()) {
+            dfltModes.put("/ignite/primary", PRIMARY);
 
-        if (secondaryFs != null) {
-            dfltModes.put("/ignite/proxy", PROXY);
-            dfltModes.put("/ignite/sync", DUAL_SYNC);
-            dfltModes.put("/ignite/async", DUAL_ASYNC);
+            if (secondaryFs != null) {
+                dfltModes.put("/ignite/proxy", PROXY);
+                dfltModes.put("/ignite/sync", DUAL_SYNC);
+                dfltModes.put("/ignite/async", DUAL_ASYNC);
+            }
         }
 
         cfgModes.putAll(dfltModes);

@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,6 +38,9 @@ public class GridBinaryMarshaller {
             return true;
         }
     };
+
+    /** Binary context in TLS store. */
+    private static final ThreadLocal<BinaryContext> BINARY_CTX = new ThreadLocal<>();
 
     /** */
     static final byte OPTM_MARSH = -2;
@@ -237,7 +245,14 @@ public class GridBinaryMarshaller {
     @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws BinaryObjectException {
         assert bytes != null;
 
-        return (T)BinaryUtils.unmarshal(BinaryHeapInputStream.create(bytes, 0), ctx, clsLdr);
+        BinaryContext oldCtx = pushContext(ctx);
+
+        try {
+            return (T) BinaryUtils.unmarshal(BinaryHeapInputStream.create(bytes, 0), ctx, clsLdr);
+        }
+        finally {
+            popContext(oldCtx);
+        }
     }
 
     /**
@@ -247,7 +262,14 @@ public class GridBinaryMarshaller {
      */
     @SuppressWarnings("unchecked")
     @Nullable public <T> T unmarshal(BinaryInputStream in) throws BinaryObjectException {
-        return (T)BinaryUtils.unmarshal(in, ctx, null);
+        BinaryContext oldCtx = pushContext(ctx);
+
+        try {
+            return (T)BinaryUtils.unmarshal(in, ctx, null);
+        }
+        finally {
+            popContext(oldCtx);
+        }
     }
 
     /**
@@ -264,7 +286,40 @@ public class GridBinaryMarshaller {
         if (arr[0] == NULL)
             return null;
 
-        return (T)new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, 0), ldr).deserialize();
+        BinaryContext oldCtx = pushContext(ctx);
+
+        try {
+            return (T)new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, 0), ldr).deserialize();
+        }
+        finally {
+            popContext(oldCtx);
+        }
+    }
+
+    /**
+     * Push binary context and return the old one.
+     *
+     * @param ctx Binary context.
+     * @return Old binary context.
+     */
+    @Nullable private static BinaryContext pushContext(BinaryContext ctx) {
+        BinaryContext old = BINARY_CTX.get();
+
+        BINARY_CTX.set(ctx);
+
+        return old;
+    }
+
+    /**
+     * Pop binary context and restore the old one.
+     *
+     * @param oldCtx Old binary context.
+     */
+    private static void popContext(@Nullable BinaryContext oldCtx) {
+        if (oldCtx == null)
+            BINARY_CTX.remove();
+        else
+            BINARY_CTX.set(oldCtx);
     }
 
     /**
@@ -291,6 +346,27 @@ public class GridBinaryMarshaller {
      * @return Context.
      */
     public BinaryContext context() {
+        return ctx;
+    }
+
+    /**
+     * @return Thread-bound context.
+     */
+    public static BinaryContext threadLocalContext() {
+        BinaryContext ctx = GridBinaryMarshaller.BINARY_CTX.get();
+
+        if (ctx == null) {
+            IgniteKernal ignite = IgnitionEx.localIgnite();
+
+            IgniteCacheObjectProcessor proc = ignite.context().cacheObjects();
+
+            if (proc instanceof CacheObjectBinaryProcessorImpl)
+                return ((CacheObjectBinaryProcessorImpl)proc).binaryContext();
+            else
+                throw new IgniteIllegalStateException("Ignite instance must be started with " +
+                    BinaryMarshaller.class.getName() + " [name=" + ignite.name() + ']');
+        }
+
         return ctx;
     }
 }
