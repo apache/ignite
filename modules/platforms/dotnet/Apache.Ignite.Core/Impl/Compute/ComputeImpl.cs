@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                     WriteTask(writer, taskName, taskArg, nodes);
                 }, input =>
                 {
-                    fut = GetFuture<TReduceRes>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepBinary.Value);
+                    fut = GetFuture<TReduceRes>((futId, futTyp) => UU.TargetListenFutureAndGet(Target, futId, futTyp), _keepBinary.Value);
                 });
 
                 return fut;
