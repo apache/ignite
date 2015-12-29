@@ -20,7 +20,7 @@ $generatorDocker = {};
 
 // Generate from
 $generatorDocker.from = function(cluster, version) {
-    return '# Start from apache ignite image.\n' +
+    return '# Start from Apache Ignite image.\n' +
         'FROM apacheignite/ignite:' + version
 };
 
