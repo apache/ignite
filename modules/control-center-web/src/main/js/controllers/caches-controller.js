@@ -483,7 +483,12 @@ consoleModule.controller('cachesController', [
                         $common.ensureActivePanel($scope.panels, 'general', 'cacheName');
                     });
 
-                    $scope.selectItem(undefined, prepareNewItem(id));
+                    var newItem = prepareNewItem(id);
+
+                    if ($common.isEmptyArray(newItem.clusters) && !$common.isEmptyArray($scope.clusters))
+                        newItem.clusters.push($scope.clusters[0].value);
+
+                    $scope.selectItem(undefined, newItem);
                 }
             };
 
