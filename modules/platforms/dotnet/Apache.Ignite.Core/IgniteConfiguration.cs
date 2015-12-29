@@ -73,12 +73,12 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Default network retry delay.
         /// </summary>
-        public static readonly TimeSpan DefaultNetworkRetryDelay = TimeSpan.FromMilliseconds(1000);
+        public static readonly TimeSpan DefaultNetworkSendRetryDelay = TimeSpan.FromMilliseconds(1000);
 
         /// <summary>
         /// Default network retry count.
         /// </summary>
-        public const int DefaultNetworkRetryCount = 3;
+        public const int DefaultNetworkSendRetryCount = 3;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -93,8 +93,8 @@ namespace Apache.Ignite.Core
             MetricsLogFrequency = DefaultMetricsLogFrequency;
             MetricsUpdateFrequency = DefaultMetricsUpdateFrequency;
             NetworkTimeout = DefaultNetworkTimeout;
-            NetworkSendRetryCount = DefaultNetworkRetryCount;
-            NetworkSendRetryDelay = DefaultNetworkRetryDelay;
+            NetworkSendRetryCount = DefaultNetworkSendRetryCount;
+            NetworkSendRetryDelay = DefaultNetworkSendRetryDelay;
         }
 
         /// <summary>

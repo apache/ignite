@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618  // deprecated SpringConfigUrl
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -38,36 +39,15 @@ namespace Apache.Ignite.Core.Tests
         }
 
         [Test]
+        public void TestDefaultConfigurationProperties()
+        {
+            CheckDefaultProperties(new IgniteConfiguration());
+        }
+
+        [Test]
         public void TestAllConfigurationProperties()
         {
-            var cfg = new IgniteConfiguration
-            {
-                DiscoveryConfiguration = new DiscoveryConfiguration
-                {
-                    NetworkTimeout = TimeSpan.FromSeconds(1),
-                    AckTimeout = TimeSpan.FromSeconds(2),
-                    MaxAckTimeout = TimeSpan.FromSeconds(3),
-                    SocketTimeout = TimeSpan.FromSeconds(4),
-                    JoinTimeout = TimeSpan.FromSeconds(5),
-                    IpFinder = new StaticIpFinder
-                    {
-                        EndPoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
-                    }
-                },
-                GridName = "gridName1",
-                IncludedEventTypes = EventType.SwapspaceAll,
-                MetricsExpireTime = TimeSpan.FromMinutes(7),
-                MetricsHistorySize = 125,
-                MetricsLogFrequency = TimeSpan.FromMinutes(8),
-                MetricsUpdateFrequency = TimeSpan.FromMinutes(9),
-                NetworkSendRetryCount = 54,
-                NetworkTimeout = TimeSpan.FromMinutes(10),
-                NetworkSendRetryDelay = TimeSpan.FromMinutes(11),
-                WorkDirectory = Path.GetTempPath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                LocalHost = "127.0.0.1"
-            };
+            var cfg = GetCustomConfig();
 
             using (var ignite = Ignition.Start(cfg))
             {
@@ -106,9 +86,19 @@ namespace Apache.Ignite.Core.Tests
         }
 
         [Test]
-        public void TestLoadSpringXml()
+        public void TestSpringXml()
         {
-            // TODO: Test various combinations
+            // When Spring XML is used, all properties are ignored.
+            var cfg = GetCustomConfig();
+
+            cfg.SpringConfigUrl = "config\\compute\\compute-grid1.xml";
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                var resCfg = ignite.GetConfiguration();
+
+                CheckDefaultProperties(resCfg);
+            }
         }
 
         [Test]
@@ -235,6 +225,58 @@ namespace Apache.Ignite.Core.Tests
                     Assert.AreEqual(1, ignite2.GetCluster().GetNodes().Count);
                 }
             }
+        }
+
+        private static void CheckDefaultProperties(IgniteConfiguration cfg)
+        {
+            Assert.AreEqual(IgniteConfiguration.DefaultMetricsExpireTime, cfg.MetricsExpireTime);
+            Assert.AreEqual(IgniteConfiguration.DefaultMetricsHistorySize, cfg.MetricsHistorySize);
+            Assert.AreEqual(IgniteConfiguration.DefaultMetricsLogFrequency, cfg.MetricsLogFrequency);
+            Assert.AreEqual(IgniteConfiguration.DefaultMetricsUpdateFrequency, cfg.MetricsUpdateFrequency);
+            Assert.AreEqual(IgniteConfiguration.DefaultNetworkTimeout, cfg.NetworkTimeout);
+            Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryCount, cfg.NetworkSendRetryCount);
+            Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryDelay, cfg.NetworkSendRetryDelay);
+            Assert.AreEqual(null, cfg.DiscoveryConfiguration);
+            Assert.AreEqual(null, cfg.CacheConfiguration);
+            Assert.AreEqual(null, cfg.LocalHost);
+            Assert.AreEqual(null, cfg.BinaryConfiguration);
+            Assert.AreEqual(null, cfg.WorkDirectory);
+            Assert.AreEqual(null, cfg.GridName);
+            Assert.AreEqual(null, cfg.Assemblies);
+            Assert.AreEqual(null, cfg.IncludedEventTypes);
+            Assert.AreEqual(false, cfg.ClientMode);
+        }
+
+        private static IgniteConfiguration GetCustomConfig()
+        {
+            return new IgniteConfiguration
+            {
+                DiscoveryConfiguration = new DiscoveryConfiguration
+                {
+                    NetworkTimeout = TimeSpan.FromSeconds(1),
+                    AckTimeout = TimeSpan.FromSeconds(2),
+                    MaxAckTimeout = TimeSpan.FromSeconds(3),
+                    SocketTimeout = TimeSpan.FromSeconds(4),
+                    JoinTimeout = TimeSpan.FromSeconds(5),
+                    IpFinder = new StaticIpFinder
+                    {
+                        EndPoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
+                    }
+                },
+                GridName = "gridName1",
+                IncludedEventTypes = EventType.SwapspaceAll,
+                MetricsExpireTime = TimeSpan.FromMinutes(7),
+                MetricsHistorySize = 125,
+                MetricsLogFrequency = TimeSpan.FromMinutes(8),
+                MetricsUpdateFrequency = TimeSpan.FromMinutes(9),
+                NetworkSendRetryCount = 54,
+                NetworkTimeout = TimeSpan.FromMinutes(10),
+                NetworkSendRetryDelay = TimeSpan.FromMinutes(11),
+                WorkDirectory = Path.GetTempPath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                LocalHost = "127.0.0.1"
+            };
         }
     }
 }

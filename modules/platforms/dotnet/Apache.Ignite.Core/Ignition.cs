@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618
+#pragma warning disable 618  // deprecated SpringConfigUrl
 namespace Apache.Ignite.Core 
 {
     using System;
