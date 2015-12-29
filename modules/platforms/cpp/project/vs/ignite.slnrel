@@ -5,6 +5,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "common", "..\..\common\proj
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "core", "..\..\core\project\vs\core.vcxproj", "{E2DEA693-F2EA-43C2-A813-053378F6E4DB}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ignite", "..\..\ignite\project\vs\ignite.vcxproj", "{69688B4D-3EE0-43F5-A1C6-29B5D2DDE949}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|x64 = Release|x64
@@ -26,6 +28,14 @@ Global
 		{E2DEA693-F2EA-43C2-A813-053378F6E4DB}.Release|Win32.Build.0 = Release|Win32
 		{E2DEA693-F2EA-43C2-A813-053378F6E4DB}.Release|x64.ActiveCfg = Release|x64
 		{E2DEA693-F2EA-43C2-A813-053378F6E4DB}.Release|x64.Build.0 = Release|x64
+		{69688B4D-3EE0-43F5-A1C6-29B5D2DDE949}.Debug|Win32.ActiveCfg = Debug|Win32
+		{69688B4D-3EE0-43F5-A1C6-29B5D2DDE949}.Debug|Win32.Build.0 = Debug|Win32
+		{69688B4D-3EE0-43F5-A1C6-29B5D2DDE949}.Debug|x64.ActiveCfg = Debug|x64
+		{69688B4D-3EE0-43F5-A1C6-29B5D2DDE949}.Debug|x64.Build.0 = Debug|x64
+		{69688B4D-3EE0-43F5-A1C6-29B5D2DDE949}.Release|Win32.ActiveCfg = Release|Win32
+		{69688B4D-3EE0-43F5-A1C6-29B5D2DDE949}.Release|Win32.Build.0 = Release|Win32
+		{69688B4D-3EE0-43F5-A1C6-29B5D2DDE949}.Release|x64.ActiveCfg = Release|x64
+		{69688B4D-3EE0-43F5-A1C6-29B5D2DDE949}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

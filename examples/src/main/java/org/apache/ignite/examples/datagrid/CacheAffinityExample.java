@@ -59,6 +59,7 @@ public final class CacheAffinityExample {
             System.out.println();
             System.out.println(">>> Cache affinity example started.");
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 for (int i = 0; i < KEY_CNT; i++)
                     cache.put(i, Integer.toString(i));
@@ -68,6 +69,10 @@ public final class CacheAffinityExample {
 
                 // Co-locates jobs with data using IgniteCluster.mapKeysToNodes(...) method.
                 visitUsingMapKeysToNodes();
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

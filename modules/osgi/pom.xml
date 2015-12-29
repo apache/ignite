@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-osgi</artifactId>
-    <version>1.5.0.final-SNAPSHOT</version>
+    <version>1.5.1.final-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -113,9 +113,9 @@
                 </executions>
             </plugin>
 
-            <!-- Generate the OSGi MANIFEST.MF for this bundle. 
-                 This bundle is a fragment attached to the ignite-core bundle, as it contains and exports classes in 
-                 the org.apache.ignite.internal.processors.query.h2.opt in the same manner as ignite-geospatial, thus 
+            <!-- Generate the OSGi MANIFEST.MF for this bundle.
+                 This bundle is a fragment attached to the ignite-core bundle, as it contains and exports classes in
+                 the org.apache.ignite.internal.processors.query.h2.opt in the same manner as ignite-geospatial, thus
                  leading to a split package situation in OSGi. It also contains an internal processor.
             -->
             <plugin>
@@ -166,5 +166,5 @@
 
         </plugins>
     </build>
-    
+
 </project>
