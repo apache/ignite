@@ -456,7 +456,7 @@ $generatorCommon.cacheHasDatasource = function (cache) {
     return false;
 };
 
-$generatorCommon.secretPropertiesNeeded = function (cluster, res) {
+$generatorCommon.secretPropertiesNeeded = function (cluster) {
     return $commonUtils.isDefined(_.find(cluster.caches, $generatorCommon.cacheHasDatasource)) || cluster.sslEnabled;
 };
 
