@@ -3361,36 +3361,38 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (val == null)
             return null;
 
-        if (val.getCacheStoreFactory() != null) {
-            IgniteCacheObjectProcessor objProc = ctx.cacheObjects();
-            BinaryContext oldCtx = null;
+        IgniteCacheObjectProcessor objProc = ctx.cacheObjects();
+        BinaryContext oldCtx = null;
 
-            if (objProc instanceof CacheObjectBinaryProcessorImpl) {
-                GridBinaryMarshaller binMarsh = ((CacheObjectBinaryProcessorImpl)objProc).marshaller();
+        if (objProc instanceof CacheObjectBinaryProcessorImpl) {
+            GridBinaryMarshaller binMarsh = ((CacheObjectBinaryProcessorImpl)objProc).marshaller();
 
-                oldCtx = binMarsh.pushContext();
-            }
-
-            try {
-                marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
-                    val.getCacheStoreFactory().getClass().getClassLoader());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteCheckedException("Failed to validate cache configuration. " +
-                    "Cache store factory is not serializable. Cache name: " + U.maskName(val.getName()), e);
-            }
-            finally {
-                if (objProc instanceof CacheObjectBinaryProcessorImpl)
-                    GridBinaryMarshaller.popContext(oldCtx);
-            }
+            oldCtx = binMarsh.pushContext();
         }
 
         try {
-            return marshaller.unmarshal(marshaller.marshal(val), val.getClass().getClassLoader());
+            if (val.getCacheStoreFactory() != null) {
+                try {
+                    marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
+                        val.getCacheStoreFactory().getClass().getClassLoader());
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteCheckedException("Failed to validate cache configuration. " +
+                        "Cache store factory is not serializable. Cache name: " + U.maskName(val.getName()), e);
+                }
+            }
+
+            try {
+                return marshaller.unmarshal(marshaller.marshal(val), val.getClass().getClassLoader());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteCheckedException("Failed to validate cache configuration " +
+                    "(make sure all objects in cache configuration are serializable): " + U.maskName(val.getName()), e);
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Failed to validate cache configuration " +
-                "(make sure all objects in cache configuration are serializable): " + U.maskName(val.getName()), e);
+        finally {
+            if (objProc instanceof CacheObjectBinaryProcessorImpl)
+                GridBinaryMarshaller.popContext(oldCtx);
         }
     }
 
