@@ -346,7 +346,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             };
 
             // Show load metadata modal.
-            $scope.showLoadMetadataModal = function () {
+            function _showLoadMetadataModal () {
                 $scope.loadMeta = {
                     action: 'connect',
                     schemas: [],
@@ -360,8 +360,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 $scope.loadMeta.action = 'drivers';
                 $scope.loadMeta.loadingOptions = LOADING_JDBC_DRIVERS;
 
-            $agentDownload.awaitAgent(function (result, onSuccess, onException) {
-                loadMetaModal.$promise.then(loadMetaModal.show);
+                $agentDownload.awaitAgent(function (result, onSuccess, onException) {
+                    loadMetaModal.$promise.then(loadMetaModal.show);
 
                     // Get available JDBC drivers via agent.
                     if ($scope.loadMeta.action === 'drivers') {
@@ -427,6 +427,18 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                 $loading.finish('loadingMetadataFromDb');
                             });
                     }
+                });
+            }
+
+            // Show load metadata modal.
+            $scope.showLoadMetadataModal = function () {
+                $table.tableReset();
+
+                $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
+                    if ($scope.ui.isDirty())
+                        $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
+
+                    _showLoadMetadataModal();
                 });
             };
 
