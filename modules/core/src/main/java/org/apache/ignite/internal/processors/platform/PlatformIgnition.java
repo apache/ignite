@@ -33,11 +33,13 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManager;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -154,14 +156,22 @@ public class PlatformIgnition {
     public static void loadSpringConfig(String springCfgPath, long memPtr) {
         assert memPtr != 0;
 
-        PlatformMemoryManagerImpl memMgr = new PlatformMemoryManagerImpl(null, 1024);
+        PlatformMemoryManager memMgr = new PlatformMemoryManagerImpl(null, 1024);
 
         try (PlatformMemory outMem = memMgr.allocate()) {
             PlatformOutputStream out = outMem.output();
             GridBinaryMarshaller marshaller = PlatformUtils.marshaller();
             BinaryRawWriterEx writer = marshaller.writer(out);
 
-            PlatformConfigurationUtils.writeIgniteConfiguration(writer, configuration(springCfgPath));
+            try {
+                writer.writeBoolean(true);  // success
+                PlatformConfigurationUtils.writeIgniteConfiguration(writer, configuration(springCfgPath));
+            }
+            catch (Throwable t) {
+                out.position(0);
+                writer.writeBoolean(false);  // failure
+                writer.writeString(X.getFullStackTrace(t));
+            }
         }
     }
 
