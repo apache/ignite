@@ -382,23 +382,6 @@ public class GridFunc {
     }
 
     /**
-     * Creates new collection by removing duplicates from the given collection.
-     *
-     * @param c Collection to remove duplicates from.
-     * @param <T> Type of the collection.
-     * @return De-duped collection.
-     */
-    public static <T> Collection<T> dedup(Collection<? extends T> c) {
-        A.notNull(c, "c");
-
-        Collection<T> set = new GridLeanSet<>();
-
-        set.addAll(c);
-
-        return set;
-    }
-
-    /**
      * Calculates sum of all elements.
      * <p>
      * <img src="{@docRoot}/img/sum.png">
@@ -1026,94 +1009,6 @@ public class GridFunc {
     }
 
     /**
-     * Loses all entries in input map that are evaluated to {@code true} by all given predicates.
-     *
-     * @param m Map to filter.
-     * @param cp If {@code true} method creates new map not modifying input, otherwise does
-     *      <tt>in-place</tt> modifications.
-     * @param p Optional set of predicates to use for filtration. If none provided - original map
-     *  will (or its copy) be returned.
-     * @param <K> Type of the free variable for the predicate and type of map's keys.
-     * @param <V> Type of the free variable for the predicate and type of map's values.
-     * @return Filtered map.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> Map<K, V> lose(Map<K, V> m, boolean cp,
-        @Nullable IgnitePredicate<? super Map.Entry<K, V>>... p) {
-        A.notNull(m, "m");
-
-        Map<K, V> res;
-
-        if (!cp) {
-            res = m;
-
-            if (isEmpty(p))
-                res.clear();
-            else if (!isAlwaysFalse(p))
-                for (Iterator<Map.Entry<K, V>> iter = m.entrySet().iterator(); iter.hasNext();)
-                    if (isAll(iter.next(), p))
-                        iter.remove();
-        }
-        else {
-            res = U.newHashMap(m.size());
-
-            if (!isEmpty(p) && !isAlwaysTrue(p))
-                for (Map.Entry<K, V> e : m.entrySet())
-                    if (!F.isAll(e, p))
-                        res.put(e.getKey(), e.getValue());
-        }
-
-        return res;
-    }
-
-    /**
-     * Loses all entries in input map which keys are evaluated to {@code true} by all
-     * given predicates.
-     *
-     * @param m Map to filter.
-     * @param cp If {@code true} method creates new map not modifying input, otherwise does
-     *      <tt>in-place</tt> modifications.
-     * @param p Optional set of predicates to use for filtration. If none provided - original
-     *      map (or its copy) will be returned.
-     * @param <K> Type of the free variable for the predicate and type of map's keys.
-     * @param <V> Type of map's values.
-     * @return Filtered map.
-     */
-    public static <K, V> Map<K, V> loseKeys(
-        Map<K, V> m,
-        boolean cp,
-        @Nullable final IgnitePredicate<? super K>... p
-    ) {
-        return lose(m, cp, new P1<Map.Entry<K, V>>() {
-            @Override public boolean apply(Map.Entry<K, V> e) {
-                return isAll(e.getKey(), p);
-            }
-        });
-    }
-
-    /**
-     * Loses all entries in input map which values are evaluated to {@code true} by all
-     * given predicates.
-     *
-     * @param m Map to filter.
-     * @param cp If {@code true} method creates new map not modifying input, otherwise does
-     *      <tt>in-place</tt> modifications.
-     * @param p Optional set of predicates to use for filtration. If none provided - original
-     *      map (or its copy) will be returned.
-     * @param <K> Type of the free variable for the predicate and type of map's keys.
-     * @param <V> Type of map's values.
-     * @return Filtered map.
-     */
-    public static <K, V> Map<K, V> loseValues(Map<K, V> m, boolean cp,
-        @Nullable final IgnitePredicate<? super V>... p) {
-        return lose(m, cp, new P1<Map.Entry<K, V>>() {
-            @Override public boolean apply(Map.Entry<K, V> e) {
-                return isAll(e.getValue(), p);
-            }
-        });
-    }
-
-    /**
      * Loses all elements in input list that are contained in {@code filter} collection.
      *
      * @param c Input list.
@@ -1142,40 +1037,6 @@ public class GridFunc {
                 if (filter == null || !filter.contains(t))
                     res.add(t);
             }
-        }
-
-        return res;
-    }
-
-    /**
-     * Loses all elements in input list for which any of the predicates evaluate to {@code true}.
-     *
-     * @param c Input list.
-     * @param cp If {@code true} method creates new list not modifying input,
-     *      otherwise does <tt>in-place</tt> modifications.
-     * @param p Looses all elements for which any of the predicates evaluate to {@code true}.
-     * @param <T> Type of list.
-     * @return List of remaining elements
-     */
-    public static <T> List<T> filterList(List<T> c, boolean cp, @Nullable IgnitePredicate<T>... p) {
-        A.notNull(c, "c");
-
-        List<T> res;
-
-        if (!cp) {
-            res = c;
-
-            if (p != null)
-                for (Iterator<T> it = c.iterator(); it.hasNext();)
-                    if (isAny(it.next(), p))
-                        it.remove();
-        }
-        else {
-            res = new ArrayList<>(c.size());
-
-            for (T t : c)
-                if (!isAny(t, p))
-                    res.add(t);
         }
 
         return res;
@@ -1735,27 +1596,6 @@ public class GridFunc {
                 return c.isEmpty();
             }
         };
-    }
-
-    /**
-     * Creates a view on given list with provided transformer and predicates.
-     * Resulting list will only "have" elements for which all provided predicates, if any,
-     * evaluate to {@code true}. Note that a new collection will be created and data will
-     * be copied.
-     *
-     * @param c Input list that serves as a base for the view.
-     * @param trans Transforming closure from T1 to T2.
-     * @param p Optional predicates. If predicates are not provided - all elements will be in the view.
-     * @return View on given list with provided predicate.
-     */
-    public static <T1, T2> List<T2> transformList(Collection<? extends T1> c,
-        IgniteClosure<? super T1, T2> trans, @Nullable IgnitePredicate<? super T1>... p) {
-        A.notNull(c, "c", trans, "trans");
-
-        if (isAlwaysFalse(p))
-            return Collections.emptyList();
-
-        return new ArrayList<>(transform(retain(c, true, p), trans));
     }
 
     /**
@@ -2838,6 +2678,7 @@ public class GridFunc {
      * @param <T> Type of the collection.
      * @return Collections' first element or {@code null} in case if the collection is empty.
      */
+    @SuppressWarnings("unchecked")
     public static <T> T first(@Nullable Iterable<? extends T> c) {
         if (c == null)
             return null;
@@ -3829,72 +3670,6 @@ public class GridFunc {
     public static <V1, V2, V3, V4, V5, V6> GridTuple6<V1, V2, V3, V4, V5, V6> t(@Nullable V1 v1, @Nullable V2 v2,
         @Nullable V3 v3, @Nullable V4 v4, @Nullable V5 v5, @Nullable V6 v6) {
         return new GridTuple6<>(v1, v2, v3, v4, v5, v6);
-    }
-
-    /**
-     * Creates vararg tuple with given values.
-     *
-     * @param objs Values for vararg tuple.
-     * @return Vararg tuple with given values.
-     */
-    public static GridTupleV tv(Object... objs) {
-        assert objs != null;
-
-        return new GridTupleV(objs);
-    }
-
-    /**
-     * Factory method returning new empty tuple.
-     *
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @param <V3> Type of the 3rd tuple parameter.
-     * @return Newly created empty tuple.
-     */
-    public static <V1, V2, V3> GridTuple3<V1, V2, V3> t3() {
-        return new GridTuple3<>();
-    }
-
-    /**
-     * Factory method returning new empty tuple.
-     *
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @param <V3> Type of the 3rd tuple parameter.
-     * @param <V4> Type of the 4th tuple parameter.
-     * @return Newly created empty tuple.
-     */
-    public static <V1, V2, V3, V4> GridTuple4<V1, V2, V3, V4> t4() {
-        return new GridTuple4<>();
-    }
-
-    /**
-     * Factory method returning new empty tuple.
-     *
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @param <V3> Type of the 3rd tuple parameter.
-     * @param <V4> Type of the 4th tuple parameter.
-     * @param <V5> Type of the 5th tuple parameter.
-     * @return Newly created empty tuple.
-     */
-    public static <V1, V2, V3, V4, V5> GridTuple5<V1, V2, V3, V4, V5> t5() {
-        return new GridTuple5<>();
-    }
-
-    /**
-     * Factory method returning new empty tuple.
-     *
-     * @param <V1> Type of the 1st tuple parameter.
-     * @param <V2> Type of the 2nd tuple parameter.
-     * @param <V3> Type of the 3rd tuple parameter.
-     * @param <V4> Type of the 4th tuple parameter.
-     * @param <V5> Type of the 5th tuple parameter.
-     * @param <V6> Type of the 6th tuple parameter.
-     * @return Newly created empty tuple.
-     */
-    public static <V1, V2, V3, V4, V5, V6> GridTuple6<V1, V2, V3, V4, V5, V6> t6() {
-        return new GridTuple6<>();
     }
 
     /**
