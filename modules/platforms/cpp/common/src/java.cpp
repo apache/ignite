@@ -1337,7 +1337,7 @@ namespace ignite
             void* JniContext::TargetListenFutureAndGet(jobject obj, long long futId, int typ) {
                 JNIEnv* env = Attach();
 
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFuture, futId, typ);
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFutureAndGet, futId, typ);
 
                 ExceptionCheck(env);
 
@@ -1347,7 +1347,7 @@ namespace ignite
             void* JniContext::TargetListenFutureForOperationAndGet(jobject obj, long long futId, int typ, int opId) {
                 JNIEnv* env = Attach();
 
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFutureForOperation, futId, typ, opId);
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFutureForOperationAndGet, futId, typ, opId);
 
                 ExceptionCheck(env);
 
