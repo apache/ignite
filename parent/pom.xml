@@ -448,7 +448,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="https://apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
+                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -826,7 +826,7 @@
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
                                         <!--special excludes-->
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
-                                        <exclude>DEVNOTES.txt</exclude>
+                                        <exclude>**/DEVNOTES.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>
                                         <exclude>**/LICENSE*</exclude>
                                         <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--BSD license-->

@@ -142,7 +142,7 @@
             <id>docs</id>
             <activation>
                 <property>
-                    <name>!skipClientDocs</name>
+                    <name>clientDocs</name>
                 </property>
             </activation>
             <build>

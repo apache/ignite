@@ -143,7 +143,7 @@
                                             <td>
                                                 <nobr>Ignite&#153; - Scalar DSL, ver. <strong>${project.version}</strong></nobr>
                                                 <br>
-                                                <a target=_blank href="https://apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
+                                                <a target=_blank href="https://ignite.apache.org"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                             </td>
                                         </tr>
                                         </table>
