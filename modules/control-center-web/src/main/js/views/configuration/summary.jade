@@ -35,11 +35,11 @@ mixin ignite-form-field-tooltip(message)
                     ignite-dialog-content 
                         | Configurations available in XML, Java and Dockerfile format for Server and Client mode.#[br]
                         | Database table POJO classes for cluster's metadata available on "POJO" tab.#[br]
-                        | Use "Download" button to receive configurations in ZIP file.#[br]
+                        | Use "Download project" button to receive configurations in ZIP file.#[br]
                         | Go back to change configuration on #[a(ui-sref='base.configuration.clusters') clusters],&nbsp;
                         | #[a(ui-sref='base.configuration.caches') caches] or #[a(ui-sref='base.configuration.metadata') metadata] screen.#[br]
-                        | Read #[a(href='https://apacheignite.readme.io/docs') Ignite Documentation].#[br]
-                        | Download #[a(href='https://ignite.apache.org/download.cgi#binaries') Ignite Binary Release].
+                        | Read #[a(href='https://apacheignite.readme.io/docs' target='_blank') Ignite Documentation].#[br]
+                        | Download #[a(href='https://ignite.apache.org/download.cgi#binaries' target='_blank') Ignite Binary Release].
 
         ignite-callout-cel(data-title='Next Steps')
             li Deploy Ignite Servers
@@ -50,8 +50,7 @@ mixin ignite-form-field-tooltip(message)
         hr
 
         .padding-dflt(ng-if='!clusters || clusters.length == 0')
-            | You have no clusters configured. Please configure them &nbsp;
-            a(href='/configuration/clusters') here.
+            | You have no clusters configured. Please configure them #[a(ui-sref='base.configuration.clusters') here].
 
         div(ng-show='clusters || clusters.length > 0')
             +main-table('clusters', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
