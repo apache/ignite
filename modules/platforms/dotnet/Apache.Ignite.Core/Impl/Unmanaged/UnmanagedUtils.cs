@@ -109,7 +109,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 try
                 {
-                    JNI.IgnitionLoadSpringConfig(cfgPath0, stream.SynchronizeOutput());
+                    var res = JNI.IgnitionLoadSpringConfig(cfgPath0, stream.SynchronizeOutput());
+
+                    if (!res)
+                        throw new IgniteException("Failed to load Spring configuration: unknown error.");
 
                     stream.SynchronizeInput();
 
