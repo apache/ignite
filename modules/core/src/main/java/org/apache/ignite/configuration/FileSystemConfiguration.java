@@ -195,7 +195,7 @@ public class FileSystemConfiguration {
         fragmentizerThrottlingBlockLen = cfg.getFragmentizerThrottlingBlockLength();
         fragmentizerThrottlingDelay = cfg.getFragmentizerThrottlingDelay();
         secondaryFs = cfg.getSecondaryFileSystem();
-        initDfltPathModes = cfg.isInitializeDefaultPathsModes();
+        initDfltPathModes = cfg.isInitializeDefaultPathModes();
         ipcEndpointCfg = cfg.getIpcEndpointConfiguration();
         ipcEndpointEnabled = cfg.isIpcEndpointEnabled();
         maxSpace = cfg.getMaxSpaceSize();
@@ -526,7 +526,7 @@ public class FileSystemConfiguration {
      * If path doesn't correspond to any specified prefix or mappings are not provided, then
      * {@link #getDefaultMode()} is used.
      * <p>
-     * If {@link #isInitializeDefaultPathsModes()} is set to {@code true}, the following path modes will be created
+     * If {@link #isInitializeDefaultPathModes()} is set to {@code true}, the following path modes will be created
      * by default:
      * <li>{@code /ignite/primary} and all it's sub-folders will always work in {@code PRIMARY} mode.</li>
      * <p>
@@ -815,18 +815,18 @@ public class FileSystemConfiguration {
      *
      * @return {@code True} if default path modes will be initialized.
      */
-    public boolean isInitializeDefaultPathsModes() {
+    public boolean isInitializeDefaultPathModes() {
         return initDfltPathModes;
     }
 
     /**
      * Set whether to initialize default path modes.
      * <p>
-     * See {@link #isInitializeDefaultPathsModes()} for more information.
+     * See {@link #isInitializeDefaultPathModes()} for more information.
      *
      * @param initDfltPathModes Whether to initialize default path modes.
      */
-    public void setInitializeDefaultPathsModes(boolean initDfltPathModes) {
+    public void setInitializeDefaultPathModes(boolean initDfltPathModes) {
         this.initDfltPathModes = initDfltPathModes;
     }
 

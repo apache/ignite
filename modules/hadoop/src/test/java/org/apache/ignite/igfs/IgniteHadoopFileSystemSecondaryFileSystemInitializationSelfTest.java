@@ -70,7 +70,7 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
         igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512 * 1024);
-        igfsCfg.setInitializeDefaultPathsModes(initDfltPathModes);
+        igfsCfg.setInitializeDefaultPathModes(initDfltPathModes);
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
