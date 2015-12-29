@@ -37,7 +37,7 @@ var consoleModule = angular.module('ignite-web-console',
                 .then(function (user) {
                     $rootScope.$broadcast('user', user);
 
-                    $state.go('base.admin');
+                    $state.go('settings.admin');
                 })
                 .catch(function (errMsg) {
                     $common.showError($common.errorMessage(errMsg));
