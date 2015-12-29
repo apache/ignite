@@ -318,6 +318,8 @@ namespace ignite
                 jmethodID m_PlatformTarget_inObjectStreamOutStream;
                 jmethodID m_PlatformTarget_listenFuture;
                 jmethodID m_PlatformTarget_listenFutureForOperation;
+                jmethodID m_PlatformTarget_listenFutureAndGet;
+                jmethodID m_PlatformTarget_listenFutureForOperationAndGet;
 
                 jclass c_PlatformTransactions;
                 jmethodID m_PlatformTransactions_txStart;
@@ -503,8 +505,10 @@ namespace ignite
                 long long TargetOutLong(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
                 void TargetOutStream(jobject obj, int opType, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetOutObject(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
-                void* TargetListenFuture(jobject obj, long long futId, int typ);
-                void* TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId);
+                void TargetListenFuture(jobject obj, long long futId, int typ);
+                void TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId);
+                void* TargetListenFutureAndGet(jobject obj, long long futId, int typ);
+                void* TargetListenFutureForOperationAndGet(jobject obj, long long futId, int typ, int opId);
                 
                 int AffinityPartitions(jobject obj);
 

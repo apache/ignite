@@ -102,7 +102,7 @@ public interface PlatformTarget {
      * @throws IgniteCheckedException In case of failure.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public PlatformListenable listenFuture(final long futId, int typ) throws Exception;
+    public void listenFuture(final long futId, int typ) throws Exception;
 
     /**
      * Start listening for the future for specific operation type.
@@ -113,5 +113,26 @@ public interface PlatformTarget {
      * @throws IgniteCheckedException In case of failure.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public PlatformListenable listenFutureForOperation(final long futId, int typ, int opId) throws Exception;
+    public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception;
+
+    /**
+     * Start listening for the future.
+     *
+     * @param futId Future ID.
+     * @param typ Result type.
+     * @throws IgniteCheckedException In case of failure.
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public PlatformListenable listenFutureAndGet(final long futId, int typ) throws Exception;
+
+    /**
+     * Start listening for the future for specific operation type.
+     *
+     * @param futId Future ID.
+     * @param typ Result type.
+     * @param opId Operation ID required to pick correct result writer.
+     * @throws IgniteCheckedException In case of failure.
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public PlatformListenable listenFutureForOperationAndGet(final long futId, int typ, int opId) throws Exception;
 }

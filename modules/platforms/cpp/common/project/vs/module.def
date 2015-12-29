@@ -111,3 +111,5 @@ IgniteAtomicLongIsClosed @108
 IgniteAtomicLongClose @109
 IgniteListenableCancel @110
 IgniteListenableIsCancelled @111
+IgniteTargetListenFutureAndGet @112
+IgniteTargetListenFutureForOperationAndGet @113

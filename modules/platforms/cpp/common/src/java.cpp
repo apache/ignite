@@ -209,8 +209,10 @@ namespace ignite
             JniMethod M_PLATFORM_TARGET_OUT_LONG = JniMethod("outLong", "(I)J", false);
             JniMethod M_PLATFORM_TARGET_OUT_STREAM = JniMethod("outStream", "(IJ)V", false);
             JniMethod M_PLATFORM_TARGET_OUT_OBJECT = JniMethod("outObject", "(I)Ljava/lang/Object;", false);
-            JniMethod M_PLATFORM_TARGET_LISTEN_FUTURE = JniMethod("listenFuture", "(JI)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
-            JniMethod M_PLATFORM_TARGET_LISTEN_FOR_OPERATION = JniMethod("listenFutureForOperation", "(JII)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
+            JniMethod M_PLATFORM_TARGET_LISTEN_FUTURE = JniMethod("listenFuture", "(JI)V", false);
+            JniMethod M_PLATFORM_TARGET_LISTEN_FOR_OPERATION = JniMethod("listenFutureForOperation", "(JII)V", false);
+            JniMethod M_PLATFORM_TARGET_LISTEN_FUTURE_AND_GET = JniMethod("listenFutureAndGet", "(JI)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
+            JniMethod M_PLATFORM_TARGET_LISTEN_FOR_OPERATION_AND_GET = JniMethod("listenFutureForOperationAndGet", "(JII)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
 
             const char* C_PLATFORM_CLUSTER_GRP = "org/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup";
             JniMethod M_PLATFORM_CLUSTER_GRP_FOR_OTHERS = JniMethod("forOthers", "(Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;)Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
@@ -654,6 +656,8 @@ namespace ignite
                 m_PlatformTarget_inObjectStreamOutStream = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_OBJECT_STREAM_OUT_STREAM);
                 m_PlatformTarget_listenFuture = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FUTURE);
                 m_PlatformTarget_listenFutureForOperation = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FOR_OPERATION);
+                m_PlatformTarget_listenFutureAndGet = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FUTURE_AND_GET);
+                m_PlatformTarget_listenFutureForOperationAndGet = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FOR_OPERATION_AND_GET);
 
                 c_PlatformTransactions = FindClass(env, C_PLATFORM_TRANSACTIONS);
                 m_PlatformTransactions_txStart = FindMethod(env, c_PlatformTransactions, M_PLATFORM_TRANSACTIONS_TX_START);
@@ -1314,7 +1318,23 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            void* JniContext::TargetListenFuture(jobject obj, long long futId, int typ) {
+            void JniContext::TargetListenFuture(jobject obj, long long futId, int typ) {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFuture, futId, typ);
+
+                ExceptionCheck(env);
+            }
+
+            void JniContext::TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId) {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFutureForOperation, futId, typ, opId);
+
+                ExceptionCheck(env);
+            }
+
+            void* JniContext::TargetListenFutureAndGet(jobject obj, long long futId, int typ) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFuture, futId, typ);
@@ -1324,7 +1344,7 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            void* JniContext::TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId) {
+            void* JniContext::TargetListenFutureForOperationAndGet(jobject obj, long long futId, int typ, int opId) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFutureForOperation, futId, typ, opId);
