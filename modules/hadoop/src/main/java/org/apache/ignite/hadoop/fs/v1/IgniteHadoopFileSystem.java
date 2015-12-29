@@ -330,7 +330,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
             if (initSecondary) {
                 try {
-                    Object payload0 = paths.getPayload(getClass().getClassLoader());
+                    //Object payload0 = paths.getPayload(getClass().getClassLoader());
 
                     factory = (HadoopFileSystemFactory) paths.getPayload(getClass().getClassLoader());
                 }

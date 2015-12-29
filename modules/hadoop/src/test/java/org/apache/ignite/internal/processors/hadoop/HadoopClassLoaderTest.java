@@ -17,29 +17,47 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import java.util.HashSet;
 import junit.framework.TestCase;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 
 /**
  *
  */
 public class HadoopClassLoaderTest extends TestCase {
     /** */
-    HadoopClassLoader ldr = new HadoopClassLoader(null, "test");
+    final HadoopClassLoader ldr = new HadoopClassLoader(null, "test");
 
     /**
      * @throws Exception If failed.
      */
     public void testClassLoading() throws Exception {
         assertNotSame(Test1.class, ldr.loadClass(Test1.class.getName()));
+
         assertNotSame(Test2.class, ldr.loadClass(Test2.class.getName()));
+
         assertSame(Test3.class, ldr.loadClass(Test3.class.getName()));
     }
 
-//    public void testDependencySearch() {
-//        assertTrue(ldr.hasExternalDependencies(Test1.class.getName(), new HashSet<String>()));
-//        assertTrue(ldr.hasExternalDependencies(Test2.class.getName(), new HashSet<String>()));
-//    }
+    /**
+     *
+     */
+    public void testDependencySearch() {
+        assertTrue(ldr.hasExternalDependencies(Test1.class.getName(), new HashSet<String>()));
+
+        assertTrue(ldr.hasExternalDependencies(Test2.class.getName(), new HashSet<String>()));
+
+        assertFalse(ldr.hasExternalDependencies(java.lang.Object.class.getName(), new HashSet<String>()));
+
+        assertTrue(ldr.hasExternalDependencies(org.apache.hadoop.conf.Configuration.class.getName(), new HashSet<String>()));
+
+        assertFalse(ldr.hasExternalDependencies(Test3.class.getName(), new HashSet<String>()));
+
+        // Classes for those org.apache.ignite.internal.processors.hadoop.HadoopClassLoader.isHadoopIgfs returns true:
+        assertTrue(ldr.hasExternalDependencies(HadoopFileSystemFactory.class.getName(), new HashSet<String>()));
+        assertTrue(ldr.hasExternalDependencies(HadoopUtils.class.getName(), new HashSet<String>()));
+    }
 
     /**
      *
