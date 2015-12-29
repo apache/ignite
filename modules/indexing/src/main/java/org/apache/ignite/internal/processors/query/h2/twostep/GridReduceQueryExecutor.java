@@ -111,6 +111,9 @@ public class GridReduceQueryExecutor {
     private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.4.0");
 
     /** */
+    private boolean oldNodesInTopology = true;
+
+    /** */
     private GridKernalContext ctx;
 
     /** */
@@ -400,7 +403,7 @@ public class GridReduceQueryExecutor {
      * @param topVer Topology version.
      * @param cctx Cache context for main space.
      * @param extraSpaces Extra spaces.
-     * @return Data nodes or {@code null} if repartitioning started and we need to retry..
+     * @return Data nodes or {@code null} if repartitioning started and we need to retry.
      */
     private Collection<ClusterNode> stableDataNodes(
         AffinityTopologyVersion topVer,
@@ -409,10 +412,12 @@ public class GridReduceQueryExecutor {
     ) {
         String space = cctx.name();
 
-        Set<ClusterNode> nodes = new HashSet<>(dataNodes(space, topVer));
+        Collection<ClusterNode> nodes = dataNodes(space, topVer);
 
         if (F.isEmpty(nodes))
             throw new CacheException("Failed to find data nodes for cache: " + space);
+
+        nodes = nodes.size() > 4 ? new HashSet<>(nodes) : new ArrayList<>(nodes);
 
         if (!F.isEmpty(extraSpaces)) {
             for (String extraSpace : extraSpaces) {
@@ -469,20 +474,25 @@ public class GridReduceQueryExecutor {
      * @return {@code true} If there are old nodes in topology.
      */
     private boolean oldNodesInTopology() {
-        NavigableMap<IgniteProductVersion,Collection<ClusterNode>> m = ctx.discovery().topologyVersionMap();
-
-        if (F.isEmpty(m))
+        if (!oldNodesInTopology)
             return false;
 
-        for (Map.Entry<IgniteProductVersion,Collection<ClusterNode>> entry : m.entrySet()) {
-            if (entry.getKey().compareTo(DISTRIBUTED_JOIN_SINCE) >= 0)
-                return false;
+        NavigableMap<IgniteProductVersion,Collection<ClusterNode>> m = ctx.discovery().topologyVersionMap();
 
-            for (ClusterNode node : entry.getValue()) {
-                if (!node.isClient() && !node.isDaemon())
-                    return true;
+        if (!F.isEmpty(m)) {
+            for (Map.Entry<IgniteProductVersion,Collection<ClusterNode>> entry : m.entrySet()) {
+                if (entry.getKey().compareTo(DISTRIBUTED_JOIN_SINCE) >= 0)
+                    break;
+
+                for (ClusterNode node : entry.getValue()) {
+                    if (!node.isClient() && !node.isDaemon())
+                        return true;
+                }
             }
         }
+
+        // If we did not find old nodes, we assume that old node will not join further.
+        oldNodesInTopology = false;
 
         return false;
     }
@@ -516,7 +526,9 @@ public class GridReduceQueryExecutor {
 
             final String space = cctx.name();
 
-            final QueryRun r = new QueryRun(h2.connectionForSpace(space), qry.mapQueries().size(), qry.pageSize());
+            List<GridCacheSqlQuery> mapQrys = qry.mapQueries();
+
+            final QueryRun r = new QueryRun(h2.connectionForSpace(space), mapQrys.size(), qry.pageSize());
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
@@ -552,18 +564,16 @@ public class GridReduceQueryExecutor {
                 nodes = Collections.singleton(F.rand(nodes));
             }
 
-            int tblIdx = 0;
+            final boolean skipMergeTbl = qry.skipMergeTable() && !qry.explain();
 
-            final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
-
-            for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
+            for (int i = 0; i < mapQrys.size(); i++) {
                 GridMergeIndex idx;
 
-                if (!skipMergeTbl || qry.explain()) {
+                if (!skipMergeTbl) {
                     GridMergeTable tbl;
 
                     try {
-                        tbl = createMergeTable(r.conn, mapQry, qry.explain());
+                        tbl = createMergeTable(r.conn, mapQrys.get(i), qry.explain());
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -571,18 +581,17 @@ public class GridReduceQueryExecutor {
 
                     idx = tbl.getScanIndex(null);
 
-                    fakeTable(r.conn, tblIdx++).innerTable(tbl);
+                    fakeTable(r.conn, i).innerTable(tbl);
                 }
                 else
                     idx = GridMergeIndexUnsorted.createDummy();
 
-                for (ClusterNode node : nodes)
-                    idx.addSource(node.id());
+                idx.setSources(nodes);
 
                 r.idxs.add(idx);
             }
 
-            r.latch = new CountDownLatch(r.idxs.size() * nodes.size());
+            r.latch = new CountDownLatch(mapQrys.size() * nodes.size());
 
             runs.put(qryReqId, r);
 
@@ -592,8 +601,6 @@ public class GridReduceQueryExecutor {
                         new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
                             "Client node disconnected."));
                 }
-
-                List<GridCacheSqlQuery> mapQrys = qry.mapQueries();
 
                 if (qry.explain()) {
                     mapQrys = new ArrayList<>(qry.mapQueries().size());
@@ -652,12 +659,12 @@ public class GridReduceQueryExecutor {
                 Iterator<List<?>> resIter = null;
 
                 if (!retry) {
-                    if (skipMergeTbl && !qry.explain()) {
-                        List<List<?>> res = new ArrayList<>();
-
+                    if (skipMergeTbl) {
                         assert r.idxs.size() == 1 : r.idxs;
 
                         GridMergeIndex idx = r.idxs.get(0);
+
+                        List<List<?>> res = new ArrayList<>((int)idx.getRowCountApproximation());
 
                         Cursor cur = idx.findInStream(null, null);
 
@@ -747,7 +754,7 @@ public class GridReduceQueryExecutor {
                     U.warn(log, "Query run was already removed: " + qryReqId);
 
                 if (!skipMergeTbl) {
-                    for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
+                    for (int i = 0; i < mapQrys.size(); i++)
                         fakeTable(null, i).innerTable(null); // Drop all merge tables.
                 }
             }

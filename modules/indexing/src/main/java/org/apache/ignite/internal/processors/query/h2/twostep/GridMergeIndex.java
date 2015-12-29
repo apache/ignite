@@ -18,16 +18,19 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.ConcurrentModificationException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
@@ -40,7 +43,6 @@ import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_MERGE_TABLE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -56,7 +58,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     private final AtomicInteger expRowsCnt = new AtomicInteger(0);
 
     /** Remaining rows per source node ID. */
-    private final ConcurrentMap<UUID, Counter> remainingRows = new ConcurrentHashMap8<>();
+    private Map<UUID, Counter> remainingRows;
 
     /** */
     private final AtomicBoolean lastSubmitted = new AtomicBoolean();
@@ -112,11 +114,19 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
-     * @param nodeId Node ID.
+     * Set source nodes.
+     *
+     * @param nodes Nodes.
      */
-    public void addSource(UUID nodeId) {
-        if (remainingRows.put(nodeId, new Counter()) != null)
-            throw new IllegalStateException();
+    public void setSources(Collection<ClusterNode> nodes) {
+        assert remainingRows == null;
+
+        remainingRows = new HashMap<>(nodes.size(), 1f);
+
+        for (ClusterNode node : nodes) {
+            if (remainingRows.put(node.id(), new Counter()) != null)
+                throw new IllegalStateException("Duplicate node id: " + node.id());
+        }
     }
 
     /**
