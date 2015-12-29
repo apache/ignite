@@ -230,11 +230,6 @@ namespace Apache.Ignite.Core.Tests
         private static void CheckDefaultProperties(IgniteConfiguration cfg)
         {
             Assert.AreEqual(IgniteConfiguration.DefaultMetricsExpireTime, cfg.MetricsExpireTime);
-
-            // Reported memory can differ slightly
-            Assert.IsTrue(IgniteConfiguration.DefaultJvmInitMem < cfg.JvmInitialMemoryMb);
-            Assert.IsTrue(IgniteConfiguration.DefaultJvmMaxMem < cfg.JvmMaxMemoryMb);
-
             Assert.AreEqual(IgniteConfiguration.DefaultMetricsHistorySize, cfg.MetricsHistorySize);
             Assert.AreEqual(IgniteConfiguration.DefaultMetricsLogFrequency, cfg.MetricsLogFrequency);
             Assert.AreEqual(IgniteConfiguration.DefaultMetricsUpdateFrequency, cfg.MetricsUpdateFrequency);
