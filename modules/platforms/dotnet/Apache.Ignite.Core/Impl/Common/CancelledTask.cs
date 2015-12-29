@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// </summary>
     internal static class CancelledTask<T>
     {
+        /** Task source. */
         private static readonly TaskCompletionSource<T> TaskCompletionSource;
 
         /// <summary>
