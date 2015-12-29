@@ -44,5 +44,7 @@ $generatorDocker.clusterDocker = function (cluster, version) {
         'ENV OPTION_LIBS ignite-rest-http\n\n' +
         '# Append config file to container.\n' +
         'ADD ./config $IGNITE_HOME/config\n\n' +
+        '# Append jdbc drivers to container.\n' +
+        'ADD ./jdbc-drivers $IGNITE_HOME/libs/jdbc-drivers\n\n' +
         $generatorDocker.secret(cluster) + '\n';
 };
