@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core 
 {
     using System;
@@ -271,6 +272,15 @@ namespace Apache.Ignite.Core
         private static void WriteConfiguration(PlatformMemoryStream outStream, IgniteConfiguration cfg)
         {
             Debug.Assert(outStream != null && cfg != null);
+
+            if (!string.IsNullOrEmpty(cfg.SpringConfigUrl))
+            {
+                // Do not write details when there is Spring config.
+                outStream.WriteBool(false);
+                return;
+            }
+
+            outStream.WriteBool(true);  // details are present
 
             var writer = _startup.Marshaller.StartMarshal(outStream);
 

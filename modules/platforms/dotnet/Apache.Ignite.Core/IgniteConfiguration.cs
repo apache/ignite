@@ -109,8 +109,6 @@ namespace Apache.Ignite.Core
 
             BinaryConfiguration = marsh.BinaryConfiguration;
 
-            SpringConfigUrl = origCfg.SpringConfigUrl;
-
             JvmClasspath = origCfg.JvmClasspath;
 
             JvmOptions = origCfg.JvmOptions;

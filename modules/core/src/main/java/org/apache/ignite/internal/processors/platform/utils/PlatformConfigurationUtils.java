@@ -242,6 +242,9 @@ import java.util.Map;
      * @param cfg Configuration.
      */
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
+        if (!in.readBoolean())
+            return;  // there is no config
+
         if (in.readBoolean()) cfg.setClientMode(in.readBoolean());
         if (in.readBoolean()) cfg.setMetricsExpireTime(in.readLong());
         if (in.readBoolean()) cfg.setMetricsLogFrequency(in.readLong());
