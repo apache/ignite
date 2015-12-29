@@ -71,13 +71,13 @@ public class GridExecutionStatistics {
 
         long time = startTime.get().get2();
 
-        AtomicInteger cnt = F.addIfAbsent(cntMap, name, F.newAtomicInt());
+        AtomicInteger cnt = F.addIfAbsent(cntMap, name, new AtomicInteger());
 
         assert cnt != null;
 
         cnt.incrementAndGet();
 
-        AtomicLong d = F.addIfAbsent(durationMap, name, F.newAtomicLong());
+        AtomicLong d = F.addIfAbsent(durationMap, name, new AtomicLong());
 
         assert d != null;
 

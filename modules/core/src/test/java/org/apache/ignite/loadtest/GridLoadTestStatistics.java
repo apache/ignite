@@ -107,7 +107,7 @@ public class GridLoadTestStatistics {
                     AtomicInteger cnt;
 
                     synchronized (nodeCnts) {
-                        cnt = F.addIfAbsent(nodeCnts, id, F.newAtomicInt());
+                        cnt = F.addIfAbsent(nodeCnts, id, new AtomicInteger());
                     }
 
                     assert cnt != null;

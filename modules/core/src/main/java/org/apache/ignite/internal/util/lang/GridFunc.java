@@ -35,13 +35,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -163,28 +161,6 @@ public class GridFunc {
     };
 
     /** */
-    private static final IgniteCallable<?> LIST_FACTORY = new IgniteCallable<List>() {
-        @Override public List call() {
-            return new ArrayList();
-        }
-
-        @Override public String toString() {
-            return "Array list factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<?> LINKED_LIST_FACTORY = new IgniteCallable<LinkedList>() {
-        @Override public LinkedList call() {
-            return new LinkedList();
-        }
-
-        @Override public String toString() {
-            return "Linked list factory.";
-        }
-    };
-
-    /** */
     private static final IgniteCallable<?> SET_FACTORY = new IgniteCallable<Set>() {
         @Override public Set call() {
             return new HashSet();
@@ -192,50 +168,6 @@ public class GridFunc {
 
         @Override public String toString() {
             return "Hash set factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<AtomicInteger> ATOMIC_INT_FACTORY = new IgniteCallable<AtomicInteger>() {
-        @Override public AtomicInteger call() {
-            return new AtomicInteger(0);
-        }
-
-        @Override public String toString() {
-            return "Atomic integer factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<AtomicLong> ATOMIC_LONG_FACTORY = new IgniteCallable<AtomicLong>() {
-        @Override public AtomicLong call() {
-            return new AtomicLong(0);
-        }
-
-        @Override public String toString() {
-            return "Atomic long factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<AtomicBoolean> ATOMIC_BOOL_FACTORY = new IgniteCallable<AtomicBoolean>() {
-        @Override public AtomicBoolean call() {
-            return new AtomicBoolean();
-        }
-
-        @Override public String toString() {
-            return "Atomic boolean factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<?> MAP_FACTORY = new IgniteCallable<Map>() {
-        @Override public Map call() {
-            return new HashMap();
-        }
-
-        @Override public String toString() {
-            return "Hash map factory.";
         }
     };
 
@@ -2107,43 +2039,6 @@ public class GridFunc {
     }
 
     /**
-     * Returns a factory closure that creates new {@link List} instance. Note that this
-     * method does not create a new closure but returns a static one.
-     *
-     * @param <T> Type parameters for the created {@link List}.
-     * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> IgniteCallable<List<T>> newList() {
-        return (IgniteCallable<List<T>>)LIST_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link AtomicInteger} instance
-     * initialized to {@code zero}. Note that this method does not create a new
-     * closure but returns a static one.
-     *
-     * @return Factory closure that creates new {@link AtomicInteger} instance
-     *      initialized to {@code zero} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    public static IgniteCallable<AtomicInteger> newAtomicInt() {
-        return ATOMIC_INT_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link AtomicLong} instance
-     * initialized to {@code zero}. Note that this method does not create a new
-     * closure but returns a static one.
-     *
-     * @return Factory closure that creates new {@link AtomicLong} instance
-     *      initialized to {@code zero} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    public static IgniteCallable<AtomicLong> newAtomicLong() {
-        return ATOMIC_LONG_FACTORY;
-    }
-
-    /**
      * Returns a factory closure that creates new {@link Set} instance. Note that this
      * method does not create a new closure but returns a static one.
      *
@@ -2154,20 +2049,6 @@ public class GridFunc {
     @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<Set<T>> newSet() {
         return (IgniteCallable<Set<T>>)SET_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link Map} instance. Note
-     * that this method does not create a new closure but returns a static one.
-     *
-     * @param <K> Type of the key for the created {@link Map}.
-     * @param <V> Type of the value for the created {@link Map}.
-     * @return Factory closure that creates new {@link Map} instance every
-     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    public static <K, V> IgniteCallable<Map<K, V>> newMap() {
-        return (IgniteCallable<Map<K, V>>)MAP_FACTORY;
     }
 
     /**
@@ -2874,11 +2755,7 @@ public class GridFunc {
      *      found (or {@code null} if key is not found and closure is not provided). Note that
      *      in case when key is not found the default value will be put into the map.
      * @throws GridClosureException Thrown in case when callable throws exception.
-     * @see #newList()
      * @see #newSet()
-     * @see #newMap()
-     * @see #newAtomicLong()
-     * @see #newAtomicInt()
      */
     @Nullable public static <K, V> V addIfAbsent(Map<? super K, V> map, @Nullable K key,
         @Nullable Callable<? extends V> c) {
