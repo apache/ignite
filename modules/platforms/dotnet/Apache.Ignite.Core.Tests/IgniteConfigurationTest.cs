@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests
             // When Spring XML is used, all properties are ignored.
             var cfg = GetCustomConfig();
 
-            cfg.SpringConfigUrl = "config\\compute\\compute-grid1.xml";
+            cfg.SpringConfigUrl = "config\\marshaller-default.xml";
 
             using (var ignite = Ignition.Start(cfg))
             {
@@ -236,15 +236,6 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkTimeout, cfg.NetworkTimeout);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryCount, cfg.NetworkSendRetryCount);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryDelay, cfg.NetworkSendRetryDelay);
-            Assert.AreEqual(null, cfg.DiscoveryConfiguration);
-            Assert.AreEqual(null, cfg.CacheConfiguration);
-            Assert.AreEqual(null, cfg.LocalHost);
-            Assert.AreEqual(null, cfg.BinaryConfiguration);
-            Assert.AreEqual(null, cfg.WorkDirectory);
-            Assert.AreEqual(null, cfg.GridName);
-            Assert.AreEqual(null, cfg.Assemblies);
-            Assert.AreEqual(null, cfg.IncludedEventTypes);
-            Assert.AreEqual(false, cfg.ClientMode);
         }
 
         private static IgniteConfiguration GetCustomConfig()
