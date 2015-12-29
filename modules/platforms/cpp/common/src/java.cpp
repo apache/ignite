@@ -357,6 +357,7 @@ namespace ignite
             JniMethod M_PLATFORM_IGNITION_ENVIRONMENT_POINTER = JniMethod("environmentPointer", "(Ljava/lang/String;)J", true);
             JniMethod M_PLATFORM_IGNITION_STOP = JniMethod("stop", "(Ljava/lang/String;Z)Z", true);
             JniMethod M_PLATFORM_IGNITION_STOP_ALL = JniMethod("stopAll", "(Z)V", true);
+            JniMethod M_PLATFORM_IGNITION_LOAD_SPRING_CONFIG = JniMethod("loadSpringConfig", "(Ljava/lang/String;Ljava/lang/String;J)V", true);
 
             const char* C_PLATFORM_ABSTRACT_QRY_CURSOR = "org/apache/ignite/internal/processors/platform/cache/query/PlatformAbstractQueryCursor";
             JniMethod M_PLATFORM_ABSTRACT_QRY_CURSOR_ITER = JniMethod("iterator", "()V", false);
@@ -623,6 +624,7 @@ namespace ignite
                 m_PlatformIgnition_environmentPointer = FindMethod(env, c_PlatformIgnition, M_PLATFORM_IGNITION_ENVIRONMENT_POINTER);
                 m_PlatformIgnition_stop = FindMethod(env, c_PlatformIgnition, M_PLATFORM_IGNITION_STOP);
                 m_PlatformIgnition_stopAll = FindMethod(env, c_PlatformIgnition, M_PLATFORM_IGNITION_STOP_ALL);
+                m_PlatformIgnition_loadSpringConfig = FindMethod(env, c_PlatformIgnition, M_PLATFORM_IGNITION_LOAD_SPRING_CONFIG);
 
                 c_PlatformMessaging = FindClass(env, C_PLATFORM_MESSAGING);
                 m_PlatformMessaging_withAsync = FindMethod(env, c_PlatformMessaging, M_PLATFORM_MESSAGING_WITH_ASYNC);
@@ -1074,6 +1076,26 @@ namespace ignite
 
                 env->CallStaticVoidMethod(jvm->GetMembers().c_PlatformIgnition,
                     jvm->GetMembers().m_PlatformIgnition_stopAll, cancel);
+
+                ExceptionCheck(env, errInfo);
+            }
+
+            void JniContext::IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr)
+            {
+                IgnitionLoadSpringConfig(cfgPath, dataPtr, NULL);
+            }
+
+            void JniContext::IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr, JniErrorInfo* errInfo)
+            {
+                JNIEnv* env = Attach();
+
+                jstring cfgPath0 = env->NewStringUTF(cfgPath);
+
+                env->CallStaticVoidMethod(
+                    jvm->GetMembers().c_PlatformIgnition,
+                    jvm->GetMembers().m_PlatformIgnition_loadSpringConfig,
+                    cfgPath0,
+                    dataPtr);
 
                 ExceptionCheck(env, errInfo);
             }

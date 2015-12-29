@@ -288,6 +288,7 @@ namespace ignite
                 jmethodID m_PlatformIgnition_environmentPointer;
                 jmethodID m_PlatformIgnition_stop;
                 jmethodID m_PlatformIgnition_stopAll;
+                jmethodID m_PlatformIgnition_loadSpringConfig;
 
                 jclass c_PlatformMessaging;
                 jmethodID m_PlatformMessaging_withAsync;
@@ -476,6 +477,8 @@ namespace ignite
                 bool IgnitionStop(char* name, bool cancel, JniErrorInfo* errInfo);
                 void IgnitionStopAll(bool cancel);
                 void IgnitionStopAll(bool cancel, JniErrorInfo* errInfo);
+                void IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr);
+                void IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr, JniErrorInfo* errInfo);
                 
                 void ProcessorReleaseStart(jobject obj);
                 jobject ProcessorProjection(jobject obj);

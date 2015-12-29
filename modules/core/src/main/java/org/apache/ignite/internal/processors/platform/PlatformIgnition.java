@@ -151,7 +151,7 @@ public class PlatformIgnition {
      * @param springCfgPath Path to the config.
      * @param memPtr Target memory pointer.
      */
-    public static void loadSpringConfiguration(String springCfgPath, long memPtr) {
+    public static void loadSpringConfig(String springCfgPath, long memPtr) {
         assert memPtr != 0;
 
         PlatformMemoryManagerImpl memMgr = new PlatformMemoryManagerImpl(null, 1024);
