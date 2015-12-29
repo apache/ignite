@@ -57,6 +57,6 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_FUNC_ERROR_AT_LINE
 
-AC_CONFIG_FILES(Makefile odbc-driver.pc)
+AC_CONFIG_FILES(Makefile ignite-odbc.pc)
 
 AC_OUTPUT

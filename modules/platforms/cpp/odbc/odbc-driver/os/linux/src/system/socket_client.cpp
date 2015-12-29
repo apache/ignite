@@ -19,12 +19,13 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <unistd.h>
 
 #include <cstring>
 
 #include <sstream>
 
-#include "ignite/odbc/socket_client.h"
+#include "ignite/odbc/system/socket_client.h"
 #include "ignite/odbc/utility.h"
 
 #define SOCKET_ERROR (-1)

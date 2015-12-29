@@ -17,14 +17,14 @@
 
 ACLOCAL_AMFLAGS = "-Im4"
 
-SUBDIRS = . include
-DIST_SUBDIRS = . include
+SUBDIRS = .
+DIST_SUBDIRS = .
 
 AM_CPPFLAGS = -I$(srcdir)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
 AM_CXXFLAGS = -Wall -std=c++0x
 LIB_LDFLAGS = -no-undefined -version-info 1
 
-COMMON_SRC = os/linux/src/socket_client.cpp \
+COMMON_SRC = os/linux/src/system/socket_client.cpp \
              src/query/table_metadata_query.cpp \
              src/query/data_query.cpp \
              src/query/primary_keys_query.cpp \

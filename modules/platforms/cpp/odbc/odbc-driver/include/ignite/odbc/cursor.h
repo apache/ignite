@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <map>
+#include <memory>
 
 #include "ignite/odbc/result_page.h"
 #include "ignite/odbc/common_types.h"

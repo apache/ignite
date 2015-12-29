@@ -33,7 +33,13 @@
 
 #endif //_WIN32
 
+#define ODBCVER 0x0351
+
 #include <sqlext.h>
 #include <odbcinst.h>
+
+#ifndef UNREFERENCED_PARAMETER
+#define UNREFERENCED_PARAMETER(x) (void)(x)
+#endif // UNREFERENCED_PARAMETER
 
 #endif //_IGNITE_ODBC_DRIVER_ODBC_CONSTANTS
