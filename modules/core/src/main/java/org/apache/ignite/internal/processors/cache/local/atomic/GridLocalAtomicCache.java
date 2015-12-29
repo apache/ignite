@@ -659,11 +659,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
-            @Override public EntryProcessor apply(K k) {
-                return entryProcessor;
-            }
-        });
+        Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = CU.invokeMap(keys, entryProcessor);
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -729,11 +725,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
-            @Override public EntryProcessor apply(K k) {
-                return entryProcessor;
-            }
-        });
+        Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = CU.invokeMap(keys, entryProcessor);
 
         return updateAllAsync0(null,
             invokeMap,

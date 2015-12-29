@@ -43,6 +43,8 @@ import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheWriterException;
+import javax.cache.processor.EntryProcessor;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -1862,5 +1864,23 @@ public class GridCacheUtils {
         }
 
         return res;
+    }
+
+    /**
+     * Create invoke map for the given key set. All provided values will be set to the passed entry processor.
+     *
+     * @param keys Keys.
+     * @param entryProc Entry processor.
+     * @return Invoke map.
+     */
+    @SuppressWarnings("unchecked")
+    public static <K, V, T> Map<? extends K, EntryProcessor<K, V, Object>> invokeMap(
+        final Set<? extends K> keys, final EntryProcessor<K, V, T> entryProc) {
+        return F.viewAsMap(keys,
+            new C1<K, EntryProcessor<K, V, Object>>() {
+                @Override public EntryProcessor apply(K k) {
+                    return entryProc;
+                }
+            });
     }
 }

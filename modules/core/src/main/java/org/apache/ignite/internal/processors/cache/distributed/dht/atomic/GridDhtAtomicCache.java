@@ -795,18 +795,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
-        final EntryProcessor<K, V, T> entryProcessor,
-        Object... args) {
+        EntryProcessor<K, V, T> entryProcessor, Object... args) {
         A.notNull(keys, "keys", entryProcessor, "entryProcessor");
 
         if (keyCheck)
             validateCacheKeys(keys);
 
-        Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
-            @Override public EntryProcessor apply(K k) {
-                return entryProcessor;
-            }
-        });
+        Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = CU.invokeMap(keys, entryProcessor);
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 

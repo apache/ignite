@@ -2150,12 +2150,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return syncOp(new SyncOp<Map<K, EntryProcessorResult<T>>>(keys.size() == 1) {
             @Nullable @Override public Map<K, EntryProcessorResult<T>> op(IgniteTxLocalAdapter tx)
                 throws IgniteCheckedException {
-                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = F.viewAsMap(keys,
-                    new C1<K, EntryProcessor<K, V, Object>>() {
-                            @Override public EntryProcessor apply(K k) {
-                            return entryProcessor;
-                        }
-                    });
+                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = CU.invokeMap(keys, entryProcessor);
 
                 IgniteInternalFuture<GridCacheReturn> fut = tx.invokeAsync(ctx, invokeMap, args);
 
@@ -2222,11 +2217,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         IgniteInternalFuture<?> fut = asyncOp(new AsyncInOp(keys) {
             @Override public IgniteInternalFuture<GridCacheReturn> inOp(IgniteTxLocalAdapter tx) {
-                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor<K, V, Object>>() {
-                    @Override public EntryProcessor apply(K k) {
-                        return entryProcessor;
-                    }
-                });
+                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = CU.invokeMap(keys, entryProcessor);
 
                 return tx.invokeAsync(ctx, invokeMap, args);
             }
