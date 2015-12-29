@@ -1080,24 +1080,70 @@ namespace ignite
                 ExceptionCheck(env, errInfo);
             }
 
-            void JniContext::IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr)
+            bool JniContext::IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr)
             {
-                IgnitionLoadSpringConfig(cfgPath, dataPtr, NULL);
+                return IgnitionLoadSpringConfig(cfgPath, dataPtr, NULL);
             }
 
-            void JniContext::IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr, JniErrorInfo* errInfo)
+            bool JniContext::IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr, JniErrorInfo* errInfo)
             {
-                JNIEnv* env = Attach();
+                JavaVM* jvm = JVM.GetJvm();
 
-                jstring cfgPath0 = env->NewStringUTF(cfgPath);
+                if (jvm)
+                {
+                    JNIEnv* env;
 
-                env->CallStaticVoidMethod(
-                    jvm->GetMembers().c_PlatformIgnition,
-                    jvm->GetMembers().m_PlatformIgnition_loadSpringConfig,
-                    cfgPath0,
-                    dataPtr);
+                    jint attachRes = jvm->AttachCurrentThread(reinterpret_cast<void**>(&env), NULL);
 
-                ExceptionCheck(env, errInfo);
+                    if (attachRes == JNI_OK)
+                    {
+                        AttachHelper::OnThreadAttach();
+
+                        jstring cfgPath0 = env->NewStringUTF(cfgPath);
+
+                        env->CallStaticVoidMethod(
+                            JVM.GetMembers().c_PlatformIgnition,
+                            JVM.GetMembers().m_PlatformIgnition_loadSpringConfig,
+                            cfgPath0,
+                            dataPtr);
+
+                        if (env->ExceptionCheck())
+                        {
+                            jthrowable err = env->ExceptionOccurred();
+
+                            if (PRINT_EXCEPTION)
+                                env->CallVoidMethod(err, JVM.GetJavaMembers().m_Throwable_printStackTrace);
+
+                            env->ExceptionClear();
+
+                            if (errInfo)
+                            {
+                                // Get error class name and message.
+                                jclass cls = env->GetObjectClass(err);
+                                jstring clsName = static_cast<jstring>(env->CallObjectMethod(cls, JVM.GetJavaMembers().m_Class_getName));
+                                jstring msg = static_cast<jstring>(env->CallObjectMethod(err, JVM.GetJavaMembers().m_Throwable_getMessage));
+
+                                env->DeleteLocalRef(cls);
+
+                                int clsNameLen;
+                                std::string clsName0 = JavaStringToCString(env, clsName, &clsNameLen);
+
+                                int msgLen;
+                                std::string msg0 = JavaStringToCString(env, msg, &msgLen);
+
+                                JniErrorInfo errInfo0(IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), msg0.c_str());
+
+                                *errInfo = errInfo0;
+                            }
+
+                            return false;
+                        }
+
+                        return true;
+                    }
+                } 
+                
+                return false;
             }
 
             void JniContext::ProcessorReleaseStart(jobject obj) {

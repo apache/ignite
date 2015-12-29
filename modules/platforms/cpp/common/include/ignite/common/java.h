@@ -477,8 +477,8 @@ namespace ignite
                 bool IgnitionStop(char* name, bool cancel, JniErrorInfo* errInfo);
                 void IgnitionStopAll(bool cancel);
                 void IgnitionStopAll(bool cancel, JniErrorInfo* errInfo);
-                void IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr);
-                void IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr, JniErrorInfo* errInfo);
+                static bool IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr);
+                static bool IgnitionLoadSpringConfig(char* cfgPath, long long dataPtr, JniErrorInfo* errInfo);
                 
                 void ProcessorReleaseStart(jobject obj);
                 jobject ProcessorProjection(jobject obj);
