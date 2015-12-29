@@ -172,6 +172,8 @@ public class PlatformIgnition {
                 writer.writeBoolean(false);  // failure
                 writer.writeString(X.getFullStackTrace(t));
             }
+
+            out.synchronize();
         }
     }
 
