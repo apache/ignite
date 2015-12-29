@@ -33,7 +33,7 @@
 
 #endif //_WIN32
 
-#define ODBCVER 0x0351
+#define ODBCVER 0x0380
 
 #include <sqlext.h>
 #include <odbcinst.h>
