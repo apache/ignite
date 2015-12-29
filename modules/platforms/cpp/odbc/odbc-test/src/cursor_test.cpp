@@ -19,19 +19,12 @@
 #   define BOOST_TEST_DYN_LINK
 #endif
 
-#ifdef _WIN32
-#   define _WINSOCKAPI_
-#   include <windows.h>
-#endif //_WIN32
-
-#include <sqlext.h>
-#include <odbcinst.h>
-
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/impl/binary/binary_writer_impl.h>
 
-#include <ignite/odbc/cursor.h>
+#include "ignite/odbc/system/odbc_constants.h"
+#include "ignite/odbc/cursor.h"
 
 using namespace ignite::odbc;
 

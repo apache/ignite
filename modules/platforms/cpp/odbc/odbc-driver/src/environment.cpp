@@ -24,8 +24,6 @@ namespace ignite
     {
         Environment::Environment()
         {
-            // HACK: move it to library-wide initialisation.
-            InitNetworking();
             // No-op.
         }
 

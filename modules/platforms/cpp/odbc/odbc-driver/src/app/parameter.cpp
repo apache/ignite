@@ -15,20 +15,11 @@
  * limitations under the License.
  */
 
-#ifdef _WIN32
-#   define _WINSOCKAPI_
-#   include <windows.h>
-
-#   undef min
-#endif //_WIN32
-
-#include <sqlext.h>
-#include <odbcinst.h>
-
 #include <algorithm>
 #include <string>
 #include <sstream>
 
+#include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/app/parameter.h"
 #include "ignite/odbc/utility.h"
 

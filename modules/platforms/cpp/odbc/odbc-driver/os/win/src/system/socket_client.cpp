@@ -26,25 +26,13 @@
 
 #include <sstream>
 
-#include "ignite/odbc/socket_client.h"
+#include "ignite/odbc/system/socket_client.h"
 #include "ignite/odbc/utility.h"
 
 namespace ignite
 {
     namespace odbc
     {
-        bool InitNetworking()
-        {
-            WSADATA wsaData;
-
-            return WSAStartup(MAKEWORD(2, 2), &wsaData) == 0;
-        }
-
-        void DeinitNetworking()
-        {
-            WSACleanup();
-        }
-
         namespace tcp
         {
 
@@ -60,9 +48,20 @@ namespace ignite
 
             bool SocketClient::Connect(const char* hostname, uint16_t port)
             {
-                int iResult;
+                static bool networkInited = false;
+
+                // Initing networking if is not inited.
+                if (!networkInited)
+                {
+                    WSADATA wsaData;
+
+                    networkInited = (WSAStartup(MAKEWORD(2, 2), &wsaData) == 0);
+
+                    if (!networkInited)
+                        return false;
+                }
+
                 addrinfo *result = NULL;
-                addrinfo *ptr = NULL;
                 addrinfo hints;
 
                 LOG_MSG("Host: %s, port: %d\n", hostname, port);
@@ -76,25 +75,26 @@ namespace ignite
                 converter << port;
 
                 // Resolve the server address and port
-                iResult = getaddrinfo(hostname, converter.str().c_str(), &hints, &result);
+                int res = getaddrinfo(hostname, converter.str().c_str(), &hints, &result);
 
-                if (iResult != 0)
+                if (res != 0)
                     return false;
 
                 // Attempt to connect to an address until one succeeds
-                for (ptr = result; ptr != NULL; ptr = ptr->ai_next) 
+                for (addrinfo *it = result; it != NULL; it = it->ai_next)
                 {
-                    LOG_MSG("Addr: %u.%u.%u.%u\n", ptr->ai_addr->sa_data[2], ptr->ai_addr->sa_data[3], ptr->ai_addr->sa_data[4], ptr->ai_addr->sa_data[5]);
+                    LOG_MSG("Addr: %u.%u.%u.%u\n", it->ai_addr->sa_data[2], it->ai_addr->sa_data[3],
+                                                   it->ai_addr->sa_data[4], it->ai_addr->sa_data[5]);
 
                     // Create a SOCKET for connecting to server
-                    socketHandle = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+                    socketHandle = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
 
                     if (socketHandle == INVALID_SOCKET)
                         return false;
 
                     // Connect to server.
-                    iResult = connect(socketHandle, ptr->ai_addr, (int)ptr->ai_addrlen);
-                    if (iResult == SOCKET_ERROR) 
+                    res = connect(socketHandle, it->ai_addr, static_cast<int>(it->ai_addrlen));
+                    if (res == SOCKET_ERROR)
                     {
                         Close();
 

@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-#ifdef _WIN32
-#   define _WINSOCKAPI_
-#   include <windows.h>
+#include <cstring>
+#include <algorithm>
 
-    // Undefining windows macro to use standard library tool
-#   undef min
-#endif //_WIN32
+#include "ignite/odbc/system/odbc_constants.h"
+#include "ignite/odbc/utility.h"
+#include "ignite/odbc/config/connection_info.h"
 
-// Temporary workaround.
+ // Temporary workaround.
 #ifndef SQL_ASYNC_NOTIFICATION
 #define SQL_ASYNC_NOTIFICATION                  10025
 #endif
@@ -35,16 +34,6 @@
 #ifndef SQL_ASYNC_NOTIFICATION_CAPABLE
 #define SQL_ASYNC_NOTIFICATION_CAPABLE          0x00000001L
 #endif 
-
-
-#include <sqlext.h>
-#include <odbcinst.h>
-
-#include <cstring>
-#include <algorithm>
-
-#include "ignite/odbc/utility.h"
-#include "ignite/odbc/config/connection_info.h"
 
 namespace ignite
 {

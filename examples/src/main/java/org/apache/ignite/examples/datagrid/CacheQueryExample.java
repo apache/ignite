@@ -63,10 +63,10 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  */
 public class CacheQueryExample {
     /** Organizations cache name. */
-    private static final String ORG_CACHE = CacheQueryExample.class.getSimpleName() + "Organizations";
+    private static final String ORG_CACHE = "Organizations";
 
     /** Persons cache name. */
-    private static final String PERSON_CACHE = CacheQueryExample.class.getSimpleName() + "Persons";
+    private static final String PERSON_CACHE = "Persons";
 
     /**
      * Executes example.
@@ -117,6 +117,10 @@ public class CacheQueryExample {
 
                 // Example for SQL-based fields queries that uses joins.
                 sqlFieldsQueryWithJoin();
+
+                synchronized (CacheQueryExample.class) {
+                    CacheQueryExample.class.wait();
+                }
             }
 
             print("Cache query example finished.");
@@ -282,10 +286,14 @@ public class CacheQueryExample {
         personCache.clear();
 
         // People.
-        Person p1 = new Person(org1, "John", "Doe", 2000, "John Doe has Master Degree.");
-        Person p2 = new Person(org1, "Jane", "Doe", 1000, "Jane Doe has Bachelor Degree.");
-        Person p3 = new Person(org2, "John", "Smith", 1000, "John Smith has Bachelor Degree.");
-        Person p4 = new Person(org2, "Jane", "Smith", 2000, "Jane Smith has Master Degree.");
+        Person p1 = new Person(org1, "John", "Doe", 2000, "Master Degree.");
+        Person p2 = new Person(org1, "Jane", "Doe", 1000, "Bachelor Degree.");
+        Person p3 = new Person(org2, "John", "Smith", 1000, "Bachelor Degree.");
+        Person p4 = new Person(org2, "Jane", "Smith", 2000, "Master Degree.");
+        Person p5 = new Person(org2, "John", "Roe", 1500, "Bachelor Degree.");
+        Person p6 = new Person(org2, "Jane", "Roe", 1000, "Bachelor Degree.");
+        Person p7 = new Person(org1, "Richard", "Miles", 2500, "Master Degree.");
+        Person p8 = new Person(org2, "Mary", "Major", 900, "Bachelor Degree.");
 
         // Note that in this example we use custom affinity key for Person objects
         // to ensure that all persons are collocated with their organizations.
@@ -293,6 +301,10 @@ public class CacheQueryExample {
         personCache.put(p2.key(), p2);
         personCache.put(p3.key(), p3);
         personCache.put(p4.key(), p4);
+        personCache.put(p5.key(), p5);
+        personCache.put(p6.key(), p6);
+        personCache.put(p7.key(), p7);
+        personCache.put(p8.key(), p8);
     }
 
     /**

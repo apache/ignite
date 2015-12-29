@@ -15,14 +15,7 @@
  * limitations under the License.
  */
 
-#ifdef _WIN32
-#   define _WINSOCKAPI_
-#   include <windows.h>
-#endif //_WIN32
-
-#include <sqlext.h>
-#include <odbcinst.h>
-
+#include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/common_types.h"
 
 namespace ignite

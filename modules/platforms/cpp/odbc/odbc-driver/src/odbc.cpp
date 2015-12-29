@@ -15,23 +15,12 @@
  * limitations under the License.
  */
 
-#ifdef _WIN32
-
-#   define _WINSOCKAPI_
-#   include <windows.h>
-
-#   undef min
-#   undef GetMessage
-
-#endif //_WIN32
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
 
-#include <sqlext.h>
-#include <odbcinst.h>
+#include "ignite/odbc/system/odbc_constants.h"
 
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/utility.h"
@@ -1101,7 +1090,7 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
 
     using ignite::odbc::app::ApplicationDataBuffer;
 
-    LOG_MSG("SQLGetDiagField called\n");
+    LOG_MSG("SQLGetDiagField called: %d\n", recNum);
 
     int64_t outResLen;
     ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_DEFAULT, buffer, bufferLen, &outResLen);

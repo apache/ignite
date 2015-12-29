@@ -159,7 +159,7 @@ namespace ignite
                         break;
                 }
 
-                if (recNum < 1 || recNum > statusRecords.size() + 1)
+                if (recNum < 1 || recNum > statusRecords.size())
                     return SQL_RESULT_NO_DATA;
 
                 // Status record.
