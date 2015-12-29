@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
-
+    using Apache.Ignite.Core.Impl.Binary;
     using JNI = IgniteJniNativeMethods;
 
     /// <summary>
@@ -100,7 +100,28 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             JNI.IgnitionStopAll(ctx, cancel);
         }
-        
+
+        internal static IgniteConfiguration IgnitionLoadSpringConfig(UnmanagedContext ctx, string cfgPath)
+        {
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfgPath);
+
+                try
+                {
+                    JNI.IgnitionLoadSpringConfig(ctx.NativeContext, cfgPath0, stream.SynchronizeOutput());
+
+                    stream.SynchronizeInput();
+
+                    return new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(stream));
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(new IntPtr(cfgPath0));
+                }
+            }
+        }
+
         internal static void ProcessorReleaseStart(IUnmanagedTarget target)
         {
             JNI.ProcessorReleaseStart(target.Context, target.Target);
