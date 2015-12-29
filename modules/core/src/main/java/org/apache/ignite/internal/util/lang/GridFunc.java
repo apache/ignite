@@ -38,12 +38,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -330,13 +327,6 @@ public class GridFunc {
 
         @Override public String toString() {
             return "UUID to ID8 transformer closure.";
-        }
-    };
-
-    /** */
-    private static final IgnitePredicate<IgniteInternalFuture<?>> UNFINISHED_FUTURE = new IgnitePredicate<IgniteInternalFuture<?>>() {
-        @Override public boolean apply(IgniteInternalFuture<?> f) {
-            return !f.isDone();
         }
     };
 
@@ -1404,21 +1394,6 @@ public class GridFunc {
                 assert b != null;
 
                 b.remove();
-            }
-        };
-    }
-
-    /**
-     * Converts given runnable to an absolute closure.
-     *
-     * @param r Runnable to convert to closure. If {@code null} - no-op closure is returned.
-     * @return Closure that wraps given runnable. Note that wrapping closure always returns {@code null}.
-     */
-    public static GridAbsClosure as(@Nullable final Runnable r) {
-        return new CA() {
-            @Override public void apply() {
-                if (r != null)
-                    r.run();
             }
         };
     }
@@ -3817,35 +3792,6 @@ public class GridFunc {
     }
 
     /**
-     * @param arr Array.
-     * @param val Value to find.
-     * @return {@code True} if array contains given value.
-     */
-    public static boolean contains(Integer[] arr, int val) {
-        for (Integer el : arr) {
-            if (el == val)
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param arr Array.
-     * @param val Value to find.
-     * @return {@code True} if array contains given value.
-     */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    public static boolean contains(long[] arr, long val) {
-        for (int i = 0; i < arr.length; i++) {
-            if (arr[i] == val)
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Tests whether specified arguments are equal, or both {@code null}.
      *
      * @param o1 Object to compare.
@@ -4017,74 +3963,6 @@ public class GridFunc {
     }
 
     /**
-     * Compares two arrays. Unlike {@code Arrays#equals(...)} method this implementation
-     * checks two arrays as sets allowing the same elements to be in different indexes.
-     *
-     * @param a1 First array to check.
-     * @param a2 Second array to check.
-     * @param sorted Tells whether or not both arrays are pre-sorted so that binary
-     *      search could be used instead of iteration.
-     * @param dups Tells whether or not arrays can contain duplicates. If arrays contain
-     *      duplicate the implementation will have to do double work.
-     * @return {@code True} if arrays are equal, {@code false} otherwise.
-     */
-    public static boolean eqArray(Object[] a1, Object[] a2, boolean sorted, boolean dups) {
-        if (a1 == a2)
-            return true;
-
-        if (a1 == null || a2 == null || a1.length != a2.length)
-            return false;
-
-        // Short circuit.
-        if (a1.length == 1)
-            return eq(a1[0], a2[0]);
-
-        for (Object o1 : a1) {
-            boolean found = false;
-
-            if (sorted)
-                found = Arrays.binarySearch(a2, o1) >= 0;
-            else {
-                for (Object o2 : a2) {
-                    if (eq(o1, o2)) {
-                        found = true;
-
-                        break;
-                    }
-                }
-            }
-
-            if (!found)
-                return false;
-        }
-
-        // If there are no dups - we can't skip checking seconds array
-        // against first one.
-        if (dups) {
-            for (Object o2 : a2) {
-                boolean found = false;
-
-                if (sorted)
-                    found = Arrays.binarySearch(a1, o2) >= 0;
-                else {
-                    for (Object o1 : a1) {
-                        if (eq(o2, o1)) {
-                            found = true;
-
-                            break;
-                        }
-                    }
-                }
-
-                if (!found)
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
      * Compares two {@link org.apache.ignite.cluster.ClusterNode} instances for equality.
      * <p>
      * Since introduction of {@link org.apache.ignite.cluster.ClusterNode} in Apache Ignite 3.0 the semantic of equality between
@@ -4151,14 +4029,5 @@ public class GridFunc {
      */
     public static GridClosureException wrap(Throwable e) {
         return new GridClosureException(e);
-    }
-
-    /**
-     * Returns predicate for filtering unfinished futures.
-     *
-     * @return Predicate for filtering unfinished futures.
-     */
-    public static IgnitePredicate<IgniteInternalFuture<?>> unfinishedFutures() {
-        return UNFINISHED_FUTURE;
     }
 }
