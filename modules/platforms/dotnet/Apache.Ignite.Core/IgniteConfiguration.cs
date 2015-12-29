@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
 
     /// <summary>
@@ -55,10 +56,28 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
+        /// </summary>
+        /// <param name="springConfigUrl">The spring configuration URL.</param>
+        public IgniteConfiguration(string springConfigUrl)
+        {
+            UnmanagedUtils.IgnitionLoadSpringConfig(springConfigUrl, this);
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class from a reader.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
         internal IgniteConfiguration(BinaryReader binaryReader)
+        {
+            Read(binaryReader);
+        }
+
+        /// <summary>
+        /// Reads data from specified reader into current instance.
+        /// </summary>
+        /// <param name="binaryReader">The binary reader.</param>
+        internal void Read(BinaryReader binaryReader)
         {
             var r = binaryReader;
 
@@ -71,8 +90,8 @@ namespace Apache.Ignite.Core
 
             IgniteHome = r.ReadString();
 
-            JvmInitialMemoryMb = (int) (r.ReadLong() / 1024 / 2014);
-            JvmMaxMemoryMb = (int) (r.ReadLong() / 1024 / 2014);
+            JvmInitialMemoryMb = (int) (r.ReadLong()/1024/2014);
+            JvmMaxMemoryMb = (int) (r.ReadLong()/1024/2014);
 
             DiscoveryConfiguration = r.ReadBoolean() ? new DiscoveryConfiguration(r) : null;
 

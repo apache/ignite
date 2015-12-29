@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
@@ -101,8 +102,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.IgnitionStopAll(ctx, cancel);
         }
 
-        internal static IgniteConfiguration IgnitionLoadSpringConfig(string cfgPath)
+        internal static void IgnitionLoadSpringConfig(string cfgPath, IgniteConfiguration target)
         {
+            Debug.Assert(target != null);
+
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfgPath);
@@ -120,10 +123,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
 
-                    if (success)
-                        return new IgniteConfiguration(reader);
+                    if (!success)
+                        throw new IgniteException(reader.ReadString());
 
-                    throw new IgniteException(reader.ReadString());
+                    target.Read(reader);
                 }
                 finally
                 {
