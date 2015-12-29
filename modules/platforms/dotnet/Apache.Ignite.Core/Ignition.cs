@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core
         public static IgniteConfiguration LoadSpringConfiguration(string springCfgPath)
         {
             // TODO
-            return new IgniteConfiguration();
+            return UU.IgnitionLoadSpringConfig(null, springCfgPath);
         }
 
         /// <summary>
