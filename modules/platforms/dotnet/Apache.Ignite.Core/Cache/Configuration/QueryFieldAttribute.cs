@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Configuration
+namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Marks field or property for SQL queries.

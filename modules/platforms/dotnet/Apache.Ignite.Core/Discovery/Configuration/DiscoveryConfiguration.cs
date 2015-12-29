@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Configuration
+namespace Apache.Ignite.Core.Discovery.Configuration
 {
     using System;
     using Apache.Ignite.Core.Binary;
-    using Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Node discovery configuration.

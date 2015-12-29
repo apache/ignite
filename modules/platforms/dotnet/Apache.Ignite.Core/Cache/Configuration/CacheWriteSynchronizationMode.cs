@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Configuration
+namespace Apache.Ignite.Core.Cache.Configuration
 {
     /// <summary>
     /// Mode indicating how Ignite should wait for write replies from other nodes.

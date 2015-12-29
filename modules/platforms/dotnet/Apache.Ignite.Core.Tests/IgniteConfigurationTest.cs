@@ -21,7 +21,8 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Discovery;
+    using Apache.Ignite.Core.Discovery.Configuration;
     using Apache.Ignite.Core.Events;
     using NUnit.Framework;
 

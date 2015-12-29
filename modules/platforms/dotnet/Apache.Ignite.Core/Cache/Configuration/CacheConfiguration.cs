@@ -18,7 +18,7 @@
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Global
-namespace Apache.Ignite.Core.Configuration
+namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System;
     using System.Collections.Generic;

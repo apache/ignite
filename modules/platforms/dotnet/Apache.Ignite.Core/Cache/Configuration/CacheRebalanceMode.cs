@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Configuration
+namespace Apache.Ignite.Core.Cache.Configuration
 {
     /// <summary>
     /// Cache rebalance mode. When rebalancing is enabled (i.e. has value other than <see cref="None"/>), 

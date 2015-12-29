@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,26 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Configuration
+namespace Apache.Ignite.Core.Cache.Configuration
 {
     /// <summary>
-    /// Memory modes define whether cache entries are stored on heap memory, offheap memory, or in swap space.
+    /// Query index type.
     /// </summary>
-    public enum CacheMemoryMode
+    public enum QueryIndexType
     {
         /// <summary>
-        /// Entries will be stored on-heap first.
+        /// Sorted index.
         /// </summary>
-        OnheapTiered,
+        Sorted,
 
         /// <summary>
-        /// Entries will be stored off-heap in unmanaged memory.
+        /// Fulltext index.
         /// </summary>
-        OffheapTiered,
+        FullText,
 
         /// <summary>
-        /// Entry keys will be stored on heap memory, and values will be stored in offheap memory.
+        /// Geo-spatial index.
         /// </summary>
-        OffheapValues
+        GeoSpatial
     }
 }

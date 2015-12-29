@@ -23,7 +23,8 @@ namespace Apache.Ignite.Core
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Discovery.Configuration;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;

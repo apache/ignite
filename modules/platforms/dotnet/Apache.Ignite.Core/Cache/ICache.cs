@@ -22,11 +22,11 @@ namespace Apache.Ignite.Core.Cache
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Cache.Store;
-    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>

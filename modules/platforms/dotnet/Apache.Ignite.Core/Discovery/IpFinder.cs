@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Configuration
+namespace Apache.Ignite.Core.Discovery
 {
-    using System;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>

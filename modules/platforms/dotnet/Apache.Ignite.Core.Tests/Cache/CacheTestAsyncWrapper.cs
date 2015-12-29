@@ -23,10 +23,10 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Diagnostics;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
-    using Apache.Ignite.Core.Configuration;
 
     /// <summary>
     /// Wraps IGridCache implementation to simplify async mode testing.
