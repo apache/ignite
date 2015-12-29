@@ -22,10 +22,16 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -38,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.CacheException;
@@ -757,6 +764,30 @@ public class PlatformUtils {
 
                 throw new IgniteCheckedException(errMsg);
             }
+        }
+    }
+
+    /**
+     * Create binary marshaller.
+     *
+     * @return Marshaller.
+     */
+    @SuppressWarnings("deprecation")
+    public static GridBinaryMarshaller marshaller() {
+        try {
+            BinaryContext ctx =
+                new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
+
+            BinaryMarshaller marsh = new BinaryMarshaller();
+
+            marsh.setContext(new MarshallerContextImpl(null));
+
+            ctx.configure(marsh, new IgniteConfiguration());
+
+            return new GridBinaryMarshaller(ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
     }
 

@@ -147,7 +147,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             try (PlatformMemory inMem = memMgr.allocate()) {
                 PlatformOutputStream out = outMem.output();
 
-                GridBinaryMarshaller marshaller = marshaller();
+                GridBinaryMarshaller marshaller = PlatformUtils.marshaller();
                 BinaryRawWriterEx writer = marshaller.writer(out);
 
                 PlatformConfigurationUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
@@ -231,29 +231,5 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         }
 
         return res;
-    }
-
-    /**
-     * Create binary marshaller.
-     *
-     * @return Marshaller.
-     */
-    @SuppressWarnings("deprecation")
-    private static GridBinaryMarshaller marshaller() {
-        try {
-            BinaryContext ctx =
-                new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
-
-            BinaryMarshaller marsh = new BinaryMarshaller();
-
-            marsh.setContext(new MarshallerContextImpl(null));
-
-            ctx.configure(marsh, new IgniteConfiguration());
-
-            return new GridBinaryMarshaller(ctx);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
     }
 }

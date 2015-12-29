@@ -27,6 +27,16 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -133,6 +143,26 @@ public class PlatformIgnition {
             Ignition.stop(proc.ignite().name(), cancel);
 
         instances.clear();
+    }
+
+    /**
+     * Loads and returns Spring config.
+     *
+     * @param springCfgPath Path to the config.
+     * @param memPtr Target memory pointer.
+     */
+    public static void loadSpringConfiguration(String springCfgPath, long memPtr) {
+        assert memPtr != 0;
+
+        PlatformMemoryManagerImpl memMgr = new PlatformMemoryManagerImpl(null, 1024);
+
+        try (PlatformMemory outMem = memMgr.allocate()) {
+            PlatformOutputStream out = outMem.output();
+            GridBinaryMarshaller marshaller = PlatformUtils.marshaller();
+            BinaryRawWriterEx writer = marshaller.writer(out);
+
+            PlatformConfigurationUtils.writeIgniteConfiguration(writer, configuration(springCfgPath));
+        }
     }
 
     /**
