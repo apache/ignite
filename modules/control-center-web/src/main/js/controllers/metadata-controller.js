@@ -649,21 +649,15 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                         containKey &= _containKey;
 
-                        var idxs = table.idxs;
-
                         if (table.idxs) {
-                            var tblIndexes = Object.keys(idxs);
-
-                            _.forEach(tblIndexes, function (indexName) {
-                                var index = idxs[indexName];
-
-                                var fields = Object.keys(index);
+                            _.forEach(table.idxs, function (idx) {
+                                var fields = Object.keys(idx.fields);
 
                                 indexes.push(
-                                    {name: indexName, indexType: 'SORTED', fields: _.map(fields, function (fieldName) {
+                                    {name: idx.name, indexType: 'SORTED', fields: _.map(fields, function (fieldName) {
                                         return {
                                             name: toJavaName(fieldName),
-                                            direction: !index[fieldName]
+                                            direction: !idx.fields[fieldName]
                                         };
                                     })});
                             });
