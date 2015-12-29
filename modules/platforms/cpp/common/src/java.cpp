@@ -357,7 +357,7 @@ namespace ignite
             JniMethod M_PLATFORM_IGNITION_ENVIRONMENT_POINTER = JniMethod("environmentPointer", "(Ljava/lang/String;)J", true);
             JniMethod M_PLATFORM_IGNITION_STOP = JniMethod("stop", "(Ljava/lang/String;Z)Z", true);
             JniMethod M_PLATFORM_IGNITION_STOP_ALL = JniMethod("stopAll", "(Z)V", true);
-            JniMethod M_PLATFORM_IGNITION_LOAD_SPRING_CONFIG = JniMethod("loadSpringConfig", "(Ljava/lang/String;Ljava/lang/String;J)V", true);
+            JniMethod M_PLATFORM_IGNITION_LOAD_SPRING_CONFIG = JniMethod("loadSpringConfig", "(Ljava/lang/String;J)V", true);
 
             const char* C_PLATFORM_ABSTRACT_QRY_CURSOR = "org/apache/ignite/internal/processors/platform/cache/query/PlatformAbstractQueryCursor";
             JniMethod M_PLATFORM_ABSTRACT_QRY_CURSOR_ITER = JniMethod("iterator", "()V", false);
