@@ -84,6 +84,9 @@ public class HibernateRegionFactory implements RegionFactory {
     /** */
     public static final String GRID_CONFIG_PROPERTY = "org.apache.ignite.hibernate.grid_config";
 
+    /** */
+    public static final String AUTO_CREATE_CACHE_PROPERTY = "org.apache.ignite.hibernate.auto_create_cache";
+
     /** Grid providing caches. */
     private Ignite ignite;
 
@@ -95,6 +98,8 @@ public class HibernateRegionFactory implements RegionFactory {
 
     /** Region name to cache name mapping. */
     private final Map<String, String> regionCaches = new HashMap<>();
+
+    private boolean autoCreateCache = true;
 
     /** Map needed to provide the same transaction context for different regions. */
     private final ThreadLocal threadLoc = new ThreadLocal();
@@ -143,6 +148,9 @@ public class HibernateRegionFactory implements RegionFactory {
             if (dfltCache == null)
                 throw new CacheException("Cache specified as default is not configured: " + dfltCacheName);
         }
+
+        if (props.get(AUTO_CREATE_CACHE_PROPERTY) != null)
+            autoCreateCache = (boolean) props.get(AUTO_CREATE_CACHE_PROPERTY);
 
         IgniteLogger log = ignite.log().getLogger(HibernateRegionFactory.class);
 
@@ -222,6 +230,9 @@ public class HibernateRegionFactory implements RegionFactory {
 
             cacheName = regionName;
         }
+
+        if ((autoCreateCache) && (ignite.cache(cacheName) == null))
+            ignite.createCache(cacheName);
 
         IgniteInternalCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
