@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public int Execute()
             {
-                Thread.Sleep(20);
+                Thread.Sleep(2000);
                 Console.WriteLine("Execute: " + Thread.CurrentThread.ManagedThreadId);
                 return 1;
             }
@@ -110,6 +110,5 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Interlocked.Increment(ref _cancelCount);
             }
         }
-
     }
 }
