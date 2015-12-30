@@ -2656,6 +2656,17 @@ public class GridFunc {
     }
 
     /**
+     * Shortcut for {@link #isAll(Object, org.apache.ignite.lang.IgnitePredicate[])} method with only single predicate.
+     *
+     * @param t Value to test.
+     * @param p Predicate.
+     * @return {@code True} if test is passed.
+     */
+    public static <T> boolean isAll(@Nullable T t, @Nullable IgnitePredicate<? super T> p) {
+        return p == null || p.apply(t);
+    }
+
+    /**
      * Tests if all provided predicates evaluate to {@code true} for given value. Note that
      * evaluation will be short-circuit when first predicate evaluated to {@code false} is found.
      *
@@ -2666,6 +2677,7 @@ public class GridFunc {
      * @return Returns {@code true} if given set of predicates is {@code null}, is empty, or all predicates
      *      evaluate to {@code true} for given value, {@code false} otherwise.
      */
+    @SuppressWarnings("unchecked")
     public static <T> boolean isAll(@Nullable T t, @Nullable IgnitePredicate<? super T>... p) {
         if (p != null)
             for (IgnitePredicate<? super T> r : p)
