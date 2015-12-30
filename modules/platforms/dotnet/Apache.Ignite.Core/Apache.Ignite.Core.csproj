@@ -104,6 +104,7 @@
     <Compile Include="Cluster\IClusterNodeFilter.cs" />
     <Compile Include="Cluster\Package-Info.cs" />
     <Compile Include="Common\IgniteException.cs" />
+    <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
@@ -187,6 +188,7 @@
     <Compile Include="Impl\Collections\MultiValueDictionary.cs" />
     <Compile Include="Impl\Collections\ReadOnlyCollection.cs" />
     <Compile Include="Impl\Collections\ReadOnlyDictionary.cs" />
+    <Compile Include="Impl\Common\CancelledTask.cs" />
     <Compile Include="Impl\Common\Classpath.cs" />
     <Compile Include="Impl\Common\CopyOnWriteConcurrentDictionary.cs" />
     <Compile Include="Impl\Common\DelegateConverter.cs" />
