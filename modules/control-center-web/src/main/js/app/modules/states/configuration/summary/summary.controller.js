@@ -30,9 +30,11 @@ export default [
 
             $loading.finish('loading');
 
-            const idx = sessionStorage.summarySelectedId || 0;
+            if (!$common.isEmptyArray(clusters)) {
+                const idx = sessionStorage.summarySelectedId || 0;
 
-            $scope.selectItem(clusters[idx]);
+                $scope.selectItem(clusters[idx]);
+            }
         });
 
         $scope.panelExpanded = $common.panelExpanded;
@@ -45,6 +47,43 @@ export default [
                 iExpanded: 'fa fa-folder-open-o',
                 iCollapsed: 'fa fa-folder-o'
             }
+        };
+
+        const javaConfigFolder = {
+            type: 'folder',
+            name: 'src-config',
+            title: 'config',
+            children: [
+                { type: 'file', name: 'ClientConfigurationFactory.java' },
+                { type: 'file', name: 'ServerConfigurationFactory.java' }
+            ]
+        };
+
+        const javaStartupFolder = {
+            type: 'folder',
+            name: 'startup',
+            children: [
+                { type: 'file', name: 'ClientNodeCodeStartup.java' },
+                { type: 'file', name: 'ClientNodeSpringStartup.java' },
+                { type: 'file', name: 'ServerNodeCodeStartup.java' },
+                { type: 'file', name: 'ServerNodeSpringStartup.java' }
+            ]
+        };
+
+        const javaFolder = {
+            type: 'folder',
+            name: 'java',
+            children: [
+                {
+                    type: 'folder',
+                    name: 'src-config',
+                    title: 'config',
+                    children: [
+                        javaConfigFolder,
+                        javaStartupFolder
+                    ]
+                }
+            ]
         };
 
         const projectStructureRoot = {
@@ -73,40 +112,7 @@ export default [
                         {
                             type: 'folder',
                             name: 'main',
-                            children: [
-                                {
-                                    type: 'folder',
-                                    name: 'java',
-                                    children: [
-                                        {
-                                            type: 'folder',
-                                            name: 'src-config',
-                                            title: 'config',
-                                            children: [
-                                                { type: 'file', name: 'ClientConfigurationFactory.java' },
-                                                { type: 'file', name: 'ServerConfigurationFactory.java' }
-                                            ]
-                                        },
-                                        {
-                                            type: 'folder',
-                                            name: 'pojo.model',
-                                            children: [
-                                                { type: 'file', name: 'GeneratedPojo.java' }
-                                            ]
-                                        },
-                                        {
-                                            type: 'folder',
-                                            name: 'startup',
-                                            children: [
-                                                { type: 'file', name: 'ClientNodeCodeStartup.java' },
-                                                { type: 'file', name: 'ClientNodeSpringStartup.java' },
-                                                { type: 'file', name: 'ServerNodeCodeStartup.java' },
-                                                { type: 'file', name: 'ServerNodeSpringStartup.java' }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
+                            children: [javaFolder]
                         }
                     ]
                 },
@@ -117,6 +123,7 @@ export default [
         };
 
         $scope.projectStructure = [projectStructureRoot];
+
         $scope.projectStructureExpanded = [projectStructureRoot];
 
         $scope.tabsServer = { activeTab: 0 };
@@ -134,6 +141,16 @@ export default [
             $scope.selectedItem = cluster;
 
             sessionStorage.summarySelectedId = $scope.clusters.indexOf(cluster);
+
+            javaFolder.children = [javaConfigFolder, javaStartupFolder];
+
+            _.forEach(cluster.caches, (cache) => {
+                _.forEach(cache.metadatas, (metadata) => {
+                    javaFolder.children.push({type: 'folder', name: 'test' + cluster.name, children: [{type: 'file', name: 'test-1'}]});
+                });
+            }) ;
+
+
         };
 
         const updateTab = (cluster) => {
@@ -168,16 +185,16 @@ export default [
             zip.file(serverXml, $generatorXml.cluster(cluster));
             zip.file(clientXml, $generatorXml.cluster(cluster, clientNearCfg));
 
-            zip.file(srcPath + 'config/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ServerConfigurationFactory', null));
-            zip.file(srcPath + 'config/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ClientConfigurationFactory', clientNearCfg));
+            zip.file(srcPath + 'config/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ServerConfigurationFactory', null));
+            zip.file(srcPath + 'config/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ClientConfigurationFactory', clientNearCfg));
 
             zip.file(srcPath + 'startup/ServerNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeSpringStartup', '"' + serverXml + '"'));
             zip.file(srcPath + 'startup/ClientNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeSpringStartup', '"' + clientXml + '"'));
 
             zip.file(srcPath + 'startup/ServerNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeCodeStartup',
-                'ServerConfigurationFactory.createConfiguration()', 'factory.ServerConfigurationFactory'));
+                'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
             zip.file(srcPath + 'startup/ClientNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeCodeStartup',
-                'ClientConfigurationFactory.createConfiguration()', 'factory.ClientConfigurationFactory', clientNearCfg));
+                'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCfg));
 
             zip.file('pom.xml', $generatorPom.pom(cluster, igniteVersion).asString());
 

@@ -567,7 +567,7 @@ $generatorJava.clusterBinary = function (cluster, res) {
             $generatorJava.declareVariable(res, arrVar, 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.binary.BinaryTypeConfiguration');
 
             _.forEach(binary.typeConfigurations, function (type) {
-                if (!$commonUtils.isDefinedAndNotEmpty(type.typeName)) {
+                if ($commonUtils.isDefinedAndNotEmpty(type.typeName)) {
                     // TODO IGNITE-2269 Replace using of separated methods for binary type configurations to extended constructors.
                     res.line(arrVar + '.add(' + $generatorJava.binaryTypeFunctionName(type.typeName) + '());');
                 }
@@ -891,10 +891,10 @@ $generatorJava.clusterTime = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, 'cfg', cluster, 'clockSyncSamples');
-    $generatorJava.property(res, 'cfg', cluster, 'clockSyncFrequency');
-    $generatorJava.property(res, 'cfg', cluster, 'timeServerPortBase');
-    $generatorJava.property(res, 'cfg', cluster, 'timeServerPortRange');
+    $generatorJava.property(res, 'cfg', cluster, 'clockSyncSamples', null, null, 8);
+    $generatorJava.property(res, 'cfg', cluster, 'clockSyncFrequency', null, null, 120000);
+    $generatorJava.property(res, 'cfg', cluster, 'timeServerPortBase', null, null, 31100);
+    $generatorJava.property(res, 'cfg', cluster, 'timeServerPortRange', null, null, 100);
 
     res.needEmptyLine = true;
 

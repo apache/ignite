@@ -515,33 +515,33 @@ $generatorXml.clusterDiscovery = function (disco, res) {
         res = $generatorCommon.builder();
 
     $generatorXml.property(res, disco, 'localAddress');
-    $generatorXml.property(res, disco, 'localPort', undefined, 47500);
-    $generatorXml.property(res, disco, 'localPortRange', undefined, 100);
+    $generatorXml.property(res, disco, 'localPort', null, 47500);
+    $generatorXml.property(res, disco, 'localPortRange', null, 100);
     if ($commonUtils.isDefinedAndNotEmpty(disco.addressResolver))
         $generatorXml.beanProperty(res, disco, 'addressResolver', {className: disco.addressResolver}, true);
-    $generatorXml.property(res, disco, 'socketTimeout', undefined, 5000);
-    $generatorXml.property(res, disco, 'ackTimeout', undefined, 5000);
-    $generatorXml.property(res, disco, 'maxAckTimeout', undefined, 600000);
-    $generatorXml.property(res, disco, 'discoNetworkTimeout', 'setNetworkTimeout', 5000);
-    $generatorXml.property(res, disco, 'joinTimeout', undefined, 0);
-    $generatorXml.property(res, disco, 'threadPriority', undefined, 10);
-    $generatorXml.property(res, disco, 'heartbeatFrequency', undefined, 2000);
-    $generatorXml.property(res, disco, 'maxMissedHeartbeats', undefined, 1);
-    $generatorXml.property(res, disco, 'maxMissedClientHeartbeats', undefined, 5);
-    $generatorXml.property(res, disco, 'topHistorySize', undefined, 100);
+    $generatorXml.property(res, disco, 'socketTimeout', null, 5000);
+    $generatorXml.property(res, disco, 'ackTimeout', null, 5000);
+    $generatorXml.property(res, disco, 'maxAckTimeout', null, 600000);
+    $generatorXml.property(res, disco, 'networkTimeout', null, 5000);
+    $generatorXml.property(res, disco, 'joinTimeout', null, 0);
+    $generatorXml.property(res, disco, 'threadPriority', null, 10);
+    $generatorXml.property(res, disco, 'heartbeatFrequency', null, 2000);
+    $generatorXml.property(res, disco, 'maxMissedHeartbeats', null, 1);
+    $generatorXml.property(res, disco, 'maxMissedClientHeartbeats', null, 5);
+    $generatorXml.property(res, disco, 'topHistorySize', null, 100);
     if ($commonUtils.isDefinedAndNotEmpty(disco.listener))
         $generatorXml.beanProperty(res, disco, 'listener', {className: disco.listener}, true);
     if ($commonUtils.isDefinedAndNotEmpty(disco.dataExchange))
         $generatorXml.beanProperty(res, disco, 'dataExchange', {className: disco.dataExchange}, true);
     if ($commonUtils.isDefinedAndNotEmpty(disco.metricsProvider))
         $generatorXml.beanProperty(res, disco, 'metricsProvider', {className: disco.metricsProvider}, true);
-    $generatorXml.property(res, disco, 'reconnectCount', undefined, 10);
-    $generatorXml.property(res, disco, 'statisticsPrintFrequency', undefined, 0);
-    $generatorXml.property(res, disco, 'ipFinderCleanFrequency', undefined, 60000);
+    $generatorXml.property(res, disco, 'reconnectCount', null, 10);
+    $generatorXml.property(res, disco, 'statisticsPrintFrequency', null, 0);
+    $generatorXml.property(res, disco, 'ipFinderCleanFrequency', null, 60000);
     if ($commonUtils.isDefinedAndNotEmpty(disco.authenticator))
         $generatorXml.beanProperty(res, disco, 'authenticator', {className: disco.authenticator}, true);
-    $generatorXml.property(res, disco, 'forceServerMode', undefined, false);
-    $generatorXml.property(res, disco, 'clientReconnectDisabled', undefined, false);
+    $generatorXml.property(res, disco, 'forceServerMode', null, false);
+    $generatorXml.property(res, disco, 'clientReconnectDisabled', null, false);
 
     res.needEmptyLine = true;
 
@@ -644,10 +644,10 @@ $generatorXml.clusterTime = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.property(res, cluster, 'clockSyncSamples');
-    $generatorXml.property(res, cluster, 'clockSyncFrequency');
-    $generatorXml.property(res, cluster, 'timeServerPortBase');
-    $generatorXml.property(res, cluster, 'timeServerPortRange');
+    $generatorXml.property(res, cluster, 'clockSyncSamples', null, 8);
+    $generatorXml.property(res, cluster, 'clockSyncFrequency', null, 120000);
+    $generatorXml.property(res, cluster, 'timeServerPortBase', null, 31100);
+    $generatorXml.property(res, cluster, 'timeServerPortRange', null, 100);
 
     res.needEmptyLine = true;
 
