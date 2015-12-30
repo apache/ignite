@@ -2739,26 +2739,6 @@ public class GridFunc {
     }
 
     /**
-     * Tests if any of provided predicates evaluate to {@code true} for given value. Note
-     * that evaluation will be short-circuit when first predicate evaluated to {@code true}
-     * is found.
-     *
-     * @param t Value to test.
-     * @param p Optional set of predicates to use for evaluation.
-     * @param <T> Type of the value and free variable of the predicates.
-     * @return Returns {@code true} if any of predicates evaluates to {@code true} for given
-     *      value, {@code false} otherwise. Returns {@code false} if given set of predicates
-     *      is {@code null} or empty.
-     */
-    public static <T> boolean isAny(@Nullable T t, @Nullable IgnitePredicate<? super T> p) {
-        if (p != null)
-            if (p != null && p.apply(t))
-                return true;
-
-        return false;
-    }
-
-    /**
      * Creates an absolute (no-arg) closure that does nothing.
      *
      * @return Absolute (no-arg) closure that does nothing.
