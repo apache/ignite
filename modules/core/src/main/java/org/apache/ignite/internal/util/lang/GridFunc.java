@@ -2729,8 +2729,7 @@ public class GridFunc {
      * @return Returns {@code true} if given set of predicates is {@code null}, is empty, or all predicates
      *      evaluate to {@code true} for given value, {@code false} otherwise.
      */
-    @SuppressWarnings("unchecked")
-    public static <T> boolean isAll(@Nullable T t, @Nullable IgnitePredicate<? super T>... p) {
+    public static <T> boolean isAll(@Nullable T t, @Nullable IgnitePredicate<? super T>[] p) {
         if (p != null)
             for (IgnitePredicate<? super T> r : p)
                 if (r != null && !r.apply(t))
@@ -2751,11 +2750,10 @@ public class GridFunc {
      *      value, {@code false} otherwise. Returns {@code false} if given set of predicates
      *      is {@code null} or empty.
      */
-    public static <T> boolean isAny(@Nullable T t, @Nullable IgnitePredicate<? super T>... p) {
+    public static <T> boolean isAny(@Nullable T t, @Nullable IgnitePredicate<? super T> p) {
         if (p != null)
-            for (IgnitePredicate<? super T> r : p)
-                if (r != null && r.apply(t))
-                    return true;
+            if (p != null && p.apply(t))
+                return true;
 
         return false;
     }
@@ -2780,13 +2778,12 @@ public class GridFunc {
      * @return First element in given collection for which predicate evaluates to
      *      {@code true} - or {@code null} if such element cannot be found.
      */
-    @Nullable public static <V> V find(Iterable<? extends V> c, @Nullable V dfltVal,
-        @Nullable IgnitePredicate<? super V> p) {
+    @Nullable public static <V> V find(Iterable<? extends V> c, @Nullable V dfltVal, IgnitePredicate<? super V> p) {
         A.notNull(c, "c");
 
         if (!isAlwaysFalse(p)) {
             for (V v : c) {
-                if (isAny(v, p))
+                if (p.apply(v))
                     return v;
             }
         }
@@ -2874,7 +2871,7 @@ public class GridFunc {
      * @return {@code true} if input collection contains element for which all the provided
      *      predicates evaluates to {@code true} - otherwise returns {@code false}.
      */
-    public static <V> boolean exist(Iterable<? extends V> c, @Nullable IgnitePredicate<? super V> p) {
+    public static <V> boolean exist(Iterable<? extends V> c, IgnitePredicate<? super V> p) {
         A.notNull(c, "c");
 
         if (isAlwaysFalse(p))
@@ -2883,7 +2880,7 @@ public class GridFunc {
             return true;
         else
             for (V v : c)
-                if (isAll(v, p))
+                if (p.apply(v))
                     return true;
 
         return false;
@@ -2909,7 +2906,7 @@ public class GridFunc {
             return true;
         else {
             for (V v : c) {
-                if (!isAll(v, p))
+                if (!p.apply(v))
                     return false;
             }
         }
@@ -2938,7 +2935,7 @@ public class GridFunc {
             return true;
         else {
             for (Map.Entry<K, V> e : m.entrySet())
-                if (!isAll(e, p))
+                if (!p.apply(e))
                     return false;
         }
 
@@ -2966,7 +2963,7 @@ public class GridFunc {
             return true;
         else {
             for (V v : c)
-                if (isAll(v, p))
+                if (p.apply(v))
                     return true;
 
             return false;
