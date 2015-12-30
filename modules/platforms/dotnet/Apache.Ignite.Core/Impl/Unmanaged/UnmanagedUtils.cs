@@ -161,6 +161,22 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        internal static IUnmanagedTarget ProcessorDestroyCache(IUnmanagedTarget target, string name)
+        {
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                void* res = JNI.ProcessorDestroyCache(target.Context, target.Target, name0);
+
+                return target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
         internal static IUnmanagedTarget ProcessorAffinity(IUnmanagedTarget target, string name)
         {
             sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
