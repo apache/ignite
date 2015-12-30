@@ -7667,6 +7667,22 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets object field offset.
+     *
+     * @param cls Object class.
+     * @param fieldName Field name.
+     * @return Field offset.
+     */
+    public static long fieldOffset(Class<?> cls, String fieldName) {
+        try {
+            return UNSAFE.objectFieldOffset(cls.getDeclaredField(fieldName));
+        }
+        catch (NoSuchFieldException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
      * @param cls Class to check.
      * @return {@code True} if class is final.
      */
@@ -9164,6 +9180,30 @@ public abstract class IgniteUtils {
                 }
             }
             catch (NoSuchMethodException ignored) {
+                // No-op.
+            }
+
+            cls = cls.getSuperclass();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param cls The class to search.
+     * @param name Name of a field to get.
+     * @return Field or {@code null}.
+     */
+    @Nullable public static Field findNonPublicField(Class<?> cls, String name) {
+        while (cls != null) {
+            try {
+                Field fld = cls.getDeclaredField(name);
+
+                fld.setAccessible(true);
+
+                return fld;
+            }
+            catch (NoSuchFieldException e) {
                 // No-op.
             }
 
