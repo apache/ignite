@@ -1993,80 +1993,22 @@ public class GridFunc {
      * @param trans Transforming closure to convert from T1 to T2.
      * @param readOnly If {@code true}, then resulting iterator will not allow modifications
      *      to the underlying collection.
-     * @param p Optional filtering predicates.
      * @return Iterator from given iterator and optional filtering predicate.
      */
     public static <T1, T2> Iterator<T2> iterator(final Iterator<? extends T1> c,
-        final IgniteClosure<? super T1, T2> trans,
-        final boolean readOnly,
-        @Nullable final IgnitePredicate<? super T1>... p)
-    {
+        final IgniteClosure<? super T1, T2> trans, final boolean readOnly) {
         A.notNull(c, "c", trans, "trans");
 
-        if (isAlwaysFalse(p))
-            return F.emptyIterator();
-
         return new GridIteratorAdapter<T2>() {
-            /** */
-            private T1 elem;
-
-            /** */
-            private boolean moved = true;
-
-            /** */
-            private boolean more;
-
             /** */
             private Iterator<? extends T1> iter = c;
 
             @Override public boolean hasNextX() {
-                if (isEmpty(p))
-                    return iter.hasNext();
-                else {
-                    if (!moved)
-                        return more;
-                    else {
-                        more = false;
-
-                        while (iter.hasNext()) {
-                            elem = iter.next();
-
-                            boolean isAll = true;
-
-                            for (IgnitePredicate<? super T1> r : p)
-                                if (r != null && !r.apply(elem)) {
-                                    isAll = false;
-
-                                    break;
-                                }
-
-                            if (isAll) {
-                                more = true;
-                                moved = false;
-
-                                return true;
-                            }
-                        }
-
-                        elem = null; // Give to GC.
-
-                        return false;
-                    }
-                }
+                return iter.hasNext();
             }
 
             @Nullable @Override public T2 nextX() {
-                if (isEmpty(p))
-                    return trans.apply(iter.next());
-                else {
-                    if (hasNext()) {
-                        moved = true;
-
-                        return trans.apply(elem);
-                    }
-                    else
-                        throw new NoSuchElementException();
-                }
+                return trans.apply(iter.next());
             }
 
             @Override public void removeX() {
