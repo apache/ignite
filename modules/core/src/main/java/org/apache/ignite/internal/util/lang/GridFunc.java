@@ -2851,7 +2851,7 @@ public class GridFunc {
      * @return {@code true} if collection {@code c1} contains at least one element from collection
      *      {@code c2}.
      */
-    public static <T> boolean containsAny(@Nullable Collection<? extends T> c1, @Nullable T... c2) {
+    public static <T> boolean containsAny(@Nullable Collection<? extends T> c1, @Nullable T[] c2) {
         if (c1 != null && !c1.isEmpty() && c2 != null && c2.length > 0)
             for (T t : c2)
                 if (c1.contains(t))
