@@ -621,6 +621,15 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                     return showPopoverMessage($scope.panels, 'general', 'serviceAccountId', 'Account ID should not be empty');
             }
 
+            var swapKind = item.swapSpaceSpi.kind;
+
+            if ($common.isDefined(swapKind)) {
+                var sparsity = item.swapSpaceSpi[swapKind].maximumSparsity;
+
+                if (sparsity < 0 || sparsity >= 1)
+                    return showPopoverMessage($scope.panels, 'swap', 'maximumSparsity', 'Maximum sparsity should be more or equal 0 and less than 1');
+            }
+
             if (item.sslEnabled) {
                 if (!$common.isDefined(item.sslContextFactory) || $common.isEmptyString(item.sslContextFactory.keyStoreFilePath))
                     return showPopoverMessage($scope.panels, 'sslConfiguration', 'keyStoreFilePath', 'Key store file should not be empty');

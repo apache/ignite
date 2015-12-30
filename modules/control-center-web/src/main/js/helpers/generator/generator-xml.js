@@ -450,7 +450,7 @@ $generatorXml.clusterCommunication = function (cluster, res) {
     $generatorXml.property(res, cluster, 'networkSendRetryCount', undefined, 3);
     $generatorXml.property(res, cluster, 'segmentCheckFrequency');
     $generatorXml.property(res, cluster, 'waitForSegmentOnStart', null, false);
-    $generatorXml.property(res, cluster, 'discoveryStartupDelay', undefined, 600000);
+    $generatorXml.property(res, cluster, 'discoveryStartupDelay', undefined, 60000);
 
     res.needEmptyLine = true;
 

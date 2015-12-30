@@ -538,7 +538,7 @@
           "id": "discoveryStartupDelay",
           "type": "number",
           "model": "discoveryStartupDelay",
-          "placeholder": 600000,
+          "placeholder": 60000,
           "tip": [
             "This value is used to expire messages from waiting list whenever node discovery discrepancies happen"
           ]
@@ -1688,9 +1688,12 @@
                 },
                 {
                   "label": "Maximum sparsity",
+                  "id": "maximumSparsity",
                   "type": "number",
                   "path": "swapSpaceSpi.FileSwapSpaceSpi",
                   "model": "maximumSparsity",
+                  "max": 1,
+                  "step": 0.05,
                   "placeholder": 0.5,
                   "tip": [
                     "This property defines maximum acceptable wasted file space to whole file size ratio",

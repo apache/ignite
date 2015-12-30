@@ -669,7 +669,7 @@ $generatorJava.clusterCommunication = function (cluster, res) {
     $generatorJava.property(res, 'cfg', cluster, 'networkSendRetryCount', null, null, 3);
     $generatorJava.property(res, 'cfg', cluster, 'segmentCheckFrequency');
     $generatorJava.property(res, 'cfg', cluster, 'waitForSegmentOnStart', null, null, false);
-    $generatorJava.property(res, 'cfg', cluster, 'discoveryStartupDelay', null, null, 600000);
+    $generatorJava.property(res, 'cfg', cluster, 'discoveryStartupDelay', null, null, 60000);
 
     res.needEmptyLine = true;
 
