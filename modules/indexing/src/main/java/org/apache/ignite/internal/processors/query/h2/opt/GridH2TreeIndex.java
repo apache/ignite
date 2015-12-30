@@ -24,10 +24,10 @@ import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -319,7 +319,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             comparable(last, 1));
 
         if (range == null)
-            return new GridEmptyIterator<>();
+            return F.emptyIterator();
 
         return filter(range.values().iterator());
     }

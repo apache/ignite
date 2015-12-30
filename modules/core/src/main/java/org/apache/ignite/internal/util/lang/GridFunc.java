@@ -37,7 +37,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.cache.Cache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.util.F0;
@@ -225,6 +224,9 @@ public class GridFunc {
             return "UUID to ID8 transformer closure.";
         }
     };
+
+    /** Empty iterator. */
+    private static final GridEmptyIterator EMPTY_ITER = new GridEmptyIterator();
 
     /**
      * Gets predicate that evaluates to {@code true} only for given local node ID.
@@ -1153,7 +1155,7 @@ public class GridFunc {
      * @return Newly created empty iterator.
      */
     public static <T> GridIterator<T> emptyIterator() {
-        return new GridEmptyIterator<>();
+        return EMPTY_ITER;
     }
 
     /**
