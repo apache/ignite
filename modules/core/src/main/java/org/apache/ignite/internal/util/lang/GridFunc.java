@@ -825,11 +825,11 @@ public class GridFunc {
      * @param c Input collection.
      * @param cp If {@code true} method creates new collection without modifying the input one,
      *      otherwise does <tt>in-place</tt> modifications.
-     * @param p Predicates to filter by. If no predicates provided - no elements are lost.
+     * @param p Predicate.
      * @param <T> Type of collections.
      * @return Collection of remaining elements.
      */
-    public static <T> Collection<T> lose(Collection<T> c, boolean cp, @Nullable IgnitePredicate<? super T>... p) {
+    public static <T> Collection<T> lose(Collection<T> c, boolean cp, IgnitePredicate<? super T> p) {
         A.notNull(c, "c");
 
         Collection<T> res;
@@ -837,19 +837,18 @@ public class GridFunc {
         if (!cp) {
             res = c;
 
-            if (isEmpty(p))
-                res.clear();
-            else if (!isAlwaysFalse(p))
-                for (Iterator<T> iter = res.iterator(); iter.hasNext();)
-                    if (isAll(iter.next(), p))
+            if (!isAlwaysFalse(p)) {
+                for (Iterator<T> iter = res.iterator(); iter.hasNext(); )
+                    if (p.apply(iter.next()))
                         iter.remove();
+            }
         }
         else {
             res = new LinkedList<>();
 
-            if (!isEmpty(p) && !isAlwaysTrue(p))
+            if (!isAlwaysTrue(p))
                 for (T t : c)
-                    if (!isAll(t, p))
+                    if (!p.apply(t))
                         res.add(t);
         }
 
