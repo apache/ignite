@@ -970,19 +970,6 @@ public class GridFunc {
     }
 
     /**
-     * Creates predicates that evaluates to {@code true} for each node in given collection.
-     * Note that if collection is empty the result predicate will always evaluate to {@code false}.
-     * Implementation simply creates {@link GridNodePredicate} instance.
-     *
-     * @param nodes Collection of nodes. If none provided - result predicate will always
-     *      return {@code false}.
-     * @return Predicates that evaluates to {@code true} for each node in given collection.
-     */
-    public static IgnitePredicate<ClusterNode> nodeForNodes(ClusterNode... nodes) {
-        return new GridNodePredicate(nodes);
-    }
-
-    /**
      * Retains all elements in input collection that are contained in {@code filter}.
      *
      * @param c Input collection.

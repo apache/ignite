@@ -51,6 +51,7 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -919,7 +920,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
                 ClusterNode node = isOldest ? U.oldest(super.nodes(), null) : U.youngest(super.nodes(), null);
 
-                IgnitePredicate<ClusterNode> p = F.nodeForNodes(node);
+                IgnitePredicate<ClusterNode> p = new GridNodePredicate(Collections.singleton(node.id()));
 
                 state = new AgeClusterGroupState(node, p, lastTopVer);
             }
