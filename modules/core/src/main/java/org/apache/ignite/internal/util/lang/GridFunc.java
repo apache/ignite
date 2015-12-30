@@ -1150,6 +1150,22 @@ public class GridFunc {
     }
 
     /**
+     * Create list containing two elements.
+     *
+     * @param t1 First element.
+     * @param t2 Second element.
+     * @return List.
+     */
+    public static <T> List<T> asList(T t1, T t2) {
+        ArrayList<T> res = new ArrayList<>(2);
+
+        res.add(t1);
+        res.add(t2);
+
+        return res;
+    }
+
+    /**
      * Converts array to {@link List}. Note that resulting list cannot
      * be altered in size, as it it based on the passed in array -
      * only current elements can be changed.
@@ -3463,6 +3479,7 @@ public class GridFunc {
      * @param <T> Element type.
      * @return Array of elements.
      */
+    @SuppressWarnings("unchecked")
     public static <T> T[] asArray(T... t) {
         return t;
     }
