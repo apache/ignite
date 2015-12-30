@@ -26,18 +26,6 @@ namespace ignite
 {
     namespace odbc
     {
-        /**
-         * Initialize network.
-         *
-         * @return True on success.
-         */
-        bool InitNetworking();
-
-        /**
-         * Deinitialize network.
-         */
-        void DeinitNetworking();
-
         namespace tcp
         {
             /**
@@ -93,7 +81,7 @@ namespace ignite
                 int Receive(int8_t* buffer, size_t size);
 
             private:
-                uintptr_t socketHandle;
+                intptr_t socketHandle;
 
                 IGNITE_NO_COPY_ASSIGNMENT(SocketClient)
             };

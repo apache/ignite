@@ -15,26 +15,15 @@
  * limitations under the License.
  */
 
-#ifdef _WIN32
-
-#   define _WINSOCKAPI_
-#   include <windows.h>
-
-#   undef min
-#   undef GetMessage
-
-#endif //_WIN32
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
 
-#include <sqlext.h>
-#include <odbcinst.h>
+#include "ignite/odbc/utility.h"
+#include "ignite/odbc/system/odbc_constants.h"
 
 #include "ignite/odbc/config/configuration.h"
-#include "ignite/odbc/utility.h"
 #include "ignite/odbc/type_traits.h"
 #include "ignite/odbc/environment.h"
 #include "ignite/odbc/connection.h"
@@ -52,7 +41,7 @@ void logInit(const char* path)
     }
 }
 
-#endif
+#endif //ODBC_DEBUG
 
 BOOL INSTAPI ConfigDSN(HWND     hwndParent,
                        WORD     req,
@@ -66,7 +55,7 @@ BOOL INSTAPI ConfigDSN(HWND     hwndParent,
     config.FillFromConfigAttributes(attributes);
 
     if (!SQLValidDSN(config.GetDsn().c_str()))
-        return FALSE;
+        return SQL_FALSE;
 
     LOG_MSG("Driver: %s\n", driver);
     LOG_MSG("Attributes: %s\n", attributes);
@@ -97,11 +86,11 @@ BOOL INSTAPI ConfigDSN(HWND     hwndParent,
 
         default:
         {
-            return FALSE;
+            return SQL_FALSE;
         }
     }
 
-    return TRUE;
+    return SQL_TRUE;
 }
 
 SQLRETURN SQL_API SQLGetInfo(SQLHDBC        conn,
@@ -899,9 +888,14 @@ SQLRETURN SQL_API SQLGetStmtAttr(SQLHSTMT       stmt,
                                  SQLINTEGER*    valueResLen)
 {
     using ignite::odbc::Statement;
+
+    LOG_MSG("SQLGetStmtAttr called");
+
+#ifdef ODBC_DEBUG
     using ignite::odbc::type_traits::StatementAttrIdToString;
 
-    LOG_MSG("SQLGetStmtAttr called: %s (%d)\n", StatementAttrIdToString(attr), attr);
+    LOG_MSG("Attr: %s (%d)\n", StatementAttrIdToString(attr), attr);
+#endif //ODBC_DEBUG
 
     Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -981,9 +975,14 @@ SQLRETURN SQL_API SQLSetStmtAttr(SQLHSTMT    stmt,
                                  SQLINTEGER  valueLen)
 {
     using ignite::odbc::Statement;
+
+    LOG_MSG("SQLSetStmtAttr called");
+
+#ifdef ODBC_DEBUG
     using ignite::odbc::type_traits::StatementAttrIdToString;
 
-    LOG_MSG("SQLSetStmtAttr called: %s (%d)\n", StatementAttrIdToString(attr), attr);
+    LOG_MSG("Attr: %s (%d)\n", StatementAttrIdToString(attr), attr);
+#endif //ODBC_DEBUG
 
     Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -1101,7 +1100,7 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
 
     using ignite::odbc::app::ApplicationDataBuffer;
 
-    LOG_MSG("SQLGetDiagField called\n");
+    LOG_MSG("SQLGetDiagField called: %d\n", recNum);
 
     int64_t outResLen;
     ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_DEFAULT, buffer, bufferLen, &outResLen);
@@ -1153,8 +1152,6 @@ SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
     using ignite::odbc::app::ApplicationDataBuffer;
 
     LOG_MSG("SQLGetDiagRec called\n");
-
-    SqlResult result = SQL_RESULT_NO_DATA;
 
     const DiagnosticRecordStorage* records = 0;
     

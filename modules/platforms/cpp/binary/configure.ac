@@ -19,7 +19,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([Apache Ignite C++], [1.5.0.7794], [dev@ignite.apache.org], [ignite], [ignite.apache.org])
+AC_INIT([Apache Ignite Binary Protocol implementation for C++], [1.5.0.10000], [dev@ignite.apache.org], [ignite-binary], [ignite.apache.org])
 AC_CONFIG_SRCDIR(src)
 
 AC_CANONICAL_SYSTEM
@@ -57,6 +57,6 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_FUNC_ERROR_AT_LINE
 
-AC_CONFIG_FILES(Makefile include/Makefile ignite.pc)
+AC_CONFIG_FILES(Makefile include/Makefile ignite-binary.pc)
 
 AC_OUTPUT

@@ -16,15 +16,7 @@
  */
 
 #include "ignite/odbc/utility.h"
-
-#ifdef _WIN32
-#   define _WINSOCKAPI_
-#   include <windows.h>
-#   undef min
-#endif //_WIN32
-
-#include <sqlext.h>
-#include <odbcinst.h>
+#include "ignite/odbc/system/odbc_constants.h"
 
 namespace ignite
 {

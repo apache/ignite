@@ -85,9 +85,6 @@
     <ClCompile Include="..\..\src\app\parameter.cpp">
       <Filter>Code\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\os\win\src\socket_client.cpp">
-      <Filter>Code\system</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\query\foreign_keys_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
@@ -102,6 +99,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\diagnostic\diagnosable_adapter.cpp">
       <Filter>Code\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\socket_client.cpp">
+      <Filter>Code\system</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -174,9 +174,6 @@
     <ClInclude Include="..\..\include\ignite\odbc\app\parameter.h">
       <Filter>Code\app</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\socket_client.h">
-      <Filter>Code\system</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\foreign_keys_query.h">
       <Filter>Code\query</Filter>
     </ClInclude>
@@ -197,6 +194,12 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnosable_adapter.h">
       <Filter>Code\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h">
+      <Filter>Code\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h">
+      <Filter>Code\system</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

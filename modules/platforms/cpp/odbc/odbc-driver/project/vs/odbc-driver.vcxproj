@@ -149,7 +149,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\os\win\src\socket_client.cpp" />
+    <ClCompile Include="..\..\os\win\src\system\socket_client.cpp" />
     <ClCompile Include="..\..\src\app\application_data_buffer.cpp" />
     <ClCompile Include="..\..\src\app\parameter.cpp" />
     <ClCompile Include="..\..\src\common_types.cpp" />
@@ -204,8 +204,9 @@
     <ClInclude Include="..\..\include\ignite\odbc\query\table_metadata_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\result_page.h" />
     <ClInclude Include="..\..\include\ignite\odbc\row.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\type_traits.h" />
     <ClInclude Include="..\..\include\ignite\odbc\utility.h" />
     <ClInclude Include="result_page.h" />

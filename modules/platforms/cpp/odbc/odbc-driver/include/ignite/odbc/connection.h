@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "ignite/odbc/parser.h"
-#include "ignite/odbc/socket_client.h"
+#include "ignite/odbc/system/socket_client.h"
 #include "ignite/odbc/config/connection_info.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 

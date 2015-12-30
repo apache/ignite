@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-#ifdef _WIN32
-#   define _WINSOCKAPI_
-#   include <windows.h>
+#include <cstring>
+#include <algorithm>
 
-    // Undefining windows macro to use standard library tool
-#   undef min
-#endif //_WIN32
+#include "ignite/odbc/system/odbc_constants.h"
+#include "ignite/odbc/utility.h"
+#include "ignite/odbc/config/connection_info.h"
 
-// Temporary workaround.
+ // Temporary workaround.
 #ifndef SQL_ASYNC_NOTIFICATION
 #define SQL_ASYNC_NOTIFICATION                  10025
 #endif
@@ -35,16 +34,6 @@
 #ifndef SQL_ASYNC_NOTIFICATION_CAPABLE
 #define SQL_ASYNC_NOTIFICATION_CAPABLE          0x00000001L
 #endif 
-
-
-#include <sqlext.h>
-#include <odbcinst.h>
-
-#include <cstring>
-#include <algorithm>
-
-#include "ignite/odbc/utility.h"
-#include "ignite/odbc/config/connection_info.h"
 
 namespace ignite
 {
@@ -124,47 +113,64 @@ namespace ignite
                 strParams[SQL_DRIVER_ODBC_VER] = "03.00";
                 strParams[SQL_DBMS_VER]        = "03.00";
 
+#ifdef SQL_DRIVER_VER
                 // Driver version. At a minimum, the version is of the form 
                 // ##.##.####, where the first two digits are the major version,
                 // the next two digits are the minor version, and the last four
                 // digits are the release version.
                 strParams[SQL_DRIVER_VER] = "01.05.0000";
+#endif // SQL_DRIVER_VER
 
+#ifdef SQL_COLUMN_ALIAS
                 // A character string: "Y" if the data source supports column 
                 // aliases; otherwise, "N".
                 strParams[SQL_COLUMN_ALIAS] = "N";
+#endif // SQL_COLUMN_ALIAS
 
+#ifdef SQL_IDENTIFIER_QUOTE_CHAR
                 // The character string that is used as the starting and ending
                 // delimiter of a quoted (delimited) identifier in SQL statements.
                 // Identifiers passed as arguments to ODBC functions do not have to
                 // be quoted. If the data source does not support quoted
                 // identifiers, a blank is returned.
                 strParams[SQL_IDENTIFIER_QUOTE_CHAR] = "";
+#endif // SQL_IDENTIFIER_QUOTE_CHAR
 
+#ifdef SQL_CATALOG_NAME_SEPARATOR
                 // A character string: the character or characters that the data
                 // source defines as the separator between a catalog name and the
                 // qualified name element that follows or precedes it.
                 strParams[SQL_CATALOG_NAME_SEPARATOR] = ".";
+#endif // SQL_CATALOG_NAME_SEPARATOR
 
+#ifdef SQL_SPECIAL_CHARACTERS
                 // A character string that contains all special characters (that
                 // is, all characters except a through z, A through Z, 0 through 9,
                 // and underscore) that can be used in an identifier name, such as
                 // a table name, column name, or index name, on the data source.
                 strParams[SQL_SPECIAL_CHARACTERS] = "";
+#endif // SQL_SPECIAL_CHARACTERS
 
+#ifdef SQL_CATALOG_TERM
                 // A character string with the data source vendor's name for
                 // a catalog; for example, "database" or "directory". This string
                 // can be in upper, lower, or mixed case.
                 strParams[SQL_CATALOG_TERM] = "catalog";
+#endif // SQL_CATALOG_TERM
 
+#ifdef SQL_TABLE_TERM
                 // A character string with the data source vendor's name for
                 // a table; for example, "table" or "file".
                 strParams[SQL_TABLE_TERM] = "table";
+#endif // SQL_TABLE_TERM
 
+#ifdef SQL_SCHEMA_TERM
                 // A character string with the data source vendor's name for 
                 // a schema; for example, "owner", "Authorization ID", or "Schema".
                 strParams[SQL_SCHEMA_TERM] = "schema";
+#endif // SQL_SCHEMA_TERM
 
+#ifdef SQL_ASYNC_DBC_FUNCTIONS
                 //======================== Integer Params =========================
                 // Indicates if the driver can execute functions asynchronously
                 // on the connection handle.
@@ -173,94 +179,140 @@ namespace ignite
                 // SQL_ASYNC_DBC_NOT_CAPABLE = The driver can not execute
                 // connection functions asynchronously.
                 intParams[SQL_ASYNC_DBC_FUNCTIONS] = SQL_ASYNC_DBC_NOT_CAPABLE;
+#endif // SQL_ASYNC_DBC_FUNCTIONS
 
+#ifdef SQL_ASYNC_NOTIFICATION
                 // Indicates if the driver supports asynchronous notification.
                 // SQL_ASYNC_NOTIFICATION_CAPABLE  = Asynchronous execution 
                 // notification is supported by the driver.
                 // SQL_ASYNC_NOTIFICATION_NOT_CAPABLE Asynchronous execution 
                 // notification is not supported by the driver.
                 intParams[SQL_ASYNC_NOTIFICATION] = SQL_ASYNC_NOTIFICATION_NOT_CAPABLE;
+#endif // SQL_ASYNC_NOTIFICATION
 
+#ifdef SQL_GETDATA_EXTENSIONS
                 // Bitmask enumerating extensions to SQLGetData.
                 intParams[SQL_GETDATA_EXTENSIONS] = SQL_GD_ANY_COLUMN;
+#endif // SQL_GETDATA_EXTENSIONS
 
+#ifdef SQL_ODBC_INTERFACE_CONFORMANCE
                 // Indicates the level of the ODBC 3.x interface that the driver 
                 // complies with.
                 intParams[SQL_ODBC_INTERFACE_CONFORMANCE] = SQL_OIC_CORE;
+#endif // SQL_ODBC_INTERFACE_CONFORMANCE
 
+#ifdef SQL_SQL_CONFORMANCE
                 // Indicates the level of SQL-92 supported by the driver.
                 intParams[SQL_SQL_CONFORMANCE] = 0; // SQL_SC_SQL92_ENTRY;
+#endif // SQL_SQL_CONFORMANCE
 
+#ifdef SQL_CATALOG_USAGE
                 // Bitmask enumerating the statements in which catalogs can be used.
                 intParams[SQL_CATALOG_USAGE] = 0;
+#endif // SQL_CATALOG_USAGE
 
+#ifdef SQL_SCHEMA_USAGE
                 // Bitmask enumerating the statements in which schemas can be used.
                 intParams[SQL_SCHEMA_USAGE] = 0;
+#endif // SQL_SCHEMA_USAGE
 
+#ifdef SQL_MAX_IDENTIFIER_LEN
                 // Indicates the maximum size in characters that the data source 
                 // supports for user-defined names.
                 intParams[SQL_MAX_IDENTIFIER_LEN] = 128;
+#endif // SQL_MAX_IDENTIFIER_LEN
 
+#ifdef SQL_AGGREGATE_FUNCTIONS
                 // Bitmask enumerating support for aggregation functions.
                 intParams[SQL_AGGREGATE_FUNCTIONS] = SQL_AF_ALL | SQL_AF_AVG | 
                     SQL_AF_COUNT | SQL_AF_DISTINCT | SQL_AF_MAX | SQL_AF_MIN |
                     SQL_AF_SUM;
+#endif // SQL_AGGREGATE_FUNCTIONS
 
+#ifdef SQL_NUMERIC_FUNCTIONS
                 // Bitmask enumerating the scalar numeric functions supported by
                 // the driver and associated data source.
                 intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS;
+#endif // SQL_NUMERIC_FUNCTIONS
 
+#ifdef SQL_STRING_FUNCTIONS
                 // Bitmask enumerating the scalar string functions supported by the
                 // driver and associated data source.
                 intParams[SQL_STRING_FUNCTIONS] = 0;
+#endif // SQL_STRING_FUNCTIONS
 
+#ifdef SQL_TIMEDATE_FUNCTIONS
                 // Bitmask enumerating the scalar date and time functions supported
                 // by the driver and associated data source.
                 intParams[SQL_TIMEDATE_FUNCTIONS] = 0;
+#endif // SQL_TIMEDATE_FUNCTIONS
 
+#ifdef SQL_TIMEDATE_ADD_INTERVALS
                 // Bitmask enumerating timestamp intervals supported by the driver 
                 // and associated data source for the TIMESTAMPADD scalar function.
                 intParams[SQL_TIMEDATE_ADD_INTERVALS] = 0;
+#endif // SQL_TIMEDATE_ADD_INTERVALS
 
+#ifdef SQL_TIMEDATE_DIFF_INTERVALS
                 // Bitmask enumerating timestamp intervals supported by the driver
                 // and associated data source for the TIMESTAMPDIFF scalar function.
                 intParams[SQL_TIMEDATE_DIFF_INTERVALS] = 0;
+#endif // SQL_TIMEDATE_DIFF_INTERVALS
 
+#ifdef SQL_DATETIME_LITERALS
                 // Bitmask enumerating the SQL-92 datetime literals supported by
                 // the data source.
                 intParams[SQL_DATETIME_LITERALS] = 0;
+#endif // SQL_DATETIME_LITERALS
 
+#ifdef SQL_SYSTEM_FUNCTIONS
                 // Bitmask enumerating the scalar system functions supported by the
                 // driver and associated data source.
                 intParams[SQL_SYSTEM_FUNCTIONS] = 0;
+#endif // SQL_SYSTEM_FUNCTIONS
 
+#ifdef SQL_CONVERT_FUNCTIONS
                 // Bitmask enumerating the scalar conversion functions supported
                 // by the driver and associated data source.
                 intParams[SQL_CONVERT_FUNCTIONS] = 0;
+#endif // SQL_CONVERT_FUNCTIONS
 
+#ifdef SQL_OJ_CAPABILITIES
                 // Bitmask enumerating the types of outer joins supported by the 
                 // driver and data source.
                 intParams[SQL_OJ_CAPABILITIES] = SQL_OJ_LEFT | SQL_OJ_RIGHT |
                     SQL_OJ_FULL | SQL_OJ_NESTED | SQL_OJ_INNER | 
                     SQL_OJ_ALL_COMPARISON_OPS;
+#endif // SQL_OJ_CAPABILITIES
 
+#ifdef SQL_POS_OPERATIONS
                 // Bitmask enumerating the support operations in SQLSetPos.
                 intParams[SQL_POS_OPERATIONS] = 0;
+#endif // SQL_POS_OPERATIONS
 
+#ifdef SQL_SQL92_NUMERIC_VALUE_FUNCTIONS
                 // Bitmask enumerating the numeric value scalar functions.
                 intParams[SQL_SQL92_NUMERIC_VALUE_FUNCTIONS] = 0;
+#endif // SQL_SQL92_NUMERIC_VALUE_FUNCTIONS
 
+#ifdef SQL_SQL92_STRING_FUNCTIONS
                 // Bitmask enumerating the string scalar functions.
                 intParams[SQL_SQL92_STRING_FUNCTIONS] = 0;
+#endif // SQL_SQL92_STRING_FUNCTIONS
 
+#ifdef SQL_SQL92_DATETIME_FUNCTIONS
                 // Bitmask enumerating the datetime scalar functions.
                 intParams[SQL_SQL92_DATETIME_FUNCTIONS] = 0;
+#endif // SQL_SQL92_DATETIME_FUNCTIONS
 
+#ifdef SQL_SQL92_VALUE_EXPRESSIONS
                 // Bitmask enumerating the value expressions supported,
                 // as defined in SQL-92.
                 intParams[SQL_SQL92_VALUE_EXPRESSIONS] = SQL_SVE_CASE | 
                     SQL_SVE_COALESCE | SQL_SVE_NULLIF;
+#endif // SQL_SQL92_VALUE_EXPRESSIONS
 
+#ifdef SQL_SQL92_PREDICATES
                 // Bitmask enumerating the datetime scalar functions.
                 intParams[SQL_SQL92_PREDICATES] = SQL_SP_BETWEEN |
                     SQL_SP_COMPARISON | SQL_SP_EXISTS | SQL_SP_IN |
@@ -269,7 +321,9 @@ namespace ignite
                     SQL_SP_MATCH_UNIQUE_FULL | SQL_SP_MATCH_UNIQUE_PARTIAL |
                     SQL_SP_OVERLAPS | SQL_SP_QUANTIFIED_COMPARISON |
                     SQL_SP_UNIQUE;
+#endif // SQL_SQL92_PREDICATES
 
+#ifdef SQL_SQL92_RELATIONAL_JOIN_OPERATORS
                 // Bitmask enumerating the relational join operators supported
                 // in a SELECT statement, as defined in SQL-92.
                 intParams[SQL_SQL92_RELATIONAL_JOIN_OPERATORS] =
@@ -278,25 +332,36 @@ namespace ignite
                     SQL_SRJO_INNER_JOIN | SQL_SRJO_INTERSECT_JOIN |
                     SQL_SRJO_LEFT_OUTER_JOIN | SQL_SRJO_NATURAL_JOIN |
                     SQL_SRJO_RIGHT_OUTER_JOIN | SQL_SRJO_UNION_JOIN;
+#endif // SQL_SQL92_RELATIONAL_JOIN_OPERATORS
 
                 //========================= Short Params ==========================
+#ifdef SQL_MAX_CONCURRENT_ACTIVITIES
                 // The maximum number of active statements that the driver can
                 // support for a connection. Zero mean no limit.
                 shortParams[SQL_MAX_CONCURRENT_ACTIVITIES] = 32;
+#endif // SQL_MAX_CONCURRENT_ACTIVITIES
 
+#ifdef SQL_CURSOR_COMMIT_BEHAVIOR
                 // Indicates how a COMMIT operation affects cursors and prepared
                 // statements in the data source.
                 shortParams[SQL_CURSOR_COMMIT_BEHAVIOR] = SQL_CB_PRESERVE;
+#endif // SQL_CURSOR_COMMIT_BEHAVIOR
 
+#ifdef SQL_CURSOR_ROLLBACK_BEHAVIOR
                 // Indicates how a ROLLBACK  operation affects cursors and prepared
                 // statements in the data source.
                 shortParams[SQL_CURSOR_ROLLBACK_BEHAVIOR] = SQL_CB_PRESERVE;
+#endif // SQL_CURSOR_ROLLBACK_BEHAVIOR
 
+#ifdef SQL_TXN_CAPABLE
                 // Describs the transaction support in the driver or data source.
                 shortParams[SQL_TXN_CAPABLE] = SQL_TC_NONE;
+#endif // SQL_TXN_CAPABLE
 
+#ifdef SQL_QUOTED_IDENTIFIER_CASE
                 // Case-sensitiveness of the quoted identifiers in SQL.
                 shortParams[SQL_QUOTED_IDENTIFIER_CASE] = SQL_IC_SENSITIVE;
+#endif // SQL_QUOTED_IDENTIFIER_CASE
             }
 
             ConnectionInfo::~ConnectionInfo()
