@@ -857,41 +857,6 @@ public class GridFunc {
     }
 
     /**
-     * Loses all elements in input list that are contained in {@code filter} collection.
-     *
-     * @param c Input list.
-     * @param cp If {@code true} method creates new list not modifying input,
-     *      otherwise does <tt>in-place</tt> modifications.
-     * @param filter Filter collection. If {@code filter} collection is empty or
-     *      {@code null} - no elements are lost.
-     * @param <T> Type of list.
-     * @return List of remaining elements
-     */
-    // TODO: REMOVE!
-    public static <T> List<T> loseList(List<T> c, boolean cp, @Nullable Collection<? super T> filter) {
-        A.notNull(c, "c");
-
-        List<T> res;
-
-        if (!cp) {
-            res = c;
-
-            if (filter != null)
-                res.removeAll(filter);
-        }
-        else {
-            res = new LinkedList<>();
-
-            for (T t : c) {
-                if (filter == null || !filter.contains(t))
-                    res.add(t);
-            }
-        }
-
-        return res;
-    }
-
-    /**
      * Gets closure which converts node to node ID.
      *
      * @return Closure which converts node to node ID.
