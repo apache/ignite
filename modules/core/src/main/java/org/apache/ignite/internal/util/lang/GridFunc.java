@@ -734,6 +734,7 @@ public class GridFunc {
      * @param obj One or more elements.
      * @return Concatenated array.
      */
+    @SuppressWarnings("unchecked")
     public static <T> T[] concat(@Nullable T[] arr, T... obj) {
         T[] newArr;
 
@@ -1396,49 +1397,6 @@ public class GridFunc {
 
             @Override public boolean isEmpty() {
                 return F.isEmpty(p) ? c.isEmpty() : !iterator().hasNext();
-            }
-        };
-    }
-
-    /**
-     * Creates read-only light-weight view on given list with provided transformation.
-     * Resulting list will only "have" {@code transformed} elements. Note that only wrapping
-     * list will be created and no duplication of data will occur.
-     *
-     * @param c Input list that serves as a base for the view.
-     * @param trans Transformation closure.
-     * @param <T1> Type of the list.
-     * @return Light-weight view on given list with provided transformation.
-     */
-    @SuppressWarnings("RedundantTypeArguments")
-    public static <T1, T2> List<T2> viewListReadOnly(@Nullable final List<? extends T1> c,
-        final IgniteClosure<? super T1, T2> trans) {
-        A.notNull(trans, "trans");
-
-        if (isEmpty(c))
-            return Collections.emptyList();
-
-        assert c != null;
-
-        return new GridSerializableList<T2>() {
-            /** */
-            private static final long serialVersionUID = 3126625219739967068L;
-
-            @Override public T2 get(int idx) {
-                return trans.apply(c.get(idx));
-            }
-
-            @NotNull
-            @Override public Iterator<T2> iterator() {
-                return F.<T1, T2>iterator(c, trans, true);
-            }
-
-            @Override public int size() {
-                return c.size();
-            }
-
-            @Override public boolean isEmpty() {
-                return c.isEmpty();
             }
         };
     }
