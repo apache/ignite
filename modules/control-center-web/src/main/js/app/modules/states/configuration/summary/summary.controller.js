@@ -129,6 +129,46 @@ export default [
         $scope.tabsServer = { activeTab: 0 };
         $scope.tabsClient = { activeTab: 0 };
 
+        function findFolder(node, name) {
+            if (node.name === name)
+                return node;
+
+            if (node.children) {
+                let folder = null;
+
+                for (let i = 0; folder === null && i < node.children.length; i++)
+                    folder = findFolder(node.children[i], name);
+
+                return folder;
+            }
+
+            return null;
+        }
+
+        function addChildren(fullClsName) {
+            const parts = fullClsName.split('.');
+
+            const shortClsName = parts.pop() + '.java';
+
+            let lastFolder = javaFolder;
+
+            _.forEach(parts, (part) => {
+                const folder = findFolder(javaFolder, part);
+
+                if (!folder) {
+                    const newLastFolder = {type: 'folder', name: part, children: []};
+
+                    lastFolder.children.push(newLastFolder);
+
+                    lastFolder = newLastFolder;
+                }
+                else
+                    lastFolder = folder;
+            });
+
+            lastFolder.children.push({type: 'file', name: shortClsName});
+        }
+
         $scope.selectItem = (cluster) => {
             delete ctrl.cluster;
 
@@ -146,9 +186,15 @@ export default [
 
             _.forEach(cluster.caches, (cache) => {
                 _.forEach(cache.metadatas, (metadata) => {
-                    javaFolder.children.push({type: 'folder', name: 'test' + cluster.name, children: [{type: 'file', name: 'test-1'}]});
+                    if (!$common.isEmptyArray(metadata.keyFields)) {
+                        const keyType = metadata.keyType;
+                        const valType = metadata.valueType;
+
+                        addChildren(keyType);
+                        addChildren(valType);
+                    }
                 });
-            }) ;
+            });
 
 
         };

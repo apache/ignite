@@ -33,13 +33,19 @@ mixin ignite-form-field-tooltip(message)
                 ignite-dialog More info
                     ignite-dialog-title Summary screen
                     ignite-dialog-content 
-                        | Configurations available in XML, Java and Dockerfile format for Server and Client mode.#[br]
-                        | Database table POJO classes for cluster's metadata available on "POJO" tab.#[br]
-                        | Use "Download project" button to receive configurations in ZIP file.#[br]
-                        | Go back to change configuration on #[a(ui-sref='base.configuration.clusters') clusters],&nbsp;
-                        | #[a(ui-sref='base.configuration.caches') caches] or #[a(ui-sref='base.configuration.metadata') metadata] screen.#[br]
-                        | Read #[a(href='https://apacheignite.readme.io/docs' target='_blank') Ignite Documentation].#[br]
-                        | Download #[a(href='https://ignite.apache.org/download.cgi#binaries' target='_blank') Ignite Binary Release].
+                        | On this screen you can preview:
+                        | <ul>
+                        | <li>XML configurations for server and client nodes.</li>
+                        | <li>Java classes with server and client nodes configuration from code.</li>
+                        | <li>POJO classes generated from database metadata.</li>
+                        | <li>Maven pom.xml for generated project.</li>
+                        | <li>Dockerfile for server node.</li>
+                        | </ul>
+                        | Also you can:
+                        | <ul>
+                        | <li>Read #[a(href='https://apacheignite.readme.io/docs' target='_blank') Ignite Documentation].</li>
+                        | <li>Download #[a(href='https://ignite.apache.org/download.cgi#binaries' target='_blank') Ignite Binary Release].</li>
+                        | </ul>
 
         ignite-callout-cel(data-title='Next Steps')
             li Deploy Ignite Servers

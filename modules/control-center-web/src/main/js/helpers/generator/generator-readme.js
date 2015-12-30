@@ -34,9 +34,9 @@ $generatorReadme.readme = function (res) {
     res.needEmptyLine = true;
 
     res.line('Project structure:');
-    res.line('    /config - this folder will contains client and server XML configurations.');
+    res.line('    /config - this folder will contain client and server XML configurations.');
     res.line('    /jdbc-drivers - this folder should contains proprietary JDBC drivers.');
-    res.line('    /src - this folder will contains generated java code.');
+    res.line('    /src - this folder will contain generated java code.');
     res.line('    /src/main/java/config - this folder will contain generated java classes with cluster configuration from code.');
     res.line('    /src/main/java/startup - this folder will contain generated java classes with server and client nodes startup code.');
     res.line('    /src/main/java/[model] - this folder will be named as package name for your POJO classes and contain generated POJO files.');
