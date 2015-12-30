@@ -1794,7 +1794,7 @@ public class GridFunc {
 
             @SuppressWarnings({"unchecked"})
             @Nullable @Override public V1 get(Object key) {
-                if (isAll((K)key, p)) {
+                if (isAll((K) key, p)) {
                     V v = m.get(key);
 
                     if (v != null)
@@ -2847,46 +2847,6 @@ public class GridFunc {
         for (X x : c)
             if (isAll(x, p))
                 f.apply(x);
-    }
-
-    /**
-     * Adds (copies) to given collection all elements in <tt>'from'</tt> array.
-     *
-     * @param to Collection to copy to.
-     * @param from Array to copy from.
-     * @param <T> Type of the free variable for the predicate and type of the collection elements.
-     * @return Collection to copy to.
-     */
-    public static <T> Collection<T> copy(Collection<T> to, T... from) {
-        A.notNull(to, "to", from, "from");
-
-        copy(to, asList(from));
-
-        return to;
-    }
-
-    /**
-     * Adds (copies) to given collection using provided predicates. Element is copied if all
-     * predicates evaluate to {@code true}.
-     *
-     * @param to Collection to copy to.
-     * @param from Collection to copy from.
-     * @param p Optional set of predicates to use for filtration.
-     * @param <T> Type of the free variable for the predicate and type of the collection elements.
-     * @return Collection to copy to.
-     */
-    public static <T> Collection<T> copy(Collection<T> to, Iterable<? extends T> from,
-        @Nullable IgnitePredicate<? super T>... p) {
-        A.notNull(to, "to", from, "from");
-
-        if (!isAlwaysFalse(p)) {
-            for (T t : from) {
-                if (isAll(t, p))
-                    to.add(t);
-            }
-        }
-
-        return to;
     }
 
     /**
