@@ -470,7 +470,8 @@ consoleModule.controller('cachesController', [
                     atomicityMode: 'ATOMIC',
                     readFromBackup: true,
                     copyOnRead: true,
-                    clusters: id && _.find($scope.clusters, {value: id}) ? [id] : [],
+                    clusters: id && _.find($scope.clusters, {value: id}) ? [id] :
+                        (!$common.isEmptyArray($scope.clusters) ? [$scope.clusters[0].value] : []),
                     metadatas: id && _.find($scope.metadatas, {value: id}) ? [id] : [],
                     get label() { return angular.bind(this, _cacheLbl)(); }
                 };
@@ -483,12 +484,7 @@ consoleModule.controller('cachesController', [
                         $common.ensureActivePanel($scope.panels, 'general', 'cacheName');
                     });
 
-                    var newItem = prepareNewItem(id);
-
-                    if ($common.isEmptyArray(newItem.clusters) && !$common.isEmptyArray($scope.clusters))
-                        newItem.clusters.push($scope.clusters[0].value);
-
-                    $scope.selectItem(undefined, newItem);
+                    $scope.selectItem(undefined, prepareNewItem(id));
                 }
             };
 

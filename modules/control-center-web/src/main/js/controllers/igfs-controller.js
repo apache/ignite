@@ -288,7 +288,8 @@ consoleModule.controller('igfsController', [
                     space: $scope.spaces[0]._id,
                     ipcEndpointEnabled: true,
                     fragmentizerEnabled: true,
-                    clusters: id && _.find($scope.clusters, {value: id}) ? [id] : []
+                    clusters: id && _.find($scope.clusters, {value: id}) ? [id] :
+                        (!$common.isEmptyArray($scope.clusters) ? [$scope.clusters[0].value] : [])
                 };
             }
 
@@ -299,12 +300,7 @@ consoleModule.controller('igfsController', [
                         $common.ensureActivePanel($scope.panels, 'general', 'igfsName');
                     });
 
-                    var newItem = prepareNewItem(id);
-
-                    if ($common.isEmptyArray(newItem.clusters) && !$common.isEmptyArray($scope.clusters))
-                        newItem.clusters.push($scope.clusters[0].value);
-
-                    $scope.selectItem(undefined, newItem);
+                    $scope.selectItem(undefined, prepareNewItem(id));
                 }
             };
 

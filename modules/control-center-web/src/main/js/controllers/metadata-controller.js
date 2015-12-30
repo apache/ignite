@@ -909,7 +909,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             function prepareNewItem(cacheId) {
                 return {
                     space: $scope.spaces[0]._id,
-                    caches: cacheId && _.find($scope.caches, {value: cacheId}) ? [cacheId] : []
+                    caches: cacheId && _.find($scope.caches, {value: cacheId}) ? [cacheId] :
+                        (!$common.isEmptyArray($scope.caches) ? [$scope.caches[0].value] : [])
                 };
             }
 
