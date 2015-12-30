@@ -1083,39 +1083,6 @@ public class GridFunc {
     }
 
     /**
-     * Curries given closure.
-     *
-     * @param f Closure.
-     * @param e Parameter.
-     * @param <T> Input type.
-     * @param <R> Output type.
-     * @return Curried closure.
-     */
-    public static <T, R> IgniteOutClosure<R> curry(final IgniteClosure<? super T, R> f, final T e) {
-        return new IgniteOutClosure<R>() {
-            @Override public R apply() {
-                return f.apply(e);
-            }
-        };
-    }
-
-    /**
-     * Curries given closure.
-     *
-     * @param f Closure.
-     * @param e Parameter.
-     * @param <T> Input type.
-     * @return Curried closure.
-     */
-    public static <T> GridAbsClosure curry(final IgniteInClosure<? super T> f, final T e) {
-        return new GridAbsClosure() {
-            @Override public void apply() {
-                f.apply(e);
-            }
-        };
-    }
-
-    /**
      * Create list containing two elements.
      *
      * @param t1 First element.
