@@ -86,6 +86,10 @@ export default [
             ]
         };
 
+        const clnCfg = { type: 'file', name: 'client.xml' };
+
+        const srvCfg = { type: 'file', name: 'server.xml' };
+
         const projectStructureRoot = {
             type: 'folder',
             name: 'project.zip',
@@ -93,10 +97,7 @@ export default [
                 {
                     type: 'folder',
                     name: 'config',
-                    children: [
-                        { type: 'file', name: 'ServerConfig.xml' },
-                        { type: 'file', name: 'ClientConfig.xml' }
-                    ]
+                    children: [clnCfg, srvCfg]
                 },
                 {
                     type: 'folder',
@@ -196,7 +197,9 @@ export default [
                 });
             });
 
-
+            projectStructureRoot.name = cluster.name + '-configuration.zip';
+            clnCfg.name = cluster.name + '-client.xml';
+            srvCfg.name = cluster.name + '-server.xml';
         };
 
         const updateTab = (cluster) => {
