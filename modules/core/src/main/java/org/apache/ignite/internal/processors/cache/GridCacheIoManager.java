@@ -57,7 +57,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
-import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -731,7 +730,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 }
 
                 if (added) {
-                    if (!F.exist(F.nodeIds(nodes), F0.not(F.contains(leftIds)))) {
+                    if (!F.exist(F.nodeIds(nodes), F.not(F.contains(leftIds)))) {
                         if (log.isDebugEnabled())
                             log.debug("Message will not be sent because all nodes left topology [msg=" + msg +
                                 ", nodes=" + U.toShortString(nodes) + ']');
@@ -767,7 +766,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     U.sleep(retryDelay);
                 }
 
-                if (!F.exist(F.nodeIds(nodes), F0.not(F.contains(leftIds)))) {
+                if (!F.exist(F.nodeIds(nodes), F.not(F.contains(leftIds)))) {
                     if (log.isDebugEnabled())
                         log.debug("Message will not be sent because all nodes left topology [msg=" + msg + ", nodes=" +
                             U.toShortString(nodes) + ']');

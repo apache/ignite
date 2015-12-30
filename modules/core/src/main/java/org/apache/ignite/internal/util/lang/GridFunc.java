@@ -815,7 +815,7 @@ public class GridFunc {
     public static <T0, T extends T0> Collection<T> lose(Collection<T> c, boolean cp, @Nullable Collection<T0> filter) {
         A.notNull(c, "c");
 
-        return lose(c, cp, F0.in(filter));
+        return lose(c, cp, in(filter));
     }
 
     /**
@@ -941,7 +941,7 @@ public class GridFunc {
         @Nullable Collection<? extends T0> filter) {
         A.notNull(c, "c");
 
-        return retain(c, cp, F0.in(filter));
+        return retain(c, cp, in(filter));
     }
 
     /**
@@ -1900,7 +1900,7 @@ public class GridFunc {
     @SuppressWarnings({"unchecked"})
     public static <T> GridIterator<T> identityIterator(Iterable<? extends T> c, boolean readOnly,
         IgnitePredicate<? super T> p) {
-        return F.iterator(c, IDENTITY, readOnly, p);
+        return iterator(c, IDENTITY, readOnly, p);
     }
 
     /**
@@ -2363,6 +2363,24 @@ public class GridFunc {
         return new C1<T, String>() {
             @Override public String apply(@Nullable T t) {
                 return String.valueOf(t); // This is null-safe.
+            }
+        };
+    }
+
+    /**
+     * Gets predicate (not peer-deployable) that returns {@code true} if its free variable is contained
+     * in given collection.
+     *
+     * @param c Collection to check for containment.
+     * @param <T> Type of the free variable for the predicate and type of the
+     *      collection elements.
+     * @return Predicate (not peer-deployable) that returns {@code true} if its free variable is
+     *      contained in given collection.
+     */
+    public static <T> IgnitePredicate<T> in(@Nullable final Collection<? extends T> c) {
+        return isEmpty(c) ? GridFunc.<T>alwaysFalse() : new P1<T>() {
+            @Override public boolean apply(T t) {
+                return c.contains(t);
             }
         };
     }

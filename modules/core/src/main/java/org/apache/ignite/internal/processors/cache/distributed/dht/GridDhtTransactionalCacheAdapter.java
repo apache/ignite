@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -1382,7 +1381,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Collection<ClusterNode> nearNodes = null;
 
         if (!F.isEmpty(readers)) {
-            nearNodes = ctx.discovery().nodes(readers, F0.not(F.idForNodeId(nodeId)));
+            nearNodes = ctx.discovery().nodes(readers, F.not(F.idForNodeId(nodeId)));
 
             if (log.isDebugEnabled())
                 log.debug("Mapping entry to near nodes [nodes=" + U.toShortString(nearNodes) + ", entry=" + cached +

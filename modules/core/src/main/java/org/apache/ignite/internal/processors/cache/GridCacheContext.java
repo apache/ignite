@@ -85,7 +85,6 @@ import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -1512,7 +1511,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             Collection<ClusterNode> nearNodes = null;
 
             if (!F.isEmpty(readers)) {
-                nearNodes = discovery().nodes(readers, F0.notEqualTo(nearNodeId));
+                nearNodes = discovery().nodes(readers, F.notEqualTo(nearNodeId));
 
                 if (log.isDebugEnabled())
                     log.debug("Mapping entry to near nodes [nodes=" + U.nodeIds(nearNodes) + ", entry=" + entry + ']');

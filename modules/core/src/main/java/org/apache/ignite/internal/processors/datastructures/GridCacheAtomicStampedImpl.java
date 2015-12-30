@@ -30,7 +30,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -179,8 +178,8 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         checkRemoved();
 
         try {
-            return CU.outTx(internalCompareAndSet(F0.equalTo(expVal), wrapperClosure(newVal),
-                F0.equalTo(expStamp), wrapperClosure(newStamp)), ctx);
+            return CU.outTx(internalCompareAndSet(F.equalTo(expVal), wrapperClosure(newVal),
+                F.equalTo(expStamp), wrapperClosure(newStamp)), ctx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

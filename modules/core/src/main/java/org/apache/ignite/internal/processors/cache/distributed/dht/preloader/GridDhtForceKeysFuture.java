@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -522,8 +521,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                 Collection<KeyCacheObject> retryKeys = F.view(
                     keys,
                     F.and(
-                        F0.notIn(missedKeys),
-                        F0.notIn(F.viewReadOnly(res.forcedInfos(), CU.<KeyCacheObject, V>info2Key()))
+                        F.notIn(missedKeys),
+                        F.notIn(F.viewReadOnly(res.forcedInfos(), CU.<KeyCacheObject, V>info2Key()))
                     )
                 );
 
