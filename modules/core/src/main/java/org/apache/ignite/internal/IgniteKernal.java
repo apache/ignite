@@ -589,8 +589,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public List<String> getLifecycleBeansFormatted() {
         LifecycleBean[] beans = cfg.getLifecycleBeans();
 
-        return F.isEmpty(beans) ? Collections.<String>emptyList() :
-            (List<String>)F.transform(beans, F.<LifecycleBean>string());
+        if (F.isEmpty(beans))
+            return Collections.emptyList();
+        else {
+            List<String> res = new ArrayList<>(beans.length);
+
+            for (LifecycleBean bean : beans)
+                res.add(String.valueOf(bean));
+
+            return res;
+        }
     }
 
     /**

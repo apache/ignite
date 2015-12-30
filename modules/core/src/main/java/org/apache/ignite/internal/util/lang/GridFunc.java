@@ -2883,21 +2883,6 @@ public class GridFunc {
     }
 
     /**
-     * Transforms an array to read only collection using provided closure.
-     *
-     * @param c Initial array to transform.
-     * @param f Closure to use for transformation.
-     * @param <X> Type of the free variable for the closure and type of the array elements.
-     * @param <Y> Type of the closure's return value.
-     * @return Transformed read only collection.
-     */
-    public static <X, Y> Collection<Y> transform(X[] c, IgniteClosure<? super X, Y> f) {
-        A.notNull(c, "c", f, "f");
-
-        return viewReadOnly(asList(c), f);
-    }
-
-    /**
      * Tests if all provided predicates evaluate to {@code true} for given value. Note that
      * evaluation will be short-circuit when first predicate evaluated to {@code false} is found.
      *
