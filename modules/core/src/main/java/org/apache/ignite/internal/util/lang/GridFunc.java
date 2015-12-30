@@ -553,20 +553,6 @@ public class GridFunc {
     }
 
     /**
-     * Gets random value from given array. This operation
-     * does not iterate through array elements and returns immediately.
-     *
-     * @param c Input collection.
-     * @param <T> Type of the collection.
-     * @return Random value from the input collection.
-     */
-    public static <T> T rand(T... c) {
-        A.notNull(c, "c");
-
-        return c[ThreadLocalRandom8.current().nextInt(c.length)];
-    }
-
-    /**
      * Concatenates an element to a collection. If {@code copy} flag is {@code true}, then
      * a new collection will be created and the element and passed in collection will be
      * copied into the new one. The returned collection will be modifiable. If {@code copy}
