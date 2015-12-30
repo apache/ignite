@@ -345,11 +345,7 @@ var ClusterSchema = new Schema({
     discoveryStartupDelay: Number,
     igfsThreadPoolSize: Number,
     igfss: [{type: ObjectId, ref: 'Igfs'}],
-    includeEventTypes: [{
-        type: String, enum: ['EVTS_CHECKPOINT', 'EVTS_DEPLOYMENT', 'EVTS_ERROR', 'EVTS_DISCOVERY',
-            'EVTS_JOB_EXECUTION', 'EVTS_TASK_EXECUTION', 'EVTS_CACHE', 'EVTS_CACHE_REBALANCE', 'EVTS_CACHE_LIFECYCLE',
-            'EVTS_CACHE_QUERY', 'EVTS_SWAPSPACE', 'EVTS_IGFS']
-    }],
+    includeEventTypes: [String],
     managementThreadPoolSize: Number,
     marshaller: {
         kind: {type: String, enum: ['OptimizedMarshaller', 'JdkMarshaller']},

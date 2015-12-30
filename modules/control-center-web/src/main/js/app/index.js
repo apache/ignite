@@ -71,6 +71,7 @@ import './modules/dialog/index';
 import './modules/navbar/main';
 import './modules/settings/main';
 import './modules/configuration/sidebar/main';
+import './modules/configuration/include-event-types/main';
 import './modules/terms/main';
 // endignite
 
@@ -110,6 +111,7 @@ angular
     'ignite-console.navbar',
     'ignite-console.userbar',
     'ignite-console.configuration.sidebar',
+    'ignite-console.configuration.include-event-types',
     'ignite-console.terms'
 ])
 // Directives.

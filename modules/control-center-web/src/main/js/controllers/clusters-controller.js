@@ -16,9 +16,8 @@
  */
 
 // Controller for Clusters screen.
-consoleModule.controller('clustersController', [
-    '$scope', '$state', '$controller', '$http', '$timeout', '$common', '$focus', '$confirm', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
-    function ($scope, $state, $controller, $http, $timeout, $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
+consoleModule.controller('clustersController', function ($http, $timeout, $scope, $state, $controller,
+    $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard, igniteIncludeEventGroups) {
         $unsavedChangesGuard.install($scope);
 
         // Initialize the super class and extend it.
@@ -145,11 +144,9 @@ consoleModule.controller('clustersController', [
 
         $scope.events = [];
 
-        for (var eventGroupName in $dataStructures.EVENT_GROUPS) {
-            if ($dataStructures.EVENT_GROUPS.hasOwnProperty(eventGroupName)) {
-                $scope.events.push({value: eventGroupName, label: eventGroupName});
-            }
-        }
+        _.forEach(igniteIncludeEventGroups, function (evts, evtGrp) {
+            $scope.events.push({label: evtGrp, value: evtGrp});
+        });
 
         $scope.preview = {
             general: {xml: '', java: '', allDefaults: true},
@@ -776,5 +773,5 @@ consoleModule.controller('clustersController', [
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
                 });
         };
-    }]
+    }
 );

@@ -563,15 +563,15 @@ $generatorXml.clusterEvents = function (cluster, res) {
         else {
             res.startBlock('<list>');
 
+            var evtGrps = angular.element(document.getElementById('app')).injector().get('igniteIncludeEventGroups');
+
             _.forEach(cluster.includeEventTypes, function(eventGroup, ix) {
                 if (ix > 0)
                     res.line();
 
                 res.line('<!-- EventType.' + eventGroup + ' -->');
 
-                var eventList = $dataStructures.EVENT_GROUPS[eventGroup];
-
-                _.forEach(eventList, function(event) {
+                _.forEach(evtGrps[eventGroup], function(event) {
                     res.line('<util:constant static-field="org.apache.ignite.events.EventType.' + event + '"/>');
                 });
             });
