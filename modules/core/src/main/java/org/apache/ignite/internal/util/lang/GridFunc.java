@@ -2658,27 +2658,13 @@ public class GridFunc {
      */
     @SuppressWarnings("unchecked")
     public static <T, C extends Collection<T>> C addAll(C c, Iterable<? extends T> it) {
-        if (it == null)
-            return c;
-
-        if (it instanceof Collection<?>) {
-            c.addAll((Collection<? extends T>)it);
-
-            return c;
-        }
-
-        return addAll(c, it.iterator());
-    }
-
-    /**
-     * @param c Target collection.
-     * @param it Iterator to fetch.
-     * @return Modified target collection.
-     */
-    public static <T, C extends Collection<T>> C addAll(C c, Iterator<? extends T> it) {
         if (it != null) {
-            while (it.hasNext())
-                c.add(it.next());
+            if (it instanceof Collection<?>)
+                c.addAll((Collection<? extends T>)it);
+            else {
+                for (T item : it)
+                    c.add(item);
+            }
         }
 
         return c;
