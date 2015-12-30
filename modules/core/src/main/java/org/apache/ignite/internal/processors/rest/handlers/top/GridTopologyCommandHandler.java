@@ -135,8 +135,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                 }
                 else
                     node = F.find(ctx.discovery().allNodes(), null, new P1<ClusterNode>() {
-                        @Override
-                        public boolean apply(ClusterNode n) {
+                        @Override public boolean apply(ClusterNode n) {
                             return containsIp(n.addresses(), ip);
                         }
                     });
