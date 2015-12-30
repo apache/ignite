@@ -559,12 +559,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<Cache.Entry<K, V>> iterator() {
             return new EntryIterator(nearSet.iterator(),
-                F.iterator0(dhtSet, false, new P1<Cache.Entry<K, V>>() {
-                    @Override public boolean apply(Cache.Entry<K, V> e) {
+                F.identityIterator(dhtSet, false, new P1<Cache.Entry<K, V>>() {
+                    @Override
+                    public boolean apply(Cache.Entry<K, V> e) {
                         try {
                             return GridNearCacheAdapter.super.localPeek(e.getKey(), NEAR_PEEK_MODE, null) == null;
-                        }
-                        catch (IgniteCheckedException ex) {
+                        } catch (IgniteCheckedException ex) {
                             throw new IgniteException(ex);
                         }
                     }

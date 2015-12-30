@@ -1363,7 +1363,7 @@ public class GridFunc {
 
             @NotNull
             @Override public Iterator<T> iterator() {
-                return F.iterator0(c, false, p);
+                return F.identityIterator(c, false, p);
             }
 
             @Override public int size() {
@@ -1449,7 +1449,7 @@ public class GridFunc {
                 return new GridSerializableSet<Map.Entry<K, V>>() {
                     @NotNull
                     @Override public Iterator<Entry<K, V>> iterator() {
-                        return iterator0(m.entrySet(), false, ep);
+                        return identityIterator(m.entrySet(), false, ep);
                     }
 
                     @Override public int size() {
@@ -1535,7 +1535,7 @@ public class GridFunc {
                     @NotNull
                     @Override public Iterator<Entry<K, V1>> iterator() {
                         return new Iterator<Entry<K, V1>>() {
-                            private Iterator<Entry<K, V>> it = iterator0(m.entrySet(), true, ep);
+                            private Iterator<Entry<K, V>> it = identityIterator(m.entrySet(), true, ep);
 
                             @Override public boolean hasNext() {
                                 return it.hasNext();
@@ -1652,7 +1652,7 @@ public class GridFunc {
                 return new GridSerializableSet<Entry<K, V>>() {
                     @NotNull @Override public Iterator<Entry<K, V>> iterator() {
                         return new Iterator<Entry<K, V>>() {
-                            private Iterator<K> it = iterator0(c, true, ep);
+                            private Iterator<K> it = identityIterator(c, true, ep);
 
                             @Override public boolean hasNext() {
                                 return it.hasNext();
@@ -1887,7 +1887,7 @@ public class GridFunc {
      * @return Iterator from given collection and optional filtering predicate.
      */
     @SuppressWarnings({"unchecked"})
-    public static <T> GridIterator<T> iterator0(Iterable<? extends T> c, boolean readOnly,
+    public static <T> GridIterator<T> identityIterator(Iterable<? extends T> c, boolean readOnly,
         IgnitePredicate<? super T>... p) {
         return F.iterator(c, IDENTITY, readOnly, p);
     }
