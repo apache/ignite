@@ -602,7 +602,7 @@ $generatorXml.clusterMarshaller = function (cluster, res) {
 
     $generatorXml.property(res, cluster, 'marshalLocalJobs', null, false);
     $generatorXml.property(res, cluster, 'marshallerCacheKeepAliveTime');
-    $generatorXml.property(res, cluster, 'marshallerCacheThreadPoolSize');
+    $generatorXml.property(res, cluster, 'marshallerCacheThreadPoolSize', 'marshallerCachePoolSize');
 
     res.needEmptyLine = true;
 

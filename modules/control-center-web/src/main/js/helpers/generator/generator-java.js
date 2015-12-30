@@ -517,7 +517,7 @@ $generatorJava.clusterAtomics = function (cluster, res) {
 
         $generatorJava.declareVariable(res, 'atomicCfg', 'org.apache.ignite.configuration.AtomicConfiguration');
 
-        $generatorJava.property(res, 'atomicCfg', atomics, 'cacheMode');
+        $generatorJava.property(res, 'atomicCfg', atomics, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
 
         var cacheMode = atomics.cacheMode ? atomics.cacheMode : 'PARTITIONED';
 
@@ -789,19 +789,16 @@ $generatorJava.clusterEvents = function (cluster, res) {
     if (cluster.includeEventTypes && cluster.includeEventTypes.length > 0) {
         res.emptyLineIfNeeded();
 
-        if (cluster.includeEventTypes.length === 1) {
-            res.importClass('org.apache.ignite.events.EventType');
+        res.importClass('org.apache.ignite.events.EventType');
 
+        if (cluster.includeEventTypes.length === 1)
             res.line('cfg.setIncludeEventTypes(EventType.' + cluster.includeEventTypes[0] + ');');
-        }
         else {
-            res.append('int[] events = new int[EventType.' + cluster.includeEventTypes[0] + '.length');
+            res.line('int[] events = new int[EventType.' + cluster.includeEventTypes[0] + '.length');
 
             _.forEach(cluster.includeEventTypes, function(e, ix) {
                 if (ix > 0) {
-                    res.needEmptyLine = true;
-
-                    res.append('    + EventType.' + e + '.length');
+                    res.line('    + EventType.' + e + '.length');
                 }
             });
 
@@ -849,7 +846,7 @@ $generatorJava.clusterMarshaller = function (cluster, res) {
 
     $generatorJava.property(res, 'cfg', cluster, 'marshalLocalJobs', null, null, false);
     $generatorJava.property(res, 'cfg', cluster, 'marshallerCacheKeepAliveTime');
-    $generatorJava.property(res, 'cfg', cluster, 'marshallerCacheThreadPoolSize');
+    $generatorJava.property(res, 'cfg', cluster, 'marshallerCacheThreadPoolSize', null, 'setMarshallerCachePoolSize');
 
     res.needEmptyLine = true;
 

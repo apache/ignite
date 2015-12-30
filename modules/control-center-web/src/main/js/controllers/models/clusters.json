@@ -1861,7 +1861,7 @@
           "id": "transactionIsolation",
           "type": "dropdown",
           "path": "transactionConfiguration",
-          "model": "transactionIsolation",
+          "model": "defaultTxIsolation",
           "placeholder": "REPEATABLE_READ",
           "items": "transactionIsolation",
           "tip": [

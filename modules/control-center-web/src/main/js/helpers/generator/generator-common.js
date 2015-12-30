@@ -342,10 +342,7 @@ $generatorCommon.TRANSACTION_CONFIGURATION = {
     className: 'org.apache.ignite.configuration.TransactionConfiguration',
     fields: {
         defaultTxConcurrency: {type: 'enum', enumClass: 'org.apache.ignite.transactions.TransactionConcurrency'},
-        transactionIsolation: {
-            type: 'org.apache.ignite.transactions.TransactionIsolation',
-            setterName: 'defaultTxIsolation'
-        },
+        defaultTxIsolation: {type: 'enum', enumClass: 'org.apache.ignite.transactions.TransactionIsolation'},
         defaultTxTimeout: null,
         pessimisticTxLogLinger: null,
         pessimisticTxLogSize: null,
