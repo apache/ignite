@@ -720,8 +720,7 @@ public class GridFunc {
      * @param obj One or more elements.
      * @return Concatenated array.
      */
-    @SuppressWarnings("unchecked")
-    public static <T> T[] concat(@Nullable T[] arr, T... obj) {
+    public static <T> T[] concat(@Nullable T[] arr, T[] obj) {
         T[] newArr;
 
         if (arr == null || arr.length == 0)
@@ -1125,6 +1124,7 @@ public class GridFunc {
      * @param <T> Type of the iterator.
      * @return Newly created empty iterator.
      */
+    @SuppressWarnings("unchecked")
     public static <T> GridIterator<T> emptyIterator() {
         return EMPTY_ITER;
     }
@@ -1284,6 +1284,16 @@ public class GridFunc {
     }
 
     /**
+     * Gets size of the given collection.
+     *
+     * @param c Collection.
+     * @return Size.
+     */
+    public static <T> int size(@Nullable Collection<? extends T> c) {
+        return c == null || c.isEmpty() ? 0 : c.size();
+    }
+
+    /**
      * Gets size of the given collection with provided optional predicates.
      *
      * @param c Collection to size.
@@ -1292,8 +1302,27 @@ public class GridFunc {
      * @return Number of elements in the collection for which all given predicates
      *      evaluates to {@code true}. If no predicates is provided - all elements are counted.
      */
-    public static <T> int size(@Nullable Collection<? extends T> c, @Nullable IgnitePredicate<? super T>... p) {
+    public static <T> int size(@Nullable Collection<? extends T> c, @Nullable IgnitePredicate<? super T>[] p) {
         return c == null || c.isEmpty() ? 0 : isEmpty(p) || isAlwaysTrue(p) ? c.size() : size(c.iterator(), p);
+    }
+
+    /**
+     * Gets size of the given iterator. Iterator will be traversed to get the count.
+     *
+     * @param it Iterator to size.
+     * @param <T> Type of the iterator.
+     * @return Number of elements in the iterator.
+     */
+    public static <T> int size(@Nullable Iterator<? extends T> it) {
+        if (it == null)
+            return 0;
+
+        int n = 0;
+
+        while (it.hasNext())
+            n++;
+
+        return n;
     }
 
     /**
@@ -1306,7 +1335,7 @@ public class GridFunc {
      * @return Number of elements in the iterator for which all given predicates
      *      evaluates to {@code true}. If no predicates is provided - all elements are counted.
      */
-    public static <T> int size(@Nullable Iterator<? extends T> it, @Nullable IgnitePredicate<? super T>... p) {
+    public static <T> int size(@Nullable Iterator<? extends T> it, @Nullable IgnitePredicate<? super T>[] p) {
         if (it == null)
             return 0;
 
