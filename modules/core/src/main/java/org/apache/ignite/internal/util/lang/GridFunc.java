@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.GridSerializableCollection;
 import org.apache.ignite.internal.util.GridSerializableIterator;
-import org.apache.ignite.internal.util.GridSerializableList;
 import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.GridSerializableSet;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -437,8 +436,6 @@ public class GridFunc {
         if (isEmpty(res))
             return Collections.emptyList();
 
-        assert res != null;
-
         Collection<T> c = new ArrayList<>(res.size());
 
         for (ComputeJobResult r : res)
@@ -574,8 +571,6 @@ public class GridFunc {
                 return l;
             }
 
-            assert c != null;
-
             Collection<T> ret = new ArrayList<>(c.size() + 1);
 
             ret.add(t);
@@ -586,8 +581,6 @@ public class GridFunc {
         else {
             if (isEmpty(c))
                 return Collections.singletonList(t);
-
-            assert c != null;
 
             return new GridSerializableCollection<T>() {
                 @NotNull
@@ -645,8 +638,11 @@ public class GridFunc {
             if (isEmpty(c1) && isEmpty(c2))
                 return new ArrayList<>(0);
 
-            if (isEmpty(c1))
+            if (isEmpty(c1)) {
+                assert c2 != null;
+
                 return new ArrayList<>(c2);
+            }
 
             if (isEmpty(c2))
                 return new ArrayList<>(c1);
@@ -823,8 +819,7 @@ public class GridFunc {
      * @param <T> Type of collections.
      * @return Collection of remaining elements
      */
-    public static <T0, T extends T0> Collection<T> lose(Collection<T> c, boolean cp,
-        @Nullable Collection<T0> filter) {
+    public static <T0, T extends T0> Collection<T> lose(Collection<T> c, boolean cp, @Nullable Collection<T0> filter) {
         A.notNull(c, "c");
 
         return lose(c, cp, F0.in(filter));
@@ -879,6 +874,7 @@ public class GridFunc {
      * @param <T> Type of list.
      * @return List of remaining elements
      */
+    // TODO: REMOVE!
     public static <T> List<T> loseList(List<T> c, boolean cp, @Nullable Collection<? super T> filter) {
         A.notNull(c, "c");
 
@@ -1369,8 +1365,6 @@ public class GridFunc {
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyList();
 
-        assert c != null;
-
         return isEmpty(p) || isAlwaysTrue(p) ? c : new GridSerializableCollection<T>() {
             // Pass through (will fail for readonly).
             @Override public boolean add(T e) {
@@ -1415,8 +1409,6 @@ public class GridFunc {
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyList();
 
-        assert c != null;
-
         return new GridSerializableCollection<T2>() {
             @NotNull
             @Override public Iterator<T2> iterator() {
@@ -1450,8 +1442,6 @@ public class GridFunc {
         @Nullable final IgnitePredicate<? super K>... p) {
         if (isEmpty(m) || isAlwaysFalse(p))
             return Collections.emptyMap();
-
-        assert m != null;
 
         return isEmpty(p) || isAlwaysTrue(p) ? m : new GridSerializableMap<K, V>() {
             /** */
@@ -1539,8 +1529,6 @@ public class GridFunc {
         if (isEmpty(m) || isAlwaysFalse(p))
             return Collections.emptyMap();
 
-        assert m != null;
-
         final boolean hasPred = p != null && p.length > 0;
 
         return new GridSerializableMap<K, V1>() {
@@ -1613,7 +1601,7 @@ public class GridFunc {
 
             @SuppressWarnings({"unchecked"})
             @Nullable @Override public V1 get(Object key) {
-                if (isAll((K)key, p)) {
+                if (isAll((K) key, p)) {
                     V v = m.get(key);
 
                     if (v != null)
@@ -1661,8 +1649,6 @@ public class GridFunc {
 
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyMap();
-
-        assert c != null;
 
         return new GridSerializableMap<K, V>() {
             /** Entry predicate. */
@@ -2176,8 +2162,9 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that evaluates to {@code true} if its free variable is {@code null}.
      */
+    @SuppressWarnings("unchecked")
     public static <T> IgnitePredicate<T> isNull() {
-        return (IgnitePredicate<T>) IS_NULL;
+        return (IgnitePredicate<T>)IS_NULL;
     }
 
     /**
@@ -2186,8 +2173,9 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that evaluates to {@code true} if its free variable is not {@code null}.
      */
+    @SuppressWarnings("unchecked")
     public static <T> IgnitePredicate<T> notNull() {
-        return (IgnitePredicate<T>) IS_NOT_NULL;
+        return (IgnitePredicate<T>)IS_NOT_NULL;
     }
 
     /**
@@ -2265,24 +2253,6 @@ public class GridFunc {
     }
 
     /**
-     * Gets predicate that evaluates to {@code true} if its free variable is instance of the given class.
-     *
-     * @param cls Class to compare to.
-     * @param <T> Type of the free variable, i.e. the element the predicate is called on.
-     * @return Predicate that evaluates to {@code true} if its free variable is instance
-     *      of the given class.
-     */
-    public static <T> IgnitePredicate<T> instanceOf(final Class<?> cls) {
-        A.notNull(cls, "cls");
-
-        return new P1<T>() {
-            @Override public boolean apply(T t) {
-                return t != null && cls.isAssignableFrom(t.getClass());
-            }
-        };
-    }
-
-    /**
      * Gets first element from given collection or returns {@code null} if the collection is empty.
      *
      * @param c A collection.
@@ -2322,11 +2292,10 @@ public class GridFunc {
      * @param <T> Type of the collection.
      * @return Collections' first element or {@code null} in case if the collection is empty.
      */
+    @SuppressWarnings("unchecked")
     @Nullable public static <T> T last(@Nullable Iterable<? extends T> c) {
         if (c == null)
             return null;
-
-        assert c != null;
 
         if (c instanceof RandomAccess && c instanceof List) {
             List<T> l = (List<T>)c;
@@ -2412,8 +2381,6 @@ public class GridFunc {
             return F.alwaysTrue();
 
         if (F0.isAllNodePredicates(ps)) {
-            assert ps != null;
-
             Set<UUID> ids = new HashSet<>();
 
             for (IgnitePredicate<? super T> p : ps) {
@@ -2433,8 +2400,6 @@ public class GridFunc {
         else {
             return new P1<T>() {
                 @Override public boolean apply(T t) {
-                    assert ps != null;
-
                     for (IgnitePredicate<? super T> p : ps)
                         if (p != null && !p.apply(t))
                             return false;
@@ -2483,8 +2448,6 @@ public class GridFunc {
     public static <T> IgnitePredicate<T> notIn(@Nullable final Collection<? extends T> c) {
         return isEmpty(c) ? GridFunc.<T>alwaysTrue() : new P1<T>() {
             @Override public boolean apply(T t) {
-                assert c != null;
-
                 return !c.contains(t);
             }
         };
