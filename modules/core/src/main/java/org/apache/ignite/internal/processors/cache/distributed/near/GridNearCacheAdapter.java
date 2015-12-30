@@ -559,7 +559,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<Cache.Entry<K, V>> iterator() {
             return new EntryIterator(nearSet.iterator(),
-                F.identityIterator(dhtSet, false, new P1<Cache.Entry<K, V>>() {
+                F.identityIterator(dhtSet, new P1<Cache.Entry<K, V>>() {
                     @Override
                     public boolean apply(Cache.Entry<K, V> e) {
                         try {

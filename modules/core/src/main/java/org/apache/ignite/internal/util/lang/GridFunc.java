@@ -1353,7 +1353,7 @@ public class GridFunc {
 
             @NotNull
             @Override public Iterator<T> iterator() {
-                return F.identityIterator(c, false, p);
+                return identityIterator(c, p);
             }
 
             @Override public int size() {
@@ -1385,7 +1385,7 @@ public class GridFunc {
         return new GridSerializableCollection<T2>() {
             @NotNull
             @Override public Iterator<T2> iterator() {
-                return F.<T1, T2>iterator(c, trans, true);
+                return F.<T1, T2>iteratorReadOnly(c, trans);
             }
 
             @Override public int size() {
@@ -1470,7 +1470,7 @@ public class GridFunc {
                 return new GridSerializableSet<Map.Entry<K, V>>() {
                     @NotNull
                     @Override public Iterator<Entry<K, V>> iterator() {
-                        return identityIterator(m.entrySet(), false, ep);
+                        return identityIterator(m.entrySet(), ep);
                     }
 
                     @Override public int size() {
@@ -1546,7 +1546,7 @@ public class GridFunc {
                     @NotNull
                     @Override public Iterator<Entry<K, V1>> iterator() {
                         return new Iterator<Entry<K, V1>>() {
-                            private Iterator<Entry<K, V>> it = identityIterator(m.entrySet(), true);
+                            private Iterator<Entry<K, V>> it = identityIteratorReadOnly(m.entrySet());
 
                             @Override public boolean hasNext() {
                                 return it.hasNext();
@@ -1647,7 +1647,7 @@ public class GridFunc {
                 return new GridSerializableSet<Entry<K, V>>() {
                     @NotNull @Override public Iterator<Entry<K, V>> iterator() {
                         return new Iterator<Entry<K, V>>() {
-                            private Iterator<K> it = identityIterator(c, true);
+                            private Iterator<K> it = identityIteratorReadOnly(c);
 
                             @Override public boolean hasNext() {
                                 return it.hasNext();
@@ -1873,14 +1873,12 @@ public class GridFunc {
      * Creates and returns iterator from given collection.
      *
      * @param c Input collection.
-     * @param readOnly If {@code true}, then resulting iterator will not allow modifications
-     *      to the underlying collection.
      * @param <T> Type of the collection elements.
      * @return Iterator from given collection and optional filtering predicate.
      */
     @SuppressWarnings({"unchecked"})
-    public static <T> GridIterator<T> identityIterator(Iterable<? extends T> c, boolean readOnly) {
-        return F.iterator(c, IDENTITY, readOnly);
+    public static <T> GridIterator<T> identityIteratorReadOnly(Iterable<? extends T> c) {
+        return iteratorReadOnly(c, IDENTITY);
     }
 
     /**
@@ -1891,16 +1889,13 @@ public class GridFunc {
      * evaluate to {@code true} for.
      *
      * @param c Input collection.
-     * @param readOnly If {@code true}, then resulting iterator will not allow modifications
-     *      to the underlying collection.
      * @param p Optional filtering predicate.
      * @param <T> Type of the collection elements.
      * @return Iterator from given collection and optional filtering predicate.
      */
     @SuppressWarnings({"unchecked"})
-    public static <T> GridIterator<T> identityIterator(Iterable<? extends T> c, boolean readOnly,
-        IgnitePredicate<? super T> p) {
-        return iterator(c, IDENTITY, readOnly, p);
+    public static <T> GridIterator<T> identityIterator(Iterable<? extends T> c, IgnitePredicate<? super T> p) {
+        return iterator(c, IDENTITY, false, p);
     }
 
     /**
@@ -1908,17 +1903,15 @@ public class GridFunc {
      *
      * @param c Input collection.
      * @param trans Transforming closure to convert from T1 to T2.
-     * @param readOnly If {@code true}, then resulting iterator will not allow modifications
-     *      to the underlying collection.
      * @param <T1> Type of the collection elements.
      * @param <T2> Type of returned elements.
      * @return Iterator from given collection and optional filtering predicate.
      */
-    public static <T1, T2> GridIterator<T2> iterator(final Iterable<? extends T1> c,
-        final IgniteClosure<? super T1, T2> trans, final boolean readOnly) {
+    public static <T1, T2> GridIterator<T2> iteratorReadOnly(final Iterable<? extends T1> c,
+        final IgniteClosure<? super T1, T2> trans) {
         A.notNull(c, "c", trans, "trans");
 
-        return  iterator(c.iterator(), trans, readOnly);
+        return iterator(c.iterator(), trans, true);
     }
 
     /**

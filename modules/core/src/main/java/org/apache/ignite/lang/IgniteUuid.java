@@ -186,7 +186,7 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
 
     /** {@inheritDoc} */
     @Override public GridIterator<IgniteUuid> iterator() {
-        return F.identityIterator(Collections.singleton(this), true);
+        return F.identityIteratorReadOnly(Collections.singleton(this));
     }
 
     /** {@inheritDoc} */
