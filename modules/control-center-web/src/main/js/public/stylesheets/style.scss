@@ -1055,6 +1055,7 @@ button.form-control {
 
     z-index: 1030;
     min-width: 305px;
+    max-width: 450px;
 
     .popover-title {
         color: black;
@@ -1249,6 +1250,10 @@ label {
     font-size: 15px;
 
     line-height: $line-height-base;
+}
+
+.fa-question-circle {
+    cursor: default;
 }
 
 label.required:after {
