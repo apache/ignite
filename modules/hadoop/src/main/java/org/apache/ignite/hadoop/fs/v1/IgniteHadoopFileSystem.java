@@ -328,6 +328,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
             if (initSecondary) {
                 Map<String, String> props = paths.properties();
+                //Object payload0 = paths.getPayload(getClass().getClassLoader());
 
                 String secUri = props.get(SECONDARY_FS_URI);
                 String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
