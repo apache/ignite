@@ -286,6 +286,41 @@ public class GridCacheUtils {
         }
     };
 
+    /** */
+    private static final IgniteClosure CACHE_ENTRY_KEY = new IgniteClosure() {
+        @Override public Object apply(Object o) {
+            return ((Cache.Entry)o).getKey();
+        }
+
+        @Override public String toString() {
+            return "Map entry to key transformer closure.";
+        }
+    };
+
+    /** */
+    private static final IgniteClosure CACHE_ENTRY_VAL_GET = new IgniteClosure() {
+        @SuppressWarnings({"unchecked"})
+        @Nullable @Override public Object apply(Object o) {
+            return ((Cache.Entry)o).getValue();
+        }
+
+        @Override public String toString() {
+            return "Cache entry to get-value transformer closure.";
+        }
+    };
+
+    /** */
+    private static final IgnitePredicate CACHE_ENTRY_HAS_PEEK_VAL = new IgnitePredicate() {
+        @SuppressWarnings({"unchecked"})
+        @Override public boolean apply(Object o) {
+            return ((Cache.Entry)o).getValue() != null;
+        }
+
+        @Override public String toString() {
+            return "Cache entry has-peek-value predicate.";
+        }
+    };
+
     /**
      * Ensure singleton.
      */
@@ -1882,5 +1917,42 @@ public class GridCacheUtils {
                     return entryProc;
                 }
             });
+    }
+
+    /**
+     * Gets closure that returns key for cache entry. The closure internally
+     * delegates to {@link javax.cache.Cache.Entry#getKey()} method.
+     *
+     * @param <K> Key type.
+     * @return Closure that returns key for an entry.
+     */
+    @SuppressWarnings({"unchecked"})
+    public static <K, V> IgniteClosure<Cache.Entry<K, V>, K> cacheEntry2Key() {
+        return (IgniteClosure<Cache.Entry<K, V>, K>)CACHE_ENTRY_KEY;
+    }
+
+    /**
+     * Gets closure that returns value for an entry. The closure internally
+     * delegates to {@link javax.cache.Cache.Entry#get(Object)} method.
+     *
+     * @param <K> Key type.
+     * @param <V> Value type.
+     * @return Closure that returns value for an entry.
+     */
+    @SuppressWarnings({"unchecked"})
+    public static <K, V> IgniteClosure<Cache.Entry<K, V>, V> cacheEntry2Get() {
+        return (IgniteClosure<Cache.Entry<K, V>, V>)CACHE_ENTRY_VAL_GET;
+    }
+
+    /**
+     * Gets predicate which returns {@code true} if entry has peek value.
+     *
+     * @param <K> Cache key type.
+     * @param <V> Cache value type.
+     * @return Predicate which returns {@code true} if entry has peek value.
+     */
+    @SuppressWarnings({"unchecked"})
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasPeekValue() {
+        return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_HAS_PEEK_VAL;
     }
 }
