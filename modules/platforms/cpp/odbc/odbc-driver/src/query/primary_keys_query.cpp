@@ -96,6 +96,8 @@ namespace ignite
 
                 executed = true;
 
+                cursor = meta.begin();
+
                 return SQL_RESULT_SUCCESS;
             }
 
@@ -113,8 +115,12 @@ namespace ignite
                     return SQL_RESULT_ERROR;
                 }
 
+                LOG_MSG("1\n");
+
                 if (cursor == meta.end())
                     return SQL_RESULT_NO_DATA;
+
+                LOG_MSG("2\n");
 
                 app::ColumnBindingMap::iterator it;
 
