@@ -28,7 +28,7 @@ header#header.header
         .row.greedy.home
             .col-xs-12.col-md-6
                 form(name='loginForm')
-                    .modal-body.row(style='padding: 0; margin: 0')
+                    .modal-body.row(style='padding-bottom: 10px; margin: 0')
                         .settings-row(ng-if='action == "register"')
                             h3.login-header Sign Up
                         .settings-row(ng-if='action == "login"')
@@ -57,8 +57,7 @@ header#header.header
                         .settings-row(ignite-terms)
                             .col-md-offset-3(ng-if='action == "register" && terms.termsState')
                                 input(type='checkbox' ng-model='user_info.agree', ng-required='true')
-                                | I agree to the&nbsp;
-                                a(ui-sref='{{::terms.termsState}}') terms and conditions
+                                | I agree to the #[a(ui-sref='{{::terms.termsState}}' target='_blank') terms and conditions]
                     .col-xs-12.col-md-11
                         .login-footer(ng-show='action == "register"')
                             a.labelField(ng-click='action = "password/forgot"' on-click-focus='user_email') Forgot password?

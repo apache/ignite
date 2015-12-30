@@ -40,6 +40,7 @@ header#header.header
                         label.col-sm-1.required Confirm:
                         .col-sm-3
                             input#user_confirm.form-control(type='password' ng-model='reset_info.confirm' match='reset_info.password' placeholder='Confirm new password' required on-enter='resetForm.$valid && resetPassword(user_info)')
-                button.btn.btn-primary(ng-disabled='resetForm.$invalid' ng-click='resetPassword(reset_info)') Reset Password
+                    .settings-row
+                        button.btn.btn-primary(ng-disabled='resetForm.$invalid' ng-click='resetPassword(reset_info)') Reset Password
 
 include includes/footer
