@@ -144,13 +144,6 @@ public class GridFunc {
     };
 
     /** */
-    public static final IgnitePredicate<Object> IS_NULL = new P1<Object>() {
-        @Override public boolean apply(Object o) {
-            return o == null;
-        }
-    };
-
-    /** */
     public static final IgnitePredicate<Object> IS_NOT_NULL = new P1<Object>() {
         @Override public boolean apply(Object o) {
             return o != null;
@@ -2140,17 +2133,6 @@ public class GridFunc {
      */
     public static boolean isAlwaysFalse(@Nullable IgnitePredicate[] p) {
         return p != null && p.length == 1 && isAlwaysFalse(p[0]);
-    }
-
-    /**
-     * Gets predicate that evaluates to {@code true} if its free variable is {@code null}.
-     *
-     * @param <T> Type of the free variable, i.e. the element the predicate is called on.
-     * @return Predicate that evaluates to {@code true} if its free variable is {@code null}.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> IgnitePredicate<T> isNull() {
-        return (IgnitePredicate<T>)IS_NULL;
     }
 
     /**
