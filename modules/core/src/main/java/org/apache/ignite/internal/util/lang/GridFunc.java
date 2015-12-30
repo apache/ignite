@@ -2904,14 +2904,12 @@ public class GridFunc {
      * @return {@code true} if input collection contains element for which all the provided
      *      predicates evaluates to {@code true} - otherwise returns {@code false}.
      */
-    public static <V> boolean exist(Iterable<? extends V> c, @Nullable IgnitePredicate<? super V>... p) {
+    public static <V> boolean exist(Iterable<? extends V> c, @Nullable IgnitePredicate<? super V> p) {
         A.notNull(c, "c");
 
         if (isAlwaysFalse(p))
             return false;
         else if (isAlwaysTrue(p))
-            return true;
-        else if (isEmpty(p))
             return true;
         else
             for (V v : c)
