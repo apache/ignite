@@ -62,7 +62,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.NotNull;
@@ -2714,6 +2713,7 @@ public class GridFunc {
      * @param p Predicate.
      * @return {@code True} if test is passed.
      */
+    // TODO: To be removed!
     public static <T> boolean isAll(@Nullable T t, @Nullable IgnitePredicate<? super T> p) {
         return p == null || p.apply(t);
     }
@@ -2932,14 +2932,14 @@ public class GridFunc {
      * @return Returns {@code true} if all given predicates evaluate to {@code true} for
      *      all elements. Returns {@code false} otherwise.
      */
-    public static <V> boolean forAll(Iterable<? extends V> c, @Nullable IgnitePredicate<? super V>... p) {
+    public static <V> boolean forAll(Iterable<? extends V> c, IgnitePredicate<? super V> p) {
         A.notNull(c, "c");
 
         if (isAlwaysFalse(p))
             return false;
         else if (isAlwaysTrue(p))
             return true;
-        else if (!isEmpty(p)) {
+        else {
             for (V v : c) {
                 if (!isAll(v, p))
                     return false;
@@ -2961,17 +2961,18 @@ public class GridFunc {
      *      entries. Returns {@code false} otherwise.
      */
     public static <K1, K extends K1, V1, V extends V1> boolean forAll(Map<K, V> m,
-        @Nullable IgnitePredicate<? super Map.Entry<K, V>>... p) {
+        IgnitePredicate<? super Map.Entry<K, V>> p) {
         A.notNull(m, "m");
 
         if (isAlwaysFalse(p))
             return false;
         else if (isAlwaysTrue(p))
             return true;
-        else if (!isEmpty(p))
+        else {
             for (Map.Entry<K, V> e : m.entrySet())
                 if (!isAll(e, p))
                     return false;
+        }
 
         return true;
     }
@@ -2988,14 +2989,10 @@ public class GridFunc {
      * @return Returns {@code true} if all given predicates evaluate to {@code true} for
      *      at least one element. Returns {@code false} otherwise.
      */
-    public static <V> boolean forAny(Iterable<? extends V> c, @Nullable IgnitePredicate<? super V>... p) {
+    public static <V> boolean forAny(Iterable<? extends V> c, IgnitePredicate<? super V> p) {
         A.notNull(c, "c");
 
-        if (!c.iterator().hasNext())
-            return false;
-        else if (isEmpty(p))
-            return true;
-        else if (isAlwaysFalse(p))
+        if (isAlwaysFalse(p))
             return false;
         else if (isAlwaysTrue(p))
             return true;
