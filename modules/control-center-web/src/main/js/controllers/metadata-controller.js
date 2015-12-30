@@ -28,8 +28,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             $scope.ui.packageName = $commonUtils.toJavaPackageName($scope.$root.user.email.replace('@', '.').split('.')
                 .reverse().join('.') + '.model');
 
-            $scope.agentGoal = 'load metadata from database schema';
-
             $scope.joinTip = $common.joinTip;
             $scope.getModel = $common.getModel;
             $scope.javaBuildInClasses = $common.javaBuildInClasses;

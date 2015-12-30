@@ -19,8 +19,6 @@
 consoleModule.controller('sqlController', function ($http, $timeout, $interval, $scope, $animate,  $location, $anchorScroll, $state,
     $modal, $popover, $loading, $common, $confirm, $agentDownload, uiGridExporterConstants) {
 
-    $scope.agentGoal = 'execute sql statements';
-
     $scope.joinTip = $common.joinTip;
 
     $scope.caches = [];
