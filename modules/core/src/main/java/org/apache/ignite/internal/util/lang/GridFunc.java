@@ -2624,16 +2624,30 @@ public class GridFunc {
      *
      * @param c Collection to call closure over.
      * @param f Side-effect only closure to call over the collection.
-     * @param p Optional set of predicates. Only if collection element evaluates
-     *      to {@code true} for given predicates the closure will be applied to it.
-     *      If no predicates provided - closure will be applied to all collection
-     *      elements.
+     * @param <X> Type of the free variable for the closure and type of the
+     *      collection elements.
+     */
+    public static <X> void forEach(Iterable<? extends X> c, IgniteInClosure<? super X> f) {
+        A.notNull(c, "c", f, "f");
+
+        for (X x : c)
+            f.apply(x);
+    }
+
+    /**
+     * Calls given {@code side-effect only} closure over the each element of the provided
+     * collection.
+     *
+     * @param c Collection to call closure over.
+     * @param f Side-effect only closure to call over the collection.
+     * @param p Optional predicate. Only if collection element evaluates
+     *      to {@code true} for given predicate the closure will be applied to it.
      * @param <X> Type of the free variable for the closure and type of the
      *      collection elements.
      */
     public static <X> void forEach(Iterable<? extends X> c, IgniteInClosure<? super X> f,
         IgnitePredicate<? super X> p) {
-        A.notNull(c, "c", f, "f");
+        A.notNull(c, "c", f, "f", p, "f");
 
         for (X x : c)
             if (p.apply(x))

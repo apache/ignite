@@ -1310,7 +1310,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                 try {
                     GridCacheVersion ver = e.version();
 
-                    return info.version().equals(ver) && F.isAll(info.filter());
+                    return info.version().equals(ver) && F.isAll(e, info.filter());
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     return false;
