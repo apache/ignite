@@ -24,7 +24,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
-import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
+import org.apache.ignite.internal.processors.platform.utils.*;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
@@ -184,12 +184,23 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public void listenFuture(final long futId, int typ) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, null, this);
+        listenFutureAndGet(futId, typ);
     }
 
     /** {@inheritDoc} */
     @Override public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, futureWriter(opId), this);
+        listenFutureForOperationAndGet(futId, typ, opId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformListenable listenFutureAndGet(final long futId, int typ) throws Exception {
+        return PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, null, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformListenable listenFutureForOperationAndGet(final long futId, int typ, int opId)
+            throws Exception {
+        return PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, futureWriter(opId), this);
     }
 
     /**

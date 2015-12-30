@@ -95,6 +95,10 @@ namespace Apache.Ignite.Core.Impl
             // Security exceptions.
             EXS["org.apache.ignite.IgniteAuthenticationException"] = m => new SecurityException(m);
             EXS["org.apache.ignite.plugin.security.GridSecurityException"] = m => new SecurityException(m);
+
+            // Future exceptions
+            EXS["org.apache.ignite.lang.IgniteFutureCancelledException"] = m => new IgniteFutureCancelledException(m);
+            EXS["org.apache.ignite.internal.IgniteFutureCancelledCheckedException"] = m => new IgniteFutureCancelledException(m);
         }
 
         /// <summary>
