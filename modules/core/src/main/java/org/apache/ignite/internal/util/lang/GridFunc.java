@@ -2665,11 +2665,11 @@ public class GridFunc {
      *      collection elements.
      */
     public static <X> void forEach(Iterable<? extends X> c, IgniteInClosure<? super X> f,
-        @Nullable IgnitePredicate<? super X>... p) {
+        IgnitePredicate<? super X> p) {
         A.notNull(c, "c", f, "f");
 
         for (X x : c)
-            if (isAll(x, p))
+            if (p.apply(x))
                 f.apply(x);
     }
 
