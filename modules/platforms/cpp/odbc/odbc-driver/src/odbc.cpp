@@ -20,10 +20,10 @@
 #include <cstring>
 #include <algorithm>
 
+#include "ignite/odbc/utility.h"
 #include "ignite/odbc/system/odbc_constants.h"
 
 #include "ignite/odbc/config/configuration.h"
-#include "ignite/odbc/utility.h"
 #include "ignite/odbc/type_traits.h"
 #include "ignite/odbc/environment.h"
 #include "ignite/odbc/connection.h"
@@ -55,7 +55,7 @@ BOOL INSTAPI ConfigDSN(HWND     hwndParent,
     config.FillFromConfigAttributes(attributes);
 
     if (!SQLValidDSN(config.GetDsn().c_str()))
-        return FALSE;
+        return SQL_FALSE;
 
     LOG_MSG("Driver: %s\n", driver);
     LOG_MSG("Attributes: %s\n", attributes);
@@ -86,11 +86,11 @@ BOOL INSTAPI ConfigDSN(HWND     hwndParent,
 
         default:
         {
-            return FALSE;
+            return SQL_FALSE;
         }
     }
 
-    return TRUE;
+    return SQL_TRUE;
 }
 
 SQLRETURN SQL_API SQLGetInfo(SQLHDBC        conn,
