@@ -1349,7 +1349,7 @@ public class GridFunc {
         return isAlwaysTrue(p) ? c : new GridSerializableCollection<T>() {
             // Pass through (will fail for readonly).
             @Override public boolean add(T e) {
-                return isAll(e, p) && c.add(e);
+                return p.apply(e) && c.add(e);
             }
 
             @NotNull
@@ -1462,7 +1462,7 @@ public class GridFunc {
             /** Entry predicate. */
             private IgnitePredicate<Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
                 @Override public boolean apply(Entry<K, V> e) {
-                    return isAll(e.getKey(), p);
+                    return p.apply(e.getKey());
                 }
             };
 
@@ -1480,12 +1480,12 @@ public class GridFunc {
 
                     @SuppressWarnings({"unchecked"})
                     @Override public boolean remove(Object o) {
-                        return F.isAll((Map.Entry<K, V>)o, ep) && m.entrySet().remove(o);
+                        return ep.apply((Map.Entry<K, V>)o) && m.entrySet().remove(o);
                     }
 
                     @SuppressWarnings({"unchecked"})
                     @Override public boolean contains(Object o) {
-                        return F.isAll((Map.Entry<K, V>)o, ep) && m.entrySet().contains(o);
+                        return ep.apply((Map.Entry<K, V>)o) && m.entrySet().contains(o);
                     }
 
                     @Override public boolean isEmpty() {
@@ -1500,13 +1500,13 @@ public class GridFunc {
 
             @SuppressWarnings({"unchecked"})
             @Nullable @Override public V get(Object key) {
-                return isAll((K)key, p) ? m.get(key) : null;
+                return p.apply((K)key) ? m.get(key) : null;
             }
 
             @Nullable @Override public V put(K key, V val) {
                 V oldVal = get(key);
 
-                if (isAll(key, p))
+                if (p.apply(key))
                     m.put(key, val);
 
                 return oldVal;
@@ -1514,7 +1514,7 @@ public class GridFunc {
 
             @SuppressWarnings({"unchecked"})
             @Override public boolean containsKey(Object key) {
-                return isAll((K)key, p) && m.containsKey(key);
+                return p.apply((K)key) && m.containsKey(key);
             }
         };
     }
@@ -2615,18 +2615,6 @@ public class GridFunc {
         A.notNull(c, "c");
 
         return (Collection<R>)c;
-    }
-
-    /**
-     * Shortcut for {@link #isAll(Object, org.apache.ignite.lang.IgnitePredicate[])} method with only single predicate.
-     *
-     * @param t Value to test.
-     * @param p Predicate.
-     * @return {@code True} if test is passed.
-     */
-    // TODO: To be removed!
-    public static <T> boolean isAll(@Nullable T t, @Nullable IgnitePredicate<? super T> p) {
-        return p == null || p.apply(t);
     }
 
     /**
