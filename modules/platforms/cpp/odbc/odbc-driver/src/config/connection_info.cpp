@@ -247,11 +247,11 @@ namespace ignite
                 intParams[SQL_TIMEDATE_FUNCTIONS] = 0;
 #endif // SQL_TIMEDATE_FUNCTIONS
 
-#ifdef SQL_TIMEDATE_ADD_FUNCTIONS
+#ifdef SQL_TIMEDATE_ADD_INTERVALS
                 // Bitmask enumerating timestamp intervals supported by the driver 
                 // and associated data source for the TIMESTAMPADD scalar function.
                 intParams[SQL_TIMEDATE_ADD_INTERVALS] = 0;
-#endif // SQL_TIMEDATE_ADD_FUNCTIONS
+#endif // SQL_TIMEDATE_ADD_INTERVALS
 
 #ifdef SQL_TIMEDATE_DIFF_INTERVALS
                 // Bitmask enumerating timestamp intervals supported by the driver
