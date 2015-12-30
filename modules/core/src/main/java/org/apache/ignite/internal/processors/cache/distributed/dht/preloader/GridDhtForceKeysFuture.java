@@ -521,8 +521,11 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             if (!cctx.rebalanceEnabled()) {
                 Collection<KeyCacheObject> retryKeys = F.view(
                     keys,
-                    F0.notIn(missedKeys),
-                    F0.notIn(F.viewReadOnly(res.forcedInfos(), CU.<KeyCacheObject, V>info2Key())));
+                    F.and(
+                        F0.notIn(missedKeys),
+                        F0.notIn(F.viewReadOnly(res.forcedInfos(), CU.<KeyCacheObject, V>info2Key()))
+                    )
+                );
 
                 if (!retryKeys.isEmpty())
                     map(retryKeys, F.concat(false, node, exc));

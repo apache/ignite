@@ -1317,13 +1317,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Gets collection of node for given node IDs.
+     *
+     * @param ids Ids to include.
+     * @return Collection with all alive nodes for given IDs.
+     */
+    public Collection<ClusterNode> nodes(@Nullable Collection<UUID> ids) {
+        return F.isEmpty(ids) ? Collections.<ClusterNode>emptyList() :
+            F.view(
+                F.viewReadOnly(ids, U.id2Node(ctx)),
+                F.notNull());
+    }
+
+    /**
      * Gets collection of node for given node IDs and predicates.
      *
      * @param ids Ids to include.
      * @param p Filter for IDs.
      * @return Collection with all alive nodes for given IDs.
      */
-    public Collection<ClusterNode> nodes(@Nullable Collection<UUID> ids, IgnitePredicate<UUID>... p) {
+    public Collection<ClusterNode> nodes(@Nullable Collection<UUID> ids, IgnitePredicate<UUID> p) {
         return F.isEmpty(ids) ? Collections.<ClusterNode>emptyList() :
             F.view(
                 F.viewReadOnly(ids, U.id2Node(ctx), p),

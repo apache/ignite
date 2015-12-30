@@ -1285,6 +1285,19 @@ public class GridFunc {
      * @return Number of elements in the collection for which all given predicates
      *      evaluates to {@code true}. If no predicates is provided - all elements are counted.
      */
+    public static <T> int size(@Nullable Collection<? extends T> c, IgnitePredicate<? super T> p) {
+        return c == null || c.isEmpty() ? 0 : isAlwaysTrue(p) ? c.size() : size(c.iterator(), p);
+    }
+
+    /**
+     * Gets size of the given collection with provided optional predicates.
+     *
+     * @param c Collection to size.
+     * @param p Optional predicates that filters out elements from count.
+     * @param <T> Type of the iterator.
+     * @return Number of elements in the collection for which all given predicates
+     *      evaluates to {@code true}. If no predicates is provided - all elements are counted.
+     */
     public static <T> int size(@Nullable Collection<? extends T> c, @Nullable IgnitePredicate<? super T>[] p) {
         return c == null || c.isEmpty() ? 0 : isEmpty(p) || isAlwaysTrue(p) ? c.size() : size(c.iterator(), p);
     }
@@ -1306,6 +1319,32 @@ public class GridFunc {
             n++;
 
             it.next();
+        }
+
+        return n;
+    }
+
+    /**
+     * Gets size of the given iterator with provided optional predicate. Iterator
+     * will be traversed to get the count.
+     *
+     * @param it Iterator to size.
+     * @param p Optional predicates that filters out elements from count.
+     * @param <T> Type of the iterator.
+     * @return Number of elements in the iterator for which all given predicates
+     *      evaluates to {@code true}. If no predicates is provided - all elements are counted.
+     */
+    public static <T> int size(@Nullable Iterator<? extends T> it, IgnitePredicate<? super T> p) {
+        if (it == null)
+            return 0;
+
+        int n = 0;
+
+        if (!isAlwaysFalse(p)) {
+            while (it.hasNext()) {
+                if (p.apply(it.next()))
+                    n++;
+            }
         }
 
         return n;
@@ -1338,24 +1377,18 @@ public class GridFunc {
     }
 
     /**
-     * Creates write-through light-weight view on given collection with provided predicates. Resulting
-     * collection will only "have" elements for which all provided predicates, if any, evaluate
-     * to {@code true}. Note that only wrapping collection will be created and no duplication of
-     * data will occur. Also note that if array of given predicates is not empty then method
-     * {@code size()} uses full iteration through the collection.
+     * Creates write-through light-weight view on given collection.
      *
      * @param c Input collection that serves as a base for the view.
      * @param p Optional predicates. If predicates are not provided - all elements will be in the view.
      * @param <T> Type of the collection.
      * @return Light-weight view on given collection with provided predicate.
      */
-    @SafeVarargs
-    public static <T> Collection<T> view(@Nullable final Collection<T> c,
-        @Nullable final IgnitePredicate<? super T>... p) {
+    public static <T> Collection<T> view(@Nullable final Collection<T> c, final IgnitePredicate<? super T> p) {
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyList();
 
-        return isEmpty(p) || isAlwaysTrue(p) ? c : new GridSerializableCollection<T>() {
+        return isAlwaysTrue(p) ? c : new GridSerializableCollection<T>() {
             // Pass through (will fail for readonly).
             @Override public boolean add(T e) {
                 return isAll(e, p) && c.add(e);
@@ -1371,7 +1404,39 @@ public class GridFunc {
             }
 
             @Override public boolean isEmpty() {
-                return F.isEmpty(p) ? c.isEmpty() : !iterator().hasNext();
+                return !iterator().hasNext();
+            }
+        };
+    }
+
+    /**
+     * Creates read-only light-weight view on given collection with transformation.
+     *
+     * @param c Input collection that serves as a base for the view.
+     * @param trans Transformation closure.
+     * @param <T1> Type of the collection.
+     * @return Light-weight view on given collection with provided predicate.
+     */
+    @SuppressWarnings("RedundantTypeArguments")
+    public static <T1, T2> Collection<T2> viewReadOnly(@Nullable final Collection<? extends T1> c,
+        final IgniteClosure<? super T1, T2> trans) {
+        A.notNull(trans, "trans");
+
+        if (isEmpty(c))
+            return Collections.emptyList();
+
+        return new GridSerializableCollection<T2>() {
+            @NotNull
+            @Override public Iterator<T2> iterator() {
+                return F.<T1, T2>iterator(c, trans, true);
+            }
+
+            @Override public int size() {
+                return c.size();
+            }
+
+            @Override public boolean isEmpty() {
+                return c.isEmpty();
             }
         };
     }
@@ -1391,9 +1456,8 @@ public class GridFunc {
      * @return Light-weight view on given collection with provided predicate.
      */
     @SuppressWarnings("RedundantTypeArguments")
-    @SafeVarargs
     public static <T1, T2> Collection<T2> viewReadOnly(@Nullable final Collection<? extends T1> c,
-        final IgniteClosure<? super T1, T2> trans, @Nullable final IgnitePredicate<? super T1>... p) {
+        final IgniteClosure<? super T1, T2> trans, @Nullable final IgnitePredicate<? super T1> p) {
         A.notNull(trans, "trans");
 
         if (isEmpty(c) || isAlwaysFalse(p))
@@ -1406,11 +1470,11 @@ public class GridFunc {
             }
 
             @Override public int size() {
-                return F.isEmpty(p) ? c.size() : F.size(iterator());
+                return F.size(iterator());
             }
 
             @Override public boolean isEmpty() {
-                return F.isEmpty(p) ? c.isEmpty() : !iterator().hasNext();
+                return !iterator().hasNext();
             }
         };
     }
@@ -1423,17 +1487,17 @@ public class GridFunc {
      * uses full iteration through the entry set.
      *
      * @param m Input map that serves as a base for the view.
-     * @param p Optional predicates. If predicates are not provided - all will be in the view.
+     * @param p Predicate.
      * @param <K> Type of the key.
      * @param <V> Type of the value.
      * @return Light-weight view on given map with provided predicate.
      */
     public static <K0, K extends K0, V0, V extends V0> Map<K, V> view(@Nullable final Map<K, V> m,
-        @Nullable final IgnitePredicate<? super K>... p) {
+        final IgnitePredicate<? super K> p) {
         if (isEmpty(m) || isAlwaysFalse(p))
             return Collections.emptyMap();
 
-        return isEmpty(p) || isAlwaysTrue(p) ? m : new GridSerializableMap<K, V>() {
+        return isAlwaysTrue(p) ? m : new GridSerializableMap<K, V>() {
             /** */
             private static final long serialVersionUID = 5531745605372387948L;
 
@@ -1506,36 +1570,26 @@ public class GridFunc {
      *
      * @param m Input map that serves as a base for the view.
      * @param trans Transformer for map value transformation.
-     * @param p Optional predicates. If predicates are not provided - all will be in the view.
      * @param <K> Type of the key.
      * @param <V> Type of the input map value.
      * @param <V1> Type of the output map value.
      * @return Light-weight view on given map with provided predicate and transformer.
      */
     public static <K0, K extends K0, V0, V extends V0, V1> Map<K, V1> viewReadOnly(@Nullable final Map<K, V> m,
-        final IgniteClosure<V, V1> trans, @Nullable final IgnitePredicate<? super K>... p) {
+        final IgniteClosure<V, V1> trans) {
         A.notNull(trans, "trans");
 
-        if (isEmpty(m) || isAlwaysFalse(p))
+        if (isEmpty(m))
             return Collections.emptyMap();
 
-        final boolean hasPred = p != null && p.length > 0;
-
         return new GridSerializableMap<K, V1>() {
-            /** Entry predicate. */
-            private IgnitePredicate<Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
-                    return isAll(e.getKey(), p);
-                }
-            };
-
             @NotNull
             @Override public Set<Entry<K, V1>> entrySet() {
                 return new GridSerializableSet<Map.Entry<K, V1>>() {
                     @NotNull
                     @Override public Iterator<Entry<K, V1>> iterator() {
                         return new Iterator<Entry<K, V1>>() {
-                            private Iterator<Entry<K, V>> it = identityIterator(m.entrySet(), true, ep);
+                            private Iterator<Entry<K, V>> it = identityIterator(m.entrySet(), true);
 
                             @Override public boolean hasNext() {
                                 return it.hasNext();
@@ -1566,7 +1620,7 @@ public class GridFunc {
                     }
 
                     @Override public int size() {
-                        return hasPred ? F.size(m.keySet(), p) : m.size();
+                        return m.size();
                     }
 
                     @SuppressWarnings({"unchecked"})
@@ -1576,27 +1630,25 @@ public class GridFunc {
 
                     @SuppressWarnings({"unchecked"})
                     @Override public boolean contains(Object o) {
-                        return F.isAll((Map.Entry<K, V>)o, ep) && m.entrySet().contains(o);
+                        return m.entrySet().contains(o);
                     }
 
                     @Override public boolean isEmpty() {
-                        return hasPred ? !iterator().hasNext() : m.isEmpty();
+                        return m.isEmpty();
                     }
                 };
             }
 
             @Override public boolean isEmpty() {
-                return hasPred ? entrySet().isEmpty() : m.isEmpty();
+                return m.isEmpty();
             }
 
             @SuppressWarnings({"unchecked"})
             @Nullable @Override public V1 get(Object key) {
-                if (isAll((K) key, p)) {
-                    V v = m.get(key);
+                V v = m.get(key);
 
-                    if (v != null)
-                        return trans.apply(v);
-                }
+                if (v != null)
+                    return trans.apply(v);
 
                 return null;
             }
@@ -1611,48 +1663,34 @@ public class GridFunc {
 
             @SuppressWarnings({"unchecked"})
             @Override public boolean containsKey(Object key) {
-                return isAll((K)key, p) && m.containsKey(key);
+                return m.containsKey(key);
             }
         };
     }
 
     /**
-     * Read-only map view of a collection. Resulting map is a lightweight view of an input collection,
-     * with filtered elements of an input collection as keys, and closure execution results
-     * as values. The map will only contain keys for which all provided predicates, if any, evaluate
-     * to {@code true}. Note that only wrapping map will be created and no duplication of data will occur.
-     * Also note that if array of given predicates is not empty then method {@code size()}
-     * uses full iteration through the entry set.
+     * Read-only map view of a collection.
      *
      * @param c Input collection.
      * @param mapClo Mapping closure, that maps key to value.
-     * @param p Optional predicates to filter input collection. If predicates are not provided - all
-     *          elements will be in the view.
      * @param <K> Key type.
      * @param <V> Value type.
      * @return Light-weight view on given map with provided predicates and mapping.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     public static <K0, K extends K0, V0, V extends V0> Map<K, V> viewAsMap(@Nullable final Set<K> c,
-        final IgniteClosure<? super K, V> mapClo, @Nullable final IgnitePredicate<? super K>... p) {
+        final IgniteClosure<? super K, V> mapClo) {
         A.notNull(mapClo, "trans");
 
-        if (isEmpty(c) || isAlwaysFalse(p))
+        if (isEmpty(c))
             return Collections.emptyMap();
 
         return new GridSerializableMap<K, V>() {
-            /** Entry predicate. */
-            private IgnitePredicate<K> ep = new P1<K>() {
-                @Override public boolean apply(K e) {
-                    return isAll(e, p);
-                }
-            };
-
             @NotNull @Override public Set<Entry<K, V>> entrySet() {
                 return new GridSerializableSet<Entry<K, V>>() {
                     @NotNull @Override public Iterator<Entry<K, V>> iterator() {
                         return new Iterator<Entry<K, V>>() {
-                            private Iterator<K> it = identityIterator(c, true, ep);
+                            private Iterator<K> it = identityIterator(c, true);
 
                             @Override public boolean hasNext() {
                                 return it.hasNext();
@@ -1685,7 +1723,7 @@ public class GridFunc {
                     }
 
                     @Override public int size() {
-                        return F.size(c, p);
+                        return F.size(c);
                     }
 
                     @Override public boolean remove(Object o) {
@@ -1702,6 +1740,7 @@ public class GridFunc {
                 return entrySet().isEmpty();
             }
 
+            @SuppressWarnings("unchecked")
             @Nullable @Override public V get(Object key) {
                 if (containsKey(key))
                     return mapClo.apply((K)key);
@@ -1717,8 +1756,9 @@ public class GridFunc {
                 throw new UnsupportedOperationException("Remove is not supported for readonly collection view.");
             }
 
+            @SuppressWarnings("SuspiciousMethodCalls")
             @Override public boolean containsKey(Object key) {
-                return isAll((K)key, p) && c.contains(key);
+                return c.contains(key);
             }
         };
     }
@@ -1873,6 +1913,20 @@ public class GridFunc {
     }
 
     /**
+     * Creates and returns iterator from given collection.
+     *
+     * @param c Input collection.
+     * @param readOnly If {@code true}, then resulting iterator will not allow modifications
+     *      to the underlying collection.
+     * @param <T> Type of the collection elements.
+     * @return Iterator from given collection and optional filtering predicate.
+     */
+    @SuppressWarnings({"unchecked"})
+    public static <T> GridIterator<T> identityIterator(Iterable<? extends T> c, boolean readOnly) {
+        return F.iterator(c, IDENTITY, readOnly);
+    }
+
+    /**
      * Creates and returns iterator from given collection and optional filtering predicates.
      * Returned iterator will only have elements for which all given predicates evaluates to
      * {@code true} (if provided). Note that this method will not create new collection but
@@ -1882,14 +1936,32 @@ public class GridFunc {
      * @param c Input collection.
      * @param readOnly If {@code true}, then resulting iterator will not allow modifications
      *      to the underlying collection.
-     * @param p Optional filtering predicates.
+     * @param p Optional filtering predicate.
      * @param <T> Type of the collection elements.
      * @return Iterator from given collection and optional filtering predicate.
      */
     @SuppressWarnings({"unchecked"})
     public static <T> GridIterator<T> identityIterator(Iterable<? extends T> c, boolean readOnly,
-        IgnitePredicate<? super T>... p) {
+        IgnitePredicate<? super T> p) {
         return F.iterator(c, IDENTITY, readOnly, p);
+    }
+
+    /**
+     * Creates and returns transforming iterator from given collection.
+     *
+     * @param c Input collection.
+     * @param trans Transforming closure to convert from T1 to T2.
+     * @param readOnly If {@code true}, then resulting iterator will not allow modifications
+     *      to the underlying collection.
+     * @param <T1> Type of the collection elements.
+     * @param <T2> Type of returned elements.
+     * @return Iterator from given collection and optional filtering predicate.
+     */
+    public static <T1, T2> GridIterator<T2> iterator(final Iterable<? extends T1> c,
+        final IgniteClosure<? super T1, T2> trans, final boolean readOnly) {
+        A.notNull(c, "c", trans, "trans");
+
+        return  iterator(c.iterator(), trans, readOnly);
     }
 
     /**
@@ -1903,15 +1975,14 @@ public class GridFunc {
      * @param trans Transforming closure to convert from T1 to T2.
      * @param readOnly If {@code true}, then resulting iterator will not allow modifications
      *      to the underlying collection.
-     * @param p Optional filtering predicates.
+     * @param p Filtering predicate.
      * @param <T1> Type of the collection elements.
      * @param <T2> Type of returned elements.
      * @return Iterator from given collection and optional filtering predicate.
      */
     public static <T1, T2> GridIterator<T2> iterator(final Iterable<? extends T1> c,
-        final IgniteClosure<? super T1, T2> trans, final boolean readOnly,
-        @Nullable final IgnitePredicate<? super T1>... p) {
-        A.notNull(c, "c", trans, "trans");
+        final IgniteClosure<? super T1, T2> trans, final boolean readOnly, final IgnitePredicate<? super T1> p) {
+        A.notNull(c, "c", trans, "trans", p, "p");
 
         if (isAlwaysFalse(p))
             return F.emptyIterator();
@@ -1930,53 +2001,36 @@ public class GridFunc {
             private Iterator<? extends T1> iter = c.iterator();
 
             @Override public boolean hasNextX() {
-                if (isEmpty(p))
-                    return iter.hasNext();
+                if (!moved)
+                    return more;
                 else {
-                    if (!moved)
-                        return more;
-                    else {
-                        more = false;
+                    more = false;
 
-                        while (iter.hasNext()) {
-                            elem = iter.next();
+                    while (iter.hasNext()) {
+                        elem = iter.next();
 
-                            boolean isAll = true;
+                        if (p.apply(elem)) {
+                            more = true;
+                            moved = false;
 
-                            for (IgnitePredicate<? super T1> r : p)
-                                if (r != null && !r.apply(elem)) {
-                                    isAll = false;
-
-                                    break;
-                                }
-
-                            if (isAll) {
-                                more = true;
-                                moved = false;
-
-                                return true;
-                            }
+                            return true;
                         }
-
-                        elem = null; // Give to GC.
-
-                        return false;
                     }
+
+                    elem = null; // Give to GC.
+
+                    return false;
                 }
             }
 
             @Nullable @Override public T2 nextX() {
-                if (isEmpty(p))
-                    return trans.apply(iter.next());
-                else {
-                    if (hasNext()) {
-                        moved = true;
+                if (hasNext()) {
+                    moved = true;
 
-                        return trans.apply(elem);
-                    }
-                    else
-                        throw new NoSuchElementException();
+                    return trans.apply(elem);
                 }
+                else
+                    throw new NoSuchElementException();
             }
 
             @Override public void removeX() {
@@ -1995,7 +2049,7 @@ public class GridFunc {
      *      to the underlying collection.
      * @return Iterator from given iterator and optional filtering predicate.
      */
-    public static <T1, T2> Iterator<T2> iterator(final Iterator<? extends T1> c,
+    public static <T1, T2> GridIterator<T2> iterator(final Iterator<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans, final boolean readOnly) {
         A.notNull(c, "c", trans, "trans");
 
