@@ -1315,8 +1315,11 @@ public class GridFunc {
 
         int n = 0;
 
-        while (it.hasNext())
+        while (it.hasNext()) {
             n++;
+
+            it.next();
+        }
 
         return n;
     }
