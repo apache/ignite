@@ -736,17 +736,15 @@ public class GridFunc {
     }
 
     /**
-     * Concatenates multiple iterators as single one.
+     * Concatenate two iterators.
      *
-     * @param iters Iterators.
+     * @param iter1 Iterator 1.
+     * @param iter2 Iterator 2.
      * @return Single iterator.
      */
     @SuppressWarnings("unchecked")
-    public static <T> Iterator<T> concat(Iterator<T> ... iters) {
-        if (iters.length == 1)
-            return iters[0];
-
-        return concat(asList(iters).iterator());
+    public static <T> Iterator<T> concat(Iterator<T> iter1, Iterator<T> iter2) {
+        return concat(asList(iter1, iter2).iterator());
     }
 
     /**
