@@ -1113,6 +1113,7 @@ public class GridFunc {
      * @param <T> Array type.
      * @return {@link List} instance for array.
      */
+    @SuppressWarnings("unchecked")
     public static <T> List<T> asList(@Nullable T... vals) {
         return isEmpty(vals) ? Collections.<T>emptyList() : Arrays.asList(vals);
     }
