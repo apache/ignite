@@ -3058,35 +3058,6 @@ public class GridFunc {
     }
 
     /**
-     * Partitions input collection in two: first containing elements for which given
-     * predicate evaluates to {@code true} - and second containing the elements for which
-     * predicate evaluates to {@code false}.
-     *
-     * @param c Input collection.
-     * @param p Partitioning predicate.
-     * @param <V> Type of the collection elements.
-     * @return Tuple of two collections: first containing elements for which given predicate
-     *      evaluates to {@code true} - and second containing the elements for which predicate
-     *      evaluates to {@code false}.
-     */
-    public static <V> IgniteBiTuple<Collection<V>, Collection<V>> partition(Iterable<? extends V> c,
-        IgnitePredicate<? super V> p) {
-        A.notNull(c, "c", p, "p");
-
-        Collection<V> c1 = new LinkedList<>();
-        Collection<V> c2 = new LinkedList<>();
-
-        for (V v : c) {
-            if (p.apply(v))
-                c1.add(v);
-            else
-                c2.add(v);
-        }
-
-        return t(c1, c2);
-    }
-
-    /**
      * Checks for existence of the element in input collection for which all provided predicates
      * evaluate to {@code true}.
      *
