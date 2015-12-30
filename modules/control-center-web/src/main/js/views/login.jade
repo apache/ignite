@@ -56,8 +56,9 @@ header#header.header
                                 input#user_confirm.form-control(type='password' ng-model='user_info.confirm' match='user_info.password' placeholder='Confirm password' ng-required='action == "register"' on-enter='loginForm.$valid && auth(action, user_info)')
                         .settings-row(ignite-terms)
                             .col-md-offset-3(ng-if='action == "register" && terms.termsState')
-                                input(type='checkbox' ng-model='user_info.agree', ng-required='true')
-                                | I agree to the #[a(ui-sref='{{::terms.termsState}}' target='_blank') terms and conditions]
+                                label
+                                    input(type='checkbox' ng-model='user_info.agree', ng-required='true')
+                                    | I agree to the #[a(ui-sref='{{::terms.termsState}}' target='_blank') terms and conditions]
                     .col-xs-12.col-md-11
                         .login-footer(ng-show='action == "register"')
                             a.labelField(ng-click='action = "password/forgot"' on-click-focus='user_email') Forgot password?
