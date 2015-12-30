@@ -1680,7 +1680,7 @@ public class GridFunc {
                     }
 
                     @Override public int size() {
-                        return F.size(c);
+                        return c.size();
                     }
 
                     @Override public boolean remove(Object o) {
@@ -1688,13 +1688,13 @@ public class GridFunc {
                     }
 
                     @Override public boolean isEmpty() {
-                        return !iterator().hasNext();
+                        return c.isEmpty();
                     }
                 };
             }
 
             @Override public boolean isEmpty() {
-                return entrySet().isEmpty();
+                return c.isEmpty();
             }
 
             @SuppressWarnings("unchecked")
