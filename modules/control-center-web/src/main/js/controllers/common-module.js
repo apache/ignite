@@ -2089,7 +2089,7 @@ consoleModule.service('$agentDownload', [
 
                 _agentDownloadModal.backState = 'base.configuration.clusters';
 
-                scope.agentGoal = 'load metadata from database schema';
+                scope.agentGoal = 'execute sql statements';
 
                 scope.backText = 'Back to Configuration';
 
@@ -2108,7 +2108,7 @@ consoleModule.service('$agentDownload', [
 
                 _agentDownloadModal.backState = 'base.configuration.metadata';
 
-                scope.agentGoal = 'execute sql statements';
+                scope.agentGoal = 'load metadata from database schema';
 
                 scope.backText = 'Back to Metadata';
 
