@@ -3031,22 +3031,17 @@ public class GridFunc {
      *
      * @param c Input collection.
      * @param b Optional first folding pair element.
-     * @param fs Optional set of folding closures.
+     * @param fs Optional folding closure.
      * @param <D> Type of the input collection elements and type of the free variable for the closure.
      * @param <B> Type of the folding value and return type of the closure.
      * @return Value representing folded collection.
      */
     @Nullable public static <D, B> B fold(Iterable<? extends D> c, @Nullable B b,
-        @Nullable IgniteBiClosure<? super D, ? super B, B>... fs) {
+        IgniteBiClosure<? super D, ? super B, B> fs) {
         A.notNull(c, "c");
 
-        if (!isEmpty(fs))
-            for (D e : c) {
-                assert fs != null;
-
-                for (IgniteBiClosure<? super D, ? super B, B> f : fs)
-                    b = f.apply(e, b);
-            }
+        for (D e : c)
+            b = fs.apply(e, b);
 
         return b;
     }
