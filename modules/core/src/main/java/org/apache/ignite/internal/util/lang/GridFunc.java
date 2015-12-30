@@ -1008,6 +1008,25 @@ public class GridFunc {
 
     /**
      * Retains all elements in input collection that are evaluated to {@code true}
+     * by the given predicate.
+     *
+     * @param c Input collection.
+     * @param cp If {@code true} method creates collection not modifying input, otherwise does
+     *      <tt>in-place</tt> modifications.
+     * @param p Predicates to filter by. If no predicates provides - all elements
+     *      will be retained.
+     * @param <T> Type of collections.
+     * @return Collection of retain elements.
+     */
+    public static <T> Collection<T> retain(Collection<T> c, boolean cp, IgnitePredicate<? super T> p) {
+        A.notNull(c, "c");
+        A.notNull(p, "p");
+
+        return lose(c, cp, not(p));
+    }
+
+    /**
+     * Retains all elements in input collection that are evaluated to {@code true}
      * by all given predicates.
      *
      * @param c Input collection.
@@ -1018,7 +1037,7 @@ public class GridFunc {
      * @param <T> Type of collections.
      * @return Collection of retain elements.
      */
-    public static <T> Collection<T> retain(Collection<T> c, boolean cp, @Nullable IgnitePredicate<? super T>... p) {
+    public static <T> Collection<T> retain(Collection<T> c, boolean cp, @Nullable IgnitePredicate<? super T>[] p) {
         A.notNull(c, "c");
 
         return lose(c, cp, not(p));
@@ -2143,6 +2162,27 @@ public class GridFunc {
     }
 
     /**
+     * Negates given predicate.
+     * <p>
+     * Gets predicate that evaluates to {@code true} if any of given predicates
+     * evaluates to {@code false}. If all predicates evaluate to {@code true} the
+     * result predicate will evaluate to {@code false}.
+     *
+     * @param p Predicate to negate.
+     * @param <T> Type of the free variable, i.e. the element the predicate is called on.
+     * @return Negated predicate.
+     */
+    public static <T> IgnitePredicate<T> not(final IgnitePredicate<? super T> p) {
+        A.notNull(p, "p");
+
+        return isAlwaysFalse(p) ? F.<T>alwaysTrue() : isAlwaysTrue(p) ? F.<T>alwaysFalse() : new P1<T>() {
+            @Override public boolean apply(T t) {
+                return !p.apply(t);
+            }
+        };
+    }
+
+    /**
      * Negates given predicates.
      * <p>
      * Gets predicate that evaluates to {@code true} if any of given predicates
@@ -2153,8 +2193,7 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Negated predicate.
      */
-    @SafeVarargs
-    public static <T> IgnitePredicate<T> not(@Nullable final IgnitePredicate<? super T>... p) {
+    public static <T> IgnitePredicate<T> not(@Nullable final IgnitePredicate<? super T>[] p) {
         return isAlwaysFalse(p) ? F.<T>alwaysTrue() : isAlwaysTrue(p) ? F.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {
                 return !isAll(t, p);
