@@ -42,8 +42,8 @@ public class CacheOperationContext implements Serializable {
     /** Client ID which operates over this projection. */
     private final UUID subjId;
 
-    /** Keep portable flag. */
-    private final boolean keepPortable;
+    /** Keep binary flag. */
+    private final boolean keepBinary;
 
     /** Expiry policy. */
     private final ExpiryPolicy expiryPlc;
@@ -56,7 +56,7 @@ public class CacheOperationContext implements Serializable {
 
         subjId = null;
 
-        keepPortable = false;
+        keepBinary = false;
 
         expiryPlc = null;
 
@@ -66,20 +66,20 @@ public class CacheOperationContext implements Serializable {
     /**
      * @param skipStore Skip store flag.
      * @param subjId Subject ID.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @param expiryPlc Expiry policy.
      */
     public CacheOperationContext(
         boolean skipStore,
         @Nullable UUID subjId,
-        boolean keepPortable,
+        boolean keepBinary,
         @Nullable ExpiryPolicy expiryPlc,
         boolean noRetries) {
         this.skipStore = skipStore;
 
         this.subjId = subjId;
 
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
 
         this.expiryPlc = expiryPlc;
 
@@ -87,18 +87,18 @@ public class CacheOperationContext implements Serializable {
     }
 
     /**
-     * @return Keep portable flag.
+     * @return Keep binary flag.
      */
-    public boolean isKeepPortable() {
-        return keepPortable;
+    public boolean isKeepBinary() {
+        return keepBinary;
     }
 
     /**
-     * See {@link IgniteInternalCache#keepPortable()}.
+     * See {@link IgniteInternalCache#keepBinary()}.
      *
-     * @return New instance of CacheOperationContext with keep portable flag.
+     * @return New instance of CacheOperationContext with keep binary flag.
      */
-    public CacheOperationContext keepPortable() {
+    public CacheOperationContext keepBinary() {
         return new CacheOperationContext(
             skipStore,
             subjId,
@@ -126,7 +126,7 @@ public class CacheOperationContext implements Serializable {
         return new CacheOperationContext(
             skipStore,
             subjId,
-            keepPortable,
+            keepBinary,
             expiryPlc,
             noRetries);
     }
@@ -148,7 +148,7 @@ public class CacheOperationContext implements Serializable {
         return new CacheOperationContext(
             skipStore,
             subjId,
-            keepPortable,
+            keepBinary,
             expiryPlc,
             noRetries);
     }
@@ -183,7 +183,7 @@ public class CacheOperationContext implements Serializable {
         return new CacheOperationContext(
             skipStore,
             subjId,
-            keepPortable,
+            keepBinary,
             expiryPlc,
             noRetries
         );

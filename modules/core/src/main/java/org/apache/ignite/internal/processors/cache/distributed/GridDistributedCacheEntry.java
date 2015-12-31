@@ -53,17 +53,14 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @param key Cache key.
      * @param hash Key hash value.
      * @param val Entry value.
-     * @param next Next entry in the linked list.
-     * @param hdrId Cache map header ID.
      */
-    public GridDistributedCacheEntry(GridCacheContext ctx,
+    public GridDistributedCacheEntry(
+        GridCacheContext ctx,
         KeyCacheObject key,
         int hash,
-        CacheObject val,
-        GridCacheMapEntry next,
-        int hdrId)
-    {
-        super(ctx, key, hash, val, next, hdrId);
+        CacheObject val
+    ) {
+        super(ctx, key, hash, val);
     }
 
     /**
@@ -402,7 +399,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
             doomed = mvcc == null ? null : mvcc.candidate(ver);
 
-            if (doomed == null || doomed.dhtLocal() || (!doomed.local() && !doomed.nearLocal()))
+            if (doomed == null)
                 addRemoved(ver);
 
             GridCacheVersion obsoleteVer = obsoleteVersionExtras();
@@ -742,8 +739,12 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(IgniteInternalTx tx, long timeout)
-        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
+    @Override public boolean tmLock(IgniteInternalTx tx,
+        long timeout,
+        @Nullable GridCacheVersion serOrder,
+        GridCacheVersion serReadVer,
+        boolean keepBinary
+    ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local())
             // Null is returned if timeout is negative and there is other lock owner.
             return addLocal(
@@ -751,8 +752,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 tx.xidVersion(),
                 tx.topologyVersion(),
                 timeout,
-                false,
-                true,
+                /*reenter*/false,
+                /*tx*/true,
                 tx.implicitSingle()) != null;
 
         try {
@@ -762,7 +763,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 tx.threadId(),
                 tx.xidVersion(),
                 tx.timeout(),
-                true,
+                /*tx*/true,
                 tx.implicitSingle(),
                 tx.ownedVersion(txKey())
             );
@@ -817,7 +818,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                 // Event notification.
                 cctx.events().addEvent(partition(), key, prev.nodeId(), prev, EVT_CACHE_OBJECT_UNLOCKED, val, hasVal,
-                    val, hasVal, null, null, null);
+                    val, hasVal, null, null, null, true);
             }
 
             if (owner != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_LOCKED)) {
@@ -825,7 +826,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                 // Event notification.
                 cctx.events().addEvent(partition(), key, owner.nodeId(), owner, EVT_CACHE_OBJECT_LOCKED, val, hasVal,
-                    val, hasVal, null, null, null);
+                    val, hasVal, null, null, null, true);
             }
         }
     }

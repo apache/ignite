@@ -462,7 +462,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
             if (cfg.getProtocol() == GridClientProtocol.TCP) {
                 conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
                     cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
-                    cfg.isTcpNoDelay(), cfg.getMarshaller(), marshId, top, cred, keepPortablesThreadLocal());
+                    cfg.isTcpNoDelay(), cfg.getMarshaller(), marshId, top, cred, keepBinariesThreadLocal());
             }
             else
                 throw new GridServerUnreachableException("Failed to create client (protocol is not supported): " +
@@ -483,9 +483,9 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
     }
 
     /**
-     * @return Get thread local used to enable keep portables mode.
+     * @return Get thread local used to enable keep binary mode.
      */
-    protected ThreadLocal<Boolean> keepPortablesThreadLocal() {
+    protected ThreadLocal<Boolean> keepBinariesThreadLocal() {
         return null;
     }
 

@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.Cache;
@@ -284,6 +285,8 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
         GridCacheContext cctx = cache0.context();
 
+        boolean binary = cctx.cacheObjects().isBinaryEnabled(null);
+
         for (Map.Entry<TestKey, TestValue> e : map.entrySet()) {
             GridCacheEntryEx entry = cache0.peekEx(e.getKey());
 
@@ -295,7 +298,10 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
             TestKey key1 = entry.key().value(cctx.cacheObjectContext(), true);
 
-            assertSame(key0, key1);
+            if (!binary)
+                assertSame(key0, key1);
+            else
+                assertNotSame(key0, key1);
 
             TestValue val0 = entry.rawGet().value(cctx.cacheObjectContext(), false);
 
@@ -330,6 +336,8 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
         GridCacheContext cctx = cache0.context();
 
+        boolean binary = cctx.cacheObjects().isBinaryEnabled(null);
+
         for (Map.Entry<TestKey, byte[]> e : map.entrySet()) {
             GridCacheEntryEx entry = cache0.peekEx(e.getKey());
 
@@ -341,7 +349,10 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
             TestKey key1 = entry.key().value(cctx.cacheObjectContext(), true);
 
-            assertSame(key0, key1);
+            if (!binary)
+                assertSame(key0, key1);
+            else
+                assertNotSame(key0, key1);
 
             byte[] val0 = entry.rawGet().value(cctx.cacheObjectContext(), false);
 
@@ -404,7 +415,10 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     /**
      *
      */
-    public static class TestKey implements Externalizable {
+    public static class TestKey implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private int key;
 
@@ -461,18 +475,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(key);
-            out.writeInt(field);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            key = in.readInt();
-            field = in.readInt();
-        }
-
-        /** {@inheritDoc} */
         @Override public String toString() {
             return "TestKey [field=" + field + ", key=" + key + ']';
         }
@@ -481,7 +483,10 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     /**
      *
      */
-    public static class TestValue implements Externalizable {
+    public static class TestValue implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private int val;
 
@@ -530,16 +535,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            val = in.readInt();
         }
     }
 

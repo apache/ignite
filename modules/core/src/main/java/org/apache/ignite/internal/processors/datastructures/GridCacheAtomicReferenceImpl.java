@@ -40,6 +40,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
 
 /**
  * Cache atomic reference implementation.
@@ -204,7 +205,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     private IgnitePredicate<T> wrapperPredicate(final T val) {
         return new IgnitePredicate<T>() {
             @Override public boolean apply(T e) {
-                return val != null && val.equals(e);
+                return F.eq(val, e);
             }
         };
     }
@@ -230,7 +231,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @return Callable for execution in async and sync mode.
      */
     private Callable<Boolean> internalSet(final T val) {
-        return new Callable<Boolean>() {
+        return retryTopologySafe(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
@@ -252,7 +253,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                     throw e;
                 }
             }
-        };
+        });
     }
 
     /**
@@ -265,7 +266,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      */
     private Callable<Boolean> internalCompareAndSet(final IgnitePredicate<T> expValPred,
         final IgniteClosure<T, T> newValClos) {
-        return new Callable<Boolean>() {
+
+        return retryTopologySafe(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
@@ -295,7 +297,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                     throw e;
                 }
             }
-        };
+        });
     }
 
     /**

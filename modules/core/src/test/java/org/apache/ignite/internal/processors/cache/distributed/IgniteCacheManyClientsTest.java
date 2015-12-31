@@ -65,6 +65,8 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setFailureDetectionTimeout(20_000);
+
         cfg.setConnectorConfiguration(null);
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setTimeServerPortRange(200);
@@ -113,13 +115,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testManyClients() throws Throwable {
-        manyClientsPutGet();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testManyClientsClientDiscovery() throws Throwable {
         clientDiscovery = true;
 
@@ -133,6 +128,13 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         clientDiscovery = true;
 
         manyClientsSequentially();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testManyClientsForceServerMode() throws Throwable {
+        manyClientsPutGet();
     }
 
     /**

@@ -17,15 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
-public class CacheObjectContext {
+@SuppressWarnings("TypeMayBeWeakened") public class CacheObjectContext {
     /** */
     private GridKernalContext kernalCtx;
 
@@ -44,22 +49,28 @@ public class CacheObjectContext {
     /** */
     private boolean p2pEnabled;
 
+    /** */
+    private boolean addDepInfo;
+
     /**
      * @param kernalCtx Kernal context.
      * @param dfltAffMapper Default affinity mapper.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
+     * @param addDepInfo {@code true} if deployment info should be associated with the objects of this cache.
      */
     public CacheObjectContext(GridKernalContext kernalCtx,
         AffinityKeyMapper dfltAffMapper,
         boolean cpyOnGet,
-        boolean storeVal) {
+        boolean storeVal,
+        boolean addDepInfo) {
         this.kernalCtx = kernalCtx;
-        this.p2pEnabled = kernalCtx.config().isPeerClassLoadingEnabled();
         this.dfltAffMapper = dfltAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
+        this.addDepInfo = addDepInfo;
 
+        p2pEnabled = kernalCtx.config().isPeerClassLoadingEnabled();
         proc = kernalCtx.cacheObjects();
     }
 
@@ -68,6 +79,13 @@ public class CacheObjectContext {
      */
     public boolean p2pEnabled() {
         return p2pEnabled;
+    }
+
+    /**
+     * @return {@code True} if deployment info should be associated with the objects of this cache.
+     */
+    public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /**
@@ -106,24 +124,162 @@ public class CacheObjectContext {
     }
 
     /**
-     * Unwraps object.
-     *
      * @param o Object to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Unwrapped object.
      */
-    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
-        return o;
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary) {
+        return unwrapBinaryIfNeeded(o, keepBinary, true);
     }
 
     /**
-     * Unwraps collection.
-     *
-     * @param col Collection to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param o Object to unwrap.
+     * @param keepBinary Keep binary flag.
+     * @param cpy Copy value flag.
+     * @return Unwrapped object.
+     */
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy) {
+        if (o == null)
+            return null;
+
+        return unwrapBinary(o, keepBinary, cpy);
+    }
+
+    /**
+     * @param col Collection of objects to unwrap.
+     * @param keepBinary Keep binary flag.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
+    public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary) {
+        return unwrapBinariesIfNeeded(col, keepBinary, true);
+    }
+
+    /**
+     * @param col Collection to unwrap.
+     * @param keepBinary Keep binary flag.
+     * @param cpy Copy value flag.
+     * @return Unwrapped collection.
+     */
+    public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary, boolean cpy) {
+        if (col instanceof ArrayList)
+            return unwrapBinaries((ArrayList<Object>)col, keepBinary, cpy);
+
+        if (col instanceof Set)
+            return unwrapBinaries((Set<Object>)col, keepBinary, cpy);
+
+        Collection<Object> col0 = new ArrayList<>(col.size());
+
+        for (Object obj : col)
+            col0.add(unwrapBinary(obj, keepBinary, cpy));
+
+        return col0;
+    }
+
+    /**
+     * Unwrap array of binaries if needed.
+     *
+     * @param arr Array.
+     * @param keepBinary Keep binary flag.
+     * @param cpy Copy.
+     * @return Result.
+     */
+    public Object[] unwrapBinariesInArrayIfNeeded(Object[] arr, boolean keepBinary, boolean cpy) {
+        Object[] res = new Object[arr.length];
+
+        for (int i = 0; i < arr.length; i++)
+            res[i] = unwrapBinary(arr[i], keepBinary, cpy);
+
+        return res;
+    }
+
+    /**
+     * Unwraps map.
+     *
+     * @param map Map to unwrap.
+     * @param keepBinary Keep binary flag.
+     * @return Unwrapped collection.
+     */
+    private Map<Object, Object> unwrapBinariesIfNeeded(Map<Object, Object> map, boolean keepBinary, boolean cpy) {
+        if (keepBinary)
+            return map;
+
+        Map<Object, Object> map0 = BinaryUtils.newMap(map);
+
+        for (Map.Entry<Object, Object> e : map.entrySet())
+            map0.put(unwrapBinary(e.getKey(), keepBinary, cpy), unwrapBinary(e.getValue(), keepBinary, cpy));
+
+        return map0;
+    }
+
+    /**
+     * Unwraps array list.
+     *
+     * @param col List to unwrap.
+     * @return Unwrapped list.
+     */
+    private Collection<Object> unwrapBinaries(ArrayList<Object> col, boolean keepBinary, boolean cpy) {
+        int size = col.size();
+
+        col = new ArrayList<>(col);
+
+        for (int i = 0; i < size; i++) {
+            Object o = col.get(i);
+
+            Object unwrapped = unwrapBinary(o, keepBinary, cpy);
+
+            if (o != unwrapped)
+                col.set(i, unwrapped);
+        }
+
         return col;
+    }
+
+    /**
+     * Unwraps set with binary.
+     *
+     * @param set Set to unwrap.
+     * @return Unwrapped set.
+     */
+    private Set<Object> unwrapBinaries(Set<Object> set, boolean keepBinary, boolean cpy) {
+        Set<Object> set0 = BinaryUtils.newSet(set);
+
+        for (Object obj : set)
+            set0.add(unwrapBinary(obj, keepBinary, cpy));
+
+        return set0;
+    }
+
+    /**
+     * @param o Object to unwrap.
+     * @return Unwrapped object.
+     */
+    private Object unwrapBinary(Object o, boolean keepBinary, boolean cpy) {
+        if (o instanceof Map.Entry) {
+            Map.Entry entry = (Map.Entry)o;
+
+            Object key = entry.getKey();
+
+            Object uKey = unwrapBinary(key, keepBinary, cpy);
+
+            Object val = entry.getValue();
+
+            Object uVal = unwrapBinary(val, keepBinary, cpy);
+
+            return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
+        }
+        else if (o instanceof Collection)
+            return unwrapBinariesIfNeeded((Collection<Object>)o, keepBinary, cpy);
+        else if (o instanceof Map)
+            return unwrapBinariesIfNeeded((Map<Object, Object>)o, keepBinary, cpy);
+        else if (o instanceof Object[])
+            return unwrapBinariesInArrayIfNeeded((Object[])o, keepBinary, cpy);
+        else if (o instanceof CacheObject) {
+            CacheObject co = (CacheObject)o;
+
+            if (!keepBinary || co.isPlatformType())
+                return unwrapBinary(co.value(this, cpy), keepBinary, cpy);
+        }
+
+        return o;
     }
 }

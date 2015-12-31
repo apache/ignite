@@ -88,6 +88,11 @@ public class GridCacheEvictionResponse extends GridCacheMessage {
         finishUnmarshalCacheObjects(rejectedKeys, ctx.cacheContext(cacheId), ldr);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
+    }
+
     /**
      * @return Future ID.
      */

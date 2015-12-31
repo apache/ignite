@@ -242,28 +242,35 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
+        Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+
+        cancelFutures(depFuts, err);
+        cancelFutures(undepFuts, err);
+
         if (log.isDebugEnabled())
             log.debug("Stopped service processor.");
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
-        for (Map.Entry<String, GridServiceDeploymentFuture> e : depFuts.entrySet()) {
-            GridServiceDeploymentFuture fut = e.getValue();
+        cancelFutures(depFuts, new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
+            "Failed to deploy service, client node disconnected."));
 
-            fut.onDone(new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
-                "Failed to deploy service, client node disconnected."));
+        cancelFutures(undepFuts, new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
+            "Failed to undeploy service, client node disconnected."));
+    }
 
-            depFuts.remove(e.getKey(), fut);
-        }
+    /**
+     * @param futs Futs.
+     * @param err Exception.
+     */
+    private void cancelFutures(ConcurrentMap<String, ? extends GridFutureAdapter<?>> futs, Exception err) {
+        for (Map.Entry<String, ? extends GridFutureAdapter<?>> entry : futs.entrySet()) {
+            GridFutureAdapter fut = entry.getValue();
 
-        for (Map.Entry<String, GridFutureAdapter<?>> e : undepFuts.entrySet()) {
-            GridFutureAdapter fut = e.getValue();
+            fut.onDone(err);
 
-            fut.onDone(new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
-                "Failed to undeploy service, client node disconnected."));
-
-            undepFuts.remove(e.getKey(), fut);
+            futs.remove(entry.getKey(), fut);
         }
     }
 
@@ -697,12 +704,32 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Object affKey = cfg.getAffinityKey();
 
         while (true) {
+            GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer);
+
+             Collection<ClusterNode> nodes;
+
+             // Call node filter outside of transaction.
+            if (affKey == null) {
+                nodes = ctx.discovery().nodes(topVer);
+
+                if (assigns.nodeFilter() != null) {
+                    Collection<ClusterNode> nodes0 = new ArrayList<>();
+
+                    for (ClusterNode node : nodes) {
+                        if (assigns.nodeFilter().apply(node))
+                            nodes0.add(node);
+                    }
+
+                    nodes = nodes0;
+                }
+            }
+            else
+                nodes = null;
+
             try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                 GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
 
                 GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);
-
-                GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer);
 
                 Map<UUID, Integer> cnts = new HashMap<>();
 
@@ -716,10 +743,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
                 }
                 else {
-                    Collection<ClusterNode> nodes = assigns.nodeFilter() == null ?
-                        ctx.discovery().nodes(topVer) :
-                        F.view(ctx.discovery().nodes(topVer), assigns.nodeFilter());
-
                     if (!nodes.isEmpty()) {
                         int size = nodes.size();
 
@@ -798,7 +821,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 assigns.assigns(cnts);
 
-                cache.getAndPut(key, assigns);
+                cache.put(key, assigns);
 
                 tx.commit();
 

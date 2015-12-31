@@ -41,9 +41,10 @@ public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
     /**
      * @param cacheId Cache ID.
      * @param keyCnt Key count.
+     * @param addDepInfo Deployment info flag.
      */
-    public GridNearUnlockRequest(int cacheId, int keyCnt) {
-        super(cacheId, keyCnt);
+    public GridNearUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
+        super(cacheId, keyCnt, addDepInfo);
     }
 
     /** {@inheritDoc} */

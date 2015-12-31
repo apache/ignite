@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -44,15 +43,19 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     @GridToStringInclude
     protected V val;
 
+    /** Keep binary flag. */
+    private boolean keepBinary;
+
     /**
      * @param cctx Cache context.
      * @param keyObj Key cache object.
      * @param valObj Cache object value.
      */
-    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj) {
+    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj, boolean keepBinary) {
+        this.cctx = cctx;
         this.keyObj = keyObj;
         this.valObj = valObj;
-        this.cctx = cctx;
+        this.keepBinary = keepBinary;
     }
 
     /**
@@ -60,10 +63,11 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      * @param val Value.
      * @param cctx Cache context.
      */
-    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, V val) {
+    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, V val, boolean keepBinary) {
+        this.cctx = cctx;
         this.keyObj = keyObj;
         this.val = val;
-        this.cctx = cctx;
+        this.keepBinary = keepBinary;
     }
 
     /**
@@ -73,30 +77,43 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      * @param valObj Cache object
      * @param val Cache value.
      */
-    public CacheLazyEntry(GridCacheContext<K, V> ctx, 
+    public CacheLazyEntry(GridCacheContext<K, V> ctx,
         KeyCacheObject keyObj,
         K key,
         CacheObject valObj,
-        V val) {
+        V val,
+        boolean keepBinary
+    ) {
         this.cctx = ctx;
         this.keyObj = keyObj;
         this.key = key;
         this.valObj = valObj;
         this.val = val;
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc} */
     @Override public K getKey() {
         if (key == null)
-            key = CU.value(keyObj, cctx, true);
+            key = (K)cctx.unwrapBinaryIfNeeded(keyObj, keepBinary);
 
         return key;
     }
 
     /** {@inheritDoc} */
     @Override public V getValue() {
+        return getValue(keepBinary);
+    }
+
+    /**
+     * Returns the value stored in the cache when this entry was created.
+     *
+     * @param keepBinary Flag to keep binary if needed.
+     * @return the value corresponding to this entry
+     */
+    public V getValue(boolean keepBinary) {
         if (val == null)
-            val = CU.value(valObj, cctx, true);
+            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, false);
 
         return val;
     }

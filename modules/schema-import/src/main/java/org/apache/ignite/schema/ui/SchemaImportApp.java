@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.sql.Connection;
@@ -313,6 +314,7 @@ public class SchemaImportApp extends Application {
     /** */
     private ProgressIndicator pi;
 
+    /** */
     private ObservableList<SchemaDescriptor> schemas = FXCollections.emptyObservableList();
 
     /** List with POJOs descriptors. */
@@ -425,7 +427,7 @@ public class SchemaImportApp extends Application {
             if (schema.selected().getValue())
                 selSchemas.add(schema.schema());
 
-        if (selSchemas.size() == 0)
+        if (selSchemas.isEmpty())
             if (!MessageBox.confirmDialog(owner, "No schemas selected.\nExtract tables for all available schemas?"))
                 return;
 
@@ -944,8 +946,8 @@ public class SchemaImportApp extends Application {
         schemaPnl.wrap();
 
         schemaPnl.add(button("Load schemas", "Load schemas for specified database", new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent evt) {
+            /** {@inheritDoc} */
+            @Override public void handle(ActionEvent evt) {
                 loadSchemas();
             }
         }));
@@ -1737,6 +1739,19 @@ public class SchemaImportApp extends Application {
             catch (Exception ignore) {
                 // No-op.
             }
+
+            // Workaround for JDK 7/JavaFX 2 application on Mac OSX El Capitan.
+            try {
+                Class<?> fontFinderCls = Class.forName("com.sun.t2k.MacFontFinder");
+
+                Field psNameToPathMap = fontFinderCls.getDeclaredField("psNameToPathMap");
+
+                psNameToPathMap.setAccessible(true);
+                psNameToPathMap.set(null, new HashMap<String, String>());
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
         }
 
         launch(args);
@@ -1827,8 +1842,8 @@ public class SchemaImportApp extends Application {
      * Special list view cell to select loaded schemas.
      */
     private static class SchemaCell implements Callback<SchemaDescriptor, ObservableValue<Boolean>> {
-        @Override
-        public ObservableValue<Boolean> call(SchemaDescriptor item) {
+        /** {@inheritDoc} */
+        @Override public ObservableValue<Boolean> call(SchemaDescriptor item) {
             return item.selected();
         }
     }

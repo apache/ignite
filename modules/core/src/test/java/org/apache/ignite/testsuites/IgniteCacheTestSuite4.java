@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheGetFutureHan
 import org.apache.ignite.internal.processors.cache.distributed.CacheNoValueClassOnServerNodeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSingleGetMessageTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtTxPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheLockFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheMultiTxLockSelfTest;
@@ -282,6 +283,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCrossCacheTxSelfTest.class);
 
         suite.addTestSuite(CacheGetFutureHangsSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheSingleGetMessageTest.class);
 
         return suite;
     }

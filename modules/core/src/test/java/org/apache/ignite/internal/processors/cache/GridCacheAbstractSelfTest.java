@@ -38,6 +38,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.internal.util.typedef.X;
@@ -241,7 +242,11 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());
         cfg.setNearConfiguration(nearConfiguration());
-        cfg.setIndexedTypes(indexedTypes());
+
+        Class<?>[] idxTypes = indexedTypes();
+
+        if (!F.isEmpty(idxTypes))
+            cfg.setIndexedTypes(idxTypes);
 
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
@@ -411,9 +416,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @param cache Cache projection.
      * @param key Key.
      * @return Value.
-     * @throws Exception If failed.
      */
-    @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) throws Exception {
+    @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) {
         return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP, CachePeekMode.OFFHEAP) :
             cache.localPeek(key, CachePeekMode.ONHEAP);
     }

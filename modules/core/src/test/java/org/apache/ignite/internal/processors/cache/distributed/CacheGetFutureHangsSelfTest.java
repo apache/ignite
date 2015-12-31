@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -29,9 +30,13 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,6 +46,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  * Test for reproducing problems during simultaneously Ignite instances stopping and cache requests executing.
  */
 public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
     /** Grid count. */
     private static final int GRID_CNT = 8;
 
@@ -54,6 +62,8 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -83,7 +93,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 5 * 60_000;
+        return 10 * 60_000;
     }
 
     /**
@@ -106,6 +116,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
 
     /**
      * Executes one test iteration.
+     *
      * @throws Exception If failed.
      */
     private void doTestFailover() throws Exception {
@@ -126,11 +137,15 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                     @Override public void run() {
                         T2<Ignite, Integer> ignite;
 
+                        Set<Integer> keys = F.asSet(1, 2, 3, 4, 5);
+
                         while ((ignite = randomNode()) != null) {
                             IgniteCache<Object, Object> cache = ignite.get1().cache(null);
 
                             for (int i = 0; i < 100; i++)
                                 cache.containsKey(ThreadLocalRandom.current().nextInt(100_000));
+
+                            cache.containsKeys(keys);
 
                             assertTrue(nodes.compareAndSet(ignite.get2(), null, ignite.get1()));
 

@@ -38,19 +38,4 @@ public class GridCacheDeploymentOffHeapSelfTest extends GridCacheDeploymentSelfT
 
         return cacheCfg;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testDeployment() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1618");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testDeployment6() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1618");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testDeployment7() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1618");
-    }
 }

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
@@ -75,7 +76,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTest(IgniteKernalSelfTestSuite.suite(ignoredTests));
         suite.addTest(IgniteStartUpTestSuite.suite());
         suite.addTest(IgniteExternalizableSelfTestSuite.suite());
-        suite.addTest(IgniteP2PSelfTestSuite.suite());
+        suite.addTest(IgniteP2PSelfTestSuite.suite(ignoredTests));
         suite.addTest(IgniteCacheP2pUnmarshallingErrorTestSuite.suite(ignoredTests));
         suite.addTest(IgniteStreamSelfTestSuite.suite());
 
@@ -110,6 +111,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(OffHeapTieredTransactionSelfTest.class);
         suite.addTestSuite(IgniteSlowClientDetectionSelfTest.class);
         suite.addTestSuite(IgniteDaemonNodeMarshallerCacheTest.class);
+
+        suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
 
         return suite;
     }

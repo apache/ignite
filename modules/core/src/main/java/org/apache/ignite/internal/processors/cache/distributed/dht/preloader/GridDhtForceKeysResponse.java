@@ -80,14 +80,16 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
      * @param cacheId Cache ID.
      * @param futId Request id.
      * @param miniId Mini-future ID.
+     * @param addDepInfo Deployment info flag.
      */
-    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId) {
+    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId, boolean addDepInfo) {
         assert futId != null;
         assert miniId != null;
 
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
+        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -186,6 +188,11 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
         }
 
         err = ctx.marshaller().unmarshal(errBytes, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */

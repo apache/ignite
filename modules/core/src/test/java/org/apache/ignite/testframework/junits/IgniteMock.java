@@ -30,23 +30,32 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
@@ -76,6 +85,12 @@ public class IgniteMock implements Ignite {
 
     /** */
     private IgniteConfiguration staticCfg;
+
+    /** */
+    private IgniteBinary binaryMock;
+
+    /** */
+    private BinaryContext ctx;
 
     /**
      * Mock values
@@ -194,6 +209,11 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<String> cacheNames() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
         return null;
     }
@@ -270,8 +290,38 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteBinary binary() {
+        if (binaryMock != null)
+            return binaryMock;
+
+        if (ctx == null) {
+            /** {@inheritDoc} */
+            ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), configuration(), new NullLogger()) {
+                @Override public int typeId(String typeName) {
+                    return typeName.hashCode();
+                }
+            };
+        }
+
+        binaryMock = new NoOpBinary() {
+            /** {@inheritDoc} */
+            @Override public int typeId(String typeName) {
+                return typeName.hashCode();
+            }
+
+            /** {@inheritDoc} */
+            @Override public BinaryObjectBuilder builder(String typeName) throws BinaryObjectException {
+                return new BinaryObjectBuilderImpl(ctx, typeName);
+            }
+        };
+
+        return binaryMock;
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() {}
 
+    /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
         return null;
     }
@@ -302,6 +352,15 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
         int cnt,
         boolean autoDel,
+        boolean create)
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteSemaphore semaphore(String name,
+        int cnt,
+        boolean failoverSafe,
         boolean create)
     {
         return null;

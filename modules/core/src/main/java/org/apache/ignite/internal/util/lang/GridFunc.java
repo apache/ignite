@@ -117,6 +117,9 @@ public class GridFunc {
 
     /** */
     private static final IgnitePredicate<Object> ALWAYS_TRUE = new P1<Object>() {
+        /** */
+        private static final long serialVersionUID = 6101914246981105862L;
+
         @Override public boolean apply(Object e) {
             return true;
         }
@@ -1221,9 +1224,10 @@ public class GridFunc {
         if (isEmpty(nodeIds))
             return alwaysFalse();
 
-        assert nodeIds != null;
-
         return new P1<T>() {
+            /** */
+            private static final long serialVersionUID = -5664060422647374863L;
+
             @Override public boolean apply(ClusterNode e) {
                 return nodeIds.contains(e.id());
             }
@@ -1862,6 +1866,8 @@ public class GridFunc {
 
         assert m != null;
 
+        final boolean hasPred = p != null && p.length > 0;
+
         return new GridSerializableMap<K, V1>() {
             /** Entry predicate. */
             private IgnitePredicate<Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
@@ -1907,7 +1913,7 @@ public class GridFunc {
                     }
 
                     @Override public int size() {
-                        return F.size(m.keySet(), p);
+                        return hasPred ? F.size(m.keySet(), p) : m.size();
                     }
 
                     @SuppressWarnings({"unchecked"})
@@ -1921,13 +1927,13 @@ public class GridFunc {
                     }
 
                     @Override public boolean isEmpty() {
-                        return !iterator().hasNext();
+                        return hasPred ? !iterator().hasNext() : m.isEmpty();
                     }
                 };
             }
 
             @Override public boolean isEmpty() {
-                return entrySet().isEmpty();
+                return hasPred ? entrySet().isEmpty() : m.isEmpty();
             }
 
             @SuppressWarnings({"unchecked"})
@@ -2836,6 +2842,9 @@ public class GridFunc {
         if (c == null)
             return null;
 
+        if (c instanceof List)
+            return first((List<? extends T>)c);
+
         Iterator<? extends T> it = c.iterator();
 
         return it.hasNext() ? it.next() : null;
@@ -3402,6 +3411,7 @@ public class GridFunc {
      * @return First element in given collection for which predicate evaluates to
      *      {@code true} - or {@code null} if such element cannot be found.
      */
+    @SafeVarargs
     @Nullable public static <V> V find(Iterable<? extends V> c, @Nullable V dfltVal,
         @Nullable IgnitePredicate<? super V>... p) {
         A.notNull(c, "c");

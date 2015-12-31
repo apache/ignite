@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -341,12 +342,16 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
 
                 IgniteCache<String, Integer> cacheAsync = cache.withAsync();
 
+                Set<Integer> ids = new HashSet<>(set);
+
                 cacheAsync.removeAll(rangeKeys(0, rnd));
 
                 cacheAsync.future().get();
 
-                for (int i = 0; i < rnd; i++)
-                    assert cache.localPeek("key" + i, CachePeekMode.ONHEAP) == null;
+                for (int i = 0; i < rnd; i++) {
+                    if (ids.contains(i))
+                        assert cache.localPeek("key" + i, CachePeekMode.ONHEAP) == null;
+                }
             }
         });
     }

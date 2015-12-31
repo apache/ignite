@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
@@ -78,7 +79,7 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepPortable) throws IgniteCheckedException {
+    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepBinary) throws IgniteCheckedException {
         return null;
     }
 
@@ -118,8 +119,13 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public void registerStore(PlatformCacheStore store, boolean convertPortable)
+    @Override public void registerStore(PlatformCacheStore store, boolean convertBinary)
         throws IgniteCheckedException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException {
+        return null;
     }
 }

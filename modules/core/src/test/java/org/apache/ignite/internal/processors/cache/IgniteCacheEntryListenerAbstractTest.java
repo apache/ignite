@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
@@ -112,7 +113,13 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         for (int i = 0; i < gridCount(); i++) {
             GridContinuousProcessor proc = grid(i).context().continuous();
 
-            ConcurrentMap<?, ?> syncMsgFuts = GridTestUtils.getFieldValue(proc, "syncMsgFuts");
+            final ConcurrentMap<?, ?> syncMsgFuts = GridTestUtils.getFieldValue(proc, "syncMsgFuts");
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return syncMsgFuts.size() == 0;
+                }
+            }, 5000);
 
             assertEquals(0, syncMsgFuts.size());
         }
@@ -361,6 +368,42 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         finally {
             stopGrid(gridCount());
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentRegisterDeregister() throws Exception {
+        final int THREADS = 10;
+
+        final CyclicBarrier barrier = new CyclicBarrier(THREADS);
+
+        final IgniteCache<Integer, Integer> cache = jcache(0);
+
+        GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                CacheEntryListenerConfiguration<Integer, Integer> cfg = new MutableCacheEntryListenerConfiguration<>(
+                    new Factory<CacheEntryListener<Integer, Integer>>() {
+                        @Override public CacheEntryListener<Integer, Integer> create() {
+                            return new CreateUpdateRemoveExpireListener();
+                        }
+                    },
+                    null,
+                    true,
+                    false
+                );
+
+                barrier.await();
+
+                for (int i = 0; i < 200; i++) {
+                    cache.registerCacheEntryListener(cfg);
+
+                    cache.deregisterCacheEntryListener(cfg);
+                }
+
+                return null;
+            }
+        }, THREADS, "register-thread").get();
     }
 
     /**
@@ -951,6 +994,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      *
      */
     private static class CreateUpdateRemoveExpireListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        /** {@inheritDoc} */
         @Override public CacheEntryListener<Integer, Integer> create() {
             return new CreateUpdateRemoveExpireListener();
         }
@@ -960,6 +1004,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      *
      */
     private static class NoOpCreateUpdateListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        /** {@inheritDoc} */
         @Override public CacheEntryListener<Integer, Integer> create() {
             return new NoOpCreateUpdateListener();
         }
@@ -969,6 +1014,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      *
      */
     private static class CreateUpdateListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        /** {@inheritDoc} */
         @Override public CacheEntryListener<Integer, Integer> create() {
             return new CreateUpdateListener();
         }
@@ -978,6 +1024,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      *
      */
     private static class CreateListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        /** {@inheritDoc} */
         @Override public CacheEntryListener<Integer, Integer> create() {
             return new CreateListener();
         }
@@ -987,6 +1034,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      *
      */
     private static class RemoveListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        /** {@inheritDoc} */
         @Override public CacheEntryListener<Integer, Integer> create() {
             return new RemoveListener();
         }
@@ -996,6 +1044,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      *
      */
     private static class UpdateListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        /** {@inheritDoc} */
         @Override public CacheEntryListener<Integer, Integer> create() {
             return new UpdateListener();
         }
@@ -1005,6 +1054,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      *
      */
     private static class ExpireListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        /** {@inheritDoc} */
         @Override public CacheEntryListener<Integer, Integer> create() {
             return new ExpireListener();
         }
@@ -1024,6 +1074,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      *
      */
     private static class CreateListener implements CacheEntryCreatedListener<Integer, Integer> {
+        /** {@inheritDoc} */
         @Override public void onCreated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
             for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
                 onEvent(evt);
@@ -1034,6 +1085,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      *
      */
     private static class UpdateListener implements CacheEntryUpdatedListener<Integer, Integer> {
+        /** {@inheritDoc} */
         @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
             for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
                 onEvent(evt);
@@ -1044,6 +1096,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      *
      */
     private static class RemoveListener implements CacheEntryRemovedListener<Integer, Integer> {
+        /** {@inheritDoc} */
         @Override public void onRemoved(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
             for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
                 onEvent(evt);
@@ -1054,6 +1107,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      *
      */
     private static class ExpireListener implements CacheEntryExpiredListener<Integer, Integer> {
+        /** {@inheritDoc} */
         @Override public void onExpired(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
             for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
                 onEvent(evt);
@@ -1238,7 +1292,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         }
 
         /** {@inheritDoc} */
-        @Override public void onCreated(Iterable<CacheEntryEvent<? extends Object, ? extends Object>> evts)
+        @Override public void onCreated(Iterable<CacheEntryEvent<?, ?>> evts)
             throws CacheEntryListenerException {
             // No-op.
         }

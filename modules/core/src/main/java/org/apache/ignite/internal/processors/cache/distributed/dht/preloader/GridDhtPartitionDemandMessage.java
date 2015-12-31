@@ -68,8 +68,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
      * @param topVer Topology version.
      */
     GridDhtPartitionDemandMessage(long updateSeq, @NotNull AffinityTopologyVersion topVer, int cacheId) {
-        assert updateSeq > 0;
-
         this.cacheId = cacheId;
         this.updateSeq = updateSeq;
         this.topVer = topVer;
@@ -113,6 +111,13 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
      */
     Collection<Integer> partitions() {
         return parts;
+    }
+
+    /**
+     * @param updateSeq Update sequence.
+     */
+    void updateSequence(long updateSeq) {
+        this.updateSeq = updateSeq;
     }
 
     /**
@@ -186,6 +191,11 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
         if (topicBytes != null)
             topic = ctx.marshaller().unmarshal(topicBytes, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -320,7 +330,8 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtPartitionDemandMessage.class, this, "partCnt", parts.size(), "super",
-            super.toString());
+        return S.toString(GridDhtPartitionDemandMessage.class, this,
+            "partCnt", parts != null ? parts.size() : 0,
+            "super", super.toString());
     }
 }

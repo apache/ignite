@@ -27,6 +27,7 @@ import java.lang.ref.SoftReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.nio.file.attribute.PosixFilePermission;
@@ -41,10 +42,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
@@ -80,6 +86,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -87,7 +94,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
@@ -146,12 +154,64 @@ public final class GridTestUtils {
     /** */
     private static final GridBusyLock busyLock = new GridBusyLock();
 
+    /** */
+    public static final ConcurrentMap<IgnitePair<UUID>, IgnitePair<Queue<Message>>> msgMap = new ConcurrentHashMap<>();
+
     /**
      * Ensure singleton.
      */
     private GridTestUtils() {
         // No-op.
     }
+
+    /**
+     * @param from From node ID.
+     * @param to To node ID.
+     * @param msg Message.
+     * @param sent Sent or received.
+     */
+    public static void addMessage(UUID from, UUID to, Message msg, boolean sent) {
+        IgnitePair<UUID> key = F.pair(from, to);
+
+        IgnitePair<Queue<Message>> val = msgMap.get(key);
+
+        if (val == null) {
+            IgnitePair<Queue<Message>> old = msgMap.putIfAbsent(key,
+                val = F.<Queue<Message>>pair(new ConcurrentLinkedQueue<Message>(), new ConcurrentLinkedQueue<Message>()));
+
+            if (old != null)
+                val = old;
+        }
+
+        (sent ? val.get1() : val.get2()).add(msg);
+    }
+
+    /**
+     * Dumps all messages tracked with {@link #addMessage(UUID, UUID, Message, boolean)} to std out.
+     */
+    public static void dumpMessages() {
+        for (Map.Entry<IgnitePair<UUID>, IgnitePair<Queue<Message>>> entry : msgMap.entrySet()) {
+            U.debug("\n" + entry.getKey().get1() + " [sent to] " + entry.getKey().get2());
+
+            for (Message message : entry.getValue().get1())
+                U.debug("\t" + message);
+
+            U.debug(entry.getKey().get2() + " [received from] " + entry.getKey().get1());
+
+            for (Message message : entry.getValue().get2())
+                U.debug("\t" + message);
+        }
+    }
+
+//    static {
+//        new Thread(new Runnable() {
+//            @Override public void run() {
+//                JOptionPane.showMessageDialog(null, "Close this to dump messages.");
+//
+//                dumpMessages();
+//            }
+//        }).start();
+//    }
 
     /**
      * Checks whether callable throws expected exception or not.
@@ -1139,7 +1199,6 @@ public final class GridTestUtils {
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void setFieldValue(Object obj, Class cls, String fieldName, Object val) throws IgniteException {
-        assert obj != null;
         assert fieldName != null;
 
         try {
@@ -1149,9 +1208,21 @@ public final class GridTestUtils {
                 // Backup accessible field state.
                 boolean accessible = field.isAccessible();
 
+                boolean isFinal = (field.getModifiers() & Modifier.FINAL) > 0;
+
+                Field modifiersField = null;
+
+                if (isFinal)
+                    modifiersField = Field.class.getDeclaredField("modifiers");
+
                 try {
                     if (!accessible)
                         field.setAccessible(true);
+
+                    if (isFinal) {
+                        modifiersField.setAccessible(true);
+                        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+                    }
 
                     field.set(obj, val);
                 }
@@ -1159,6 +1230,11 @@ public final class GridTestUtils {
                     // Recover accessible field state.
                     if (!accessible)
                         field.setAccessible(false);
+
+                    if (isFinal) {
+                        modifiersField.setInt(field, field.getModifiers() | Modifier.FINAL);
+                        modifiersField.setAccessible(false);
+                    }
                 }
             }
         }
@@ -1681,7 +1757,7 @@ public final class GridTestUtils {
         ccfg.setSwapEnabled(swap);
 
         if (swap && cfg != null)
-            cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+            cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         if (evictionPlc) {
             LruEvictionPolicy plc = new LruEvictionPolicy();

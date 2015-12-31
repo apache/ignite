@@ -626,7 +626,15 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forRandom() {
-        return ids != null ? forNodeId(F.rand(ids)) : forNode(F.rand(nodes()));
+        if (!F.isEmpty(ids))
+            return forNodeId(F.rand(ids));
+
+        Collection<ClusterNode> nodes = nodes();
+
+        if (nodes.isEmpty())
+            return new ClusterGroupAdapter(ctx, null, Collections.<UUID>emptySet());
+
+        return forNode(F.rand(nodes));
     }
 
     /** {@inheritDoc} */

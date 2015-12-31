@@ -77,10 +77,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     /**
      * @param cacheId Cache ID.
      * @param futVer Future version.
+     * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicUpdateResponse(int cacheId, GridCacheVersion futVer) {
+    public GridDhtAtomicUpdateResponse(int cacheId, GridCacheVersion futVer, boolean addDepInfo) {
         this.cacheId = cacheId;
         this.futVer = futVer;
+        this.addDepInfo = addDepInfo;
     }
 
     /** {@inheritDoc} */
@@ -177,6 +179,11 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
         finishUnmarshalCacheObjects(nearEvicted, cctx, ldr);
 
         err = ctx.marshaller().unmarshal(errBytes, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */
