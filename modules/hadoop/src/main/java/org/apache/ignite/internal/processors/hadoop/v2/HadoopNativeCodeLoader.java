@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.v2;
 
+import java.lang.reflect.Method;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.CommonConfigurationKeys;
+import org.apache.hadoop.util.NativeCodeLoader;
 
 /**
  * A fake helper to load the native hadoop code i.e. libhadoop.so.
@@ -34,22 +37,61 @@ public class HadoopNativeCodeLoader {
      *         else <code>false</code>
      */
     public static boolean isNativeCodeLoaded() {
-        return false;
+        try {
+            ClassLoader parent = Configuration.class.getClassLoader().getParent();
+
+            Class cls = Class.forName(NativeCodeLoader.class.getName(), true, parent);
+
+            Method m = cls.getMethod("isNativeCodeLoaded");
+
+            boolean value = (boolean)m.invoke(null);
+
+            return value;
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
      * Returns true only if this build was compiled with support for snappy.
      */
     public static boolean buildSupportsSnappy() {
-        return false;
+        try {
+            ClassLoader parent = Configuration.class.getClassLoader().getParent();
+
+            Class cls = Class.forName(NativeCodeLoader.class.getName(), true, parent);
+
+            boolean value = (boolean)cls.getMethod("buildSupportsSnappy").invoke(null);
+
+            return value;
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
      * @return Library name.
      */
     public static String getLibraryName() {
-        throw new IllegalStateException();
+        try {
+            ClassLoader parent = Configuration.class.getClassLoader().getParent();
+
+            Class cls = Class.forName(NativeCodeLoader.class.getName(), true, parent);
+
+            Method m = cls.getMethod("getLibraryName");
+
+            String value = (String)m.invoke(null);
+
+            return value;
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
+
+    // --------------- copied methods:
 
     /**
      * Return if native hadoop libraries, if present, can be used for this job.
@@ -59,7 +101,8 @@ public class HadoopNativeCodeLoader {
      *         used for this job; <code>false</code> otherwise.
      */
     public boolean getLoadNativeLibraries(Configuration conf) {
-        return false;
+        return conf.getBoolean(CommonConfigurationKeys.IO_NATIVE_LIB_AVAILABLE_KEY,
+            CommonConfigurationKeys.IO_NATIVE_LIB_AVAILABLE_DEFAULT);
     }
 
     /**
@@ -68,7 +111,9 @@ public class HadoopNativeCodeLoader {
      * @param conf configuration
      * @param loadNativeLibraries can native hadoop libraries be loaded
      */
-    public void setLoadNativeLibraries(Configuration conf, boolean loadNativeLibraries) {
-        // No-op.
+    public void setLoadNativeLibraries(Configuration conf,
+                                       boolean loadNativeLibraries) {
+        conf.setBoolean(CommonConfigurationKeys.IO_NATIVE_LIB_AVAILABLE_KEY,
+            loadNativeLibraries);
     }
 }
