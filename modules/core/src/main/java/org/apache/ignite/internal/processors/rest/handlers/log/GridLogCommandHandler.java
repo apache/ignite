@@ -16,21 +16,6 @@
  */
 package org.apache.ignite.internal.processors.rest.handlers.log;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.rest.GridRestCommand;
-
-import org.apache.ignite.internal.processors.rest.GridRestResponse;
-import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
-import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
-import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.LOG;
-
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -40,28 +25,43 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
+import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.LOG;
 
 /**
  * Handler for {@link org.apache.ignite.internal.processors.rest.GridRestCommand#LOG} command.
  */
 public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
-
     /**
      * Supported commands.
-     */
+    */
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(LOG);
+
     /**
      * Default log file name *
      */
     private static final String DEFAULT_LOG_PATH = "work/log/ignite.log";
+
     /**
      * Default log file start line number *
      */
     private static final int DEFAULT_FROM = 0;
+
     /**
      * Default log file end line number*
      */
     private static final int DEFAULT_TO = 1;
+
     /**
      * @param ctx Context.
      */
@@ -83,35 +83,46 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     @Override
     public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert req != null;
-        assert SUPPORTED_COMMANDS.contains(req.command());
-        if (log.isDebugEnabled())
-            log.debug("Handling log REST request: " + req);
-        GridRestLogRequest req0 = (GridRestLogRequest) req;
-        int from = DEFAULT_FROM;
-        if (req0.from() != -1) {
-            from = req0.from();
-        }
-        int to = DEFAULT_TO;
-        if (req0.to() != -1) {
-            to = req0.to();
-        }
-        String path = DEFAULT_LOG_PATH;
-        Path filePath = getPath(req0, path);
-        if (from > to) {
-            return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                    "Log file start from cannot be greater than to"));
-        }
-        switch (req.command()) {
-            case LOG:
+        if (req.command() == LOG) {
+            if (log.isDebugEnabled())
+                log.debug("Handling log REST request: " + req);
+            GridRestLogRequest req0 = (GridRestLogRequest) req;
+            try {
+                validateRange(req0);
+            } catch (IgniteCheckedException e){
+                return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED, e.getMessage()));
+            }
+            int from = DEFAULT_FROM;
+            if (req0.from() != -1) {
+                from = req0.from();
+            }
+            int to = DEFAULT_TO;
+            if (req0.to() != -1) {
+                to = req0.to();
+            }
+            String path = DEFAULT_LOG_PATH;
+            Path filePath = getPath(req0, path);
+            if (from >= to) {
+                return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
+                        "Log file start from cannot be greater than to"));
+            }
+            if(req0.command() == LOG) {
                 try {
-                    List content = getContent(from, to, filePath);
-                    return new GridFinishedFuture<>(new GridRestResponse(content));
+                   List content = getContent(from, to, filePath);
+                   return new GridFinishedFuture<>(new GridRestResponse(content));
                 } catch (IgniteCheckedException e) {
-                    return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED, e.getMessage()));
+                   return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED, e.getMessage()));
                 }
+            }
         }
-
         return new GridFinishedFuture<>();
+    }
+
+    private void validateRange(GridRestLogRequest req0) throws IgniteCheckedException {
+        if((req0.from() != -1 && req0.to() == -1)||
+                (req0.from() == -1 && req0.to() != -1)){
+            throw new IgniteCheckedException("Both from and to need to be provided");
+        }
     }
 
     private Path getPath(GridRestLogRequest req0, String path) {
@@ -131,19 +142,17 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
         try (BufferedReader reader = Files.newBufferedReader(filePath, Charset.defaultCharset())) {
             String line = null;
             int start = from;
-            int lineCounter = 0;
             while ((line = reader.readLine()) != null
-                    && start < to) {
-                if (lineCounter >= from) {
+                    && from < to) {
+                if (start >= from) {
                     content.add(line);
                     start++;
                 }
-                lineCounter++;
+                from++;
             }
         } catch (IOException e) {
-            throw new IgniteCheckedException("Unable to open file " + filePath.getFileName());
+            throw new IgniteCheckedException(e);
         }
         return content;
     }
-
 }
