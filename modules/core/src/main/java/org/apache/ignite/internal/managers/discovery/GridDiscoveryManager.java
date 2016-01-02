@@ -30,7 +30,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -79,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1317,13 +1315,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Gets collection of node for given node IDs.
+     *
+     * @param ids Ids to include.
+     * @return Collection with all alive nodes for given IDs.
+     */
+    public Collection<ClusterNode> nodes(@Nullable Collection<UUID> ids) {
+        return F.isEmpty(ids) ? Collections.<ClusterNode>emptyList() :
+            F.view(
+                F.viewReadOnly(ids, U.id2Node(ctx)),
+                F.notNull());
+    }
+
+    /**
      * Gets collection of node for given node IDs and predicates.
      *
      * @param ids Ids to include.
      * @param p Filter for IDs.
      * @return Collection with all alive nodes for given IDs.
      */
-    public Collection<ClusterNode> nodes(@Nullable Collection<UUID> ids, IgnitePredicate<UUID>... p) {
+    public Collection<ClusterNode> nodes(@Nullable Collection<UUID> ids, IgnitePredicate<UUID> p) {
         return F.isEmpty(ids) ? Collections.<ClusterNode>emptyList() :
             F.view(
                 F.viewReadOnly(ids, U.id2Node(ctx), p),
@@ -2565,7 +2576,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             nearEnabledCaches = Collections.unmodifiableSet(nearEnabledSet);
 
             daemonNodes = Collections.unmodifiableList(new ArrayList<>(
-                F.view(F.concat(false, loc, rmts), F0.not(daemonFilter))));
+                F.view(F.concat(false, loc, rmts), F.not(daemonFilter))));
 
             Map<UUID, ClusterNode> nodeMap = new HashMap<>(allNodes().size() + daemonNodes.size(), 1.0f);
 

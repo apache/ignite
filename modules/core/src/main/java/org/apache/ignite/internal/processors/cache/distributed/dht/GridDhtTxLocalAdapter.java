@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
@@ -641,7 +640,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             // Otherwise, during rollback we will not know whether locks need
             // to be rolled back.
             // Loose all skipped and previously locked (we cannot reenter locks here).
-            final Collection<KeyCacheObject> passedKeys = skipped != null ? F.view(keys, F0.notIn(skipped)) : keys;
+            final Collection<KeyCacheObject> passedKeys = skipped != null ? F.view(keys, F.notIn(skipped)) : keys;
 
             if (log.isDebugEnabled())
                 log.debug("Lock keys: " + passedKeys);

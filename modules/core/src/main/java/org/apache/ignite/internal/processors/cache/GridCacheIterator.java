@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Iterator;
 import javax.cache.Cache;
+
+import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridSerializableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteClosure;
@@ -57,7 +59,7 @@ public class GridCacheIterator<K, V, T> implements GridSerializableIterator<T> {
     ) {
         this.cctx = cctx;
 
-        it = F.iterator0(c, false, filter);
+        it = F.identityIterator(c, F0.and(filter));
 
         this.trans = trans;
     }

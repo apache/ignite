@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -335,7 +336,8 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
                             map = new HashMap<>();
                         }
 
-                        map.put(new ObjectKey(String.valueOf(i)), F.rand(vals));
+                        map.put(new ObjectKey(String.valueOf(i)),
+                            vals[ThreadLocalRandom.current().nextInt(vals.length)]);
                     }
 
                     if (!map.isEmpty()) {

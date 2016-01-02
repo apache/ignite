@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.loadbalancer;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -92,7 +93,12 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
                 if (F.isEmpty(exclNodes))
                     return GridLoadBalancerManager.this.getBalancedNode(ses, top, job);
 
-                List<ClusterNode> nodes = F.loseList(top, true, exclNodes);
+                List<ClusterNode> nodes = new LinkedList<>();
+
+                for (ClusterNode topNode : top) {
+                    if (!exclNodes.contains(topNode))
+                        nodes.add(topNode);
+                }
 
                 if (nodes.isEmpty())
                     return null;

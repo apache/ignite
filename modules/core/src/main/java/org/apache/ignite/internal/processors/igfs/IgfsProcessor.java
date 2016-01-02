@@ -45,7 +45,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -128,11 +127,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
         final Map<String, CacheConfiguration> cacheCfgs = new HashMap<>();
 
-        F.forEach(gridCfg.getCacheConfiguration(), new CI1<CacheConfiguration>() {
-            @Override public void apply(CacheConfiguration c) {
-                cacheCfgs.put(c.getName(), c);
-            }
-        });
+        for (CacheConfiguration c : gridCfg.getCacheConfiguration())
+            cacheCfgs.put(c.getName(), c);
 
         Collection<IgfsAttributes> attrVals = new ArrayList<>();
 

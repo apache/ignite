@@ -757,7 +757,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             if (TEST_INFO)
                 X.println("Cache event: " + evt.shortDisplay());
 
-            AtomicInteger cntr = F.addIfAbsent(cntrs, evt.type(), F.newAtomicInt());
+            AtomicInteger cntr = F.addIfAbsent(cntrs, evt.type(), new AtomicInteger());
 
             assert cntr != null;
 

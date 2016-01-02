@@ -34,7 +34,6 @@ import org.jetbrains.annotations.Nullable;
  * This class doesn't provide any synchronization for multi-threaded access
  * and it is responsibility of the user of this class to provide outside
  * synchronization, if needed.
- * @see GridFunc#t4()
  * @see GridFunc#t(Object, Object, Object, Object)
  */
 public class GridTuple4<V1, V2, V3, V4> implements Iterable<Object>, Externalizable, Cloneable {

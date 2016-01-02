@@ -235,13 +235,13 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                         @Override public Set<Entry<K, V>> entrySet() {
                             return new AbstractSet<Entry<K, V>>() {
                                 @Override public Iterator<Entry<K, V>> iterator() {
-                                    return F.iterator(entries, new C1<Cache.Entry<? extends K, ? extends V>, Entry<K, V>>() {
+                                    return F.iteratorReadOnly(entries, new C1<Cache.Entry<? extends K, ? extends V>, Entry<K, V>>() {
                                         private static final long serialVersionUID = 0L;
 
                                         @Override public Entry<K, V> apply(Cache.Entry<? extends K, ? extends V> entry) {
                                             return new GridMapEntry<>(entry.getKey(), entry.getValue());
                                         }
-                                    }, true);
+                                    });
                                 }
 
                                 @Override public int size() {

@@ -80,6 +80,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
@@ -1270,9 +1271,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
 
                     // After workers line up and before preloading starts we initialize all futures.
-                    if (log.isDebugEnabled())
+                    if (log.isDebugEnabled()) {
+                        IgnitePredicate p = new IgnitePredicate<IgniteInternalFuture<?>>() {
+                            @Override public boolean apply(IgniteInternalFuture<?> f) {
+                                return !f.isDone();
+                            }
+                        };
+
                         log.debug("Before waiting for exchange futures [futs" +
-                            F.view(exchFuts.values(), F.unfinishedFutures()) + ", worker=" + this + ']');
+                            F.view(exchFuts.values(), p) + ", worker=" + this + ']');
+                    }
 
                     // Take next exchange future.
                     exchFut = poll(futQ, timeout, this);

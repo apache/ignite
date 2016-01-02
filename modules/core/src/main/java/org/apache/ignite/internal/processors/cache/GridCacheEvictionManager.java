@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
-import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -1310,7 +1309,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                 try {
                     GridCacheVersion ver = e.version();
 
-                    return info.version().equals(ver) && F.isAll(info.filter());
+                    return info.version().equals(ver) && F.isAll(e, info.filter());
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     return false;
@@ -1341,7 +1340,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         Collection<ClusterNode> backups;
 
         if (evictSync)
-            backups = F.view(cctx.dht().topology().nodes(entry.partition(), topVer), F0.notEqualTo(cctx.localNode()));
+            backups = F.view(cctx.dht().topology().nodes(entry.partition(), topVer), F.notEqualTo(cctx.localNode()));
         else
             backups = Collections.emptySet();
 

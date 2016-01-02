@@ -589,8 +589,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public List<String> getLifecycleBeansFormatted() {
         LifecycleBean[] beans = cfg.getLifecycleBeans();
 
-        return F.isEmpty(beans) ? Collections.<String>emptyList() :
-            (List<String>)F.transform(beans, F.<LifecycleBean>string());
+        if (F.isEmpty(beans))
+            return Collections.emptyList();
+        else {
+            List<String> res = new ArrayList<>(beans.length);
+
+            for (LifecycleBean bean : beans)
+                res.add(String.valueOf(bean));
+
+            return res;
+        }
     }
 
     /**
@@ -2269,16 +2277,19 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         Collection<Object> objs = new ArrayList<>();
 
         if (!F.isEmpty(cfg.getLifecycleBeans()))
-            F.copy(objs, cfg.getLifecycleBeans());
+            Collections.addAll(objs, cfg.getLifecycleBeans());
 
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
-            F.copy(objs, cfg.getSegmentationResolvers());
+            Collections.addAll(objs, cfg.getSegmentationResolvers());
 
-        if (cfg.getConnectorConfiguration() != null)
-            F.copy(objs, cfg.getConnectorConfiguration().getMessageInterceptor(),
-                cfg.getConnectorConfiguration().getSslContextFactory());
+        if (cfg.getConnectorConfiguration() != null) {
+            objs.add(cfg.getConnectorConfiguration().getMessageInterceptor());
+            objs.add(cfg.getConnectorConfiguration().getSslContextFactory());
+        }
 
-        F.copy(objs, cfg.getMarshaller(), cfg.getGridLogger(), cfg.getMBeanServer());
+        objs.add(cfg.getMarshaller());
+        objs.add(cfg.getGridLogger());
+        objs.add(cfg.getMBeanServer());
 
         return objs;
     }

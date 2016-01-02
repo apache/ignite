@@ -517,12 +517,16 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
          * @param shmemIds Shared memory IDs string.
          */
         public void shmemIds(String shmemIds) {
-            this.shmemIds = (shmemIds == null) ? null :
-                F.transform(shmemIds.split(","), new C1<String, Integer>() {
-                    @Override public Integer apply(String s) {
-                        return Long.valueOf(s).intValue();
-                    }
-                });
+            if (shmemIds == null)
+                this.shmemIds = null;
+            else {
+                String[] tokens = shmemIds.split(",");
+
+                this.shmemIds = new ArrayList<>(tokens.length);
+
+                for (String token : tokens)
+                    this.shmemIds.add(Long.valueOf(token).intValue());
+            }
         }
     }
 }

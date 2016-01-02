@@ -66,7 +66,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
 
     /** {@inheritDoc} */
     @Override public Iterator<K> iterator() {
-        return new GridCacheIterator<>(ctx, map.values(), F.<K, V>cacheEntry2Key(), filter);
+        return new GridCacheIterator<>(ctx, map.values(), CU.<K, V>cacheEntry2Key(), filter);
     }
 
     /** {@inheritDoc} */

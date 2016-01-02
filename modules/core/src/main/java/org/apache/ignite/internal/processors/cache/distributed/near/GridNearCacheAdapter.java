@@ -64,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.NotNull;
@@ -416,7 +417,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public Collection<V> values(CacheEntryPredicate... filter) {
-        return new GridCacheValueCollection<>(ctx, entrySet(filter), ctx.vararg(F.<K, V>cacheHasPeekValue()));
+        return new GridCacheValueCollection<>(ctx, entrySet(filter), ctx.vararg(CU.<K, V>cacheHasPeekValue()));
     }
 
     /** {@inheritDoc} */
@@ -558,12 +559,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<Cache.Entry<K, V>> iterator() {
             return new EntryIterator(nearSet.iterator(),
-                F.iterator0(dhtSet, false, new P1<Cache.Entry<K, V>>() {
-                    @Override public boolean apply(Cache.Entry<K, V> e) {
+                F.identityIterator(dhtSet, new P1<Cache.Entry<K, V>>() {
+                    @Override
+                    public boolean apply(Cache.Entry<K, V> e) {
                         try {
                             return GridNearCacheAdapter.super.localPeek(e.getKey(), NEAR_PEEK_MODE, null) == null;
-                        }
-                        catch (IgniteCheckedException ex) {
+                        } catch (IgniteCheckedException ex) {
                             throw new IgniteException(ex);
                         }
                     }
