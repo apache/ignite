@@ -368,8 +368,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         guard();
 
         try {
-            if (p != null)
-                ctx.resource().injectGeneric(p);
+            ctx.resource().injectGeneric(p);
 
             return new ClusterGroupAdapter(ctx, subjId, this.p != null ? F.and(p, this.p) : p);
         }
@@ -704,6 +703,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         gridName = U.readString(in);
         subjId = U.readUuid(in);
@@ -920,7 +920,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
                 ClusterNode node = isOldest ? U.oldest(super.nodes(), null) : U.youngest(super.nodes(), null);
 
-                IgnitePredicate<ClusterNode> p = new GridNodePredicate(Collections.singleton(node.id()));
+                IgnitePredicate<ClusterNode> p = new GridNodePredicate(node);
 
                 state = new AgeClusterGroupState(node, p, lastTopVer);
             }
@@ -962,8 +962,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             guard();
 
             try {
-                if (p != null)
-                    ctx.resource().injectGeneric(p);
+                ctx.resource().injectGeneric(p);
 
                 return new ClusterGroupAdapter(ctx, this.subjId, new GroupPredicate(this, p));
             }
