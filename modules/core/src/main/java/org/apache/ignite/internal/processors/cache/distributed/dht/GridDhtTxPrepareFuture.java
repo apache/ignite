@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
+import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1303,14 +1304,14 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                 if (!F.isEmpty(readers)) {
                     Collection<ClusterNode> nearNodes =
-                        cctx.discovery().nodes(readers, F.not(F.idForNodeId(tx.nearNodeId())));
+                        cctx.discovery().nodes(readers, F0.not(F.idForNodeId(tx.nearNodeId())));
 
                     if (log.isDebugEnabled())
                         log.debug("Mapping entry to near nodes [nodes=" + U.toShortString(nearNodes) +
                             ", entry=" + entry + ']');
 
                     // Exclude DHT nodes.
-                    map(entry, F.view(nearNodes, F.notIn(dhtNodes)), nearMap);
+                    map(entry, F.view(nearNodes, F0.notIn(dhtNodes)), nearMap);
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Entry has no near readers: " + entry);

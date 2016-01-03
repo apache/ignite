@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridSerializableCollection;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,8 +72,8 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
         return new GridCacheIterator<K, V, V>(
             ctx,
             map.values(),
-            CU.<K, V>cacheEntry2Get(),
-            ctx.vararg(F0.and(filter, CU.<K, V>cacheHasPeekValue()))
+            F.<K, V>cacheEntry2Get(),
+            ctx.vararg(F0.and(filter, F.<K, V>cacheHasPeekValue()))
         ) {
             {
                 advance();

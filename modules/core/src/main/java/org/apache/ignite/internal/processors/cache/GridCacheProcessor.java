@@ -96,6 +96,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1159,12 +1160,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 log.debug("Executed onKernalStart() callback for DHT cache: " + dht.name());
         }
 
-        Collection<GridCacheManager> excluded = dhtExcludes(ctx);
-
-        for (GridCacheManager mgr : ctx.managers()) {
-            if (!excluded.contains(mgr))
-                mgr.onKernalStart();
-        }
+        for (GridCacheManager mgr : F.view(ctx.managers(), F0.notContains(dhtExcludes(ctx))))
+            mgr.onKernalStart();
 
         cache.onKernalStart();
 

@@ -216,7 +216,6 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) {
         A.notNull(p, "p");
 

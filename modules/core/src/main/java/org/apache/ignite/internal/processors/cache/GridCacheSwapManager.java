@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
+import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridWeakIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -1580,7 +1581,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      */
     public <K, V> Iterator<Map.Entry<K, V>> lazySwapIterator() throws IgniteCheckedException {
         if (!swapEnabled)
-            return F.emptyIterator();
+            return new GridEmptyIterator<>();
 
         return lazyIterator(cctx.gridSwap().rawIterator(spaceName));
     }
@@ -1671,7 +1672,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     private <K, V> Iterator<Map.Entry<K, V>> lazyIterator(
         final GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> it) {
         if (it == null)
-            return F.emptyIterator();
+            return new GridEmptyIterator<>();
 
         checkIteratorQueue();
 
@@ -1742,7 +1743,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     private Iterator<KeyCacheObject> keyIterator(
         final GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> it) {
         if (it == null)
-            return F.emptyIterator();
+            return new GridEmptyIterator<>();
 
         checkIteratorQueue();
 
