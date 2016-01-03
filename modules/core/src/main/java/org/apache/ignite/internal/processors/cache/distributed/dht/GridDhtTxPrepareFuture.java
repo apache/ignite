@@ -26,8 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -100,6 +101,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Error updater. */
+    private static final AtomicReferenceFieldUpdater<GridDhtTxPrepareFuture, Throwable> ERR_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridDhtTxPrepareFuture.class, Throwable.class, "err");
+
     /** */
     private static final IgniteReducer<IgniteInternalTx, GridNearTxPrepareResponse> REDUCER =
         new IgniteReducer<IgniteInternalTx, GridNearTxPrepareResponse>() {
@@ -112,6 +117,14 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 return null;
             }
         };
+
+    /** Replied flag updater. */
+    private static final AtomicIntegerFieldUpdater<GridDhtTxPrepareFuture> REPLIED_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridDhtTxPrepareFuture.class, "replied");
+
+    /** Mapped flag updater. */
+    private static final AtomicIntegerFieldUpdater<GridDhtTxPrepareFuture> MAPPED_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridDhtTxPrepareFuture.class, "mapped");
 
     /** Logger. */
     private static IgniteLogger log;
@@ -133,13 +146,16 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     private Map<UUID, GridDistributedTxMapping> dhtMap;
 
     /** Error. */
-    private AtomicReference<Throwable> err = new AtomicReference<>(null);
+    @SuppressWarnings("UnusedDeclaration")
+    private volatile Throwable err;
 
     /** Replied flag. */
-    private AtomicBoolean replied = new AtomicBoolean(false);
+    @SuppressWarnings("UnusedDeclaration")
+    private volatile int replied;
 
     /** All replies flag. */
-    private AtomicBoolean mapped = new AtomicBoolean(false);
+    @SuppressWarnings("UnusedDeclaration")
+    private volatile int mapped;
 
     /** Prepare reads. */
     private Iterable<IgniteTxEntry> reads;
@@ -570,9 +586,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      *
      * @return {@code True} if all locks are acquired, {@code false} otherwise.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private boolean mapIfLocked() {
         if (checkLocks()) {
-            if (!mapped.compareAndSet(false, true))
+            if (!MAPPED_UPD.compareAndSet(this, 0, 1))
                 return false;
 
             if (forceKeysFut == null || (forceKeysFut.isDone() && forceKeysFut.error() == null))
@@ -606,7 +623,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
             "pending mini futures: " + this;
 
-        this.err.compareAndSet(null, err);
+        ERR_UPD.compareAndSet(this, null, err);
 
         // Must clear prepare future before response is sent or listeners are notified.
         if (tx.optimistic())
@@ -616,7 +633,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (tx.onePhaseCommit() && tx.commitOnPrepare()) {
             assert last;
 
-            Throwable prepErr = this.err.get();
+            Throwable prepErr = this.err;
 
             // Must create prepare response before transaction is committed to grab correct return value.
             final GridNearTxPrepareResponse res = createPrepareResponse(prepErr);
@@ -631,7 +648,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                             @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
                                 try {
-                                    if (replied.compareAndSet(false, true))
+                                    if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
                                         sendPrepareResponse(res);
                                 }
                                 catch (IgniteCheckedException e) {
@@ -669,7 +686,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             }
             else {
                 try {
-                    if (replied.compareAndSet(false, true))
+                    if (REPLIED_UPD.compareAndSet(this, 0, 1))
                         sendPrepareResponse(res);
                 }
                 catch (IgniteCheckedException e) {
@@ -680,8 +697,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             return true;
         }
         else {
-            if (replied.compareAndSet(false, true)) {
-                GridNearTxPrepareResponse res = createPrepareResponse(this.err.get());
+            if (REPLIED_UPD.compareAndSet(this, 0, 1)) {
+                GridNearTxPrepareResponse res = createPrepareResponse(this.err);
 
                 try {
                     sendPrepareResponse(res);
@@ -720,7 +737,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      */
     private void sendPrepareResponse(GridNearTxPrepareResponse res) throws IgniteCheckedException {
         if (!tx.nearNodeId().equals(cctx.localNodeId())) {
-            Throwable err = this.err.get();
+            Throwable err = this.err;
 
             if (err != null && err instanceof IgniteFutureCancelledException)
                 return;
@@ -851,7 +868,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (last || tx.isSystemInvalidate())
             tx.state(PREPARED);
 
-        if (super.onDone(res, err.get())) {
+        if (super.onDone(res, err)) {
             // Don't forget to clean up.
             cctx.mvcc().removeMvccFuture(this);
 
@@ -1045,11 +1062,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 }
 
                 if (err0 != null) {
-                    err.compareAndSet(null, err0);
+                    ERR_UPD.compareAndSet(this, null, err0);
 
                     tx.rollbackAsync();
 
-                    final GridNearTxPrepareResponse res = createPrepareResponse(err.get());
+                    final GridNearTxPrepareResponse res = createPrepareResponse(err);
 
                     onDone(res, res.error());
 
@@ -1467,6 +1484,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         /**
          * @param res Result callback.
          */
+        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void onResult(GridDhtTxPrepareResponse res) {
             if (res.error() != null)
                 // Fail the whole compound future.
