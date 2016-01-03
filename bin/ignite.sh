@@ -89,8 +89,13 @@ fi
 #
 # ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 #
+JAVA_VER=$("$JAVA" -version 2>&1 | awk -F '"' '/version/ {print $2}')
 if [ -z "$JVM_OPTS" ] ; then
-    JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m"
+    if [[ "$JAVA_VER" < "1.8" ]]; then
+        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m"
+    else
+        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
+    fi
 fi
 
 #
