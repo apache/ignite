@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import junit.framework.TestSuite;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -63,6 +65,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobTrackerSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceEmbeddedSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerializationWrapperSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopSnappyTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopSortingTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopSplitWrapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskExecutionSelfTest;
@@ -70,6 +73,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTasksV1Test;
 import org.apache.ignite.internal.processors.hadoop.HadoopTasksV2Test;
 import org.apache.ignite.internal.processors.hadoop.HadoopV2JobSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopValidationSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopSnappyFullMapReduceTest;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimapSelftest;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopHashMapSelfTest;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipListSelfTest;
@@ -95,6 +99,9 @@ public class IgniteHadoopTestSuite extends TestSuite {
         final ClassLoader ldr = TestSuite.class.getClassLoader();
 
         TestSuite suite = new TestSuite("Ignite Hadoop MR Test Suite");
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyFullMapReduceTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopClassLoaderTest.class.getName())));
 
@@ -192,7 +199,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         X.println("Will use Hadoop version: " + ver);
 
-        String downloadPath = "hadoop/common/hadoop-" + ver + "/hadoop-" + ver + ".tar.gz";
+        String downloadPath = "hadoop/core/hadoop-" + ver + "/hadoop-" + ver + ".tar.gz";
 
         download("Hadoop", "HADOOP_HOME", downloadPath, "hadoop-" + ver);
     }
@@ -217,6 +224,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
         }
 
         List<String> urls = F.asList(
+            "http://archive.apache.org/dist/",
             "http://apache-mirror.rbc.ru/pub/apache/",
             "http://www.eu.apache.org/dist/",
             "http://www.us.apache.org/dist/");
@@ -272,6 +280,14 @@ public class IgniteHadoopTestSuite extends TestSuite {
                         if (entry.isDirectory()) {
                             if (!dest.mkdirs())
                                 throw new IllegalStateException();
+                        }
+                        else if (entry.isSymbolicLink()) {
+                            // Important: in Hadoop installation there are symlinks, we need to create them:
+                            Path theLinkItself = Paths.get(install.getAbsolutePath(), entry.getName());
+
+                            Path linkTarget = Paths.get(entry.getLinkName());
+
+                            Files.createSymbolicLink(theLinkItself, linkTarget);
                         }
                         else {
                             File parent = dest.getParentFile();
