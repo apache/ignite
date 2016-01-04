@@ -30,13 +30,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
+import java.util.Vector;
+import org.apache.hadoop.util.NativeCodeLoader;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopDaemon;
-import org.apache.ignite.internal.processors.hadoop.v2.HadoopNativeCodeLoader;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.objectweb.asm.AnnotationVisitor;
@@ -68,6 +69,9 @@ public class HadoopClassLoader extends URLClassLoader {
 
     /** Name of the Hadoop daemon class. */
     public static final String HADOOP_DAEMON_CLASS_NAME = "org.apache.hadoop.util.Daemon";
+
+    /** Name of libhadoop library. */
+    private static final String LIBHADOOP = "hadoop.";
 
     /** */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
@@ -119,6 +123,51 @@ public class HadoopClassLoader extends URLClassLoader {
         assert !(getParent() instanceof HadoopClassLoader);
 
         this.name = name;
+
+        initializeNativeLibraries();
+    }
+
+    /**
+     * Workaround to load native Hadoop libraries. Java doesn't allow native libraries to be loaded from different
+     * classloaders. But we load Hadoop classes many times and one of these classes - {@code NativeCodeLoader} - tries
+     * to load the same native library over and over again.
+     * <p>
+     * To fix the problem, we force native library load in parent class loader and then "link" handle to this native
+     * library to our class loader. As a result, our class loader will think that the library is already loaded and will
+     * be able to link native methods.
+     *
+     * @see <a href="http://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/invocation.html#library_version">
+     *     JNI specification</a>
+     */
+    private void initializeNativeLibraries() {
+        try {
+            // This must trigger native library load.
+            Class.forName(NativeCodeLoader.class.getName(), true, APP_CLS_LDR);
+
+            final Vector<Object> curVector = U.field(this, "nativeLibraries");
+
+            ClassLoader ldr = APP_CLS_LDR;
+
+            while (ldr != null) {
+                Vector vector = U.field(ldr, "nativeLibraries");
+
+                for (Object lib : vector) {
+                    String libName = U.field(lib, "name");
+
+                    if (libName.contains(LIBHADOOP)) {
+                        curVector.add(lib);
+
+                        return;
+                    }
+                }
+
+                ldr = ldr.getParent();
+            }
+        }
+        catch (Exception e) {
+            U.quietAndWarn(null, "Failed to initialize Hadoop native library " +
+                "(native Hadoop methods might not work properly): " + e);
+        }
     }
 
     /**
@@ -152,8 +201,6 @@ public class HadoopClassLoader extends URLClassLoader {
             if (isHadoop(name)) { // Always load Hadoop classes explicitly, since Hadoop can be available in App classpath.
                 if (name.endsWith(".util.ShutdownHookManager"))  // Dirty hack to get rid of Hadoop shutdown hooks.
                     return loadFromBytes(name, HadoopShutdownHookManager.class.getName());
-                else if (name.endsWith(".util.NativeCodeLoader"))
-                    return loadFromBytes(name, HadoopNativeCodeLoader.class.getName());
                 else if (name.equals(HADOOP_DAEMON_CLASS_NAME))
                     // We replace this in order to be able to forcibly stop some daemon threads
                     // that otherwise never stop (e.g. PeerCache runnables):
@@ -274,7 +321,7 @@ public class HadoopClassLoader extends URLClassLoader {
 
     /**
      * Check whether class has external dependencies on Hadoop.
-     * 
+     *
      * @param clsName Class name.
      * @return {@code True} if class has external dependencies.
      */
@@ -285,15 +332,15 @@ public class HadoopClassLoader extends URLClassLoader {
         ctx.mthdVisitor = new CollectingMethodVisitor(ctx, ctx.annVisitor);
         ctx.fldVisitor = new CollectingFieldVisitor(ctx, ctx.annVisitor);
         ctx.clsVisitor = new CollectingClassVisitor(ctx, ctx.annVisitor, ctx.mthdVisitor, ctx.fldVisitor);
-        
+
         return hasExternalDependencies(clsName, ctx);
     }
-        
+
     /**
      * Check whether class has external dependencies on Hadoop.
-     * 
+     *
      * @param clsName Class name.
-     * @param ctx Context.                
+     * @param ctx Context.
      * @return {@code true} If the class has external dependencies.
      */
     boolean hasExternalDependencies(String clsName, CollectingContext ctx) {
@@ -519,7 +566,7 @@ public class HadoopClassLoader extends URLClassLoader {
 
         /** Field visitor. */
         private FieldVisitor fldVisitor;
-        
+
         /** Class visitor. */
         private ClassVisitor clsVisitor;
 
@@ -627,7 +674,7 @@ public class HadoopClassLoader extends URLClassLoader {
                 onType(t);
             }
         }
-    }    
+    }
 
     /**
      * Annotation visitor.
@@ -638,7 +685,7 @@ public class HadoopClassLoader extends URLClassLoader {
 
         /**
          * Annotation visitor.
-         * 
+         *
          * @param ctx The collector.
          */
         CollectingAnnotationVisitor(CollectingContext ctx) {
