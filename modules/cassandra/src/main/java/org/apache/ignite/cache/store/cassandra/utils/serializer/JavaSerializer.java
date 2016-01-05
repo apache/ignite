@@ -27,9 +27,12 @@ import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 
 /**
- * Serializer based on standard Java serialization
+ * Serializer based on standard Java serialization.
  */
 public class JavaSerializer implements Serializer {
+    /** */
+    private static final int DFLT_BUFFER_SIZE = 4096;
+
     /** {@inheritDoc} */
     @Override public ByteBuffer serialize(Object obj) {
         if (obj == null)
@@ -39,9 +42,9 @@ public class JavaSerializer implements Serializer {
         ObjectOutputStream out = null;
 
         try {
-            stream = new ByteArrayOutputStream(4096);
-            out = new ObjectOutputStream(stream);
+            stream = new ByteArrayOutputStream(DFLT_BUFFER_SIZE);
 
+            out = new ObjectOutputStream(stream);
             out.writeObject(obj);
             out.flush();
 
@@ -64,6 +67,7 @@ public class JavaSerializer implements Serializer {
         try {
             stream = new ByteArrayInputStream(buf.array());
             in = new ObjectInputStream(stream);
+
             return in.readObject();
         }
         catch (Throwable e) {

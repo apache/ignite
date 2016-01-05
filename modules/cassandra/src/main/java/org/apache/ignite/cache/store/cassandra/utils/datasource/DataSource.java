@@ -40,7 +40,7 @@ import org.apache.ignite.cache.store.cassandra.utils.session.CassandraSession;
 import org.apache.ignite.cache.store.cassandra.utils.session.CassandraSessionImpl;
 
 /**
- * Data source abstraction to specify configuration of the Cassandra session to be used
+ * Data source abstraction to specify configuration of the Cassandra session to be used.
  */
 public class DataSource {
     /** Number of rows to immediately fetch in CQL statement execution. */
@@ -219,7 +219,7 @@ public class DataSource {
     /**
      * Sets compression algorithm to use for the transport.
      *
-     * @param compression compression algorithm
+     * @param compression Compression algorithm.
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setCompression(String compression) {
@@ -239,7 +239,7 @@ public class DataSource {
     /**
      * Enables SSL for communications with Cassandra.
      *
-     * @param use flag to enable/disable SSL
+     * @param use Flag to enable/disable SSL.
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setUseSSL(boolean use) {
@@ -251,7 +251,7 @@ public class DataSource {
     /**
      * Enables metrics collection.
      *
-     * @param collect flag to enable/disable metrics collection
+     * @param collect Flag to enable/disable metrics collection.
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setCollectMetrix(boolean collect) {
@@ -263,7 +263,7 @@ public class DataSource {
     /**
      * Enables JMX reporting of the metrics.
      *
-     * @param enableReporting flag to enable/disable JMX reporting
+     * @param enableReporting Flag to enable/disable JMX reporting.
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setJmxReporting(boolean enableReporting) {
@@ -275,7 +275,7 @@ public class DataSource {
     /**
      * Sets number of rows to immediately fetch in CQL statement execution.
      *
-     * @param size number of rows to fetch.
+     * @param size Number of rows to fetch.
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setFetchSize(int size) {
@@ -287,7 +287,7 @@ public class DataSource {
     /**
      * Set consistency level for READ operations.
      *
-     * @param level consistency level.
+     * @param level Consistency level.
      */
     public void setReadConsistency(String level) {
         readConsistency = parseConsistencyLevel(level);
@@ -298,7 +298,7 @@ public class DataSource {
     /**
      * Set consistency level for WRITE operations.
      *
-     * @param level consistency level.
+     * @param level Consistency level.
      */
     public void setWriteConsistency(String level) {
         writeConsistency = parseConsistencyLevel(level);
@@ -309,7 +309,7 @@ public class DataSource {
     /**
      * Sets credentials to use for authentication.
      *
-     * @param creds credentials.
+     * @param creds Credentials.
      */
     public void setCredentials(Credentials creds) {
         this.creds = creds;
@@ -320,7 +320,7 @@ public class DataSource {
     /**
      * Sets load balancing policy.
      *
-     * @param plc load balancing policy.
+     * @param plc Load balancing policy.
      */
     public void setLoadBalancingPolicy(LoadBalancingPolicy plc) {
         this.loadBalancingPlc = plc;
@@ -331,7 +331,7 @@ public class DataSource {
     /**
      * Sets reconnection policy.
      *
-     * @param plc reconnection policy.
+     * @param plc Reconnection policy.
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setReconnectionPolicy(ReconnectionPolicy plc) {
@@ -343,7 +343,7 @@ public class DataSource {
     /**
      * Sets retry policy.
      *
-     * @param plc retry policy.
+     * @param plc Retry policy.
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setRetryPolicy(RetryPolicy plc) {
@@ -355,7 +355,7 @@ public class DataSource {
     /**
      * Sets address translator.
      *
-     * @param translater address translator.
+     * @param translater Address translator.
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setAddressTranslater(AddressTranslater translater) {
@@ -367,22 +367,24 @@ public class DataSource {
     /**
      * Sets speculative execution policy.
      *
-     * @param plc speculative execution policy.
+     * @param plc Speculative execution policy.
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setSpeculativeExecutionPolicy(SpeculativeExecutionPolicy plc) {
         this.speculativeExecutionPlc = plc;
+
         invalidate();
     }
 
     /**
      * Sets authentication provider.
      *
-     * @param provider authentication provider
+     * @param provider Authentication provider.
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setAuthProvider(AuthProvider provider) {
         this.authProvider = provider;
+
         invalidate();
     }
 
@@ -394,6 +396,7 @@ public class DataSource {
     @SuppressWarnings("UnusedDeclaration")
     public void setSslOptions(SSLOptions options) {
         this.sslOptions = options;
+
         invalidate();
     }
 
@@ -405,17 +408,19 @@ public class DataSource {
     @SuppressWarnings("UnusedDeclaration")
     public void setPoolingOptions(PoolingOptions options) {
         this.poolingOptions = options;
+
         invalidate();
     }
 
     /**
      * Sets socket options to use.
      *
-     * @param options socket options.
+     * @param options Socket options.
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setSocketOptions(SocketOptions options) {
         this.sockOptions = options;
+
         invalidate();
     }
 
@@ -427,6 +432,7 @@ public class DataSource {
     @SuppressWarnings("UnusedDeclaration")
     public void setNettyOptions(NettyOptions options) {
         this.nettyOptions = options;
+
         invalidate();
     }
 

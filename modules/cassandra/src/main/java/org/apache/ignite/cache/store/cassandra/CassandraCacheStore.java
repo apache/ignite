@@ -50,8 +50,8 @@ import org.apache.ignite.resources.LoggerResource;
 /**
  * Implementation of {@link CacheStore} backed by Cassandra database.
  *
- * @param <K> Ignite cache key type
- * @param <V> Ignite cache value type
+ * @param <K> Ignite cache key type.
+ * @param <V> Ignite cache value type.
  */
 public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     /** Connection attribute property name. */

@@ -263,8 +263,8 @@ public abstract class PersistenceSettings {
             for (PojoField field2 : fields) {
                 if (field1.getName().equals(field2.getName())) {
                     if (sameNames) {
-                        throw new IllegalArgumentException("Incorrect Cassandra key persistence settings," +
-                            " two POJO fields with the same name '" + field1.getName() + "' specified");
+                        throw new IllegalArgumentException("Incorrect Cassandra key persistence settings, " +
+                            "two POJO fields with the same name '" + field1.getName() + "' specified");
                     }
 
                     sameNames = true;
@@ -272,8 +272,8 @@ public abstract class PersistenceSettings {
 
                 if (field1.getColumn().equals(field2.getColumn())) {
                     if (sameCols) {
-                        throw new IllegalArgumentException("Incorrect Cassandra persistence settings," +
-                            " two POJO fields with the same column '" + field1.getColumn() + "' specified");
+                        throw new IllegalArgumentException("Incorrect Cassandra persistence settings, " +
+                            "two POJO fields with the same column '" + field1.getColumn() + "' specified");
                     }
 
                     sameCols = true;

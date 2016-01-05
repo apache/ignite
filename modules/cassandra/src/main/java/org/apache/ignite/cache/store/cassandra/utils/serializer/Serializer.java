@@ -28,18 +28,16 @@ public interface Serializer extends Serializable {
     /**
      * Serializes object into byte buffer.
      *
-     * @param obj object.
-     *
-     * @return byte buffer.
+     * @param obj Object to serialize.
+     * @return Byte buffer with binary data.
      */
     public ByteBuffer serialize(Object obj);
 
     /**
      * Deserializes object from byte buffer.
      *
-     * @param buf byte buffer.
-     *
-     * @return object.
+     * @param buf Byte buffer.
+     * @return Deserialized object.
      */
     public Object deserialize(ByteBuffer buf);
 }

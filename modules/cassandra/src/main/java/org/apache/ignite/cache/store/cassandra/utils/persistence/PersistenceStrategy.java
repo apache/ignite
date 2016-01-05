@@ -18,44 +18,45 @@
 package org.apache.ignite.cache.store.cassandra.utils.persistence;
 
 /**
- * Describes persistence strategy to be used to persist object data into Cassandra
+ * Describes persistence strategy to be used to persist object data into Cassandra.
  */
 public enum PersistenceStrategy {
     /**
      * Stores object value as is, by mapping its value to Cassandra table column with corresponding type.
-     *
-     * Could be used for:
-     *
-     * 1) Primitive java type (like Integer, String, Long and etc) which could be directly mapped to appropriate
-     * Cassandra type.
+     * <p>
+     * Could be used for primitive java type (like Integer, String, Long and etc) which could be directly mapped
+     * to appropriate Cassandra types.
      */
     PRIMITIVE,
 
     /**
-     * Stores object value as BLOB, by mapping its value to Cassandra table column with blob type. Could be used for any
-     * java type. Conversion of java object to BLOB is handled by specified "serializer".
-     *
+     * Stores object value as BLOB, by mapping its value to Cassandra table column with blob type.
+     * Could be used for any java type. Conversion of java object to BLOB is handled by specified serializer.
+     * <p>
      * Available serializer implementations:
-     *
-     * 1) org.apache.ignite.cache.store.cassandra.utils.serializer.JavaSerializer - uses standard Java serialization
-     * framework
-     *
-     * 2) org.apache.ignite.cache.store.cassandra.utils.serializer.KryoSerializer - uses Kryo serialization
-     * framework
+     * <ul>
+     *     <li>
+     *         org.apache.ignite.cache.store.cassandra.utils.serializer.JavaSerializer - uses standard Java
+     *         serialization framework.
+     *     </li>
+     *     <li>
+     *        org.apache.ignite.cache.store.cassandra.utils.serializer.KryoSerializer - uses Kryo serialization
+     *        framework.
+     *     </li>
+     * </ul>
      */
     BLOB,
 
     /**
-     * Stores each field of an object as a column having corresponding type in Cassandra table. Provides ability to
-     * utilize Cassandra secondary indexes for object fields.
-     *
-     * Could be used for:
-     *
-     * 1) Objects which follow JavaBeans convention and having empty public constructor. Object fields should be:
-     *
-     * - Primitive java types like int, long, String and etc.
-     *
-     * - Collections of primitive java types like List<Integer>, Map<Integer, String>, Set<Long>
+     * Stores each field of an object as a column having corresponding type in Cassandra table.
+     * Provides ability to utilize Cassandra secondary indexes for object fields.
+     * <p>
+     * Could be used for objects which follow JavaBeans convention and having empty public constructor.
+     * Object fields should be:
+     * <ul>
+     *     <li>Primitive java types like int, long, String and etc.</li>
+     *     <li>Collections of primitive java types like List<Integer>, Map<Integer, String>, Set<Long></li>
+     * </ul>
      */
-    POJO,
+    POJO
 }
