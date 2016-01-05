@@ -34,6 +34,3 @@ interested in):
 for an example.
 
 4. Create a topology with the streamer and start.
-
-Known limitations:
-- Cannot be run with multiple Storm executors.

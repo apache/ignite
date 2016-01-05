@@ -60,6 +60,9 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     /** Number of threads to stream data to the grid. */
     private static final int THREADS = 5;
 
+    /** Parallelization in Storm. */
+    private static final int STORM_EXECUTORS = 3;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
@@ -82,7 +85,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException
      */
     public void testStormStreamerIgniteBolt() throws TimeoutException, InterruptedException {
-        StormStreamer<String, String> stormStreamer = new StormStreamer<>();
+        final StormStreamer<String, String> stormStreamer = new StormStreamer<>();
         stormStreamer.setThreads(THREADS);
         stormStreamer.setAutoFlushFrequency(10L);
         stormStreamer.setAllowOverwrite(true);
@@ -120,7 +123,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
                     TestStormSpout testStormSpout = new TestStormSpout();
 
                     builder.setSpout("test-spout", testStormSpout);
-                    builder.setBolt("ignite-bolt", stormStreamer).shuffleGrouping("test-spout");
+                    builder.setBolt("ignite-bolt", stormStreamer, STORM_EXECUTORS).shuffleGrouping("test-spout");
 
                     StormTopology topology = builder.createTopology();
 

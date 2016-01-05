@@ -25,6 +25,7 @@ import backtype.storm.tuple.Tuple;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -58,17 +59,17 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
     /** Enables overwriting existing values in cache. */
     private boolean allowOverwrite = false;
 
-    /** Stopped. */
-    private volatile boolean stopped = true;
+    /** Flag for stopped state. */
+    private static volatile boolean stopped = true;
 
     /** Storm output collector. */
     private OutputCollector collector;
 
     /** Ignite grid configuration file. */
-    private String igniteConfigFile;
+    private static String igniteConfigFile;
 
     /** Cache name. */
-    private String cacheName;
+    private static String cacheName;
 
     /**
      * Gets the cache name.
@@ -166,18 +167,23 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
      * @throws IgniteException If failed.
      */
     public void start() throws IgniteException {
-        if (!stopped)
-            throw new IgniteException("Attempted to start an already started Storm  Streamer");
-
         A.notNull(igniteConfigFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");
-        A.notNull(getIgnite(), "Ignite");
-        A.notNull(getStreamer(), "Streamer");
         A.ensure(threads > 0, "threads > 0");
+
+        setIgnite(StreamerContext.getIgnite());
+
+        final IgniteDataStreamer dataStreamer = StreamerContext.getStreamer();
+        dataStreamer.autoFlushFrequency(autoFlushFrequency);
+        dataStreamer.allowOverwrite(allowOverwrite);
+
+        setStreamer(dataStreamer);
 
         log = getIgnite().log();
 
         executor = Executors.newFixedThreadPool(threads);
+
+        stopped = false;
     }
 
     /**
@@ -185,7 +191,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
      */
     public void stop() throws IgniteException {
         if (stopped)
-            throw new IgniteException("Attempted to stop an already stopped Storm Streamer");
+            return;
 
         stopped = true;
 
@@ -205,19 +211,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
      */
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
-        if (stopped) {
-            setIgnite(Ignition.start(igniteConfigFile));
-
-            IgniteDataStreamer dataStreamer = getIgnite().<K, V>dataStreamer(cacheName);
-            dataStreamer.autoFlushFrequency(autoFlushFrequency);
-            dataStreamer.allowOverwrite(allowOverwrite);
-
-            setStreamer(dataStreamer);
-
-            start();
-
-            stopped = false;
-        }
+        start();
 
         this.collector = collector;
     }
@@ -280,10 +274,43 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
     /**
      * Not used.
      *
-     * @return
+     * @return Configurations.
      */
     @Override
     public Map<String, Object> getComponentConfiguration() {
         return null;
+    }
+
+    /**
+     * Streamer context initializing grid and data streamer instances on demand.
+     */
+    public static class StreamerContext {
+        /** Constructor. */
+        private StreamerContext() {
+        }
+
+        /** Instance holder. */
+        private static class Holder {
+            private static final Ignite IGNITE = Ignition.start(igniteConfigFile);
+            private static final IgniteDataStreamer STREAMER = IGNITE.dataStreamer(cacheName);
+        }
+
+        /**
+         * Obtains grid instance.
+         *
+         * @return Grid instance.
+         */
+        public static Ignite getIgnite() {
+            return Holder.IGNITE;
+        }
+
+        /**
+         * Obtains data streamer instance.
+         *
+         * @return Data streamer instance.
+         */
+        public static IgniteDataStreamer getStreamer() {
+            return Holder.STREAMER;
+        }
     }
 }
