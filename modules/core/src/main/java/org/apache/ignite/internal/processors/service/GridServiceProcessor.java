@@ -300,7 +300,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         ensure(c.getMaxPerNodeCount() >= 0, "getMaxPerNodeCount() >= 0", c.getMaxPerNodeCount());
         ensure(c.getService() != null, "getService() != null", c.getService());
         ensure(c.getTotalCount() > 0 || c.getMaxPerNodeCount() > 0,
-                "c.getTotalCount() > 0 || c.getMaxPerNodeCount() > 0", null);
+            "c.getTotalCount() > 0 || c.getMaxPerNodeCount() > 0", null);
     }
 
     /**
