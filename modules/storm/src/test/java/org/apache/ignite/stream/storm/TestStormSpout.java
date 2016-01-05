@@ -22,8 +22,8 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Testing Storm spout.
@@ -34,7 +34,7 @@ public class TestStormSpout implements IRichSpout {
     private static final String IGNITE_TUPLE_FIELD = "ignite";
 
     /** Number of outgoing tuples. */
-    public static final int CNT = 100;
+    public static final int CNT = 500;
 
     /** Spout message prefix. */
     private static final String VAL_PREFIX = "v:";
@@ -43,7 +43,7 @@ public class TestStormSpout implements IRichSpout {
     private SpoutOutputCollector collector;
 
     /** Map of messages to be sent. */
-    private static HashMap<String, String> keyValMap;
+    private static TreeMap<Integer, String> keyValMap;
 
     static {
         keyValMap = generateKeyValMap();
@@ -52,7 +52,7 @@ public class TestStormSpout implements IRichSpout {
     /**
      * Declares the output field for the component.
      *
-     * @param outputFieldsDeclarer
+     * @param outputFieldsDeclarer Declarer to declare fields on.
      */
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
@@ -80,20 +80,19 @@ public class TestStormSpout implements IRichSpout {
      *
      * @return Key, value pair.
      */
-    public static HashMap<String, String> generateKeyValMap() {
-        HashMap<String, String> keyValMap = new HashMap<>();
+    private static TreeMap<Integer, String> generateKeyValMap() {
+        TreeMap<Integer, String> keyValMap = new TreeMap<>();
 
         for (int evt = 0; evt < CNT; evt++) {
-            String key = Integer.toString(evt);
-            String msg = VAL_PREFIX + key;
+            String msg = VAL_PREFIX + evt;
 
-            keyValMap.put(key, msg);
+            keyValMap.put(evt, msg);
         }
 
         return keyValMap;
     }
 
-    public HashMap<String, String> getKeyValMap() {
+    public TreeMap<Integer, String> getKeyValMap() {
         return keyValMap;
     }
 

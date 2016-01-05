@@ -28,8 +28,8 @@ import backtype.storm.testing.TestJob;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Values;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -61,7 +61,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     private static final int THREADS = 5;
 
     /** Parallelization in Storm. */
-    private static final int STORM_EXECUTORS = 3;
+    private static final int STORM_EXECUTORS = 2;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -129,7 +129,8 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
                     // Prepares a mock data for the spout.
                     MockedSources mockedSources = new MockedSources();
-                    mockedSources.addMockData("test-spout", new Values(testStormSpout.getKeyValMap()));
+                    mockedSources.addMockData("test-spout", new Values(testStormSpout.getKeyValMap().subMap(0, TestStormSpout.CNT / 2)),
+                        new Values(testStormSpout.getKeyValMap().subMap(TestStormSpout.CNT / 2, TestStormSpout.CNT)));
 
                     // Prepares the config.
                     Config conf = new Config();
@@ -153,10 +154,10 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
         );
     }
 
-    private void compareStreamCacheData(HashMap<String, String> keyValMap) {
-        IgniteCache<String, String> cache = ignite.cache(TEST_CACHE);
+    private void compareStreamCacheData(TreeMap<Integer, String> keyValMap) {
+        IgniteCache<Integer, String> cache = ignite.cache(TEST_CACHE);
 
-        for (Map.Entry<String, String> entry : keyValMap.entrySet()) {
+        for (Map.Entry<Integer, String> entry : keyValMap.entrySet()) {
             assertEquals(entry.getValue(), cache.get(entry.getKey()));
         }
 
