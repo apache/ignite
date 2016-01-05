@@ -76,7 +76,15 @@ public class KeyValuePersistenceSettings {
     /** Cassandra table creation options. */
     private String tblOptions;
 
-    /** Cassandra keyspace creation options. */
+    /** Cassandra keyspace creation options. By default most generic options will be used:
+     *
+     *  1) SimpleStrategy for replication which work well for single data center Cassandra cluster.
+     *     If your Cassandra cluster deployed across multiple data centers it's better to use NetworkTopologyStrategy.
+     *
+     *  2) Three replicas will be created for each data block.
+     *
+     *  3) Setting DURABLE_WRITES to true specifies that all data should be written to commit log.
+     */
     private String keyspaceOptions = "replication = {'class' : 'SimpleStrategy', 'replication_factor' : 3} " +
         "and durable_writes = true";
 
