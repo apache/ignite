@@ -26,6 +26,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.UniversalFileSystemAdapter;
@@ -34,55 +36,55 @@ import org.apache.ignite.internal.processors.igfs.UniversalFileSystemAdapter;
  * Universal adapter wrapping {@link org.apache.hadoop.fs.FileSystem} instance.
  */
 public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFileSystemAdapter {
-    /** The wrapped filesystem. */
-    private final FileSystem fileSys;
+    /** File system factory. */
+    private final HadoopFileSystemFactory factory;
 
     /**
      * Constructor.
-     * @param fs the filesystem to be wrapped.
+     * @param factory File system factory.
      */
-    public HadoopFileSystemUniversalFileSystemAdapter(FileSystem fs) {
-        this.fileSys = fs;
+    public HadoopFileSystemUniversalFileSystemAdapter(HadoopFileSystemFactory factory) {
+        assert factory != null;
+
+        this.factory = factory;
     }
 
     /** {@inheritDoc} */
-    @Override public String name() {
-        return fileSys.getUri().toString();
+    @Override public String name() throws IOException {
+        return get().getUri().toString();
     }
 
     /** {@inheritDoc} */
     @Override public boolean exists(String path) throws IOException {
-        return fileSys.exists(new Path(path));
+        return get().exists(new Path(path));
     }
 
     /** {@inheritDoc} */
     @Override public boolean delete(String path, boolean recursive) throws IOException {
-        boolean ok = fileSys.delete(new Path(path), recursive);
-        return ok;
+        return get().delete(new Path(path), recursive);
     }
 
     /** {@inheritDoc} */
     @Override public void mkdirs(String path) throws IOException {
-        boolean ok = fileSys.mkdirs(new Path(path));
+        boolean ok = get().mkdirs(new Path(path));
         if (!ok)
             throw new IOException("Failed to mkdirs: " + path);
     }
 
     /** {@inheritDoc} */
     @Override public void format() throws IOException {
-        HadoopIgfsUtils.clear(fileSys);
+        HadoopIgfsUtils.clear(get());
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, String> properties(String path) throws IOException {
         Path p = new Path(path);
 
-        FileStatus status = fileSys.getFileStatus(p);
+        FileStatus status = get().getFileStatus(p);
 
         Map<String,String> m = new HashMap<>(3); // max size == 4
 
         m.put(IgfsEx.PROP_USER_NAME, status.getOwner());
-
         m.put(IgfsEx.PROP_GROUP_NAME, status.getGroup());
 
         FsPermission perm = status.getPermission();
@@ -95,7 +97,7 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
 
     /** {@inheritDoc} */
     @Override public InputStream openInputStream(String path) throws IOException {
-        return fileSys.open(new Path(path));
+        return get().open(new Path(path));
     }
 
     /** {@inheritDoc} */
@@ -103,16 +105,27 @@ public class HadoopFileSystemUniversalFileSystemAdapter implements UniversalFile
         Path p = new Path(path);
 
         if (append)
-            return fileSys.append(p);
+            return get().append(p);
         else
-            return fileSys.create(p, true/*overwrite*/);
+            return get().create(p, true/*overwrite*/);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T getAdapter(Class<T> clazz) {
-        if (clazz == FileSystem.class)
-            return (T)fileSys;
+    @SuppressWarnings("unchecked")
+    @Override public <T> T unwrap(Class<T> cls) {
+        if (HadoopFileSystemFactory.class.isAssignableFrom(cls))
+            return (T)factory;
 
         return null;
+    }
+
+    /**
+     * Create file system.
+     *
+     * @return File system.
+     * @throws IOException If failed.
+     */
+    private FileSystem get() throws IOException {
+        return factory.get(FileSystemConfiguration.DFLT_USER_NAME);
     }
 }
