@@ -11,10 +11,13 @@
         <relativePath>../../parent</relativePath>
     </parent>
 
-    <!--<groupId>storm</groupId>-->
     <artifactId>ignite-storm</artifactId>
     <version>1.5.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
+
+    <properties>
+        <storm.version>0.10.0</storm.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -26,8 +29,7 @@
         <dependency>
             <groupId>org.apache.storm</groupId>
             <artifactId>storm-core</artifactId>
-            <version>0.9.5</version>
-            <!--<scope>provided</scope>-->
+            <version>${storm.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>log4j</groupId>
@@ -77,6 +79,5 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
 
 </project>

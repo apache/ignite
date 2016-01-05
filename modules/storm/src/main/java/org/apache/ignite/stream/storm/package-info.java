@@ -15,22 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.storm;
-
-import backtype.storm.tuple.Tuple;
-import java.util.Map;
-
 /**
- * Exampple of implementation of Ignite Bolt.
+ * <!-- Package description. -->
+ * StormStreamer -- integration with Apache Storm.
  */
-public class IgniteBoltImpl extends IgniteBolt {
-
-    /**
-     * This method should be overridden by providing a way to translate a tuple in a map.
-     *
-     * @param tuple
-     * @return The format accepted by Ignite
-     * @throws Exception
-     */
-    @Override public Map<?, ?> process(Tuple tuple) throws Exception { return null; }
-}
+package org.apache.ignite.stream.storm;

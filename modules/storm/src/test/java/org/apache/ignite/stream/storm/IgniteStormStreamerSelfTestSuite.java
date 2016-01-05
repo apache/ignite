@@ -20,7 +20,7 @@ package org.apache.ignite.stream.storm;
 import junit.framework.TestSuite;
 
 /**
- * Apache Storm streamer tests. Tests {@link StormStreamer}.
+ * Apache Storm streamer tests.
  */
 public class IgniteStormStreamerSelfTestSuite extends TestSuite {
 
@@ -30,7 +30,9 @@ public class IgniteStormStreamerSelfTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Apache Storm streamer Test Suite");
+
         suite.addTest(new TestSuite(StormIgniteStreamerSelfTest.class));
+
         return suite;
     }
 }
