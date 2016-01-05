@@ -1530,6 +1530,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     @GridInternal
     private static class ServiceTopologyCallable implements IgniteCallable<Map<UUID, Integer>> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private static final IgniteProductVersion SINCE_VER = IgniteProductVersion.fromString("1.5.0");
 
         /** */
