@@ -40,6 +40,19 @@ import org.xml.sax.InputSource;
  * Stores persistence settings for Ignite cache key and value
  */
 public class KeyValuePersistenceSettings {
+    /**
+     * Default Cassandra keyspace options which should be used to create new keyspace.
+     *
+     *  1) SimpleStrategy for replication work well for single data center Cassandra cluster.
+     *     If your Cassandra cluster deployed across multiple data centers it's better to use NetworkTopologyStrategy.
+     *
+     *  2) Three replicas will be created for each data block.
+     *
+     *  3) Setting DURABLE_WRITES to true specifies that all data should be written to commit log.
+     */
+    private static final String DFLT_KEYSPACE_OPTIONS = "replication = {'class' : 'SimpleStrategy', " +
+            "'replication_factor' : 3} and durable_writes = true";
+
     /** Xml attribute specifying Cassandra keyspace to use. */
     private static final String KEYSPACE_ATTR = "keyspace";
 
@@ -76,17 +89,8 @@ public class KeyValuePersistenceSettings {
     /** Cassandra table creation options. */
     private String tblOptions;
 
-    /** Cassandra keyspace creation options. By default most generic options will be used:
-     *
-     *  1) SimpleStrategy for replication which work well for single data center Cassandra cluster.
-     *     If your Cassandra cluster deployed across multiple data centers it's better to use NetworkTopologyStrategy.
-     *
-     *  2) Three replicas will be created for each data block.
-     *
-     *  3) Setting DURABLE_WRITES to true specifies that all data should be written to commit log.
-     */
-    private String keyspaceOptions = "replication = {'class' : 'SimpleStrategy', 'replication_factor' : 3} " +
-        "and durable_writes = true";
+    /** Cassandra keyspace creation options */
+    private String keyspaceOptions = DFLT_KEYSPACE_OPTIONS;
 
     /** Persistence settings for Ignite cache keys */
     private KeyPersistenceSettings keyPersistenceSettings;
