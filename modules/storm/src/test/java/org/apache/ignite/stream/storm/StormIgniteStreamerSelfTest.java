@@ -57,6 +57,9 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     /** Ignite instance. */
     private Ignite ignite;
 
+    /** Number of threads to stream data to the grid. */
+    private static final int THREADS = 5;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
@@ -80,6 +83,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      */
     public void testStormStreamerIgniteBolt() throws TimeoutException, InterruptedException {
         StormStreamer<String, String> stormStreamer = new StormStreamer<>();
+        stormStreamer.setThreads(THREADS);
         stormStreamer.setAutoFlushFrequency(10L);
         stormStreamer.setAllowOverwrite(true);
         stormStreamer.setCacheName(TEST_CACHE);

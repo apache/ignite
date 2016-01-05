@@ -34,7 +34,7 @@ public class TestStormSpout implements IRichSpout {
     private static final String IGNITE_TUPLE_FIELD = "ignite";
 
     /** Number of outgoing tuples. */
-    public static final int CNT = 1000;
+    public static final int CNT = 100;
 
     /** Spout message prefix. */
     private static final String VAL_PREFIX = "v:";
