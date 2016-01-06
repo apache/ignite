@@ -209,7 +209,7 @@ class GridServiceProxy<T> implements Serializable {
          * @param name Service name.
          * @return Node with deployed service or {@code null} if there is no such node.
          */
-        private ClusterNode nodeForService(String name, boolean sticky) {
+        private ClusterNode nodeForService(String name, boolean sticky) throws IgniteCheckedException {
             do { // Repeat if reference to remote node was changed.
                 if (sticky) {
                     ClusterNode curNode = rmtNode.get();
@@ -236,7 +236,7 @@ class GridServiceProxy<T> implements Serializable {
          * @return Local node if it has a given service deployed or randomly chosen remote node,
          * otherwise ({@code null} if given service is not deployed on any node.
          */
-        private ClusterNode randomNodeForService(String name) {
+        private ClusterNode randomNodeForService(String name) throws IgniteCheckedException {
             if (hasLocNode && ctx.service().service(name) != null)
                 return ctx.discovery().localNode();
 

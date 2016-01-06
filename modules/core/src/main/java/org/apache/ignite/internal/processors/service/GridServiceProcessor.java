@@ -545,26 +545,19 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param name Service name.
      * @return Service topology.
      */
-    public Map<UUID, Integer> serviceTopology(String name) {
-        try {
-            ClusterNode node = cache.affinity().mapKeyToNode(name);
+    public Map<UUID, Integer> serviceTopology(String name) throws IgniteCheckedException {
+        ClusterNode node = cache.affinity().mapKeyToNode(name);
 
-            if (node.version().compareTo(ServiceTopologyCallable.SINCE_VER) >= 0) {
-                return ctx.closure().callAsyncNoFailover(
-                    GridClosureCallMode.BALANCE,
-                    new ServiceTopologyCallable(name),
-                    Collections.singletonList(node),
-                    false
-                ).get();
-            }
-            else
-                return serviceTopology(cache, name);
+        if (node.version().compareTo(ServiceTopologyCallable.SINCE_VER) >= 0) {
+            return ctx.closure().callAsyncNoFailover(
+                GridClosureCallMode.BALANCE,
+                new ServiceTopologyCallable(name),
+                Collections.singletonList(node),
+                false
+            ).get();
         }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to get assignments from replicated cache for service: " + name, e);
-
-            return null;
-        }
+        else
+            return serviceTopology(cache, name);
     }
 
     /**
