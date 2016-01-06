@@ -28,8 +28,8 @@ import backtype.storm.testing.TestJob;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Values;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -56,9 +57,6 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
     /** Ignite instance. */
     private Ignite ignite;
-
-    /** Number of threads to stream data to the grid. */
-    private static final int THREADS = 5;
 
     /** Parallelization in Storm. */
     private static final int STORM_EXECUTORS = 2;
@@ -86,7 +84,6 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      */
     public void testStormStreamerIgniteBolt() throws TimeoutException, InterruptedException {
         final StormStreamer<String, String> stormStreamer = new StormStreamer<>();
-        stormStreamer.setThreads(THREADS);
         stormStreamer.setAutoFlushFrequency(10L);
         stormStreamer.setAllowOverwrite(true);
         stormStreamer.setCacheName(TEST_CACHE);
@@ -129,8 +126,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
                     // Prepares a mock data for the spout.
                     MockedSources mockedSources = new MockedSources();
-                    mockedSources.addMockData("test-spout", new Values(testStormSpout.getKeyValMap().subMap(0, TestStormSpout.CNT / 2)),
-                        new Values(testStormSpout.getKeyValMap().subMap(TestStormSpout.CNT / 2, TestStormSpout.CNT)));
+                    mockedSources.addMockData("test-spout", getMockData());
 
                     // Prepares the config.
                     Config conf = new Config();
@@ -148,13 +144,35 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
                     ignite.events(ignite.cluster().forCacheNodes(TEST_CACHE)).stopRemoteListen(putLsnrId);
 
-                    compareStreamCacheData(testStormSpout.getKeyValMap());
+                    validateStreamCacheData(TestStormSpout.getKeyValMap());
                 }
             }
         );
     }
 
-    private void compareStreamCacheData(TreeMap<Integer, String> keyValMap) {
+    /**
+     * Prepares entry values for test input.s
+     *
+     * @return Array of entry values.
+     */
+    @NotNull
+    private static Values[] getMockData() {
+        final int SIZE = 10;
+        ArrayList<Values> mockData = new ArrayList<>();
+
+        for (int i = 0; i < TestStormSpout.CNT; i += SIZE) {
+            mockData.add(new Values(TestStormSpout.getKeyValMap().subMap(i, i + SIZE)));
+        }
+
+        return mockData.toArray(new Values[mockData.size()]);
+    }
+
+    /**
+     * Validates the data submitted to the grid is correctly stored.
+     *
+     * @param keyValMap Validation entries.s
+     */
+    private void validateStreamCacheData(Map<Integer, String> keyValMap) {
         IgniteCache<Integer, String> cache = ignite.cache(TEST_CACHE);
 
         for (Map.Entry<Integer, String> entry : keyValMap.entrySet()) {

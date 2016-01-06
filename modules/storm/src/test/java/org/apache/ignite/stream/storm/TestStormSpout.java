@@ -92,7 +92,7 @@ public class TestStormSpout implements IRichSpout {
         return keyValMap;
     }
 
-    public TreeMap<Integer, String> getKeyValMap() {
+    public static TreeMap<Integer, String> getKeyValMap() {
         return keyValMap;
     }
 

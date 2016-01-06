@@ -23,8 +23,6 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -46,12 +44,6 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
 
     /** Logger. */
     private IgniteLogger log;
-
-    /** Executor used to submit storm streams. */
-    private ExecutorService executor;
-
-    /** Number of threads to process Storm streams. */
-    private int threads = 1;
 
     /** Automatic flush frequency. */
     private long autoFlushFrequency = DFLT_FLUSH_FREQ;
@@ -108,24 +100,6 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
     }
 
     /**
-     * Obtains the number of threads.
-     *
-     * @return Number of threads.
-     */
-    public int getThreads() {
-        return threads;
-    }
-
-    /**
-     * Specifies the number of threads.
-     *
-     * @param threads Number of threads.
-     */
-    public void setThreads(int threads) {
-        this.threads = threads;
-    }
-
-    /**
      * Obtains data flush frequency.
      *
      * @return Flush frequency.
@@ -169,7 +143,6 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
     public void start() throws IgniteException {
         A.notNull(igniteConfigFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");
-        A.ensure(threads > 0, "threads > 0");
 
         setIgnite(StreamerContext.getIgnite());
 
@@ -180,8 +153,6 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
         setStreamer(dataStreamer);
 
         log = getIgnite().log();
-
-        executor = Executors.newFixedThreadPool(threads);
 
         stopped = false;
     }
@@ -196,8 +167,6 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
         stopped = true;
 
         getIgnite().<K, V>dataStreamer(cacheName).close(true);
-
-        executor.shutdown();
 
         getIgnite().close();
     }
@@ -226,30 +195,23 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
         if (stopped)
             return;
 
-        final Map<K, V> igniteGrid = (Map)tuple.getValueByField(IGNITE_TUPLE_FIELD);
+        if (!(tuple.getValueByField(IGNITE_TUPLE_FIELD) instanceof Map))
+            throw new IgniteException("Map as a streamer input is expected!");
 
-        if (log.isDebugEnabled()) {
-            log.debug("Tuple id: " + tuple.getMessageId());
+        final Map<K, V> gridVals = (Map)tuple.getValueByField(IGNITE_TUPLE_FIELD);
+
+        try {
+            if (log.isDebugEnabled())
+                log.debug("Tuple (id:" + tuple.getMessageId() + ") from storm: " + gridVals);
+
+            getStreamer().addData(gridVals);
+
+            collector.ack(tuple);
         }
-
-        executor.submit(new Runnable() {
-            @Override public void run() {
-                for (K k : igniteGrid.keySet()) {
-                    try {
-                        if (log.isDebugEnabled())
-                            log.debug("Tuple from storm: " + k + ", " + igniteGrid.get(k));
-
-                        getStreamer().addData(k, igniteGrid.get(k));
-                    }
-                    catch (Exception e) {
-                        if (log.isDebugEnabled())
-                            log.debug(e.toString());
-                    }
-                }
-            }
-        });
-
-        collector.ack(tuple);
+        catch (Exception e) {
+            log.error("Error while processing tuple of " + gridVals, e);
+            collector.fail(tuple);
+        }
     }
 
     /**
